@@ -1,0 +1,15 @@
+{
+  "name": "cantero",
+  "private": true,
+  "version": "0.0.1",
+  "scripts": {
+    "build:shared": "pnpm --filter @cantero/shared build",
+    "dev:api": "pnpm build:shared && pnpm --filter api start:dev",
+    "dev:web": "pnpm build:shared && pnpm --filter web dev",
+    "build": "pnpm build:shared && pnpm -r build",
+    "test": "pnpm build:shared && pnpm -r test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

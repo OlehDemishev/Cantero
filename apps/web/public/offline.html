@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cantero — Offline</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        background: #f9fafb;
+        color: #101828;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+        text-align: center;
+        padding: 24px;
+      }
+      .badge {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+        background: #465fff;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: 700;
+      }
+      h1 {
+        font-size: 18px;
+        margin: 8px 0 0;
+      }
+      p {
+        color: #667085;
+        font-size: 14px;
+        max-width: 320px;
+        margin: 0;
+      }
+      button {
+        margin-top: 12px;
+        border: none;
+        background: #465fff;
+        color: white;
+        font-weight: 500;
+        font-size: 14px;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="badge">C</div>
+    <h1>You're offline</h1>
+    <p>This page isn't cached yet. Anything you log here will sync automatically once you're back online.</p>
+    <button onclick="location.reload()">Try again</button>
+  </body>
+</html>

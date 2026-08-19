@@ -1,0 +1,50 @@
+import { z } from "zod";
+
+export const STOCK_MOVEMENT_TYPES = ["receipt", "issue", "transfer", "write_off"] as const;
+export type StockMovementType = (typeof STOCK_MOVEMENT_TYPES)[number];
+
+export const createWarehouseSchema = z.object({
+  name: z.string().min(1).max(160),
+  address: z.string().max(300).optional(),
+});
+export type CreateWarehouseInput = z.infer<typeof createWarehouseSchema>;
+
+export const recordStockMovementSchema = z.object({
+  warehouseId: z.string().uuid(),
+  materialCatalogItemId: z.string().uuid(),
+  type: z.enum(STOCK_MOVEMENT_TYPES),
+  quantity: z.number().positive(),
+  projectId: z.string().uuid().optional(),
+});
+export type RecordStockMovementInput = z.infer<typeof recordStockMovementSchema>;
+
+export const issueFromEstimateSchema = z.object({
+  estimateId: z.string().uuid(),
+  warehouseId: z.string().uuid(),
+});
+export type IssueFromEstimateInput = z.infer<typeof issueFromEstimateSchema>;
+
+export const createSupplierSchema = z.object({
+  name: z.string().min(1).max(160),
+  email: z.string().email().optional(),
+  phone: z.string().max(40).optional(),
+});
+export type CreateSupplierInput = z.infer<typeof createSupplierSchema>;
+
+export const purchaseOrderLineSchema = z.object({
+  materialCatalogItemId: z.string().uuid(),
+  quantity: z.number().positive(),
+  unitPrice: z.number().nonnegative(),
+});
+export type PurchaseOrderLineInput = z.infer<typeof purchaseOrderLineSchema>;
+
+export const createPurchaseOrderSchema = z.object({
+  supplierId: z.string().uuid(),
+  lines: z.array(purchaseOrderLineSchema).min(1),
+});
+export type CreatePurchaseOrderInput = z.infer<typeof createPurchaseOrderSchema>;
+
+export const receivePurchaseOrderSchema = z.object({
+  warehouseId: z.string().uuid(),
+});
+export type ReceivePurchaseOrderInput = z.infer<typeof receivePurchaseOrderSchema>;
