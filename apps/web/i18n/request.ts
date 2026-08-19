@@ -1,7 +1,7 @@
 import { getRequestConfig } from "next-intl/server";
 import { cookies } from "next/headers";
 
-export const SUPPORTED_LOCALES = ["en", "de", "es"] as const;
+export const SUPPORTED_LOCALES = ["en", "de", "es", "pl", "uk"] as const;
 export const DEFAULT_LOCALE = "en";
 
 export default getRequestConfig(async () => {

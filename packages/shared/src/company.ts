@@ -6,7 +6,7 @@ export type UnitSystem = (typeof UNIT_SYSTEMS)[number];
 export const SUPPORTED_CURRENCIES = ["EUR", "USD", "GBP", "CHF", "CAD"] as const;
 export type Currency = (typeof SUPPORTED_CURRENCIES)[number];
 
-export const SUPPORTED_LOCALES = ["en", "de", "es"] as const;
+export const SUPPORTED_LOCALES = ["en", "de", "es", "pl", "uk"] as const;
 export type Locale = (typeof SUPPORTED_LOCALES)[number];
 
 export const companySettingsSchema = z.object({

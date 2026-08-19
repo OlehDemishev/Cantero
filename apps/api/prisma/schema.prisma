@@ -35,6 +35,8 @@ enum Locale {
   en
   de
   es
+  pl
+  uk
 }
 
 enum SubscriptionStatus {
