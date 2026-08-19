@@ -106,11 +106,40 @@ export function TeamIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function ReportsIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M3 17V3" />
+      <path d="M3 17h14" />
+      <path d="M6 14V9M10 14V6M14 14v-3.5" />
+    </Icon>
+  );
+}
+
+export function DocumentsIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M5 2.5h6l4 4V16a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1Z" />
+      <path d="M11 2.5V6a1 1 0 0 0 1 1h3" />
+      <path d="M7 10.5h6M7 13.5h6" />
+    </Icon>
+  );
+}
+
 export function SettingsIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <Icon {...props}>
       <circle cx="10" cy="10" r="2.5" />
       <path d="M10 3v2M10 15v2M17 10h-2M5 10H3M14.66 5.34l-1.42 1.42M6.76 13.24l-1.42 1.42M14.66 14.66l-1.42-1.42M6.76 6.76 5.34 5.34" />
+    </Icon>
+  );
+}
+
+export function BellIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M10 2.5c-2.5 0-4.25 2-4.25 4.5v2.5c0 .8-.3 1.6-.85 2.2L4 12.75h12l-.9-1.05c-.55-.6-.85-1.4-.85-2.2V7c0-2.5-1.75-4.5-4.25-4.5Z" />
+      <path d="M8.25 15.5a1.9 1.9 0 0 0 3.5 0" />
     </Icon>
   );
 }

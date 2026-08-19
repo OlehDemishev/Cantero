@@ -77,3 +77,14 @@ export const createFromTemplateSchema = z.object({
   taxPercent: z.number().min(0).max(100).default(0),
 });
 export type CreateFromTemplateInput = z.infer<typeof createFromTemplateSchema>;
+
+export const createVariantSchema = z.object({
+  label: z.string().min(1).max(80),
+});
+export type CreateVariantInput = z.infer<typeof createVariantSchema>;
+
+export const clientDecisionSchema = z.object({
+  decision: z.enum(["approved", "rejected"]),
+  note: z.string().max(2000).optional(),
+});
+export type ClientDecisionInput = z.infer<typeof clientDecisionSchema>;

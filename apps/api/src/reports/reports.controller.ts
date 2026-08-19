@@ -11,4 +11,19 @@ export class ReportsController {
   overview(@CurrentUser() user: AuthUser) {
     return this.service.overview(user.companyId);
   }
+
+  @Get("project-margins")
+  projectMargins(@CurrentUser() user: AuthUser) {
+    return this.service.projectMargins(user.companyId);
+  }
+
+  @Get("warehouse-turnover")
+  warehouseTurnover(@CurrentUser() user: AuthUser) {
+    return this.service.warehouseTurnover(user.companyId);
+  }
+
+  @Get("invoice-aging")
+  invoiceAging(@CurrentUser() user: AuthUser) {
+    return this.service.invoiceAging(user.companyId);
+  }
 }

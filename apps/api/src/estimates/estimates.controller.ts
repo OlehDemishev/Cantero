@@ -3,11 +3,13 @@ import {
   createEstimateLineSchema,
   createEstimateSchema,
   createFromTemplateSchema,
+  createVariantSchema,
   saveAsTemplateSchema,
   type AuthUser,
   type CreateEstimateInput,
   type CreateEstimateLineInput,
   type CreateFromTemplateInput,
+  type CreateVariantInput,
   type SaveAsTemplateInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
@@ -91,6 +93,25 @@ export class EstimatesController {
     @Param("revisionId") revisionId: string,
   ) {
     return this.service.getRevision(user.companyId, id, revisionId);
+  }
+
+  @Post(":id/send")
+  send(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.send(user.companyId, id);
+  }
+
+  @Post(":id/create-variant")
+  createVariant(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(createVariantSchema)) body: CreateVariantInput,
+  ) {
+    return this.service.createVariant(user.companyId, id, body);
+  }
+
+  @Get(":id/variants")
+  listVariants(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.listVariants(user.companyId, id);
   }
 
   @Get(":id/pdf")

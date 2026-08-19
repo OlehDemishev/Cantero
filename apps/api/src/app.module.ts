@@ -20,6 +20,7 @@ import { FinanceModule } from "./finance/finance.module";
 import { TeamModule } from "./team/team.module";
 import { DocumentsModule } from "./documents/documents.module";
 import { ReportsModule } from "./reports/reports.module";
+import { NotificationsModule } from "./notifications/notifications.module";
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { ReportsModule } from "./reports/reports.module";
     TeamModule,
     DocumentsModule,
     ReportsModule,
+    NotificationsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

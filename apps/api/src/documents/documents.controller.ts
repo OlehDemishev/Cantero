@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Controller,
+  Delete,
   Get,
   Header,
   Param,
@@ -20,8 +21,14 @@ export class DocumentsController {
   constructor(private readonly service: DocumentsService) {}
 
   @Get()
-  list(@CurrentUser() user: AuthUser, @Query("projectId") projectId?: string, @Query("invoiceId") invoiceId?: string) {
-    return this.service.list(user.companyId, projectId, invoiceId);
+  list(
+    @CurrentUser() user: AuthUser,
+    @Query("projectId") projectId?: string,
+    @Query("invoiceId") invoiceId?: string,
+    @Query("category") category?: string,
+    @Query("search") search?: string,
+  ) {
+    return this.service.list(user.companyId, { projectId, invoiceId, category, search });
   }
 
   @Post()
@@ -31,9 +38,22 @@ export class DocumentsController {
     @UploadedFile() file: Express.Multer.File,
     @Query("projectId") projectId?: string,
     @Query("invoiceId") invoiceId?: string,
+    @Query("category") category?: string,
   ) {
     if (!file) throw new BadRequestException("No file provided");
-    return this.service.upload(user.companyId, file, { projectId, invoiceId });
+    return this.service.upload(user.companyId, user.userId, file, { projectId, invoiceId, category });
+  }
+
+  @Post(":id/replace")
+  @UseInterceptors(FileInterceptor("file"))
+  async replace(@CurrentUser() user: AuthUser, @Param("id") id: string, @UploadedFile() file: Express.Multer.File) {
+    if (!file) throw new BadRequestException("No file provided");
+    return this.service.replace(user.companyId, id, user.userId, file);
+  }
+
+  @Get(":id/versions")
+  versions(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.versions(user.companyId, id);
   }
 
   @Get(":id/download")
@@ -41,5 +61,10 @@ export class DocumentsController {
   async download(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     const { buffer, name } = await this.service.download(user.companyId, id);
     return new StreamableFile(buffer, { disposition: `attachment; filename="${name}"` });
+  }
+
+  @Delete(":id")
+  delete(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.delete(user.companyId, id);
   }
 }

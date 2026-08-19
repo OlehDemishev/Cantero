@@ -7,3 +7,4 @@ export * from "./scheduling";
 export * from "./finance";
 export * from "./team";
 export * from "./crm";
+export * from "./documents";

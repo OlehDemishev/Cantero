@@ -1,5 +1,12 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
-import type { CreateEstimateInput, CreateEstimateLineInput, CreateFromTemplateInput } from "@cantero/shared";
+import { randomBytes } from "node:crypto";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import type {
+  ClientDecisionInput,
+  CreateEstimateInput,
+  CreateEstimateLineInput,
+  CreateFromTemplateInput,
+  CreateVariantInput,
+} from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { PdfService } from "../common/pdf/pdf.service";
 import {
@@ -203,6 +210,121 @@ export class EstimatesService {
     const revision = await this.prisma.estimateRevision.findFirst({ where: { id: revisionId, estimateId } });
     if (!revision) throw new NotFoundException("Revision not found");
     return revision;
+  }
+
+  /** Generates (or regenerates) the public review link and resets any prior client decision. */
+  async send(companyId: string, estimateId: string) {
+    const estimate = await this.findOrThrow(companyId, estimateId);
+    if (estimate.status !== "approved") {
+      throw new BadRequestException("Only an approved estimate can be sent to the client");
+    }
+    return this.prisma.estimate.update({
+      where: { id: estimateId },
+      data: {
+        clientAccessToken: randomBytes(24).toString("hex"),
+        sentAt: new Date(),
+        clientDecision: "pending",
+        decisionAt: null,
+        clientDecisionNote: null,
+      },
+    });
+  }
+
+  /** Clones the current sections/lines into a sibling option (e.g. "Basic" vs "Premium") for the same project. */
+  async createVariant(companyId: string, estimateId: string, input: CreateVariantInput) {
+    const source = await this.findOrThrow(companyId, estimateId);
+    const rootId = source.variantOfId ?? source.id;
+    const variant = await this.prisma.estimate.create({
+      data: {
+        companyId,
+        projectId: source.projectId,
+        name: source.name,
+        laborRatePerHour: source.laborRatePerHour,
+        markupPercent: source.markupPercent,
+        taxPercent: source.taxPercent,
+        variantOfId: rootId,
+        variantLabel: input.label,
+      },
+    });
+    return this.cloneSectionsAndLines(companyId, source.sections, source.lines, variant.id);
+  }
+
+  async listVariants(companyId: string, estimateId: string) {
+    const source = await this.findOrThrow(companyId, estimateId);
+    const rootId = source.variantOfId ?? source.id;
+    return this.prisma.estimate.findMany({
+      where: { companyId, OR: [{ id: rootId }, { variantOfId: rootId }] },
+      orderBy: { createdAt: "asc" },
+    });
+  }
+
+  /** Client-safe view via the public token — no internal cost breakdown, just what a quote shows. */
+  async getByToken(token: string) {
+    const estimate = await this.prisma.estimate.findFirst({
+      where: { clientAccessToken: token },
+      include: {
+        lines: { orderBy: { sortOrder: "asc" }, include: { rateCatalogItem: true } },
+        project: true,
+        company: { select: { name: true, currency: true } },
+      },
+    });
+    if (!estimate) throw new NotFoundException("Estimate not found");
+
+    return {
+      id: estimate.id,
+      name: estimate.name,
+      variantLabel: estimate.variantLabel,
+      clientDecision: estimate.clientDecision,
+      decisionAt: estimate.decisionAt,
+      clientDecisionNote: estimate.clientDecisionNote,
+      companyName: estimate.company.name,
+      currency: estimate.company.currency,
+      projectName: estimate.project?.name ?? null,
+      lines: estimate.lines.map((l) => ({
+        id: l.id,
+        description: l.rateCatalogItem.name,
+        unit: l.rateCatalogItem.unit,
+        quantity: l.quantity,
+        lineTotal: l.lineTotal,
+      })),
+      subtotal: estimate.subtotal,
+      markupAmount: estimate.markupAmount,
+      taxAmount: estimate.taxAmount,
+      grandTotal: estimate.grandTotal,
+    };
+  }
+
+  /** Client approval auto-declines sibling variants still pending — picking one option settles the others. */
+  async decide(token: string, input: ClientDecisionInput) {
+    const estimate = await this.prisma.estimate.findFirst({ where: { clientAccessToken: token } });
+    if (!estimate) throw new NotFoundException("Estimate not found");
+    if (estimate.clientDecision !== "pending") {
+      throw new BadRequestException("This estimate has already been decided");
+    }
+
+    const updated = await this.prisma.estimate.update({
+      where: { id: estimate.id },
+      data: { clientDecision: input.decision, decisionAt: new Date(), clientDecisionNote: input.note },
+    });
+
+    if (input.decision === "approved") {
+      const rootId = estimate.variantOfId ?? estimate.id;
+      await this.prisma.estimate.updateMany({
+        where: {
+          companyId: estimate.companyId,
+          id: { not: estimate.id },
+          OR: [{ id: rootId }, { variantOfId: rootId }],
+          clientDecision: "pending",
+        },
+        data: {
+          clientDecision: "rejected",
+          decisionAt: new Date(),
+          clientDecisionNote: "Auto-declined — a sibling variant was approved",
+        },
+      });
+    }
+
+    return { clientDecision: updated.clientDecision };
   }
 
   /** Clones the current sections/lines into a new, project-less template estimate. */

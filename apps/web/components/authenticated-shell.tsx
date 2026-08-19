@@ -8,11 +8,13 @@ import { clearToken, getToken } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { useSidebar } from "@/context/SidebarContext";
 import { useTheme } from "@/context/ThemeContext";
+import { NotificationBell } from "@/components/notification-bell";
 import {
   ChevronDownIcon,
   ClientsIcon,
   CloseIcon,
   DashboardIcon,
+  DocumentsIcon,
   InvoicesIcon,
   LogoutIcon,
   MenuIcon,
@@ -20,6 +22,7 @@ import {
   ProjectsIcon,
   PurchaseOrdersIcon,
   RateCatalogIcon,
+  ReportsIcon,
   SettingsIcon,
   SunIcon,
   SuppliersIcon,
@@ -38,6 +41,8 @@ const NAV_ITEMS = [
   { href: "/purchase-orders", key: "purchaseOrders", icon: PurchaseOrdersIcon },
   { href: "/invoices", key: "invoices", icon: InvoicesIcon },
   { href: "/team", key: "team", icon: TeamIcon },
+  { href: "/documents", key: "documents", icon: DocumentsIcon },
+  { href: "/reports", key: "reports", icon: ReportsIcon },
   { href: "/settings", key: "settings", icon: SettingsIcon },
 ] as const;
 
@@ -174,6 +179,8 @@ function AppHeader({ me }: { me: NonNullable<ReturnType<typeof useMe>["data"]> }
       </div>
 
       <div className="flex items-center gap-2">
+        <NotificationBell />
+
         <button
           onClick={toggleTheme}
           aria-label="Toggle theme"

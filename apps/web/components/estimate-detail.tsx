@@ -37,6 +37,7 @@ interface IssueReportLine {
   required: number;
   remainingStock: number;
 }
+type ClientDecision = "pending" | "approved" | "rejected";
 interface Estimate {
   id: string;
   name: string;
@@ -55,6 +56,21 @@ interface Estimate {
   lines: EstimateLine[];
   requirements: Requirement[];
   project: { id: string; name: string };
+  clientDecision: ClientDecision;
+  sentAt: string | null;
+  decisionAt: string | null;
+  clientDecisionNote: string | null;
+  clientAccessToken: string | null;
+  variantOfId: string | null;
+  variantLabel: string | null;
+}
+interface VariantSummary {
+  id: string;
+  name: string;
+  variantLabel: string | null;
+  status: "draft" | "approved";
+  clientDecision: ClientDecision;
+  grandTotal: string;
 }
 interface RevisionSummary {
   id: string;
@@ -143,6 +159,9 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
   const [revisions, setRevisions] = useState<RevisionSummary[] | null>(null);
   const [selectedRevision, setSelectedRevision] = useState<Revision | null>(null);
   const [loadingRevision, setLoadingRevision] = useState(false);
+  const [variants, setVariants] = useState<VariantSummary[] | null>(null);
+  const [variantLabel, setVariantLabel] = useState("");
+  const [linkCopied, setLinkCopied] = useState(false);
 
   function load() {
     apiFetch<Estimate>(`/estimates/${estimateId}`).then(setEstimate);
@@ -152,9 +171,14 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
     apiFetch<RevisionSummary[]>(`/estimates/${estimateId}/revisions`).then(setRevisions);
   }
 
+  function loadVariants() {
+    apiFetch<VariantSummary[]>(`/estimates/${estimateId}/variants`).then(setVariants);
+  }
+
   useEffect(() => {
     load();
     loadRevisions();
+    loadVariants();
     apiFetch<RateCatalogItem[]>("/estimates/rate-catalog").then((items) => {
       setRateItems(items);
       if (items[0]) setNewLine((l) => ({ ...l, rateCatalogItemId: items[0].id }));
@@ -199,6 +223,38 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
       await apiFetch(`/estimates/${estimateId}/approve`, { method: "POST" });
       load();
       loadRevisions();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function send() {
+    setBusy(true);
+    setLinkCopied(false);
+    try {
+      await apiFetch(`/estimates/${estimateId}/send`, { method: "POST" });
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function copyLink() {
+    if (!estimate?.clientAccessToken) return;
+    await navigator.clipboard.writeText(`${window.location.origin}/estimate/${estimate.clientAccessToken}`);
+    setLinkCopied(true);
+  }
+
+  async function createVariant(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      const created = await apiFetch<{ id: string }>(`/estimates/${estimateId}/create-variant`, {
+        method: "POST",
+        body: JSON.stringify({ label: variantLabel }),
+      });
+      setVariantLabel("");
+      router.push(`/estimates/${created.id}`);
     } finally {
       setBusy(false);
     }
@@ -279,15 +335,42 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
         ← {estimate.project.name}
       </a>
       <div className="mt-2 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{estimate.name}</h1>
-        <span
-          className={`rounded-full px-3 py-1 text-xs font-medium ${
-            estimate.status === "approved" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"
-          }`}
-        >
-          {estimate.status === "approved" ? t("approved") : t("draft")}
-        </span>
+        <h1 className="text-2xl font-semibold">
+          {estimate.name}
+          {estimate.variantLabel && (
+            <span className="ml-2 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700 align-middle">
+              {estimate.variantLabel}
+            </span>
+          )}
+        </h1>
+        <div className="flex items-center gap-2">
+          {estimate.sentAt && (
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-medium ${
+                estimate.clientDecision === "approved"
+                  ? "bg-success-50 text-success-700"
+                  : estimate.clientDecision === "rejected"
+                    ? "bg-error-50 text-error-700"
+                    : "bg-warning-50 text-warning-700"
+              }`}
+            >
+              {t(`clientDecision_${estimate.clientDecision}`)}
+            </span>
+          )}
+          <span
+            className={`rounded-full px-3 py-1 text-xs font-medium ${
+              estimate.status === "approved" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"
+            }`}
+          >
+            {estimate.status === "approved" ? t("approved") : t("draft")}
+          </span>
+        </div>
       </div>
+      {estimate.clientDecision === "rejected" && estimate.clientDecisionNote && (
+        <p className="mt-2 text-sm text-error-700">
+          {t("clientNote")}: {estimate.clientDecisionNote}
+        </p>
+      )}
 
       {estimate.status === "draft" && estimate.isStale && (
         <div className="mt-4 flex items-center justify-between rounded-lg border border-warning-200 bg-warning-50 px-4 py-3">
@@ -486,6 +569,54 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
               )}
             </div>
           )}
+
+          <div className="mt-10">
+            <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("variants")}</h2>
+            {variants && variants.length > 1 && (
+              <table className="mb-4 w-full border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200 text-left text-gray-500">
+                    <th className="py-2">{t("variantOption")}</th>
+                    <th>{tc("status")}</th>
+                    <th>{t("clientDecision_label")}</th>
+                    <th className="text-right">{t("grandTotal")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {variants.map((v) => (
+                    <tr key={v.id} className={`border-b border-gray-100 ${v.id === estimateId ? "bg-gray-50" : ""}`}>
+                      <td className="py-2">
+                        {v.id === estimateId ? (
+                          <span className="font-medium">{v.variantLabel ?? v.name}</span>
+                        ) : (
+                          <a href={`/estimates/${v.id}`} className="text-brand-700 hover:underline">
+                            {v.variantLabel ?? v.name}
+                          </a>
+                        )}
+                      </td>
+                      <td>{v.status === "approved" ? t("approved") : t("draft")}</td>
+                      <td>{t(`clientDecision_${v.clientDecision}`)}</td>
+                      <td className="text-right">
+                        {v.grandTotal} {currency}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            <form onSubmit={createVariant} className="flex items-end gap-2">
+              <input
+                required
+                placeholder={t("variantLabelPlaceholder")}
+                className="input"
+                value={variantLabel}
+                onChange={(e) => setVariantLabel(e.target.value)}
+              />
+              <button type="submit" disabled={busy} className="btn-secondary shrink-0">
+                {t("createVariant")}
+              </button>
+            </form>
+          </div>
         </div>
 
         <div className="card lg:col-span-1 h-fit">
@@ -509,11 +640,32 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
                 {t("generateInvoice")}
               </button>
             )}
+            {estimate.status === "approved" && (
+              <button onClick={send} disabled={busy} className="btn-secondary">
+                {estimate.sentAt ? t("resend") : t("sendToClient")}
+              </button>
+            )}
             <button onClick={downloadPdf} className="btn-secondary">
               {t("downloadPdf")}
             </button>
             {estimate.status === "draft" && <p className="text-xs text-gray-400">{t("approveFirst")}</p>}
           </div>
+
+          {estimate.sentAt && estimate.clientAccessToken && (
+            <div className="mt-4 border-t border-gray-100 pt-4">
+              <span className="text-xs font-medium text-gray-500">{t("clientLink")}</span>
+              <div className="mt-2 flex items-center gap-2">
+                <input
+                  readOnly
+                  className="input flex-1 text-xs"
+                  value={`${typeof window !== "undefined" ? window.location.origin : ""}/estimate/${estimate.clientAccessToken}`}
+                />
+                <button onClick={copyLink} className="btn-secondary shrink-0 px-3 py-1 text-xs">
+                  {linkCopied ? tc("saved") : t("copyLink")}
+                </button>
+              </div>
+            </div>
+          )}
 
           <form onSubmit={saveAsTemplate} className="mt-6 flex flex-col gap-2 border-t border-gray-100 pt-4">
             <span className="text-xs font-medium text-gray-500">{t("saveAsTemplate")}</span>
