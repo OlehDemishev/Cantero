@@ -15,7 +15,9 @@
     "currency": "Moneda",
     "signOut": "Cerrar sesión",
     "download": "Descargar",
-    "saved": "Guardado"
+    "saved": "Guardado",
+    "edit": "Editar",
+    "delete": "Eliminar"
   },
   "nav": {
     "menu": "Menú",
@@ -160,7 +162,23 @@
     "worker": "Trabajador",
     "task": "Tarea",
     "noneTask": "Sin tarea",
-    "noTimeEntries": "Aún no hay horas registradas."
+    "noTimeEntries": "Aún no hay horas registradas.",
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "showInactive": "Mostrar inactivos",
+    "profile": "Perfil",
+    "deactivate": "Desactivar",
+    "reactivate": "Reactivar",
+    "totalHours": "Horas totales",
+    "totalCost": "Costo total",
+    "projectHistory": "Historial de proyectos",
+    "noProjectHistory": "Aún no se han registrado horas.",
+    "project": "Proyecto",
+    "cost": "Costo",
+    "laborCostReport": "Informe de costo laboral",
+    "noLaborCost": "Aún no se han registrado costos laborales.",
+    "total": "Total",
+    "confirmDeleteEntry": "¿Eliminar este registro de horas?"
   },
   "documents": {
     "title": "Documentos",
@@ -285,7 +303,23 @@
     "reorderThreshold": "Reponer por debajo de",
     "reorderQuantity": "Cantidad a reponer",
     "preferredSupplier": "Proveedor preferido",
-    "noSupplier": "Sin proveedor"
+    "noSupplier": "Sin proveedor",
+    "stockCounts": "Recuentos de inventario",
+    "startCount": "Iniciar recuento",
+    "draft": "Borrador",
+    "finalized": "Finalizado",
+    "variances": "{count} diferencias",
+    "systemQuantity": "Cantidad en sistema",
+    "countedQuantity": "Cantidad contada",
+    "variance": "Diferencia",
+    "finalizeCount": "Finalizar recuento",
+    "priceHistory": "Historial de precios",
+    "noPriceHistory": "Aún no hay historial de compras.",
+    "currentPrice": "Precio actual del catálogo",
+    "supplierComparison": "Comparación de proveedores",
+    "noSupplierPrices": "Aún no hay historial de compras de ningún proveedor.",
+    "latestPrice": "Último",
+    "avgPrice": "Promedio"
   },
   "suppliers": {
     "title": "Proveedores",

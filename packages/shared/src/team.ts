@@ -7,6 +7,14 @@ export const createWorkerSchema = z.object({
 });
 export type CreateWorkerInput = z.infer<typeof createWorkerSchema>;
 
+export const updateWorkerSchema = z.object({
+  name: z.string().min(1).max(160).optional(),
+  role: z.string().max(80).nullable().optional(),
+  hourlyCost: z.number().nonnegative().nullable().optional(),
+  active: z.boolean().optional(),
+});
+export type UpdateWorkerInput = z.infer<typeof updateWorkerSchema>;
+
 export const createTimeEntrySchema = z.object({
   workerId: z.string().uuid(),
   projectId: z.string().uuid(),
@@ -15,3 +23,10 @@ export const createTimeEntrySchema = z.object({
   date: z.string().datetime(),
 });
 export type CreateTimeEntryInput = z.infer<typeof createTimeEntrySchema>;
+
+export const updateTimeEntrySchema = z.object({
+  hours: z.number().positive().max(24).optional(),
+  date: z.string().datetime().optional(),
+  taskId: z.string().uuid().nullable().optional(),
+});
+export type UpdateTimeEntryInput = z.infer<typeof updateTimeEntrySchema>;

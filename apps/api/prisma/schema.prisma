@@ -112,6 +112,7 @@ model Company {
   subcontractorCosts   SubcontractorCost[]
   clientActivities     ClientActivity[]
   clientReminders      ClientReminder[]
+  stockCounts          StockCount[]
 
   @@map("companies")
 }
@@ -219,6 +220,7 @@ model MaterialCatalogItem {
   stockMovements       StockMovement[]
   purchaseOrderLines   PurchaseOrderLine[]
   requirementLines     EstimateMaterialRequirement[]
+  stockCountLines      StockCountLine[]
 
   @@unique([companyId, code])
   @@index([companyId])
@@ -390,6 +392,7 @@ model Warehouse {
   stockLevels       StockLevel[]
   stockMovements    StockMovement[]
   incomingTransfers StockMovement[] @relation("TransferDestination")
+  stockCounts       StockCount[]
 
   @@index([companyId])
   @@map("warehouses")
@@ -432,6 +435,50 @@ model StockMovement {
   @@index([warehouseId])
   @@index([toWarehouseId])
   @@map("stock_movements")
+}
+
+enum StockCountStatus {
+  draft
+  finalized
+}
+
+/// A physical inventory count for one warehouse. Lines snapshot the system
+/// quantity at count-start time so variance stays meaningful even if other
+/// movements happen while the count is still in progress. Finalizing applies
+/// each line's variance as an ordinary receipt/write_off StockMovement —
+/// reusing the existing movement machinery rather than a parallel one.
+model StockCount {
+  id          String           @id @default(uuid())
+  companyId   String
+  warehouseId String
+  status      StockCountStatus @default(draft)
+  createdAt   DateTime         @default(now())
+  finalizedAt DateTime?
+
+  company   Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  warehouse Warehouse        @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  lines     StockCountLine[]
+
+  @@index([companyId])
+  @@index([warehouseId])
+  @@map("stock_counts")
+}
+
+model StockCountLine {
+  id                    String  @id @default(uuid())
+  stockCountId          String
+  materialCatalogItemId String
+  /// Snapshot of StockLevel.quantityOnHand when the count line was created.
+  systemQuantity        Decimal @db.Decimal(14, 4)
+  /// Defaults to systemQuantity until staff overwrite it with what they physically counted.
+  countedQuantity        Decimal @db.Decimal(14, 4)
+
+  stockCount          StockCount          @relation(fields: [stockCountId], references: [id], onDelete: Cascade)
+  materialCatalogItem MaterialCatalogItem @relation(fields: [materialCatalogItemId], references: [id], onDelete: Restrict)
+
+  @@unique([stockCountId, materialCatalogItemId])
+  @@index([stockCountId])
+  @@map("stock_count_lines")
 }
 
 model Supplier {
@@ -730,6 +777,7 @@ model Worker {
   role        String?
   /// Cost rate used to value TimeEntry hours into actual labor cost (Finance budget-vs-actual).
   hourlyCost  Decimal? @db.Decimal(10, 2)
+  active      Boolean  @default(true)
 
   company     Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
   user        User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -747,6 +795,9 @@ model TimeEntry {
   taskId    String?
   hours     Decimal  @db.Decimal(6, 2)
   date      DateTime
+  createdAt DateTime @default(now())
+  /// Worker.hourlyCost captured at creation time, so past labor-cost reports don't shift when a worker's rate later changes.
+  hourlyCostSnapshot Decimal? @db.Decimal(10, 2)
 
   worker  Worker   @relation(fields: [workerId], references: [id], onDelete: Cascade)
   project Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)

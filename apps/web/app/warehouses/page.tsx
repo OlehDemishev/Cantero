@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch } from "@/lib/api-client";
@@ -28,6 +28,34 @@ interface StockLevel {
 interface Supplier {
   id: string;
   name: string;
+}
+interface StockCountLine {
+  id: string;
+  materialCatalogItemId: string;
+  systemQuantity: string;
+  countedQuantity: string;
+  materialCatalogItem: { code: string; name: string; unit: string };
+}
+interface StockCount {
+  id: string;
+  status: "draft" | "finalized";
+  createdAt: string;
+  finalizedAt: string | null;
+  lines: StockCountLine[];
+}
+interface PricePoint {
+  date: string;
+  unitPrice: number;
+  supplierName: string;
+  source: "order" | "catalog";
+}
+interface SupplierPrice {
+  supplierId: string;
+  supplierName: string;
+  latestUnitPrice: number;
+  latestOrderDate: string;
+  averageUnitPrice: number;
+  orderCount: number;
 }
 
 const GENERIC_MOVEMENT_TYPES = ["receipt", "issue", "write_off"] as const;
@@ -187,6 +215,15 @@ function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: string; 
   });
   const [transfer, setTransfer] = useState({ materialCatalogItemId: "", toWarehouseId: "", quantity: "1" });
   const [busy, setBusy] = useState(false);
+  const [counts, setCounts] = useState<StockCount[] | null>(null);
+  const [activeCount, setActiveCount] = useState<StockCount | null>(null);
+  const [lineInputs, setLineInputs] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (activeCount) {
+      setLineInputs(Object.fromEntries(activeCount.lines.map((l) => [l.id, l.countedQuantity])));
+    }
+  }, [activeCount?.id]);
 
   const otherWarehouses = allWarehouses.filter((w) => w.id !== warehouseId);
 
@@ -194,8 +231,14 @@ function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: string; 
     apiFetch<StockLevel[]>(`/materials/stock/levels?warehouseId=${warehouseId}`).then(setLevels);
   }
 
+  function loadCounts() {
+    apiFetch<StockCount[]>(`/materials/stock/counts?warehouseId=${warehouseId}`).then(setCounts);
+  }
+
   useEffect(() => {
     load();
+    loadCounts();
+    setActiveCount(null);
     apiFetch<MaterialCatalogItem[]>("/materials/catalog").then((items) => {
       setMaterials(items);
       if (items[0]) {
@@ -205,6 +248,49 @@ function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: string; 
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warehouseId]);
+
+  async function startCount() {
+    setBusy(true);
+    try {
+      const count = await apiFetch<StockCount>("/materials/stock/counts", {
+        method: "POST",
+        body: JSON.stringify({ warehouseId }),
+      });
+      setActiveCount(count);
+      loadCounts();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function viewCount(id: string) {
+    const count = await apiFetch<StockCount>(`/materials/stock/counts/${id}`);
+    setActiveCount(count);
+  }
+
+  async function saveLine(lineId: string, countedQuantity: string) {
+    if (!activeCount || countedQuantity === "") return;
+    await apiFetch(`/materials/stock/counts/${activeCount.id}/lines/${lineId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ countedQuantity: Number(countedQuantity) }),
+    });
+    setActiveCount((c) =>
+      c ? { ...c, lines: c.lines.map((l) => (l.id === lineId ? { ...l, countedQuantity } : l)) } : c,
+    );
+  }
+
+  async function finalizeCount() {
+    if (!activeCount) return;
+    setBusy(true);
+    try {
+      await apiFetch(`/materials/stock/counts/${activeCount.id}/finalize`, { method: "POST" });
+      setActiveCount(null);
+      loadCounts();
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
 
   useEffect(() => {
     if (!transfer.toWarehouseId && otherWarehouses[0]) {
@@ -348,6 +434,103 @@ function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: string; 
           </form>
         </>
       )}
+
+      <div className="mb-3 mt-8 flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-gray-700">{t("stockCounts")}</h2>
+        <button onClick={startCount} disabled={busy} className="btn-secondary px-3 py-1 text-xs">
+          {t("startCount")}
+        </button>
+      </div>
+
+      {counts && counts.length > 0 && !activeCount && (
+        <ul className="flex flex-col gap-2">
+          {counts.map((c) => {
+            const varianceCount = c.lines.filter((l) => l.countedQuantity !== l.systemQuantity).length;
+            return (
+              <li key={c.id}>
+                <button
+                  onClick={() => viewCount(c.id)}
+                  className="card flex w-full items-center justify-between text-left hover:border-gray-400"
+                >
+                  <span className="text-sm">{new Date(c.createdAt).toLocaleDateString()}</span>
+                  <span className="flex items-center gap-2 text-xs">
+                    {varianceCount > 0 && (
+                      <span className="text-warning-700">
+                        {t("variances", { count: varianceCount })}
+                      </span>
+                    )}
+                    <span
+                      className={`rounded-full px-2 py-0.5 font-medium ${
+                        c.status === "finalized" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {t(c.status)}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {activeCount && (
+        <div>
+          <button onClick={() => setActiveCount(null)} className="mb-2 text-xs text-gray-500 hover:underline">
+            ← {tc("back")}
+          </button>
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-gray-200 text-left text-gray-500">
+                <th className="py-2">{t("material")}</th>
+                <th>{t("systemQuantity")}</th>
+                <th>{t("countedQuantity")}</th>
+                <th>{t("variance")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {activeCount.lines.map((line) => {
+                const variance = Number(lineInputs[line.id] ?? line.countedQuantity) - Number(line.systemQuantity);
+                return (
+                  <tr key={line.id} className="border-b border-gray-100">
+                    <td className="py-1.5">
+                      {line.materialCatalogItem.name} ({line.materialCatalogItem.code})
+                    </td>
+                    <td className="text-gray-500">
+                      {line.systemQuantity} {line.materialCatalogItem.unit}
+                    </td>
+                    <td>
+                      {activeCount.status === "draft" ? (
+                        <input
+                          type="number"
+                          step="0.01"
+                          className="input w-24"
+                          value={lineInputs[line.id] ?? line.countedQuantity}
+                          onChange={(e) => setLineInputs((li) => ({ ...li, [line.id]: e.target.value }))}
+                          onBlur={(e) => saveLine(line.id, e.target.value)}
+                        />
+                      ) : (
+                        <span>
+                          {line.countedQuantity} {line.materialCatalogItem.unit}
+                        </span>
+                      )}
+                    </td>
+                    <td className={variance === 0 ? "text-gray-400" : variance > 0 ? "text-success-700" : "text-error-600"}>
+                      {variance > 0 ? "+" : ""}
+                      {variance !== 0 ? variance : "—"}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          {activeCount.status === "draft" && (
+            <button onClick={finalizeCount} disabled={busy} className="btn-primary mt-3">
+              {t("finalizeCount")}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -361,6 +544,9 @@ function ReorderSettings() {
   const [drafts, setDrafts] = useState<Record<string, { reorderThreshold: string; reorderQuantity: string; preferredSupplierId: string }>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [priceHistory, setPriceHistory] = useState<PricePoint[] | null>(null);
+  const [supplierPrices, setSupplierPrices] = useState<SupplierPrice[] | null>(null);
 
   function load() {
     apiFetch<MaterialCatalogItem[]>("/materials/catalog").then((items) => {
@@ -407,6 +593,18 @@ function ReorderSettings() {
     }
   }
 
+  async function toggleExpand(materialId: string) {
+    if (expandedId === materialId) {
+      setExpandedId(null);
+      return;
+    }
+    setExpandedId(materialId);
+    setPriceHistory(null);
+    setSupplierPrices(null);
+    apiFetch<PricePoint[]>(`/materials/catalog/${materialId}/price-history`).then(setPriceHistory);
+    apiFetch<SupplierPrice[]>(`/materials/catalog/${materialId}/supplier-prices`).then(setSupplierPrices);
+  }
+
   if (!materials || materials.length === 0) return null;
 
   return (
@@ -427,9 +625,12 @@ function ReorderSettings() {
           {materials.map((m) => {
             const draft = drafts[m.id] ?? { reorderThreshold: "", reorderQuantity: "", preferredSupplierId: "" };
             return (
-              <tr key={m.id} className="border-b border-gray-100">
+              <Fragment key={m.id}>
+              <tr className="border-b border-gray-100">
                 <td className="py-2">
-                  {m.name} ({m.code})
+                  <button type="button" onClick={() => toggleExpand(m.id)} className="text-left hover:underline">
+                    {m.name} ({m.code})
+                  </button>
                 </td>
                 <td>
                   <input
@@ -476,6 +677,68 @@ function ReorderSettings() {
                   {savedId === m.id && <span className="ml-2 text-xs text-success-700">{tc("saved")}</span>}
                 </td>
               </tr>
+              {expandedId === m.id && (
+                <tr className="border-b border-gray-100 bg-gray-50">
+                  <td colSpan={5} className="py-3">
+                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                      <div>
+                        <div className="mb-2 text-xs font-semibold text-gray-500">{t("priceHistory")}</div>
+                        {!priceHistory ? (
+                          <p className="text-xs text-gray-400">{tc("loading")}</p>
+                        ) : priceHistory.length <= 1 ? (
+                          <p className="text-xs text-gray-400">{t("noPriceHistory")}</p>
+                        ) : (
+                          <table className="w-full text-xs">
+                            <tbody>
+                              {priceHistory.map((p, i) => (
+                                <tr key={i} className="border-b border-gray-200">
+                                  <td className="py-1 text-gray-500">
+                                    {p.source === "catalog" ? t("currentPrice") : new Date(p.date).toLocaleDateString()}
+                                  </td>
+                                  <td className="text-gray-500">{p.supplierName}</td>
+                                  <td className="text-right font-medium">{p.unitPrice}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
+                      </div>
+                      <div>
+                        <div className="mb-2 text-xs font-semibold text-gray-500">{t("supplierComparison")}</div>
+                        {!supplierPrices ? (
+                          <p className="text-xs text-gray-400">{tc("loading")}</p>
+                        ) : supplierPrices.length === 0 ? (
+                          <p className="text-xs text-gray-400">{t("noSupplierPrices")}</p>
+                        ) : (
+                          <table className="w-full text-xs">
+                            <thead>
+                              <tr className="text-left text-gray-400">
+                                <th className="py-1 font-normal">{tc("name")}</th>
+                                <th className="font-normal">{t("latestPrice")}</th>
+                                <th className="font-normal">{t("avgPrice")}</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {supplierPrices.map((s, i) => (
+                                <tr key={s.supplierId} className="border-b border-gray-200">
+                                  <td className={`py-1 ${i === 0 ? "font-medium text-success-700" : "text-gray-700"}`}>
+                                    {s.supplierName}
+                                  </td>
+                                  <td className={i === 0 ? "font-medium text-success-700" : "text-gray-700"}>
+                                    {s.latestUnitPrice}
+                                  </td>
+                                  <td className="text-gray-500">{s.averageUnitPrice}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              )}
+              </Fragment>
             );
           })}
         </tbody>

@@ -1,5 +1,11 @@
-import { Body, Controller, Get, Post, Query } from "@nestjs/common";
-import { createTimeEntrySchema, type AuthUser, type CreateTimeEntryInput } from "@cantero/shared";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from "@nestjs/common";
+import {
+  createTimeEntrySchema,
+  updateTimeEntrySchema,
+  type AuthUser,
+  type CreateTimeEntryInput,
+  type UpdateTimeEntryInput,
+} from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { TimeEntriesService } from "./time-entries.service";
@@ -9,8 +15,14 @@ export class TimeEntriesController {
   constructor(private readonly service: TimeEntriesService) {}
 
   @Get()
-  list(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string) {
-    return this.service.listForProject(user.companyId, projectId);
+  list(
+    @CurrentUser() user: AuthUser,
+    @Query("projectId") projectId?: string,
+    @Query("workerId") workerId?: string,
+    @Query("from") from?: string,
+    @Query("to") to?: string,
+  ) {
+    return this.service.list(user.companyId, { projectId, workerId, from, to });
   }
 
   @Post()
@@ -19,5 +31,19 @@ export class TimeEntriesController {
     @Body(new ZodValidationPipe(createTimeEntrySchema)) body: CreateTimeEntryInput,
   ) {
     return this.service.create(user.companyId, body);
+  }
+
+  @Patch(":id")
+  update(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(updateTimeEntrySchema)) body: UpdateTimeEntryInput,
+  ) {
+    return this.service.update(user.companyId, id, body);
+  }
+
+  @Delete(":id")
+  delete(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.delete(user.companyId, id);
   }
 }

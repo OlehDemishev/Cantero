@@ -66,3 +66,13 @@ export const receivePurchaseOrderSchema = z.object({
   warehouseId: z.string().uuid(),
 });
 export type ReceivePurchaseOrderInput = z.infer<typeof receivePurchaseOrderSchema>;
+
+export const createStockCountSchema = z.object({
+  warehouseId: z.string().uuid(),
+});
+export type CreateStockCountInput = z.infer<typeof createStockCountSchema>;
+
+export const updateStockCountLineSchema = z.object({
+  countedQuantity: z.number().nonnegative(),
+});
+export type UpdateStockCountLineInput = z.infer<typeof updateStockCountLineSchema>;

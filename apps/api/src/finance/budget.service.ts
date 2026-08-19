@@ -2,12 +2,14 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../common/prisma/prisma.service";
 
 /**
- * Budget-vs-actual per project. Materials and labor are both compared
- * apples-to-apples: materials at the catalog's current unit price, labor at
- * each worker's current hourlyCost. Hours logged against a worker with no
- * hourlyCost set are counted in `laborHoursLogged` but excluded from
- * `laborCostActual` (reported separately as `laborHoursUncosted`) rather than
- * silently treated as zero cost.
+ * Budget-vs-actual per project. Materials are compared at the catalog's
+ * current unit price. Labor is valued at each entry's hourlyCostSnapshot
+ * (the worker's rate at the time it was logged), falling back to the
+ * worker's current hourlyCost for entries logged before the snapshot field
+ * existed — so past reports don't shift when a worker's rate later changes.
+ * Hours with no rate available at all are counted in `laborHoursLogged` but
+ * excluded from `laborCostActual` (reported separately as
+ * `laborHoursUncosted`) rather than silently treated as zero cost.
  */
 @Injectable()
 export class BudgetService {
@@ -43,8 +45,9 @@ export class BudgetService {
     for (const entry of timeEntries) {
       const hours = Number(entry.hours);
       laborHoursLogged += hours;
-      if (entry.worker.hourlyCost !== null) {
-        laborCostActual += hours * Number(entry.worker.hourlyCost);
+      const rate = entry.hourlyCostSnapshot !== null ? Number(entry.hourlyCostSnapshot) : entry.worker.hourlyCost !== null ? Number(entry.worker.hourlyCost) : null;
+      if (rate !== null) {
+        laborCostActual += hours * rate;
       } else {
         laborHoursUncosted += hours;
       }

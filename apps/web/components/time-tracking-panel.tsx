@@ -29,6 +29,8 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [form, setForm] = useState({ workerId: "", taskId: "", hours: "1", date: new Date().toISOString().slice(0, 10) });
   const [busy, setBusy] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editHours, setEditHours] = useState("");
 
   function load() {
     apiFetch<TimeEntry[]>(`/time-entries?projectId=${projectId}`).then(setEntries);
@@ -43,6 +45,33 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
     apiFetch<Task[]>(`/tasks?projectId=${projectId}`).then(setTasks);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
+
+  function startEdit(entry: TimeEntry) {
+    setEditingId(entry.id);
+    setEditHours(entry.hours);
+  }
+
+  async function saveEdit(id: string) {
+    setBusy(true);
+    try {
+      await apiFetch(`/time-entries/${id}`, { method: "PATCH", body: JSON.stringify({ hours: Number(editHours) }) });
+      setEditingId(null);
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteEntry(id: string) {
+    if (!window.confirm(t("confirmDeleteEntry"))) return;
+    setBusy(true);
+    try {
+      await apiFetch(`/time-entries/${id}`, { method: "DELETE" });
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function logTime(e: React.FormEvent) {
     e.preventDefault();
@@ -80,7 +109,39 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
                 <td className="py-1">{new Date(entry.date).toLocaleDateString()}</td>
                 <td>{entry.worker.name}</td>
                 <td>{entry.task?.name ?? "—"}</td>
-                <td className="text-right">{entry.hours}h</td>
+                <td className="text-right">
+                  {editingId === entry.id ? (
+                    <input
+                      type="number"
+                      step="0.25"
+                      min="0.25"
+                      max="24"
+                      className="input w-20 text-right"
+                      value={editHours}
+                      onChange={(e) => setEditHours(e.target.value)}
+                    />
+                  ) : (
+                    `${entry.hours}h`
+                  )}
+                </td>
+                <td className="py-1 pl-2 text-right text-xs">
+                  {editingId === entry.id ? (
+                    <button onClick={() => saveEdit(entry.id)} disabled={busy} className="text-brand-700 hover:underline">
+                      {tc("save")}
+                    </button>
+                  ) : (
+                    <button onClick={() => startEdit(entry)} disabled={busy} className="text-brand-700 hover:underline">
+                      {tc("edit")}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => deleteEntry(entry.id)}
+                    disabled={busy}
+                    className="ml-2 text-error-700 hover:underline"
+                  >
+                    {tc("delete")}
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>

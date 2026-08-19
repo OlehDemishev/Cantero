@@ -1,0 +1,191 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
+import { AuthenticatedShell } from "@/components/authenticated-shell";
+import { apiFetch } from "@/lib/api-client";
+import { useMe } from "@/lib/use-me";
+
+interface Worker {
+  id: string;
+  name: string;
+  role: string | null;
+  hourlyCost: string | null;
+  active: boolean;
+}
+interface ProjectBreakdown {
+  projectId: string;
+  projectName: string;
+  hours: number;
+  cost: number;
+}
+interface Summary {
+  worker: Worker;
+  totalHours: number;
+  totalCost: number;
+  byProject: ProjectBreakdown[];
+}
+
+export function WorkerDetail({ workerId }: { workerId: string }) {
+  const t = useTranslations("team");
+  const tc = useTranslations("common");
+  const { data: me } = useMe();
+
+  const [summary, setSummary] = useState<Summary | null>(null);
+  const [form, setForm] = useState({ name: "", role: "", hourlyCost: "" });
+  const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  function load() {
+    apiFetch<Summary>(`/workers/${workerId}/summary`).then((s) => {
+      setSummary(s);
+      setForm({ name: s.worker.name, role: s.worker.role ?? "", hourlyCost: s.worker.hourlyCost ?? "" });
+    });
+  }
+
+  useEffect(load, [workerId]);
+
+  async function saveProfile(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setSaved(false);
+    try {
+      await apiFetch(`/workers/${workerId}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          name: form.name,
+          role: form.role || null,
+          hourlyCost: form.hourlyCost ? Number(form.hourlyCost) : null,
+        }),
+      });
+      setSaved(true);
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function toggleActive() {
+    if (!summary) return;
+    setBusy(true);
+    try {
+      await apiFetch(`/workers/${workerId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ active: !summary.worker.active }),
+      });
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!summary) {
+    return (
+      <AuthenticatedShell>
+        <p className="text-gray-500">{tc("loading")}</p>
+      </AuthenticatedShell>
+    );
+  }
+
+  const currency = me?.company.currency ?? "";
+
+  return (
+    <AuthenticatedShell>
+      <a href="/team" className="text-sm text-gray-500 hover:underline">
+        ← {t("title")}
+      </a>
+      <div className="mt-2 flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">{summary.worker.name}</h1>
+        <span
+          className={`rounded-full px-3 py-1 text-xs font-medium ${
+            summary.worker.active ? "bg-success-50 text-success-700" : "bg-gray-100 text-gray-500"
+          }`}
+        >
+          {summary.worker.active ? t("active") : t("inactive")}
+        </span>
+      </div>
+      <p className="text-sm text-gray-500">{summary.worker.role ?? "—"}</p>
+
+      <div className="mt-4 flex gap-4 text-sm">
+        <div className="card flex-1">
+          <div className="text-xs text-gray-500">{t("totalHours")}</div>
+          <div className="mt-1 text-lg font-semibold">{summary.totalHours}h</div>
+        </div>
+        <div className="card flex-1">
+          <div className="text-xs text-gray-500">{t("totalCost")}</div>
+          <div className="mt-1 text-lg font-semibold">
+            {summary.totalCost} {currency}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <div className="lg:col-span-1">
+          <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("profile")}</h2>
+          <form onSubmit={saveProfile} className="card flex flex-col gap-3">
+            <input
+              required
+              placeholder={tc("name")}
+              className="input"
+              value={form.name}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+            />
+            <input
+              placeholder={t("role")}
+              className="input"
+              value={form.role}
+              onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
+            />
+            <label className="text-xs text-gray-500">
+              {t("hourlyCost")} ({currency})
+              <input
+                type="number"
+                step="0.01"
+                className="input mt-1"
+                value={form.hourlyCost}
+                onChange={(e) => setForm((f) => ({ ...f, hourlyCost: e.target.value }))}
+              />
+            </label>
+            <div className="flex items-center gap-2">
+              <button type="submit" disabled={busy} className="btn-primary">
+                {tc("save")}
+              </button>
+              {saved && <span className="text-xs text-success-700">{tc("saved")}</span>}
+            </div>
+          </form>
+          <button onClick={toggleActive} disabled={busy} className="btn-secondary mt-3 w-full">
+            {summary.worker.active ? t("deactivate") : t("reactivate")}
+          </button>
+        </div>
+
+        <div className="lg:col-span-2">
+          <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("projectHistory")}</h2>
+          {summary.byProject.length === 0 ? (
+            <p className="text-sm text-gray-400">{t("noProjectHistory")}</p>
+          ) : (
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 text-left text-gray-500">
+                  <th className="py-2">{t("project")}</th>
+                  <th className="text-right">{t("hours")}</th>
+                  <th className="text-right">{t("cost")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {summary.byProject.map((p) => (
+                  <tr key={p.projectId} className="border-b border-gray-100">
+                    <td className="py-2">{p.projectName}</td>
+                    <td className="text-right">{p.hours}h</td>
+                    <td className="text-right">
+                      {p.cost} {currency}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </AuthenticatedShell>
+  );
+}

@@ -10,6 +10,8 @@ import { SuppliersService } from "./suppliers.service";
 import { PurchaseOrdersController } from "./purchase-orders.controller";
 import { PurchaseOrdersService } from "./purchase-orders.service";
 import { LowStockProcessor } from "./low-stock.processor";
+import { StockCountsController } from "./stock-counts.controller";
+import { StockCountsService } from "./stock-counts.service";
 
 @Module({
   controllers: [
@@ -18,6 +20,7 @@ import { LowStockProcessor } from "./low-stock.processor";
     StockController,
     SuppliersController,
     PurchaseOrdersController,
+    StockCountsController,
   ],
   providers: [
     MaterialCatalogService,
@@ -26,6 +29,7 @@ import { LowStockProcessor } from "./low-stock.processor";
     SuppliersService,
     PurchaseOrdersService,
     LowStockProcessor,
+    StockCountsService,
   ],
   exports: [MaterialCatalogService, StockService],
 })

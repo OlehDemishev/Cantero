@@ -15,7 +15,9 @@
     "currency": "Currency",
     "signOut": "Sign out",
     "download": "Download",
-    "saved": "Saved"
+    "saved": "Saved",
+    "edit": "Edit",
+    "delete": "Delete"
   },
   "nav": {
     "menu": "Menu",
@@ -160,7 +162,23 @@
     "worker": "Worker",
     "task": "Task",
     "noneTask": "No task",
-    "noTimeEntries": "No time logged yet."
+    "noTimeEntries": "No time logged yet.",
+    "active": "Active",
+    "inactive": "Inactive",
+    "showInactive": "Show inactive",
+    "profile": "Profile",
+    "deactivate": "Deactivate",
+    "reactivate": "Reactivate",
+    "totalHours": "Total hours",
+    "totalCost": "Total cost",
+    "projectHistory": "Project history",
+    "noProjectHistory": "No hours logged yet.",
+    "project": "Project",
+    "cost": "Cost",
+    "laborCostReport": "Labor cost report",
+    "noLaborCost": "No labor cost logged yet.",
+    "total": "Total",
+    "confirmDeleteEntry": "Delete this time entry?"
   },
   "documents": {
     "title": "Documents",
@@ -285,7 +303,23 @@
     "reorderThreshold": "Reorder below",
     "reorderQuantity": "Reorder quantity",
     "preferredSupplier": "Preferred supplier",
-    "noSupplier": "No supplier"
+    "noSupplier": "No supplier",
+    "stockCounts": "Stock counts",
+    "startCount": "Start count",
+    "draft": "Draft",
+    "finalized": "Finalized",
+    "variances": "{count} variances",
+    "systemQuantity": "System qty",
+    "countedQuantity": "Counted qty",
+    "variance": "Variance",
+    "finalizeCount": "Finalize count",
+    "priceHistory": "Price history",
+    "noPriceHistory": "No purchase history yet.",
+    "currentPrice": "Current catalog price",
+    "supplierComparison": "Supplier comparison",
+    "noSupplierPrices": "No purchase history from any supplier yet.",
+    "latestPrice": "Latest",
+    "avgPrice": "Average"
   },
   "suppliers": {
     "title": "Suppliers",

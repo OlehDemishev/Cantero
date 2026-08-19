@@ -24,6 +24,16 @@ export class MaterialCatalogController {
     return this.service.get(user.companyId, id);
   }
 
+  @Get(":id/price-history")
+  priceHistory(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.priceHistory(user.companyId, id);
+  }
+
+  @Get(":id/supplier-prices")
+  supplierPrices(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.supplierPrices(user.companyId, id);
+  }
+
   @Post()
   create(
     @CurrentUser() user: AuthUser,

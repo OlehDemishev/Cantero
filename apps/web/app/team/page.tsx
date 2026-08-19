@@ -11,6 +11,19 @@ interface Worker {
   name: string;
   role: string | null;
   hourlyCost: string | null;
+  active: boolean;
+}
+interface LaborCostRow {
+  workerId: string;
+  workerName: string;
+  role: string | null;
+  hours: number;
+  cost: number;
+}
+interface LaborCostReport {
+  totalHours: number;
+  totalCost: number;
+  byWorker: LaborCostRow[];
 }
 
 export default function TeamPage() {
@@ -19,14 +32,19 @@ export default function TeamPage() {
   const { data: me } = useMe();
 
   const [workers, setWorkers] = useState<Worker[] | null>(null);
+  const [report, setReport] = useState<LaborCostReport | null>(null);
+  const [showInactive, setShowInactive] = useState(false);
   const [form, setForm] = useState({ name: "", role: "", hourlyCost: "" });
   const [submitting, setSubmitting] = useState(false);
 
   function load() {
     apiFetch<Worker[]>("/workers").then(setWorkers);
+    apiFetch<LaborCostReport>("/team/labor-cost-report").then(setReport);
   }
 
   useEffect(load, []);
+
+  const visibleWorkers = workers?.filter((w) => showInactive || w.active) ?? null;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -85,7 +103,14 @@ export default function TeamPage() {
         </div>
 
         <div className="lg:col-span-2">
-          {!workers ? (
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-700">{t("workers")}</h2>
+            <label className="flex items-center gap-2 text-xs text-gray-500">
+              <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} />
+              {t("showInactive")}
+            </label>
+          </div>
+          {!visibleWorkers ? (
             <p className="text-gray-500">{tc("loading")}</p>
           ) : (
             <table className="w-full border-collapse text-sm">
@@ -94,17 +119,74 @@ export default function TeamPage() {
                   <th className="py-2">{tc("name")}</th>
                   <th>{t("role")}</th>
                   <th>{t("hourlyCost")}</th>
+                  <th>{tc("status")}</th>
                 </tr>
               </thead>
               <tbody>
-                {workers.map((w) => (
+                {visibleWorkers.map((w) => (
                   <tr key={w.id} className="border-b border-gray-100">
-                    <td className="py-2">{w.name}</td>
+                    <td className="py-2">
+                      <a href={`/team/${w.id}`} className="font-medium text-brand-700 hover:underline">
+                        {w.name}
+                      </a>
+                    </td>
                     <td>{w.role ?? "—"}</td>
                     <td>{w.hourlyCost ? `${w.hourlyCost} ${me?.company.currency}` : "—"}</td>
+                    <td>
+                      {w.active ? (
+                        <span className="text-xs text-success-700">{t("active")}</span>
+                      ) : (
+                        <span className="text-xs text-gray-400">{t("inactive")}</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
+            </table>
+          )}
+
+          <h2 className="mb-3 mt-10 text-sm font-semibold text-gray-700">{t("laborCostReport")}</h2>
+          {!report ? (
+            <p className="text-gray-500">{tc("loading")}</p>
+          ) : report.byWorker.length === 0 ? (
+            <p className="text-sm text-gray-400">{t("noLaborCost")}</p>
+          ) : (
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 text-left text-gray-500">
+                  <th className="py-2">{tc("name")}</th>
+                  <th>{t("role")}</th>
+                  <th className="text-right">{t("hours")}</th>
+                  <th className="text-right">{t("cost")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {report.byWorker.map((r) => (
+                  <tr key={r.workerId} className="border-b border-gray-100">
+                    <td className="py-2">
+                      <a href={`/team/${r.workerId}`} className="text-brand-700 hover:underline">
+                        {r.workerName}
+                      </a>
+                    </td>
+                    <td>{r.role ?? "—"}</td>
+                    <td className="text-right">{r.hours}h</td>
+                    <td className="text-right">
+                      {r.cost} {me?.company.currency}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t border-gray-200 font-medium">
+                  <td className="py-2" colSpan={2}>
+                    {t("total")}
+                  </td>
+                  <td className="text-right">{report.totalHours}h</td>
+                  <td className="text-right">
+                    {report.totalCost} {me?.company.currency}
+                  </td>
+                </tr>
+              </tfoot>
             </table>
           )}
         </div>

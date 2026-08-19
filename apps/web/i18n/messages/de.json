@@ -15,7 +15,9 @@
     "currency": "Währung",
     "signOut": "Abmelden",
     "download": "Herunterladen",
-    "saved": "Gespeichert"
+    "saved": "Gespeichert",
+    "edit": "Bearbeiten",
+    "delete": "Löschen"
   },
   "nav": {
     "menu": "Menü",
@@ -160,7 +162,23 @@
     "worker": "Mitarbeiter",
     "task": "Aufgabe",
     "noneTask": "Keine Aufgabe",
-    "noTimeEntries": "Noch keine Zeit erfasst."
+    "noTimeEntries": "Noch keine Zeit erfasst.",
+    "active": "Aktiv",
+    "inactive": "Inaktiv",
+    "showInactive": "Inaktive anzeigen",
+    "profile": "Profil",
+    "deactivate": "Deaktivieren",
+    "reactivate": "Reaktivieren",
+    "totalHours": "Stunden gesamt",
+    "totalCost": "Kosten gesamt",
+    "projectHistory": "Projekthistorie",
+    "noProjectHistory": "Noch keine Stunden erfasst.",
+    "project": "Projekt",
+    "cost": "Kosten",
+    "laborCostReport": "Lohnkostenbericht",
+    "noLaborCost": "Noch keine Lohnkosten erfasst.",
+    "total": "Gesamt",
+    "confirmDeleteEntry": "Diesen Zeiteintrag löschen?"
   },
   "documents": {
     "title": "Dokumente",
@@ -285,7 +303,23 @@
     "reorderThreshold": "Nachbestellen unter",
     "reorderQuantity": "Nachbestellmenge",
     "preferredSupplier": "Bevorzugter Lieferant",
-    "noSupplier": "Kein Lieferant"
+    "noSupplier": "Kein Lieferant",
+    "stockCounts": "Inventuren",
+    "startCount": "Inventur starten",
+    "draft": "Entwurf",
+    "finalized": "Abgeschlossen",
+    "variances": "{count} Abweichungen",
+    "systemQuantity": "Soll-Bestand",
+    "countedQuantity": "Gezählter Bestand",
+    "variance": "Abweichung",
+    "finalizeCount": "Inventur abschließen",
+    "priceHistory": "Preisverlauf",
+    "noPriceHistory": "Noch keine Bestellhistorie.",
+    "currentPrice": "Aktueller Katalogpreis",
+    "supplierComparison": "Lieferantenvergleich",
+    "noSupplierPrices": "Noch keine Bestellhistorie von Lieferanten.",
+    "latestPrice": "Letzter Preis",
+    "avgPrice": "Durchschnitt"
   },
   "suppliers": {
     "title": "Lieferanten",
