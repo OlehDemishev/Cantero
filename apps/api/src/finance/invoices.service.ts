@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import type { RecordPaymentInput } from "@cantero/shared";
+import type { AddInstallmentInput, RecordPaymentInput, UpdateInvoiceInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { PdfService } from "../common/pdf/pdf.service";
 
@@ -26,6 +26,9 @@ export class InvoicesService {
       include: { lines: true, project: true },
     });
     if (!estimate) throw new NotFoundException("Estimate not found");
+    if (!estimate.project) {
+      throw new NotFoundException("Estimate has no project — templates can't be invoiced directly");
+    }
     if (!estimate.project.clientId) {
       throw new NotFoundException("Project has no client — add a client before invoicing");
     }
@@ -44,7 +47,7 @@ export class InvoicesService {
     const invoice = await this.prisma.invoice.create({
       data: {
         companyId,
-        projectId: estimate.projectId,
+        projectId: estimate.project.id,
         clientId: estimate.project.clientId,
         estimateId: estimate.id,
         number,
@@ -75,8 +78,32 @@ export class InvoicesService {
     return this.prisma.invoice.update({
       where: { id },
       data: { status: "sent" },
-      include: { lines: true, client: true, project: true, payments: true },
+      include: { lines: true, client: true, project: true, payments: true, installments: true },
     });
+  }
+
+  async update(companyId: string, id: string, input: UpdateInvoiceInput) {
+    await this.findOrThrow(companyId, id);
+    return this.prisma.invoice.update({
+      where: { id },
+      data: { dueDate: input.dueDate === undefined ? undefined : input.dueDate ? new Date(input.dueDate) : null },
+      include: { lines: true, client: true, project: true, payments: true, installments: true },
+    });
+  }
+
+  /** Adds one row to the invoice's planned payment schedule — a plan only, not linked to actual Payment rows. */
+  async addInstallment(companyId: string, id: string, input: AddInstallmentInput) {
+    const invoice = await this.findOrThrow(companyId, id);
+    await this.prisma.invoiceInstallment.create({
+      data: {
+        invoiceId: id,
+        label: input.label,
+        amount: input.amount,
+        dueDate: input.dueDate ? new Date(input.dueDate) : undefined,
+        sortOrder: invoice.installments.length,
+      },
+    });
+    return this.findOrThrow(companyId, id);
   }
 
   /** Records a payment and re-derives invoice status from the running balance. */
@@ -100,7 +127,7 @@ export class InvoicesService {
     return this.prisma.invoice.update({
       where: { id },
       data: { status: newStatus },
-      include: { lines: true, client: true, project: true, payments: true },
+      include: { lines: true, client: true, project: true, payments: true, installments: true },
     });
   }
 
@@ -127,12 +154,66 @@ export class InvoicesService {
     });
   }
 
+  /** Accounting export: one row per invoice, with paid/outstanding derived from its payments. */
+  async exportCsv(companyId: string): Promise<string> {
+    const invoices = await this.prisma.invoice.findMany({
+      where: { companyId },
+      include: { client: true, project: true, payments: true },
+      orderBy: { number: "asc" },
+    });
+
+    const header = [
+      "Number",
+      "Status",
+      "Client",
+      "Project",
+      "Subtotal",
+      "Tax",
+      "Total",
+      "Paid",
+      "Outstanding",
+      "Due date",
+      "Created date",
+    ];
+    const rows = invoices.map((inv) => {
+      const paid = inv.payments.reduce((sum, p) => sum + Number(p.amount), 0);
+      return [
+        inv.number,
+        inv.status,
+        inv.client.name,
+        inv.project.name,
+        inv.subtotal.toString(),
+        inv.taxAmount.toString(),
+        inv.total.toString(),
+        paid.toFixed(2),
+        (Number(inv.total) - paid).toFixed(2),
+        inv.dueDate ? inv.dueDate.toISOString().slice(0, 10) : "",
+        inv.createdAt.toISOString().slice(0, 10),
+      ];
+    });
+
+    return [header, ...rows].map((row) => row.map(csvEscape).join(",")).join("\r\n");
+  }
+
   private async findOrThrow(companyId: string, id: string) {
     const invoice = await this.prisma.invoice.findFirst({
       where: { id, companyId },
-      include: { lines: true, client: true, project: true, payments: true },
+      include: {
+        lines: true,
+        client: true,
+        project: true,
+        payments: true,
+        installments: { orderBy: { sortOrder: "asc" } },
+      },
     });
     if (!invoice) throw new NotFoundException("Invoice not found");
     return invoice;
   }
+}
+
+function csvEscape(value: string): string {
+  if (/[",\r\n]/.test(value)) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
 }

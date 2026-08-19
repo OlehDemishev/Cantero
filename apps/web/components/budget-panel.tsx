@@ -15,6 +15,8 @@ interface BudgetVsActual {
   laborCostVariance: number;
   laborHoursLogged: number;
   laborHoursUncosted: number;
+  subcontractorCostActual: number;
+  subcontractorCostUnpaid: number;
   grandTotalBudget: number;
   invoicedTotal: number;
   paidTotal: number;
@@ -74,6 +76,21 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
               : []),
           ]}
         />
+        {budget.subcontractorCostActual > 0 && (
+          <BudgetCard
+            title={t("subcontractorCost")}
+            rows={[
+              [t("actual"), `${budget.subcontractorCostActual} ${currency}`],
+              ...(budget.subcontractorCostUnpaid > 0
+                ? ([[t("unpaid"), `${budget.subcontractorCostUnpaid} ${currency}`, "text-warning-700"]] as [
+                    string,
+                    string,
+                    string,
+                  ][])
+                : []),
+            ]}
+          />
+        )}
         <BudgetCard
           title={t("grandTotalBudget")}
           rows={[

@@ -1,6 +1,15 @@
-import { Body, Controller, Get, Header, Param, Post, StreamableFile } from "@nestjs/common";
+import { Body, Controller, Get, Header, Param, Patch, Post, Res, StreamableFile } from "@nestjs/common";
 import { IsUUID } from "class-validator";
-import { recordPaymentSchema, type AuthUser, type RecordPaymentInput } from "@cantero/shared";
+import type { Response } from "express";
+import {
+  addInstallmentSchema,
+  recordPaymentSchema,
+  updateInvoiceSchema,
+  type AddInstallmentInput,
+  type AuthUser,
+  type RecordPaymentInput,
+  type UpdateInvoiceInput,
+} from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { InvoicesService } from "./invoices.service";
@@ -19,6 +28,14 @@ export class InvoicesController {
     return this.service.list(user.companyId);
   }
 
+  // Declared before ":id" so "export.csv" isn't swallowed as an invoice id.
+  @Get("export.csv")
+  @Header("Content-Type", "text/csv")
+  async exportCsv(@CurrentUser() user: AuthUser, @Res({ passthrough: true }) res: Response) {
+    res.set("Content-Disposition", 'attachment; filename="invoices.csv"');
+    return this.service.exportCsv(user.companyId);
+  }
+
   @Get(":id")
   get(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.get(user.companyId, id);
@@ -29,9 +46,27 @@ export class InvoicesController {
     return this.service.generateFromEstimate(user.companyId, body.estimateId);
   }
 
+  @Patch(":id")
+  update(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(updateInvoiceSchema)) body: UpdateInvoiceInput,
+  ) {
+    return this.service.update(user.companyId, id, body);
+  }
+
   @Post(":id/send")
   send(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.send(user.companyId, id);
+  }
+
+  @Post(":id/installments")
+  addInstallment(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(addInstallmentSchema)) body: AddInstallmentInput,
+  ) {
+    return this.service.addInstallment(user.companyId, id, body);
   }
 
   @Post(":id/payments")

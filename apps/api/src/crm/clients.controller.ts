@@ -1,7 +1,11 @@
 import { Body, Controller, Get, Param, Patch, Post } from "@nestjs/common";
 import {
+  addClientActivitySchema,
+  addClientReminderSchema,
   createClientSchema,
   updateClientSchema,
+  type AddClientActivityInput,
+  type AddClientReminderInput,
   type AuthUser,
   type CreateClientInput,
   type UpdateClientInput,
@@ -17,6 +21,12 @@ export class ClientsController {
   @Get()
   list(@CurrentUser() user: AuthUser) {
     return this.service.list(user.companyId);
+  }
+
+  // Declared before ":id" so "reminders/upcoming" isn't swallowed as a client id.
+  @Get("reminders/upcoming")
+  upcomingReminders(@CurrentUser() user: AuthUser) {
+    return this.service.listUpcomingReminders(user.companyId);
   }
 
   @Get(":id")
@@ -39,5 +49,42 @@ export class ClientsController {
     @Body(new ZodValidationPipe(updateClientSchema)) body: UpdateClientInput,
   ) {
     return this.service.update(user.companyId, id, body);
+  }
+
+  @Get(":id/activities")
+  listActivities(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.listActivities(user.companyId, id);
+  }
+
+  @Post(":id/activities")
+  addActivity(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(addClientActivitySchema)) body: AddClientActivityInput,
+  ) {
+    return this.service.addActivity(user.companyId, id, body);
+  }
+
+  @Get(":id/reminders")
+  listReminders(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.listReminders(user.companyId, id);
+  }
+
+  @Post(":id/reminders")
+  addReminder(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(addClientReminderSchema)) body: AddClientReminderInput,
+  ) {
+    return this.service.addReminder(user.companyId, id, body);
+  }
+
+  @Post(":id/reminders/:reminderId/complete")
+  completeReminder(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Param("reminderId") reminderId: string,
+  ) {
+    return this.service.completeReminder(user.companyId, id, reminderId);
   }
 }

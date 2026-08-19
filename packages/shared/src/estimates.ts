@@ -9,6 +9,15 @@ export const createMaterialCatalogItemSchema = z.object({
 });
 export type CreateMaterialCatalogItemInput = z.infer<typeof createMaterialCatalogItemSchema>;
 
+/** Reorder settings only — the low-stock processor auto-drafts a PO once both
+ * reorderQuantity and preferredSupplierId are set alongside reorderThreshold. */
+export const updateMaterialReorderSchema = z.object({
+  reorderThreshold: z.number().nonnegative().nullable().optional(),
+  reorderQuantity: z.number().positive().nullable().optional(),
+  preferredSupplierId: z.string().uuid().nullable().optional(),
+});
+export type UpdateMaterialReorderInput = z.infer<typeof updateMaterialReorderSchema>;
+
 export const rateCatalogItemMaterialSchema = z.object({
   materialCatalogItemId: z.string().uuid(),
   quantityPerUnit: z.number().positive(),
@@ -54,3 +63,17 @@ export const createEstimateSchema = z.object({
   taxPercent: z.number().min(0).max(100).default(0),
 });
 export type CreateEstimateInput = z.infer<typeof createEstimateSchema>;
+
+export const saveAsTemplateSchema = z.object({
+  name: z.string().min(1).max(160),
+});
+export type SaveAsTemplateInput = z.infer<typeof saveAsTemplateSchema>;
+
+export const createFromTemplateSchema = z.object({
+  projectId: z.string().uuid(),
+  name: z.string().min(1).max(160),
+  laborRatePerHour: z.number().nonnegative(),
+  markupPercent: z.number().min(0).max(500).default(15),
+  taxPercent: z.number().min(0).max(100).default(0),
+});
+export type CreateFromTemplateInput = z.infer<typeof createFromTemplateSchema>;

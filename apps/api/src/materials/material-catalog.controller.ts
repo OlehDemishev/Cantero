@@ -1,5 +1,11 @@
-import { Body, Controller, Get, Param, Post } from "@nestjs/common";
-import { createMaterialCatalogItemSchema, type AuthUser, type CreateMaterialCatalogItemInput } from "@cantero/shared";
+import { Body, Controller, Get, Param, Patch, Post } from "@nestjs/common";
+import {
+  createMaterialCatalogItemSchema,
+  updateMaterialReorderSchema,
+  type AuthUser,
+  type CreateMaterialCatalogItemInput,
+  type UpdateMaterialReorderInput,
+} from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { MaterialCatalogService } from "./material-catalog.service";
@@ -24,5 +30,14 @@ export class MaterialCatalogController {
     @Body(new ZodValidationPipe(createMaterialCatalogItemSchema)) body: CreateMaterialCatalogItemInput,
   ) {
     return this.service.create(user.companyId, body);
+  }
+
+  @Patch(":id/reorder-settings")
+  updateReorderSettings(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(updateMaterialReorderSchema)) body: UpdateMaterialReorderInput,
+  ) {
+    return this.service.updateReorderSettings(user.companyId, id, body);
   }
 }

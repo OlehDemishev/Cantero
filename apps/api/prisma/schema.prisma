@@ -108,6 +108,10 @@ model Company {
   suppliers            Supplier[]
   workers              Worker[]
   documents            Document[]
+  subcontractors       Subcontractor[]
+  subcontractorCosts   SubcontractorCost[]
+  clientActivities     ClientActivity[]
+  clientReminders      ClientReminder[]
 
   @@map("companies")
 }
@@ -202,9 +206,14 @@ model MaterialCatalogItem {
   defaultUnitPrice Decimal  @db.Decimal(12, 4)
   /// Below this quantity on hand (summed across warehouses), a low-stock alert is queued. Null = no alert.
   reorderThreshold Decimal? @db.Decimal(14, 4)
-  createdAt        DateTime @default(now())
+  /// How much to auto-order when a low-stock alert fires. Both this and preferredSupplierId
+  /// must be set for the low-stock processor to draft a purchase order automatically.
+  reorderQuantity     Decimal? @db.Decimal(14, 4)
+  preferredSupplierId String?
+  createdAt           DateTime @default(now())
 
-  company              Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company              Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  preferredSupplier    Supplier?                 @relation(fields: [preferredSupplierId], references: [id], onDelete: SetNull)
   rateCatalogItemUses  RateCatalogItemMaterial[]
   stockLevels          StockLevel[]
   stockMovements       StockMovement[]
@@ -213,6 +222,7 @@ model MaterialCatalogItem {
 
   @@unique([companyId, code])
   @@index([companyId])
+  @@index([preferredSupplierId])
   @@map("material_catalog_items")
 }
 
@@ -252,12 +262,17 @@ model RateCatalogItemMaterial {
 model Estimate {
   id               String         @id @default(uuid())
   companyId        String
-  projectId        String
+  projectId        String?
   name             String
   status           EstimateStatus @default(draft)
   laborRatePerHour Decimal        @db.Decimal(10, 2)
   markupPercent    Decimal        @default(15) @db.Decimal(5, 2)
   taxPercent       Decimal        @default(0) @db.Decimal(5, 2)
+  /// A template is a reusable line-item structure with no project of its own;
+  /// "create from template" clones its sections/lines into a brand-new estimate.
+  isTemplate       Boolean        @default(false)
+  /// Bumped each time approve() snapshots the current state into EstimateRevision.
+  currentVersion   Int            @default(1)
 
   materialsCostTotal Decimal @default(0) @db.Decimal(14, 2)
   laborCostTotal     Decimal @default(0) @db.Decimal(14, 2)
@@ -270,15 +285,47 @@ model Estimate {
   updatedAt DateTime @updatedAt
 
   company      Company                        @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  project      Project                        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project      Project?                       @relation(fields: [projectId], references: [id], onDelete: Cascade)
   sections     EstimateSection[]
   lines        EstimateLine[]
   requirements EstimateMaterialRequirement[]
+  revisions    EstimateRevision[]
   invoices     Invoice[]
 
   @@index([companyId])
   @@index([projectId])
   @@map("estimates")
+}
+
+/// Immutable, fully denormalized snapshot of an estimate's state at approval
+/// time — captures rate item names/codes directly (not just FK references) so
+/// history stays accurate even if the catalog changes or an item is deleted later.
+model EstimateRevision {
+  id            String @id @default(uuid())
+  estimateId    String
+  versionNumber Int
+  name          String
+
+  laborRatePerHour Decimal @db.Decimal(10, 2)
+  markupPercent    Decimal @db.Decimal(5, 2)
+  taxPercent       Decimal @db.Decimal(5, 2)
+
+  materialsCostTotal Decimal @db.Decimal(14, 2)
+  laborCostTotal     Decimal @db.Decimal(14, 2)
+  subtotal           Decimal @db.Decimal(14, 2)
+  markupAmount       Decimal @db.Decimal(14, 2)
+  taxAmount          Decimal @db.Decimal(14, 2)
+  grandTotal         Decimal @db.Decimal(14, 2)
+
+  /// EstimateRevisionLineSnapshot[]: { rateCatalogItemCode, rateCatalogItemName, unit, quantity, materialsCost, laborCost, lineTotal }
+  lines Json
+
+  createdAt DateTime @default(now())
+
+  estimate Estimate @relation(fields: [estimateId], references: [id], onDelete: Cascade)
+
+  @@index([estimateId])
+  @@map("estimate_revisions")
 }
 
 model EstimateSection {
@@ -339,9 +386,10 @@ model Warehouse {
   name      String
   address   String?
 
-  company        Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  stockLevels    StockLevel[]
-  stockMovements StockMovement[]
+  company           Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  stockLevels       StockLevel[]
+  stockMovements    StockMovement[]
+  incomingTransfers StockMovement[] @relation("TransferDestination")
 
   @@index([companyId])
   @@map("warehouses")
@@ -364,6 +412,9 @@ model StockMovement {
   id                    String            @id @default(uuid())
   companyId             String
   warehouseId           String
+  /// Only set for type=transfer — the destination warehouse credited alongside
+  /// the source warehouseId being debited, both recorded as one movement row.
+  toWarehouseId         String?
   materialCatalogItemId String
   type                  StockMovementType
   quantity              Decimal           @db.Decimal(14, 4)
@@ -372,12 +423,14 @@ model StockMovement {
   createdAt             DateTime          @default(now())
 
   warehouse           Warehouse           @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  toWarehouse          Warehouse?          @relation("TransferDestination", fields: [toWarehouseId], references: [id], onDelete: Cascade)
   materialCatalogItem MaterialCatalogItem @relation(fields: [materialCatalogItemId], references: [id], onDelete: Restrict)
   project             Project?            @relation(fields: [projectId], references: [id], onDelete: SetNull)
   estimateLine         EstimateLine?      @relation(fields: [estimateLineId], references: [id], onDelete: SetNull)
 
   @@index([companyId])
   @@index([warehouseId])
+  @@index([toWarehouseId])
   @@map("stock_movements")
 }
 
@@ -388,20 +441,26 @@ model Supplier {
   email     String?
   phone     String?
 
-  company        Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  purchaseOrders PurchaseOrder[]
+  company            Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  purchaseOrders     PurchaseOrder[]
+  preferredForItems  MaterialCatalogItem[]
 
   @@index([companyId])
   @@map("suppliers")
 }
 
 model PurchaseOrder {
-  id         String              @id @default(uuid())
-  companyId  String
-  supplierId String
-  status     PurchaseOrderStatus @default(draft)
-  receivedAt DateTime?
-  createdAt  DateTime            @default(now())
+  id            String              @id @default(uuid())
+  companyId     String
+  supplierId    String
+  status        PurchaseOrderStatus @default(draft)
+  /// True when created by the low-stock processor rather than a person — surfaced
+  /// in the UI as a nudge to review quantities/pricing before ordering.
+  autoGenerated Boolean             @default(false)
+  /// When the supplier is expected to deliver/be paid — feeds the cash-flow forecast's outflow buckets.
+  expectedDate  DateTime?
+  receivedAt    DateTime?
+  createdAt     DateTime            @default(now())
 
   supplier Supplier            @relation(fields: [supplierId], references: [id], onDelete: Restrict)
   lines    PurchaseOrderLine[]
@@ -443,6 +502,7 @@ model Project {
   stockMovements StockMovement[]
   timeEntries    TimeEntry[]
   documents      Document[]
+  subcontractorCosts SubcontractorCost[]
 
   @@index([companyId])
   @@map("projects")
@@ -491,19 +551,39 @@ model Invoice {
   subtotal   Decimal       @db.Decimal(14, 2)
   taxAmount  Decimal       @default(0) @db.Decimal(14, 2)
   total      Decimal       @db.Decimal(14, 2)
+  dueDate    DateTime?
   createdAt  DateTime      @default(now())
 
-  company  Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  project  Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  client   Client        @relation(fields: [clientId], references: [id], onDelete: Restrict)
-  estimate Estimate?     @relation(fields: [estimateId], references: [id], onDelete: SetNull)
-  lines    InvoiceLine[]
-  payments Payment[]
-  documents Document[]
+  company      Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project      Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  client       Client               @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  estimate     Estimate?            @relation(fields: [estimateId], references: [id], onDelete: SetNull)
+  lines        InvoiceLine[]
+  payments     Payment[]
+  installments InvoiceInstallment[]
+  documents    Document[]
 
   @@unique([companyId, number])
   @@index([companyId])
   @@map("invoices")
+}
+
+/// A planned installment on an invoice's payment schedule (e.g. "Deposit — 30%",
+/// "On completion — 40%"). Purely a plan: actual money received is still recorded
+/// as Payment rows and matched against installments client-side by running total,
+/// so this never has to be reconciled against Payment as a hard foreign key.
+model InvoiceInstallment {
+  id        String    @id @default(uuid())
+  invoiceId String
+  label     String
+  amount    Decimal   @db.Decimal(14, 2)
+  dueDate   DateTime?
+  sortOrder Int       @default(0)
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@map("invoice_installments")
 }
 
 model InvoiceLine {
@@ -533,6 +613,48 @@ model Payment {
   @@map("payments")
 }
 
+/// A subcontractor the company pays for labor/work — distinct from Worker
+/// (internal staff whose hours are tracked via TimeEntry) and from Supplier
+/// (sells materials, paid via PurchaseOrder).
+model Subcontractor {
+  id        String  @id @default(uuid())
+  companyId String
+  name      String
+  email     String?
+  phone     String?
+
+  company Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  costs   SubcontractorCost[]
+
+  @@index([companyId])
+  @@map("subcontractors")
+}
+
+/// A bill from a subcontractor against a project — an actual cost the moment
+/// it's logged (mirrors how stock issue counts as actual at issue-time, not
+/// payment-time); `paid` and `dueDate` exist for the cash-flow forecast, not
+/// for gating whether it counts toward budget-vs-actual.
+model SubcontractorCost {
+  id              String    @id @default(uuid())
+  companyId       String
+  subcontractorId String
+  projectId       String
+  description     String
+  amount          Decimal   @db.Decimal(14, 2)
+  incurredDate    DateTime  @default(now())
+  dueDate         DateTime?
+  paid            Boolean   @default(false)
+
+  company       Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  subcontractor Subcontractor @relation(fields: [subcontractorId], references: [id], onDelete: Restrict)
+  project       Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([projectId])
+  @@index([subcontractorId])
+  @@map("subcontractor_costs")
+}
+
 // ---------- CRM (thin in Phase 1) ----------
 
 model Client {
@@ -545,12 +667,57 @@ model Client {
   notes     String?
   createdAt DateTime    @default(now())
 
-  company  Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  projects Project[]
-  invoices Invoice[]
+  company    Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  projects   Project[]
+  invoices   Invoice[]
+  activities ClientActivity[]
+  reminders  ClientReminder[]
 
   @@index([companyId])
   @@map("clients")
+}
+
+enum ClientActivityType {
+  note
+  call
+  meeting
+  email
+}
+
+/// A timestamped log entry on a client — calls, meetings, emails, freeform notes.
+/// Distinct from Client.notes (a single pinned summary field): this is a history.
+model ClientActivity {
+  id        String              @id @default(uuid())
+  companyId String
+  clientId  String
+  type      ClientActivityType
+  content   String
+  createdAt DateTime            @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  client  Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([clientId])
+  @@map("client_activities")
+}
+
+/// A follow-up reminder against a client (e.g. "Call back about the quote").
+model ClientReminder {
+  id        String   @id @default(uuid())
+  companyId String
+  clientId  String
+  title     String
+  dueDate   DateTime
+  done      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  client  Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([clientId])
+  @@map("client_reminders")
 }
 
 // ---------- Team/HR (schema-only until Phase 5) ----------

@@ -2,9 +2,11 @@ import { Body, Controller, Get, Post, Query } from "@nestjs/common";
 import {
   issueFromEstimateSchema,
   recordStockMovementSchema,
+  transferStockSchema,
   type AuthUser,
   type IssueFromEstimateInput,
   type RecordStockMovementInput,
+  type TransferStockInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
@@ -30,6 +32,14 @@ export class StockController {
     @Body(new ZodValidationPipe(recordStockMovementSchema)) body: RecordStockMovementInput,
   ) {
     return this.service.recordMovement(user.companyId, body);
+  }
+
+  @Post("transfer")
+  transfer(
+    @CurrentUser() user: AuthUser,
+    @Body(new ZodValidationPipe(transferStockSchema)) body: TransferStockInput,
+  ) {
+    return this.service.transferStock(user.companyId, body);
   }
 
   @Post("issue-from-estimate")

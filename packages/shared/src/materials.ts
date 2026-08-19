@@ -3,6 +3,10 @@ import { z } from "zod";
 export const STOCK_MOVEMENT_TYPES = ["receipt", "issue", "transfer", "write_off"] as const;
 export type StockMovementType = (typeof STOCK_MOVEMENT_TYPES)[number];
 
+/** "transfer" is excluded here on purpose — it debits one warehouse and credits
+ * another, so it goes through the dedicated transferStockSchema/endpoint instead. */
+export const GENERIC_MOVEMENT_TYPES = ["receipt", "issue", "write_off"] as const;
+
 export const createWarehouseSchema = z.object({
   name: z.string().min(1).max(160),
   address: z.string().max(300).optional(),
@@ -12,11 +16,24 @@ export type CreateWarehouseInput = z.infer<typeof createWarehouseSchema>;
 export const recordStockMovementSchema = z.object({
   warehouseId: z.string().uuid(),
   materialCatalogItemId: z.string().uuid(),
-  type: z.enum(STOCK_MOVEMENT_TYPES),
+  type: z.enum(GENERIC_MOVEMENT_TYPES),
   quantity: z.number().positive(),
   projectId: z.string().uuid().optional(),
 });
 export type RecordStockMovementInput = z.infer<typeof recordStockMovementSchema>;
+
+export const transferStockSchema = z
+  .object({
+    fromWarehouseId: z.string().uuid(),
+    toWarehouseId: z.string().uuid(),
+    materialCatalogItemId: z.string().uuid(),
+    quantity: z.number().positive(),
+  })
+  .refine((data) => data.fromWarehouseId !== data.toWarehouseId, {
+    message: "fromWarehouseId and toWarehouseId must differ",
+    path: ["toWarehouseId"],
+  });
+export type TransferStockInput = z.infer<typeof transferStockSchema>;
 
 export const issueFromEstimateSchema = z.object({
   estimateId: z.string().uuid(),
@@ -41,6 +58,7 @@ export type PurchaseOrderLineInput = z.infer<typeof purchaseOrderLineSchema>;
 export const createPurchaseOrderSchema = z.object({
   supplierId: z.string().uuid(),
   lines: z.array(purchaseOrderLineSchema).min(1),
+  expectedDate: z.string().datetime().optional(),
 });
 export type CreatePurchaseOrderInput = z.infer<typeof createPurchaseOrderSchema>;
 

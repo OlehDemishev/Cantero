@@ -22,6 +22,12 @@ interface Payment {
   method: string;
   paidAt: string;
 }
+interface Installment {
+  id: string;
+  label: string;
+  amount: string;
+  dueDate: string | null;
+}
 interface Invoice {
   id: string;
   number: string;
@@ -29,8 +35,10 @@ interface Invoice {
   subtotal: string;
   taxAmount: string;
   total: string;
+  dueDate: string | null;
   lines: InvoiceLine[];
   payments: Payment[];
+  installments: Installment[];
   client: { name: string };
   project: { id: string; name: string };
 }
@@ -41,10 +49,15 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   const { data: me } = useMe();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [paymentForm, setPaymentForm] = useState({ amount: "", method: "bank_transfer" as (typeof PAYMENT_METHODS)[number] });
+  const [dueDateInput, setDueDateInput] = useState("");
+  const [installmentForm, setInstallmentForm] = useState({ label: "", amount: "", dueDate: "" });
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<Invoice>(`/invoices/${invoiceId}`).then(setInvoice);
+    apiFetch<Invoice>(`/invoices/${invoiceId}`).then((inv) => {
+      setInvoice(inv);
+      setDueDateInput(inv.dueDate ? inv.dueDate.slice(0, 10) : "");
+    });
   }
 
   useEffect(load, [invoiceId]);
@@ -58,6 +71,39 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
     setBusy(true);
     try {
       await apiFetch(`/invoices/${invoiceId}/send`, { method: "POST" });
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveDueDate(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      await apiFetch(`/invoices/${invoiceId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ dueDate: dueDateInput ? new Date(dueDateInput).toISOString() : null }),
+      });
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function addInstallment(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      await apiFetch(`/invoices/${invoiceId}/installments`, {
+        method: "POST",
+        body: JSON.stringify({
+          label: installmentForm.label,
+          amount: Number(installmentForm.amount),
+          dueDate: installmentForm.dueDate ? new Date(installmentForm.dueDate).toISOString() : undefined,
+        }),
+      });
+      setInstallmentForm({ label: "", amount: "", dueDate: "" });
       load();
     } finally {
       setBusy(false);
@@ -90,6 +136,15 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   const currency = me?.company.currency ?? "";
   const paidTotal = invoice.payments.reduce((sum, p) => sum + Number(p.amount), 0);
   const balanceDue = Number(invoice.total) - paidTotal;
+
+  let cumulative = 0;
+  const installmentRows = invoice.installments.map((inst) => {
+    const from = cumulative;
+    cumulative += Number(inst.amount);
+    const fulfilled = paidTotal >= cumulative;
+    const partial = !fulfilled && paidTotal > from;
+    return { ...inst, fulfilled, partial };
+  });
 
   const statusColor =
     invoice.status === "paid"
@@ -131,6 +186,69 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
               ))}
             </tbody>
           </table>
+
+          <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700">{t("paymentPlan")}</h2>
+          {installmentRows.length === 0 ? (
+            <p className="text-sm text-gray-400">{t("noInstallments")}</p>
+          ) : (
+            <table className="w-full border-collapse text-sm">
+              <tbody>
+                {installmentRows.map((inst) => (
+                  <tr key={inst.id} className="border-b border-gray-100">
+                    <td className="py-1.5">{inst.label}</td>
+                    <td className="text-gray-500">
+                      {inst.dueDate ? new Date(inst.dueDate).toLocaleDateString() : "—"}
+                    </td>
+                    <td>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                          inst.fulfilled
+                            ? "bg-success-50 text-success-700"
+                            : inst.partial
+                              ? "bg-warning-50 text-warning-700"
+                              : "bg-gray-100 text-gray-500"
+                        }`}
+                      >
+                        {inst.fulfilled ? t("fulfilled") : inst.partial ? t("partial") : t("pending")}
+                      </span>
+                    </td>
+                    <td className="text-right font-medium">
+                      {inst.amount} {currency}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          {invoice.status !== "void" && (
+            <form onSubmit={addInstallment} className="mt-3 flex flex-wrap items-end gap-2">
+              <input
+                required
+                placeholder={t("installmentLabel")}
+                className="input w-auto"
+                value={installmentForm.label}
+                onChange={(e) => setInstallmentForm((f) => ({ ...f, label: e.target.value }))}
+              />
+              <input
+                required
+                type="number"
+                step="0.01"
+                placeholder={t("amount")}
+                className="input w-28"
+                value={installmentForm.amount}
+                onChange={(e) => setInstallmentForm((f) => ({ ...f, amount: e.target.value }))}
+              />
+              <input
+                type="date"
+                className="input w-auto"
+                value={installmentForm.dueDate}
+                onChange={(e) => setInstallmentForm((f) => ({ ...f, dueDate: e.target.value }))}
+              />
+              <button type="submit" disabled={busy} className="btn-secondary">
+                {t("addInstallment")}
+              </button>
+            </form>
+          )}
 
           <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700">{t("payments")}</h2>
           {invoice.payments.length === 0 ? (
@@ -186,6 +304,21 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
             <Row label={t("paidTotal")} value={`${paidTotal.toFixed(2)} ${currency}`} />
             <Row label={t("balanceDue")} value={`${balanceDue.toFixed(2)} ${currency}`} emphasize />
           </dl>
+
+          <form onSubmit={saveDueDate} className="mt-4 flex items-end gap-2 border-t border-gray-100 pt-4">
+            <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500">
+              {t("dueDate")}
+              <input
+                type="date"
+                className="input"
+                value={dueDateInput}
+                onChange={(e) => setDueDateInput(e.target.value)}
+              />
+            </label>
+            <button type="submit" disabled={busy} className="btn-secondary shrink-0">
+              {tc("save")}
+            </button>
+          </form>
 
           <div className="mt-6 flex flex-col gap-2">
             {invoice.status === "draft" && (

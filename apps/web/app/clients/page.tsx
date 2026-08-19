@@ -15,16 +15,24 @@ interface Client {
   phone: string | null;
   stage: ClientStage;
 }
+interface UpcomingReminder {
+  id: string;
+  title: string;
+  dueDate: string;
+  client: { id: string; name: string };
+}
 
 export default function ClientsPage() {
   const t = useTranslations("clients");
   const tc = useTranslations("common");
   const [clients, setClients] = useState<Client[] | null>(null);
+  const [upcoming, setUpcoming] = useState<UpcomingReminder[] | null>(null);
   const [form, setForm] = useState({ name: "", email: "", phone: "" });
   const [submitting, setSubmitting] = useState(false);
 
   function load() {
     apiFetch<Client[]>("/clients").then(setClients);
+    apiFetch<UpcomingReminder[]>("/clients/reminders/upcoming").then(setUpcoming);
   }
 
   useEffect(load, []);
@@ -56,6 +64,28 @@ export default function ClientsPage() {
   return (
     <AuthenticatedShell>
       <h1 className="text-2xl font-semibold">{t("title")}</h1>
+
+      {upcoming && upcoming.length > 0 && (
+        <div className="mt-6">
+          <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("upcomingReminders")}</h2>
+          <ul className="flex flex-col gap-2">
+            {upcoming.map((r) => {
+              const overdue = new Date(r.dueDate) < new Date();
+              return (
+                <li key={r.id} className="card flex items-center justify-between">
+                  <a href={`/clients/${r.client.id}`} className="text-sm hover:underline">
+                    <span className="font-medium">{r.title}</span>
+                    <span className="text-gray-500"> · {r.client.name}</span>
+                  </a>
+                  <span className={`text-xs font-medium ${overdue ? "text-error-600" : "text-gray-500"}`}>
+                    {new Date(r.dueDate).toLocaleDateString()}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
 
       <div className="mt-6 card max-w-md">
         <h2 className="mb-4 text-sm font-semibold text-gray-700">{t("newClient")}</h2>
@@ -101,7 +131,9 @@ export default function ClientsPage() {
                     .filter((c) => c.stage === stage)
                     .map((c) => (
                       <div key={c.id} className="card">
-                        <div className="text-sm font-medium">{c.name}</div>
+                        <a href={`/clients/${c.id}`} className="text-sm font-medium hover:underline">
+                          {c.name}
+                        </a>
                         <div className="text-xs text-gray-500">{c.email ?? c.phone ?? "—"}</div>
                         <div className="mt-2 flex flex-wrap gap-1">
                           {STAGES.filter((s) => s !== stage).map((s) => (

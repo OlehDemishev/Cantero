@@ -1,12 +1,12 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectQueue } from "@nestjs/bullmq";
 import type { Queue } from "bullmq";
-import type { RecordStockMovementInput } from "@cantero/shared";
+import type { RecordStockMovementInput, TransferStockInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { STOCK_ALERTS_QUEUE } from "../common/queue/queue.module";
 import type { LowStockCheckJob } from "./low-stock.processor";
 
-const DECREASING_TYPES = new Set(["issue", "transfer", "write_off"]);
+const DECREASING_TYPES = new Set(["issue", "write_off"]);
 
 @Injectable()
 export class StockService {
@@ -70,6 +70,61 @@ export class StockService {
     if (delta < 0) {
       await this.queueLowStockCheck(companyId, input.materialCatalogItemId);
     }
+
+    return movement;
+  }
+
+  /**
+   * Moves stock between two of the company's own warehouses as a single atomic
+   * operation: one `transfer` StockMovement row records both sides (warehouseId
+   * debited, toWarehouseId credited), and both StockLevel rows update together —
+   * unlike the generic movements endpoint, which only ever touches one warehouse
+   * and so can't represent a transfer without silently losing the credited half.
+   */
+  async transferStock(companyId: string, input: TransferStockInput) {
+    const [fromWarehouse, toWarehouse, material] = await Promise.all([
+      this.prisma.warehouse.findFirst({ where: { id: input.fromWarehouseId, companyId } }),
+      this.prisma.warehouse.findFirst({ where: { id: input.toWarehouseId, companyId } }),
+      this.prisma.materialCatalogItem.findFirst({ where: { id: input.materialCatalogItemId, companyId } }),
+    ]);
+    if (!fromWarehouse) throw new NotFoundException("Source warehouse not found");
+    if (!toWarehouse) throw new NotFoundException("Destination warehouse not found");
+    if (!material) throw new NotFoundException("Material not found");
+
+    const [movement] = await this.prisma.$transaction([
+      this.prisma.stockMovement.create({
+        data: {
+          companyId,
+          warehouseId: input.fromWarehouseId,
+          toWarehouseId: input.toWarehouseId,
+          materialCatalogItemId: input.materialCatalogItemId,
+          type: "transfer",
+          quantity: input.quantity,
+        },
+      }),
+      this.prisma.stockLevel.upsert({
+        where: {
+          warehouseId_materialCatalogItemId: {
+            warehouseId: input.fromWarehouseId,
+            materialCatalogItemId: input.materialCatalogItemId,
+          },
+        },
+        create: { warehouseId: input.fromWarehouseId, materialCatalogItemId: input.materialCatalogItemId, quantityOnHand: -input.quantity },
+        update: { quantityOnHand: { decrement: input.quantity } },
+      }),
+      this.prisma.stockLevel.upsert({
+        where: {
+          warehouseId_materialCatalogItemId: {
+            warehouseId: input.toWarehouseId,
+            materialCatalogItemId: input.materialCatalogItemId,
+          },
+        },
+        create: { warehouseId: input.toWarehouseId, materialCatalogItemId: input.materialCatalogItemId, quantityOnHand: input.quantity },
+        update: { quantityOnHand: { increment: input.quantity } },
+      }),
+    ]);
+
+    await this.queueLowStockCheck(companyId, input.materialCatalogItemId);
 
     return movement;
   }

@@ -32,6 +32,7 @@ export class PurchaseOrdersService {
         companyId,
         supplierId: input.supplierId,
         status: "ordered",
+        expectedDate: input.expectedDate ? new Date(input.expectedDate) : undefined,
         lines: {
           create: input.lines.map((l) => ({
             materialCatalogItemId: l.materialCatalogItemId,

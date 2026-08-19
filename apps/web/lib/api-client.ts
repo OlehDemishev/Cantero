@@ -48,7 +48,11 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
   if (res.status === 204) return undefined as T;
 
   const contentType = res.headers.get("content-type") ?? "";
-  if (contentType.includes("application/pdf") || contentType.includes("application/octet-stream")) {
+  if (
+    contentType.includes("application/pdf") ||
+    contentType.includes("application/octet-stream") ||
+    contentType.includes("text/csv")
+  ) {
     return (await res.blob()) as unknown as T;
   }
   return res.json() as Promise<T>;

@@ -60,6 +60,14 @@ export class BudgetService {
       0,
     );
 
+    // Counted as actual the moment it's logged, same convention as materials at issue-time —
+    // no budget counterpart exists yet since estimates don't plan for subcontractor spend.
+    const subcontractorCosts = await this.prisma.subcontractorCost.findMany({ where: { companyId, projectId } });
+    const subcontractorCostActual = subcontractorCosts.reduce((sum, c) => sum + Number(c.amount), 0);
+    const subcontractorCostUnpaid = subcontractorCosts
+      .filter((c) => !c.paid)
+      .reduce((sum, c) => sum + Number(c.amount), 0);
+
     return {
       projectId,
       estimatesCount: approvedEstimates.length,
@@ -71,6 +79,8 @@ export class BudgetService {
       laborCostVariance: round2(laborCostBudget - laborCostActual),
       laborHoursLogged: round2(laborHoursLogged),
       laborHoursUncosted: round2(laborHoursUncosted),
+      subcontractorCostActual: round2(subcontractorCostActual),
+      subcontractorCostUnpaid: round2(subcontractorCostUnpaid),
       grandTotalBudget: round2(grandTotalBudget),
       invoicedTotal: round2(invoicedTotal),
       paidTotal: round2(paidTotal),

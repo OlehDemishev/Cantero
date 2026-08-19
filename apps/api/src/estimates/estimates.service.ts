@@ -1,8 +1,24 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import type { CreateEstimateInput, CreateEstimateLineInput } from "@cantero/shared";
+import type { CreateEstimateInput, CreateEstimateLineInput, CreateFromTemplateInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { PdfService } from "../common/pdf/pdf.service";
-import { calculateEstimate, type MaterialPrice, type RateItemForCalc } from "./estimate-calc";
+import {
+  calculateEstimate,
+  type EstimateCalcOptions,
+  type EstimateLineInput,
+  type MaterialPrice,
+  type RateItemForCalc,
+} from "./estimate-calc";
+
+interface RevisionLineSnapshot {
+  rateCatalogItemCode: string;
+  rateCatalogItemName: string;
+  unit: string;
+  quantity: number;
+  materialsCost: number;
+  laborCost: number;
+  lineTotal: number;
+}
 
 @Injectable()
 export class EstimatesService {
@@ -12,12 +28,29 @@ export class EstimatesService {
   ) {}
 
   list(companyId: string) {
-    return this.prisma.estimate.findMany({ where: { companyId }, include: { project: true } });
+    return this.prisma.estimate.findMany({ where: { companyId, isTemplate: false }, include: { project: true } });
   }
 
+  listTemplates(companyId: string) {
+    return this.prisma.estimate.findMany({ where: { companyId, isTemplate: true }, orderBy: { name: "asc" } });
+  }
+
+  /** Recomputes the estimate live (without persisting) and flags it if that differs from the stored totals — a catalog price moved since it was last saved. */
   async get(companyId: string, id: string) {
     const estimate = await this.findOrThrow(companyId, id);
-    return estimate;
+    if (estimate.isTemplate || estimate.lines.length === 0) {
+      return { ...estimate, isStale: false };
+    }
+    const result = await this.computeForLines(
+      companyId,
+      estimate.lines.map((l) => ({ id: l.id, rateCatalogItemId: l.rateCatalogItemId, quantity: Number(l.quantity) })),
+      {
+        laborRatePerHour: Number(estimate.laborRatePerHour),
+        markupPercent: Number(estimate.markupPercent),
+        taxPercent: Number(estimate.taxPercent),
+      },
+    );
+    return { ...estimate, isStale: result.grandTotal !== Number(estimate.grandTotal) };
   }
 
   async create(companyId: string, input: CreateEstimateInput) {
@@ -51,36 +84,9 @@ export class EstimatesService {
       });
     }
 
-    const rateItemIds = [...new Set(estimate.lines.map((l) => l.rateCatalogItemId))];
-    const rateItems = await this.prisma.rateCatalogItem.findMany({
-      where: { id: { in: rateItemIds }, companyId },
-      include: { materials: true },
-    });
-    const rateItemsById: Record<string, RateItemForCalc> = Object.fromEntries(
-      rateItems.map((ri) => [
-        ri.id,
-        {
-          id: ri.id,
-          laborHoursPerUnit: Number(ri.laborHoursPerUnit),
-          materials: ri.materials.map((m) => ({
-            materialCatalogItemId: m.materialCatalogItemId,
-            quantityPerUnit: Number(m.quantityPerUnit),
-            wasteFactorPercent: Number(m.wasteFactorPercent),
-          })),
-        },
-      ]),
-    );
-
-    const materialIds = [...new Set(rateItems.flatMap((ri) => ri.materials.map((m) => m.materialCatalogItemId)))];
-    const materials = await this.prisma.materialCatalogItem.findMany({ where: { id: { in: materialIds } } });
-    const materialPricesById: Record<string, MaterialPrice> = Object.fromEntries(
-      materials.map((m) => [m.id, { unitPrice: Number(m.defaultUnitPrice), unit: m.unit }]),
-    );
-
-    const result = calculateEstimate(
+    const result = await this.computeForLines(
+      companyId,
       estimate.lines.map((l) => ({ id: l.id, rateCatalogItemId: l.rateCatalogItemId, quantity: Number(l.quantity) })),
-      rateItemsById,
-      materialPricesById,
       {
         laborRatePerHour: Number(estimate.laborRatePerHour),
         markupPercent: Number(estimate.markupPercent),
@@ -111,13 +117,178 @@ export class EstimatesService {
     return this.findOrThrow(companyId, estimateId);
   }
 
-  /** Locks the estimate and snapshots the auto-generated material requirement list. */
+  /**
+   * Locks in the material requirement list and snapshots the current state into
+   * an EstimateRevision. Callable more than once: editing an approved estimate
+   * and approving again creates the next revision instead of being blocked.
+   */
   async approve(companyId: string, estimateId: string) {
     const estimate = await this.recalculate(companyId, estimateId);
 
+    const lineInputs = estimate.lines.map((l) => ({
+      id: l.id,
+      rateCatalogItemId: l.rateCatalogItemId,
+      quantity: Number(l.quantity),
+    }));
+    const calcOptions: EstimateCalcOptions = {
+      laborRatePerHour: Number(estimate.laborRatePerHour),
+      markupPercent: Number(estimate.markupPercent),
+      taxPercent: Number(estimate.taxPercent),
+    };
+    const result = await this.computeForLines(companyId, lineInputs, calcOptions);
+
     const rateItemIds = [...new Set(estimate.lines.map((l) => l.rateCatalogItemId))];
-    const rateItems = await this.prisma.rateCatalogItem.findMany({
+    const rateItemsInfo = await this.prisma.rateCatalogItem.findMany({
       where: { id: { in: rateItemIds } },
+      select: { id: true, code: true, name: true, unit: true },
+    });
+    const rateItemInfoById = Object.fromEntries(rateItemsInfo.map((r) => [r.id, r]));
+
+    const revisionLines: RevisionLineSnapshot[] = estimate.lines.map((line) => {
+      const info = rateItemInfoById[line.rateCatalogItemId];
+      return {
+        rateCatalogItemCode: info?.code ?? "",
+        rateCatalogItemName: info?.name ?? line.rateCatalogItemId,
+        unit: info?.unit ?? "",
+        quantity: Number(line.quantity),
+        materialsCost: Number(line.materialsCost),
+        laborCost: Number(line.laborCost),
+        lineTotal: Number(line.lineTotal),
+      };
+    });
+
+    await this.prisma.$transaction([
+      this.prisma.estimateMaterialRequirement.deleteMany({ where: { estimateId } }),
+      this.prisma.estimateMaterialRequirement.createMany({
+        data: result.materialRequirements.map((r) => ({
+          estimateId,
+          materialCatalogItemId: r.materialCatalogItemId,
+          quantity: r.quantity,
+          unit: r.unit,
+        })),
+      }),
+      this.prisma.estimateRevision.create({
+        data: {
+          estimateId,
+          versionNumber: estimate.currentVersion,
+          name: estimate.name,
+          laborRatePerHour: estimate.laborRatePerHour,
+          markupPercent: estimate.markupPercent,
+          taxPercent: estimate.taxPercent,
+          materialsCostTotal: estimate.materialsCostTotal,
+          laborCostTotal: estimate.laborCostTotal,
+          subtotal: estimate.subtotal,
+          markupAmount: estimate.markupAmount,
+          taxAmount: estimate.taxAmount,
+          grandTotal: estimate.grandTotal,
+          lines: revisionLines as unknown as object,
+        },
+      }),
+      this.prisma.estimate.update({
+        where: { id: estimateId },
+        data: { status: "approved", currentVersion: { increment: 1 } },
+      }),
+    ]);
+
+    return this.findOrThrow(companyId, estimateId);
+  }
+
+  async listRevisions(companyId: string, estimateId: string) {
+    await this.findOrThrow(companyId, estimateId);
+    return this.prisma.estimateRevision.findMany({ where: { estimateId }, orderBy: { versionNumber: "desc" } });
+  }
+
+  async getRevision(companyId: string, estimateId: string, revisionId: string) {
+    await this.findOrThrow(companyId, estimateId);
+    const revision = await this.prisma.estimateRevision.findFirst({ where: { id: revisionId, estimateId } });
+    if (!revision) throw new NotFoundException("Revision not found");
+    return revision;
+  }
+
+  /** Clones the current sections/lines into a new, project-less template estimate. */
+  async saveAsTemplate(companyId: string, estimateId: string, name: string) {
+    const estimate = await this.findOrThrow(companyId, estimateId);
+    const template = await this.prisma.estimate.create({
+      data: {
+        companyId,
+        name,
+        isTemplate: true,
+        laborRatePerHour: estimate.laborRatePerHour,
+        markupPercent: estimate.markupPercent,
+        taxPercent: estimate.taxPercent,
+      },
+    });
+    return this.cloneSectionsAndLines(companyId, estimate.sections, estimate.lines, template.id);
+  }
+
+  /** Clones a template's sections/lines into a brand-new project estimate, then recalculates against current prices. */
+  async createFromTemplate(companyId: string, templateId: string, input: CreateFromTemplateInput) {
+    const template = await this.prisma.estimate.findFirst({
+      where: { id: templateId, companyId, isTemplate: true },
+      include: { sections: { orderBy: { sortOrder: "asc" } }, lines: { orderBy: { sortOrder: "asc" } } },
+    });
+    if (!template) throw new NotFoundException("Template not found");
+
+    const estimate = await this.prisma.estimate.create({
+      data: {
+        companyId,
+        projectId: input.projectId,
+        name: input.name,
+        laborRatePerHour: input.laborRatePerHour,
+        markupPercent: input.markupPercent,
+        taxPercent: input.taxPercent,
+      },
+    });
+    return this.cloneSectionsAndLines(companyId, template.sections, template.lines, estimate.id);
+  }
+
+  private async cloneSectionsAndLines(
+    companyId: string,
+    sourceSections: { id: string; name: string; sortOrder: number }[],
+    sourceLines: { rateCatalogItemId: string; quantity: unknown; sectionId: string | null; sortOrder: number }[],
+    targetEstimateId: string,
+  ) {
+    const sectionIdMap = new Map<string, string>();
+    for (const section of sourceSections) {
+      const created = await this.prisma.estimateSection.create({
+        data: { estimateId: targetEstimateId, name: section.name, sortOrder: section.sortOrder },
+      });
+      sectionIdMap.set(section.id, created.id);
+    }
+
+    if (sourceLines.length > 0) {
+      await this.prisma.estimateLine.createMany({
+        data: sourceLines.map((l) => ({
+          estimateId: targetEstimateId,
+          rateCatalogItemId: l.rateCatalogItemId,
+          quantity: l.quantity as never,
+          sectionId: l.sectionId ? sectionIdMap.get(l.sectionId) : undefined,
+          sortOrder: l.sortOrder,
+        })),
+      });
+      return this.recalculate(companyId, targetEstimateId);
+    }
+    return this.findOrThrow(companyId, targetEstimateId);
+  }
+
+  /** Shared rate/material lookup + pure calc — used by recalculate, approve, and the stale check. */
+  private async computeForLines(companyId: string, lines: EstimateLineInput[], options: EstimateCalcOptions) {
+    if (lines.length === 0) {
+      return {
+        lines: [],
+        materialsCostTotal: 0,
+        laborCostTotal: 0,
+        subtotal: 0,
+        markupAmount: 0,
+        taxAmount: 0,
+        grandTotal: 0,
+        materialRequirements: [],
+      };
+    }
+
+    const rateItemIds = [...new Set(lines.map((l) => l.rateCatalogItemId))];
+    const rateItems = await this.prisma.rateCatalogItem.findMany({
+      where: { id: { in: rateItemIds }, companyId },
       include: { materials: true },
     });
     const rateItemsById: Record<string, RateItemForCalc> = Object.fromEntries(
@@ -134,37 +305,14 @@ export class EstimatesService {
         },
       ]),
     );
+
     const materialIds = [...new Set(rateItems.flatMap((ri) => ri.materials.map((m) => m.materialCatalogItemId)))];
     const materials = await this.prisma.materialCatalogItem.findMany({ where: { id: { in: materialIds } } });
     const materialPricesById: Record<string, MaterialPrice> = Object.fromEntries(
       materials.map((m) => [m.id, { unitPrice: Number(m.defaultUnitPrice), unit: m.unit }]),
     );
 
-    const result = calculateEstimate(
-      estimate.lines.map((l) => ({ id: l.id, rateCatalogItemId: l.rateCatalogItemId, quantity: Number(l.quantity) })),
-      rateItemsById,
-      materialPricesById,
-      {
-        laborRatePerHour: Number(estimate.laborRatePerHour),
-        markupPercent: Number(estimate.markupPercent),
-        taxPercent: Number(estimate.taxPercent),
-      },
-    );
-
-    await this.prisma.$transaction([
-      this.prisma.estimateMaterialRequirement.deleteMany({ where: { estimateId } }),
-      this.prisma.estimateMaterialRequirement.createMany({
-        data: result.materialRequirements.map((r) => ({
-          estimateId,
-          materialCatalogItemId: r.materialCatalogItemId,
-          quantity: r.quantity,
-          unit: r.unit,
-        })),
-      }),
-      this.prisma.estimate.update({ where: { id: estimateId }, data: { status: "approved" } }),
-    ]);
-
-    return this.findOrThrow(companyId, estimateId);
+    return calculateEstimate(lines, rateItemsById, materialPricesById, options);
   }
 
   async generatePdf(companyId: string, estimateId: string): Promise<Buffer> {
@@ -177,7 +325,7 @@ export class EstimatesService {
 
     return this.pdfService.render({
       title: `Estimate — ${estimate.name}`,
-      subtitle: estimate.project.name,
+      subtitle: estimate.project?.name ?? "",
       meta: [
         { label: "Status", value: estimate.status },
         { label: "Currency", value: company.currency },

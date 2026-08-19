@@ -15,6 +15,9 @@ interface MaterialCatalogItem {
   code: string;
   name: string;
   unit: string;
+  reorderThreshold: string | null;
+  reorderQuantity: string | null;
+  preferredSupplierId: string | null;
 }
 interface StockLevel {
   id: string;
@@ -22,8 +25,12 @@ interface StockLevel {
   materialCatalogItem: MaterialCatalogItem;
   warehouse: { id: string };
 }
+interface Supplier {
+  id: string;
+  name: string;
+}
 
-const MOVEMENT_TYPES = ["receipt", "issue", "transfer", "write_off"] as const;
+const GENERIC_MOVEMENT_TYPES = ["receipt", "issue", "write_off"] as const;
 
 export default function WarehousesPage() {
   const t = useTranslations("warehouses");
@@ -111,22 +118,77 @@ export default function WarehousesPage() {
           ) : warehouses.length === 0 ? (
             <p className="text-gray-500">{t("empty")}</p>
           ) : selected ? (
-            <WarehouseDetail warehouseId={selected} />
+            <WarehouseDetail warehouseId={selected} allWarehouses={warehouses} />
           ) : null}
         </div>
       </div>
+
+      <ReorderSettings />
     </AuthenticatedShell>
   );
 }
 
-function WarehouseDetail({ warehouseId }: { warehouseId: string }) {
+/** Type-ahead SKU entry: type or pick a code from the native datalist, matching sets the id. */
+function MaterialPicker({
+  id,
+  materials,
+  value,
+  onChange,
+}: {
+  id: string;
+  materials: MaterialCatalogItem[];
+  value: string;
+  onChange: (id: string) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const selectedMaterial = materials.find((m) => m.id === value);
+
+  useEffect(() => {
+    if (selectedMaterial) setQuery(selectedMaterial.code);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMaterial?.id]);
+
+  function handleInput(next: string) {
+    setQuery(next);
+    const match = materials.find((m) => m.code.toLowerCase() === next.trim().toLowerCase());
+    if (match) onChange(match.id);
+  }
+
+  return (
+    <>
+      <input
+        list={id}
+        className="input w-36"
+        placeholder="SKU"
+        value={query}
+        onChange={(e) => handleInput(e.target.value)}
+      />
+      <datalist id={id}>
+        {materials.map((m) => (
+          <option key={m.id} value={m.code}>
+            {m.name}
+          </option>
+        ))}
+      </datalist>
+    </>
+  );
+}
+
+function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: string; allWarehouses: Warehouse[] }) {
   const t = useTranslations("warehouses");
   const tc = useTranslations("common");
 
   const [levels, setLevels] = useState<StockLevel[] | null>(null);
   const [materials, setMaterials] = useState<MaterialCatalogItem[]>([]);
-  const [movement, setMovement] = useState({ materialCatalogItemId: "", type: "receipt" as (typeof MOVEMENT_TYPES)[number], quantity: "1" });
+  const [movement, setMovement] = useState({
+    materialCatalogItemId: "",
+    type: "receipt" as (typeof GENERIC_MOVEMENT_TYPES)[number],
+    quantity: "1",
+  });
+  const [transfer, setTransfer] = useState({ materialCatalogItemId: "", toWarehouseId: "", quantity: "1" });
   const [busy, setBusy] = useState(false);
+
+  const otherWarehouses = allWarehouses.filter((w) => w.id !== warehouseId);
 
   function load() {
     apiFetch<StockLevel[]>(`/materials/stock/levels?warehouseId=${warehouseId}`).then(setLevels);
@@ -136,10 +198,20 @@ function WarehouseDetail({ warehouseId }: { warehouseId: string }) {
     load();
     apiFetch<MaterialCatalogItem[]>("/materials/catalog").then((items) => {
       setMaterials(items);
-      if (items[0]) setMovement((m) => ({ ...m, materialCatalogItemId: items[0].id }));
+      if (items[0]) {
+        setMovement((m) => ({ ...m, materialCatalogItemId: items[0].id }));
+        setTransfer((tr) => ({ ...tr, materialCatalogItemId: items[0].id }));
+      }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warehouseId]);
+
+  useEffect(() => {
+    if (!transfer.toWarehouseId && otherWarehouses[0]) {
+      setTransfer((tr) => ({ ...tr, toWarehouseId: otherWarehouses[0].id }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [otherWarehouses[0]?.id]);
 
   async function recordMovement(e: React.FormEvent) {
     e.preventDefault();
@@ -152,6 +224,26 @@ function WarehouseDetail({ warehouseId }: { warehouseId: string }) {
           materialCatalogItemId: movement.materialCatalogItemId,
           type: movement.type,
           quantity: Number(movement.quantity),
+        }),
+      });
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function recordTransfer(e: React.FormEvent) {
+    e.preventDefault();
+    if (!transfer.toWarehouseId) return;
+    setBusy(true);
+    try {
+      await apiFetch("/materials/stock/transfer", {
+        method: "POST",
+        body: JSON.stringify({
+          fromWarehouseId: warehouseId,
+          toWarehouseId: transfer.toWarehouseId,
+          materialCatalogItemId: transfer.materialCatalogItemId,
+          quantity: Number(transfer.quantity),
         }),
       });
       load();
@@ -190,23 +282,20 @@ function WarehouseDetail({ warehouseId }: { warehouseId: string }) {
 
       <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700">{t("recordMovement")}</h2>
       <form onSubmit={recordMovement} className="flex flex-wrap items-end gap-2">
-        <select
-          className="input w-auto"
+        <MaterialPicker
+          id="movement-material"
+          materials={materials}
           value={movement.materialCatalogItemId}
-          onChange={(e) => setMovement((m) => ({ ...m, materialCatalogItemId: e.target.value }))}
-        >
-          {materials.map((mat) => (
-            <option key={mat.id} value={mat.id}>
-              {mat.code}
-            </option>
-          ))}
-        </select>
+          onChange={(id) => setMovement((m) => ({ ...m, materialCatalogItemId: id }))}
+        />
         <select
           className="input w-auto"
           value={movement.type}
-          onChange={(e) => setMovement((m) => ({ ...m, type: e.target.value as (typeof MOVEMENT_TYPES)[number] }))}
+          onChange={(e) =>
+            setMovement((m) => ({ ...m, type: e.target.value as (typeof GENERIC_MOVEMENT_TYPES)[number] }))
+          }
         >
-          {MOVEMENT_TYPES.map((ty) => (
+          {GENERIC_MOVEMENT_TYPES.map((ty) => (
             <option key={ty} value={ty}>
               {t(ty)}
             </option>
@@ -223,6 +312,174 @@ function WarehouseDetail({ warehouseId }: { warehouseId: string }) {
           {tc("save")}
         </button>
       </form>
+
+      {otherWarehouses.length > 0 && (
+        <>
+          <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700">{t("transferStock")}</h2>
+          <form onSubmit={recordTransfer} className="flex flex-wrap items-end gap-2">
+            <MaterialPicker
+              id="transfer-material"
+              materials={materials}
+              value={transfer.materialCatalogItemId}
+              onChange={(id) => setTransfer((tr) => ({ ...tr, materialCatalogItemId: id }))}
+            />
+            <span className="pb-2.5 text-sm text-gray-400">→</span>
+            <select
+              className="input w-auto"
+              value={transfer.toWarehouseId}
+              onChange={(e) => setTransfer((tr) => ({ ...tr, toWarehouseId: e.target.value }))}
+            >
+              {otherWarehouses.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name}
+                </option>
+              ))}
+            </select>
+            <input
+              type="number"
+              step="0.01"
+              className="input w-24"
+              value={transfer.quantity}
+              onChange={(e) => setTransfer((tr) => ({ ...tr, quantity: e.target.value }))}
+            />
+            <button type="submit" disabled={busy} className="btn-secondary">
+              {t("transfer")}
+            </button>
+          </form>
+        </>
+      )}
+    </div>
+  );
+}
+
+function ReorderSettings() {
+  const t = useTranslations("warehouses");
+  const tc = useTranslations("common");
+
+  const [materials, setMaterials] = useState<MaterialCatalogItem[] | null>(null);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [drafts, setDrafts] = useState<Record<string, { reorderThreshold: string; reorderQuantity: string; preferredSupplierId: string }>>({});
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [savedId, setSavedId] = useState<string | null>(null);
+
+  function load() {
+    apiFetch<MaterialCatalogItem[]>("/materials/catalog").then((items) => {
+      setMaterials(items);
+      setDrafts((prev) => {
+        const next = { ...prev };
+        for (const item of items) {
+          if (!next[item.id]) {
+            next[item.id] = {
+              reorderThreshold: item.reorderThreshold ?? "",
+              reorderQuantity: item.reorderQuantity ?? "",
+              preferredSupplierId: item.preferredSupplierId ?? "",
+            };
+          }
+        }
+        return next;
+      });
+    });
+  }
+
+  useEffect(() => {
+    load();
+    apiFetch<Supplier[]>("/materials/suppliers").then(setSuppliers);
+  }, []);
+
+  async function save(materialId: string) {
+    const draft = drafts[materialId];
+    if (!draft) return;
+    setSavingId(materialId);
+    setSavedId(null);
+    try {
+      await apiFetch(`/materials/catalog/${materialId}/reorder-settings`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          reorderThreshold: draft.reorderThreshold === "" ? null : Number(draft.reorderThreshold),
+          reorderQuantity: draft.reorderQuantity === "" ? null : Number(draft.reorderQuantity),
+          preferredSupplierId: draft.preferredSupplierId || null,
+        }),
+      });
+      setSavedId(materialId);
+      load();
+    } finally {
+      setSavingId(null);
+    }
+  }
+
+  if (!materials || materials.length === 0) return null;
+
+  return (
+    <div className="mt-10">
+      <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("reorderSettings")}</h2>
+      <p className="mb-3 text-xs text-gray-500">{t("reorderSettingsHint")}</p>
+      <table className="w-full border-collapse text-sm">
+        <thead>
+          <tr className="border-b border-gray-200 text-left text-gray-500">
+            <th className="py-2">{t("material")}</th>
+            <th>{t("reorderThreshold")}</th>
+            <th>{t("reorderQuantity")}</th>
+            <th>{t("preferredSupplier")}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {materials.map((m) => {
+            const draft = drafts[m.id] ?? { reorderThreshold: "", reorderQuantity: "", preferredSupplierId: "" };
+            return (
+              <tr key={m.id} className="border-b border-gray-100">
+                <td className="py-2">
+                  {m.name} ({m.code})
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="input w-24"
+                    value={draft.reorderThreshold}
+                    onChange={(e) =>
+                      setDrafts((d) => ({ ...d, [m.id]: { ...draft, reorderThreshold: e.target.value } }))
+                    }
+                  />
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="input w-24"
+                    value={draft.reorderQuantity}
+                    onChange={(e) =>
+                      setDrafts((d) => ({ ...d, [m.id]: { ...draft, reorderQuantity: e.target.value } }))
+                    }
+                  />
+                </td>
+                <td>
+                  <select
+                    className="input w-auto"
+                    value={draft.preferredSupplierId}
+                    onChange={(e) =>
+                      setDrafts((d) => ({ ...d, [m.id]: { ...draft, preferredSupplierId: e.target.value } }))
+                    }
+                  >
+                    <option value="">{t("noSupplier")}</option>
+                    {suppliers.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </td>
+                <td>
+                  <button onClick={() => save(m.id)} disabled={savingId === m.id} className="btn-secondary px-3 py-1 text-xs">
+                    {tc("save")}
+                  </button>
+                  {savedId === m.id && <span className="ml-2 text-xs text-success-700">{tc("saved")}</span>}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }

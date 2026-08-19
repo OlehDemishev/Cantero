@@ -7,6 +7,7 @@ import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { SchedulingPanel } from "@/components/scheduling-panel";
 import { BudgetPanel } from "@/components/budget-panel";
 import { TimeTrackingPanel } from "@/components/time-tracking-panel";
+import { SubcontractorCostsPanel } from "@/components/subcontractor-costs-panel";
 import { DocumentsPanel } from "@/components/documents-panel";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
@@ -24,6 +25,10 @@ interface Estimate {
   grandTotal: string;
   project: { id: string };
 }
+interface Template {
+  id: string;
+  name: string;
+}
 
 export function ProjectDetail({ projectId }: { projectId: string }) {
   const t = useTranslations("estimates");
@@ -34,28 +39,37 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
 
   const [project, setProject] = useState<Project | null>(null);
   const [estimates, setEstimates] = useState<Estimate[] | null>(null);
-  const [form, setForm] = useState({ name: "", laborRatePerHour: "35", markupPercent: "15", taxPercent: "0" });
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [form, setForm] = useState({
+    name: "",
+    laborRatePerHour: "35",
+    markupPercent: "15",
+    taxPercent: "0",
+    templateId: "",
+  });
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     apiFetch<Project>(`/projects/${projectId}`).then(setProject);
     apiFetch<Estimate[]>("/estimates").then((all) => setEstimates(all.filter((e) => e.project.id === projectId)));
+    apiFetch<Template[]>("/estimates/templates").then(setTemplates);
   }, [projectId]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const estimate = await apiFetch<{ id: string }>("/estimates", {
-        method: "POST",
-        body: JSON.stringify({
-          projectId,
-          name: form.name,
-          laborRatePerHour: Number(form.laborRatePerHour),
-          markupPercent: Number(form.markupPercent),
-          taxPercent: Number(form.taxPercent),
-        }),
+      const body = JSON.stringify({
+        projectId,
+        name: form.name,
+        laborRatePerHour: Number(form.laborRatePerHour),
+        markupPercent: Number(form.markupPercent),
+        taxPercent: Number(form.taxPercent),
       });
+      const estimate = await apiFetch<{ id: string }>(
+        form.templateId ? `/estimates/from-template/${form.templateId}` : "/estimates",
+        { method: "POST", body },
+      );
       router.push(`/estimates/${estimate.id}`);
     } finally {
       setSubmitting(false);
@@ -74,6 +88,23 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
         <div className="card lg:col-span-1">
           <h2 className="mb-4 text-sm font-semibold text-gray-700">{t("newEstimate")}</h2>
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+            {templates.length > 0 && (
+              <label className="text-xs text-gray-500">
+                {t("startFromTemplate")}
+                <select
+                  className="input mt-1"
+                  value={form.templateId}
+                  onChange={(e) => setForm((f) => ({ ...f, templateId: e.target.value }))}
+                >
+                  <option value="">{t("blankEstimate")}</option>
+                  {templates.map((tpl) => (
+                    <option key={tpl.id} value={tpl.id}>
+                      {tpl.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <input
               required
               placeholder={tc("name")}
@@ -145,6 +176,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
 
       <SchedulingPanel projectId={projectId} />
       <TimeTrackingPanel projectId={projectId} />
+      <SubcontractorCostsPanel projectId={projectId} />
       <BudgetPanel projectId={projectId} />
       <DocumentsPanel projectId={projectId} />
     </AuthenticatedShell>
