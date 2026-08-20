@@ -23,7 +23,11 @@ export class ProjectsService {
     return project;
   }
 
-  create(companyId: string, input: CreateProjectInput) {
+  async create(companyId: string, input: CreateProjectInput) {
+    if (input.clientId) {
+      const client = await this.prisma.client.findFirst({ where: { id: input.clientId, companyId } });
+      if (!client) throw new NotFoundException("Client not found");
+    }
     return this.prisma.project.create({ data: { ...input, companyId } });
   }
 }

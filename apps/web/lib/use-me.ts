@@ -10,8 +10,9 @@ export interface MeResponse {
     name: string;
     unitSystem: "metric" | "imperial";
     currency: string;
-    locale: "en" | "de" | "es";
+    locale: "en" | "de" | "es" | "pl" | "uk";
     country: string;
+    onboardingCompletedAt: string | null;
   };
   subscriptionStatus: "incomplete" | "active" | "past_due" | "canceled";
 }

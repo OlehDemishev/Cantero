@@ -6,6 +6,7 @@ import { SUPPORTED_LOCALES, MEMBERSHIP_ROLES_MANAGEABLE } from "@cantero/shared"
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { isPushSupported, getExistingSubscription, enablePush, disablePush } from "@/lib/push";
 
 interface Company {
   name: string;
@@ -34,6 +35,20 @@ interface Invite {
   role: string;
   expiresAt: string;
 }
+interface ApiKey {
+  id: string;
+  name: string;
+  keyPrefix: string;
+  createdAt: string;
+  lastUsedAt: string | null;
+  revokedAt: string | null;
+}
+interface AuditLogEntry {
+  id: string;
+  actorName: string;
+  summary: string;
+  createdAt: string;
+}
 
 export default function SettingsPage() {
   const t = useTranslations("settings");
@@ -48,6 +63,14 @@ export default function SettingsPage() {
   const [members, setMembers] = useState<Member[] | null>(null);
   const [invites, setInvites] = useState<Invite[] | null>(null);
   const [inviteForm, setInviteForm] = useState({ email: "", role: "worker" });
+  const [apiKeys, setApiKeys] = useState<ApiKey[] | null>(null);
+  const [newKeyName, setNewKeyName] = useState("");
+  const [createdKey, setCreatedKey] = useState<string | null>(null);
+  const [keyCopied, setKeyCopied] = useState(false);
+  const [auditLog, setAuditLog] = useState<AuditLogEntry[] | null>(null);
+  const [pushStatus, setPushStatus] = useState<"checking" | "unsupported" | "enabled" | "disabled">("checking");
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushError, setPushError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,13 +82,43 @@ export default function SettingsPage() {
     });
     apiFetch<Plan[]>("/billing/plans").then(setPlans);
     apiFetch<Member[]>("/company/members").then(setMembers);
-    if (isManager) apiFetch<Invite[]>("/company/invites").then(setInvites);
+    if (isManager) {
+      apiFetch<Invite[]>("/company/invites").then(setInvites);
+      apiFetch<ApiKey[]>("/company/api-keys").then(setApiKeys);
+      apiFetch<AuditLogEntry[]>("/company/audit-log").then(setAuditLog);
+    }
   }
 
   useEffect(() => {
     loadAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isManager]);
+
+  useEffect(() => {
+    if (!isPushSupported()) {
+      setPushStatus("unsupported");
+      return;
+    }
+    getExistingSubscription().then((sub) => setPushStatus(sub ? "enabled" : "disabled"));
+  }, []);
+
+  async function togglePush() {
+    setPushBusy(true);
+    setPushError(null);
+    try {
+      if (pushStatus === "enabled") {
+        await disablePush();
+        setPushStatus("disabled");
+      } else {
+        await enablePush();
+        setPushStatus("enabled");
+      }
+    } catch (err) {
+      setPushError(err instanceof Error && err.message === "denied" ? t("pushPermissionDenied") : tc("error"));
+    } finally {
+      setPushBusy(false);
+    }
+  }
 
   async function saveCompany(e: React.FormEvent) {
     e.preventDefault();
@@ -137,10 +190,60 @@ export default function SettingsPage() {
     loadAll();
   }
 
+  async function createApiKey(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setKeyCopied(false);
+    try {
+      const created = await apiFetch<{ key: string }>("/company/api-keys", {
+        method: "POST",
+        body: JSON.stringify({ name: newKeyName }),
+      });
+      setCreatedKey(created.key);
+      setNewKeyName("");
+      loadAll();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function copyApiKey() {
+    if (!createdKey) return;
+    await navigator.clipboard.writeText(createdKey);
+    setKeyCopied(true);
+  }
+
+  async function revokeApiKey(id: string) {
+    await apiFetch(`/company/api-keys/${id}`, { method: "DELETE" });
+    loadAll();
+  }
+
   return (
     <AuthenticatedShell>
       <h1 className="text-2xl font-semibold">{t("title")}</h1>
       {error && <p className="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+
+      {pushStatus !== "unsupported" && (
+        <section className="card mt-6">
+          <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("pushNotifications")}</h2>
+          <p className="mb-4 text-xs text-gray-500">{t("pushNotificationsHint")}</p>
+          {pushError && <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{pushError}</p>}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={togglePush}
+              disabled={pushBusy || pushStatus === "checking"}
+              className={pushStatus === "enabled" ? "btn-secondary" : "btn-primary"}
+            >
+              {pushBusy
+                ? tc("loading")
+                : pushStatus === "enabled"
+                  ? t("disablePush")
+                  : t("enablePush")}
+            </button>
+            {pushStatus === "enabled" && <span className="text-sm text-green-700">{t("pushEnabled")}</span>}
+          </div>
+        </section>
+      )}
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <section className="card">
@@ -328,6 +431,102 @@ export default function SettingsPage() {
                 {t("sendInvite")}
               </button>
             </form>
+          </section>
+        )}
+
+        {isManager && (
+          <section className="card lg:col-span-2">
+            <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("apiKeys")}</h2>
+            <p className="mb-4 text-xs text-gray-500">{t("apiKeysHint")}</p>
+
+            {createdKey && (
+              <div className="mb-4 rounded-md border border-warning-200 bg-warning-50 px-3 py-2">
+                <p className="text-xs text-warning-700">{t("apiKeyShownOnce")}</p>
+                <div className="mt-2 flex items-center gap-2">
+                  <code className="flex-1 truncate rounded bg-white px-2 py-1 text-xs">{createdKey}</code>
+                  <button onClick={copyApiKey} className="btn-secondary shrink-0 px-3 py-1 text-xs">
+                    {keyCopied ? tc("saved") : t("copyKey")}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {!apiKeys || apiKeys.length === 0 ? (
+              <p className="text-sm text-gray-400">{t("noApiKeys")}</p>
+            ) : (
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200 text-left text-gray-500">
+                    <th className="py-2">{tc("name")}</th>
+                    <th>{t("apiKeyPrefix")}</th>
+                    <th>{t("apiKeyLastUsed")}</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {apiKeys.map((k) => (
+                    <tr key={k.id} className="border-b border-gray-100">
+                      <td className="py-2">{k.name}</td>
+                      <td className="font-mono text-xs text-gray-500">{k.keyPrefix}…</td>
+                      <td className="text-xs text-gray-500">
+                        {k.revokedAt
+                          ? t("apiKeyRevoked")
+                          : k.lastUsedAt
+                            ? new Date(k.lastUsedAt).toLocaleDateString()
+                            : t("apiKeyNeverUsed")}
+                      </td>
+                      <td>
+                        {!k.revokedAt && (
+                          <button onClick={() => revokeApiKey(k.id)} className="btn-secondary px-2 py-1 text-xs">
+                            {t("revoke")}
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+
+            <form onSubmit={createApiKey} className="mt-4 flex items-end gap-2">
+              <input
+                required
+                placeholder={t("apiKeyNamePlaceholder")}
+                className="input"
+                value={newKeyName}
+                onChange={(e) => setNewKeyName(e.target.value)}
+              />
+              <button type="submit" disabled={busy} className="btn-primary shrink-0">
+                {t("createApiKey")}
+              </button>
+            </form>
+          </section>
+        )}
+
+        {isManager && (
+          <section className="card lg:col-span-2">
+            <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("auditLog")}</h2>
+            <p className="mb-4 text-xs text-gray-500">{t("auditLogHint")}</p>
+
+            {!auditLog ? (
+              <p className="text-gray-500">{tc("loading")}</p>
+            ) : auditLog.length === 0 ? (
+              <p className="text-sm text-gray-400">{t("noAuditLog")}</p>
+            ) : (
+              <ul className="flex max-h-96 flex-col gap-2 overflow-y-auto">
+                {auditLog.map((entry) => (
+                  <li key={entry.id} className="flex items-start justify-between border-b border-gray-100 pb-2 text-sm">
+                    <div>
+                      <span className="font-medium text-gray-800">{entry.actorName}</span>{" "}
+                      <span className="text-gray-600">{entry.summary}</span>
+                    </div>
+                    <span className="shrink-0 pl-3 text-xs text-gray-400">
+                      {new Date(entry.createdAt).toLocaleString()}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
         )}
       </div>

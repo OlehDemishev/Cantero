@@ -9,6 +9,6 @@ import { LaborCostService } from "./labor-cost.service";
 @Module({
   controllers: [WorkersController, TimeEntriesController, LaborCostController],
   providers: [WorkersService, TimeEntriesService, LaborCostService],
-  exports: [WorkersService],
+  exports: [WorkersService, TimeEntriesService],
 })
 export class TeamModule {}

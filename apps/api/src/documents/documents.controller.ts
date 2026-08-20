@@ -14,6 +14,7 @@ import {
 import { FileInterceptor } from "@nestjs/platform-express";
 import type { AuthUser } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
+import { Roles } from "../common/decorators/roles.decorator";
 import { DocumentsService } from "./documents.service";
 
 @Controller("documents")
@@ -63,8 +64,9 @@ export class DocumentsController {
     return new StreamableFile(buffer, { disposition: `attachment; filename="${name}"` });
   }
 
+  @Roles("owner", "admin")
   @Delete(":id")
   delete(@CurrentUser() user: AuthUser, @Param("id") id: string) {
-    return this.service.delete(user.companyId, id);
+    return this.service.delete(user.companyId, { userId: user.userId, name: user.name }, id);
   }
 }

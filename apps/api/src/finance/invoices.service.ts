@@ -2,12 +2,15 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import type { AddInstallmentInput, RecordPaymentInput, UpdateInvoiceInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { PdfService } from "../common/pdf/pdf.service";
+import { toCsv } from "../common/csv";
+import { AuditService, type AuditActor } from "../common/audit/audit.service";
 
 @Injectable()
 export class InvoicesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly pdfService: PdfService,
+    private readonly audit: AuditService,
   ) {}
 
   list(companyId: string) {
@@ -40,7 +43,7 @@ export class InvoicesService {
     const number = `INV-${String(invoiceCount + 1).padStart(4, "0")}`;
 
     const rateItems = await this.prisma.rateCatalogItem.findMany({
-      where: { id: { in: estimate.lines.map((l) => l.rateCatalogItemId) } },
+      where: { id: { in: estimate.lines.map((l) => l.rateCatalogItemId) }, companyId },
     });
     const rateItemsById = Object.fromEntries(rateItems.map((ri) => [ri.id, ri]));
 
@@ -70,16 +73,18 @@ export class InvoicesService {
     return invoice;
   }
 
-  async send(companyId: string, id: string) {
+  async send(companyId: string, actor: AuditActor, id: string) {
     const invoice = await this.findOrThrow(companyId, id);
     if (invoice.status !== "draft") {
       throw new BadRequestException("Only a draft invoice can be sent");
     }
-    return this.prisma.invoice.update({
+    const updated = await this.prisma.invoice.update({
       where: { id },
       data: { status: "sent" },
       include: { lines: true, client: true, project: true, payments: true, installments: true },
     });
+    this.audit.record(companyId, actor, "invoice.sent", "Invoice", id, `Sent invoice ${invoice.number} to ${invoice.client.name}`);
+    return updated;
   }
 
   async update(companyId: string, id: string, input: UpdateInvoiceInput) {
@@ -107,7 +112,7 @@ export class InvoicesService {
   }
 
   /** Records a payment and re-derives invoice status from the running balance. */
-  async recordPayment(companyId: string, id: string, input: RecordPaymentInput) {
+  async recordPayment(companyId: string, actor: AuditActor, id: string, input: RecordPaymentInput) {
     const invoice = await this.findOrThrow(companyId, id);
     if (invoice.status === "draft") {
       throw new BadRequestException("Send the invoice before recording a payment against it");
@@ -123,6 +128,16 @@ export class InvoicesService {
     const payments = await this.prisma.payment.findMany({ where: { invoiceId: id } });
     const paidTotal = payments.reduce((sum, p) => sum + Number(p.amount), 0);
     const newStatus = paidTotal >= Number(invoice.total) ? "paid" : "sent";
+
+    this.audit.record(
+      companyId,
+      actor,
+      "invoice.payment_recorded",
+      "Invoice",
+      id,
+      `Recorded a ${input.amount} payment (${input.method}) on invoice ${invoice.number}`,
+      { amount: input.amount, method: input.method },
+    );
 
     return this.prisma.invoice.update({
       where: { id },
@@ -192,7 +207,7 @@ export class InvoicesService {
       ];
     });
 
-    return [header, ...rows].map((row) => row.map(csvEscape).join(",")).join("\r\n");
+    return toCsv(header, rows);
   }
 
   private async findOrThrow(companyId: string, id: string) {
@@ -209,11 +224,4 @@ export class InvoicesService {
     if (!invoice) throw new NotFoundException("Invoice not found");
     return invoice;
   }
-}
-
-function csvEscape(value: string): string {
-  if (/[",\r\n]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
 }

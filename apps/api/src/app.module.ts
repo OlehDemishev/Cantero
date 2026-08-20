@@ -5,6 +5,7 @@ import { PrismaModule } from "./common/prisma/prisma.module";
 import { PdfModule } from "./common/pdf/pdf.module";
 import { QueueModule } from "./common/queue/queue.module";
 import { StorageModule } from "./common/storage/storage.module";
+import { AuditModule } from "./common/audit/audit.module";
 import { JwtAuthGuard } from "./common/guards/jwt-auth.guard";
 import { SubscriptionGuard } from "./common/guards/subscription.guard";
 import { RolesGuard } from "./common/guards/roles.guard";
@@ -21,6 +22,8 @@ import { TeamModule } from "./team/team.module";
 import { DocumentsModule } from "./documents/documents.module";
 import { ReportsModule } from "./reports/reports.module";
 import { NotificationsModule } from "./notifications/notifications.module";
+import { SearchModule } from "./search/search.module";
+import { PublicApiModule } from "./public-api/public-api.module";
 
 @Module({
   imports: [
@@ -29,6 +32,7 @@ import { NotificationsModule } from "./notifications/notifications.module";
     PdfModule,
     QueueModule,
     StorageModule,
+    AuditModule,
     AuthModule,
     BillingModule,
     MeModule,
@@ -42,6 +46,8 @@ import { NotificationsModule } from "./notifications/notifications.module";
     DocumentsModule,
     ReportsModule,
     NotificationsModule,
+    SearchModule,
+    PublicApiModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

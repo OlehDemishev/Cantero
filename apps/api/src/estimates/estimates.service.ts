@@ -9,6 +9,7 @@ import type {
 } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { PdfService } from "../common/pdf/pdf.service";
+import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import {
   calculateEstimate,
   type EstimateCalcOptions,
@@ -32,6 +33,7 @@ export class EstimatesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly pdfService: PdfService,
+    private readonly audit: AuditService,
   ) {}
 
   list(companyId: string) {
@@ -61,6 +63,9 @@ export class EstimatesService {
   }
 
   async create(companyId: string, input: CreateEstimateInput) {
+    const project = await this.prisma.project.findFirst({ where: { id: input.projectId, companyId } });
+    if (!project) throw new NotFoundException("Project not found");
+
     return this.prisma.estimate.create({
       data: { ...input, companyId },
       include: { lines: true, sections: true },
@@ -69,6 +74,11 @@ export class EstimatesService {
 
   async addLine(companyId: string, estimateId: string, input: CreateEstimateLineInput) {
     await this.findOrThrow(companyId, estimateId);
+    const rateItem = await this.prisma.rateCatalogItem.findFirst({
+      where: { id: input.rateCatalogItemId, companyId },
+    });
+    if (!rateItem) throw new NotFoundException("Rate catalog item not found");
+
     await this.prisma.estimateLine.create({
       data: {
         estimateId,
@@ -129,7 +139,7 @@ export class EstimatesService {
    * an EstimateRevision. Callable more than once: editing an approved estimate
    * and approving again creates the next revision instead of being blocked.
    */
-  async approve(companyId: string, estimateId: string) {
+  async approve(companyId: string, actor: AuditActor, estimateId: string) {
     const estimate = await this.recalculate(companyId, estimateId);
 
     const lineInputs = estimate.lines.map((l) => ({
@@ -146,7 +156,7 @@ export class EstimatesService {
 
     const rateItemIds = [...new Set(estimate.lines.map((l) => l.rateCatalogItemId))];
     const rateItemsInfo = await this.prisma.rateCatalogItem.findMany({
-      where: { id: { in: rateItemIds } },
+      where: { id: { in: rateItemIds }, companyId },
       select: { id: true, code: true, name: true, unit: true },
     });
     const rateItemInfoById = Object.fromEntries(rateItemsInfo.map((r) => [r.id, r]));
@@ -197,6 +207,7 @@ export class EstimatesService {
       }),
     ]);
 
+    this.audit.record(companyId, actor, "estimate.approved", "Estimate", estimateId, `Approved estimate "${estimate.name}"`);
     return this.findOrThrow(companyId, estimateId);
   }
 
@@ -213,12 +224,12 @@ export class EstimatesService {
   }
 
   /** Generates (or regenerates) the public review link and resets any prior client decision. */
-  async send(companyId: string, estimateId: string) {
+  async send(companyId: string, actor: AuditActor, estimateId: string) {
     const estimate = await this.findOrThrow(companyId, estimateId);
     if (estimate.status !== "approved") {
       throw new BadRequestException("Only an approved estimate can be sent to the client");
     }
-    return this.prisma.estimate.update({
+    const updated = await this.prisma.estimate.update({
       where: { id: estimateId },
       data: {
         clientAccessToken: randomBytes(24).toString("hex"),
@@ -228,6 +239,8 @@ export class EstimatesService {
         clientDecisionNote: null,
       },
     });
+    this.audit.record(companyId, actor, "estimate.sent", "Estimate", estimateId, `Sent estimate "${estimate.name}" to client for review`);
+    return updated;
   }
 
   /** Clones the current sections/lines into a sibling option (e.g. "Basic" vs "Premium") for the same project. */
@@ -323,6 +336,15 @@ export class EstimatesService {
         },
       });
     }
+
+    this.audit.record(
+      estimate.companyId,
+      { name: "Client" },
+      input.decision === "approved" ? "estimate.client_approved" : "estimate.client_rejected",
+      "Estimate",
+      estimate.id,
+      `Client ${input.decision} estimate "${estimate.name}"${input.note ? ` — "${input.note}"` : ""}`,
+    );
 
     return { clientDecision: updated.clientDecision };
   }
@@ -429,7 +451,7 @@ export class EstimatesService {
     );
 
     const materialIds = [...new Set(rateItems.flatMap((ri) => ri.materials.map((m) => m.materialCatalogItemId)))];
-    const materials = await this.prisma.materialCatalogItem.findMany({ where: { id: { in: materialIds } } });
+    const materials = await this.prisma.materialCatalogItem.findMany({ where: { id: { in: materialIds }, companyId } });
     const materialPricesById: Record<string, MaterialPrice> = Object.fromEntries(
       materials.map((m) => [m.id, { unitPrice: Number(m.defaultUnitPrice), unit: m.unit }]),
     );
@@ -441,7 +463,7 @@ export class EstimatesService {
     const estimate = await this.findOrThrow(companyId, estimateId);
     const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
     const rateItems = await this.prisma.rateCatalogItem.findMany({
-      where: { id: { in: estimate.lines.map((l) => l.rateCatalogItemId) } },
+      where: { id: { in: estimate.lines.map((l) => l.rateCatalogItemId) }, companyId },
     });
     const rateItemsById = Object.fromEntries(rateItems.map((ri) => [ri.id, ri]));
 

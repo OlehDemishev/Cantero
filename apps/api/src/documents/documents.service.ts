@@ -3,6 +3,7 @@ import type { DocumentCategory } from "@cantero/shared";
 import { documentCategorySchema } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { StorageService } from "../common/storage/storage.service";
+import { AuditService, type AuditActor } from "../common/audit/audit.service";
 
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024; // 25MB — contracts/photos, not video
 
@@ -32,6 +33,7 @@ export class DocumentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
+    private readonly audit: AuditService,
   ) {}
 
   /** Latest version per chain, excluding soft-deleted documents. */
@@ -138,9 +140,10 @@ export class DocumentsService {
     });
   }
 
-  async delete(companyId: string, id: string) {
-    await this.findOrThrow(companyId, id);
+  async delete(companyId: string, actor: AuditActor, id: string) {
+    const doc = await this.findOrThrow(companyId, id);
     await this.prisma.document.update({ where: { id }, data: { deletedAt: new Date() } });
+    this.audit.record(companyId, actor, "document.deleted", "Document", id, `Deleted document "${doc.name}"`);
     return { ok: true };
   }
 

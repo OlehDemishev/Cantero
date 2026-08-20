@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
 import IORedis from "ioredis";
 
 export const STOCK_ALERTS_QUEUE = "stock-alerts";
+export const PUSH_CHECK_QUEUE = "push-check";
 
 @Global()
 @Module({
@@ -17,6 +18,7 @@ export const STOCK_ALERTS_QUEUE = "stock-alerts";
       }),
     }),
     BullModule.registerQueue({ name: STOCK_ALERTS_QUEUE }),
+    BullModule.registerQueue({ name: PUSH_CHECK_QUEUE }),
   ],
   exports: [BullModule],
 })

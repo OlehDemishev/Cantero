@@ -27,6 +27,12 @@ export class PurchaseOrdersService {
     const supplier = await this.prisma.supplier.findFirst({ where: { id: input.supplierId, companyId } });
     if (!supplier) throw new NotFoundException("Supplier not found");
 
+    if (input.lines.length > 0) {
+      const materialIds = [...new Set(input.lines.map((l) => l.materialCatalogItemId))];
+      const owned = await this.prisma.materialCatalogItem.count({ where: { id: { in: materialIds }, companyId } });
+      if (owned !== materialIds.length) throw new BadRequestException("One or more materials do not belong to this company");
+    }
+
     return this.prisma.purchaseOrder.create({
       data: {
         companyId,

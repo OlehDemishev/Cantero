@@ -15,7 +15,9 @@ export default function BillingPendingPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (data?.subscriptionStatus === "active") router.replace("/dashboard");
+    if (data?.subscriptionStatus !== "active") return;
+    const needsOnboarding = data.user.role === "owner" && !data.company.onboardingCompletedAt;
+    router.replace(needsOnboarding ? "/onboarding" : "/dashboard");
   }, [data, router]);
 
   async function startCheckout() {

@@ -8,5 +8,6 @@ import { EstimatesService } from "./estimates.service";
 @Module({
   controllers: [RateCatalogController, EstimatesController, PublicEstimatesController],
   providers: [RateCatalogService, EstimatesService],
+  exports: [EstimatesService],
 })
 export class EstimatesModule {}

@@ -9,6 +9,7 @@ import { useMe } from "@/lib/use-me";
 import { useSidebar } from "@/context/SidebarContext";
 import { useTheme } from "@/context/ThemeContext";
 import { NotificationBell } from "@/components/notification-bell";
+import { GlobalSearch } from "@/components/global-search";
 import {
   ChevronDownIcon,
   ClientsIcon,
@@ -176,6 +177,10 @@ function AppHeader({ me }: { me: NonNullable<ReturnType<typeof useMe>["data"]> }
           {isMobileOpen ? <CloseIcon /> : <MenuIcon />}
         </button>
         <span className="hidden text-sm font-medium text-gray-500 dark:text-gray-400 sm:block">{me.company.name}</span>
+      </div>
+
+      <div className="hidden flex-1 justify-center px-4 md:flex">
+        <GlobalSearch />
       </div>
 
       <div className="flex items-center gap-2">

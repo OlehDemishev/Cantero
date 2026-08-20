@@ -7,6 +7,7 @@ import {
   type UpdateWorkerInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
+import { Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { WorkersService } from "./workers.service";
 
@@ -34,12 +35,13 @@ export class WorkersController {
     return this.service.create(user.companyId, body);
   }
 
+  @Roles("owner", "admin")
   @Patch(":id")
   update(
     @CurrentUser() user: AuthUser,
     @Param("id") id: string,
     @Body(new ZodValidationPipe(updateWorkerSchema)) body: UpdateWorkerInput,
   ) {
-    return this.service.update(user.companyId, id, body);
+    return this.service.update(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 }

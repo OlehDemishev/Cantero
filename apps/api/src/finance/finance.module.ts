@@ -19,5 +19,6 @@ import { CashFlowService } from "./cash-flow.service";
     CashFlowController,
   ],
   providers: [InvoicesService, BudgetService, SubcontractorsService, SubcontractorCostsService, CashFlowService],
+  exports: [InvoicesService],
 })
 export class FinanceModule {}

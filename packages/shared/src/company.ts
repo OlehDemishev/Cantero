@@ -55,3 +55,8 @@ export const updateSeatsSchema = z.object({
   seats: z.number().int().min(1).max(500),
 });
 export type UpdateSeatsInput = z.infer<typeof updateSeatsSchema>;
+
+export const createApiKeySchema = z.object({
+  name: z.string().min(1).max(80),
+});
+export type CreateApiKeyInput = z.infer<typeof createApiKeySchema>;

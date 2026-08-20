@@ -21,12 +21,12 @@ export class MembersController {
     @Param("userId") userId: string,
     @Body(new ZodValidationPipe(updateMemberRoleSchema)) body: UpdateMemberRoleInput,
   ) {
-    return this.service.updateRole(user.companyId, userId, body);
+    return this.service.updateRole(user.companyId, { userId: user.userId, name: user.name }, userId, body);
   }
 
   @Roles("owner", "admin")
   @Delete(":userId")
   remove(@CurrentUser() user: AuthUser, @Param("userId") userId: string) {
-    return this.service.remove(user.companyId, userId);
+    return this.service.remove(user.companyId, { userId: user.userId, name: user.name }, userId);
   }
 }

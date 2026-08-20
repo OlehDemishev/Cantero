@@ -69,7 +69,7 @@ export class EstimatesController {
 
   @Post(":id/approve")
   approve(@CurrentUser() user: AuthUser, @Param("id") id: string) {
-    return this.service.approve(user.companyId, id);
+    return this.service.approve(user.companyId, { userId: user.userId, name: user.name }, id);
   }
 
   @Post(":id/save-as-template")
@@ -97,7 +97,7 @@ export class EstimatesController {
 
   @Post(":id/send")
   send(@CurrentUser() user: AuthUser, @Param("id") id: string) {
-    return this.service.send(user.companyId, id);
+    return this.service.send(user.companyId, { userId: user.userId, name: user.name }, id);
   }
 
   @Post(":id/create-variant")

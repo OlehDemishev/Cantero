@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import type { CreateWorkerInput, UpdateWorkerInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { AuditService, type AuditActor } from "../common/audit/audit.service";
 
 @Injectable()
 export class WorkersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   list(companyId: string) {
     return this.prisma.worker.findMany({ where: { companyId }, orderBy: { name: "asc" } });
@@ -20,9 +24,32 @@ export class WorkersService {
     return this.prisma.worker.create({ data: { ...input, companyId } });
   }
 
-  async update(companyId: string, id: string, input: UpdateWorkerInput) {
-    await this.get(companyId, id);
-    return this.prisma.worker.update({ where: { id }, data: input });
+  async update(companyId: string, actor: AuditActor, id: string, input: UpdateWorkerInput) {
+    const before = await this.get(companyId, id);
+    const worker = await this.prisma.worker.update({ where: { id }, data: input });
+
+    if (input.hourlyCost !== undefined && Number(before.hourlyCost) !== Number(input.hourlyCost)) {
+      this.audit.record(
+        companyId,
+        actor,
+        "worker.rate_changed",
+        "Worker",
+        id,
+        `Changed hourly rate for ${worker.name} from ${before.hourlyCost ?? "—"} to ${input.hourlyCost ?? "—"}`,
+        { before: before.hourlyCost, after: input.hourlyCost },
+      );
+    }
+    if (input.active !== undefined && before.active !== input.active) {
+      this.audit.record(
+        companyId,
+        actor,
+        input.active ? "worker.reactivated" : "worker.deactivated",
+        "Worker",
+        id,
+        `${input.active ? "Reactivated" : "Deactivated"} worker ${worker.name}`,
+      );
+    }
+    return worker;
   }
 
   /** Cumulative hours/cost for this worker, broken down by project — derived from TimeEntry. */

@@ -11,6 +11,7 @@ import {
   type UpdateInvoiceInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
+import { Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { InvoicesService } from "./invoices.service";
 
@@ -55,11 +56,13 @@ export class InvoicesController {
     return this.service.update(user.companyId, id, body);
   }
 
+  @Roles("owner", "admin", "accountant")
   @Post(":id/send")
   send(@CurrentUser() user: AuthUser, @Param("id") id: string) {
-    return this.service.send(user.companyId, id);
+    return this.service.send(user.companyId, { userId: user.userId, name: user.name }, id);
   }
 
+  @Roles("owner", "admin", "accountant")
   @Post(":id/installments")
   addInstallment(
     @CurrentUser() user: AuthUser,
@@ -69,13 +72,14 @@ export class InvoicesController {
     return this.service.addInstallment(user.companyId, id, body);
   }
 
+  @Roles("owner", "admin", "accountant")
   @Post(":id/payments")
   recordPayment(
     @CurrentUser() user: AuthUser,
     @Param("id") id: string,
     @Body(new ZodValidationPipe(recordPaymentSchema)) body: RecordPaymentInput,
   ) {
-    return this.service.recordPayment(user.companyId, id, body);
+    return this.service.recordPayment(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
   @Get(":id/pdf")

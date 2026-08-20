@@ -42,6 +42,11 @@ export class StockService {
     });
     if (!material) throw new NotFoundException("Material not found");
 
+    if (input.projectId) {
+      const project = await this.prisma.project.findFirst({ where: { id: input.projectId, companyId } });
+      if (!project) throw new NotFoundException("Project not found");
+    }
+
     const delta = DECREASING_TYPES.has(input.type) ? -input.quantity : input.quantity;
 
     const [movement] = await this.prisma.$transaction([
