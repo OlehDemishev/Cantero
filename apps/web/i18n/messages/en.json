@@ -38,7 +38,8 @@
     "team": "Team",
     "documents": "Documents",
     "settings": "Settings",
-    "reports": "Reports"
+    "reports": "Reports",
+    "portfolio": "Portfolio"
   },
   "auth": {
     "signupTitle": "Create your Cantero account",
@@ -563,7 +564,16 @@
     "done": "Done",
     "milestones": "Milestones",
     "newMilestone": "New milestone",
-    "noDatedTasks": "Add start/due dates to tasks or milestones to see them on the timeline."
+    "noDatedTasks": "Add start/due dates to tasks or milestones to see them on the timeline.",
+    "critical": "Critical",
+    "addDependency": "+ Dependency",
+    "dependsOn": "Depends on",
+    "selectPredecessor": "Select task…",
+    "depType_finish_to_start": "Finish→Start",
+    "depType_start_to_start": "Start→Start",
+    "depType_finish_to_finish": "Finish→Finish",
+    "depType_start_to_finish": "Start→Finish",
+    "criticalPathLegend": "Critical path — delaying these delays the finish"
   },
   "purchaseOrders": {
     "title": "Purchase orders",
@@ -830,5 +840,32 @@
     "submitForReview": "Submit for review",
     "submitReview": "Submit decision",
     "createRevision": "Create revision"
+  },
+  "portfolio": {
+    "title": "Portfolio",
+    "subtitle": "Budget health and open risk items across every project, in one view.",
+    "noProjects": "No projects yet.",
+    "projectsAtRisk": "Projects at risk",
+    "varianceTotal": "Budget variance",
+    "openRfiTotal": "Open RFIs",
+    "openPunchListTotal": "Open punch items",
+    "pendingSubmittalTotal": "Pending submittals",
+    "incidentTotal": "Safety incidents",
+    "overdueTaskTotal": "Overdue tasks",
+    "projects": "Projects",
+    "project": "Project",
+    "client": "Client",
+    "budget": "Budget",
+    "actual": "Actual",
+    "variance": "Variance",
+    "openRfis": "Open RFIs",
+    "openPunchList": "Open punch",
+    "pendingSubmittals": "Pending submittals",
+    "incidents": "Incidents",
+    "overdueTasks": "Overdue tasks",
+    "critical": "Critical tasks",
+    "status": "Status",
+    "atRisk": "At risk",
+    "onTrack": "On track"
   }
 }

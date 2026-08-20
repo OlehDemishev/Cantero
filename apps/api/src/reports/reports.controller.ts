@@ -26,4 +26,9 @@ export class ReportsController {
   invoiceAging(@CurrentUser() user: AuthUser) {
     return this.service.invoiceAging(user.companyId);
   }
+
+  @Get("portfolio")
+  portfolio(@CurrentUser() user: AuthUser) {
+    return this.service.portfolio(user.companyId);
+  }
 }

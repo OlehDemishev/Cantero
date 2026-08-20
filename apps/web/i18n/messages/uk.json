@@ -38,7 +38,8 @@
     "team": "Команда",
     "documents": "Документи",
     "settings": "Налаштування",
-    "reports": "Звіти"
+    "reports": "Звіти",
+    "portfolio": "Портфоліо"
   },
   "auth": {
     "signupTitle": "Створіть обліковий запис Cantero",
@@ -563,7 +564,16 @@
     "done": "Готово",
     "milestones": "Ключові етапи",
     "newMilestone": "Новий етап",
-    "noDatedTasks": "Додайте дати початку/терміну до завдань або етапів, щоб побачити їх на таймлайні."
+    "noDatedTasks": "Додайте дати початку/терміну до завдань або етапів, щоб побачити їх на таймлайні.",
+    "critical": "Критичний",
+    "addDependency": "+ Залежність",
+    "dependsOn": "Залежить від",
+    "selectPredecessor": "Виберіть задачу…",
+    "depType_finish_to_start": "Кінець→Початок",
+    "depType_start_to_start": "Початок→Початок",
+    "depType_finish_to_finish": "Кінець→Кінець",
+    "depType_start_to_finish": "Початок→Кінець",
+    "criticalPathLegend": "Критичний шлях — затримка тут зсуває завершення"
   },
   "purchaseOrders": {
     "title": "Замовлення на закупівлю",
@@ -830,5 +840,32 @@
     "submitForReview": "Подати на розгляд",
     "submitReview": "Надіслати рішення",
     "createRevision": "Створити ревізію"
+  },
+  "portfolio": {
+    "title": "Портфоліо",
+    "subtitle": "Стан бюджету та відкриті ризики по всіх проєктах в одному вигляді.",
+    "noProjects": "Поки немає проєктів.",
+    "projectsAtRisk": "Проєкти з ризиком",
+    "varianceTotal": "Відхилення бюджету",
+    "openRfiTotal": "Відкриті запити",
+    "openPunchListTotal": "Відкриті дефекти",
+    "pendingSubmittalTotal": "Очікують погодження",
+    "incidentTotal": "Інциденти з ТБ",
+    "overdueTaskTotal": "Прострочені задачі",
+    "projects": "Проєкти",
+    "project": "Проєкт",
+    "client": "Клієнт",
+    "budget": "Бюджет",
+    "actual": "Факт",
+    "variance": "Відхилення",
+    "openRfis": "Відкриті запити",
+    "openPunchList": "Відкриті дефекти",
+    "pendingSubmittals": "Очікують погодження",
+    "incidents": "Інциденти",
+    "overdueTasks": "Прострочені",
+    "critical": "Критичні задачі",
+    "status": "Статус",
+    "atRisk": "Ризик",
+    "onTrack": "За планом"
   }
 }

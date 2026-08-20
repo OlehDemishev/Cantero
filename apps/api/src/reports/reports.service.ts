@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { computeCriticalPath, type DependencyForCpm, type TaskForCpm } from "../projects/critical-path";
 
 /** Company-wide overview spanning every module — the "everything in one place" story for the dashboard. */
 @Injectable()
@@ -234,6 +235,139 @@ export class ReportsService {
       },
       invoices: outstandingInvoices.sort((a, b) => (b.daysOverdue ?? -1) - (a.daysOverdue ?? -1)),
     };
+  }
+
+  /**
+   * Leadership single-glance rollup across every project: budget health plus the operational
+   * risk signals scattered across the Phase 36-41 modules (open RFIs, unresolved punch items,
+   * submittals awaiting action, logged incidents, and anything overdue on the critical path).
+   * "At risk" is deliberately narrow — an incomplete critical-path task past its due date is the
+   * one signal that's unambiguously a schedule problem, not just busy.
+   */
+  async portfolio(companyId: string) {
+    const now = new Date();
+    const projects = await this.prisma.project.findMany({
+      where: { companyId },
+      include: {
+        client: { select: { name: true } },
+        estimates: { where: { status: "approved" } },
+        stockMovements: { where: { type: { in: ["issue", "write_off"] } }, include: { materialCatalogItem: true } },
+        timeEntries: { include: { worker: true } },
+        subcontractorCosts: true,
+        tasks: true,
+        rfis: true,
+        punchListItems: true,
+        submittals: true,
+        incidentReports: true,
+      },
+      orderBy: { name: "asc" },
+    });
+
+    const dependencyEdges = await this.prisma.taskDependency.findMany({
+      where: { predecessor: { project: { companyId } } },
+      select: { predecessorId: true, successorId: true, type: true, lagDays: true, predecessor: { select: { projectId: true } } },
+    });
+    const dependenciesByProject = new Map<string, DependencyForCpm[]>();
+    for (const edge of dependencyEdges) {
+      const list = dependenciesByProject.get(edge.predecessor.projectId) ?? [];
+      list.push({ predecessorId: edge.predecessorId, successorId: edge.successorId, type: edge.type, lagDays: edge.lagDays });
+      dependenciesByProject.set(edge.predecessor.projectId, list);
+    }
+
+    const rows = projects.map((project) => {
+      const budgetTotal = project.estimates.reduce((sum, e) => sum + Number(e.grandTotal), 0);
+      const materialsCostActual = project.stockMovements.reduce(
+        (sum, m) => sum + Number(m.quantity) * Number(m.materialCatalogItem.defaultUnitPrice),
+        0,
+      );
+      const laborCostActual = project.timeEntries.reduce((sum, entry) => {
+        const rate =
+          entry.hourlyCostSnapshot !== null
+            ? Number(entry.hourlyCostSnapshot)
+            : entry.worker.hourlyCost !== null
+              ? Number(entry.worker.hourlyCost)
+              : 0;
+        return sum + Number(entry.hours) * rate;
+      }, 0);
+      const subcontractorCostActual = project.subcontractorCosts.reduce((sum, c) => sum + Number(c.amount), 0);
+      const actualTotal = materialsCostActual + laborCostActual + subcontractorCostActual;
+
+      // Only the latest revision per submittal chain counts — a superseded draft/rejected
+      // revision isn't itself pending anything.
+      const latestSubmittalByChain = new Map<string, (typeof project.submittals)[number]>();
+      for (const s of project.submittals) {
+        const chainKey = s.rootSubmittalId ?? s.id;
+        const existing = latestSubmittalByChain.get(chainKey);
+        if (!existing || s.revision > existing.revision) latestSubmittalByChain.set(chainKey, s);
+      }
+      const pendingSubmittalCount = Array.from(latestSubmittalByChain.values()).filter(
+        (s) => s.status !== "approved" && s.status !== "approved_as_noted",
+      ).length;
+
+      const datedTasks = project.tasks.filter((t) => t.startDate && t.dueDate);
+      const cpmResults =
+        datedTasks.length > 0
+          ? computeCriticalPath(
+              datedTasks.map((t): TaskForCpm => ({ id: t.id, startDate: t.startDate!, dueDate: t.dueDate! })),
+              dependenciesByProject.get(project.id) ?? [],
+            )
+          : [];
+      const criticalIds = new Set(cpmResults.filter((r) => r.critical).map((r) => r.id));
+      const overdueCriticalTaskCount = project.tasks.filter(
+        (t) => criticalIds.has(t.id) && t.status !== "done" && t.dueDate! < now,
+      ).length;
+      const overdueTaskCount = project.tasks.filter((t) => t.dueDate && t.dueDate < now && t.status !== "done").length;
+
+      const openRfiCount = project.rfis.filter((r) => r.status !== "closed").length;
+      const openPunchListCount = project.punchListItems.filter((p) => p.status !== "verified").length;
+      const incidentCount = project.incidentReports.length;
+
+      return {
+        id: project.id,
+        name: project.name,
+        clientName: project.client?.name ?? null,
+        budgetTotal: round2(budgetTotal),
+        actualTotal: round2(actualTotal),
+        variance: round2(budgetTotal - actualTotal),
+        openRfiCount,
+        openPunchListCount,
+        pendingSubmittalCount,
+        incidentCount,
+        overdueTaskCount,
+        criticalTaskCount: criticalIds.size,
+        overdueCriticalTaskCount,
+        atRisk: overdueCriticalTaskCount > 0,
+      };
+    });
+
+    const summary = rows.reduce(
+      (acc, r) => ({
+        projectsTotal: acc.projectsTotal + 1,
+        projectsAtRisk: acc.projectsAtRisk + (r.atRisk ? 1 : 0),
+        budgetTotal: round2(acc.budgetTotal + r.budgetTotal),
+        actualTotal: round2(acc.actualTotal + r.actualTotal),
+        varianceTotal: round2(acc.varianceTotal + r.variance),
+        openRfiTotal: acc.openRfiTotal + r.openRfiCount,
+        openPunchListTotal: acc.openPunchListTotal + r.openPunchListCount,
+        pendingSubmittalTotal: acc.pendingSubmittalTotal + r.pendingSubmittalCount,
+        incidentTotal: acc.incidentTotal + r.incidentCount,
+        overdueTaskTotal: acc.overdueTaskTotal + r.overdueTaskCount,
+      }),
+      {
+        projectsTotal: 0,
+        projectsAtRisk: 0,
+        budgetTotal: 0,
+        actualTotal: 0,
+        varianceTotal: 0,
+        openRfiTotal: 0,
+        openPunchListTotal: 0,
+        pendingSubmittalTotal: 0,
+        incidentTotal: 0,
+        overdueTaskTotal: 0,
+      },
+    );
+
+    return { projects: rows, summary };
   }
 }
 

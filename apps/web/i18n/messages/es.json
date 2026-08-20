@@ -38,7 +38,8 @@
     "team": "Equipo",
     "documents": "Documentos",
     "settings": "Ajustes",
-    "reports": "Informes"
+    "reports": "Informes",
+    "portfolio": "Portafolio"
   },
   "auth": {
     "signupTitle": "Crea tu cuenta de Cantero",
@@ -563,7 +564,16 @@
     "done": "Hecha",
     "milestones": "Hitos",
     "newMilestone": "Nuevo hito",
-    "noDatedTasks": "Añade fechas de inicio/fin a tareas o hitos para verlos en el cronograma."
+    "noDatedTasks": "Añade fechas de inicio/fin a tareas o hitos para verlos en el cronograma.",
+    "critical": "Crítica",
+    "addDependency": "+ Dependencia",
+    "dependsOn": "Depende de",
+    "selectPredecessor": "Seleccionar tarea…",
+    "depType_finish_to_start": "Fin→Inicio",
+    "depType_start_to_start": "Inicio→Inicio",
+    "depType_finish_to_finish": "Fin→Fin",
+    "depType_start_to_finish": "Inicio→Fin",
+    "criticalPathLegend": "Ruta crítica — retrasar esto retrasa la finalización"
   },
   "purchaseOrders": {
     "title": "Pedidos de compra",
@@ -830,5 +840,32 @@
     "submitForReview": "Enviar para revisión",
     "submitReview": "Enviar decisión",
     "createRevision": "Crear revisión"
+  },
+  "portfolio": {
+    "title": "Portafolio",
+    "subtitle": "Estado del presupuesto y puntos de riesgo abiertos de todos los proyectos, en una vista.",
+    "noProjects": "Aún no hay proyectos.",
+    "projectsAtRisk": "Proyectos en riesgo",
+    "varianceTotal": "Desviación de presupuesto",
+    "openRfiTotal": "Solicitudes abiertas",
+    "openPunchListTotal": "Defectos abiertos",
+    "pendingSubmittalTotal": "Aprobaciones pendientes",
+    "incidentTotal": "Incidentes de seguridad",
+    "overdueTaskTotal": "Tareas atrasadas",
+    "projects": "Proyectos",
+    "project": "Proyecto",
+    "client": "Cliente",
+    "budget": "Presupuesto",
+    "actual": "Real",
+    "variance": "Desviación",
+    "openRfis": "Solicitudes abiertas",
+    "openPunchList": "Defectos abiertos",
+    "pendingSubmittals": "Aprobaciones pendientes",
+    "incidents": "Incidentes",
+    "overdueTasks": "Tareas atrasadas",
+    "critical": "Tareas críticas",
+    "status": "Estado",
+    "atRisk": "En riesgo",
+    "onTrack": "En curso"
   }
 }

@@ -38,7 +38,8 @@
     "team": "Team",
     "documents": "Dokumente",
     "settings": "Einstellungen",
-    "reports": "Berichte"
+    "reports": "Berichte",
+    "portfolio": "Portfolio"
   },
   "auth": {
     "signupTitle": "Cantero-Konto erstellen",
@@ -563,7 +564,16 @@
     "done": "Erledigt",
     "milestones": "Meilensteine",
     "newMilestone": "Neuer Meilenstein",
-    "noDatedTasks": "Fügen Sie Start-/Fälligkeitsdaten zu Aufgaben oder Meilensteinen hinzu, um sie im Zeitplan zu sehen."
+    "noDatedTasks": "Fügen Sie Start-/Fälligkeitsdaten zu Aufgaben oder Meilensteinen hinzu, um sie im Zeitplan zu sehen.",
+    "critical": "Kritisch",
+    "addDependency": "+ Abhängigkeit",
+    "dependsOn": "Abhängig von",
+    "selectPredecessor": "Aufgabe wählen…",
+    "depType_finish_to_start": "Ende→Anfang",
+    "depType_start_to_start": "Anfang→Anfang",
+    "depType_finish_to_finish": "Ende→Ende",
+    "depType_start_to_finish": "Anfang→Ende",
+    "criticalPathLegend": "Kritischer Pfad — eine Verzögerung hier verschiebt den Endtermin"
   },
   "purchaseOrders": {
     "title": "Bestellungen",
@@ -830,5 +840,32 @@
     "submitForReview": "Zur Prüfung einreichen",
     "submitReview": "Entscheidung übermitteln",
     "createRevision": "Revision erstellen"
+  },
+  "portfolio": {
+    "title": "Portfolio",
+    "subtitle": "Budgetstatus und offene Risikopunkte aller Projekte auf einen Blick.",
+    "noProjects": "Noch keine Projekte.",
+    "projectsAtRisk": "Projekte mit Risiko",
+    "varianceTotal": "Budgetabweichung",
+    "openRfiTotal": "Offene Anfragen",
+    "openPunchListTotal": "Offene Mängel",
+    "pendingSubmittalTotal": "Ausstehende Freigaben",
+    "incidentTotal": "Sicherheitsvorfälle",
+    "overdueTaskTotal": "Überfällige Aufgaben",
+    "projects": "Projekte",
+    "project": "Projekt",
+    "client": "Kunde",
+    "budget": "Budget",
+    "actual": "Ist",
+    "variance": "Abweichung",
+    "openRfis": "Offene Anfragen",
+    "openPunchList": "Offene Mängel",
+    "pendingSubmittals": "Ausstehende Freigaben",
+    "incidents": "Vorfälle",
+    "overdueTasks": "Überfällig",
+    "critical": "Kritische Aufgaben",
+    "status": "Status",
+    "atRisk": "Risiko",
+    "onTrack": "Im Plan"
   }
 }

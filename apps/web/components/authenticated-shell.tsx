@@ -21,6 +21,7 @@ import {
   LogoutIcon,
   MenuIcon,
   MoonIcon,
+  PortfolioIcon,
   ProjectsIcon,
   PurchaseOrdersIcon,
   RateCatalogIcon,
@@ -35,6 +36,7 @@ import {
 
 const NAV_ITEMS = [
   { href: "/dashboard", key: "dashboard", icon: DashboardIcon },
+  { href: "/portfolio", key: "portfolio", icon: PortfolioIcon },
   { href: "/projects", key: "projects", icon: ProjectsIcon },
   { href: "/clients", key: "clients", icon: ClientsIcon },
   { href: "/rate-catalog", key: "rateCatalog", icon: RateCatalogIcon },

@@ -19,3 +19,4 @@ export * from "./punch-list";
 export * from "./rfi";
 export * from "./safety";
 export * from "./submittals";
+export * from "./task-dependencies";

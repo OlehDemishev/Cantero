@@ -854,9 +854,37 @@ model Task {
   project      Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
   estimateLine EstimateLine? @relation(fields: [estimateLineId], references: [id], onDelete: SetNull)
   timeEntries  TimeEntry[]
+  /// Dependencies where this task is the successor (i.e. what this task waits on).
+  predecessorLinks TaskDependency[] @relation("TaskSuccessor")
+  /// Dependencies where this task is the predecessor (i.e. what waits on this task).
+  successorLinks   TaskDependency[] @relation("TaskPredecessor")
 
   @@index([projectId])
   @@map("tasks")
+}
+
+enum TaskDependencyType {
+  finish_to_start
+  start_to_start
+  finish_to_finish
+  start_to_finish
+}
+
+/// A precedence link between two tasks in the same project — predecessor must satisfy the
+/// constraint (offset by lagDays) before the successor can proceed. Powers auto date-shifting
+/// and critical-path highlighting on the Gantt.
+model TaskDependency {
+  id            String             @id @default(uuid())
+  predecessorId String
+  successorId   String
+  type          TaskDependencyType @default(finish_to_start)
+  lagDays       Int                @default(0)
+
+  predecessor Task @relation("TaskPredecessor", fields: [predecessorId], references: [id], onDelete: Cascade)
+  successor   Task @relation("TaskSuccessor", fields: [successorId], references: [id], onDelete: Cascade)
+
+  @@unique([predecessorId, successorId])
+  @@map("task_dependencies")
 }
 
 model Milestone {

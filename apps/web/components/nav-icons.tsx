@@ -116,6 +116,16 @@ export function ReportsIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function PortfolioIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M10 2 2.5 6 10 10l7.5-4L10 2Z" />
+      <path d="M2.5 10 10 14l7.5-4" />
+      <path d="M2.5 14 10 18l7.5-4" />
+    </Icon>
+  );
+}
+
 export function DocumentsIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <Icon {...props}>

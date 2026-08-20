@@ -38,7 +38,8 @@
     "team": "Zespół",
     "documents": "Dokumenty",
     "settings": "Ustawienia",
-    "reports": "Raporty"
+    "reports": "Raporty",
+    "portfolio": "Portfolio"
   },
   "auth": {
     "signupTitle": "Utwórz konto Cantero",
@@ -563,7 +564,16 @@
     "done": "Zrobione",
     "milestones": "Kamienie milowe",
     "newMilestone": "Nowy kamień milowy",
-    "noDatedTasks": "Dodaj daty rozpoczęcia/terminu do zadań lub kamieni milowych, aby zobaczyć je na osi czasu."
+    "noDatedTasks": "Dodaj daty rozpoczęcia/terminu do zadań lub kamieni milowych, aby zobaczyć je na osi czasu.",
+    "critical": "Krytyczne",
+    "addDependency": "+ Zależność",
+    "dependsOn": "Zależy od",
+    "selectPredecessor": "Wybierz zadanie…",
+    "depType_finish_to_start": "Koniec→Początek",
+    "depType_start_to_start": "Początek→Początek",
+    "depType_finish_to_finish": "Koniec→Koniec",
+    "depType_start_to_finish": "Początek→Koniec",
+    "criticalPathLegend": "Ścieżka krytyczna — opóźnienie tutaj opóźnia zakończenie"
   },
   "purchaseOrders": {
     "title": "Zamówienia zakupu",
@@ -830,5 +840,32 @@
     "submitForReview": "Zgłoś do weryfikacji",
     "submitReview": "Zatwierdź decyzję",
     "createRevision": "Utwórz rewizję"
+  },
+  "portfolio": {
+    "title": "Portfolio",
+    "subtitle": "Stan budżetu i otwarte ryzyka we wszystkich projektach w jednym miejscu.",
+    "noProjects": "Brak projektów.",
+    "projectsAtRisk": "Projekty zagrożone",
+    "varianceTotal": "Odchylenie budżetu",
+    "openRfiTotal": "Otwarte zapytania",
+    "openPunchListTotal": "Otwarte usterki",
+    "pendingSubmittalTotal": "Oczekujące zatwierdzenia",
+    "incidentTotal": "Zdarzenia BHP",
+    "overdueTaskTotal": "Zaległe zadania",
+    "projects": "Projekty",
+    "project": "Projekt",
+    "client": "Klient",
+    "budget": "Budżet",
+    "actual": "Rzeczywiste",
+    "variance": "Odchylenie",
+    "openRfis": "Otwarte zapytania",
+    "openPunchList": "Otwarte usterki",
+    "pendingSubmittals": "Oczekujące zatwierdzenia",
+    "incidents": "Zdarzenia",
+    "overdueTasks": "Zaległe zadania",
+    "critical": "Zadania krytyczne",
+    "status": "Status",
+    "atRisk": "Zagrożony",
+    "onTrack": "Zgodnie z planem"
   }
 }

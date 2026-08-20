@@ -1,6 +1,12 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import type { CreateTaskInput, UpdateTaskInput } from "@cantero/shared";
+import type { CreateTaskDependencyInput, CreateTaskInput, UpdateTaskInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { computeCriticalPath, minSuccessorStart, type DependencyForCpm, type TaskForCpm } from "./critical-path";
+
+const INCLUDE_DEPENDENCIES = {
+  estimateLine: { include: { rateCatalogItem: true } },
+  predecessorLinks: { include: { predecessor: { select: { id: true, name: true } } } },
+} as const;
 
 @Injectable()
 export class TasksService {
@@ -10,7 +16,7 @@ export class TasksService {
     await this.assertProject(companyId, projectId);
     return this.prisma.task.findMany({
       where: { projectId },
-      include: { estimateLine: { include: { rateCatalogItem: true } } },
+      include: INCLUDE_DEPENDENCIES,
       orderBy: [{ sortOrder: "asc" }, { startDate: "asc" }],
     });
   }
@@ -39,7 +45,7 @@ export class TasksService {
         dueDate: input.dueDate ? new Date(input.dueDate) : undefined,
         sortOrder: (maxSort._max.sortOrder ?? 0) + 1,
       },
-      include: { estimateLine: { include: { rateCatalogItem: true } } },
+      include: INCLUDE_DEPENDENCIES,
     });
   }
 
@@ -49,7 +55,7 @@ export class TasksService {
     });
     if (!task) throw new NotFoundException("Task not found");
 
-    return this.prisma.task.update({
+    const updated = await this.prisma.task.update({
       where: { id: taskId },
       data: {
         status: input.status,
@@ -57,8 +63,115 @@ export class TasksService {
         dueDate: input.dueDate ? new Date(input.dueDate) : undefined,
         sortOrder: input.sortOrder,
       },
-      include: { estimateLine: { include: { rateCatalogItem: true } } },
+      include: INCLUDE_DEPENDENCIES,
     });
+
+    if (input.startDate || input.dueDate) await this.cascadeShift(taskId);
+    return updated;
+  }
+
+  /** All dependency edges among a project's tasks, restricted to those with both dates set, run through the CPM calculator. */
+  async getCriticalPath(companyId: string, projectId: string) {
+    await this.assertProject(companyId, projectId);
+
+    const tasks = await this.prisma.task.findMany({ where: { projectId, startDate: { not: null }, dueDate: { not: null } } });
+    const taskIds = tasks.map((t) => t.id);
+    const dependencies = await this.prisma.taskDependency.findMany({
+      where: { predecessorId: { in: taskIds }, successorId: { in: taskIds } },
+    });
+
+    const forCpm: TaskForCpm[] = tasks.map((t) => ({ id: t.id, startDate: t.startDate!, dueDate: t.dueDate! }));
+    const depsForCpm: DependencyForCpm[] = dependencies.map((d) => ({
+      predecessorId: d.predecessorId,
+      successorId: d.successorId,
+      type: d.type,
+      lagDays: d.lagDays,
+    }));
+    return computeCriticalPath(forCpm, depsForCpm);
+  }
+
+  async addDependency(companyId: string, successorId: string, input: CreateTaskDependencyInput) {
+    const successor = await this.prisma.task.findFirst({ where: { id: successorId, project: { companyId } } });
+    if (!successor) throw new NotFoundException("Task not found");
+    if (input.predecessorId === successorId) throw new BadRequestException("A task cannot depend on itself");
+
+    const predecessor = await this.prisma.task.findFirst({ where: { id: input.predecessorId, projectId: successor.projectId } });
+    if (!predecessor) throw new BadRequestException("Predecessor task does not belong to the same project");
+
+    if (await this.wouldCreateCycle(input.predecessorId, successorId)) {
+      throw new BadRequestException("This dependency would create a circular chain");
+    }
+
+    const existing = await this.prisma.taskDependency.findUnique({
+      where: { predecessorId_successorId: { predecessorId: input.predecessorId, successorId } },
+    });
+    if (existing) throw new BadRequestException("This dependency already exists");
+
+    const dependency = await this.prisma.taskDependency.create({
+      data: { predecessorId: input.predecessorId, successorId, type: input.type, lagDays: input.lagDays },
+    });
+
+    await this.cascadeShift(input.predecessorId);
+    return dependency;
+  }
+
+  async removeDependency(companyId: string, dependencyId: string) {
+    const dependency = await this.prisma.taskDependency.findFirst({
+      where: { id: dependencyId, successor: { project: { companyId } } },
+    });
+    if (!dependency) throw new NotFoundException("Dependency not found");
+    await this.prisma.taskDependency.delete({ where: { id: dependencyId } });
+  }
+
+  /**
+   * Forward-only cascade: when a task's dates move, any successor whose dependency constraint is
+   * now violated gets pushed out by the same delta (its own duration is preserved), then the
+   * cascade continues into that successor's own successors. Never pulls a successor earlier —
+   * this models "delays ripple forward," not full re-optimization.
+   */
+  private async cascadeShift(taskId: string, visited = new Set<string>()): Promise<void> {
+    if (visited.has(taskId)) return;
+    visited.add(taskId);
+
+    const task = await this.prisma.task.findUnique({ where: { id: taskId } });
+    if (!task || !task.startDate || !task.dueDate) return;
+
+    const edges = await this.prisma.taskDependency.findMany({ where: { predecessorId: taskId }, include: { successor: true } });
+    for (const edge of edges) {
+      const succ = edge.successor;
+      if (!succ.startDate || !succ.dueDate) continue;
+
+      const requiredStart = minSuccessorStart(
+        { id: task.id, startDate: task.startDate, dueDate: task.dueDate },
+        { id: succ.id, startDate: succ.startDate, dueDate: succ.dueDate },
+        edge.type,
+        edge.lagDays,
+      );
+      if (requiredStart > succ.startDate) {
+        const deltaMs = requiredStart.getTime() - succ.startDate.getTime();
+        const newDueDate = new Date(succ.dueDate.getTime() + deltaMs);
+        await this.prisma.task.update({ where: { id: succ.id }, data: { startDate: requiredStart, dueDate: newDueDate } });
+        await this.cascadeShift(succ.id, visited);
+      }
+    }
+  }
+
+  /** BFS forward from the would-be successor: if the would-be predecessor is reachable, the new edge would close a loop. */
+  private async wouldCreateCycle(predecessorId: string, successorId: string): Promise<boolean> {
+    const queue = [successorId];
+    const seen = new Set<string>([successorId]);
+    while (queue.length) {
+      const current = queue.shift()!;
+      if (current === predecessorId) return true;
+      const edges = await this.prisma.taskDependency.findMany({ where: { predecessorId: current }, select: { successorId: true } });
+      for (const e of edges) {
+        if (!seen.has(e.successorId)) {
+          seen.add(e.successorId);
+          queue.push(e.successorId);
+        }
+      }
+    }
+    return false;
   }
 
   private async assertProject(companyId: string, projectId: string) {
