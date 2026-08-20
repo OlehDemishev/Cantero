@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Header, Param, Post, StreamableFile } from "@nestjs/common";
 import {
   addChangeOrderLineSchema,
   createChangeOrderSchema,
@@ -55,5 +55,19 @@ export class ChangeOrdersController {
   @Post(":id/send")
   send(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.send(user.companyId, { userId: user.userId, name: user.name }, id);
+  }
+
+  @Get(":id/pdf")
+  @Header("Content-Type", "application/pdf")
+  async pdf(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    const buffer = await this.service.generatePdf(user.companyId, id);
+    return new StreamableFile(buffer);
+  }
+
+  @Get(":id/signature")
+  @Header("Content-Type", "image/png")
+  async signature(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    const buffer = await this.service.getSignature(user.companyId, id);
+    return new StreamableFile(buffer);
   }
 }

@@ -4,13 +4,14 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { SUPPORTED_LOCALES, MEMBERSHIP_ROLES_MANAGEABLE } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, apiUpload } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { isPushSupported, getExistingSubscription, enablePush, disablePush } from "@/lib/push";
 
 interface Company {
   name: string;
   locale: string;
+  brandColor: string | null;
 }
 interface Plan {
   id: string;
@@ -56,7 +57,14 @@ export default function SettingsPage() {
   const { data: me } = useMe();
   const isManager = me?.user.role === "owner" || me?.user.role === "admin";
 
-  const [companyForm, setCompanyForm] = useState({ name: "", locale: "en" });
+  const [companyForm, setCompanyForm] = useState<{ name: string; locale: string; brandColor: string | null }>({
+    name: "",
+    locale: "en",
+    brandColor: null,
+  });
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoBusy, setLogoBusy] = useState(false);
+  const [logoError, setLogoError] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [seatsInput, setSeatsInput] = useState("1");
@@ -74,8 +82,17 @@ export default function SettingsPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  function loadLogo() {
+    apiFetch<Blob>("/company/logo")
+      .then((blob) => setLogoUrl(URL.createObjectURL(blob)))
+      .catch(() => setLogoUrl(null));
+  }
+
   function loadAll() {
-    apiFetch<Company>("/company").then((c) => setCompanyForm({ name: c.name, locale: c.locale }));
+    apiFetch<Company>("/company").then((c) =>
+      setCompanyForm({ name: c.name, locale: c.locale, brandColor: c.brandColor }),
+    );
+    loadLogo();
     apiFetch<Subscription>("/billing/subscription").then((s) => {
       setSubscription(s);
       setSeatsInput(String(s.seats));
@@ -130,6 +147,22 @@ export default function SettingsPage() {
       window.location.reload();
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function uploadLogo(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoBusy(true);
+    setLogoError(null);
+    try {
+      await apiUpload("/company/logo", file);
+      loadLogo();
+    } catch (err) {
+      setLogoError(err instanceof Error ? err.message : tc("error"));
+    } finally {
+      setLogoBusy(false);
+      e.target.value = "";
     }
   }
 
@@ -280,6 +313,48 @@ export default function SettingsPage() {
               </button>
             )}
           </form>
+
+          <div className="mt-6 border-t border-gray-100 pt-4">
+            <h3 className="mb-1 text-sm font-semibold text-gray-700">{t("branding")}</h3>
+            <p className="mb-3 text-xs text-gray-500">{t("brandingHint")}</p>
+            {logoError && <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{logoError}</p>}
+            <div className="flex flex-col gap-3">
+              <label className="text-xs text-gray-500">
+                {t("brandColor")}
+                <div className="mt-1 flex items-center gap-2">
+                  <input
+                    type="color"
+                    className="h-9 w-14 cursor-pointer rounded border border-gray-200"
+                    value={companyForm.brandColor ?? "#465fff"}
+                    onChange={(e) => setCompanyForm((f) => ({ ...f, brandColor: e.target.value }))}
+                    disabled={!isManager}
+                  />
+                  {companyForm.brandColor && isManager && (
+                    <button
+                      type="button"
+                      onClick={() => setCompanyForm((f) => ({ ...f, brandColor: null }))}
+                      className="btn-secondary px-2 py-1 text-xs"
+                    >
+                      {t("resetBrandColor")}
+                    </button>
+                  )}
+                </div>
+              </label>
+              <div className="flex items-center gap-3">
+                {logoUrl ? (
+                  <img src={logoUrl} alt={t("logo")} className="h-12 max-w-[120px] rounded border border-gray-200 object-contain" />
+                ) : (
+                  <span className="text-xs text-gray-400">{t("noLogo")}</span>
+                )}
+                {isManager && (
+                  <label className="btn-secondary cursor-pointer px-3 py-1 text-xs">
+                    {logoBusy ? tc("loading") : t("uploadLogo")}
+                    <input type="file" accept="image/png,image/jpeg" className="hidden" onChange={uploadLogo} disabled={logoBusy} />
+                  </label>
+                )}
+              </div>
+            </div>
+          </div>
         </section>
 
         <section className="card">

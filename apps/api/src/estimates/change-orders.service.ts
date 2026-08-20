@@ -3,6 +3,9 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import { ConfigService } from "@nestjs/config";
 import type { AddChangeOrderLineInput, ClientDecisionInput, CreateChangeOrderInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { PdfService } from "../common/pdf/pdf.service";
+import { StorageService } from "../common/storage/storage.service";
+import { decodePngDataUrl } from "../common/signature";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
 import { calculateEstimate, type EstimateLineInput, type MaterialPrice, type RateItemForCalc } from "./estimate-calc";
@@ -17,6 +20,8 @@ import { calculateEstimate, type EstimateLineInput, type MaterialPrice, type Rat
 export class ChangeOrdersService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly pdfService: PdfService,
+    private readonly storage: StorageService,
     private readonly audit: AuditService,
     private readonly config: ConfigService,
     private readonly mail: MailService,
@@ -196,16 +201,33 @@ export class ChangeOrdersService {
     };
   }
 
-  async decide(token: string, input: ClientDecisionInput) {
+  async decide(token: string, input: ClientDecisionInput, signerIp?: string) {
     const changeOrder = await this.prisma.changeOrder.findFirst({ where: { clientAccessToken: token } });
     if (!changeOrder) throw new NotFoundException("Change order not found");
     if (changeOrder.clientDecision !== "pending") {
       throw new BadRequestException("This change order has already been decided");
     }
 
+    let signatureImageKey: string | undefined;
+    if (input.decision === "approved" && input.signatureDataUrl) {
+      const stored = await this.storage.save(
+        changeOrder.companyId,
+        "signature.png",
+        decodePngDataUrl(input.signatureDataUrl),
+      );
+      signatureImageKey = stored.storageKey;
+    }
+
     const updated = await this.prisma.changeOrder.update({
       where: { id: changeOrder.id },
-      data: { clientDecision: input.decision, decisionAt: new Date(), clientDecisionNote: input.note },
+      data: {
+        clientDecision: input.decision,
+        decisionAt: new Date(),
+        clientDecisionNote: input.note,
+        signerName: input.decision === "approved" ? input.signerName : undefined,
+        signatureImageKey,
+        signedIp: input.decision === "approved" ? signerIp : undefined,
+      },
     });
 
     this.audit.record(
@@ -218,6 +240,56 @@ export class ChangeOrdersService {
     );
 
     return { clientDecision: updated.clientDecision };
+  }
+
+  async getSignature(companyId: string, changeOrderId: string): Promise<Buffer> {
+    const changeOrder = await this.prisma.changeOrder.findFirst({ where: { id: changeOrderId, companyId } });
+    if (!changeOrder) throw new NotFoundException("Change order not found");
+    if (!changeOrder.signatureImageKey) throw new NotFoundException("No signature on file");
+    return this.storage.read(changeOrder.signatureImageKey);
+  }
+
+  async generatePdf(companyId: string, changeOrderId: string): Promise<Buffer> {
+    const changeOrder = await this.findOrThrow(companyId, changeOrderId);
+    const estimate = await this.prisma.estimate.findUniqueOrThrow({ where: { id: changeOrder.estimateId } });
+    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    const logoBuffer = company.logoStorageKey ? await this.storage.read(company.logoStorageKey) : undefined;
+    const signatureImageBuffer = changeOrder.signatureImageKey
+      ? await this.storage.read(changeOrder.signatureImageKey)
+      : undefined;
+
+    return this.pdfService.render({
+      title: `Change Order CO-${changeOrder.number} — ${changeOrder.title}`,
+      subtitle: estimate.name,
+      meta: [
+        { label: "Status", value: changeOrder.status },
+        { label: "Currency", value: company.currency },
+      ],
+      tableHeader: ["Item", "Qty", "Unit", "Materials", "Labor", "Line total"],
+      tableRows: changeOrder.lines.map((line) => ({
+        cells: [
+          line.rateCatalogItem.name,
+          line.quantity.toString(),
+          line.rateCatalogItem.unit,
+          line.materialsCost.toString(),
+          line.laborCost.toString(),
+          line.lineTotal.toString(),
+        ],
+      })),
+      totals: [
+        { label: "Materials total", value: `${changeOrder.materialsCostTotal} ${company.currency}` },
+        { label: "Labor total", value: `${changeOrder.laborCostTotal} ${company.currency}` },
+        { label: "Subtotal", value: `${changeOrder.subtotal} ${company.currency}` },
+        { label: `Markup (${estimate.markupPercent}%)`, value: `${changeOrder.markupAmount} ${company.currency}` },
+        { label: `Tax (${estimate.taxPercent}%)`, value: `${changeOrder.taxAmount} ${company.currency}` },
+        { label: "Grand total", value: `${changeOrder.grandTotal} ${company.currency}`, emphasize: true },
+      ],
+      branding: { logoBuffer, accentColor: company.brandColor ?? undefined },
+      signature:
+        changeOrder.clientDecision === "approved" && changeOrder.signerName && changeOrder.decisionAt
+          ? { imageBuffer: signatureImageBuffer, signerName: changeOrder.signerName, signedAt: changeOrder.decisionAt }
+          : undefined,
+    });
   }
 
   /** Re-runs the pure calc engine over every line and persists the resulting costs/totals, against the parent estimate's own rates. */

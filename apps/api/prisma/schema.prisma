@@ -102,6 +102,11 @@ model Company {
   country               String // ISO 3166-1 alpha-2
   createdAt             DateTime   @default(now())
   onboardingCompletedAt DateTime?
+  /// Storage key for the uploaded logo image (PNG/JPEG — pdfkit can't rasterize SVG), read back via StorageService.
+  logoStorageKey        String?
+  logoMimeType          String?
+  /// Hex color (e.g. "#465fff") used as the accent on generated estimate/invoice PDFs.
+  brandColor            String?
 
   memberships  Membership[]
   invites      Invite[]
@@ -369,6 +374,10 @@ model Estimate {
   clientDecisionNote String?
   /// Random token embedded in the public review link; set on send(), never exposed except there.
   clientAccessToken  String?                @unique
+  /// Set together on approval only — a typed name plus a drawn signature (stored via StorageService), never on rejection.
+  signerName         String?
+  signatureImageKey  String?
+  signedIp           String?
 
   /// Null on the first estimate of a group; every alternate option ("Basic"/"Premium" etc.)
   /// points back to that root so siblings can be listed/compared without their own model.
@@ -422,6 +431,9 @@ model ChangeOrder {
   decisionAt         DateTime?
   clientDecisionNote String?
   clientAccessToken  String?                @unique
+  signerName         String?
+  signatureImageKey  String?
+  signedIp           String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

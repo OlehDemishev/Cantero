@@ -83,10 +83,22 @@ export const createVariantSchema = z.object({
 });
 export type CreateVariantInput = z.infer<typeof createVariantSchema>;
 
-export const clientDecisionSchema = z.object({
-  decision: z.enum(["approved", "rejected"]),
-  note: z.string().max(2000).optional(),
-});
+export const clientDecisionSchema = z
+  .object({
+    decision: z.enum(["approved", "rejected"]),
+    note: z.string().max(2000).optional(),
+    signerName: z.string().min(1).max(160).optional(),
+    /// Drawn signature exported from a <canvas> as a base64 PNG data URL — capped well above a typical hand-drawn trace.
+    signatureDataUrl: z
+      .string()
+      .regex(/^data:image\/png;base64,/, "Signature must be a PNG data URL")
+      .max(300_000)
+      .optional(),
+  })
+  .refine((data) => data.decision !== "approved" || (!!data.signerName && !!data.signatureDataUrl), {
+    message: "A typed name and drawn signature are required to approve",
+    path: ["signatureDataUrl"],
+  });
 export type ClientDecisionInput = z.infer<typeof clientDecisionSchema>;
 
 export const createChangeOrderSchema = z.object({

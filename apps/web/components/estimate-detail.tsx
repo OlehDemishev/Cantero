@@ -63,6 +63,7 @@ interface Estimate {
   clientAccessToken: string | null;
   variantOfId: string | null;
   variantLabel: string | null;
+  signerName: string | null;
 }
 interface VariantSummary {
   id: string;
@@ -90,6 +91,8 @@ interface ChangeOrder {
   clientAccessToken: string | null;
   grandTotal: string;
   lines: ChangeOrderLine[];
+  signerName: string | null;
+  decisionAt: string | null;
 }
 interface RevisionSummary {
   id: string;
@@ -189,8 +192,16 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
   const [coEmailSentTo, setCoEmailSentTo] = useState<Record<string, string | null>>({});
   const [coLinkCopiedId, setCoLinkCopiedId] = useState<string | null>(null);
 
+  const [estimateSignatureUrl, setEstimateSignatureUrl] = useState<string | null>(null);
+  const [coSignatureUrls, setCoSignatureUrls] = useState<Record<string, string>>({});
+
   function load() {
-    apiFetch<Estimate>(`/estimates/${estimateId}`).then(setEstimate);
+    apiFetch<Estimate>(`/estimates/${estimateId}`).then((e) => {
+      setEstimate(e);
+      if (e.clientDecision === "approved" && e.signerName) {
+        apiFetch<Blob>(`/estimates/${estimateId}/signature`).then((blob) => setEstimateSignatureUrl(URL.createObjectURL(blob)));
+      }
+    });
   }
 
   function loadRevisions() {
@@ -202,7 +213,21 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
   }
 
   function loadChangeOrders() {
-    apiFetch<ChangeOrder[]>(`/estimates/${estimateId}/change-orders`).then(setChangeOrders);
+    apiFetch<ChangeOrder[]>(`/estimates/${estimateId}/change-orders`).then((list) => {
+      setChangeOrders(list);
+      for (const co of list) {
+        if (co.clientDecision === "approved" && co.signerName) {
+          apiFetch<Blob>(`/estimates/${estimateId}/change-orders/${co.id}/signature`).then((blob) =>
+            setCoSignatureUrls((prev) => ({ ...prev, [co.id]: URL.createObjectURL(blob) })),
+          );
+        }
+      }
+    });
+  }
+
+  async function downloadChangeOrderPdf(co: ChangeOrder) {
+    const blob = await apiFetch<Blob>(`/estimates/${estimateId}/change-orders/${co.id}/pdf`);
+    downloadBlob(blob, `CO-${co.number}-${co.title}.pdf`);
   }
 
   useEffect(() => {
@@ -462,6 +487,17 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
         <p className="mt-2 text-sm text-error-700">
           {t("clientNote")}: {estimate.clientDecisionNote}
         </p>
+      )}
+      {estimate.clientDecision === "approved" && estimate.signerName && (
+        <div className="mt-2 flex items-center gap-2 text-sm text-gray-600">
+          {estimateSignatureUrl && (
+            <img src={estimateSignatureUrl} alt={t("signature")} className="h-8 rounded border border-gray-200 bg-white px-1" />
+          )}
+          <span>
+            {t("signedBy", { name: estimate.signerName })}
+            {estimate.decisionAt && ` · ${new Date(estimate.decisionAt).toLocaleString()}`}
+          </span>
+        </div>
       )}
 
       {estimate.status === "draft" && estimate.isStale && (
@@ -828,6 +864,29 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
                                   : tc("noClientEmail")}
                               </p>
                             )}
+                          </div>
+                        )}
+
+                        {co.clientDecision === "approved" && co.signerName && (
+                          <div className="mt-3 flex items-center gap-2 border-t border-gray-100 pt-3 text-xs text-gray-600">
+                            {coSignatureUrls[co.id] && (
+                              <img
+                                src={coSignatureUrls[co.id]}
+                                alt={t("signature")}
+                                className="h-6 rounded border border-gray-200 bg-white px-1"
+                              />
+                            )}
+                            <span>
+                              {t("signedBy", { name: co.signerName })}
+                              {co.decisionAt && ` · ${new Date(co.decisionAt).toLocaleString()}`}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => downloadChangeOrderPdf(co)}
+                              className="btn-secondary ml-auto shrink-0 px-2 py-1 text-xs"
+                            >
+                              {t("downloadPdf")}
+                            </button>
                           </div>
                         )}
                       </div>

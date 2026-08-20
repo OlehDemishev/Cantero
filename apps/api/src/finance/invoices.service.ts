@@ -3,6 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import type { AddInstallmentInput, RecordPaymentInput, UpdateInvoiceInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { PdfService } from "../common/pdf/pdf.service";
+import { StorageService } from "../common/storage/storage.service";
 import { toCsv } from "../common/csv";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
@@ -12,6 +13,7 @@ export class InvoicesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly pdfService: PdfService,
+    private readonly storage: StorageService,
     private readonly audit: AuditService,
     private readonly config: ConfigService,
     private readonly mail: MailService,
@@ -166,6 +168,7 @@ export class InvoicesService {
   async generatePdf(companyId: string, id: string): Promise<Buffer> {
     const invoice = await this.findOrThrow(companyId, id);
     const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    const logoBuffer = company.logoStorageKey ? await this.storage.read(company.logoStorageKey) : undefined;
 
     return this.pdfService.render({
       title: `Invoice ${invoice.number}`,
@@ -183,6 +186,7 @@ export class InvoicesService {
         { label: "Tax", value: `${invoice.taxAmount} ${company.currency}` },
         { label: "Total due", value: `${invoice.total} ${company.currency}`, emphasize: true },
       ],
+      branding: { logoBuffer, accentColor: company.brandColor ?? undefined },
     });
   }
 

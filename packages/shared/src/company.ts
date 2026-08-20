@@ -23,6 +23,11 @@ export type PlanId = (typeof PLAN_IDS)[number];
 export const updateCompanySchema = z.object({
   name: z.string().min(2).max(120).optional(),
   locale: z.enum(SUPPORTED_LOCALES).optional(),
+  brandColor: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/, "Must be a hex color like #465fff")
+    .nullable()
+    .optional(),
 });
 export type UpdateCompanyInput = z.infer<typeof updateCompanySchema>;
 

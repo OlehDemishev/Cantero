@@ -4,6 +4,7 @@ import { ConfigService } from "@nestjs/config";
 import { EstimatesService } from "./estimates.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { PdfService } from "../common/pdf/pdf.service";
+import { StorageService } from "../common/storage/storage.service";
 import { AuditService } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
 
@@ -20,7 +21,7 @@ const OTHER_COMPANY_ESTIMATE = {
 describe("EstimatesService — cross-tenant isolation", () => {
   let service: EstimatesService;
   let prisma: {
-    estimate: { findFirst: jest.Mock; create: jest.Mock };
+    estimate: { findFirst: jest.Mock; create: jest.Mock; update: jest.Mock; updateMany: jest.Mock };
     project: { findFirst: jest.Mock };
     rateCatalogItem: { findFirst: jest.Mock };
     estimateLine: { create: jest.Mock };
@@ -28,7 +29,7 @@ describe("EstimatesService — cross-tenant isolation", () => {
 
   beforeEach(async () => {
     prisma = {
-      estimate: { findFirst: jest.fn(), create: jest.fn() },
+      estimate: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn(), updateMany: jest.fn() },
       project: { findFirst: jest.fn() },
       rateCatalogItem: { findFirst: jest.fn() },
       estimateLine: { create: jest.fn() },
@@ -39,6 +40,7 @@ describe("EstimatesService — cross-tenant isolation", () => {
         EstimatesService,
         { provide: PrismaService, useValue: prisma },
         { provide: PdfService, useValue: { render: jest.fn() } },
+        { provide: StorageService, useValue: { save: jest.fn(), read: jest.fn() } },
         { provide: AuditService, useValue: { record: jest.fn(), list: jest.fn() } },
         { provide: ConfigService, useValue: { get: jest.fn(), getOrThrow: jest.fn() } },
         { provide: MailService, useValue: { send: jest.fn() } },
@@ -79,5 +81,36 @@ describe("EstimatesService — cross-tenant isolation", () => {
       where: { id: "foreign-project", companyId: COMPANY_A },
     });
     expect(prisma.estimate.create).not.toHaveBeenCalled();
+  });
+
+  it("decide() stores the signature image and signer name on approval", async () => {
+    prisma.estimate.findFirst.mockResolvedValue({
+      id: "estimate-1",
+      companyId: COMPANY_A,
+      name: "Test",
+      clientDecision: "pending",
+      variantOfId: null,
+    });
+    prisma.estimate.update.mockResolvedValue({ clientDecision: "approved" });
+    prisma.estimate.updateMany.mockResolvedValue({ count: 0 });
+    const storage: { save: jest.Mock } = (service as any).storage;
+    storage.save.mockResolvedValue({ storageKey: "company-a/signature.png", size: 42 });
+
+    await service.decide(
+      "some-token",
+      { decision: "approved", signerName: "Jane Client", signatureDataUrl: "data:image/png;base64,AAAA" },
+      "203.0.113.5",
+    );
+
+    expect(storage.save).toHaveBeenCalledWith(COMPANY_A, "signature.png", expect.any(Buffer));
+    expect(prisma.estimate.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          signerName: "Jane Client",
+          signatureImageKey: "company-a/signature.png",
+          signedIp: "203.0.113.5",
+        }),
+      }),
+    );
   });
 });

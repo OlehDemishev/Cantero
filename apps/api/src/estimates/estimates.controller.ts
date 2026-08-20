@@ -120,4 +120,11 @@ export class EstimatesController {
     const buffer = await this.service.generatePdf(user.companyId, id);
     return new StreamableFile(buffer);
   }
+
+  @Get(":id/signature")
+  @Header("Content-Type", "image/png")
+  async signature(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    const buffer = await this.service.getSignature(user.companyId, id);
+    return new StreamableFile(buffer);
+  }
 }

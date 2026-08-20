@@ -3,6 +3,7 @@
 import { use, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, ApiError } from "@/lib/api-client";
+import { SignaturePad } from "@/components/signature-pad";
 
 interface PublicLine {
   id: string;
@@ -37,6 +38,9 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
   const [estimate, setEstimate] = useState<PublicEstimate | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState("");
+  const [signerName, setSignerName] = useState("");
+  const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
+  const [signatureError, setSignatureError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   function load() {
@@ -48,11 +52,21 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
   useEffect(load, [token]);
 
   async function decide(decision: "approved" | "rejected") {
+    if (decision === "approved" && (!signerName.trim() || !signatureDataUrl)) {
+      setSignatureError(t("signatureRequired"));
+      return;
+    }
+    setSignatureError(null);
     setBusy(true);
     try {
       await apiFetch(`/public/estimates/${token}/decision`, {
         method: "POST",
-        body: JSON.stringify({ decision, note: note || undefined }),
+        body: JSON.stringify({
+          decision,
+          note: note || undefined,
+          signerName: decision === "approved" ? signerName.trim() : undefined,
+          signatureDataUrl: decision === "approved" ? signatureDataUrl : undefined,
+        }),
       });
       load();
     } finally {
@@ -160,6 +174,22 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
                   onChange={(e) => setNote(e.target.value)}
                 />
               </label>
+
+              <div className="mt-4 flex flex-col gap-1.5 text-sm">
+                <span className="font-medium text-gray-700">{t("signerNameLabel")}</span>
+                <input
+                  className="input"
+                  placeholder={t("signerNamePlaceholder")}
+                  value={signerName}
+                  onChange={(e) => setSignerName(e.target.value)}
+                />
+              </div>
+              <div className="mt-3 flex flex-col gap-1.5 text-sm">
+                <span className="font-medium text-gray-700">{t("signHere")}</span>
+                <SignaturePad onChange={setSignatureDataUrl} clearLabel={t("clearSignature")} />
+              </div>
+              {signatureError && <p className="mt-2 text-xs text-error-600">{signatureError}</p>}
+
               <div className="mt-3 flex gap-2">
                 <button onClick={() => decide("approved")} disabled={busy} className="btn-primary flex-1">
                   {t("clientApprove")}

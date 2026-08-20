@@ -10,6 +10,8 @@ import type {
 } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { PdfService } from "../common/pdf/pdf.service";
+import { StorageService } from "../common/storage/storage.service";
+import { decodePngDataUrl } from "../common/signature";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
 import {
@@ -35,6 +37,7 @@ export class EstimatesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly pdfService: PdfService,
+    private readonly storage: StorageService,
     private readonly audit: AuditService,
     private readonly config: ConfigService,
     private readonly mail: MailService,
@@ -328,16 +331,29 @@ export class EstimatesService {
   }
 
   /** Client approval auto-declines sibling variants still pending — picking one option settles the others. */
-  async decide(token: string, input: ClientDecisionInput) {
+  async decide(token: string, input: ClientDecisionInput, signerIp?: string) {
     const estimate = await this.prisma.estimate.findFirst({ where: { clientAccessToken: token } });
     if (!estimate) throw new NotFoundException("Estimate not found");
     if (estimate.clientDecision !== "pending") {
       throw new BadRequestException("This estimate has already been decided");
     }
 
+    let signatureImageKey: string | undefined;
+    if (input.decision === "approved" && input.signatureDataUrl) {
+      const stored = await this.storage.save(estimate.companyId, "signature.png", decodePngDataUrl(input.signatureDataUrl));
+      signatureImageKey = stored.storageKey;
+    }
+
     const updated = await this.prisma.estimate.update({
       where: { id: estimate.id },
-      data: { clientDecision: input.decision, decisionAt: new Date(), clientDecisionNote: input.note },
+      data: {
+        clientDecision: input.decision,
+        decisionAt: new Date(),
+        clientDecisionNote: input.note,
+        signerName: input.decision === "approved" ? input.signerName : undefined,
+        signatureImageKey,
+        signedIp: input.decision === "approved" ? signerIp : undefined,
+      },
     });
 
     if (input.decision === "approved") {
@@ -486,6 +502,8 @@ export class EstimatesService {
       where: { id: { in: estimate.lines.map((l) => l.rateCatalogItemId) }, companyId },
     });
     const rateItemsById = Object.fromEntries(rateItems.map((ri) => [ri.id, ri]));
+    const logoBuffer = company.logoStorageKey ? await this.storage.read(company.logoStorageKey) : undefined;
+    const signatureImageBuffer = estimate.signatureImageKey ? await this.storage.read(estimate.signatureImageKey) : undefined;
 
     return this.pdfService.render({
       title: `Estimate — ${estimate.name}`,
@@ -516,7 +534,19 @@ export class EstimatesService {
         { label: `Tax (${estimate.taxPercent}%)`, value: `${estimate.taxAmount} ${company.currency}` },
         { label: "Grand total", value: `${estimate.grandTotal} ${company.currency}`, emphasize: true },
       ],
+      branding: { logoBuffer, accentColor: company.brandColor ?? undefined },
+      signature:
+        estimate.clientDecision === "approved" && estimate.signerName && estimate.decisionAt
+          ? { imageBuffer: signatureImageBuffer, signerName: estimate.signerName, signedAt: estimate.decisionAt }
+          : undefined,
     });
+  }
+
+  async getSignature(companyId: string, estimateId: string): Promise<Buffer> {
+    const estimate = await this.prisma.estimate.findFirst({ where: { id: estimateId, companyId } });
+    if (!estimate) throw new NotFoundException("Estimate not found");
+    if (!estimate.signatureImageKey) throw new NotFoundException("No signature on file");
+    return this.storage.read(estimate.signatureImageKey);
   }
 
   private async findOrThrow(companyId: string, id: string) {

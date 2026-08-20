@@ -51,7 +51,8 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
   if (
     contentType.includes("application/pdf") ||
     contentType.includes("application/octet-stream") ||
-    contentType.includes("text/csv")
+    contentType.includes("text/csv") ||
+    contentType.startsWith("image/")
   ) {
     return (await res.blob()) as unknown as T;
   }

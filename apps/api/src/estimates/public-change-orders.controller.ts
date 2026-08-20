@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Post } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Req } from "@nestjs/common";
+import type { Request } from "express";
 import { clientDecisionSchema, type ClientDecisionInput } from "@cantero/shared";
 import { Public } from "../common/decorators/public.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
@@ -17,7 +18,11 @@ export class PublicChangeOrdersController {
 
   @Public()
   @Post(":token/decision")
-  decide(@Param("token") token: string, @Body(new ZodValidationPipe(clientDecisionSchema)) body: ClientDecisionInput) {
-    return this.service.decide(token, body);
+  decide(
+    @Param("token") token: string,
+    @Body(new ZodValidationPipe(clientDecisionSchema)) body: ClientDecisionInput,
+    @Req() req: Request,
+  ) {
+    return this.service.decide(token, body, req.ip);
   }
 }
