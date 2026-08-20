@@ -13,6 +13,8 @@ import { RfiController } from "./rfi.controller";
 import { RfiService } from "./rfi.service";
 import { SubmittalsController } from "./submittals.controller";
 import { SubmittalsService } from "./submittals.service";
+import { WarrantyClaimsController } from "./warranty-claims.controller";
+import { WarrantyClaimsService } from "./warranty-claims.service";
 
 @Module({
   controllers: [
@@ -23,8 +25,18 @@ import { SubmittalsService } from "./submittals.service";
     PunchListController,
     RfiController,
     SubmittalsController,
+    WarrantyClaimsController,
   ],
-  providers: [ProjectsService, TasksService, MilestonesService, DailyLogsService, PunchListService, RfiService, SubmittalsService],
+  providers: [
+    ProjectsService,
+    TasksService,
+    MilestonesService,
+    DailyLogsService,
+    PunchListService,
+    RfiService,
+    SubmittalsService,
+    WarrantyClaimsService,
+  ],
   exports: [ProjectsService],
 })
 export class ProjectsModule {}

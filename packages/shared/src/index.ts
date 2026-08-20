@@ -20,3 +20,4 @@ export * from "./rfi";
 export * from "./safety";
 export * from "./submittals";
 export * from "./task-dependencies";
+export * from "./warranty";

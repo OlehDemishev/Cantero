@@ -188,7 +188,10 @@
     "webhookEvent_submittal_approved": "Погодження надано",
     "webhookEvent_submittal_revise_requested": "Повернено на доопрацювання",
     "webhookEvent_submittal_rejected": "Погодження відхилено",
-    "webhookEvent_safety_incident_logged": "Зафіксовано інцидент з ТБ"
+    "webhookEvent_safety_incident_logged": "Зафіксовано інцидент з ТБ",
+    "webhookEvent_warranty_claim_submitted": "Подано гарантійне звернення",
+    "webhookEvent_warranty_claim_resolved": "Гарантійне звернення усунено",
+    "webhookEvent_warranty_claim_denied": "Гарантійне звернення відхилено"
   },
   "projects": {
     "title": "Проєкти",
@@ -441,7 +444,20 @@
     "noChangeOrders": "Додаткових угод ще немає.",
     "noInvoices": "Рахунків ще немає.",
     "description": "Опис",
-    "back": "Назад"
+    "back": "Назад",
+    "warranty": "Гарантія",
+    "noWarrantyClaims": "Поки немає гарантійних звернень.",
+    "claimStatus_open": "Відкрито",
+    "claimStatus_in_progress": "В роботі",
+    "claimStatus_resolved": "Усунено",
+    "claimStatus_denied": "Відхилено",
+    "noProjectsUnderWarranty": "Жоден із ваших проєктів наразі не на гарантії.",
+    "project": "Проєкт",
+    "claimTitlePlaceholder": "У чому проблема?",
+    "locationPlaceholder": "Приміщення, ділянка…",
+    "descriptionPlaceholder": "Додаткові деталі…",
+    "submitClaim": "Надіслати звернення",
+    "claimSubmitted": "Звернення надіслано — ми з вами зв'яжемося."
   },
   "equipment": {
     "title": "Техніка",
@@ -691,7 +707,12 @@
     "type_estimate": "Кошторис",
     "type_document": "Документ",
     "type_worker": "Працівник",
-    "type_supplier": "Постачальник"
+    "type_supplier": "Постачальник",
+    "type_rfi": "Запит",
+    "type_punch_list_item": "Дефект",
+    "type_submittal": "Погодження",
+    "type_incident_report": "Інцидент",
+    "type_warranty_claim": "Гарантійне звернення"
   },
   "onboarding": {
     "skipSetup": "Пропустити налаштування",
@@ -875,5 +896,40 @@
     "status": "Статус",
     "atRisk": "Ризик",
     "onTrack": "За планом"
+  },
+  "warranty": {
+    "title": "Гарантія",
+    "handoverDate": "Дата передачі",
+    "warrantyMonths": "Гарантія (місяців)",
+    "underWarrantyUntil": "На гарантії до {date}",
+    "warrantyExpiredOn": "Гарантія закінчилась {date}",
+    "claims": "Звернення",
+    "newClaim": "+ Нове звернення",
+    "claimTitle": "Назва",
+    "location": "Місце",
+    "assignee": "Відповідальний",
+    "description": "Опис",
+    "open": "Відкрито",
+    "in_progress": "В роботі",
+    "resolved": "Усунено",
+    "denied": "Відхилено",
+    "fromClient": "Від клієнта",
+    "assignedTo": "Призначено на {name}",
+    "submittedBy": "Подав: {name}",
+    "resolutionNotes": "Нотатки про усунення",
+    "resolutionNotesPlaceholder": "Як усунено…",
+    "denialReason": "Причина відхилення",
+    "denialReasonPlaceholder": "Чому не покривається…",
+    "startWork": "Почати роботу",
+    "markResolved": "Позначити усуненим",
+    "deny": "Відхилити",
+    "reopen": "Відкрити знову",
+    "noClaims": "Поки немає гарантійних звернень."
+  },
+  "photos": {
+    "title": "Фото",
+    "addPhoto": "+ Додати фото",
+    "uploading": "Завантаження…",
+    "noPhotos": "Поки немає фото."
   }
 }

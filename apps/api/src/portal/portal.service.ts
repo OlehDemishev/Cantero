@@ -1,11 +1,19 @@
-import { NotFoundException } from "@nestjs/common";
+import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { Injectable } from "@nestjs/common";
-import type { ClientDecisionInput } from "@cantero/shared";
+import type { ClientDecisionInput, PortalCreateWarrantyClaimInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { EstimatesService } from "../estimates/estimates.service";
 import { ChangeOrdersService } from "../estimates/change-orders.service";
 import { InvoicesService } from "../finance/invoices.service";
+import { WebhooksService } from "../common/webhooks/webhooks.service";
 import type { PortalClientContext } from "./portal-jwt.service";
+
+function warrantyExpiresAt(handoverDate: Date | null, warrantyMonths: number | null): Date | null {
+  if (!handoverDate || !warrantyMonths) return null;
+  const expiry = new Date(handoverDate);
+  expiry.setMonth(expiry.getMonth() + warrantyMonths);
+  return expiry;
+}
 
 @Injectable()
 export class PortalService {
@@ -14,6 +22,7 @@ export class PortalService {
     private readonly estimates: EstimatesService,
     private readonly changeOrders: ChangeOrdersService,
     private readonly invoices: InvoicesService,
+    private readonly webhooks: WebhooksService,
   ) {}
 
   async me(client: PortalClientContext) {
@@ -163,6 +172,58 @@ export class PortalService {
   async getInvoicePdf(client: PortalClientContext, id: string): Promise<Buffer> {
     await this.getInvoice(client, id);
     return this.invoices.generatePdf(client.companyId, id);
+  }
+
+  async listProjects(client: PortalClientContext) {
+    const projects = await this.prisma.project.findMany({
+      where: { companyId: client.companyId, clientId: client.clientId },
+      select: { id: true, name: true, handoverDate: true, warrantyMonths: true },
+      orderBy: { name: "asc" },
+    });
+    const now = new Date();
+    return projects.map((p) => {
+      const expiresAt = warrantyExpiresAt(p.handoverDate, p.warrantyMonths);
+      return { ...p, warrantyExpiresAt: expiresAt, isUnderWarranty: expiresAt !== null && expiresAt > now };
+    });
+  }
+
+  listWarrantyClaims(client: PortalClientContext) {
+    return this.prisma.warrantyClaim.findMany({
+      where: { companyId: client.companyId, project: { clientId: client.clientId } },
+      include: { project: { select: { id: true, name: true } } },
+      orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+    });
+  }
+
+  async createWarrantyClaim(client: PortalClientContext, input: PortalCreateWarrantyClaimInput) {
+    const project = await this.prisma.project.findFirst({
+      where: { id: input.projectId, companyId: client.companyId, clientId: client.clientId },
+    });
+    if (!project) throw new NotFoundException("Project not found");
+
+    const expiresAt = warrantyExpiresAt(project.handoverDate, project.warrantyMonths);
+    if (!expiresAt || expiresAt <= new Date()) {
+      throw new BadRequestException("This project is not currently under warranty");
+    }
+
+    const clientRecord = await this.prisma.client.findUniqueOrThrow({ where: { id: client.clientId } });
+    const claim = await this.prisma.warrantyClaim.create({
+      data: {
+        companyId: client.companyId,
+        projectId: input.projectId,
+        title: input.title,
+        description: input.description,
+        location: input.location,
+        submittedByClientId: client.clientId,
+        submittedByName: clientRecord.name,
+      },
+    });
+    this.webhooks.trigger(client.companyId, "warranty_claim.submitted", {
+      warrantyClaimId: claim.id,
+      title: claim.title,
+      projectId: project.id,
+    });
+    return claim;
   }
 
   private async findClientEstimate(client: PortalClientContext, id: string) {

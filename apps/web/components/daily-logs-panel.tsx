@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { WEATHER_CONDITIONS, type WeatherCondition } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { PhotoAttachments } from "@/components/photo-attachments";
 
 interface DailyLog {
   id: string;
@@ -286,6 +287,7 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
                         {log.notes}
                       </p>
                     )}
+                    <PhotoAttachments param="dailyLogId" entityId={log.id} />
                     <button onClick={() => startEdit(log)} className="btn-secondary mt-1 w-fit px-3 py-1 text-xs">
                       {tc("edit")}
                     </button>

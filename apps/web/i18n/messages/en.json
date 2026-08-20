@@ -188,7 +188,10 @@
     "webhookEvent_submittal_approved": "Submittal approved",
     "webhookEvent_submittal_revise_requested": "Submittal sent back for revision",
     "webhookEvent_submittal_rejected": "Submittal rejected",
-    "webhookEvent_safety_incident_logged": "Safety incident logged"
+    "webhookEvent_safety_incident_logged": "Safety incident logged",
+    "webhookEvent_warranty_claim_submitted": "Warranty claim submitted",
+    "webhookEvent_warranty_claim_resolved": "Warranty claim resolved",
+    "webhookEvent_warranty_claim_denied": "Warranty claim denied"
   },
   "projects": {
     "title": "Projects",
@@ -441,7 +444,20 @@
     "noChangeOrders": "No change orders yet.",
     "noInvoices": "No invoices yet.",
     "description": "Description",
-    "back": "Back"
+    "back": "Back",
+    "warranty": "Warranty",
+    "noWarrantyClaims": "No warranty claims yet.",
+    "claimStatus_open": "Open",
+    "claimStatus_in_progress": "In progress",
+    "claimStatus_resolved": "Resolved",
+    "claimStatus_denied": "Denied",
+    "noProjectsUnderWarranty": "None of your projects are currently under warranty.",
+    "project": "Project",
+    "claimTitlePlaceholder": "What's the issue?",
+    "locationPlaceholder": "Room, area…",
+    "descriptionPlaceholder": "More details…",
+    "submitClaim": "Submit claim",
+    "claimSubmitted": "Claim submitted — we'll be in touch."
   },
   "equipment": {
     "title": "Equipment",
@@ -691,7 +707,12 @@
     "type_estimate": "Estimate",
     "type_document": "Document",
     "type_worker": "Worker",
-    "type_supplier": "Supplier"
+    "type_supplier": "Supplier",
+    "type_rfi": "RFI",
+    "type_punch_list_item": "Punch list",
+    "type_submittal": "Submittal",
+    "type_incident_report": "Incident",
+    "type_warranty_claim": "Warranty claim"
   },
   "onboarding": {
     "skipSetup": "Skip setup",
@@ -875,5 +896,40 @@
     "status": "Status",
     "atRisk": "At risk",
     "onTrack": "On track"
+  },
+  "warranty": {
+    "title": "Warranty",
+    "handoverDate": "Handover date",
+    "warrantyMonths": "Warranty (months)",
+    "underWarrantyUntil": "Under warranty until {date}",
+    "warrantyExpiredOn": "Warranty expired on {date}",
+    "claims": "Claims",
+    "newClaim": "+ New claim",
+    "claimTitle": "Title",
+    "location": "Location",
+    "assignee": "Assignee",
+    "description": "Description",
+    "open": "Open",
+    "in_progress": "In progress",
+    "resolved": "Resolved",
+    "denied": "Denied",
+    "fromClient": "From client",
+    "assignedTo": "Assigned to {name}",
+    "submittedBy": "Submitted by {name}",
+    "resolutionNotes": "Resolution notes",
+    "resolutionNotesPlaceholder": "How was this fixed…",
+    "denialReason": "Denial reason",
+    "denialReasonPlaceholder": "Why isn't this covered…",
+    "startWork": "Start work",
+    "markResolved": "Mark resolved",
+    "deny": "Deny",
+    "reopen": "Reopen",
+    "noClaims": "No warranty claims yet."
+  },
+  "photos": {
+    "title": "Photos",
+    "addPhoto": "+ Add photo",
+    "uploading": "Uploading…",
+    "noPhotos": "No photos yet."
   }
 }

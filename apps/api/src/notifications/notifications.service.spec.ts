@@ -15,6 +15,7 @@ describe("NotificationsService.list", () => {
     punchListItem: { findMany: jest.Mock };
     submittal: { findMany: jest.Mock };
     incidentReport: { findMany: jest.Mock };
+    warrantyClaim: { findMany: jest.Mock };
     membership: { findFirst: jest.Mock };
   };
 
@@ -27,6 +28,7 @@ describe("NotificationsService.list", () => {
       punchListItem: { findMany: jest.fn().mockResolvedValue([]) },
       submittal: { findMany: jest.fn().mockResolvedValue([]) },
       incidentReport: { findMany: jest.fn().mockResolvedValue([]) },
+      warrantyClaim: { findMany: jest.fn().mockResolvedValue([]) },
       membership: { findFirst: jest.fn().mockResolvedValue(null) },
     };
 
@@ -91,6 +93,20 @@ describe("NotificationsService.list", () => {
 
     expect(byKey["incident:inc-1"].severity).toBe("warning");
     expect(byKey["incident:inc-2"].severity).toBe("critical");
+  });
+
+  it("flags a client-submitted warranty claim as critical and an internally-logged one as a warning", async () => {
+    const project = { id: "project-1", name: "Site A" };
+    prisma.warrantyClaim.findMany.mockResolvedValue([
+      { id: "claim-1", title: "Cracked grout", location: null, submittedByClientId: "client-1", createdAt: new Date(), project },
+      { id: "claim-2", title: "Squeaky door", location: null, submittedByClientId: null, createdAt: new Date(), project },
+    ]);
+
+    const { notifications } = await service.list(COMPANY_A, USER_A);
+    const byKey = Object.fromEntries(notifications.map((n) => [n.key, n]));
+
+    expect(byKey["warranty_claim:claim-1"].severity).toBe("critical");
+    expect(byKey["warranty_claim:claim-2"].severity).toBe("warning");
   });
 
   it("includes results from every source, sorted newest first", async () => {

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { INCIDENT_SEVERITIES, type IncidentSeverity } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { PhotoAttachments } from "@/components/photo-attachments";
 
 interface Worker {
   id: string;
@@ -239,6 +240,9 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
                   {t("correctiveActions")}: {item.correctiveActions}
                 </p>
               )}
+              <div className="mt-2">
+                <PhotoAttachments param="incidentReportId" entityId={item.id} />
+              </div>
               <p className="mt-1 text-xs text-gray-400">{item.reportedByName}</p>
             </li>
           ))}

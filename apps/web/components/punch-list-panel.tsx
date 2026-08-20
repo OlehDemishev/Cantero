@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { PunchListItemStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { PhotoAttachments } from "@/components/photo-attachments";
 
 interface Worker {
   id: string;
@@ -181,6 +182,9 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
                   {item.status === "resolved" && item.resolvedByName && (
                     <p className="mt-1.5 text-xs text-warning-700">{t("resolvedBy", { name: item.resolvedByName })}</p>
                   )}
+                  <div className="mt-2">
+                    <PhotoAttachments param="punchListItemId" entityId={item.id} />
+                  </div>
                 </div>
                 <div className="flex flex-none gap-1.5">
                   {item.status === "open" && (

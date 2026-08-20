@@ -188,7 +188,10 @@
     "webhookEvent_submittal_approved": "Zatwierdzenie udzielone",
     "webhookEvent_submittal_revise_requested": "Zwrócono do poprawy",
     "webhookEvent_submittal_rejected": "Zatwierdzenie odrzucone",
-    "webhookEvent_safety_incident_logged": "Zarejestrowano zdarzenie BHP"
+    "webhookEvent_safety_incident_logged": "Zarejestrowano zdarzenie BHP",
+    "webhookEvent_warranty_claim_submitted": "Zgłoszono roszczenie gwarancyjne",
+    "webhookEvent_warranty_claim_resolved": "Usunięto roszczenie gwarancyjne",
+    "webhookEvent_warranty_claim_denied": "Odrzucono roszczenie gwarancyjne"
   },
   "projects": {
     "title": "Projekty",
@@ -441,7 +444,20 @@
     "noChangeOrders": "Brak aneksów.",
     "noInvoices": "Brak faktur.",
     "description": "Opis",
-    "back": "Wstecz"
+    "back": "Wstecz",
+    "warranty": "Gwarancja",
+    "noWarrantyClaims": "Brak zgłoszeń gwarancyjnych.",
+    "claimStatus_open": "Otwarte",
+    "claimStatus_in_progress": "W trakcie",
+    "claimStatus_resolved": "Usunięte",
+    "claimStatus_denied": "Odrzucone",
+    "noProjectsUnderWarranty": "Żaden z Twoich projektów nie jest obecnie objęty gwarancją.",
+    "project": "Projekt",
+    "claimTitlePlaceholder": "Na czym polega problem?",
+    "locationPlaceholder": "Pomieszczenie, obszar…",
+    "descriptionPlaceholder": "Więcej szczegółów…",
+    "submitClaim": "Zgłoś usterkę",
+    "claimSubmitted": "Zgłoszenie wysłane — skontaktujemy się."
   },
   "equipment": {
     "title": "Sprzęt",
@@ -691,7 +707,12 @@
     "type_estimate": "Kosztorys",
     "type_document": "Dokument",
     "type_worker": "Pracownik",
-    "type_supplier": "Dostawca"
+    "type_supplier": "Dostawca",
+    "type_rfi": "Zapytanie",
+    "type_punch_list_item": "Usterka",
+    "type_submittal": "Zatwierdzenie",
+    "type_incident_report": "Zdarzenie",
+    "type_warranty_claim": "Roszczenie gwarancyjne"
   },
   "onboarding": {
     "skipSetup": "Pomiń konfigurację",
@@ -875,5 +896,40 @@
     "status": "Status",
     "atRisk": "Zagrożony",
     "onTrack": "Zgodnie z planem"
+  },
+  "warranty": {
+    "title": "Gwarancja",
+    "handoverDate": "Data przekazania",
+    "warrantyMonths": "Gwarancja (miesiące)",
+    "underWarrantyUntil": "Gwarancja do {date}",
+    "warrantyExpiredOn": "Gwarancja wygasła {date}",
+    "claims": "Zgłoszenia",
+    "newClaim": "+ Nowe zgłoszenie",
+    "claimTitle": "Tytuł",
+    "location": "Lokalizacja",
+    "assignee": "Odpowiedzialny",
+    "description": "Opis",
+    "open": "Otwarte",
+    "in_progress": "W trakcie",
+    "resolved": "Usunięte",
+    "denied": "Odrzucone",
+    "fromClient": "Od klienta",
+    "assignedTo": "Przypisano do {name}",
+    "submittedBy": "Zgłosił: {name}",
+    "resolutionNotes": "Uwagi o rozwiązaniu",
+    "resolutionNotesPlaceholder": "Jak to naprawiono…",
+    "denialReason": "Powód odrzucenia",
+    "denialReasonPlaceholder": "Dlaczego nie jest objęte…",
+    "startWork": "Rozpocznij pracę",
+    "markResolved": "Oznacz jako usunięte",
+    "deny": "Odrzuć",
+    "reopen": "Otwórz ponownie",
+    "noClaims": "Brak zgłoszeń gwarancyjnych."
+  },
+  "photos": {
+    "title": "Zdjęcia",
+    "addPhoto": "+ Dodaj zdjęcie",
+    "uploading": "Przesyłanie…",
+    "noPhotos": "Brak zdjęć."
   }
 }

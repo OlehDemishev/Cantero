@@ -24,8 +24,22 @@ const ALLOWED_MIME_TYPES = new Set([
 export interface DocumentListFilter {
   projectId?: string;
   invoiceId?: string;
+  punchListItemId?: string;
+  dailyLogId?: string;
+  incidentReportId?: string;
+  warrantyClaimId?: string;
   category?: string;
   search?: string;
+}
+
+export interface DocumentAttachmentMeta {
+  projectId?: string;
+  invoiceId?: string;
+  punchListItemId?: string;
+  dailyLogId?: string;
+  incidentReportId?: string;
+  warrantyClaimId?: string;
+  category?: string;
 }
 
 @Injectable()
@@ -46,6 +60,10 @@ export class DocumentsService {
         deletedAt: null,
         ...(filter.projectId ? { projectId: filter.projectId } : {}),
         ...(filter.invoiceId ? { invoiceId: filter.invoiceId } : {}),
+        ...(filter.punchListItemId ? { punchListItemId: filter.punchListItemId } : {}),
+        ...(filter.dailyLogId ? { dailyLogId: filter.dailyLogId } : {}),
+        ...(filter.incidentReportId ? { incidentReportId: filter.incidentReportId } : {}),
+        ...(filter.warrantyClaimId ? { warrantyClaimId: filter.warrantyClaimId } : {}),
         ...(category ? { category } : {}),
         ...(filter.search ? { name: { contains: filter.search, mode: "insensitive" as const } } : {}),
       },
@@ -67,7 +85,7 @@ export class DocumentsService {
     companyId: string,
     uploadedByUserId: string,
     file: { originalname: string; mimetype: string; buffer: Buffer; size: number },
-    meta: { projectId?: string; invoiceId?: string; category?: string },
+    meta: DocumentAttachmentMeta,
   ) {
     this.validateFile(file);
     if (meta.projectId) {
@@ -78,6 +96,22 @@ export class DocumentsService {
       const invoice = await this.prisma.invoice.findFirst({ where: { id: meta.invoiceId, companyId } });
       if (!invoice) throw new NotFoundException("Invoice not found");
     }
+    if (meta.punchListItemId) {
+      const item = await this.prisma.punchListItem.findFirst({ where: { id: meta.punchListItemId, companyId } });
+      if (!item) throw new NotFoundException("Punch list item not found");
+    }
+    if (meta.dailyLogId) {
+      const log = await this.prisma.dailyLog.findFirst({ where: { id: meta.dailyLogId, companyId } });
+      if (!log) throw new NotFoundException("Daily log not found");
+    }
+    if (meta.incidentReportId) {
+      const incident = await this.prisma.incidentReport.findFirst({ where: { id: meta.incidentReportId, companyId } });
+      if (!incident) throw new NotFoundException("Incident report not found");
+    }
+    if (meta.warrantyClaimId) {
+      const claim = await this.prisma.warrantyClaim.findFirst({ where: { id: meta.warrantyClaimId, companyId } });
+      if (!claim) throw new NotFoundException("Warranty claim not found");
+    }
     const category: DocumentCategory = meta.category ? documentCategorySchema.parse(meta.category) : "other";
 
     const stored = await this.storage.save(companyId, file.originalname, file.buffer);
@@ -87,6 +121,10 @@ export class DocumentsService {
         companyId,
         projectId: meta.projectId,
         invoiceId: meta.invoiceId,
+        punchListItemId: meta.punchListItemId,
+        dailyLogId: meta.dailyLogId,
+        incidentReportId: meta.incidentReportId,
+        warrantyClaimId: meta.warrantyClaimId,
         name: file.originalname,
         storageKey: stored.storageKey,
         mimeType: file.mimetype,
@@ -116,6 +154,10 @@ export class DocumentsService {
         companyId,
         projectId: current.projectId,
         invoiceId: current.invoiceId,
+        punchListItemId: current.punchListItemId,
+        dailyLogId: current.dailyLogId,
+        incidentReportId: current.incidentReportId,
+        warrantyClaimId: current.warrantyClaimId,
         name: file.originalname,
         storageKey: stored.storageKey,
         mimeType: file.mimetype,

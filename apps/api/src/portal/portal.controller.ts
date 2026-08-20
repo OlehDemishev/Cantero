@@ -1,6 +1,11 @@
 import { Body, Controller, Get, Header, Param, Post, Req, StreamableFile, UseGuards } from "@nestjs/common";
 import type { Request } from "express";
-import { clientDecisionSchema, type ClientDecisionInput } from "@cantero/shared";
+import {
+  clientDecisionSchema,
+  portalCreateWarrantyClaimSchema,
+  type ClientDecisionInput,
+  type PortalCreateWarrantyClaimInput,
+} from "@cantero/shared";
 import { Public } from "../common/decorators/public.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { PortalAuthGuard } from "./portal-auth.guard";
@@ -103,5 +108,23 @@ export class PortalController {
   async getInvoicePdf(@CurrentPortalClient() client: PortalClientContext, @Param("id") id: string) {
     const buffer = await this.service.getInvoicePdf(client, id);
     return new StreamableFile(buffer);
+  }
+
+  @Get("projects")
+  listProjects(@CurrentPortalClient() client: PortalClientContext) {
+    return this.service.listProjects(client);
+  }
+
+  @Get("warranty")
+  listWarrantyClaims(@CurrentPortalClient() client: PortalClientContext) {
+    return this.service.listWarrantyClaims(client);
+  }
+
+  @Post("warranty")
+  createWarrantyClaim(
+    @CurrentPortalClient() client: PortalClientContext,
+    @Body(new ZodValidationPipe(portalCreateWarrantyClaimSchema)) body: PortalCreateWarrantyClaimInput,
+  ) {
+    return this.service.createWarrantyClaim(client, body);
   }
 }

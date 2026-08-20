@@ -41,6 +41,12 @@ export const createProjectSchema = z.object({
 });
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;
 
+export const updateProjectWarrantySchema = z.object({
+  handoverDate: z.string().datetime().nullable().optional(),
+  warrantyMonths: z.number().int().min(1).max(120).nullable().optional(),
+});
+export type UpdateProjectWarrantyInput = z.infer<typeof updateProjectWarrantySchema>;
+
 export const createClientSchema = z.object({
   name: z.string().min(1).max(160),
   email: z.string().email().optional(),

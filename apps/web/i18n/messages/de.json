@@ -188,7 +188,10 @@
     "webhookEvent_submittal_approved": "Freigabe erteilt",
     "webhookEvent_submittal_revise_requested": "Freigabe zur Überarbeitung zurückgesendet",
     "webhookEvent_submittal_rejected": "Freigabe abgelehnt",
-    "webhookEvent_safety_incident_logged": "Sicherheitsvorfall erfasst"
+    "webhookEvent_safety_incident_logged": "Sicherheitsvorfall erfasst",
+    "webhookEvent_warranty_claim_submitted": "Gewährleistungsfall gemeldet",
+    "webhookEvent_warranty_claim_resolved": "Gewährleistungsfall behoben",
+    "webhookEvent_warranty_claim_denied": "Gewährleistungsfall abgelehnt"
   },
   "projects": {
     "title": "Projekte",
@@ -441,7 +444,20 @@
     "noChangeOrders": "Noch keine Nachträge.",
     "noInvoices": "Noch keine Rechnungen.",
     "description": "Beschreibung",
-    "back": "Zurück"
+    "back": "Zurück",
+    "warranty": "Gewährleistung",
+    "noWarrantyClaims": "Noch keine Gewährleistungsfälle.",
+    "claimStatus_open": "Offen",
+    "claimStatus_in_progress": "In Bearbeitung",
+    "claimStatus_resolved": "Behoben",
+    "claimStatus_denied": "Abgelehnt",
+    "noProjectsUnderWarranty": "Keines Ihrer Projekte hat derzeit Gewährleistung.",
+    "project": "Projekt",
+    "claimTitlePlaceholder": "Worum geht es?",
+    "locationPlaceholder": "Raum, Bereich…",
+    "descriptionPlaceholder": "Weitere Details…",
+    "submitClaim": "Fall melden",
+    "claimSubmitted": "Fall gemeldet — wir melden uns bei Ihnen."
   },
   "equipment": {
     "title": "Ausrüstung",
@@ -691,7 +707,12 @@
     "type_estimate": "Angebot",
     "type_document": "Dokument",
     "type_worker": "Mitarbeiter",
-    "type_supplier": "Lieferant"
+    "type_supplier": "Lieferant",
+    "type_rfi": "Anfrage",
+    "type_punch_list_item": "Mängel",
+    "type_submittal": "Freigabe",
+    "type_incident_report": "Vorfall",
+    "type_warranty_claim": "Gewährleistungsfall"
   },
   "onboarding": {
     "skipSetup": "Einrichtung überspringen",
@@ -875,5 +896,40 @@
     "status": "Status",
     "atRisk": "Risiko",
     "onTrack": "Im Plan"
+  },
+  "warranty": {
+    "title": "Gewährleistung",
+    "handoverDate": "Übergabedatum",
+    "warrantyMonths": "Gewährleistung (Monate)",
+    "underWarrantyUntil": "Gewährleistung bis {date}",
+    "warrantyExpiredOn": "Gewährleistung abgelaufen am {date}",
+    "claims": "Fälle",
+    "newClaim": "+ Neuer Fall",
+    "claimTitle": "Titel",
+    "location": "Ort",
+    "assignee": "Zuständig",
+    "description": "Beschreibung",
+    "open": "Offen",
+    "in_progress": "In Bearbeitung",
+    "resolved": "Behoben",
+    "denied": "Abgelehnt",
+    "fromClient": "Vom Kunden",
+    "assignedTo": "Zugewiesen an {name}",
+    "submittedBy": "Gemeldet von {name}",
+    "resolutionNotes": "Lösungshinweise",
+    "resolutionNotesPlaceholder": "Wie wurde das behoben…",
+    "denialReason": "Ablehnungsgrund",
+    "denialReasonPlaceholder": "Warum nicht abgedeckt…",
+    "startWork": "Arbeit beginnen",
+    "markResolved": "Als behoben markieren",
+    "deny": "Ablehnen",
+    "reopen": "Wieder öffnen",
+    "noClaims": "Noch keine Gewährleistungsfälle."
+  },
+  "photos": {
+    "title": "Fotos",
+    "addPhoto": "+ Foto hinzufügen",
+    "uploading": "Wird hochgeladen…",
+    "noPhotos": "Noch keine Fotos."
   }
 }

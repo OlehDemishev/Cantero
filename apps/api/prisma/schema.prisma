@@ -183,6 +183,7 @@ model Company {
   incidentReports      IncidentReport[]
   safetyBriefings      SafetyBriefing[]
   submittals           Submittal[]
+  warrantyClaims       WarrantyClaim[]
 
   @@map("companies")
 }
@@ -816,6 +817,10 @@ model Project {
   address   String?
   clientId  String?
   createdAt DateTime @default(now())
+  /// When the finished project was handed over to the client — the anchor date for the warranty window.
+  handoverDate   DateTime?
+  /// Warranty length in months from handoverDate; null means no warranty is configured yet.
+  warrantyMonths Int?
 
   company            Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
   client             Client?             @relation(fields: [clientId], references: [id], onDelete: SetNull)
@@ -836,6 +841,7 @@ model Project {
   incidentReports    IncidentReport[]
   safetyBriefings    SafetyBriefing[]
   submittals         Submittal[]
+  warrantyClaims     WarrantyClaim[]
 
   @@index([companyId])
   @@map("projects")
@@ -921,6 +927,7 @@ model DailyLog {
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   author  User?   @relation(fields: [authorUserId], references: [id], onDelete: SetNull)
+  photos  Document[]
 
   @@unique([projectId, date])
   @@index([companyId])
@@ -950,6 +957,7 @@ model PunchListItem {
   company  Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   project  Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   assignee Worker? @relation(fields: [assigneeWorkerId], references: [id], onDelete: SetNull)
+  photos   Document[]
 
   @@index([projectId])
   @@index([companyId])
@@ -1211,6 +1219,7 @@ model Client {
   activities        ClientActivity[]
   reminders         ClientReminder[]
   portalLoginTokens ClientPortalLoginToken[]
+  warrantyClaims    WarrantyClaim[]
 
   @@index([companyId])
   @@map("clients")
@@ -1293,6 +1302,7 @@ model Worker {
   equipmentAssignments EquipmentAssignment[]
   punchListItems      PunchListItem[]
   safetyBriefingAttendance SafetyBriefingAttendance[]
+  warrantyClaims      WarrantyClaim[]
 
   @@index([companyId])
   @@map("workers")
@@ -1334,6 +1344,14 @@ model Document {
   companyId        String
   projectId        String?
   invoiceId        String?
+  /// The following four are alternative attachment points alongside project/invoice — a photo of
+  /// a defect, a daily-log condition shot, incident evidence, or a warranty claim photo. Exactly
+  /// one of these (or project/invoice) is set per document in practice, though nothing enforces
+  /// that at the schema level, same as project/invoice today.
+  punchListItemId  String?
+  dailyLogId       String?
+  incidentReportId String?
+  warrantyClaimId  String?
   name             String
   storageKey       String
   mimeType         String
@@ -1349,15 +1367,23 @@ model Document {
   deletedAt        DateTime?
   createdAt        DateTime         @default(now())
 
-  company      Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  project      Project?   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  invoice      Invoice?   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  uploadedBy   User?      @relation(fields: [uploadedByUserId], references: [id], onDelete: SetNull)
-  rootDocument Document?  @relation("DocumentVersions", fields: [rootDocumentId], references: [id], onDelete: Cascade)
-  versions     Document[] @relation("DocumentVersions")
+  company        Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project        Project?       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  invoice        Invoice?       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  punchListItem  PunchListItem? @relation(fields: [punchListItemId], references: [id], onDelete: Cascade)
+  dailyLog       DailyLog?      @relation(fields: [dailyLogId], references: [id], onDelete: Cascade)
+  incidentReport IncidentReport? @relation(fields: [incidentReportId], references: [id], onDelete: Cascade)
+  warrantyClaim  WarrantyClaim? @relation(fields: [warrantyClaimId], references: [id], onDelete: Cascade)
+  uploadedBy     User?          @relation(fields: [uploadedByUserId], references: [id], onDelete: SetNull)
+  rootDocument   Document?      @relation("DocumentVersions", fields: [rootDocumentId], references: [id], onDelete: Cascade)
+  versions       Document[]     @relation("DocumentVersions")
 
   @@index([companyId])
   @@index([rootDocumentId])
+  @@index([punchListItemId])
+  @@index([dailyLogId])
+  @@index([incidentReportId])
+  @@index([warrantyClaimId])
   @@map("documents")
 }
 
@@ -1451,6 +1477,7 @@ model IncidentReport {
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  photos  Document[]
 
   @@index([projectId])
   @@index([companyId])
@@ -1537,4 +1564,49 @@ model Submittal {
   @@index([companyId])
   @@index([rootSubmittalId])
   @@map("submittals")
+}
+
+// ---------- Warranty (post-handover) ----------
+
+enum WarrantyClaimStatus {
+  open
+  in_progress
+  resolved
+  denied
+}
+
+/// A defect reported after handover, within the project's warranty window — distinct from
+/// PunchListItem, which is pre-handover QA. Can be raised internally (a phone call logged by the
+/// office) or by the client themselves through the portal.
+model WarrantyClaim {
+  id                 String              @id @default(uuid())
+  companyId          String
+  projectId          String
+  title              String
+  description        String?
+  location           String?
+  status             WarrantyClaimStatus @default(open)
+  submittedByClientId String?
+  submittedByUserId   String?
+  submittedByName     String
+  assigneeWorkerId    String?
+  resolvedAt          DateTime?
+  resolvedByUserId    String?
+  resolvedByName      String?
+  resolutionNotes     String?
+  deniedAt            DateTime?
+  deniedByUserId      String?
+  deniedByName        String?
+  denialReason        String?
+  createdAt           DateTime            @default(now())
+
+  company         Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project         Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  submittedByClient Client?  @relation(fields: [submittedByClientId], references: [id], onDelete: SetNull)
+  assignee        Worker?    @relation(fields: [assigneeWorkerId], references: [id], onDelete: SetNull)
+  photos          Document[]
+
+  @@index([projectId])
+  @@index([companyId])
+  @@map("warranty_claims")
 }

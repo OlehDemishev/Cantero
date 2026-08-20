@@ -188,7 +188,10 @@
     "webhookEvent_submittal_approved": "Aprobación concedida",
     "webhookEvent_submittal_revise_requested": "Aprobación devuelta para revisión",
     "webhookEvent_submittal_rejected": "Aprobación rechazada",
-    "webhookEvent_safety_incident_logged": "Incidente de seguridad registrado"
+    "webhookEvent_safety_incident_logged": "Incidente de seguridad registrado",
+    "webhookEvent_warranty_claim_submitted": "Reclamación de garantía enviada",
+    "webhookEvent_warranty_claim_resolved": "Reclamación de garantía resuelta",
+    "webhookEvent_warranty_claim_denied": "Reclamación de garantía rechazada"
   },
   "projects": {
     "title": "Proyectos",
@@ -441,7 +444,20 @@
     "noChangeOrders": "Aún no hay órdenes de cambio.",
     "noInvoices": "Aún no hay facturas.",
     "description": "Descripción",
-    "back": "Volver"
+    "back": "Volver",
+    "warranty": "Garantía",
+    "noWarrantyClaims": "Aún no hay reclamaciones de garantía.",
+    "claimStatus_open": "Abierta",
+    "claimStatus_in_progress": "En curso",
+    "claimStatus_resolved": "Resuelta",
+    "claimStatus_denied": "Rechazada",
+    "noProjectsUnderWarranty": "Ninguno de sus proyectos está actualmente en garantía.",
+    "project": "Proyecto",
+    "claimTitlePlaceholder": "¿Cuál es el problema?",
+    "locationPlaceholder": "Habitación, zona…",
+    "descriptionPlaceholder": "Más detalles…",
+    "submitClaim": "Enviar reclamación",
+    "claimSubmitted": "Reclamación enviada — nos pondremos en contacto."
   },
   "equipment": {
     "title": "Equipos",
@@ -691,7 +707,12 @@
     "type_estimate": "Presupuesto",
     "type_document": "Documento",
     "type_worker": "Trabajador",
-    "type_supplier": "Proveedor"
+    "type_supplier": "Proveedor",
+    "type_rfi": "Solicitud",
+    "type_punch_list_item": "Defecto",
+    "type_submittal": "Aprobación",
+    "type_incident_report": "Incidente",
+    "type_warranty_claim": "Reclamación de garantía"
   },
   "onboarding": {
     "skipSetup": "Omitir configuración",
@@ -875,5 +896,40 @@
     "status": "Estado",
     "atRisk": "En riesgo",
     "onTrack": "En curso"
+  },
+  "warranty": {
+    "title": "Garantía",
+    "handoverDate": "Fecha de entrega",
+    "warrantyMonths": "Garantía (meses)",
+    "underWarrantyUntil": "En garantía hasta {date}",
+    "warrantyExpiredOn": "Garantía vencida el {date}",
+    "claims": "Reclamaciones",
+    "newClaim": "+ Nueva reclamación",
+    "claimTitle": "Título",
+    "location": "Ubicación",
+    "assignee": "Responsable",
+    "description": "Descripción",
+    "open": "Abierta",
+    "in_progress": "En curso",
+    "resolved": "Resuelta",
+    "denied": "Rechazada",
+    "fromClient": "Del cliente",
+    "assignedTo": "Asignado a {name}",
+    "submittedBy": "Enviado por {name}",
+    "resolutionNotes": "Notas de resolución",
+    "resolutionNotesPlaceholder": "Cómo se solucionó…",
+    "denialReason": "Motivo de rechazo",
+    "denialReasonPlaceholder": "Por qué no está cubierto…",
+    "startWork": "Iniciar trabajo",
+    "markResolved": "Marcar como resuelta",
+    "deny": "Rechazar",
+    "reopen": "Reabrir",
+    "noClaims": "Aún no hay reclamaciones de garantía."
+  },
+  "photos": {
+    "title": "Fotos",
+    "addPhoto": "+ Añadir foto",
+    "uploading": "Subiendo…",
+    "noPhotos": "Aún no hay fotos."
   }
 }

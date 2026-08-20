@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import type { CreateProjectInput } from "@cantero/shared";
+import type { CreateProjectInput, UpdateProjectWarrantyInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 
 @Injectable()
@@ -29,5 +29,17 @@ export class ProjectsService {
       if (!client) throw new NotFoundException("Client not found");
     }
     return this.prisma.project.create({ data: { ...input, companyId } });
+  }
+
+  async updateWarranty(companyId: string, id: string, input: UpdateProjectWarrantyInput) {
+    await this.get(companyId, id);
+    return this.prisma.project.update({
+      where: { id },
+      data: {
+        handoverDate: input.handoverDate === null ? null : input.handoverDate ? new Date(input.handoverDate) : undefined,
+        warrantyMonths: input.warrantyMonths,
+      },
+      include: { client: true },
+    });
   }
 }

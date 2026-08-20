@@ -10,6 +10,7 @@ import { PunchListPanel } from "@/components/punch-list-panel";
 import { RfiPanel } from "@/components/rfi-panel";
 import { SafetyPanel } from "@/components/safety-panel";
 import { SubmittalsPanel } from "@/components/submittals-panel";
+import { WarrantyPanel } from "@/components/warranty-panel";
 import { BudgetPanel } from "@/components/budget-panel";
 import { TimeTrackingPanel } from "@/components/time-tracking-panel";
 import { SubcontractorCostsPanel } from "@/components/subcontractor-costs-panel";
@@ -186,6 +187,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
       <RfiPanel projectId={projectId} />
       <SafetyPanel projectId={projectId} />
       <SubmittalsPanel projectId={projectId} />
+      <WarrantyPanel projectId={projectId} />
       <TimeTrackingPanel projectId={projectId} />
       <SubcontractorAssignmentsPanel projectId={projectId} />
       <SubcontractorCostsPanel projectId={projectId} />

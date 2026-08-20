@@ -5,7 +5,15 @@ export type Severity = "warning" | "critical";
 
 export interface NotificationItem {
   key: string;
-  type: "low_stock" | "reminder_due" | "invoice_overdue" | "rfi_open" | "punch_list_open" | "submittal_pending" | "safety_incident";
+  type:
+    | "low_stock"
+    | "reminder_due"
+    | "invoice_overdue"
+    | "rfi_open"
+    | "punch_list_open"
+    | "submittal_pending"
+    | "safety_incident"
+    | "warranty_claim_open";
   severity: Severity;
   title: string;
   body: string;
@@ -27,20 +35,29 @@ export class NotificationsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async list(companyId: string, userId: string) {
-    const [lowStock, reminders, invoices, openRfis, openPunchItems, pendingSubmittals, incidents, membership] = await Promise.all([
-      this.lowStockItems(companyId),
-      this.dueReminders(companyId),
-      this.overdueInvoices(companyId),
-      this.openRfis(companyId),
-      this.openPunchListItems(companyId),
-      this.pendingSubmittals(companyId),
-      this.safetyIncidents(companyId),
-      this.prisma.membership.findFirst({ where: { companyId, userId } }),
-    ]);
+    const [lowStock, reminders, invoices, openRfis, openPunchItems, pendingSubmittals, incidents, openWarrantyClaims, membership] =
+      await Promise.all([
+        this.lowStockItems(companyId),
+        this.dueReminders(companyId),
+        this.overdueInvoices(companyId),
+        this.openRfis(companyId),
+        this.openPunchListItems(companyId),
+        this.pendingSubmittals(companyId),
+        this.safetyIncidents(companyId),
+        this.openWarrantyClaims(companyId),
+        this.prisma.membership.findFirst({ where: { companyId, userId } }),
+      ]);
 
-    const items = [...lowStock, ...reminders, ...invoices, ...openRfis, ...openPunchItems, ...pendingSubmittals, ...incidents].sort(
-      (a, b) => b.occurredAt.getTime() - a.occurredAt.getTime(),
-    );
+    const items = [
+      ...lowStock,
+      ...reminders,
+      ...invoices,
+      ...openRfis,
+      ...openPunchItems,
+      ...pendingSubmittals,
+      ...incidents,
+      ...openWarrantyClaims,
+    ].sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
 
     const lastViewedAt = membership?.notificationsLastViewedAt ?? null;
     const unreadCount = lastViewedAt
@@ -214,6 +231,24 @@ export class NotificationsService {
       body: `${incident.project.name}${incident.location ? ` — ${incident.location}` : ""}`,
       link: `/projects/${incident.project.id}`,
       occurredAt: incident.createdAt,
+    }));
+  }
+
+  private async openWarrantyClaims(companyId: string): Promise<NotificationItem[]> {
+    const claims = await this.prisma.warrantyClaim.findMany({
+      where: { companyId, status: "open" },
+      include: { project: { select: { id: true, name: true } } },
+    });
+
+    return claims.map((claim) => ({
+      key: `warranty_claim:${claim.id}`,
+      // A client submitting their own claim is more time-sensitive than one the office already knows about.
+      severity: (claim.submittedByClientId ? "critical" : "warning") as Severity,
+      type: "warranty_claim_open" as const,
+      title: claim.title,
+      body: `${claim.project.name}${claim.location ? ` — ${claim.location}` : ""}`,
+      link: `/projects/${claim.project.id}`,
+      occurredAt: claim.createdAt,
     }));
   }
 }

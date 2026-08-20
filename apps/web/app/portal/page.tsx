@@ -36,6 +36,20 @@ interface InvoiceSummary {
   dueDate: string | null;
   project: { name: string };
 }
+interface PortalProject {
+  id: string;
+  name: string;
+  warrantyExpiresAt: string | null;
+  isUnderWarranty: boolean;
+}
+type WarrantyClaimStatus = "open" | "in_progress" | "resolved" | "denied";
+interface WarrantyClaimSummary {
+  id: string;
+  title: string;
+  location: string | null;
+  status: WarrantyClaimStatus;
+  project: { id: string; name: string };
+}
 
 export default function PortalDashboardPage() {
   const t = useTranslations("portal");
@@ -47,6 +61,20 @@ export default function PortalDashboardPage() {
   const [estimates, setEstimates] = useState<EstimateSummary[] | null>(null);
   const [changeOrders, setChangeOrders] = useState<ChangeOrderSummary[] | null>(null);
   const [invoices, setInvoices] = useState<InvoiceSummary[] | null>(null);
+  const [projects, setProjects] = useState<PortalProject[] | null>(null);
+  const [warrantyClaims, setWarrantyClaims] = useState<WarrantyClaimSummary[] | null>(null);
+  const [claimForm, setClaimForm] = useState({ projectId: "", title: "", description: "", location: "" });
+  const [claimBusy, setClaimBusy] = useState(false);
+  const [claimMessage, setClaimMessage] = useState<string | null>(null);
+
+  function loadWarranty() {
+    portalApiFetch<PortalProject[]>("/portal/projects").then((list) => {
+      setProjects(list);
+      const firstUnderWarranty = list.find((p) => p.isUnderWarranty);
+      if (firstUnderWarranty) setClaimForm((f) => ({ ...f, projectId: f.projectId || firstUnderWarranty.id }));
+    });
+    portalApiFetch<WarrantyClaimSummary[]>("/portal/warranty").then(setWarrantyClaims);
+  }
 
   useEffect(() => {
     if (!getPortalToken()) {
@@ -57,8 +85,34 @@ export default function PortalDashboardPage() {
     portalApiFetch<EstimateSummary[]>("/portal/estimates").then(setEstimates);
     portalApiFetch<ChangeOrderSummary[]>("/portal/change-orders").then(setChangeOrders);
     portalApiFetch<InvoiceSummary[]>("/portal/invoices").then(setInvoices);
+    loadWarranty();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function submitClaim(e: React.FormEvent) {
+    e.preventDefault();
+    if (!claimForm.projectId) return;
+    setClaimBusy(true);
+    setClaimMessage(null);
+    try {
+      await portalApiFetch("/portal/warranty", {
+        method: "POST",
+        body: JSON.stringify({
+          projectId: claimForm.projectId,
+          title: claimForm.title,
+          description: claimForm.description || undefined,
+          location: claimForm.location || undefined,
+        }),
+      });
+      setClaimForm((f) => ({ ...f, title: "", description: "", location: "" }));
+      setClaimMessage(t("claimSubmitted"));
+      loadWarranty();
+    } catch (err) {
+      setClaimMessage(err instanceof Error ? err.message : String(err));
+    } finally {
+      setClaimBusy(false);
+    }
+  }
 
   function logout() {
     clearPortalToken();
@@ -202,6 +256,85 @@ export default function PortalDashboardPage() {
                 </li>
               ))}
             </ul>
+          )}
+        </section>
+
+        <section className="card mt-6">
+          <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("warranty")}</h2>
+          {!warrantyClaims || warrantyClaims.length === 0 ? (
+            <p className="text-sm text-gray-400">{t("noWarrantyClaims")}</p>
+          ) : (
+            <ul className="mb-4 flex flex-col gap-2">
+              {warrantyClaims.map((claim) => (
+                <li key={claim.id} className="flex items-center justify-between rounded-md border border-gray-200 px-3 py-2 text-sm">
+                  <span>
+                    {claim.title}
+                    <span className="ml-2 text-xs text-gray-400">{claim.project.name}</span>
+                    {claim.location && <span className="ml-2 text-xs text-gray-400">— {claim.location}</span>}
+                  </span>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                      claim.status === "resolved"
+                        ? "bg-success-50 text-success-700"
+                        : claim.status === "denied"
+                          ? "bg-error-50 text-error-700"
+                          : claim.status === "in_progress"
+                            ? "bg-brand-50 text-brand-700"
+                            : "bg-gray-100 text-gray-600"
+                    }`}
+                  >
+                    {t(`claimStatus_${claim.status}`)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {!projects || projects.filter((p) => p.isUnderWarranty).length === 0 ? (
+            <p className="text-sm text-gray-400">{t("noProjectsUnderWarranty")}</p>
+          ) : (
+            <form onSubmit={submitClaim} className="flex flex-col gap-2">
+              <label className="text-xs text-gray-500">
+                {t("project")}
+                <select
+                  className="input mt-1"
+                  value={claimForm.projectId}
+                  onChange={(e) => setClaimForm((f) => ({ ...f, projectId: e.target.value }))}
+                >
+                  {projects
+                    .filter((p) => p.isUnderWarranty)
+                    .map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              <input
+                required
+                placeholder={t("claimTitlePlaceholder")}
+                className="input"
+                value={claimForm.title}
+                onChange={(e) => setClaimForm((f) => ({ ...f, title: e.target.value }))}
+              />
+              <input
+                placeholder={t("locationPlaceholder")}
+                className="input"
+                value={claimForm.location}
+                onChange={(e) => setClaimForm((f) => ({ ...f, location: e.target.value }))}
+              />
+              <textarea
+                rows={2}
+                placeholder={t("descriptionPlaceholder")}
+                className="input"
+                value={claimForm.description}
+                onChange={(e) => setClaimForm((f) => ({ ...f, description: e.target.value }))}
+              />
+              <button type="submit" disabled={claimBusy} className="btn-primary self-start">
+                {t("submitClaim")}
+              </button>
+              {claimMessage && <p className="text-xs text-gray-600">{claimMessage}</p>}
+            </form>
           )}
         </section>
       </div>

@@ -6,7 +6,19 @@ import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { SearchIcon } from "@/components/nav-icons";
 
-type ResultType = "project" | "client" | "invoice" | "estimate" | "document" | "worker" | "supplier";
+type ResultType =
+  | "project"
+  | "client"
+  | "invoice"
+  | "estimate"
+  | "document"
+  | "worker"
+  | "supplier"
+  | "rfi"
+  | "punch_list_item"
+  | "submittal"
+  | "incident_report"
+  | "warranty_claim";
 interface SearchResult {
   type: ResultType;
   id: string;

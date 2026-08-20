@@ -26,10 +26,23 @@ export class DocumentsController {
     @CurrentUser() user: AuthUser,
     @Query("projectId") projectId?: string,
     @Query("invoiceId") invoiceId?: string,
+    @Query("punchListItemId") punchListItemId?: string,
+    @Query("dailyLogId") dailyLogId?: string,
+    @Query("incidentReportId") incidentReportId?: string,
+    @Query("warrantyClaimId") warrantyClaimId?: string,
     @Query("category") category?: string,
     @Query("search") search?: string,
   ) {
-    return this.service.list(user.companyId, { projectId, invoiceId, category, search });
+    return this.service.list(user.companyId, {
+      projectId,
+      invoiceId,
+      punchListItemId,
+      dailyLogId,
+      incidentReportId,
+      warrantyClaimId,
+      category,
+      search,
+    });
   }
 
   @Post()
@@ -39,10 +52,22 @@ export class DocumentsController {
     @UploadedFile() file: Express.Multer.File,
     @Query("projectId") projectId?: string,
     @Query("invoiceId") invoiceId?: string,
+    @Query("punchListItemId") punchListItemId?: string,
+    @Query("dailyLogId") dailyLogId?: string,
+    @Query("incidentReportId") incidentReportId?: string,
+    @Query("warrantyClaimId") warrantyClaimId?: string,
     @Query("category") category?: string,
   ) {
     if (!file) throw new BadRequestException("No file provided");
-    return this.service.upload(user.companyId, user.userId, file, { projectId, invoiceId, category });
+    return this.service.upload(user.companyId, user.userId, file, {
+      projectId,
+      invoiceId,
+      punchListItemId,
+      dailyLogId,
+      incidentReportId,
+      warrantyClaimId,
+      category,
+    });
   }
 
   @Post(":id/replace")
