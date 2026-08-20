@@ -3,6 +3,7 @@ import { Test } from "@nestjs/testing";
 import { IncidentReportsService } from "./incident-reports.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService } from "../common/audit/audit.service";
+import { WebhooksService } from "../common/webhooks/webhooks.service";
 
 const COMPANY_A = "company-a";
 const ACTOR = { userId: "user-1", name: "Foreman" };
@@ -14,6 +15,7 @@ describe("IncidentReportsService", () => {
     incidentReport: { findFirst: jest.Mock; create: jest.Mock; update: jest.Mock };
   };
   let audit: { record: jest.Mock };
+  let webhooks: { trigger: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -21,12 +23,14 @@ describe("IncidentReportsService", () => {
       incidentReport: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
     };
     audit = { record: jest.fn() };
+    webhooks = { trigger: jest.fn() };
 
     const module = await Test.createTestingModule({
       providers: [
         IncidentReportsService,
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: audit },
+        { provide: WebhooksService, useValue: webhooks },
       ],
     }).compile();
 
@@ -50,7 +54,7 @@ describe("IncidentReportsService", () => {
 
     it("records the reporting actor and audits the entry", async () => {
       prisma.project.findFirst.mockResolvedValue({ id: "project-1", companyId: COMPANY_A, name: "Site A" });
-      prisma.incidentReport.create.mockResolvedValue({ id: "incident-1" });
+      prisma.incidentReport.create.mockResolvedValue({ id: "incident-1", severity: "first_aid" });
 
       await service.create(COMPANY_A, ACTOR, {
         projectId: "project-1",
@@ -65,6 +69,11 @@ describe("IncidentReportsService", () => {
         }),
       );
       expect(audit.record).toHaveBeenCalled();
+      expect(webhooks.trigger).toHaveBeenCalledWith(
+        COMPANY_A,
+        "safety_incident.logged",
+        expect.objectContaining({ incidentId: "incident-1", severity: "first_aid" }),
+      );
     });
   });
 

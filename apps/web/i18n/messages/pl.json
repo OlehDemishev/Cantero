@@ -180,7 +180,15 @@
     "disablePush": "Wyłącz powiadomienia push",
     "pushEnabled": "Włączone w tej przeglądarce",
     "pushPermissionDenied": "Powiadomienia dla tej strony są zablokowane w ustawieniach przeglądarki.",
-    "inviteEmailHint": "Na ten adres zostanie wysłany e-mail z linkiem do akceptacji."
+    "inviteEmailHint": "Na ten adres zostanie wysłany e-mail z linkiem do akceptacji.",
+    "webhookEvent_rfi_answered": "Odpowiedziano na zapytanie",
+    "webhookEvent_rfi_closed": "Zapytanie zamknięte",
+    "webhookEvent_punch_list_resolved": "Usterka usunięta",
+    "webhookEvent_punch_list_verified": "Usterka zweryfikowana",
+    "webhookEvent_submittal_approved": "Zatwierdzenie udzielone",
+    "webhookEvent_submittal_revise_requested": "Zwrócono do poprawy",
+    "webhookEvent_submittal_rejected": "Zatwierdzenie odrzucone",
+    "webhookEvent_safety_incident_logged": "Zarejestrowano zdarzenie BHP"
   },
   "projects": {
     "title": "Projekty",

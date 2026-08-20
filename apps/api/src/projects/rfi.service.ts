@@ -2,12 +2,14 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import type { AnswerRfiInput, CreateRfiInput, UpdateRfiInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
+import { WebhooksService } from "../common/webhooks/webhooks.service";
 
 @Injectable()
 export class RfiService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly webhooks: WebhooksService,
   ) {}
 
   async listForProject(companyId: string, projectId: string) {
@@ -70,6 +72,7 @@ export class RfiService {
       data: { status: "answered", answer: input.answer, answeredAt: new Date(), answeredByUserId: actor.userId, answeredByName: actor.name },
     });
     this.audit.record(companyId, actor, "rfi.answered", "Rfi", rfi.id, `Answered ${rfi.number}: ${rfi.subject}`);
+    this.webhooks.trigger(companyId, "rfi.answered", { rfiId: rfi.id, number: rfi.number, subject: rfi.subject });
     return updated;
   }
 
@@ -82,6 +85,7 @@ export class RfiService {
       data: { status: "closed", closedAt: new Date(), closedByUserId: actor.userId, closedByName: actor.name },
     });
     this.audit.record(companyId, actor, "rfi.closed", "Rfi", rfi.id, `Closed ${rfi.number}: ${rfi.subject}`);
+    this.webhooks.trigger(companyId, "rfi.closed", { rfiId: rfi.id, number: rfi.number, subject: rfi.subject });
     return updated;
   }
 

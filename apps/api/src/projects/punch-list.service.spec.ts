@@ -3,6 +3,7 @@ import { Test } from "@nestjs/testing";
 import { PunchListService } from "./punch-list.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService } from "../common/audit/audit.service";
+import { WebhooksService } from "../common/webhooks/webhooks.service";
 
 const COMPANY_A = "company-a";
 const ACTOR = { userId: "user-1", name: "Foreman" };
@@ -15,6 +16,7 @@ describe("PunchListService", () => {
     punchListItem: { findFirst: jest.Mock; create: jest.Mock; update: jest.Mock };
   };
   let audit: { record: jest.Mock };
+  let webhooks: { trigger: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -23,12 +25,14 @@ describe("PunchListService", () => {
       punchListItem: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
     };
     audit = { record: jest.fn() };
+    webhooks = { trigger: jest.fn() };
 
     const module = await Test.createTestingModule({
       providers: [
         PunchListService,
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: audit },
+        { provide: WebhooksService, useValue: webhooks },
       ],
     }).compile();
 
@@ -85,6 +89,7 @@ describe("PunchListService", () => {
         }),
       );
       expect(audit.record).toHaveBeenCalled();
+      expect(webhooks.trigger).toHaveBeenCalledWith(COMPANY_A, "punch_list.verified", expect.objectContaining({ punchListItemId: "item-1" }));
     });
   });
 

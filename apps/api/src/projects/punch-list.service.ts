@@ -2,12 +2,14 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import type { CreatePunchListItemInput, UpdatePunchListItemInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
+import { WebhooksService } from "../common/webhooks/webhooks.service";
 
 @Injectable()
 export class PunchListService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly webhooks: WebhooksService,
   ) {}
 
   async listForProject(companyId: string, projectId: string) {
@@ -77,6 +79,7 @@ export class PunchListService {
       include: { assignee: { select: { id: true, name: true } } },
     });
     this.audit.record(companyId, actor, "punch_list.resolved", "PunchListItem", item.id, `Marked "${item.title}" resolved`);
+    this.webhooks.trigger(companyId, "punch_list.resolved", { punchListItemId: item.id, title: item.title });
     return updated;
   }
 
@@ -90,6 +93,7 @@ export class PunchListService {
       include: { assignee: { select: { id: true, name: true } } },
     });
     this.audit.record(companyId, actor, "punch_list.verified", "PunchListItem", item.id, `Verified fix for "${item.title}"`);
+    this.webhooks.trigger(companyId, "punch_list.verified", { punchListItemId: item.id, title: item.title });
     return updated;
   }
 

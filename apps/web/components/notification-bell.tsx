@@ -5,7 +5,14 @@ import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { BellIcon } from "@/components/nav-icons";
 
-type NotificationType = "low_stock" | "reminder_due" | "invoice_overdue";
+type NotificationType =
+  | "low_stock"
+  | "reminder_due"
+  | "invoice_overdue"
+  | "rfi_open"
+  | "punch_list_open"
+  | "submittal_pending"
+  | "safety_incident";
 type Severity = "warning" | "critical";
 
 interface Notification {

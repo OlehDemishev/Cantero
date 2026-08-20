@@ -2,12 +2,14 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import type { CreateIncidentReportInput, UpdateIncidentReportInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
+import { WebhooksService } from "../common/webhooks/webhooks.service";
 
 @Injectable()
 export class IncidentReportsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly webhooks: WebhooksService,
   ) {}
 
   async listForProject(companyId: string, projectId: string) {
@@ -46,6 +48,7 @@ export class IncidentReportsService {
       report.id,
       `Logged ${input.severity.replace(/_/g, " ")} incident on "${project.name}"`,
     );
+    this.webhooks.trigger(companyId, "safety_incident.logged", { incidentId: report.id, severity: report.severity, projectId: input.projectId });
     return report;
   }
 

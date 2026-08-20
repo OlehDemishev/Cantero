@@ -2,12 +2,22 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import type { CreateSubmittalInput, ReviewSubmittalInput, UpdateSubmittalInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
+import { WebhooksService } from "../common/webhooks/webhooks.service";
+import type { WebhookEvent } from "@cantero/shared";
+
+const REVIEW_DECISION_WEBHOOK_EVENT: Record<string, WebhookEvent> = {
+  approved: "submittal.approved",
+  approved_as_noted: "submittal.approved",
+  revise_and_resubmit: "submittal.revise_requested",
+  rejected: "submittal.rejected",
+};
 
 @Injectable()
 export class SubmittalsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly webhooks: WebhooksService,
   ) {}
 
   /** Latest revision per chain, same convention as Document versioning. */
@@ -100,6 +110,12 @@ export class SubmittalsService {
       submittal.id,
       `Reviewed ${submittal.number} rev.${submittal.revision}: ${input.decision.replace(/_/g, " ")}`,
     );
+    this.webhooks.trigger(companyId, REVIEW_DECISION_WEBHOOK_EVENT[input.decision], {
+      submittalId: submittal.id,
+      number: submittal.number,
+      revision: submittal.revision,
+      decision: input.decision,
+    });
     return updated;
   }
 

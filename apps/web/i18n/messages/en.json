@@ -180,7 +180,15 @@
     "disablePush": "Disable push notifications",
     "pushEnabled": "Enabled on this browser",
     "pushPermissionDenied": "Notifications are blocked for this site in your browser settings.",
-    "inviteEmailHint": "An email with an accept link is sent to this address."
+    "inviteEmailHint": "An email with an accept link is sent to this address.",
+    "webhookEvent_rfi_answered": "RFI answered",
+    "webhookEvent_rfi_closed": "RFI closed",
+    "webhookEvent_punch_list_resolved": "Punch list item resolved",
+    "webhookEvent_punch_list_verified": "Punch list item verified",
+    "webhookEvent_submittal_approved": "Submittal approved",
+    "webhookEvent_submittal_revise_requested": "Submittal sent back for revision",
+    "webhookEvent_submittal_rejected": "Submittal rejected",
+    "webhookEvent_safety_incident_logged": "Safety incident logged"
   },
   "projects": {
     "title": "Projects",

@@ -180,7 +180,15 @@
     "disablePush": "Desactivar notificaciones push",
     "pushEnabled": "Activado en este navegador",
     "pushPermissionDenied": "Las notificaciones están bloqueadas para este sitio en la configuración de su navegador.",
-    "inviteEmailHint": "Se envía un correo con un enlace de aceptación a esta dirección."
+    "inviteEmailHint": "Se envía un correo con un enlace de aceptación a esta dirección.",
+    "webhookEvent_rfi_answered": "Solicitud respondida",
+    "webhookEvent_rfi_closed": "Solicitud cerrada",
+    "webhookEvent_punch_list_resolved": "Defecto resuelto",
+    "webhookEvent_punch_list_verified": "Defecto verificado",
+    "webhookEvent_submittal_approved": "Aprobación concedida",
+    "webhookEvent_submittal_revise_requested": "Aprobación devuelta para revisión",
+    "webhookEvent_submittal_rejected": "Aprobación rechazada",
+    "webhookEvent_safety_incident_logged": "Incidente de seguridad registrado"
   },
   "projects": {
     "title": "Proyectos",

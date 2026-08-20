@@ -3,6 +3,7 @@ import { Test } from "@nestjs/testing";
 import { RfiService } from "./rfi.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService } from "../common/audit/audit.service";
+import { WebhooksService } from "../common/webhooks/webhooks.service";
 
 const COMPANY_A = "company-a";
 const ACTOR = { userId: "user-1", name: "Site Manager" };
@@ -14,6 +15,7 @@ describe("RfiService", () => {
     rfi: { findFirst: jest.Mock; count: jest.Mock; create: jest.Mock; update: jest.Mock };
   };
   let audit: { record: jest.Mock };
+  let webhooks: { trigger: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -21,12 +23,14 @@ describe("RfiService", () => {
       rfi: { findFirst: jest.fn(), count: jest.fn(), create: jest.fn(), update: jest.fn() },
     };
     audit = { record: jest.fn() };
+    webhooks = { trigger: jest.fn() };
 
     const module = await Test.createTestingModule({
       providers: [
         RfiService,
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: audit },
+        { provide: WebhooksService, useValue: webhooks },
       ],
     }).compile();
 
@@ -63,6 +67,15 @@ describe("RfiService", () => {
       await expect(service.answer(COMPANY_A, ACTOR, "rfi-1", { answer: "Inward" })).rejects.toThrow(BadRequestException);
       expect(prisma.rfi.update).not.toHaveBeenCalled();
     });
+
+    it("triggers the rfi.answered webhook on success", async () => {
+      prisma.rfi.findFirst.mockResolvedValue({ id: "rfi-1", companyId: COMPANY_A, status: "open", number: "RFI-001", subject: "Door swing" });
+      prisma.rfi.update.mockResolvedValue({ id: "rfi-1", status: "answered" });
+
+      await service.answer(COMPANY_A, ACTOR, "rfi-1", { answer: "Inward" });
+
+      expect(webhooks.trigger).toHaveBeenCalledWith(COMPANY_A, "rfi.answered", expect.objectContaining({ rfiId: "rfi-1", number: "RFI-001" }));
+    });
   });
 
   describe("close()", () => {
@@ -80,6 +93,7 @@ describe("RfiService", () => {
       await service.close(COMPANY_A, ACTOR, "rfi-1");
 
       expect(prisma.rfi.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: "closed" }) }));
+      expect(webhooks.trigger).toHaveBeenCalledWith(COMPANY_A, "rfi.closed", expect.objectContaining({ rfiId: "rfi-1" }));
     });
   });
 

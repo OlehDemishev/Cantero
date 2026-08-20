@@ -3,6 +3,7 @@ import { Test } from "@nestjs/testing";
 import { SubmittalsService } from "./submittals.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService } from "../common/audit/audit.service";
+import { WebhooksService } from "../common/webhooks/webhooks.service";
 
 const COMPANY_A = "company-a";
 const ACTOR = { userId: "user-1", name: "PM" };
@@ -14,6 +15,7 @@ describe("SubmittalsService", () => {
     submittal: { findFirst: jest.Mock; count: jest.Mock; create: jest.Mock; update: jest.Mock };
   };
   let audit: { record: jest.Mock };
+  let webhooks: { trigger: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -21,12 +23,14 @@ describe("SubmittalsService", () => {
       submittal: { findFirst: jest.fn(), count: jest.fn(), create: jest.fn(), update: jest.fn() },
     };
     audit = { record: jest.fn() };
+    webhooks = { trigger: jest.fn() };
 
     const module = await Test.createTestingModule({
       providers: [
         SubmittalsService,
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: audit },
+        { provide: WebhooksService, useValue: webhooks },
       ],
     }).compile();
 
@@ -70,6 +74,24 @@ describe("SubmittalsService", () => {
 
       await expect(service.review(COMPANY_A, ACTOR, "s-1", { decision: "approved" })).rejects.toThrow(BadRequestException);
       expect(prisma.submittal.update).not.toHaveBeenCalled();
+    });
+
+    it("maps both approval decisions to the same submittal.approved webhook event", async () => {
+      prisma.submittal.findFirst.mockResolvedValue({ id: "s-1", companyId: COMPANY_A, status: "submitted", number: "SUB-001", revision: 0 });
+      prisma.submittal.update.mockResolvedValue({ id: "s-1", status: "approved_as_noted" });
+
+      await service.review(COMPANY_A, ACTOR, "s-1", { decision: "approved_as_noted" });
+
+      expect(webhooks.trigger).toHaveBeenCalledWith(COMPANY_A, "submittal.approved", expect.objectContaining({ submittalId: "s-1" }));
+    });
+
+    it("maps a revise-and-resubmit decision to submittal.revise_requested", async () => {
+      prisma.submittal.findFirst.mockResolvedValue({ id: "s-1", companyId: COMPANY_A, status: "submitted", number: "SUB-001", revision: 0 });
+      prisma.submittal.update.mockResolvedValue({ id: "s-1", status: "revise_and_resubmit" });
+
+      await service.review(COMPANY_A, ACTOR, "s-1", { decision: "revise_and_resubmit" });
+
+      expect(webhooks.trigger).toHaveBeenCalledWith(COMPANY_A, "submittal.revise_requested", expect.objectContaining({ submittalId: "s-1" }));
     });
   });
 

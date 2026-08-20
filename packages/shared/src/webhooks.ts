@@ -11,6 +11,14 @@ export const WEBHOOK_EVENTS = [
   "invoice.payment_recorded",
   "invoice.recurring_generated",
   "material.low_stock",
+  "rfi.answered",
+  "rfi.closed",
+  "punch_list.resolved",
+  "punch_list.verified",
+  "submittal.approved",
+  "submittal.revise_requested",
+  "submittal.rejected",
+  "safety_incident.logged",
 ] as const;
 export type WebhookEvent = (typeof WEBHOOK_EVENTS)[number];
 

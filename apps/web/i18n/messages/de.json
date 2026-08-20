@@ -180,7 +180,15 @@
     "disablePush": "Push-Benachrichtigungen deaktivieren",
     "pushEnabled": "In diesem Browser aktiviert",
     "pushPermissionDenied": "Benachrichtigungen sind für diese Seite in Ihren Browsereinstellungen blockiert.",
-    "inviteEmailHint": "An diese Adresse wird eine E-Mail mit einem Annahme-Link gesendet."
+    "inviteEmailHint": "An diese Adresse wird eine E-Mail mit einem Annahme-Link gesendet.",
+    "webhookEvent_rfi_answered": "Anfrage beantwortet",
+    "webhookEvent_rfi_closed": "Anfrage geschlossen",
+    "webhookEvent_punch_list_resolved": "Mangel behoben",
+    "webhookEvent_punch_list_verified": "Mangel geprüft",
+    "webhookEvent_submittal_approved": "Freigabe erteilt",
+    "webhookEvent_submittal_revise_requested": "Freigabe zur Überarbeitung zurückgesendet",
+    "webhookEvent_submittal_rejected": "Freigabe abgelehnt",
+    "webhookEvent_safety_incident_logged": "Sicherheitsvorfall erfasst"
   },
   "projects": {
     "title": "Projekte",
