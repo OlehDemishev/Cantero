@@ -48,6 +48,8 @@ enum SubscriptionStatus {
 
 enum EstimateStatus {
   draft
+  /// Above the company's approval threshold — some but not all required internal approvals recorded yet.
+  pending_approval
   approved
 }
 
@@ -114,6 +116,10 @@ model Company {
   logoMimeType          String?
   /// Hex color (e.g. "#465fff") used as the accent on generated estimate/invoice PDFs.
   brandColor            String?
+  /// Estimates at or above this amount need `requiredApprovalCount` distinct internal
+  /// approvals before they can be finalized — null disables the chain (single-click approve).
+  approvalThresholdAmount Decimal? @db.Decimal(14, 2)
+  requiredApprovalCount   Int      @default(1)
 
   memberships  Membership[]
   invites      Invite[]
@@ -447,11 +453,28 @@ model Estimate {
   variantOf    Estimate?                     @relation("EstimateVariants", fields: [variantOfId], references: [id], onDelete: SetNull)
   variants     Estimate[]                    @relation("EstimateVariants")
   changeOrders ChangeOrder[]
+  approvals    EstimateApproval[]
 
   @@index([companyId])
   @@index([projectId])
   @@index([variantOfId])
   @@map("estimates")
+}
+
+/// One row per person who has signed off on a high-value estimate — see Company.approvalThresholdAmount.
+/// A given user can only appear once per estimate (the unique constraint doubles as the "already approved" check).
+model EstimateApproval {
+  id         String   @id @default(uuid())
+  estimateId String
+  userId     String
+  actorName  String
+  approvedAt DateTime @default(now())
+
+  estimate Estimate @relation(fields: [estimateId], references: [id], onDelete: Cascade)
+
+  @@unique([estimateId, userId])
+  @@index([estimateId])
+  @@map("estimate_approvals")
 }
 
 /// A formal addendum to an already-approved Estimate — extra scope proposed after the

@@ -148,10 +148,71 @@ export class EstimatesService {
    * Locks in the material requirement list and snapshots the current state into
    * an EstimateRevision. Callable more than once: editing an approved estimate
    * and approving again creates the next revision instead of being blocked.
+   *
+   * Above the company's approval threshold, a draft/pending_approval estimate needs
+   * `requiredApprovalCount` distinct internal approvals before it finalizes — each call
+   * to this method from a not-yet-fully-approved estimate records one step instead of
+   * finalizing immediately. Re-approving an already-`approved` estimate after edits
+   * bypasses the chain (it already cleared the gate once) and finalizes directly, same
+   * as when no threshold is configured.
    */
   async approve(companyId: string, actor: AuditActor, estimateId: string) {
     const estimate = await this.recalculate(companyId, estimateId);
 
+    if (estimate.status !== "approved") {
+      const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+      const threshold = company.approvalThresholdAmount;
+      if (threshold != null && Number(estimate.grandTotal) >= Number(threshold)) {
+        return this.recordApprovalStep(companyId, actor, estimate, company.requiredApprovalCount);
+      }
+    }
+
+    return this.finalizeApproval(companyId, actor, estimate);
+  }
+
+  /** Records one step of a multi-approver chain; finalizes once the required count is reached. */
+  private async recordApprovalStep(
+    companyId: string,
+    actor: AuditActor,
+    estimate: Awaited<ReturnType<typeof this.recalculate>>,
+    requiredCount: number,
+  ) {
+    if (!actor.userId) throw new BadRequestException("Only a signed-in user can approve");
+
+    const existing = await this.prisma.estimateApproval.findUnique({
+      where: { estimateId_userId: { estimateId: estimate.id, userId: actor.userId } },
+    });
+    if (existing) throw new BadRequestException("You have already approved this estimate");
+
+    await this.prisma.$transaction([
+      this.prisma.estimateApproval.create({
+        data: { estimateId: estimate.id, userId: actor.userId, actorName: actor.name },
+      }),
+      this.prisma.estimate.update({ where: { id: estimate.id }, data: { status: "pending_approval" } }),
+    ]);
+
+    const approvalCount = await this.prisma.estimateApproval.count({ where: { estimateId: estimate.id } });
+    this.audit.record(
+      companyId,
+      actor,
+      "estimate.approval_step",
+      "Estimate",
+      estimate.id,
+      `Approved step ${approvalCount}/${requiredCount} for "${estimate.name}"`,
+    );
+
+    if (approvalCount >= requiredCount) {
+      return this.finalizeApproval(companyId, actor, estimate);
+    }
+    return this.findOrThrow(companyId, estimate.id);
+  }
+
+  private async finalizeApproval(
+    companyId: string,
+    actor: AuditActor,
+    estimate: Awaited<ReturnType<typeof this.recalculate>>,
+  ) {
+    const estimateId = estimate.id;
     const lineInputs = estimate.lines.map((l) => ({
       id: l.id,
       rateCatalogItemId: l.rateCatalogItemId,
@@ -579,6 +640,7 @@ export class EstimatesService {
         sections: { orderBy: { sortOrder: "asc" } },
         requirements: { include: { materialCatalogItem: true } },
         project: true,
+        approvals: { orderBy: { approvedAt: "asc" } },
       },
     });
     if (!estimate) throw new NotFoundException("Estimate not found");

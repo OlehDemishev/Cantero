@@ -12,6 +12,8 @@ interface Company {
   name: string;
   locale: string;
   brandColor: string | null;
+  approvalThresholdAmount: string | null;
+  requiredApprovalCount: number;
 }
 interface Plan {
   id: string;
@@ -74,10 +76,18 @@ export default function SettingsPage() {
   const { data: me } = useMe();
   const isManager = me?.user.role === "owner" || me?.user.role === "admin";
 
-  const [companyForm, setCompanyForm] = useState<{ name: string; locale: string; brandColor: string | null }>({
+  const [companyForm, setCompanyForm] = useState<{
+    name: string;
+    locale: string;
+    brandColor: string | null;
+    approvalThresholdAmount: string;
+    requiredApprovalCount: string;
+  }>({
     name: "",
     locale: "en",
     brandColor: null,
+    approvalThresholdAmount: "",
+    requiredApprovalCount: "1",
   });
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [logoBusy, setLogoBusy] = useState(false);
@@ -113,7 +123,13 @@ export default function SettingsPage() {
 
   function loadAll() {
     apiFetch<Company>("/company").then((c) =>
-      setCompanyForm({ name: c.name, locale: c.locale, brandColor: c.brandColor }),
+      setCompanyForm({
+        name: c.name,
+        locale: c.locale,
+        brandColor: c.brandColor,
+        approvalThresholdAmount: c.approvalThresholdAmount ?? "",
+        requiredApprovalCount: String(c.requiredApprovalCount),
+      }),
     );
     loadLogo();
     apiFetch<Subscription>("/billing/subscription").then((s) => {
@@ -166,7 +182,16 @@ export default function SettingsPage() {
     setBusy(true);
     setError(null);
     try {
-      await apiFetch("/company", { method: "PATCH", body: JSON.stringify(companyForm) });
+      await apiFetch("/company", {
+        method: "PATCH",
+        body: JSON.stringify({
+          name: companyForm.name,
+          locale: companyForm.locale,
+          brandColor: companyForm.brandColor,
+          approvalThresholdAmount: companyForm.approvalThresholdAmount ? Number(companyForm.approvalThresholdAmount) : null,
+          requiredApprovalCount: Number(companyForm.requiredApprovalCount) || 1,
+        }),
+      });
       document.cookie = `NEXT_LOCALE=${companyForm.locale};path=/;max-age=31536000`;
       window.location.reload();
     } finally {
@@ -392,6 +417,37 @@ export default function SettingsPage() {
                 ))}
               </select>
             </label>
+            <div className="border-t border-gray-100 pt-3">
+              <p className="mb-2 text-xs font-medium text-gray-700">{t("approvalChains")}</p>
+              <p className="mb-2 text-xs text-gray-500">{t("approvalChainsHint")}</p>
+              <div className="flex gap-2">
+                <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500">
+                  {t("approvalThreshold")}
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder={t("approvalThresholdPlaceholder")}
+                    className="input"
+                    value={companyForm.approvalThresholdAmount}
+                    onChange={(e) => setCompanyForm((f) => ({ ...f, approvalThresholdAmount: e.target.value }))}
+                    disabled={!isManager}
+                  />
+                </label>
+                <label className="flex w-28 flex-col gap-1 text-xs text-gray-500">
+                  {t("requiredApprovals")}
+                  <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    className="input"
+                    value={companyForm.requiredApprovalCount}
+                    onChange={(e) => setCompanyForm((f) => ({ ...f, requiredApprovalCount: e.target.value }))}
+                    disabled={!isManager || !companyForm.approvalThresholdAmount}
+                  />
+                </label>
+              </div>
+            </div>
             {isManager && (
               <button type="submit" disabled={busy} className="btn-primary">
                 {t("save")}

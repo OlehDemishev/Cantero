@@ -38,10 +38,17 @@ interface IssueReportLine {
   remainingStock: number;
 }
 type ClientDecision = "pending" | "approved" | "rejected";
+type EstimateStatus = "draft" | "pending_approval" | "approved";
+interface EstimateApproval {
+  id: string;
+  userId: string;
+  actorName: string;
+  approvedAt: string;
+}
 interface Estimate {
   id: string;
   name: string;
-  status: "draft" | "approved";
+  status: EstimateStatus;
   laborRatePerHour: string;
   markupPercent: string;
   taxPercent: string;
@@ -64,12 +71,13 @@ interface Estimate {
   variantOfId: string | null;
   variantLabel: string | null;
   signerName: string | null;
+  approvals: EstimateApproval[];
 }
 interface VariantSummary {
   id: string;
   name: string;
   variantLabel: string | null;
-  status: "draft" | "approved";
+  status: EstimateStatus;
   clientDecision: ClientDecision;
   grandTotal: string;
 }
@@ -476,13 +484,27 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
           )}
           <span
             className={`rounded-full px-3 py-1 text-xs font-medium ${
-              estimate.status === "approved" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"
+              estimate.status === "approved"
+                ? "bg-green-100 text-green-800"
+                : estimate.status === "pending_approval"
+                  ? "bg-warning-50 text-warning-700"
+                  : "bg-gray-100 text-gray-600"
             }`}
           >
-            {estimate.status === "approved" ? t("approved") : t("draft")}
+            {estimate.status === "approved" ? t("approved") : estimate.status === "pending_approval" ? t("pendingApproval") : t("draft")}
           </span>
         </div>
       </div>
+      {estimate.status === "pending_approval" && me?.company.requiredApprovalCount && (
+        <div className="mt-2 rounded-lg border border-warning-200 bg-warning-50 px-4 py-3">
+          <p className="text-sm text-warning-700">
+            {t("approvalProgress", { count: estimate.approvals.length, required: me.company.requiredApprovalCount })}
+          </p>
+          <p className="mt-1 text-xs text-warning-700">
+            {estimate.approvals.map((a) => a.actorName).join(", ")}
+          </p>
+        </div>
+      )}
       {estimate.clientDecision === "rejected" && estimate.clientDecisionNote && (
         <p className="mt-2 text-sm text-error-700">
           {t("clientNote")}: {estimate.clientDecisionNote}
@@ -933,6 +955,14 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
                 {t("approve")}
               </button>
             )}
+            {estimate.status === "pending_approval" &&
+              (estimate.approvals.some((a) => a.userId === me?.user.id) ? (
+                <p className="text-xs text-gray-400">{t("alreadyApprovedByYou")}</p>
+              ) : (
+                <button onClick={approve} disabled={busy} className="btn-primary">
+                  {t("approveStep")}
+                </button>
+              ))}
             {estimate.status === "approved" && (
               <button onClick={generateInvoice} disabled={busy} className="btn-primary">
                 {t("generateInvoice")}

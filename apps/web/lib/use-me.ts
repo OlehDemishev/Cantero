@@ -13,6 +13,8 @@ export interface MeResponse {
     locale: "en" | "de" | "es" | "pl" | "uk";
     country: string;
     onboardingCompletedAt: string | null;
+    approvalThresholdAmount: string | null;
+    requiredApprovalCount: number;
   };
   subscriptionStatus: "incomplete" | "active" | "past_due" | "canceled";
 }

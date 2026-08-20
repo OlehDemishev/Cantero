@@ -1,4 +1,4 @@
-import { NotFoundException } from "@nestjs/common";
+import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { ConfigService } from "@nestjs/config";
 import { EstimatesService } from "./estimates.service";
@@ -143,5 +143,99 @@ describe("EstimatesService — cross-tenant isolation", () => {
     const result = await service.decideForClient(COMPANY_A, "client-1", "estimate-1", { decision: "rejected" });
 
     expect(result).toEqual({ clientDecision: "rejected" });
+  });
+});
+
+describe("EstimatesService — approval chains", () => {
+  let service: EstimatesService;
+  let prisma: {
+    company: { findUniqueOrThrow: jest.Mock };
+    estimate: { findFirst: jest.Mock; update: jest.Mock };
+    estimateApproval: { findUnique: jest.Mock; create: jest.Mock; count: jest.Mock };
+    $transaction: jest.Mock;
+  };
+
+  const DRAFT_ESTIMATE = {
+    id: "estimate-1",
+    companyId: COMPANY_A,
+    name: "High-value job",
+    status: "draft",
+    grandTotal: "50000",
+    lines: [],
+  };
+
+  beforeEach(async () => {
+    prisma = {
+      company: { findUniqueOrThrow: jest.fn() },
+      estimate: { findFirst: jest.fn().mockResolvedValue({ ...DRAFT_ESTIMATE, approvals: [] }), update: jest.fn() },
+      estimateApproval: { findUnique: jest.fn(), create: jest.fn(), count: jest.fn() },
+      $transaction: jest.fn((ops) => Promise.all(ops)),
+    };
+
+    const module = await Test.createTestingModule({
+      providers: [
+        EstimatesService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: PdfService, useValue: { render: jest.fn() } },
+        { provide: StorageService, useValue: { save: jest.fn(), read: jest.fn() } },
+        { provide: AuditService, useValue: { record: jest.fn(), list: jest.fn() } },
+        { provide: ConfigService, useValue: { get: jest.fn(), getOrThrow: jest.fn() } },
+        { provide: MailService, useValue: { send: jest.fn() } },
+        { provide: WebhooksService, useValue: { trigger: jest.fn() } },
+      ],
+    }).compile();
+
+    service = module.get(EstimatesService);
+    jest.spyOn(service, "recalculate").mockResolvedValue(DRAFT_ESTIMATE as never);
+  });
+
+  it("records a single approval step and does not finalize while below the required count", async () => {
+    prisma.company.findUniqueOrThrow.mockResolvedValue({ approvalThresholdAmount: "10000", requiredApprovalCount: 2 });
+    prisma.estimateApproval.findUnique.mockResolvedValue(null);
+    prisma.estimateApproval.count.mockResolvedValue(1);
+
+    await service.approve(COMPANY_A, { userId: "user-1", name: "Alice" }, "estimate-1");
+
+    expect(prisma.estimateApproval.create).toHaveBeenCalledWith({
+      data: { estimateId: "estimate-1", userId: "user-1", actorName: "Alice" },
+    });
+    expect(prisma.estimate.update).toHaveBeenCalledWith({
+      where: { id: "estimate-1" },
+      data: { status: "pending_approval" },
+    });
+    // Only the gating update ran — finalize's status:"approved" transaction never fired.
+    expect(prisma.estimate.update).not.toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ status: "approved" }) }),
+    );
+  });
+
+  it("rejects a second approval from the same user", async () => {
+    prisma.company.findUniqueOrThrow.mockResolvedValue({ approvalThresholdAmount: "10000", requiredApprovalCount: 2 });
+    prisma.estimateApproval.findUnique.mockResolvedValue({ id: "existing-approval" });
+
+    await expect(service.approve(COMPANY_A, { userId: "user-1", name: "Alice" }, "estimate-1")).rejects.toThrow(
+      BadRequestException,
+    );
+    expect(prisma.estimateApproval.create).not.toHaveBeenCalled();
+  });
+
+  it("requires a signed-in user to record an approval step", async () => {
+    prisma.company.findUniqueOrThrow.mockResolvedValue({ approvalThresholdAmount: "10000", requiredApprovalCount: 2 });
+
+    await expect(service.approve(COMPANY_A, { name: "System" }, "estimate-1")).rejects.toThrow(BadRequestException);
+    expect(prisma.estimateApproval.create).not.toHaveBeenCalled();
+  });
+
+  it("skips the chain entirely when the estimate total is below the threshold", async () => {
+    prisma.company.findUniqueOrThrow.mockResolvedValue({ approvalThresholdAmount: "999999", requiredApprovalCount: 2 });
+
+    // Below threshold falls straight into finalizeApproval, which needs the full compute
+    // pipeline — asserting only that the chain-gating path was never entered is enough here.
+    await service.approve(COMPANY_A, { userId: "user-1", name: "Alice" }, "estimate-1").catch(() => {});
+
+    expect(prisma.estimateApproval.create).not.toHaveBeenCalled();
+    expect(prisma.estimate.update).not.toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ status: "pending_approval" }) }),
+    );
   });
 });

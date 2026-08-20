@@ -61,18 +61,20 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Next.js build assets are content-hashed and immutable: cache-first is safe and fast.
+  // Next.js build assets are content-hashed and immutable in production, but dev-mode
+  // (Turbopack `next dev`) chunk URLs are not guaranteed to change when their content
+  // does, so cache-first would serve stale code forever after any local edit.
+  // Network-first (matching the navigate/API strategies above) keeps prod fast via the
+  // browser's own HTTP cache while never permanently pinning a dev chunk.
   if (url.pathname.startsWith("/_next/static/")) {
     event.respondWith(
-      caches.match(request).then(
-        (cached) =>
-          cached ||
-          fetch(request).then((response) => {
-            const copy = response.clone();
-            caches.open(STATIC_CACHE).then((cache) => cache.put(request, copy));
-            return response;
-          }),
-      ),
+      fetch(request)
+        .then((response) => {
+          const copy = response.clone();
+          caches.open(STATIC_CACHE).then((cache) => cache.put(request, copy));
+          return response;
+        })
+        .catch(() => caches.match(request)),
     );
     return;
   }

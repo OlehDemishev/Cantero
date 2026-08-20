@@ -28,6 +28,8 @@ export const updateCompanySchema = z.object({
     .regex(/^#[0-9a-fA-F]{6}$/, "Must be a hex color like #465fff")
     .nullable()
     .optional(),
+  approvalThresholdAmount: z.number().nonnegative().nullable().optional(),
+  requiredApprovalCount: z.number().int().min(1).max(10).optional(),
 });
 export type UpdateCompanyInput = z.infer<typeof updateCompanySchema>;
 
