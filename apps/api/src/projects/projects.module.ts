@@ -5,10 +5,12 @@ import { TasksController } from "./tasks.controller";
 import { TasksService } from "./tasks.service";
 import { MilestonesController } from "./milestones.controller";
 import { MilestonesService } from "./milestones.service";
+import { DailyLogsController } from "./daily-logs.controller";
+import { DailyLogsService } from "./daily-logs.service";
 
 @Module({
-  controllers: [ProjectsController, TasksController, MilestonesController],
-  providers: [ProjectsService, TasksService, MilestonesService],
+  controllers: [ProjectsController, TasksController, MilestonesController, DailyLogsController],
+  providers: [ProjectsService, TasksService, MilestonesService, DailyLogsService],
   exports: [ProjectsService],
 })
 export class ProjectsModule {}

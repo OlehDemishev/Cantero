@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { WEATHER_CONDITIONS, type WeatherCondition } from "@cantero/shared";
 import { apiFetch, clearToken, getToken } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { submitOrQueue, useOfflineQueue } from "@/lib/offline-queue";
@@ -49,7 +50,7 @@ export default function FieldPage() {
   const [projects, setProjects] = useState<Project[] | null>(null);
   const [projectsError, setProjectsError] = useState(false);
   const [projectId, setProjectId] = useState("");
-  const [tab, setTab] = useState<"tasks" | "time" | "stock">("tasks");
+  const [tab, setTab] = useState<"tasks" | "time" | "stock" | "logs">("tasks");
 
   useEffect(() => {
     if (!getToken()) router.replace("/login");
@@ -146,8 +147,8 @@ export default function FieldPage() {
               </select>
             </label>
 
-            <div className="mt-4 grid grid-cols-3 gap-1 rounded-lg bg-gray-100 p-1">
-              {(["tasks", "time", "stock"] as const).map((key) => (
+            <div className="mt-4 grid grid-cols-4 gap-1 rounded-lg bg-gray-100 p-1">
+              {(["tasks", "time", "stock", "logs"] as const).map((key) => (
                 <button
                   key={key}
                   onClick={() => setTab(key)}
@@ -164,6 +165,7 @@ export default function FieldPage() {
               {tab === "tasks" && <TasksTab projectId={projectId} />}
               {tab === "time" && <TimeTab projectId={projectId} meUserId={me.user.id} />}
               {tab === "stock" && <StockTab projectId={projectId} />}
+              {tab === "logs" && <LogsTab projectId={projectId} />}
             </div>
           </>
         )}
@@ -433,6 +435,124 @@ function StockTab({ projectId }: { projectId: string }) {
       </div>
       <button type="submit" disabled={busy} className="btn-primary mt-1">
         {t("issueStockButton")}
+      </button>
+      {message && <p className="text-xs text-success-700">{message}</p>}
+    </form>
+  );
+}
+
+interface DailyLog {
+  id: string;
+  date: string;
+  weatherCondition: WeatherCondition | null;
+  crewCount: number | null;
+  workPerformed: string;
+  delays: string | null;
+}
+
+const TODAY = new Date().toISOString().slice(0, 10);
+
+function LogsTab({ projectId }: { projectId: string }) {
+  const t = useTranslations("field");
+  const td = useTranslations("dailyLogs");
+  const tc = useTranslations("common");
+  const [existingId, setExistingId] = useState<string | null>(null);
+  const [form, setForm] = useState({ weatherCondition: "" as WeatherCondition | "", crewCount: "", workPerformed: "", delays: "" });
+  const [loaded, setLoaded] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLoaded(false);
+    setExistingId(null);
+    setForm({ weatherCondition: "", crewCount: "", workPerformed: "", delays: "" });
+    apiFetch<DailyLog[]>(`/daily-logs?projectId=${projectId}`)
+      .then((list) => {
+        const today = list.find((l) => l.date.slice(0, 10) === TODAY);
+        if (today) {
+          setExistingId(today.id);
+          setForm({
+            weatherCondition: today.weatherCondition ?? "",
+            crewCount: today.crewCount?.toString() ?? "",
+            workPerformed: today.workPerformed,
+            delays: today.delays ?? "",
+          });
+        }
+      })
+      .finally(() => setLoaded(true));
+  }, [projectId]);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setMessage(null);
+    const body = {
+      weatherCondition: form.weatherCondition || undefined,
+      crewCount: form.crewCount ? Number(form.crewCount) : undefined,
+      workPerformed: form.workPerformed,
+      delays: form.delays || undefined,
+    };
+    try {
+      const { queued } = existingId
+        ? await submitOrQueue("daily-log", `/daily-logs/${existingId}`, "PATCH", body)
+        : await submitOrQueue("daily-log", "/daily-logs", "POST", { ...body, projectId, date: new Date().toISOString() });
+      setMessage(queued ? t("queuedOffline") : tc("saved"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!loaded) return <p className="text-sm text-gray-400">{tc("loading")}</p>;
+
+  return (
+    <form onSubmit={submit} className="card flex flex-col gap-3">
+      <p className="text-xs text-gray-500">{new Date().toLocaleDateString()}</p>
+      <label className="flex flex-col gap-1.5 text-sm">
+        <span className="font-medium text-gray-700">{td("weather")}</span>
+        <select
+          className="input"
+          value={form.weatherCondition}
+          onChange={(e) => setForm((f) => ({ ...f, weatherCondition: e.target.value as WeatherCondition | "" }))}
+        >
+          <option value="">{tc("none")}</option>
+          {WEATHER_CONDITIONS.map((w) => (
+            <option key={w} value={w}>
+              {td(`weather_${w}`)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="flex flex-col gap-1.5 text-sm">
+        <span className="font-medium text-gray-700">{td("crewCount")}</span>
+        <input
+          type="number"
+          min="0"
+          className="input"
+          value={form.crewCount}
+          onChange={(e) => setForm((f) => ({ ...f, crewCount: e.target.value }))}
+        />
+      </label>
+      <label className="flex flex-col gap-1.5 text-sm">
+        <span className="font-medium text-gray-700">{td("workPerformed")}</span>
+        <textarea
+          required
+          rows={3}
+          className="input"
+          value={form.workPerformed}
+          onChange={(e) => setForm((f) => ({ ...f, workPerformed: e.target.value }))}
+        />
+      </label>
+      <label className="flex flex-col gap-1.5 text-sm">
+        <span className="font-medium text-gray-700">{td("delays")}</span>
+        <textarea
+          rows={2}
+          className="input"
+          value={form.delays}
+          onChange={(e) => setForm((f) => ({ ...f, delays: e.target.value }))}
+        />
+      </label>
+      <button type="submit" disabled={busy} className="btn-primary mt-1">
+        {existingId ? tc("save") : td("newLog")}
       </button>
       {message && <p className="text-xs text-success-700">{message}</p>}
     </form>

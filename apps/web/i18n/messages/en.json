@@ -19,7 +19,8 @@
     "edit": "Edit",
     "delete": "Delete",
     "emailedTo": "Emailed to {email}.",
-    "noClientEmail": "No email on file for this client — share the link manually."
+    "noClientEmail": "No email on file for this client — share the link manually.",
+    "none": "None"
   },
   "nav": {
     "menu": "Menu",
@@ -596,7 +597,8 @@
     "offline": "Offline — will sync automatically",
     "queuedOffline": "Saved offline — will sync automatically",
     "backToDashboard": "Full dashboard",
-    "quantity": "Quantity"
+    "quantity": "Quantity",
+    "logs": "Logs"
   },
   "subcontractors": {
     "title": "Subcontractor costs",
@@ -712,5 +714,29 @@
     "importClients": "Import CSV",
     "importMaterials": "Import materials CSV",
     "importRateItems": "Import rate items CSV"
+  },
+  "dailyLogs": {
+    "title": "Daily logs",
+    "newLog": "+ New log",
+    "date": "Date",
+    "weather": "Weather",
+    "weather_clear": "Clear",
+    "weather_cloudy": "Cloudy",
+    "weather_rain": "Rain",
+    "weather_snow": "Snow",
+    "weather_extreme_heat": "Extreme heat",
+    "weather_extreme_cold": "Extreme cold",
+    "weather_other": "Other",
+    "weatherNotes": "Weather notes",
+    "weatherNotesPlaceholder": "Wind, temperature, conditions…",
+    "crewCount": "Crew size",
+    "crewNotes": "Crew notes",
+    "crewNotesPlaceholder": "Trades on site, subcontractors present…",
+    "workPerformed": "Work performed",
+    "delays": "Delays / issues",
+    "delaysPlaceholder": "Anything that blocked or slowed work today",
+    "notes": "Notes",
+    "noLogs": "No daily logs yet.",
+    "hasDelays": "Delays"
   }
 }

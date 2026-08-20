@@ -19,7 +19,8 @@
     "edit": "Editar",
     "delete": "Eliminar",
     "emailedTo": "Enviado por correo a {email}.",
-    "noClientEmail": "No hay correo registrado para este cliente — comparta el enlace manualmente."
+    "noClientEmail": "No hay correo registrado para este cliente — comparta el enlace manualmente.",
+    "none": "Ninguno"
   },
   "nav": {
     "menu": "Menú",
@@ -596,7 +597,8 @@
     "offline": "Sin conexión — se sincronizará automáticamente",
     "queuedOffline": "Guardado sin conexión — se sincronizará automáticamente",
     "backToDashboard": "Panel completo",
-    "quantity": "Cantidad"
+    "quantity": "Cantidad",
+    "logs": "Registros"
   },
   "subcontractors": {
     "title": "Costos de subcontratistas",
@@ -712,5 +714,29 @@
     "importClients": "Importar CSV",
     "importMaterials": "Importar materiales CSV",
     "importRateItems": "Importar partidas CSV"
+  },
+  "dailyLogs": {
+    "title": "Partes diarios",
+    "newLog": "+ Nuevo parte",
+    "date": "Fecha",
+    "weather": "Clima",
+    "weather_clear": "Despejado",
+    "weather_cloudy": "Nublado",
+    "weather_rain": "Lluvia",
+    "weather_snow": "Nieve",
+    "weather_extreme_heat": "Calor extremo",
+    "weather_extreme_cold": "Frío extremo",
+    "weather_other": "Otro",
+    "weatherNotes": "Notas del clima",
+    "weatherNotesPlaceholder": "Viento, temperatura, condiciones…",
+    "crewCount": "Tamaño del equipo",
+    "crewNotes": "Notas del equipo",
+    "crewNotesPlaceholder": "Oficios en obra, subcontratistas presentes…",
+    "workPerformed": "Trabajo realizado",
+    "delays": "Retrasos / incidencias",
+    "delaysPlaceholder": "Cualquier cosa que haya bloqueado o retrasado el trabajo hoy",
+    "notes": "Notas",
+    "noLogs": "Aún no hay partes diarios.",
+    "hasDelays": "Retrasos"
   }
 }

@@ -19,7 +19,8 @@
     "edit": "Редагувати",
     "delete": "Видалити",
     "emailedTo": "Надіслано на {email}.",
-    "noClientEmail": "У цього клієнта немає email — поділіться посиланням вручну."
+    "noClientEmail": "У цього клієнта немає email — поділіться посиланням вручну.",
+    "none": "Немає"
   },
   "nav": {
     "menu": "Меню",
@@ -596,7 +597,8 @@
     "offline": "Офлайн — синхронізується автоматично",
     "queuedOffline": "Збережено офлайн — синхронізується автоматично",
     "backToDashboard": "Повна панель",
-    "quantity": "Кількість"
+    "quantity": "Кількість",
+    "logs": "Журнали"
   },
   "subcontractors": {
     "title": "Витрати на субпідрядників",
@@ -712,5 +714,29 @@
     "importClients": "Імпортувати CSV",
     "importMaterials": "Імпортувати матеріали CSV",
     "importRateItems": "Імпортувати позиції розцінок CSV"
+  },
+  "dailyLogs": {
+    "title": "Журнал робіт",
+    "newLog": "+ Новий запис",
+    "date": "Дата",
+    "weather": "Погода",
+    "weather_clear": "Ясно",
+    "weather_cloudy": "Хмарно",
+    "weather_rain": "Дощ",
+    "weather_snow": "Сніг",
+    "weather_extreme_heat": "Екстремальна спека",
+    "weather_extreme_cold": "Екстремальний холод",
+    "weather_other": "Інше",
+    "weatherNotes": "Нотатки про погоду",
+    "weatherNotesPlaceholder": "Вітер, температура, умови…",
+    "crewCount": "Кількість бригади",
+    "crewNotes": "Нотатки про бригаду",
+    "crewNotesPlaceholder": "Спеціальності на об'єкті, присутні субпідрядники…",
+    "workPerformed": "Виконані роботи",
+    "delays": "Затримки / проблеми",
+    "delaysPlaceholder": "Що сьогодні блокувало або сповільнювало роботу",
+    "notes": "Нотатки",
+    "noLogs": "Записів журналу робіт поки немає.",
+    "hasDelays": "Затримки"
   }
 }

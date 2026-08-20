@@ -14,3 +14,4 @@ export * from "./webhooks";
 export * from "./portal";
 export * from "./equipment";
 export * from "./subcontractor-portal";
+export * from "./daily-logs";

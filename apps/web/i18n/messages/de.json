@@ -19,7 +19,8 @@
     "edit": "Bearbeiten",
     "delete": "Löschen",
     "emailedTo": "Per E-Mail gesendet an {email}.",
-    "noClientEmail": "Für diesen Kunden ist keine E-Mail-Adresse hinterlegt — teilen Sie den Link manuell."
+    "noClientEmail": "Für diesen Kunden ist keine E-Mail-Adresse hinterlegt — teilen Sie den Link manuell.",
+    "none": "Keine"
   },
   "nav": {
     "menu": "Menü",
@@ -596,7 +597,8 @@
     "offline": "Offline — wird automatisch synchronisiert",
     "queuedOffline": "Offline gespeichert — wird automatisch synchronisiert",
     "backToDashboard": "Vollständiges Dashboard",
-    "quantity": "Menge"
+    "quantity": "Menge",
+    "logs": "Protokolle"
   },
   "subcontractors": {
     "title": "Nachunternehmerkosten",
@@ -712,5 +714,29 @@
     "importClients": "CSV importieren",
     "importMaterials": "Materialien per CSV importieren",
     "importRateItems": "Leistungspositionen per CSV importieren"
+  },
+  "dailyLogs": {
+    "title": "Bautagebuch",
+    "newLog": "+ Neuer Eintrag",
+    "date": "Datum",
+    "weather": "Wetter",
+    "weather_clear": "Klar",
+    "weather_cloudy": "Bewölkt",
+    "weather_rain": "Regen",
+    "weather_snow": "Schnee",
+    "weather_extreme_heat": "Extreme Hitze",
+    "weather_extreme_cold": "Extreme Kälte",
+    "weather_other": "Sonstiges",
+    "weatherNotes": "Wetternotizen",
+    "weatherNotesPlaceholder": "Wind, Temperatur, Bedingungen…",
+    "crewCount": "Teamgröße",
+    "crewNotes": "Team-Notizen",
+    "crewNotesPlaceholder": "Gewerke vor Ort, anwesende Subunternehmer…",
+    "workPerformed": "Ausgeführte Arbeiten",
+    "delays": "Verzögerungen / Probleme",
+    "delaysPlaceholder": "Was die Arbeit heute behindert oder verzögert hat",
+    "notes": "Notizen",
+    "noLogs": "Noch keine Bautagebucheinträge.",
+    "hasDelays": "Verzögerungen"
   }
 }

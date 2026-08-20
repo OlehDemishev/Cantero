@@ -19,7 +19,8 @@
     "edit": "Edytuj",
     "delete": "Usuń",
     "emailedTo": "Wysłano e-mailem do {email}.",
-    "noClientEmail": "Brak adresu e-mail tego klienta — udostępnij link ręcznie."
+    "noClientEmail": "Brak adresu e-mail tego klienta — udostępnij link ręcznie.",
+    "none": "Brak"
   },
   "nav": {
     "menu": "Menu",
@@ -596,7 +597,8 @@
     "offline": "Offline — synchronizacja nastąpi automatycznie",
     "queuedOffline": "Zapisano offline — synchronizacja nastąpi automatycznie",
     "backToDashboard": "Pełny pulpit",
-    "quantity": "Ilość"
+    "quantity": "Ilość",
+    "logs": "Dzienniki"
   },
   "subcontractors": {
     "title": "Koszty podwykonawców",
@@ -712,5 +714,29 @@
     "importClients": "Importuj CSV",
     "importMaterials": "Importuj materiały CSV",
     "importRateItems": "Importuj pozycje cennika CSV"
+  },
+  "dailyLogs": {
+    "title": "Dziennik budowy",
+    "newLog": "+ Nowy wpis",
+    "date": "Data",
+    "weather": "Pogoda",
+    "weather_clear": "Bezchmurnie",
+    "weather_cloudy": "Pochmurno",
+    "weather_rain": "Deszcz",
+    "weather_snow": "Śnieg",
+    "weather_extreme_heat": "Ekstremalny upał",
+    "weather_extreme_cold": "Ekstremalny mróz",
+    "weather_other": "Inne",
+    "weatherNotes": "Uwagi o pogodzie",
+    "weatherNotesPlaceholder": "Wiatr, temperatura, warunki…",
+    "crewCount": "Liczebność ekipy",
+    "crewNotes": "Uwagi o ekipie",
+    "crewNotesPlaceholder": "Branże na budowie, obecni podwykonawcy…",
+    "workPerformed": "Wykonane prace",
+    "delays": "Opóźnienia / problemy",
+    "delaysPlaceholder": "Co dziś blokowało lub spowalniało prace",
+    "notes": "Notatki",
+    "noLogs": "Brak wpisów w dzienniku budowy.",
+    "hasDelays": "Opóźnienia"
   }
 }

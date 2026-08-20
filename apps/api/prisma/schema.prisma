@@ -100,6 +100,16 @@ enum ClientStage {
   lost
 }
 
+enum WeatherCondition {
+  clear
+  cloudy
+  rain
+  snow
+  extreme_heat
+  extreme_cold
+  other
+}
+
 // ---------- Tenancy & Identity ----------
 
 model Company {
@@ -146,6 +156,7 @@ model Company {
   webhookEndpoints     WebhookEndpoint[]
   recurringInvoices    RecurringInvoice[]
   equipment            Equipment[]
+  dailyLogs            DailyLog[]
 
   @@map("companies")
 }
@@ -241,6 +252,7 @@ model User {
   memberships Membership[]
   workers     Worker[]
   documents   Document[]
+  dailyLogs   DailyLog[]
 
   @@map("users")
 }
@@ -792,6 +804,7 @@ model Project {
   subcontractorCosts SubcontractorCost[]
   equipmentAssignments EquipmentAssignment[]
   subcontractorAssignments SubcontractorAssignment[]
+  dailyLogs          DailyLog[]
 
   @@index([companyId])
   @@map("projects")
@@ -825,6 +838,34 @@ model Milestone {
 
   @@index([projectId])
   @@map("milestones")
+}
+
+/// One entry per project per calendar date — the standard site-diary convention (Procore et al.),
+/// so a day's record is edited in place rather than accumulating duplicate entries.
+model DailyLog {
+  id               String            @id @default(uuid())
+  companyId        String
+  projectId        String
+  date             DateTime
+  authorUserId     String?
+  authorName       String
+  weatherCondition WeatherCondition?
+  weatherNotes     String?
+  crewCount        Int?
+  crewNotes        String?
+  workPerformed    String
+  delays           String?
+  notes            String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  author  User?   @relation(fields: [authorUserId], references: [id], onDelete: SetNull)
+
+  @@unique([projectId, date])
+  @@index([companyId])
+  @@map("daily_logs")
 }
 
 // ---------- Finance (thin in Phase 1; Payments/budget-vs-actual in Phase 4) ----------

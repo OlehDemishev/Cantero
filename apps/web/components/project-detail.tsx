@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { SchedulingPanel } from "@/components/scheduling-panel";
+import { DailyLogsPanel } from "@/components/daily-logs-panel";
 import { BudgetPanel } from "@/components/budget-panel";
 import { TimeTrackingPanel } from "@/components/time-tracking-panel";
 import { SubcontractorCostsPanel } from "@/components/subcontractor-costs-panel";
@@ -176,6 +177,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
       </div>
 
       <SchedulingPanel projectId={projectId} />
+      <DailyLogsPanel projectId={projectId} />
       <TimeTrackingPanel projectId={projectId} />
       <SubcontractorAssignmentsPanel projectId={projectId} />
       <SubcontractorCostsPanel projectId={projectId} />
