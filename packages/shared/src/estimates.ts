@@ -88,3 +88,15 @@ export const clientDecisionSchema = z.object({
   note: z.string().max(2000).optional(),
 });
 export type ClientDecisionInput = z.infer<typeof clientDecisionSchema>;
+
+export const createChangeOrderSchema = z.object({
+  title: z.string().min(1).max(160),
+  description: z.string().max(2000).optional(),
+});
+export type CreateChangeOrderInput = z.infer<typeof createChangeOrderSchema>;
+
+export const addChangeOrderLineSchema = z.object({
+  rateCatalogItemId: z.string().uuid(),
+  quantity: z.number().positive(),
+});
+export type AddChangeOrderLineInput = z.infer<typeof addChangeOrderLineSchema>;

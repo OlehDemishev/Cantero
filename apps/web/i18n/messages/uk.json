@@ -295,7 +295,13 @@
     "clientApprove": "Затвердити",
     "clientReject": "Відхилити",
     "clientDecisionThanksApproved": "Дякуємо — ви затвердили цей кошторис.",
-    "clientDecisionThanksRejected": "Дякуємо — ви відхилили цей кошторис."
+    "clientDecisionThanksRejected": "Дякуємо — ви відхилили цей кошторис.",
+    "changeOrders": "Додаткові угоди",
+    "changeOrdersHint": "Додатковий обсяг робіт, запропонований після затвердження цього кошторису — кожен проходить власне внутрішнє погодження та підтвердження клієнтом.",
+    "changeOrderTitlePlaceholder": "напр. Додаткове облицювання ванної",
+    "changeOrderDescriptionPlaceholder": "Опис (необов'язково)",
+    "createChangeOrder": "Створити додаткову угоду",
+    "changeOrderFor": "Додаткова угода до {estimateName}"
   },
   "invoices": {
     "title": "Рахунки",

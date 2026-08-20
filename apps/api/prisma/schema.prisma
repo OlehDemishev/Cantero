@@ -124,6 +124,7 @@ model Company {
   stockCounts          StockCount[]
   apiKeys              ApiKey[]
   auditLogs            AuditLog[]
+  changeOrders         ChangeOrder[]
 
   @@map("companies")
 }
@@ -313,9 +314,10 @@ model RateCatalogItem {
   laborHoursPerUnit Decimal  @db.Decimal(10, 4)
   createdAt         DateTime @default(now())
 
-  company       Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  materials     RateCatalogItemMaterial[]
-  estimateLines EstimateLine[]
+  company          Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  materials        RateCatalogItemMaterial[]
+  estimateLines    EstimateLine[]
+  changeOrderLines ChangeOrderLine[]
 
   @@unique([companyId, code])
   @@index([companyId])
@@ -385,11 +387,70 @@ model Estimate {
   invoices     Invoice[]
   variantOf    Estimate?                     @relation("EstimateVariants", fields: [variantOfId], references: [id], onDelete: SetNull)
   variants     Estimate[]                    @relation("EstimateVariants")
+  changeOrders ChangeOrder[]
 
   @@index([companyId])
   @@index([projectId])
   @@index([variantOfId])
   @@map("estimates")
+}
+
+/// A formal addendum to an already-approved Estimate — extra scope proposed after the
+/// original contract, with its own internal approval and client sign-off, so the original
+/// approved document stays an untouched record of what was first agreed. Reuses Estimate's
+/// own status/decision enums since the workflow (draft -> approved -> sent -> client decides)
+/// is identical in shape, just scoped to one estimate's addenda instead of the whole quote.
+model ChangeOrder {
+  id          String         @id @default(uuid())
+  companyId   String
+  estimateId  String
+  /// Sequential per estimate (CO-1, CO-2, ...), not globally — see @@unique below.
+  number      Int
+  title       String
+  description String?
+  status      EstimateStatus @default(draft)
+
+  materialsCostTotal Decimal @default(0) @db.Decimal(14, 2)
+  laborCostTotal     Decimal @default(0) @db.Decimal(14, 2)
+  subtotal           Decimal @default(0) @db.Decimal(14, 2)
+  markupAmount       Decimal @default(0) @db.Decimal(14, 2)
+  taxAmount          Decimal @default(0) @db.Decimal(14, 2)
+  grandTotal         Decimal @default(0) @db.Decimal(14, 2)
+
+  clientDecision     EstimateClientDecision @default(pending)
+  sentAt             DateTime?
+  decisionAt         DateTime?
+  clientDecisionNote String?
+  clientAccessToken  String?                @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company  Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  estimate Estimate          @relation(fields: [estimateId], references: [id], onDelete: Cascade)
+  lines    ChangeOrderLine[]
+
+  @@unique([estimateId, number])
+  @@index([companyId])
+  @@index([estimateId])
+  @@map("change_orders")
+}
+
+model ChangeOrderLine {
+  id                String  @id @default(uuid())
+  changeOrderId     String
+  rateCatalogItemId String
+  quantity          Decimal @db.Decimal(12, 4)
+  materialsCost     Decimal @default(0) @db.Decimal(14, 2)
+  laborCost         Decimal @default(0) @db.Decimal(14, 2)
+  lineTotal         Decimal @default(0) @db.Decimal(14, 2)
+  sortOrder         Int     @default(0)
+
+  changeOrder     ChangeOrder     @relation(fields: [changeOrderId], references: [id], onDelete: Cascade)
+  rateCatalogItem RateCatalogItem @relation(fields: [rateCatalogItemId], references: [id])
+
+  @@index([changeOrderId])
+  @@map("change_order_lines")
 }
 
 /// Immutable, fully denormalized snapshot of an estimate's state at approval

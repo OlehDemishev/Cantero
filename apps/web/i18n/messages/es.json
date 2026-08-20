@@ -295,7 +295,13 @@
     "clientApprove": "Aprobar",
     "clientReject": "Rechazar",
     "clientDecisionThanksApproved": "Gracias — ha aprobado este presupuesto.",
-    "clientDecisionThanksRejected": "Gracias — ha rechazado este presupuesto."
+    "clientDecisionThanksRejected": "Gracias — ha rechazado este presupuesto.",
+    "changeOrders": "Órdenes de cambio",
+    "changeOrdersHint": "Alcance adicional propuesto después de aprobar este presupuesto — cada uno tiene su propia aprobación interna y visto bueno del cliente.",
+    "changeOrderTitlePlaceholder": "p. ej. Azulejos extra en el baño",
+    "changeOrderDescriptionPlaceholder": "Descripción (opcional)",
+    "createChangeOrder": "Crear orden de cambio",
+    "changeOrderFor": "Orden de cambio para {estimateName}"
   },
   "invoices": {
     "title": "Facturas",

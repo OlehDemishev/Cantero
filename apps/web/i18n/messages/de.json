@@ -295,7 +295,13 @@
     "clientApprove": "Freigeben",
     "clientReject": "Ablehnen",
     "clientDecisionThanksApproved": "Vielen Dank — Sie haben dieses Angebot freigegeben.",
-    "clientDecisionThanksRejected": "Vielen Dank — Sie haben dieses Angebot abgelehnt."
+    "clientDecisionThanksRejected": "Vielen Dank — Sie haben dieses Angebot abgelehnt.",
+    "changeOrders": "Nachträge",
+    "changeOrdersHint": "Zusätzlicher Umfang, der nach Genehmigung dieses Kostenvoranschlags vorgeschlagen wurde — jeder erhält eine eigene interne Freigabe und Kundenzustimmung.",
+    "changeOrderTitlePlaceholder": "z. B. Zusätzliche Badfliesen",
+    "changeOrderDescriptionPlaceholder": "Beschreibung (optional)",
+    "createChangeOrder": "Nachtrag erstellen",
+    "changeOrderFor": "Nachtrag zu {estimateName}"
   },
   "invoices": {
     "title": "Rechnungen",

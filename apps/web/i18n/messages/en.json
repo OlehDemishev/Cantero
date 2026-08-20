@@ -295,7 +295,13 @@
     "clientApprove": "Approve",
     "clientReject": "Decline",
     "clientDecisionThanksApproved": "Thank you — you approved this estimate.",
-    "clientDecisionThanksRejected": "Thank you — you declined this estimate."
+    "clientDecisionThanksRejected": "Thank you — you declined this estimate.",
+    "changeOrders": "Change orders",
+    "changeOrdersHint": "Additional scope proposed after this estimate was approved — each one gets its own internal approval and client sign-off.",
+    "changeOrderTitlePlaceholder": "e.g. Extra bathroom tiling",
+    "changeOrderDescriptionPlaceholder": "Description (optional)",
+    "createChangeOrder": "Create change order",
+    "changeOrderFor": "Change order for {estimateName}"
   },
   "invoices": {
     "title": "Invoices",

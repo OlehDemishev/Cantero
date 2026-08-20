@@ -295,7 +295,13 @@
     "clientApprove": "Zatwierdź",
     "clientReject": "Odrzuć",
     "clientDecisionThanksApproved": "Dziękujemy — zatwierdziłeś ten kosztorys.",
-    "clientDecisionThanksRejected": "Dziękujemy — odrzuciłeś ten kosztorys."
+    "clientDecisionThanksRejected": "Dziękujemy — odrzuciłeś ten kosztorys.",
+    "changeOrders": "Aneksy",
+    "changeOrdersHint": "Dodatkowy zakres zaproponowany po zatwierdzeniu tego kosztorysu — każdy ma własną wewnętrzną akceptację i zgodę klienta.",
+    "changeOrderTitlePlaceholder": "np. Dodatkowe płytki w łazience",
+    "changeOrderDescriptionPlaceholder": "Opis (opcjonalnie)",
+    "createChangeOrder": "Utwórz aneks",
+    "changeOrderFor": "Aneks do {estimateName}"
   },
   "invoices": {
     "title": "Faktury",
