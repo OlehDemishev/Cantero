@@ -11,3 +11,6 @@ export * from "./documents";
 export * from "./notifications";
 export * from "./import";
 export * from "./webhooks";
+export * from "./portal";
+export * from "./equipment";
+export * from "./subcontractor-portal";

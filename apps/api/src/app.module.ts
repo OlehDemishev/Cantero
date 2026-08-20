@@ -26,6 +26,9 @@ import { ReportsModule } from "./reports/reports.module";
 import { NotificationsModule } from "./notifications/notifications.module";
 import { SearchModule } from "./search/search.module";
 import { PublicApiModule } from "./public-api/public-api.module";
+import { PortalModule } from "./portal/portal.module";
+import { EquipmentModule } from "./equipment/equipment.module";
+import { SubcontractorPortalModule } from "./subcontractor-portal/subcontractor-portal.module";
 
 @Module({
   imports: [
@@ -52,6 +55,9 @@ import { PublicApiModule } from "./public-api/public-api.module";
     NotificationsModule,
     SearchModule,
     PublicApiModule,
+    PortalModule,
+    EquipmentModule,
+    SubcontractorPortalModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

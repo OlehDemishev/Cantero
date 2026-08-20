@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import type { ChangeOrder } from "@prisma/client";
 import type { AddChangeOrderLineInput, ClientDecisionInput, CreateChangeOrderInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { PdfService } from "../common/pdf/pdf.service";
@@ -207,6 +208,19 @@ export class ChangeOrdersService {
   async decide(token: string, input: ClientDecisionInput, signerIp?: string) {
     const changeOrder = await this.prisma.changeOrder.findFirst({ where: { clientAccessToken: token } });
     if (!changeOrder) throw new NotFoundException("Change order not found");
+    return this.applyDecision(changeOrder, input, signerIp);
+  }
+
+  /** Same decision flow as decide(), reached from the client portal (JWT-authenticated) instead of a one-off email token. */
+  async decideForClient(companyId: string, clientId: string, changeOrderId: string, input: ClientDecisionInput, signerIp?: string) {
+    const changeOrder = await this.prisma.changeOrder.findFirst({
+      where: { id: changeOrderId, companyId, sentAt: { not: null }, estimate: { project: { clientId } } },
+    });
+    if (!changeOrder) throw new NotFoundException("Change order not found");
+    return this.applyDecision(changeOrder, input, signerIp);
+  }
+
+  private async applyDecision(changeOrder: ChangeOrder, input: ClientDecisionInput, signerIp?: string) {
     if (changeOrder.clientDecision !== "pending") {
       throw new BadRequestException("This change order has already been decided");
     }

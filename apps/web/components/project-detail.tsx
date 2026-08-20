@@ -8,6 +8,7 @@ import { SchedulingPanel } from "@/components/scheduling-panel";
 import { BudgetPanel } from "@/components/budget-panel";
 import { TimeTrackingPanel } from "@/components/time-tracking-panel";
 import { SubcontractorCostsPanel } from "@/components/subcontractor-costs-panel";
+import { SubcontractorAssignmentsPanel } from "@/components/subcontractor-assignments-panel";
 import { DocumentsPanel } from "@/components/documents-panel";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
@@ -176,6 +177,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
 
       <SchedulingPanel projectId={projectId} />
       <TimeTrackingPanel projectId={projectId} />
+      <SubcontractorAssignmentsPanel projectId={projectId} />
       <SubcontractorCostsPanel projectId={projectId} />
       <BudgetPanel projectId={projectId} />
       <DocumentsPanel projectId={projectId} />

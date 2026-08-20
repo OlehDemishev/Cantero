@@ -23,7 +23,13 @@ export class JwtAuthGuard implements CanActivate {
     if (!token) throw new UnauthorizedException("Missing bearer token");
 
     try {
-      request.user = await this.jwtService.verifyAsync<AuthUser>(token);
+      const payload = await this.jwtService.verifyAsync<AuthUser & { kind?: string }>(token);
+      // Any portal token (client, subcontractor, ...) is signed with its own secret and never
+      // reaches here for portal routes (marked @Public()) — this rejects one anyway, in case
+      // it's replayed against an internal route or a secret is ever misconfigured to match.
+      // AuthUser payloads never carry `kind`, so any truthy value here is a non-internal token.
+      if (payload.kind) throw new Error("wrong token kind");
+      request.user = payload;
       return true;
     } catch {
       throw new UnauthorizedException("Invalid or expired token");

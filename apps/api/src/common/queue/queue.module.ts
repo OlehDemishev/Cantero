@@ -5,6 +5,7 @@ import IORedis from "ioredis";
 
 export const STOCK_ALERTS_QUEUE = "stock-alerts";
 export const PUSH_CHECK_QUEUE = "push-check";
+export const RECURRING_INVOICES_QUEUE = "recurring-invoices";
 
 @Global()
 @Module({
@@ -19,6 +20,7 @@ export const PUSH_CHECK_QUEUE = "push-check";
     }),
     BullModule.registerQueue({ name: STOCK_ALERTS_QUEUE }),
     BullModule.registerQueue({ name: PUSH_CHECK_QUEUE }),
+    BullModule.registerQueue({ name: RECURRING_INVOICES_QUEUE }),
   ],
   exports: [BullModule],
 })

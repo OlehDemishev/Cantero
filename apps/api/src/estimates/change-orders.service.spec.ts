@@ -196,5 +196,18 @@ describe("ChangeOrdersService", () => {
         }),
       );
     });
+
+    it("decideForClient() rejects a change order that doesn't belong to this client (portal ownership check)", async () => {
+      prisma.changeOrder.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.decideForClient(COMPANY_A, "client-1", "co-1", { decision: "rejected" }),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(prisma.changeOrder.findFirst).toHaveBeenCalledWith({
+        where: { id: "co-1", companyId: COMPANY_A, sentAt: { not: null }, estimate: { project: { clientId: "client-1" } } },
+      });
+      expect(prisma.changeOrder.update).not.toHaveBeenCalled();
+    });
   });
 });

@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import type { Estimate } from "@prisma/client";
 import type {
   ClientDecisionInput,
   CreateEstimateInput,
@@ -337,6 +338,19 @@ export class EstimatesService {
   async decide(token: string, input: ClientDecisionInput, signerIp?: string) {
     const estimate = await this.prisma.estimate.findFirst({ where: { clientAccessToken: token } });
     if (!estimate) throw new NotFoundException("Estimate not found");
+    return this.applyDecision(estimate, input, signerIp);
+  }
+
+  /** Same decision flow as decide(), reached from the client portal (JWT-authenticated) instead of a one-off email token. */
+  async decideForClient(companyId: string, clientId: string, estimateId: string, input: ClientDecisionInput, signerIp?: string) {
+    const estimate = await this.prisma.estimate.findFirst({
+      where: { id: estimateId, companyId, sentAt: { not: null }, project: { clientId } },
+    });
+    if (!estimate) throw new NotFoundException("Estimate not found");
+    return this.applyDecision(estimate, input, signerIp);
+  }
+
+  private async applyDecision(estimate: Estimate, input: ClientDecisionInput, signerIp?: string) {
     if (estimate.clientDecision !== "pending") {
       throw new BadRequestException("This estimate has already been decided");
     }

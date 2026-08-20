@@ -17,6 +17,6 @@ import { ChangeOrdersService } from "./change-orders.service";
     PublicChangeOrdersController,
   ],
   providers: [RateCatalogService, EstimatesService, ChangeOrdersService],
-  exports: [EstimatesService],
+  exports: [EstimatesService, ChangeOrdersService],
 })
 export class EstimatesModule {}

@@ -115,4 +115,33 @@ describe("EstimatesService — cross-tenant isolation", () => {
       }),
     );
   });
+
+  it("decideForClient() rejects an estimate that doesn't belong to this client (portal ownership check)", async () => {
+    prisma.estimate.findFirst.mockResolvedValue(null); // not found for THIS clientId's project
+
+    await expect(
+      service.decideForClient(COMPANY_A, "client-1", "estimate-1", { decision: "rejected" }),
+    ).rejects.toThrow(NotFoundException);
+
+    expect(prisma.estimate.findFirst).toHaveBeenCalledWith({
+      where: { id: "estimate-1", companyId: COMPANY_A, sentAt: { not: null }, project: { clientId: "client-1" } },
+    });
+    expect(prisma.estimate.update).not.toHaveBeenCalled();
+  });
+
+  it("decideForClient() succeeds when the estimate's project belongs to this client", async () => {
+    prisma.estimate.findFirst.mockResolvedValue({
+      id: "estimate-1",
+      companyId: COMPANY_A,
+      name: "Test",
+      clientDecision: "pending",
+      variantOfId: null,
+    });
+    prisma.estimate.update.mockResolvedValue({ clientDecision: "rejected" });
+    prisma.estimate.updateMany.mockResolvedValue({ count: 0 });
+
+    const result = await service.decideForClient(COMPANY_A, "client-1", "estimate-1", { decision: "rejected" });
+
+    expect(result).toEqual({ clientDecision: "rejected" });
+  });
 });

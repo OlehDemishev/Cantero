@@ -212,3 +212,11 @@ export function UserCircleIcon(props: SVGProps<SVGSVGElement>) {
     </Icon>
   );
 }
+
+export function EquipmentIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M12.5 3.5a3.5 3.5 0 0 0-4.6 4.1L3 12.5V17h4.5l4.9-4.9a3.5 3.5 0 0 0 4.1-4.6l-2.6 2.6-2-2 2.6-2.6Z" />
+    </Icon>
+  );
+}

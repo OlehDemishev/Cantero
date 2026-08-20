@@ -9,6 +9,9 @@ import { SubcontractorCostsController } from "./subcontractor-costs.controller";
 import { SubcontractorCostsService } from "./subcontractor-costs.service";
 import { CashFlowController } from "./cash-flow.controller";
 import { CashFlowService } from "./cash-flow.service";
+import { RecurringInvoicesController } from "./recurring-invoices.controller";
+import { RecurringInvoicesService } from "./recurring-invoices.service";
+import { RecurringInvoicesProcessor } from "./recurring-invoices.processor";
 
 @Module({
   controllers: [
@@ -17,8 +20,17 @@ import { CashFlowService } from "./cash-flow.service";
     SubcontractorsController,
     SubcontractorCostsController,
     CashFlowController,
+    RecurringInvoicesController,
   ],
-  providers: [InvoicesService, BudgetService, SubcontractorsService, SubcontractorCostsService, CashFlowService],
+  providers: [
+    InvoicesService,
+    BudgetService,
+    SubcontractorsService,
+    SubcontractorCostsService,
+    CashFlowService,
+    RecurringInvoicesService,
+    RecurringInvoicesProcessor,
+  ],
   exports: [InvoicesService],
 })
 export class FinanceModule {}

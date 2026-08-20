@@ -9,6 +9,7 @@ export const WEBHOOK_EVENTS = [
   "change_order.client_rejected",
   "invoice.sent",
   "invoice.payment_recorded",
+  "invoice.recurring_generated",
   "material.low_stock",
 ] as const;
 export type WebhookEvent = (typeof WEBHOOK_EVENTS)[number];

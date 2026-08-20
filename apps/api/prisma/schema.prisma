@@ -64,6 +64,13 @@ enum InvoiceStatus {
   void
 }
 
+enum RecurringInvoiceFrequency {
+  weekly
+  monthly
+  quarterly
+  yearly
+}
+
 enum StockMovementType {
   receipt
   issue
@@ -131,6 +138,8 @@ model Company {
   auditLogs            AuditLog[]
   changeOrders         ChangeOrder[]
   webhookEndpoints     WebhookEndpoint[]
+  recurringInvoices    RecurringInvoice[]
+  equipment            Equipment[]
 
   @@map("companies")
 }
@@ -751,12 +760,15 @@ model Project {
   client             Client?             @relation(fields: [clientId], references: [id], onDelete: SetNull)
   estimates          Estimate[]
   invoices           Invoice[]
+  recurringInvoices  RecurringInvoice[]
   tasks              Task[]
   milestones         Milestone[]
   stockMovements     StockMovement[]
   timeEntries        TimeEntry[]
   documents          Document[]
   subcontractorCosts SubcontractorCost[]
+  equipmentAssignments EquipmentAssignment[]
+  subcontractorAssignments SubcontractorAssignment[]
 
   @@index([companyId])
   @@map("projects")
@@ -795,31 +807,79 @@ model Milestone {
 // ---------- Finance (thin in Phase 1; Payments/budget-vs-actual in Phase 4) ----------
 
 model Invoice {
-  id         String        @id @default(uuid())
-  companyId  String
-  projectId  String
-  clientId   String
-  estimateId String?
-  number     String
-  status     InvoiceStatus @default(draft)
-  subtotal   Decimal       @db.Decimal(14, 2)
-  taxAmount  Decimal       @default(0) @db.Decimal(14, 2)
-  total      Decimal       @db.Decimal(14, 2)
-  dueDate    DateTime?
-  createdAt  DateTime      @default(now())
+  id                 String        @id @default(uuid())
+  companyId          String
+  projectId          String
+  clientId           String
+  estimateId         String?
+  /// Set when a RecurringInvoice's scheduled pass generated this invoice — null for everything else.
+  recurringInvoiceId String?
+  number             String
+  status             InvoiceStatus @default(draft)
+  subtotal           Decimal       @db.Decimal(14, 2)
+  taxAmount          Decimal       @default(0) @db.Decimal(14, 2)
+  total              Decimal       @db.Decimal(14, 2)
+  dueDate            DateTime?
+  createdAt          DateTime      @default(now())
 
-  company      Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  project      Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  client       Client               @relation(fields: [clientId], references: [id], onDelete: Restrict)
-  estimate     Estimate?            @relation(fields: [estimateId], references: [id], onDelete: SetNull)
-  lines        InvoiceLine[]
-  payments     Payment[]
-  installments InvoiceInstallment[]
-  documents    Document[]
+  company          Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project          Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  client           Client               @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  estimate         Estimate?            @relation(fields: [estimateId], references: [id], onDelete: SetNull)
+  recurringInvoice RecurringInvoice?    @relation(fields: [recurringInvoiceId], references: [id], onDelete: SetNull)
+  lines            InvoiceLine[]
+  payments         Payment[]
+  installments     InvoiceInstallment[]
+  documents        Document[]
 
   @@unique([companyId, number])
   @@index([companyId])
   @@map("invoices")
+}
+
+/// A billing template that generates a new draft Invoice on a schedule — for retainers
+/// and ongoing contracts that don't start from a fresh Estimate each cycle. The scheduled
+/// pass (RecurringInvoiceProcessor) always leaves the generated invoice as a draft so the
+/// office reviews it before sending, same restraint as the low-stock auto-drafted POs.
+model RecurringInvoice {
+  id              String                    @id @default(uuid())
+  companyId       String
+  projectId       String
+  clientId        String
+  name            String
+  frequency       RecurringInvoiceFrequency
+  taxPercent      Decimal                   @default(0) @db.Decimal(5, 2)
+  active          Boolean                   @default(true)
+  startDate       DateTime
+  /// The next date this template is due to generate an invoice; advanced by `frequency` after each run.
+  nextRunDate     DateTime
+  endDate         DateTime?
+  lastGeneratedAt DateTime?
+  createdAt       DateTime                  @default(now())
+
+  company  Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project  Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  client   Client                 @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  lines    RecurringInvoiceLine[]
+  invoices Invoice[]
+
+  @@index([companyId])
+  @@index([active, nextRunDate])
+  @@map("recurring_invoices")
+}
+
+model RecurringInvoiceLine {
+  id                 String  @id @default(uuid())
+  recurringInvoiceId String
+  description        String
+  quantity            Decimal @db.Decimal(12, 4)
+  unitPrice          Decimal @db.Decimal(12, 4)
+  sortOrder          Int     @default(0)
+
+  recurringInvoice RecurringInvoice @relation(fields: [recurringInvoiceId], references: [id], onDelete: Cascade)
+
+  @@index([recurringInvoiceId])
+  @@map("recurring_invoice_lines")
 }
 
 /// A planned installment on an invoice's payment schedule (e.g. "Deposit — 30%",
@@ -877,11 +937,47 @@ model Subcontractor {
   email     String?
   phone     String?
 
-  company Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  costs   SubcontractorCost[]
+  company     Company                    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  costs       SubcontractorCost[]
+  assignments SubcontractorAssignment[]
+  portalLoginTokens SubcontractorPortalLoginToken[]
 
   @@index([companyId])
   @@map("subcontractors")
+}
+
+/// Which projects a subcontractor may see/log costs against from their portal — office staff
+/// grants this explicitly; a subcontractor otherwise has no visibility into any project.
+model SubcontractorAssignment {
+  id              String   @id @default(uuid())
+  subcontractorId String
+  projectId       String
+  createdAt       DateTime @default(now())
+
+  subcontractor Subcontractor @relation(fields: [subcontractorId], references: [id], onDelete: Cascade)
+  project       Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([subcontractorId, projectId])
+  @@index([subcontractorId])
+  @@index([projectId])
+  @@map("subcontractor_assignments")
+}
+
+/// Single-use magic-link token for the subcontractor portal — same shape and lifecycle as
+/// ClientPortalLoginToken, kept as its own model since subcontractors and clients are
+/// distinct entities with no shared identity.
+model SubcontractorPortalLoginToken {
+  id        String    @id @default(uuid())
+  subcontractorId String
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  subcontractor Subcontractor @relation(fields: [subcontractorId], references: [id], onDelete: Cascade)
+
+  @@index([subcontractorId])
+  @@map("subcontractor_portal_login_tokens")
 }
 
 /// A bill from a subcontractor against a project — an actual cost the moment
@@ -921,14 +1017,32 @@ model Client {
   notes     String?
   createdAt DateTime    @default(now())
 
-  company    Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  projects   Project[]
-  invoices   Invoice[]
-  activities ClientActivity[]
-  reminders  ClientReminder[]
+  company           Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  projects          Project[]
+  invoices          Invoice[]
+  recurringInvoices RecurringInvoice[]
+  activities        ClientActivity[]
+  reminders         ClientReminder[]
+  portalLoginTokens ClientPortalLoginToken[]
 
   @@index([companyId])
   @@map("clients")
+}
+
+/// A single-use magic-link token — the client's persistent portal session is a JWT
+/// issued once this is verified, not this row itself (this row is only the login step).
+model ClientPortalLoginToken {
+  id        String    @id @default(uuid())
+  clientId  String
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@map("client_portal_login_tokens")
 }
 
 enum ClientActivityType {
@@ -986,9 +1100,10 @@ model Worker {
   hourlyCost Decimal? @db.Decimal(10, 2)
   active     Boolean  @default(true)
 
-  company     Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  user        User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
-  timeEntries TimeEntry[]
+  company             Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user                User?                 @relation(fields: [userId], references: [id], onDelete: SetNull)
+  timeEntries         TimeEntry[]
+  equipmentAssignments EquipmentAssignment[]
 
   @@index([companyId])
   @@map("workers")
@@ -1055,4 +1170,68 @@ model Document {
   @@index([companyId])
   @@index([rootDocumentId])
   @@map("documents")
+}
+
+// ---------- Equipment / asset tracking ----------
+
+enum EquipmentStatus {
+  available
+  in_use
+  maintenance
+  retired
+}
+
+model Equipment {
+  id            String          @id @default(uuid())
+  companyId     String
+  name          String
+  category      String
+  serialNumber  String?
+  purchaseDate  DateTime?
+  purchaseCost  Decimal?        @db.Decimal(12, 2)
+  status        EquipmentStatus @default(available)
+  notes         String?
+  createdAt     DateTime        @default(now())
+
+  company             Company                      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  assignments         EquipmentAssignment[]
+  maintenanceRecords  EquipmentMaintenanceRecord[]
+
+  @@index([companyId])
+  @@map("equipment")
+}
+
+/// One row per check-out; checkedInAt stays null while the item is still out. Exactly one
+/// open (checkedInAt: null) assignment can exist per Equipment — enforced in the service, not the DB.
+model EquipmentAssignment {
+  id           String    @id @default(uuid())
+  equipmentId  String
+  projectId    String?
+  workerId     String?
+  checkedOutAt DateTime  @default(now())
+  checkedInAt  DateTime?
+  notes        String?
+
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  project   Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  worker    Worker?   @relation(fields: [workerId], references: [id], onDelete: SetNull)
+
+  @@index([equipmentId])
+  @@index([projectId])
+  @@map("equipment_assignments")
+}
+
+/// A logged maintenance event — historical record, independent of the equipment's current status.
+model EquipmentMaintenanceRecord {
+  id          String   @id @default(uuid())
+  equipmentId String
+  description String
+  cost        Decimal? @db.Decimal(12, 2)
+  performedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+
+  @@index([equipmentId])
+  @@map("equipment_maintenance_records")
 }
