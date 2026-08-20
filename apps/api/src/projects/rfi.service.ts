@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import type { AnswerRfiInput, CreateRfiInput, UpdateRfiInput } from "@cantero/shared";
+import type { AnswerRfiInput, BulkActionResult, CreateRfiInput, UpdateRfiInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { WebhooksService } from "../common/webhooks/webhooks.service";
@@ -99,6 +99,19 @@ export class RfiService {
     });
     this.audit.record(companyId, actor, "rfi.reopened", "Rfi", rfi.id, `Reopened ${rfi.number}: ${rfi.subject}`);
     return updated;
+  }
+
+  async bulkClose(companyId: string, actor: AuditActor, ids: string[]): Promise<BulkActionResult> {
+    const result: BulkActionResult = { succeeded: 0, failed: [] };
+    for (const id of ids) {
+      try {
+        await this.close(companyId, actor, id);
+        result.succeeded++;
+      } catch (err) {
+        result.failed.push({ id, message: err instanceof Error ? err.message : String(err) });
+      }
+    }
+    return result;
   }
 
   private async assertProject(companyId: string, projectId: string) {

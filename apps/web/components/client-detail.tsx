@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch } from "@/lib/api-client";
+import { useMe } from "@/lib/use-me";
 
 type ClientStage = "lead" | "contacted" | "qualified" | "won" | "lost";
 const STAGES: ClientStage[] = ["lead", "contacted", "qualified", "won", "lost"];
@@ -11,6 +12,10 @@ const STAGES: ClientStage[] = ["lead", "contacted", "qualified", "won", "lost"];
 type ActivityType = "note" | "call" | "meeting" | "email";
 const ACTIVITY_TYPES: ActivityType[] = ["note", "call", "meeting", "email"];
 
+interface Worker {
+  id: string;
+  name: string;
+}
 interface Client {
   id: string;
   name: string;
@@ -18,6 +23,9 @@ interface Client {
   phone: string | null;
   stage: ClientStage;
   notes: string | null;
+  estimatedValue: number | null;
+  owner: Worker | null;
+  lostReason: string | null;
 }
 interface Activity {
   id: string;
@@ -35,35 +43,83 @@ interface Reminder {
 export function ClientDetail({ clientId }: { clientId: string }) {
   const t = useTranslations("clients");
   const tc = useTranslations("common");
+  const { data: me } = useMe();
+  const currency = me?.company.currency ?? "";
 
   const [client, setClient] = useState<Client | null>(null);
   const [activities, setActivities] = useState<Activity[] | null>(null);
   const [reminders, setReminders] = useState<Reminder[] | null>(null);
+  const [workers, setWorkers] = useState<Worker[]>([]);
   const [notesInput, setNotesInput] = useState("");
+  const [dealForm, setDealForm] = useState({ estimatedValue: "", ownerWorkerId: "" });
+  const [dealSaved, setDealSaved] = useState(false);
   const [activityForm, setActivityForm] = useState({ type: "note" as ActivityType, content: "" });
   const [reminderForm, setReminderForm] = useState({ title: "", dueDate: "" });
   const [busy, setBusy] = useState(false);
   const [notesSaved, setNotesSaved] = useState(false);
+  const [losingStage, setLosingStage] = useState(false);
+  const [lostReasonDraft, setLostReasonDraft] = useState("");
+  const [converting, setConverting] = useState(false);
+  const [convertForm, setConvertForm] = useState({ name: "", address: "" });
 
   function load() {
     apiFetch<Client>(`/clients/${clientId}`).then((c) => {
       setClient(c);
       setNotesInput(c.notes ?? "");
+      setDealForm({ estimatedValue: c.estimatedValue?.toString() ?? "", ownerWorkerId: c.owner?.id ?? "" });
     });
     apiFetch<Activity[]>(`/clients/${clientId}/activities`).then(setActivities);
     apiFetch<Reminder[]>(`/clients/${clientId}/reminders`).then(setReminders);
   }
 
-  useEffect(load, [clientId]);
+  useEffect(() => {
+    load();
+    apiFetch<Worker[]>("/workers").then(setWorkers);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientId]);
 
   async function moveStage(stage: ClientStage) {
+    if (stage === "lost") {
+      setLosingStage(true);
+      setLostReasonDraft("");
+      return;
+    }
     setBusy(true);
     try {
-      await apiFetch(`/clients/${clientId}`, { method: "PATCH", body: JSON.stringify({ stage }) });
+      await apiFetch(`/clients/${clientId}/move-stage`, { method: "POST", body: JSON.stringify({ stage }) });
       load();
     } finally {
       setBusy(false);
     }
+  }
+
+  async function confirmLost() {
+    if (!lostReasonDraft.trim()) return;
+    setBusy(true);
+    try {
+      await apiFetch(`/clients/${clientId}/move-stage`, {
+        method: "POST",
+        body: JSON.stringify({ stage: "lost", lostReason: lostReasonDraft }),
+      });
+      setLosingStage(false);
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function startConvert() {
+    setConverting(true);
+    setConvertForm({ name: client?.name ?? "", address: "" });
+  }
+
+  async function submitConvert(e: React.FormEvent) {
+    e.preventDefault();
+    const project = await apiFetch<{ id: string }>(`/clients/${clientId}/convert-to-project`, {
+      method: "POST",
+      body: JSON.stringify({ name: convertForm.name, address: convertForm.address || undefined }),
+    });
+    window.location.href = `/projects/${project.id}`;
   }
 
   async function saveNotes(e: React.FormEvent) {
@@ -73,6 +129,25 @@ export function ClientDetail({ clientId }: { clientId: string }) {
     try {
       await apiFetch(`/clients/${clientId}`, { method: "PATCH", body: JSON.stringify({ notes: notesInput }) });
       setNotesSaved(true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveDeal(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setDealSaved(false);
+    try {
+      await apiFetch(`/clients/${clientId}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          estimatedValue: dealForm.estimatedValue ? Number(dealForm.estimatedValue) : null,
+          ownerWorkerId: dealForm.ownerWorkerId || null,
+        }),
+      });
+      setDealSaved(true);
+      load();
     } finally {
       setBusy(false);
     }
@@ -128,13 +203,99 @@ export function ClientDetail({ clientId }: { clientId: string }) {
         <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-medium text-brand-700">{t(client.stage)}</span>
       </div>
       <p className="text-sm text-gray-500">{client.email ?? client.phone ?? "—"}</p>
+      {client.estimatedValue != null && (
+        <p className="mt-1 text-sm font-medium text-gray-700">
+          {t("estimatedValue")}: {client.estimatedValue} {currency}
+        </p>
+      )}
+      {client.owner && <p className="text-xs text-gray-400">{t("ownedBy", { name: client.owner.name })}</p>}
+      {client.stage === "lost" && client.lostReason && (
+        <p className="mt-1 text-xs text-error-600">
+          {t("lostReason")}: {client.lostReason}
+        </p>
+      )}
 
-      <div className="mt-4 flex flex-wrap gap-1">
-        {STAGES.filter((s) => s !== client.stage).map((s) => (
-          <button key={s} onClick={() => moveStage(s)} disabled={busy} className="btn-secondary px-2 py-1 text-xs">
-            → {t(s)}
-          </button>
-        ))}
+      {losingStage ? (
+        <div className="mt-4 flex max-w-md flex-col gap-2">
+          <textarea
+            rows={2}
+            className="input"
+            placeholder={t("lostReasonPlaceholder")}
+            value={lostReasonDraft}
+            onChange={(e) => setLostReasonDraft(e.target.value)}
+          />
+          <div className="flex gap-2">
+            <button onClick={confirmLost} disabled={busy || !lostReasonDraft.trim()} className="btn-secondary px-3 py-1 text-xs">
+              {t("confirmLoss")}
+            </button>
+            <button onClick={() => setLosingStage(false)} className="btn-secondary px-3 py-1 text-xs">
+              {tc("cancel")}
+            </button>
+          </div>
+        </div>
+      ) : converting ? (
+        <form onSubmit={submitConvert} className="mt-4 flex max-w-md flex-col gap-2">
+          <input
+            required
+            className="input"
+            placeholder={t("projectName")}
+            value={convertForm.name}
+            onChange={(e) => setConvertForm((f) => ({ ...f, name: e.target.value }))}
+          />
+          <div className="flex gap-2">
+            <button type="submit" className="btn-primary px-3 py-1 text-xs">
+              {t("convertToProject")}
+            </button>
+            <button type="button" onClick={() => setConverting(false)} className="btn-secondary px-3 py-1 text-xs">
+              {tc("cancel")}
+            </button>
+          </div>
+        </form>
+      ) : (
+        <div className="mt-4 flex flex-wrap gap-1">
+          {STAGES.filter((s) => s !== client.stage).map((s) => (
+            <button key={s} onClick={() => moveStage(s)} disabled={busy} className="btn-secondary px-2 py-1 text-xs">
+              → {t(s)}
+            </button>
+          ))}
+          {client.stage === "won" && (
+            <button onClick={startConvert} className="btn-primary px-2 py-1 text-xs">
+              {t("convertToProject")}
+            </button>
+          )}
+        </div>
+      )}
+
+      <div className="mt-6 card max-w-md">
+        <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("estimatedValue")} / {t("owner")}</h2>
+        <form onSubmit={saveDeal} className="flex flex-col gap-2">
+          <input
+            type="number"
+            min="0"
+            className="input"
+            placeholder={t("estimatedValue")}
+            value={dealForm.estimatedValue}
+            onChange={(e) => setDealForm((f) => ({ ...f, estimatedValue: e.target.value }))}
+          />
+          <select
+            className="input"
+            value={dealForm.ownerWorkerId}
+            onChange={(e) => setDealForm((f) => ({ ...f, ownerWorkerId: e.target.value }))}
+          >
+            <option value="">{tc("none")}</option>
+            {workers.map((w) => (
+              <option key={w.id} value={w.id}>
+                {w.name}
+              </option>
+            ))}
+          </select>
+          <div className="flex items-center gap-2">
+            <button type="submit" disabled={busy} className="btn-secondary self-start">
+              {tc("save")}
+            </button>
+            {dealSaved && <span className="text-xs text-success-700">{tc("saved")}</span>}
+          </div>
+        </form>
       </div>
 
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">

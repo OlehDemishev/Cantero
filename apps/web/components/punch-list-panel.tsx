@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import type { PunchListItemStatus } from "@cantero/shared";
+import type { BulkActionResult, PunchListItemStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { PhotoAttachments } from "@/components/photo-attachments";
+import { useBulkSelection } from "@/components/bulk-select";
 
 interface Worker {
   id: string;
@@ -32,12 +33,14 @@ const STATUS_STYLES: Record<PunchListItemStatus, string> = {
 export function PunchListPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("punchList");
   const tc = useTranslations("common");
+  const tb = useTranslations("bulk");
 
   const [items, setItems] = useState<PunchListItem[] | null>(null);
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", location: "", assigneeWorkerId: "", dueDate: "" });
   const [busy, setBusy] = useState(false);
+  const bulk = useBulkSelection();
 
   function load() {
     apiFetch<PunchListItem[]>(`/punch-list?projectId=${projectId}`).then(setItems);
@@ -74,6 +77,14 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
 
   async function transition(id: string, action: "resolve" | "verify" | "reopen") {
     await apiFetch(`/punch-list/${id}/${action}`, { method: "POST" });
+    load();
+  }
+
+  async function bulkTransition(action: "resolve" | "verify") {
+    const ids = Array.from(bulk.selected);
+    const result = await apiFetch<BulkActionResult>(`/punch-list/bulk/${action}`, { method: "POST", body: JSON.stringify({ ids }) });
+    bulk.setResult(result);
+    bulk.clearSelection();
     load();
   }
 
@@ -154,16 +165,49 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
         </form>
       )}
 
+      {bulk.result && (
+        <div className="mb-3 flex items-center justify-between rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-600">
+          <span>{tb("resultSummary", { succeeded: bulk.result.succeeded, failed: bulk.result.failed.length })}</span>
+          <button onClick={bulk.dismissResult} className="text-gray-400 hover:text-gray-600">
+            ×
+          </button>
+        </div>
+      )}
+
       {items === null ? (
         <p className="text-sm text-gray-400">{tc("loading")}</p>
       ) : items.length === 0 ? (
         <p className="text-sm text-gray-400">{t("noItems")}</p>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <>
+          <div className="mb-2 flex items-center gap-3 text-xs text-gray-500">
+            <label className="flex items-center gap-1.5">
+              <input
+                type="checkbox"
+                checked={bulk.selected.size === items.length}
+                onChange={() => bulk.toggleAll(items.map((i) => i.id))}
+              />
+              {tb("selectAll")}
+            </label>
+            {bulk.selected.size > 0 && (
+              <>
+                <span>{tb("nSelected", { count: bulk.selected.size })}</span>
+                <button onClick={() => bulkTransition("resolve")} className="btn-secondary px-2.5 py-1 text-xs">
+                  {t("bulkResolve")}
+                </button>
+                <button onClick={() => bulkTransition("verify")} className="btn-secondary px-2.5 py-1 text-xs">
+                  {t("bulkVerify")}
+                </button>
+              </>
+            )}
+          </div>
+          <ul className="flex flex-col gap-2">
           {items.map((item) => (
             <li key={item.id} className="card">
               <div className="flex items-start justify-between gap-3">
-                <div>
+                <div className="flex items-start gap-2">
+                  <input type="checkbox" className="mt-1" checked={bulk.selected.has(item.id)} onChange={() => bulk.toggle(item.id)} />
+                  <div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-gray-900">{item.title}</span>
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[item.status]}`}>
@@ -184,6 +228,7 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
                   )}
                   <div className="mt-2">
                     <PhotoAttachments param="punchListItemId" entityId={item.id} />
+                  </div>
                   </div>
                 </div>
                 <div className="flex flex-none gap-1.5">
@@ -211,7 +256,8 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
               </div>
             </li>
           ))}
-        </ul>
+          </ul>
+        </>
       )}
     </div>
   );

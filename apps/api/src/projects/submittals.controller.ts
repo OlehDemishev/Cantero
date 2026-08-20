@@ -1,9 +1,11 @@
 import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common";
 import {
+  bulkActionIdsSchema,
   createSubmittalSchema,
   reviewSubmittalSchema,
   updateSubmittalSchema,
   type AuthUser,
+  type BulkActionIdsInput,
   type CreateSubmittalInput,
   type ReviewSubmittalInput,
   type UpdateSubmittalInput,
@@ -38,6 +40,11 @@ export class SubmittalsController {
     @Body(new ZodValidationPipe(updateSubmittalSchema)) body: UpdateSubmittalInput,
   ) {
     return this.service.update(user.companyId, id, body);
+  }
+
+  @Post("bulk/approve")
+  bulkApprove(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(bulkActionIdsSchema)) body: BulkActionIdsInput) {
+    return this.service.bulkApprove(user.companyId, { userId: user.userId, name: user.name }, body.ids);
   }
 
   @Post(":id/submit")

@@ -1,10 +1,12 @@
 import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common";
 import {
+  bulkActionIdsSchema,
   createWarrantyClaimSchema,
   denyWarrantyClaimSchema,
   resolveWarrantyClaimSchema,
   updateWarrantyClaimSchema,
   type AuthUser,
+  type BulkActionIdsInput,
   type CreateWarrantyClaimInput,
   type DenyWarrantyClaimInput,
   type ResolveWarrantyClaimInput,
@@ -40,6 +42,11 @@ export class WarrantyClaimsController {
     @Body(new ZodValidationPipe(updateWarrantyClaimSchema)) body: UpdateWarrantyClaimInput,
   ) {
     return this.service.update(user.companyId, id, body);
+  }
+
+  @Post("bulk/start")
+  bulkStart(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(bulkActionIdsSchema)) body: BulkActionIdsInput) {
+    return this.service.bulkStart(user.companyId, { userId: user.userId, name: user.name }, body.ids);
   }
 
   @Post(":id/start")

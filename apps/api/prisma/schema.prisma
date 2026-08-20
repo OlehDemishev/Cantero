@@ -1203,16 +1203,23 @@ model SubcontractorCost {
 // ---------- CRM (thin in Phase 1) ----------
 
 model Client {
-  id        String      @id @default(uuid())
-  companyId String
-  name      String
-  email     String?
-  phone     String?
-  stage     ClientStage @default(lead)
-  notes     String?
-  createdAt DateTime    @default(now())
+  id             String      @id @default(uuid())
+  companyId      String
+  name           String
+  email          String?
+  phone          String?
+  stage          ClientStage @default(lead)
+  notes          String?
+  createdAt      DateTime    @default(now())
+  /// Estimated deal value while the client is still in the pipeline (lead/contacted/qualified).
+  estimatedValue Decimal?    @db.Decimal(12, 2)
+  ownerWorkerId  String?
+  wonAt          DateTime?
+  lostAt         DateTime?
+  lostReason     String?
 
   company           Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  owner             Worker?                   @relation(fields: [ownerWorkerId], references: [id], onDelete: SetNull)
   projects          Project[]
   invoices          Invoice[]
   recurringInvoices RecurringInvoice[]
@@ -1222,6 +1229,7 @@ model Client {
   warrantyClaims    WarrantyClaim[]
 
   @@index([companyId])
+  @@index([ownerWorkerId])
   @@map("clients")
 }
 
@@ -1303,6 +1311,7 @@ model Worker {
   punchListItems      PunchListItem[]
   safetyBriefingAttendance SafetyBriefingAttendance[]
   warrantyClaims      WarrantyClaim[]
+  ownedClients        Client[]
 
   @@index([companyId])
   @@map("workers")

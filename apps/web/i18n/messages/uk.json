@@ -191,7 +191,9 @@
     "webhookEvent_safety_incident_logged": "Зафіксовано інцидент з ТБ",
     "webhookEvent_warranty_claim_submitted": "Подано гарантійне звернення",
     "webhookEvent_warranty_claim_resolved": "Гарантійне звернення усунено",
-    "webhookEvent_warranty_claim_denied": "Гарантійне звернення відхилено"
+    "webhookEvent_warranty_claim_denied": "Гарантійне звернення відхилено",
+    "webhookEvent_client_won": "Клієнта позначено як виграного",
+    "webhookEvent_client_lost": "Клієнта позначено як втраченого"
   },
   "projects": {
     "title": "Проєкти",
@@ -225,7 +227,16 @@
     "complete": "Виконано",
     "reminderTitle": "Назва нагадування",
     "addReminder": "Додати нагадування",
-    "upcomingReminders": "Найближчі нагадування"
+    "upcomingReminders": "Найближчі нагадування",
+    "estimatedValue": "Орієнтовна вартість",
+    "owner": "Відповідальний",
+    "ownedBy": "Відповідальний: {name}",
+    "lostReason": "Причина втрати",
+    "lostReasonPlaceholder": "Чому угоду втрачено…",
+    "confirmLoss": "Підтвердити втрату",
+    "convertToProject": "Перетворити на проєкт",
+    "projectName": "Назва проєкту",
+    "pipelineOverview": "Огляд пайплайну"
   },
   "team": {
     "title": "Команда",
@@ -797,7 +808,9 @@
     "reopen": "Відкрити знову",
     "noItems": "Поки немає пунктів у списку дефектів.",
     "verifiedBy": "Перевірено: {name}",
-    "resolvedBy": "Позначено усуненим: {name}"
+    "resolvedBy": "Позначено усуненим: {name}",
+    "bulkResolve": "Позначити вибрані як вирішені",
+    "bulkVerify": "Перевірити вибрані"
   },
   "rfi": {
     "title": "Запити на уточнення (RFI)",
@@ -820,7 +833,8 @@
     "submitAnswer": "Надіслати відповідь",
     "close": "Закрити",
     "reopen": "Відкрити знову",
-    "closedBy": "Закрито: {name}"
+    "closedBy": "Закрито: {name}",
+    "bulkClose": "Закрити вибрані"
   },
   "safety": {
     "title": "Охорона праці",
@@ -868,7 +882,8 @@
     "reviewCommentsPlaceholder": "Коментарі для перевіряючого або підрядника…",
     "submitForReview": "Подати на розгляд",
     "submitReview": "Надіслати рішення",
-    "createRevision": "Створити ревізію"
+    "createRevision": "Створити ревізію",
+    "bulkApprove": "Затвердити вибрані"
   },
   "portfolio": {
     "title": "Портфоліо",
@@ -924,12 +939,19 @@
     "markResolved": "Позначити усуненим",
     "deny": "Відхилити",
     "reopen": "Відкрити знову",
-    "noClaims": "Поки немає гарантійних звернень."
+    "noClaims": "Поки немає гарантійних звернень.",
+    "bulkStart": "Почати роботу над вибраними"
   },
   "photos": {
     "title": "Фото",
     "addPhoto": "+ Додати фото",
     "uploading": "Завантаження…",
     "noPhotos": "Поки немає фото."
+  },
+  "bulk": {
+    "selectAll": "Вибрати всі",
+    "nSelected": "Вибрано: {count}",
+    "clearSelection": "Скасувати вибір",
+    "resultSummary": "{succeeded} успішно, {failed} не вдалося"
   }
 }

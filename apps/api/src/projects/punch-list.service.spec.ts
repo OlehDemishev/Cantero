@@ -101,4 +101,25 @@ describe("PunchListService", () => {
       expect(prisma.punchListItem.update).not.toHaveBeenCalled();
     });
   });
+
+  describe("bulkResolve()", () => {
+    it("resolves every valid id and reports failures for the rest without aborting the batch", async () => {
+      const items: Record<string, { id: string; companyId: string; status: string; title: string }> = {
+        "item-1": { id: "item-1", companyId: COMPANY_A, status: "open", title: "Chipped tile" },
+        "item-2": { id: "item-2", companyId: COMPANY_A, status: "resolved", title: "Loose railing" },
+        "item-3": { id: "item-3", companyId: COMPANY_A, status: "open", title: "Paint touch-up" },
+      };
+      prisma.punchListItem.findFirst.mockImplementation(({ where }: { where: { id: string } }) =>
+        Promise.resolve(items[where.id] ?? null),
+      );
+      prisma.punchListItem.update.mockResolvedValue({ id: "item-1", status: "resolved" });
+
+      const result = await service.bulkResolve(COMPANY_A, ACTOR, ["item-1", "item-2", "item-3", "missing"]);
+
+      expect(result.succeeded).toBe(2);
+      expect(result.failed).toHaveLength(2);
+      expect(result.failed.map((f) => f.id).sort()).toEqual(["item-2", "missing"]);
+      expect(prisma.punchListItem.update).toHaveBeenCalledTimes(2);
+    });
+  });
 });

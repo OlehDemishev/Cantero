@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import type { CreatePunchListItemInput, UpdatePunchListItemInput } from "@cantero/shared";
+import type { BulkActionResult, CreatePunchListItemInput, UpdatePunchListItemInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { WebhooksService } from "../common/webhooks/webhooks.service";
@@ -116,6 +116,28 @@ export class PunchListService {
     });
     this.audit.record(companyId, actor, "punch_list.reopened", "PunchListItem", item.id, `Reopened "${item.title}"`);
     return updated;
+  }
+
+  /** Each id is resolved independently via the same guarded resolve() — one bad id never blocks the rest. */
+  async bulkResolve(companyId: string, actor: AuditActor, ids: string[]): Promise<BulkActionResult> {
+    return this.bulkRun(ids, (id) => this.resolve(companyId, actor, id));
+  }
+
+  async bulkVerify(companyId: string, actor: AuditActor, ids: string[]): Promise<BulkActionResult> {
+    return this.bulkRun(ids, (id) => this.verify(companyId, actor, id));
+  }
+
+  private async bulkRun(ids: string[], run: (id: string) => Promise<unknown>): Promise<BulkActionResult> {
+    const result: BulkActionResult = { succeeded: 0, failed: [] };
+    for (const id of ids) {
+      try {
+        await run(id);
+        result.succeeded++;
+      } catch (err) {
+        result.failed.push({ id, message: err instanceof Error ? err.message : String(err) });
+      }
+    }
+    return result;
   }
 
   private async assertProject(companyId: string, projectId: string) {

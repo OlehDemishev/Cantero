@@ -1,8 +1,10 @@
 import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common";
 import {
+  bulkActionIdsSchema,
   createPunchListItemSchema,
   updatePunchListItemSchema,
   type AuthUser,
+  type BulkActionIdsInput,
   type CreatePunchListItemInput,
   type UpdatePunchListItemInput,
 } from "@cantero/shared";
@@ -36,6 +38,18 @@ export class PunchListController {
     @Body(new ZodValidationPipe(updatePunchListItemSchema)) body: UpdatePunchListItemInput,
   ) {
     return this.service.update(user.companyId, { userId: user.userId, name: user.name }, id, body);
+  }
+
+  // Registered ahead of ":id/resolve" and ":id/verify" — those are structurally the same
+  // two-segment pattern, so route order decides which one "bulk/resolve" actually hits.
+  @Post("bulk/resolve")
+  bulkResolve(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(bulkActionIdsSchema)) body: BulkActionIdsInput) {
+    return this.service.bulkResolve(user.companyId, { userId: user.userId, name: user.name }, body.ids);
+  }
+
+  @Post("bulk/verify")
+  bulkVerify(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(bulkActionIdsSchema)) body: BulkActionIdsInput) {
+    return this.service.bulkVerify(user.companyId, { userId: user.userId, name: user.name }, body.ids);
   }
 
   @Post(":id/resolve")

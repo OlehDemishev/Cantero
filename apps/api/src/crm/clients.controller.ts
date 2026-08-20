@@ -3,12 +3,16 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import {
   addClientActivitySchema,
   addClientReminderSchema,
+  convertClientToProjectSchema,
   createClientSchema,
+  moveClientStageSchema,
   updateClientSchema,
   type AddClientActivityInput,
   type AddClientReminderInput,
   type AuthUser,
+  type ConvertClientToProjectInput,
   type CreateClientInput,
+  type MoveClientStageInput,
   type UpdateClientInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
@@ -24,10 +28,15 @@ export class ClientsController {
     return this.service.list(user.companyId);
   }
 
-  // Declared before ":id" so "reminders/upcoming" isn't swallowed as a client id.
+  // Declared before ":id" so "reminders/upcoming" and "pipeline-summary" aren't swallowed as a client id.
   @Get("reminders/upcoming")
   upcomingReminders(@CurrentUser() user: AuthUser) {
     return this.service.listUpcomingReminders(user.companyId);
+  }
+
+  @Get("pipeline-summary")
+  pipelineSummary(@CurrentUser() user: AuthUser) {
+    return this.service.pipelineSummary(user.companyId);
   }
 
   @Get(":id")
@@ -57,6 +66,24 @@ export class ClientsController {
     @Body(new ZodValidationPipe(updateClientSchema)) body: UpdateClientInput,
   ) {
     return this.service.update(user.companyId, id, body);
+  }
+
+  @Post(":id/move-stage")
+  moveStage(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(moveClientStageSchema)) body: MoveClientStageInput,
+  ) {
+    return this.service.moveStage(user.companyId, { userId: user.userId, name: user.name }, id, body);
+  }
+
+  @Post(":id/convert-to-project")
+  convertToProject(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(convertClientToProjectSchema)) body: ConvertClientToProjectInput,
+  ) {
+    return this.service.convertToProject(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
   @Get(":id/activities")

@@ -191,7 +191,9 @@
     "webhookEvent_safety_incident_logged": "Zarejestrowano zdarzenie BHP",
     "webhookEvent_warranty_claim_submitted": "Zgłoszono roszczenie gwarancyjne",
     "webhookEvent_warranty_claim_resolved": "Usunięto roszczenie gwarancyjne",
-    "webhookEvent_warranty_claim_denied": "Odrzucono roszczenie gwarancyjne"
+    "webhookEvent_warranty_claim_denied": "Odrzucono roszczenie gwarancyjne",
+    "webhookEvent_client_won": "Klient oznaczony jako wygrany",
+    "webhookEvent_client_lost": "Klient oznaczony jako utracony"
   },
   "projects": {
     "title": "Projekty",
@@ -225,7 +227,16 @@
     "complete": "Zakończ",
     "reminderTitle": "Tytuł przypomnienia",
     "addReminder": "Dodaj przypomnienie",
-    "upcomingReminders": "Nadchodzące przypomnienia"
+    "upcomingReminders": "Nadchodzące przypomnienia",
+    "estimatedValue": "Szacowana wartość",
+    "owner": "Opiekun",
+    "ownedBy": "Opiekun: {name}",
+    "lostReason": "Powód utraty",
+    "lostReasonPlaceholder": "Dlaczego transakcja została utracona…",
+    "confirmLoss": "Potwierdź utratę",
+    "convertToProject": "Przekształć w projekt",
+    "projectName": "Nazwa projektu",
+    "pipelineOverview": "Przegląd lejka sprzedaży"
   },
   "team": {
     "title": "Zespół",
@@ -797,7 +808,9 @@
     "reopen": "Otwórz ponownie",
     "noItems": "Brak usterek na liście.",
     "verifiedBy": "Zweryfikowane przez {name}",
-    "resolvedBy": "Oznaczone jako usunięte przez {name}"
+    "resolvedBy": "Oznaczone jako usunięte przez {name}",
+    "bulkResolve": "Oznacz wybrane jako rozwiązane",
+    "bulkVerify": "Zweryfikuj wybrane"
   },
   "rfi": {
     "title": "Zapytania (RFI)",
@@ -820,7 +833,8 @@
     "submitAnswer": "Wyślij odpowiedź",
     "close": "Zamknij",
     "reopen": "Otwórz ponownie",
-    "closedBy": "Zamknięte przez {name}"
+    "closedBy": "Zamknięte przez {name}",
+    "bulkClose": "Zamknij wybrane"
   },
   "safety": {
     "title": "Bezpieczeństwo",
@@ -868,7 +882,8 @@
     "reviewCommentsPlaceholder": "Uwagi dla weryfikującego lub wykonawcy…",
     "submitForReview": "Zgłoś do weryfikacji",
     "submitReview": "Zatwierdź decyzję",
-    "createRevision": "Utwórz rewizję"
+    "createRevision": "Utwórz rewizję",
+    "bulkApprove": "Zatwierdź wybrane"
   },
   "portfolio": {
     "title": "Portfolio",
@@ -924,12 +939,19 @@
     "markResolved": "Oznacz jako usunięte",
     "deny": "Odrzuć",
     "reopen": "Otwórz ponownie",
-    "noClaims": "Brak zgłoszeń gwarancyjnych."
+    "noClaims": "Brak zgłoszeń gwarancyjnych.",
+    "bulkStart": "Rozpocznij pracę nad wybranymi"
   },
   "photos": {
     "title": "Zdjęcia",
     "addPhoto": "+ Dodaj zdjęcie",
     "uploading": "Przesyłanie…",
     "noPhotos": "Brak zdjęć."
+  },
+  "bulk": {
+    "selectAll": "Zaznacz wszystko",
+    "nSelected": "Wybrano: {count}",
+    "clearSelection": "Wyczyść zaznaczenie",
+    "resultSummary": "{succeeded} powodzenie, {failed} niepowodzenie"
   }
 }

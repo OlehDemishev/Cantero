@@ -121,4 +121,21 @@ describe("RfiService", () => {
       expect(prisma.rfi.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: "answered" }) }));
     });
   });
+
+  describe("bulkClose()", () => {
+    it("closes every open/answered RFI and reports failures for already-closed ones", async () => {
+      const rfis: Record<string, { id: string; companyId: string; status: string; number: string; subject: string }> = {
+        "rfi-1": { id: "rfi-1", companyId: COMPANY_A, status: "open", number: "RFI-001", subject: "Door swing" },
+        "rfi-2": { id: "rfi-2", companyId: COMPANY_A, status: "closed", number: "RFI-002", subject: "Rebar spacing" },
+      };
+      prisma.rfi.findFirst.mockImplementation(({ where }: { where: { id: string } }) => Promise.resolve(rfis[where.id] ?? null));
+      prisma.rfi.update.mockResolvedValue({ id: "rfi-1", status: "closed" });
+
+      const result = await service.bulkClose(COMPANY_A, ACTOR, ["rfi-1", "rfi-2"]);
+
+      expect(result.succeeded).toBe(1);
+      expect(result.failed).toEqual([{ id: "rfi-2", message: "RFI is already closed" }]);
+      expect(prisma.rfi.update).toHaveBeenCalledTimes(1);
+    });
+  });
 });

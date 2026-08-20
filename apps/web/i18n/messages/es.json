@@ -191,7 +191,9 @@
     "webhookEvent_safety_incident_logged": "Incidente de seguridad registrado",
     "webhookEvent_warranty_claim_submitted": "Reclamación de garantía enviada",
     "webhookEvent_warranty_claim_resolved": "Reclamación de garantía resuelta",
-    "webhookEvent_warranty_claim_denied": "Reclamación de garantía rechazada"
+    "webhookEvent_warranty_claim_denied": "Reclamación de garantía rechazada",
+    "webhookEvent_client_won": "Cliente marcado como ganado",
+    "webhookEvent_client_lost": "Cliente marcado como perdido"
   },
   "projects": {
     "title": "Proyectos",
@@ -225,7 +227,16 @@
     "complete": "Completar",
     "reminderTitle": "Título del recordatorio",
     "addReminder": "Añadir recordatorio",
-    "upcomingReminders": "Próximos recordatorios"
+    "upcomingReminders": "Próximos recordatorios",
+    "estimatedValue": "Valor estimado",
+    "owner": "Responsable",
+    "ownedBy": "A cargo de {name}",
+    "lostReason": "Motivo de la pérdida",
+    "lostReasonPlaceholder": "Por qué se perdió…",
+    "confirmLoss": "Confirmar pérdida",
+    "convertToProject": "Convertir en proyecto",
+    "projectName": "Nombre del proyecto",
+    "pipelineOverview": "Resumen del pipeline"
   },
   "team": {
     "title": "Equipo",
@@ -797,7 +808,9 @@
     "reopen": "Reabrir",
     "noItems": "Aún no hay elementos en la lista de defectos.",
     "verifiedBy": "Verificado por {name}",
-    "resolvedBy": "Marcado como resuelto por {name}"
+    "resolvedBy": "Marcado como resuelto por {name}",
+    "bulkResolve": "Resolver seleccionados",
+    "bulkVerify": "Verificar seleccionados"
   },
   "rfi": {
     "title": "Solicitudes de información (RFI)",
@@ -820,7 +833,8 @@
     "submitAnswer": "Enviar respuesta",
     "close": "Cerrar",
     "reopen": "Reabrir",
-    "closedBy": "Cerrada por {name}"
+    "closedBy": "Cerrada por {name}",
+    "bulkClose": "Cerrar seleccionados"
   },
   "safety": {
     "title": "Seguridad",
@@ -868,7 +882,8 @@
     "reviewCommentsPlaceholder": "Comentarios para el revisor o el contratista…",
     "submitForReview": "Enviar para revisión",
     "submitReview": "Enviar decisión",
-    "createRevision": "Crear revisión"
+    "createRevision": "Crear revisión",
+    "bulkApprove": "Aprobar seleccionados"
   },
   "portfolio": {
     "title": "Portafolio",
@@ -924,12 +939,19 @@
     "markResolved": "Marcar como resuelta",
     "deny": "Rechazar",
     "reopen": "Reabrir",
-    "noClaims": "Aún no hay reclamaciones de garantía."
+    "noClaims": "Aún no hay reclamaciones de garantía.",
+    "bulkStart": "Iniciar trabajo en los seleccionados"
   },
   "photos": {
     "title": "Fotos",
     "addPhoto": "+ Añadir foto",
     "uploading": "Subiendo…",
     "noPhotos": "Aún no hay fotos."
+  },
+  "bulk": {
+    "selectAll": "Seleccionar todo",
+    "nSelected": "{count} seleccionados",
+    "clearSelection": "Borrar selección",
+    "resultSummary": "{succeeded} correctos, {failed} fallidos"
   }
 }

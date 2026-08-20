@@ -5,16 +5,23 @@ import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { CsvImportButton } from "@/components/csv-import-button";
 import { apiFetch } from "@/lib/api-client";
+import { useMe } from "@/lib/use-me";
 
 type ClientStage = "lead" | "contacted" | "qualified" | "won" | "lost";
 const STAGES: ClientStage[] = ["lead", "contacted", "qualified", "won", "lost"];
 
+interface Worker {
+  id: string;
+  name: string;
+}
 interface Client {
   id: string;
   name: string;
   email: string | null;
   phone: string | null;
   stage: ClientStage;
+  estimatedValue: number | null;
+  owner: Worker | null;
 }
 interface UpcomingReminder {
   id: string;
@@ -22,22 +29,41 @@ interface UpcomingReminder {
   dueDate: string;
   client: { id: string; name: string };
 }
+interface PipelineSummaryRow {
+  stage: ClientStage;
+  count: number;
+  totalValue: number;
+}
 
 export default function ClientsPage() {
   const t = useTranslations("clients");
   const tc = useTranslations("common");
   const ti = useTranslations("import");
+  const { data: me } = useMe();
+  const currency = me?.company.currency ?? "";
+
   const [clients, setClients] = useState<Client[] | null>(null);
   const [upcoming, setUpcoming] = useState<UpcomingReminder[] | null>(null);
-  const [form, setForm] = useState({ name: "", email: "", phone: "" });
+  const [summary, setSummary] = useState<PipelineSummaryRow[] | null>(null);
+  const [workers, setWorkers] = useState<Worker[]>([]);
+  const [form, setForm] = useState({ name: "", email: "", phone: "", estimatedValue: "", ownerWorkerId: "" });
   const [submitting, setSubmitting] = useState(false);
+
+  const [pendingLostId, setPendingLostId] = useState<string | null>(null);
+  const [lostReasonDraft, setLostReasonDraft] = useState("");
+  const [convertingId, setConvertingId] = useState<string | null>(null);
+  const [convertForm, setConvertForm] = useState({ name: "", address: "" });
 
   function load() {
     apiFetch<Client[]>("/clients").then(setClients);
     apiFetch<UpcomingReminder[]>("/clients/reminders/upcoming").then(setUpcoming);
+    apiFetch<PipelineSummaryRow[]>("/clients/pipeline-summary").then(setSummary);
   }
 
-  useEffect(load, []);
+  useEffect(() => {
+    load();
+    apiFetch<Worker[]>("/workers").then(setWorkers);
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -49,9 +75,11 @@ export default function ClientsPage() {
           name: form.name,
           email: form.email || undefined,
           phone: form.phone || undefined,
+          estimatedValue: form.estimatedValue ? Number(form.estimatedValue) : undefined,
+          ownerWorkerId: form.ownerWorkerId || undefined,
         }),
       });
-      setForm({ name: "", email: "", phone: "" });
+      setForm({ name: "", email: "", phone: "", estimatedValue: "", ownerWorkerId: "" });
       load();
     } finally {
       setSubmitting(false);
@@ -59,8 +87,37 @@ export default function ClientsPage() {
   }
 
   async function moveStage(clientId: string, stage: ClientStage) {
-    await apiFetch(`/clients/${clientId}`, { method: "PATCH", body: JSON.stringify({ stage }) });
+    if (stage === "lost") {
+      setPendingLostId(clientId);
+      setLostReasonDraft("");
+      return;
+    }
+    await apiFetch(`/clients/${clientId}/move-stage`, { method: "POST", body: JSON.stringify({ stage }) });
     load();
+  }
+
+  async function confirmLost(clientId: string) {
+    if (!lostReasonDraft.trim()) return;
+    await apiFetch(`/clients/${clientId}/move-stage`, {
+      method: "POST",
+      body: JSON.stringify({ stage: "lost", lostReason: lostReasonDraft }),
+    });
+    setPendingLostId(null);
+    load();
+  }
+
+  function startConvert(client: Client) {
+    setConvertingId(client.id);
+    setConvertForm({ name: client.name, address: "" });
+  }
+
+  async function submitConvert(e: React.FormEvent, clientId: string) {
+    e.preventDefault();
+    const project = await apiFetch<{ id: string }>(`/clients/${clientId}/convert-to-project`, {
+      method: "POST",
+      body: JSON.stringify({ name: convertForm.name, address: convertForm.address || undefined }),
+    });
+    window.location.href = `/projects/${project.id}`;
   }
 
   return (
@@ -69,6 +126,23 @@ export default function ClientsPage() {
         <h1 className="text-2xl font-semibold">{t("title")}</h1>
         <CsvImportButton endpoint="/clients/import" label={ti("importClients")} onDone={load} />
       </div>
+
+      {summary && (
+        <div className="mt-6">
+          <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("pipelineOverview")}</h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+            {summary.map((s) => (
+              <div key={s.stage} className="card">
+                <div className="text-xs font-medium uppercase tracking-wide text-gray-500">{t(s.stage)}</div>
+                <div className="mt-1 text-xl font-semibold text-gray-900">{s.count}</div>
+                <div className="mt-0.5 text-xs text-gray-400">
+                  {s.totalValue} {currency}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {upcoming && upcoming.length > 0 && (
         <div className="mt-6">
@@ -115,6 +189,26 @@ export default function ClientsPage() {
             value={form.phone}
             onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
           />
+          <input
+            type="number"
+            min="0"
+            placeholder={t("estimatedValue")}
+            className="input"
+            value={form.estimatedValue}
+            onChange={(e) => setForm((f) => ({ ...f, estimatedValue: e.target.value }))}
+          />
+          <select
+            className="input"
+            value={form.ownerWorkerId}
+            onChange={(e) => setForm((f) => ({ ...f, ownerWorkerId: e.target.value }))}
+          >
+            <option value="">{t("owner")}</option>
+            {workers.map((w) => (
+              <option key={w.id} value={w.id}>
+                {w.name}
+              </option>
+            ))}
+          </select>
           <button type="submit" disabled={submitting} className="btn-primary">
             {tc("create")}
           </button>
@@ -140,17 +234,75 @@ export default function ClientsPage() {
                           {c.name}
                         </a>
                         <div className="text-xs text-gray-500">{c.email ?? c.phone ?? "—"}</div>
-                        <div className="mt-2 flex flex-wrap gap-1">
-                          {STAGES.filter((s) => s !== stage).map((s) => (
-                            <button
-                              key={s}
-                              onClick={() => moveStage(c.id, s)}
-                              className="btn-secondary px-2 py-0.5 text-xs"
-                            >
-                              → {t(s)}
-                            </button>
-                          ))}
-                        </div>
+                        {c.estimatedValue != null && (
+                          <div className="mt-1 text-xs font-medium text-gray-700">
+                            {c.estimatedValue} {currency}
+                          </div>
+                        )}
+                        {c.owner && <div className="text-xs text-gray-400">{t("ownedBy", { name: c.owner.name })}</div>}
+
+                        {pendingLostId === c.id ? (
+                          <div className="mt-2 flex flex-col gap-1.5">
+                            <textarea
+                              rows={2}
+                              className="input text-xs"
+                              placeholder={t("lostReasonPlaceholder")}
+                              value={lostReasonDraft}
+                              onChange={(e) => setLostReasonDraft(e.target.value)}
+                            />
+                            <div className="flex gap-1.5">
+                              <button
+                                onClick={() => confirmLost(c.id)}
+                                disabled={!lostReasonDraft.trim()}
+                                className="btn-secondary px-2 py-0.5 text-xs"
+                              >
+                                {t("confirmLoss")}
+                              </button>
+                              <button onClick={() => setPendingLostId(null)} className="btn-secondary px-2 py-0.5 text-xs">
+                                {tc("cancel")}
+                              </button>
+                            </div>
+                          </div>
+                        ) : convertingId === c.id ? (
+                          <form onSubmit={(e) => submitConvert(e, c.id)} className="mt-2 flex flex-col gap-1.5">
+                            <input
+                              required
+                              className="input text-xs"
+                              placeholder={t("projectName")}
+                              value={convertForm.name}
+                              onChange={(e) => setConvertForm((f) => ({ ...f, name: e.target.value }))}
+                            />
+                            <div className="flex gap-1.5">
+                              <button type="submit" className="btn-primary px-2 py-0.5 text-xs">
+                                {t("convertToProject")}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setConvertingId(null)}
+                                className="btn-secondary px-2 py-0.5 text-xs"
+                              >
+                                {tc("cancel")}
+                              </button>
+                            </div>
+                          </form>
+                        ) : (
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {STAGES.filter((s) => s !== stage).map((s) => (
+                              <button
+                                key={s}
+                                onClick={() => moveStage(c.id, s)}
+                                className="btn-secondary px-2 py-0.5 text-xs"
+                              >
+                                → {t(s)}
+                              </button>
+                            ))}
+                            {stage === "won" && (
+                              <button onClick={() => startConvert(c)} className="btn-primary px-2 py-0.5 text-xs">
+                                {t("convertToProject")}
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ))}
                 </div>

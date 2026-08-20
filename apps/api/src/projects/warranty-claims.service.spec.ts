@@ -129,4 +129,21 @@ describe("WarrantyClaimsService", () => {
       expect(prisma.warrantyClaim.update).not.toHaveBeenCalled();
     });
   });
+
+  describe("bulkStart()", () => {
+    it("starts every open claim and reports failures for claims already in progress", async () => {
+      const claims: Record<string, { id: string; companyId: string; status: string; title: string }> = {
+        "claim-1": { id: "claim-1", companyId: COMPANY_A, status: "open", title: "Cracked grout" },
+        "claim-2": { id: "claim-2", companyId: COMPANY_A, status: "in_progress", title: "Leaky faucet" },
+      };
+      prisma.warrantyClaim.findFirst.mockImplementation(({ where }: { where: { id: string } }) => Promise.resolve(claims[where.id] ?? null));
+      prisma.warrantyClaim.update.mockResolvedValue({ id: "claim-1", status: "in_progress" });
+
+      const result = await service.bulkStart(COMPANY_A, ACTOR, ["claim-1", "claim-2"]);
+
+      expect(result.succeeded).toBe(1);
+      expect(result.failed).toEqual([{ id: "claim-2", message: "Claim is already in_progress" }]);
+      expect(prisma.warrantyClaim.update).toHaveBeenCalledTimes(1);
+    });
+  });
 });

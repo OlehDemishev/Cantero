@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import type { WarrantyClaimStatus } from "@cantero/shared";
+import type { BulkActionResult, WarrantyClaimStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { PhotoAttachments } from "@/components/photo-attachments";
+import { useBulkSelection } from "@/components/bulk-select";
 
 interface Worker {
   id: string;
@@ -44,6 +45,8 @@ function warrantyExpiresAt(handoverDate: string | null, warrantyMonths: number |
 export function WarrantyPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("warranty");
   const tc = useTranslations("common");
+  const tb = useTranslations("bulk");
+  const bulk = useBulkSelection();
 
   const [project, setProject] = useState<Project | null>(null);
   const [claims, setClaims] = useState<WarrantyClaim[] | null>(null);
@@ -142,6 +145,14 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
 
   async function reopen(id: string) {
     await apiFetch(`/warranty-claims/${id}/reopen`, { method: "POST" });
+    load();
+  }
+
+  async function bulkStart() {
+    const ids = Array.from(bulk.selected);
+    const result = await apiFetch<BulkActionResult>("/warranty-claims/bulk/start", { method: "POST", body: JSON.stringify({ ids }) });
+    bulk.setResult(result);
+    bulk.clearSelection();
     load();
   }
 
@@ -248,40 +259,71 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
         </form>
       )}
 
+      {bulk.result && (
+        <div className="mb-3 flex items-center justify-between rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-600">
+          <span>{tb("resultSummary", { succeeded: bulk.result.succeeded, failed: bulk.result.failed.length })}</span>
+          <button onClick={bulk.dismissResult} className="text-gray-400 hover:text-gray-600">
+            ×
+          </button>
+        </div>
+      )}
+
       {claims === null ? (
         <p className="text-sm text-gray-400">{tc("loading")}</p>
       ) : claims.length === 0 ? (
         <p className="text-sm text-gray-400">{t("noClaims")}</p>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <>
+          <div className="mb-2 flex items-center gap-3 text-xs text-gray-500">
+            <label className="flex items-center gap-1.5">
+              <input
+                type="checkbox"
+                checked={bulk.selected.size === claims.length}
+                onChange={() => bulk.toggleAll(claims.map((c) => c.id))}
+              />
+              {tb("selectAll")}
+            </label>
+            {bulk.selected.size > 0 && (
+              <>
+                <span>{tb("nSelected", { count: bulk.selected.size })}</span>
+                <button onClick={bulkStart} className="btn-secondary px-2.5 py-1 text-xs">
+                  {t("bulkStart")}
+                </button>
+              </>
+            )}
+          </div>
+          <ul className="flex flex-col gap-2">
           {claims.map((claim) => {
             const expanded = expandedId === claim.id;
             return (
               <li key={claim.id} className="card">
-                <button
-                  onClick={() => {
-                    setExpandedId(expanded ? null : claim.id);
-                    setDenyReason("");
-                    setResolutionNotes("");
-                  }}
-                  className="flex w-full items-start justify-between gap-3 text-left"
-                >
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-900">{claim.title}</span>
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[claim.status]}`}>
-                        {t(claim.status)}
-                      </span>
-                      {claim.submittedByClientId && (
-                        <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700">{t("fromClient")}</span>
-                      )}
+                <div className="flex w-full items-start gap-3">
+                  <input type="checkbox" className="mt-1" checked={bulk.selected.has(claim.id)} onChange={() => bulk.toggle(claim.id)} />
+                  <button
+                    onClick={() => {
+                      setExpandedId(expanded ? null : claim.id);
+                      setDenyReason("");
+                      setResolutionNotes("");
+                    }}
+                    className="flex flex-1 items-start justify-between gap-3 text-left"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-gray-900">{claim.title}</span>
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[claim.status]}`}>
+                          {t(claim.status)}
+                        </span>
+                        {claim.submittedByClientId && (
+                          <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700">{t("fromClient")}</span>
+                        )}
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-gray-500">
+                        {claim.location && <span>{claim.location}</span>}
+                        {claim.assignee && <span>{t("assignedTo", { name: claim.assignee.name })}</span>}
+                      </div>
                     </div>
-                    <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-gray-500">
-                      {claim.location && <span>{claim.location}</span>}
-                      {claim.assignee && <span>{t("assignedTo", { name: claim.assignee.name })}</span>}
-                    </div>
-                  </div>
-                </button>
+                  </button>
+                </div>
 
                 {expanded && (
                   <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 pt-3 text-sm">
@@ -345,7 +387,8 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
               </li>
             );
           })}
-        </ul>
+          </ul>
+        </>
       )}
     </div>
   );

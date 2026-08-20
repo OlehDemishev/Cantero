@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import type { CreateSubmittalInput, ReviewSubmittalInput, UpdateSubmittalInput } from "@cantero/shared";
+import type { BulkActionResult, CreateSubmittalInput, ReviewSubmittalInput, UpdateSubmittalInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { WebhooksService } from "../common/webhooks/webhooks.service";
@@ -140,6 +140,21 @@ export class SubmittalsService {
     });
     this.audit.record(companyId, actor, "submittal.revised", "Submittal", revised.id, `Created rev.${revised.revision} of ${submittal.number}`);
     return revised;
+  }
+
+  /** Only the unambiguous "approved" outcome is bulkable — revise/reject decisions read best with
+   * a comment explaining why, which doesn't make sense to share across an arbitrary batch. */
+  async bulkApprove(companyId: string, actor: AuditActor, ids: string[]): Promise<BulkActionResult> {
+    const result: BulkActionResult = { succeeded: 0, failed: [] };
+    for (const id of ids) {
+      try {
+        await this.review(companyId, actor, id, { decision: "approved" });
+        result.succeeded++;
+      } catch (err) {
+        result.failed.push({ id, message: err instanceof Error ? err.message : String(err) });
+      }
+    }
+    return result;
   }
 
   private async findOrThrow(companyId: string, id: string) {

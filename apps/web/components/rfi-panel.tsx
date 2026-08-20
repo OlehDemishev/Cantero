@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import type { RfiPriority, RfiStatus } from "@cantero/shared";
+import type { BulkActionResult, RfiPriority, RfiStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useBulkSelection } from "@/components/bulk-select";
 
 interface Rfi {
   id: string;
@@ -37,6 +38,8 @@ const EMPTY_FORM = { subject: "", question: "", priority: "medium" as RfiPriorit
 export function RfiPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("rfi");
   const tc = useTranslations("common");
+  const tb = useTranslations("bulk");
+  const bulk = useBulkSelection();
 
   const [items, setItems] = useState<Rfi[] | null>(null);
   const [creating, setCreating] = useState(false);
@@ -89,6 +92,14 @@ export function RfiPanel({ projectId }: { projectId: string }) {
 
   async function transition(id: string, action: "close" | "reopen") {
     await apiFetch(`/rfis/${id}/${action}`, { method: "POST" });
+    load();
+  }
+
+  async function bulkClose() {
+    const ids = Array.from(bulk.selected);
+    const result = await apiFetch<BulkActionResult>("/rfis/bulk/close", { method: "POST", body: JSON.stringify({ ids }) });
+    bulk.setResult(result);
+    bulk.clearSelection();
     load();
   }
 
@@ -176,44 +187,75 @@ export function RfiPanel({ projectId }: { projectId: string }) {
         </form>
       )}
 
+      {bulk.result && (
+        <div className="mb-3 flex items-center justify-between rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-600">
+          <span>{tb("resultSummary", { succeeded: bulk.result.succeeded, failed: bulk.result.failed.length })}</span>
+          <button onClick={bulk.dismissResult} className="text-gray-400 hover:text-gray-600">
+            ×
+          </button>
+        </div>
+      )}
+
       {items === null ? (
         <p className="text-sm text-gray-400">{tc("loading")}</p>
       ) : items.length === 0 ? (
         <p className="text-sm text-gray-400">{t("noItems")}</p>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <>
+          <div className="mb-2 flex items-center gap-3 text-xs text-gray-500">
+            <label className="flex items-center gap-1.5">
+              <input
+                type="checkbox"
+                checked={bulk.selected.size === items.length}
+                onChange={() => bulk.toggleAll(items.map((i) => i.id))}
+              />
+              {tb("selectAll")}
+            </label>
+            {bulk.selected.size > 0 && (
+              <>
+                <span>{tb("nSelected", { count: bulk.selected.size })}</span>
+                <button onClick={bulkClose} className="btn-secondary px-2.5 py-1 text-xs">
+                  {t("bulkClose")}
+                </button>
+              </>
+            )}
+          </div>
+          <ul className="flex flex-col gap-2">
           {items.map((item) => {
             const expanded = expandedId === item.id;
             return (
               <li key={item.id} className="card">
-                <button
-                  onClick={() => {
-                    setExpandedId(expanded ? null : item.id);
-                    setAnswerDraft("");
-                  }}
-                  className="flex w-full items-start justify-between gap-3 text-left"
-                >
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-mono text-gray-400">{item.number}</span>
-                      <span className="text-sm font-medium text-gray-900">{item.subject}</span>
-                    </div>
-                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[item.status]}`}>
-                        {t(item.status)}
-                      </span>
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${PRIORITY_STYLES[item.priority]}`}>
-                        {t(item.priority)}
-                      </span>
-                      {item.costImpact && (
-                        <span className="rounded-full bg-error-50 px-2 py-0.5 text-xs font-medium text-error-700">
-                          {t("costImpact")}
+                <div className="flex w-full items-start gap-3">
+                  <input type="checkbox" className="mt-1" checked={bulk.selected.has(item.id)} onChange={() => bulk.toggle(item.id)} />
+                  <button
+                    onClick={() => {
+                      setExpandedId(expanded ? null : item.id);
+                      setAnswerDraft("");
+                    }}
+                    className="flex flex-1 items-start justify-between gap-3 text-left"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono text-gray-400">{item.number}</span>
+                        <span className="text-sm font-medium text-gray-900">{item.subject}</span>
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[item.status]}`}>
+                          {t(item.status)}
                         </span>
-                      )}
-                      {item.dueDate && <span className="text-xs text-gray-500">{new Date(item.dueDate).toLocaleDateString()}</span>}
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${PRIORITY_STYLES[item.priority]}`}>
+                          {t(item.priority)}
+                        </span>
+                        {item.costImpact && (
+                          <span className="rounded-full bg-error-50 px-2 py-0.5 text-xs font-medium text-error-700">
+                            {t("costImpact")}
+                          </span>
+                        )}
+                        {item.dueDate && <span className="text-xs text-gray-500">{new Date(item.dueDate).toLocaleDateString()}</span>}
+                      </div>
                     </div>
-                  </div>
-                </button>
+                  </button>
+                </div>
 
                 {expanded && (
                   <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 pt-3 text-sm">
@@ -271,7 +313,8 @@ export function RfiPanel({ projectId }: { projectId: string }) {
               </li>
             );
           })}
-        </ul>
+          </ul>
+        </>
       )}
     </div>
   );

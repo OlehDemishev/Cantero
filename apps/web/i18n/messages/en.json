@@ -191,7 +191,9 @@
     "webhookEvent_safety_incident_logged": "Safety incident logged",
     "webhookEvent_warranty_claim_submitted": "Warranty claim submitted",
     "webhookEvent_warranty_claim_resolved": "Warranty claim resolved",
-    "webhookEvent_warranty_claim_denied": "Warranty claim denied"
+    "webhookEvent_warranty_claim_denied": "Warranty claim denied",
+    "webhookEvent_client_won": "Client marked as won",
+    "webhookEvent_client_lost": "Client marked as lost"
   },
   "projects": {
     "title": "Projects",
@@ -225,7 +227,16 @@
     "complete": "Complete",
     "reminderTitle": "Reminder title",
     "addReminder": "Add reminder",
-    "upcomingReminders": "Upcoming reminders"
+    "upcomingReminders": "Upcoming reminders",
+    "estimatedValue": "Estimated value",
+    "owner": "Owner",
+    "ownedBy": "Owned by {name}",
+    "lostReason": "Reason for loss",
+    "lostReasonPlaceholder": "Why was this lost…",
+    "confirmLoss": "Confirm loss",
+    "convertToProject": "Convert to project",
+    "projectName": "Project name",
+    "pipelineOverview": "Pipeline overview"
   },
   "team": {
     "title": "Team",
@@ -797,7 +808,9 @@
     "reopen": "Reopen",
     "noItems": "No punch list items yet.",
     "verifiedBy": "Verified by {name}",
-    "resolvedBy": "Marked resolved by {name}"
+    "resolvedBy": "Marked resolved by {name}",
+    "bulkResolve": "Resolve selected",
+    "bulkVerify": "Verify selected"
   },
   "rfi": {
     "title": "RFIs",
@@ -820,7 +833,8 @@
     "submitAnswer": "Submit answer",
     "close": "Close",
     "reopen": "Reopen",
-    "closedBy": "Closed by {name}"
+    "closedBy": "Closed by {name}",
+    "bulkClose": "Close selected"
   },
   "safety": {
     "title": "Safety",
@@ -868,7 +882,8 @@
     "reviewCommentsPlaceholder": "Comments for the reviewer or contractor…",
     "submitForReview": "Submit for review",
     "submitReview": "Submit decision",
-    "createRevision": "Create revision"
+    "createRevision": "Create revision",
+    "bulkApprove": "Approve selected"
   },
   "portfolio": {
     "title": "Portfolio",
@@ -924,12 +939,19 @@
     "markResolved": "Mark resolved",
     "deny": "Deny",
     "reopen": "Reopen",
-    "noClaims": "No warranty claims yet."
+    "noClaims": "No warranty claims yet.",
+    "bulkStart": "Start work on selected"
   },
   "photos": {
     "title": "Photos",
     "addPhoto": "+ Add photo",
     "uploading": "Uploading…",
     "noPhotos": "No photos yet."
+  },
+  "bulk": {
+    "selectAll": "Select all",
+    "nSelected": "{count} selected",
+    "clearSelection": "Clear selection",
+    "resultSummary": "{succeeded} succeeded, {failed} failed"
   }
 }

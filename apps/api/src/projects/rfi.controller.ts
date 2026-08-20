@@ -1,10 +1,12 @@
 import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common";
 import {
   answerRfiSchema,
+  bulkActionIdsSchema,
   createRfiSchema,
   updateRfiSchema,
   type AnswerRfiInput,
   type AuthUser,
+  type BulkActionIdsInput,
   type CreateRfiInput,
   type UpdateRfiInput,
 } from "@cantero/shared";
@@ -34,6 +36,11 @@ export class RfiController {
   @Patch(":id")
   update(@CurrentUser() user: AuthUser, @Param("id") id: string, @Body(new ZodValidationPipe(updateRfiSchema)) body: UpdateRfiInput) {
     return this.service.update(user.companyId, id, body);
+  }
+
+  @Post("bulk/close")
+  bulkClose(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(bulkActionIdsSchema)) body: BulkActionIdsInput) {
+    return this.service.bulkClose(user.companyId, { userId: user.userId, name: user.name }, body.ids);
   }
 
   @Post(":id/answer")

@@ -21,3 +21,4 @@ export * from "./safety";
 export * from "./submittals";
 export * from "./task-dependencies";
 export * from "./warranty";
+export * from "./bulk-actions";

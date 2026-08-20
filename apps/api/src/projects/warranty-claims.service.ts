@@ -1,5 +1,11 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import type { CreateWarrantyClaimInput, DenyWarrantyClaimInput, ResolveWarrantyClaimInput, UpdateWarrantyClaimInput } from "@cantero/shared";
+import type {
+  BulkActionResult,
+  CreateWarrantyClaimInput,
+  DenyWarrantyClaimInput,
+  ResolveWarrantyClaimInput,
+  UpdateWarrantyClaimInput,
+} from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { WebhooksService } from "../common/webhooks/webhooks.service";
@@ -130,6 +136,19 @@ export class WarrantyClaimsService {
     });
     this.audit.record(companyId, actor, "warranty_claim.reopened", "WarrantyClaim", claim.id, `Reopened warranty claim "${claim.title}"`);
     return updated;
+  }
+
+  async bulkStart(companyId: string, actor: AuditActor, ids: string[]): Promise<BulkActionResult> {
+    const result: BulkActionResult = { succeeded: 0, failed: [] };
+    for (const id of ids) {
+      try {
+        await this.start(companyId, actor, id);
+        result.succeeded++;
+      } catch (err) {
+        result.failed.push({ id, message: err instanceof Error ? err.message : String(err) });
+      }
+    }
+    return result;
   }
 
   private async assertProject(companyId: string, projectId: string) {
