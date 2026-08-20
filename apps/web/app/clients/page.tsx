@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
+import { CsvImportButton } from "@/components/csv-import-button";
 import { apiFetch } from "@/lib/api-client";
 
 type ClientStage = "lead" | "contacted" | "qualified" | "won" | "lost";
@@ -25,6 +26,7 @@ interface UpcomingReminder {
 export default function ClientsPage() {
   const t = useTranslations("clients");
   const tc = useTranslations("common");
+  const ti = useTranslations("import");
   const [clients, setClients] = useState<Client[] | null>(null);
   const [upcoming, setUpcoming] = useState<UpcomingReminder[] | null>(null);
   const [form, setForm] = useState({ name: "", email: "", phone: "" });
@@ -63,7 +65,10 @@ export default function ClientsPage() {
 
   return (
     <AuthenticatedShell>
-      <h1 className="text-2xl font-semibold">{t("title")}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">{t("title")}</h1>
+        <CsvImportButton endpoint="/clients/import" label={ti("importClients")} onDone={load} />
+      </div>
 
       {upcoming && upcoming.length > 0 && (
         <div className="mt-6">

@@ -52,6 +52,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   const [dueDateInput, setDueDateInput] = useState("");
   const [installmentForm, setInstallmentForm] = useState({ label: "", amount: "", dueDate: "" });
   const [busy, setBusy] = useState(false);
+  const [emailSentTo, setEmailSentTo] = useState<string | null | undefined>(undefined);
 
   function load() {
     apiFetch<Invoice>(`/invoices/${invoiceId}`).then((inv) => {
@@ -70,7 +71,8 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   async function send() {
     setBusy(true);
     try {
-      await apiFetch(`/invoices/${invoiceId}/send`, { method: "POST" });
+      const result = await apiFetch<{ emailSentTo: string | null }>(`/invoices/${invoiceId}/send`, { method: "POST" });
+      setEmailSentTo(result.emailSentTo);
       load();
     } finally {
       setBusy(false);
@@ -329,6 +331,11 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
             <button onClick={downloadPdf} className="btn-secondary">
               {t("downloadPdf")}
             </button>
+            {emailSentTo !== undefined && (
+              <p className="text-xs text-gray-500">
+                {emailSentTo ? tc("emailedTo", { email: emailSentTo }) : tc("noClientEmail")}
+              </p>
+            )}
           </div>
         </div>
       </div>

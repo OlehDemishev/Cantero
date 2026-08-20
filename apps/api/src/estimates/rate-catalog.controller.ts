@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Post } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Get, Param, Post, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
 import { createRateCatalogItemSchema, type AuthUser, type CreateRateCatalogItemInput } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
@@ -14,11 +15,18 @@ export class RateCatalogController {
     return this.service.list(user.companyId);
   }
 
-  // Declared before ":id" so "starter" isn't swallowed as an item id.
+  // Declared before ":id" so "starter"/"import" aren't swallowed as an item id.
   @Roles("owner", "admin")
   @Post("starter")
   seedStarter(@CurrentUser() user: AuthUser) {
     return this.service.seedStarter(user.companyId, { userId: user.userId, name: user.name });
+  }
+
+  @Post("import")
+  @UseInterceptors(FileInterceptor("file"))
+  importCsv(@CurrentUser() user: AuthUser, @UploadedFile() file: Express.Multer.File) {
+    if (!file) throw new BadRequestException("No file provided");
+    return this.service.importCsv(user.companyId, { userId: user.userId, name: user.name }, file.buffer.toString("utf-8"));
   }
 
   @Get(":id")

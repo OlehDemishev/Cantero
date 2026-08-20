@@ -17,7 +17,9 @@
     "download": "Descargar",
     "saved": "Guardado",
     "edit": "Editar",
-    "delete": "Eliminar"
+    "delete": "Eliminar",
+    "emailedTo": "Enviado por correo a {email}.",
+    "noClientEmail": "No hay correo registrado para este cliente — comparta el enlace manualmente."
   },
   "nav": {
     "menu": "Menú",
@@ -134,7 +136,8 @@
     "enablePush": "Activar notificaciones push",
     "disablePush": "Desactivar notificaciones push",
     "pushEnabled": "Activado en este navegador",
-    "pushPermissionDenied": "Las notificaciones están bloqueadas para este sitio en la configuración de su navegador."
+    "pushPermissionDenied": "Las notificaciones están bloqueadas para este sitio en la configuración de su navegador.",
+    "inviteEmailHint": "Se envía un correo con un enlace de aceptación a esta dirección."
   },
   "projects": {
     "title": "Proyectos",
@@ -532,5 +535,14 @@
       "accountant": "Contable",
       "worker": "Trabajador"
     }
+  },
+  "import": {
+    "importing": "Importando…",
+    "resultSummary": "{created} importados, {skipped} omitidos.",
+    "row": "Fila",
+    "more": "más",
+    "importClients": "Importar CSV",
+    "importMaterials": "Importar materiales CSV",
+    "importRateItems": "Importar partidas CSV"
   }
 }

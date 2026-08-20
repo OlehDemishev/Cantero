@@ -17,7 +17,9 @@
     "download": "Herunterladen",
     "saved": "Gespeichert",
     "edit": "Bearbeiten",
-    "delete": "Löschen"
+    "delete": "Löschen",
+    "emailedTo": "Per E-Mail gesendet an {email}.",
+    "noClientEmail": "Für diesen Kunden ist keine E-Mail-Adresse hinterlegt — teilen Sie den Link manuell."
   },
   "nav": {
     "menu": "Menü",
@@ -134,7 +136,8 @@
     "enablePush": "Push-Benachrichtigungen aktivieren",
     "disablePush": "Push-Benachrichtigungen deaktivieren",
     "pushEnabled": "In diesem Browser aktiviert",
-    "pushPermissionDenied": "Benachrichtigungen sind für diese Seite in Ihren Browsereinstellungen blockiert."
+    "pushPermissionDenied": "Benachrichtigungen sind für diese Seite in Ihren Browsereinstellungen blockiert.",
+    "inviteEmailHint": "An diese Adresse wird eine E-Mail mit einem Annahme-Link gesendet."
   },
   "projects": {
     "title": "Projekte",
@@ -532,5 +535,14 @@
       "accountant": "Buchhalter",
       "worker": "Mitarbeiter"
     }
+  },
+  "import": {
+    "importing": "Importiere…",
+    "resultSummary": "{created} importiert, {skipped} übersprungen.",
+    "row": "Zeile",
+    "more": "weitere",
+    "importClients": "CSV importieren",
+    "importMaterials": "Materialien per CSV importieren",
+    "importRateItems": "Leistungspositionen per CSV importieren"
   }
 }

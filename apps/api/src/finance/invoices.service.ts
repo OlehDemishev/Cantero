@@ -1,9 +1,11 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import type { AddInstallmentInput, RecordPaymentInput, UpdateInvoiceInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { PdfService } from "../common/pdf/pdf.service";
 import { toCsv } from "../common/csv";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
+import { MailService } from "../common/mail/mail.service";
 
 @Injectable()
 export class InvoicesService {
@@ -11,6 +13,8 @@ export class InvoicesService {
     private readonly prisma: PrismaService,
     private readonly pdfService: PdfService,
     private readonly audit: AuditService,
+    private readonly config: ConfigService,
+    private readonly mail: MailService,
   ) {}
 
   list(companyId: string) {
@@ -84,7 +88,20 @@ export class InvoicesService {
       include: { lines: true, client: true, project: true, payments: true, installments: true },
     });
     this.audit.record(companyId, actor, "invoice.sent", "Invoice", id, `Sent invoice ${invoice.number} to ${invoice.client.name}`);
-    return updated;
+
+    if (updated.client.email) {
+      const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+      const pdf = await this.generatePdf(companyId, id);
+      this.mail.send({
+        to: updated.client.email,
+        subject: `Invoice ${updated.number} from ${company.name}`,
+        html: `<p>${company.name} has sent you invoice <strong>${updated.number}</strong> for ${updated.total} ${company.currency}.</p><p>The invoice is attached as a PDF.</p>`,
+        text: `${company.name} has sent you invoice ${updated.number} for ${updated.total} ${company.currency}. The invoice is attached as a PDF.`,
+        attachments: [{ filename: `${updated.number}.pdf`, content: pdf, contentType: "application/pdf" }],
+      });
+    }
+
+    return { ...updated, emailSentTo: updated.client.email ?? null };
   }
 
   async update(companyId: string, id: string, input: UpdateInvoiceInput) {

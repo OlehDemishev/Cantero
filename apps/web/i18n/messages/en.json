@@ -17,7 +17,9 @@
     "download": "Download",
     "saved": "Saved",
     "edit": "Edit",
-    "delete": "Delete"
+    "delete": "Delete",
+    "emailedTo": "Emailed to {email}.",
+    "noClientEmail": "No email on file for this client — share the link manually."
   },
   "nav": {
     "menu": "Menu",
@@ -134,7 +136,8 @@
     "enablePush": "Enable push notifications",
     "disablePush": "Disable push notifications",
     "pushEnabled": "Enabled on this browser",
-    "pushPermissionDenied": "Notifications are blocked for this site in your browser settings."
+    "pushPermissionDenied": "Notifications are blocked for this site in your browser settings.",
+    "inviteEmailHint": "An email with an accept link is sent to this address."
   },
   "projects": {
     "title": "Projects",
@@ -532,5 +535,14 @@
       "accountant": "Accountant",
       "worker": "Worker"
     }
+  },
+  "import": {
+    "importing": "Importing…",
+    "resultSummary": "Imported {created}, skipped {skipped}.",
+    "row": "Row",
+    "more": "more",
+    "importClients": "Import CSV",
+    "importMaterials": "Import materials CSV",
+    "importRateItems": "Import rate items CSV"
   }
 }

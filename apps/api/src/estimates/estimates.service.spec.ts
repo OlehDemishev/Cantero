@@ -1,9 +1,11 @@
 import { NotFoundException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
+import { ConfigService } from "@nestjs/config";
 import { EstimatesService } from "./estimates.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { PdfService } from "../common/pdf/pdf.service";
 import { AuditService } from "../common/audit/audit.service";
+import { MailService } from "../common/mail/mail.service";
 
 const COMPANY_A = "company-a";
 const OTHER_COMPANY_ESTIMATE = {
@@ -38,6 +40,8 @@ describe("EstimatesService — cross-tenant isolation", () => {
         { provide: PrismaService, useValue: prisma },
         { provide: PdfService, useValue: { render: jest.fn() } },
         { provide: AuditService, useValue: { record: jest.fn(), list: jest.fn() } },
+        { provide: ConfigService, useValue: { get: jest.fn(), getOrThrow: jest.fn() } },
+        { provide: MailService, useValue: { send: jest.fn() } },
       ],
     }).compile();
 

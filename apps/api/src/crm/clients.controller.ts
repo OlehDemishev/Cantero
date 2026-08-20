@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Patch, Post } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Get, Param, Patch, Post, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
 import {
   addClientActivitySchema,
   addClientReminderSchema,
@@ -40,6 +41,13 @@ export class ClientsController {
     @Body(new ZodValidationPipe(createClientSchema)) body: CreateClientInput,
   ) {
     return this.service.create(user.companyId, body);
+  }
+
+  @Post("import")
+  @UseInterceptors(FileInterceptor("file"))
+  importCsv(@CurrentUser() user: AuthUser, @UploadedFile() file: Express.Multer.File) {
+    if (!file) throw new BadRequestException("No file provided");
+    return this.service.importCsv(user.companyId, { userId: user.userId, name: user.name }, file.buffer.toString("utf-8"));
   }
 
   @Patch(":id")

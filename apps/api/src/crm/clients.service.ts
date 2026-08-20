@@ -3,13 +3,19 @@ import type {
   AddClientActivityInput,
   AddClientReminderInput,
   CreateClientInput,
+  ImportResult,
   UpdateClientInput,
 } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { parseCsvRecords } from "../common/csv";
+import { AuditService, type AuditActor } from "../common/audit/audit.service";
 
 @Injectable()
 export class ClientsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   list(companyId: string) {
     return this.prisma.client.findMany({ where: { companyId }, orderBy: { name: "asc" } });
@@ -28,6 +34,40 @@ export class ClientsService {
   async update(companyId: string, id: string, input: UpdateClientInput) {
     await this.get(companyId, id);
     return this.prisma.client.update({ where: { id }, data: input });
+  }
+
+  /** CSV columns: name (required), email, phone. */
+  async importCsv(companyId: string, actor: AuditActor, csv: string): Promise<ImportResult> {
+    const records = parseCsvRecords(csv);
+    const result: ImportResult = { created: 0, skipped: 0, errors: [] };
+    const toCreate: { name: string; email: string | null; phone: string | null }[] = [];
+
+    records.forEach((record, index) => {
+      const row = index + 2; // header is row 1
+      const name = record.name?.trim();
+      if (!name) {
+        result.skipped++;
+        result.errors.push({ row, message: "Missing name" });
+        return;
+      }
+      toCreate.push({ name, email: record.email?.trim() || null, phone: record.phone?.trim() || null });
+    });
+
+    if (toCreate.length > 0) {
+      await this.prisma.client.createMany({ data: toCreate.map((c) => ({ ...c, companyId })) });
+      result.created = toCreate.length;
+    }
+
+    this.audit.record(
+      companyId,
+      actor,
+      "clients.imported",
+      "Client",
+      companyId,
+      `Imported ${result.created} clients from CSV (${result.skipped} skipped)`,
+    );
+
+    return result;
   }
 
   async listActivities(companyId: string, clientId: string) {

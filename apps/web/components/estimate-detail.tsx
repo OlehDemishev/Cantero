@@ -162,6 +162,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
   const [variants, setVariants] = useState<VariantSummary[] | null>(null);
   const [variantLabel, setVariantLabel] = useState("");
   const [linkCopied, setLinkCopied] = useState(false);
+  const [emailSentTo, setEmailSentTo] = useState<string | null | undefined>(undefined);
 
   function load() {
     apiFetch<Estimate>(`/estimates/${estimateId}`).then(setEstimate);
@@ -232,7 +233,8 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
     setBusy(true);
     setLinkCopied(false);
     try {
-      await apiFetch(`/estimates/${estimateId}/send`, { method: "POST" });
+      const result = await apiFetch<{ emailSentTo: string | null }>(`/estimates/${estimateId}/send`, { method: "POST" });
+      setEmailSentTo(result.emailSentTo);
       load();
     } finally {
       setBusy(false);
@@ -664,6 +666,11 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
                   {linkCopied ? tc("saved") : t("copyLink")}
                 </button>
               </div>
+              {emailSentTo !== undefined && (
+                <p className="mt-2 text-xs text-gray-500">
+                  {emailSentTo ? tc("emailedTo", { email: emailSentTo }) : tc("noClientEmail")}
+                </p>
+              )}
             </div>
           )}
 

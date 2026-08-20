@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import type {
   ClientDecisionInput,
   CreateEstimateInput,
@@ -10,6 +11,7 @@ import type {
 import { PrismaService } from "../common/prisma/prisma.service";
 import { PdfService } from "../common/pdf/pdf.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
+import { MailService } from "../common/mail/mail.service";
 import {
   calculateEstimate,
   type EstimateCalcOptions,
@@ -34,6 +36,8 @@ export class EstimatesService {
     private readonly prisma: PrismaService,
     private readonly pdfService: PdfService,
     private readonly audit: AuditService,
+    private readonly config: ConfigService,
+    private readonly mail: MailService,
   ) {}
 
   list(companyId: string) {
@@ -223,7 +227,7 @@ export class EstimatesService {
     return revision;
   }
 
-  /** Generates (or regenerates) the public review link and resets any prior client decision. */
+  /** Generates (or regenerates) the public review link, emails it to the client if one is on file, and resets any prior client decision. */
   async send(companyId: string, actor: AuditActor, estimateId: string) {
     const estimate = await this.findOrThrow(companyId, estimateId);
     if (estimate.status !== "approved") {
@@ -240,7 +244,23 @@ export class EstimatesService {
       },
     });
     this.audit.record(companyId, actor, "estimate.sent", "Estimate", estimateId, `Sent estimate "${estimate.name}" to client for review`);
-    return updated;
+
+    const client = estimate.project?.clientId
+      ? await this.prisma.client.findUnique({ where: { id: estimate.project.clientId } })
+      : null;
+    if (client?.email) {
+      const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+      const webOrigin = this.config.get<string>("WEB_ORIGIN") ?? "http://localhost:3000";
+      const link = `${webOrigin}/estimate/${updated.clientAccessToken}`;
+      this.mail.send({
+        to: client.email,
+        subject: `Estimate from ${company.name}: ${estimate.name}`,
+        html: `<p>${company.name} has sent you an estimate for review: <strong>${estimate.name}</strong>.</p><p><a href="${link}">View and respond to the estimate</a></p>`,
+        text: `${company.name} has sent you an estimate for review: ${estimate.name}.\n\nView and respond: ${link}`,
+      });
+    }
+
+    return { ...updated, emailSentTo: client?.email ?? null };
   }
 
   /** Clones the current sections/lines into a sibling option (e.g. "Basic" vs "Premium") for the same project. */

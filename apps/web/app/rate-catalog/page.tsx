@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
+import { CsvImportButton } from "@/components/csv-import-button";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
@@ -31,6 +32,7 @@ interface MaterialLine {
 export default function RateCatalogPage() {
   const t = useTranslations("rateCatalog");
   const tc = useTranslations("common");
+  const ti = useTranslations("import");
   const { data: me } = useMe();
 
   const [items, setItems] = useState<RateCatalogItem[] | null>(null);
@@ -43,9 +45,13 @@ export default function RateCatalogPage() {
     apiFetch<RateCatalogItem[]>("/estimates/rate-catalog").then(setItems);
   }
 
+  function loadMaterials() {
+    apiFetch<MaterialCatalogItem[]>("/materials/catalog").then(setMaterials);
+  }
+
   useEffect(() => {
     load();
-    apiFetch<MaterialCatalogItem[]>("/materials/catalog").then(setMaterials);
+    loadMaterials();
   }, []);
 
   function addLine() {
@@ -81,7 +87,13 @@ export default function RateCatalogPage() {
 
   return (
     <AuthenticatedShell>
-      <h1 className="text-2xl font-semibold">{t("title")}</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold">{t("title")}</h1>
+        <div className="flex flex-wrap gap-2">
+          <CsvImportButton endpoint="/materials/catalog/import" label={ti("importMaterials")} onDone={loadMaterials} />
+          <CsvImportButton endpoint="/estimates/rate-catalog/import" label={ti("importRateItems")} onDone={load} />
+        </div>
+      </div>
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="card lg:col-span-1">

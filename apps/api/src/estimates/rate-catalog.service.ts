@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import type { CreateRateCatalogItemInput } from "@cantero/shared";
+import type { CreateRateCatalogItemInput, ImportResult } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { parseCsvRecords } from "../common/csv";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { metricMaterials, metricRateItems, imperialMaterials, imperialRateItems } from "./starter-catalog-data";
 
@@ -99,5 +100,54 @@ export class RateCatalogService {
     );
 
     return { materialsCreated: materials.length, rateItemsCreated: rateItems.length };
+  }
+
+  /** CSV columns: code (required), name (required), unit (required), laborHoursPerUnit (required, numeric). No material norms — those still need setting up via the item detail view. Rows whose code already exists for this company are skipped. */
+  async importCsv(companyId: string, actor: AuditActor, csv: string): Promise<ImportResult> {
+    const records = parseCsvRecords(csv);
+    const result: ImportResult = { created: 0, skipped: 0, errors: [] };
+
+    const existing = await this.prisma.rateCatalogItem.findMany({ where: { companyId }, select: { code: true } });
+    const seenCodes = new Set(existing.map((r) => r.code));
+
+    const toCreate: { code: string; name: string; unit: string; laborHoursPerUnit: number }[] = [];
+
+    records.forEach((record, index) => {
+      const row = index + 2;
+      const code = record.code?.trim();
+      const name = record.name?.trim();
+      const unit = record.unit?.trim();
+      const hoursRaw = record.laborhoursperunit?.trim();
+      const laborHoursPerUnit = Number(hoursRaw);
+
+      if (!code || !name || !unit || !hoursRaw || Number.isNaN(laborHoursPerUnit)) {
+        result.skipped++;
+        result.errors.push({ row, message: "Missing or invalid code/name/unit/laborHoursPerUnit" });
+        return;
+      }
+      if (seenCodes.has(code)) {
+        result.skipped++;
+        result.errors.push({ row, message: `Code "${code}" already exists` });
+        return;
+      }
+      seenCodes.add(code);
+      toCreate.push({ code, name, unit, laborHoursPerUnit });
+    });
+
+    if (toCreate.length > 0) {
+      await this.prisma.rateCatalogItem.createMany({ data: toCreate.map((r) => ({ ...r, companyId })) });
+      result.created = toCreate.length;
+    }
+
+    this.audit.record(
+      companyId,
+      actor,
+      "rate_catalog.imported",
+      "Company",
+      companyId,
+      `Imported ${result.created} rate catalog items from CSV (${result.skipped} skipped)`,
+    );
+
+    return result;
   }
 }

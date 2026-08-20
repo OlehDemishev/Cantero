@@ -389,7 +389,8 @@ export default function SettingsPage() {
 
         {isManager && (
           <section className="card lg:col-span-2">
-            <h2 className="mb-4 text-sm font-semibold text-gray-700">{t("invites")}</h2>
+            <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("invites")}</h2>
+            <p className="mb-4 text-xs text-gray-500">{t("inviteEmailHint")}</p>
             {!invites || invites.length === 0 ? (
               <p className="text-sm text-gray-400">{t("noInvites")}</p>
             ) : (

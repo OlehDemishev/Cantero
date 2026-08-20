@@ -1,10 +1,15 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import type { CreateMaterialCatalogItemInput, UpdateMaterialReorderInput } from "@cantero/shared";
+import type { CreateMaterialCatalogItemInput, ImportResult, UpdateMaterialReorderInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { parseCsvRecords } from "../common/csv";
+import { AuditService, type AuditActor } from "../common/audit/audit.service";
 
 @Injectable()
 export class MaterialCatalogService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   list(companyId: string) {
     return this.prisma.materialCatalogItem.findMany({
@@ -27,6 +32,55 @@ export class MaterialCatalogService {
     return this.prisma.materialCatalogItem.create({
       data: { ...input, companyId },
     });
+  }
+
+  /** CSV columns: code (required), name (required), unit (required), defaultUnitPrice (required, numeric). Rows whose code already exists for this company are skipped. */
+  async importCsv(companyId: string, actor: AuditActor, csv: string): Promise<ImportResult> {
+    const records = parseCsvRecords(csv);
+    const result: ImportResult = { created: 0, skipped: 0, errors: [] };
+
+    const existing = await this.prisma.materialCatalogItem.findMany({ where: { companyId }, select: { code: true } });
+    const seenCodes = new Set(existing.map((m) => m.code));
+
+    const toCreate: { code: string; name: string; unit: string; defaultUnitPrice: number }[] = [];
+
+    records.forEach((record, index) => {
+      const row = index + 2;
+      const code = record.code?.trim();
+      const name = record.name?.trim();
+      const unit = record.unit?.trim();
+      const priceRaw = record.defaultunitprice?.trim();
+      const price = Number(priceRaw);
+
+      if (!code || !name || !unit || !priceRaw || Number.isNaN(price)) {
+        result.skipped++;
+        result.errors.push({ row, message: "Missing or invalid code/name/unit/defaultUnitPrice" });
+        return;
+      }
+      if (seenCodes.has(code)) {
+        result.skipped++;
+        result.errors.push({ row, message: `Code "${code}" already exists` });
+        return;
+      }
+      seenCodes.add(code);
+      toCreate.push({ code, name, unit, defaultUnitPrice: price });
+    });
+
+    if (toCreate.length > 0) {
+      await this.prisma.materialCatalogItem.createMany({ data: toCreate.map((m) => ({ ...m, companyId })) });
+      result.created = toCreate.length;
+    }
+
+    this.audit.record(
+      companyId,
+      actor,
+      "materials.imported",
+      "Company",
+      companyId,
+      `Imported ${result.created} materials from CSV (${result.skipped} skipped)`,
+    );
+
+    return result;
   }
 
   async updateReorderSettings(companyId: string, id: string, input: UpdateMaterialReorderInput) {

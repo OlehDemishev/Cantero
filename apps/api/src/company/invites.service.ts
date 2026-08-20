@@ -2,8 +2,10 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { randomBytes } from "node:crypto";
 import * as bcrypt from "bcryptjs";
 import { JwtService } from "@nestjs/jwt";
+import { ConfigService } from "@nestjs/config";
 import type { AcceptInviteInput, AuthUser, CreateInviteInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { MailService } from "../common/mail/mail.service";
 
 const INVITE_TTL_DAYS = 14;
 const BCRYPT_ROUNDS = 12;
@@ -13,6 +15,8 @@ export class InvitesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly config: ConfigService,
+    private readonly mail: MailService,
   ) {}
 
   listPending(companyId: string) {
@@ -34,7 +38,7 @@ export class InvitesService {
     }
 
     const token = randomBytes(24).toString("hex");
-    return this.prisma.invite.create({
+    const invite = await this.prisma.invite.create({
       data: {
         companyId,
         email: input.email,
@@ -43,6 +47,18 @@ export class InvitesService {
         expiresAt: new Date(Date.now() + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000),
       },
     });
+
+    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    const webOrigin = this.config.get<string>("WEB_ORIGIN") ?? "http://localhost:3000";
+    const acceptUrl = `${webOrigin}/accept-invite/${token}`;
+    this.mail.send({
+      to: invite.email,
+      subject: `You're invited to join ${company.name} on Cantero`,
+      html: `<p>You've been invited to join <strong>${company.name}</strong> on Cantero as ${invite.role}.</p><p><a href="${acceptUrl}">Accept invite</a></p><p>This link expires in ${INVITE_TTL_DAYS} days.</p>`,
+      text: `You've been invited to join ${company.name} on Cantero as ${invite.role}.\n\nAccept your invite: ${acceptUrl}\n\nThis link expires in ${INVITE_TTL_DAYS} days.`,
+    });
+
+    return invite;
   }
 
   async revoke(companyId: string, id: string) {

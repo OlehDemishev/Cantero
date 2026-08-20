@@ -17,7 +17,9 @@
     "download": "Pobierz",
     "saved": "Zapisano",
     "edit": "Edytuj",
-    "delete": "Usuń"
+    "delete": "Usuń",
+    "emailedTo": "Wysłano e-mailem do {email}.",
+    "noClientEmail": "Brak adresu e-mail tego klienta — udostępnij link ręcznie."
   },
   "nav": {
     "menu": "Menu",
@@ -134,7 +136,8 @@
     "enablePush": "Włącz powiadomienia push",
     "disablePush": "Wyłącz powiadomienia push",
     "pushEnabled": "Włączone w tej przeglądarce",
-    "pushPermissionDenied": "Powiadomienia dla tej strony są zablokowane w ustawieniach przeglądarki."
+    "pushPermissionDenied": "Powiadomienia dla tej strony są zablokowane w ustawieniach przeglądarki.",
+    "inviteEmailHint": "Na ten adres zostanie wysłany e-mail z linkiem do akceptacji."
   },
   "projects": {
     "title": "Projekty",
@@ -532,5 +535,14 @@
       "accountant": "Księgowy",
       "worker": "Pracownik"
     }
+  },
+  "import": {
+    "importing": "Importowanie…",
+    "resultSummary": "Zaimportowano {created}, pominięto {skipped}.",
+    "row": "Wiersz",
+    "more": "więcej",
+    "importClients": "Importuj CSV",
+    "importMaterials": "Importuj materiały CSV",
+    "importRateItems": "Importuj pozycje cennika CSV"
   }
 }
