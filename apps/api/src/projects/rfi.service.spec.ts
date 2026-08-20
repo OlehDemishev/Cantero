@@ -1,0 +1,110 @@
+import { BadRequestException, NotFoundException } from "@nestjs/common";
+import { Test } from "@nestjs/testing";
+import { RfiService } from "./rfi.service";
+import { PrismaService } from "../common/prisma/prisma.service";
+import { AuditService } from "../common/audit/audit.service";
+
+const COMPANY_A = "company-a";
+const ACTOR = { userId: "user-1", name: "Site Manager" };
+
+describe("RfiService", () => {
+  let service: RfiService;
+  let prisma: {
+    project: { findFirst: jest.Mock };
+    rfi: { findFirst: jest.Mock; count: jest.Mock; create: jest.Mock; update: jest.Mock };
+  };
+  let audit: { record: jest.Mock };
+
+  beforeEach(async () => {
+    prisma = {
+      project: { findFirst: jest.fn() },
+      rfi: { findFirst: jest.fn(), count: jest.fn(), create: jest.fn(), update: jest.fn() },
+    };
+    audit = { record: jest.fn() };
+
+    const module = await Test.createTestingModule({
+      providers: [
+        RfiService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: AuditService, useValue: audit },
+      ],
+    }).compile();
+
+    service = module.get(RfiService);
+  });
+
+  describe("create()", () => {
+    it("rejects when the project does not belong to this company", async () => {
+      prisma.project.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.create(COMPANY_A, ACTOR, { projectId: "project-1", subject: "Door swing", question: "Which way does it open?" }),
+      ).rejects.toThrow(NotFoundException);
+      expect(prisma.rfi.create).not.toHaveBeenCalled();
+    });
+
+    it("numbers the RFI sequentially per project starting at RFI-001", async () => {
+      prisma.project.findFirst.mockResolvedValue({ id: "project-1", companyId: COMPANY_A, name: "Site A" });
+      prisma.rfi.count.mockResolvedValue(4);
+      prisma.rfi.create.mockResolvedValue({ id: "rfi-1", number: "RFI-005" });
+
+      await service.create(COMPANY_A, ACTOR, { projectId: "project-1", subject: "Door swing", question: "Which way does it open?" });
+
+      expect(prisma.rfi.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ number: "RFI-005" }) }),
+      );
+    });
+  });
+
+  describe("answer()", () => {
+    it("rejects answering a closed RFI", async () => {
+      prisma.rfi.findFirst.mockResolvedValue({ id: "rfi-1", companyId: COMPANY_A, status: "closed", number: "RFI-001", subject: "Door swing" });
+
+      await expect(service.answer(COMPANY_A, ACTOR, "rfi-1", { answer: "Inward" })).rejects.toThrow(BadRequestException);
+      expect(prisma.rfi.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("close()", () => {
+    it("rejects closing an already-closed RFI", async () => {
+      prisma.rfi.findFirst.mockResolvedValue({ id: "rfi-1", companyId: COMPANY_A, status: "closed", number: "RFI-001", subject: "Door swing" });
+
+      await expect(service.close(COMPANY_A, ACTOR, "rfi-1")).rejects.toThrow(BadRequestException);
+      expect(prisma.rfi.update).not.toHaveBeenCalled();
+    });
+
+    it("closes an open RFI directly (withdrawn, no answer needed)", async () => {
+      prisma.rfi.findFirst.mockResolvedValue({ id: "rfi-1", companyId: COMPANY_A, status: "open", number: "RFI-001", subject: "Door swing" });
+      prisma.rfi.update.mockResolvedValue({ id: "rfi-1", status: "closed" });
+
+      await service.close(COMPANY_A, ACTOR, "rfi-1");
+
+      expect(prisma.rfi.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: "closed" }) }));
+    });
+  });
+
+  describe("reopen()", () => {
+    it("rejects reopening an RFI that isn't closed", async () => {
+      prisma.rfi.findFirst.mockResolvedValue({ id: "rfi-1", companyId: COMPANY_A, status: "open", number: "RFI-001", subject: "Door swing" });
+
+      await expect(service.reopen(COMPANY_A, ACTOR, "rfi-1")).rejects.toThrow(BadRequestException);
+      expect(prisma.rfi.update).not.toHaveBeenCalled();
+    });
+
+    it("reopens to 'answered' when an answer already exists, not back to 'open'", async () => {
+      prisma.rfi.findFirst.mockResolvedValue({
+        id: "rfi-1",
+        companyId: COMPANY_A,
+        status: "closed",
+        answer: "Inward",
+        number: "RFI-001",
+        subject: "Door swing",
+      });
+      prisma.rfi.update.mockResolvedValue({ id: "rfi-1", status: "answered" });
+
+      await service.reopen(COMPANY_A, ACTOR, "rfi-1");
+
+      expect(prisma.rfi.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: "answered" }) }));
+    });
+  });
+});

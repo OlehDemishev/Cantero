@@ -110,6 +110,27 @@ enum WeatherCondition {
   other
 }
 
+/// open: logged, not yet fixed. resolved: assignee says it's fixed. verified: a second person
+/// (typically the one who logged it, or a PM) confirmed the fix — the standard two-step
+/// punch-list closeout so the same person doesn't both fix and sign off on their own work.
+enum PunchListItemStatus {
+  open
+  resolved
+  verified
+}
+
+enum RfiStatus {
+  open
+  answered
+  closed
+}
+
+enum RfiPriority {
+  low
+  medium
+  high
+}
+
 // ---------- Tenancy & Identity ----------
 
 model Company {
@@ -157,6 +178,11 @@ model Company {
   recurringInvoices    RecurringInvoice[]
   equipment            Equipment[]
   dailyLogs            DailyLog[]
+  punchListItems       PunchListItem[]
+  rfis                 Rfi[]
+  incidentReports      IncidentReport[]
+  safetyBriefings      SafetyBriefing[]
+  submittals           Submittal[]
 
   @@map("companies")
 }
@@ -805,6 +831,11 @@ model Project {
   equipmentAssignments EquipmentAssignment[]
   subcontractorAssignments SubcontractorAssignment[]
   dailyLogs          DailyLog[]
+  punchListItems     PunchListItem[]
+  rfis               Rfi[]
+  incidentReports    IncidentReport[]
+  safetyBriefings    SafetyBriefing[]
+  submittals         Submittal[]
 
   @@index([companyId])
   @@map("projects")
@@ -866,6 +897,70 @@ model DailyLog {
   @@unique([projectId, date])
   @@index([companyId])
   @@map("daily_logs")
+}
+
+model PunchListItem {
+  id             String              @id @default(uuid())
+  companyId      String
+  projectId      String
+  title          String
+  description    String?
+  location       String?
+  status         PunchListItemStatus @default(open)
+  assigneeWorkerId String?
+  dueDate        DateTime?
+  createdByUserId  String?
+  createdByName    String
+  resolvedAt       DateTime?
+  resolvedByUserId String?
+  resolvedByName   String?
+  verifiedAt       DateTime?
+  verifiedByUserId String?
+  verifiedByName   String?
+  createdAt      DateTime            @default(now())
+
+  company  Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project  Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignee Worker? @relation(fields: [assigneeWorkerId], references: [id], onDelete: SetNull)
+
+  @@index([projectId])
+  @@index([companyId])
+  @@map("punch_list_items")
+}
+
+/// Formal question-and-answer thread between the field and the office/client, the standard
+/// commercial-construction mechanism for resolving ambiguity in plans/specs that could affect
+/// schedule or cost — closing without an answer is normal (the question was withdrawn or moot).
+model Rfi {
+  id                 String      @id @default(uuid())
+  companyId          String
+  projectId          String
+  /// Human reference code, e.g. "RFI-001" — numbered per project, not globally.
+  number             String
+  subject            String
+  question           String
+  priority           RfiPriority @default(medium)
+  status             RfiStatus   @default(open)
+  dueDate            DateTime?
+  costImpact         Boolean     @default(false)
+  scheduleImpactDays Int?
+  askedByUserId      String?
+  askedByName        String
+  answer             String?
+  answeredAt         DateTime?
+  answeredByUserId   String?
+  answeredByName     String?
+  closedAt           DateTime?
+  closedByUserId     String?
+  closedByName       String?
+  createdAt          DateTime    @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, number])
+  @@index([companyId])
+  @@map("rfis")
 }
 
 // ---------- Finance (thin in Phase 1; Payments/budget-vs-actual in Phase 4) ----------
@@ -1168,6 +1263,8 @@ model Worker {
   user                User?                 @relation(fields: [userId], references: [id], onDelete: SetNull)
   timeEntries         TimeEntry[]
   equipmentAssignments EquipmentAssignment[]
+  punchListItems      PunchListItem[]
+  safetyBriefingAttendance SafetyBriefingAttendance[]
 
   @@index([companyId])
   @@map("workers")
@@ -1298,4 +1395,118 @@ model EquipmentMaintenanceRecord {
 
   @@index([equipmentId])
   @@map("equipment_maintenance_records")
+}
+
+// ---------- Safety ----------
+
+enum IncidentSeverity {
+  near_miss
+  first_aid
+  medical_treatment
+  lost_time_injury
+  fatality
+}
+
+model IncidentReport {
+  id                String           @id @default(uuid())
+  companyId         String
+  projectId         String
+  occurredAt        DateTime
+  severity          IncidentSeverity
+  description       String
+  location          String?
+  involvedPersons   String?
+  correctiveActions String?
+  reportedByUserId  String?
+  reportedByName    String
+  createdAt         DateTime         @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([companyId])
+  @@map("incident_reports")
+}
+
+/// Pre-work safety briefing ("toolbox talk") with per-worker attendance — the standard
+/// evidence a commercial GC keeps to show a crew was briefed on a hazard before starting work.
+model SafetyBriefing {
+  id               String   @id @default(uuid())
+  companyId        String
+  projectId        String
+  date             DateTime
+  topic            String
+  notes            String?
+  conductedByUserId String?
+  conductedByName  String
+  createdAt        DateTime @default(now())
+
+  company   Company                    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project   Project                    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  attendees SafetyBriefingAttendance[]
+
+  @@index([projectId])
+  @@index([companyId])
+  @@map("safety_briefings")
+}
+
+model SafetyBriefingAttendance {
+  id         String @id @default(uuid())
+  briefingId String
+  workerId   String
+
+  briefing SafetyBriefing @relation(fields: [briefingId], references: [id], onDelete: Cascade)
+  worker   Worker         @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  @@unique([briefingId, workerId])
+  @@map("safety_briefing_attendance")
+}
+
+// ---------- Submittals ----------
+
+enum SubmittalStatus {
+  draft
+  submitted
+  approved
+  approved_as_noted
+  revise_and_resubmit
+  rejected
+}
+
+/// Shop-drawing / product-data approval workflow, gating procurement or installation until the
+/// client/architect signs off. Revisions chain the same way Document versioning does (version +
+/// rootId self-relation) — `number` stays constant across a chain, `revision` counts resubmissions.
+model Submittal {
+  id                String          @id @default(uuid())
+  companyId         String
+  projectId         String
+  /// Constant across a revision chain, e.g. "SUB-001".
+  number            String
+  /// 0 on the first submission; each resubmission increments this within the same chain.
+  revision          Int             @default(0)
+  /// Null on revision 0 (the root); later revisions point back to the root's id.
+  rootSubmittalId   String?
+  title             String
+  specSection       String?
+  status            SubmittalStatus @default(draft)
+  dueDate           DateTime?
+  submittedAt       DateTime?
+  submittedByUserId String?
+  submittedByName   String?
+  reviewedAt        DateTime?
+  reviewedByUserId  String?
+  reviewedByName    String?
+  reviewComments    String?
+  createdAt         DateTime        @default(now())
+
+  company       Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project       Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  rootSubmittal Submittal?  @relation("SubmittalRevisions", fields: [rootSubmittalId], references: [id], onDelete: Cascade)
+  revisions     Submittal[] @relation("SubmittalRevisions")
+
+  @@index([projectId])
+  @@index([companyId])
+  @@index([rootSubmittalId])
+  @@map("submittals")
 }

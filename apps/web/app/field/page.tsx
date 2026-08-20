@@ -50,7 +50,7 @@ export default function FieldPage() {
   const [projects, setProjects] = useState<Project[] | null>(null);
   const [projectsError, setProjectsError] = useState(false);
   const [projectId, setProjectId] = useState("");
-  const [tab, setTab] = useState<"tasks" | "time" | "stock" | "logs">("tasks");
+  const [tab, setTab] = useState<"tasks" | "time" | "stock" | "logs" | "punch">("tasks");
 
   useEffect(() => {
     if (!getToken()) router.replace("/login");
@@ -147,12 +147,12 @@ export default function FieldPage() {
               </select>
             </label>
 
-            <div className="mt-4 grid grid-cols-4 gap-1 rounded-lg bg-gray-100 p-1">
-              {(["tasks", "time", "stock", "logs"] as const).map((key) => (
+            <div className="mt-4 grid grid-cols-5 gap-1 rounded-lg bg-gray-100 p-1">
+              {(["tasks", "time", "stock", "logs", "punch"] as const).map((key) => (
                 <button
                   key={key}
                   onClick={() => setTab(key)}
-                  className={`rounded-md py-2 text-sm font-medium transition ${
+                  className={`rounded-md py-2 text-xs font-medium transition ${
                     tab === key ? "bg-white text-gray-900 shadow-theme-xs" : "text-gray-500"
                   }`}
                 >
@@ -166,6 +166,7 @@ export default function FieldPage() {
               {tab === "time" && <TimeTab projectId={projectId} meUserId={me.user.id} />}
               {tab === "stock" && <StockTab projectId={projectId} />}
               {tab === "logs" && <LogsTab projectId={projectId} />}
+              {tab === "punch" && <PunchTab projectId={projectId} />}
             </div>
           </>
         )}
@@ -556,5 +557,109 @@ function LogsTab({ projectId }: { projectId: string }) {
       </button>
       {message && <p className="text-xs text-success-700">{message}</p>}
     </form>
+  );
+}
+
+interface PunchListItem {
+  id: string;
+  title: string;
+  location: string | null;
+  status: "open" | "resolved" | "verified";
+}
+
+function PunchTab({ projectId }: { projectId: string }) {
+  const t = useTranslations("field");
+  const tp = useTranslations("punchList");
+  const tc = useTranslations("common");
+  const [items, setItems] = useState<PunchListItem[] | null>(null);
+  const [form, setForm] = useState({ title: "", location: "" });
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  function load() {
+    apiFetch<PunchListItem[]>(`/punch-list?projectId=${projectId}`).then(setItems).catch(() => setItems(null));
+  }
+
+  useEffect(load, [projectId]);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!form.title) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      const { queued } = await submitOrQueue("punch-list-item", "/punch-list", "POST", {
+        projectId,
+        title: form.title,
+        location: form.location || undefined,
+      });
+      setMessage(queued ? t("queuedOffline") : tc("saved"));
+      setForm({ title: "", location: "" });
+      if (!queued) load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resolve(id: string) {
+    const { queued } = await submitOrQueue("punch-list-resolve", `/punch-list/${id}/resolve`, "POST", {});
+    if (!queued) load();
+  }
+
+  const openAndResolved = (items ?? []).filter((i) => i.status !== "verified");
+
+  return (
+    <div className="flex flex-col gap-4">
+      <form onSubmit={submit} className="card flex flex-col gap-3">
+        <label className="flex flex-col gap-1.5 text-sm">
+          <span className="font-medium text-gray-700">{tp("itemTitle")}</span>
+          <input
+            required
+            className="input"
+            value={form.title}
+            onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+          />
+        </label>
+        <label className="flex flex-col gap-1.5 text-sm">
+          <span className="font-medium text-gray-700">{tp("location")}</span>
+          <input
+            className="input"
+            placeholder={tp("locationPlaceholder")}
+            value={form.location}
+            onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
+          />
+        </label>
+        <button type="submit" disabled={busy} className="btn-primary">
+          {tp("newItem")}
+        </button>
+        {message && <p className="text-xs text-success-700">{message}</p>}
+      </form>
+
+      {items === null ? (
+        <p className="text-sm text-gray-400">{tc("loading")}</p>
+      ) : openAndResolved.length === 0 ? (
+        <p className="text-sm text-gray-400">{tp("noItems")}</p>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {openAndResolved.map((item) => (
+            <li key={item.id} className="card flex items-center justify-between">
+              <div>
+                <div className="text-sm font-medium text-gray-900">{item.title}</div>
+                {item.location && <div className="text-xs text-gray-500">{item.location}</div>}
+              </div>
+              {item.status === "open" ? (
+                <button onClick={() => resolve(item.id)} className="btn-secondary px-2.5 py-1 text-xs">
+                  {tp("markResolved")}
+                </button>
+              ) : (
+                <span className="rounded-full bg-warning-50 px-2.5 py-1 text-xs font-medium text-warning-700">
+                  {tp("resolved")}
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }

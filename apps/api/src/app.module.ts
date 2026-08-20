@@ -29,6 +29,7 @@ import { PublicApiModule } from "./public-api/public-api.module";
 import { PortalModule } from "./portal/portal.module";
 import { EquipmentModule } from "./equipment/equipment.module";
 import { SubcontractorPortalModule } from "./subcontractor-portal/subcontractor-portal.module";
+import { SafetyModule } from "./safety/safety.module";
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { SubcontractorPortalModule } from "./subcontractor-portal/subcontractor-
     PortalModule,
     EquipmentModule,
     SubcontractorPortalModule,
+    SafetyModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

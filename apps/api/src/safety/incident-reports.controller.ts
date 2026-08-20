@@ -1,0 +1,40 @@
+import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common";
+import {
+  createIncidentReportSchema,
+  updateIncidentReportSchema,
+  type AuthUser,
+  type CreateIncidentReportInput,
+  type UpdateIncidentReportInput,
+} from "@cantero/shared";
+import { CurrentUser } from "../common/decorators/current-user.decorator";
+import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
+import { IncidentReportsService } from "./incident-reports.service";
+
+@Controller("safety/incidents")
+export class IncidentReportsController {
+  constructor(private readonly service: IncidentReportsService) {}
+
+  @Get()
+  list(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string) {
+    return this.service.listForProject(user.companyId, projectId);
+  }
+
+  @Get(":id")
+  get(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.get(user.companyId, id);
+  }
+
+  @Post()
+  create(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(createIncidentReportSchema)) body: CreateIncidentReportInput) {
+    return this.service.create(user.companyId, { userId: user.userId, name: user.name }, body);
+  }
+
+  @Patch(":id")
+  update(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(updateIncidentReportSchema)) body: UpdateIncidentReportInput,
+  ) {
+    return this.service.update(user.companyId, id, body);
+  }
+}
