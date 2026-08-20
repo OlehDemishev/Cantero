@@ -7,6 +7,7 @@ import { PdfService } from "../common/pdf/pdf.service";
 import { StorageService } from "../common/storage/storage.service";
 import { AuditService } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
+import { WebhooksService } from "../common/webhooks/webhooks.service";
 
 const COMPANY_A = "company-a";
 const OTHER_COMPANY_ESTIMATE = {
@@ -44,6 +45,7 @@ describe("EstimatesService — cross-tenant isolation", () => {
         { provide: AuditService, useValue: { record: jest.fn(), list: jest.fn() } },
         { provide: ConfigService, useValue: { get: jest.fn(), getOrThrow: jest.fn() } },
         { provide: MailService, useValue: { send: jest.fn() } },
+        { provide: WebhooksService, useValue: { trigger: jest.fn() } },
       ],
     }).compile();
 

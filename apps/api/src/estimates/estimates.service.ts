@@ -14,6 +14,7 @@ import { StorageService } from "../common/storage/storage.service";
 import { decodePngDataUrl } from "../common/signature";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
+import { WebhooksService } from "../common/webhooks/webhooks.service";
 import {
   calculateEstimate,
   type EstimateCalcOptions,
@@ -41,6 +42,7 @@ export class EstimatesService {
     private readonly audit: AuditService,
     private readonly config: ConfigService,
     private readonly mail: MailService,
+    private readonly webhooks: WebhooksService,
   ) {}
 
   list(companyId: string) {
@@ -247,6 +249,7 @@ export class EstimatesService {
       },
     });
     this.audit.record(companyId, actor, "estimate.sent", "Estimate", estimateId, `Sent estimate "${estimate.name}" to client for review`);
+    this.webhooks.trigger(companyId, "estimate.sent", { estimateId, name: estimate.name });
 
     const client = estimate.project?.clientId
       ? await this.prisma.client.findUnique({ where: { id: estimate.project.clientId } })
@@ -381,6 +384,11 @@ export class EstimatesService {
       estimate.id,
       `Client ${input.decision} estimate "${estimate.name}"${input.note ? ` — "${input.note}"` : ""}`,
     );
+    this.webhooks.trigger(estimate.companyId, input.decision === "approved" ? "estimate.client_approved" : "estimate.client_rejected", {
+      estimateId: estimate.id,
+      name: estimate.name,
+      decision: input.decision,
+    });
 
     return { clientDecision: updated.clientDecision };
   }

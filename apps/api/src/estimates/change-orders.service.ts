@@ -8,6 +8,7 @@ import { StorageService } from "../common/storage/storage.service";
 import { decodePngDataUrl } from "../common/signature";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
+import { WebhooksService } from "../common/webhooks/webhooks.service";
 import { calculateEstimate, type EstimateLineInput, type MaterialPrice, type RateItemForCalc } from "./estimate-calc";
 
 /**
@@ -25,6 +26,7 @@ export class ChangeOrdersService {
     private readonly audit: AuditService,
     private readonly config: ConfigService,
     private readonly mail: MailService,
+    private readonly webhooks: WebhooksService,
   ) {}
 
   list(companyId: string, estimateId: string) {
@@ -145,6 +147,7 @@ export class ChangeOrdersService {
       changeOrderId,
       `Sent change order CO-${changeOrder.number} "${changeOrder.title}" to client for review`,
     );
+    this.webhooks.trigger(companyId, "change_order.sent", { changeOrderId, title: changeOrder.title });
 
     const client = estimate.project?.clientId
       ? await this.prisma.client.findUnique({ where: { id: estimate.project.clientId } })
@@ -237,6 +240,11 @@ export class ChangeOrdersService {
       "ChangeOrder",
       changeOrder.id,
       `Client ${input.decision} change order CO-${changeOrder.number} "${changeOrder.title}"${input.note ? ` — "${input.note}"` : ""}`,
+    );
+    this.webhooks.trigger(
+      changeOrder.companyId,
+      input.decision === "approved" ? "change_order.client_approved" : "change_order.client_rejected",
+      { changeOrderId: changeOrder.id, title: changeOrder.title, decision: input.decision },
     );
 
     return { clientDecision: updated.clientDecision };

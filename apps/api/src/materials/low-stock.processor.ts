@@ -2,6 +2,7 @@ import { Logger } from "@nestjs/common";
 import { Processor, WorkerHost } from "@nestjs/bullmq";
 import type { Job } from "bullmq";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { WebhooksService } from "../common/webhooks/webhooks.service";
 import { STOCK_ALERTS_QUEUE } from "../common/queue/queue.module";
 
 export interface LowStockCheckJob {
@@ -21,7 +22,10 @@ export interface LowStockCheckJob {
 export class LowStockProcessor extends WorkerHost {
   private readonly logger = new Logger(LowStockProcessor.name);
 
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly webhooks: WebhooksService,
+  ) {
     super();
   }
 
@@ -46,6 +50,14 @@ export class LowStockProcessor extends WorkerHost {
     this.logger.warn(
       `Low stock: ${material.code} (${material.name}) at ${quantityOnHand}${material.unit}, below reorder threshold of ${material.reorderThreshold}${material.unit}`,
     );
+    this.webhooks.trigger(companyId, "material.low_stock", {
+      materialCatalogItemId,
+      code: material.code,
+      name: material.name,
+      quantityOnHand,
+      unit: material.unit,
+      reorderThreshold: Number(material.reorderThreshold),
+    });
 
     if (!material.preferredSupplierId || material.reorderQuantity === null) {
       return { belowThreshold: true, quantityOnHand };

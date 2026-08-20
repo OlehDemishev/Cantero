@@ -10,3 +10,4 @@ export * from "./crm";
 export * from "./documents";
 export * from "./notifications";
 export * from "./import";
+export * from "./webhooks";

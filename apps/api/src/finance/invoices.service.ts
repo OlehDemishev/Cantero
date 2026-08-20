@@ -7,6 +7,7 @@ import { StorageService } from "../common/storage/storage.service";
 import { toCsv } from "../common/csv";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
+import { WebhooksService } from "../common/webhooks/webhooks.service";
 
 @Injectable()
 export class InvoicesService {
@@ -17,6 +18,7 @@ export class InvoicesService {
     private readonly audit: AuditService,
     private readonly config: ConfigService,
     private readonly mail: MailService,
+    private readonly webhooks: WebhooksService,
   ) {}
 
   list(companyId: string) {
@@ -90,6 +92,7 @@ export class InvoicesService {
       include: { lines: true, client: true, project: true, payments: true, installments: true },
     });
     this.audit.record(companyId, actor, "invoice.sent", "Invoice", id, `Sent invoice ${invoice.number} to ${invoice.client.name}`);
+    this.webhooks.trigger(companyId, "invoice.sent", { invoiceId: id, number: invoice.number });
 
     if (updated.client.email) {
       const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
@@ -157,6 +160,13 @@ export class InvoicesService {
       `Recorded a ${input.amount} payment (${input.method}) on invoice ${invoice.number}`,
       { amount: input.amount, method: input.method },
     );
+    this.webhooks.trigger(companyId, "invoice.payment_recorded", {
+      invoiceId: id,
+      number: invoice.number,
+      amount: input.amount,
+      method: input.method,
+      newStatus,
+    });
 
     return this.prisma.invoice.update({
       where: { id },

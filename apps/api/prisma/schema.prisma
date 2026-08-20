@@ -130,6 +130,7 @@ model Company {
   apiKeys              ApiKey[]
   auditLogs            AuditLog[]
   changeOrders         ChangeOrder[]
+  webhookEndpoints     WebhookEndpoint[]
 
   @@map("companies")
 }
@@ -173,6 +174,46 @@ model ApiKey {
 
   @@index([companyId])
   @@map("api_keys")
+}
+
+/// A company-configured HTTP callback: on subscribed events, the raw secret signs the
+/// POST body (HMAC-SHA256) so the receiver can verify it actually came from Cantero.
+/// The secret is shown in full only at creation/regeneration — unlike ApiKey it must
+/// stay retrievable server-side since every delivery needs it to sign the payload.
+model WebhookEndpoint {
+  id                 String    @id @default(uuid())
+  companyId          String
+  url                String
+  secret             String
+  /// Event names this endpoint receives, e.g. "estimate.sent" — see WEBHOOK_EVENTS in @cantero/shared.
+  events             String[]
+  active             Boolean   @default(true)
+  createdAt          DateTime  @default(now())
+  lastDeliveryAt     DateTime?
+  lastDeliveryStatus String?
+
+  company    Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  deliveries WebhookDelivery[]
+
+  @@index([companyId])
+  @@map("webhook_endpoints")
+}
+
+/// A rolling delivery log per endpoint, kept for the Settings UI so a company can see
+/// why a webhook stopped firing (timeout, 4xx/5xx, DNS failure) without external tooling.
+model WebhookDelivery {
+  id                String   @id @default(uuid())
+  webhookEndpointId String
+  event             String
+  success           Boolean
+  statusCode        Int?
+  error             String?
+  createdAt         DateTime @default(now())
+
+  endpoint WebhookEndpoint @relation(fields: [webhookEndpointId], references: [id], onDelete: Cascade)
+
+  @@index([webhookEndpointId, createdAt])
+  @@map("webhook_deliveries")
 }
 
 model User {

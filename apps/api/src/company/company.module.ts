@@ -8,9 +8,10 @@ import { InvitesService } from "./invites.service";
 import { ApiKeysController } from "./api-keys.controller";
 import { ApiKeysService } from "./api-keys.service";
 import { AuditLogController } from "./audit-log.controller";
+import { WebhooksController } from "./webhooks.controller";
 
 @Module({
-  controllers: [CompanyController, MembersController, InvitesController, ApiKeysController, AuditLogController],
+  controllers: [CompanyController, MembersController, InvitesController, ApiKeysController, AuditLogController, WebhooksController],
   providers: [CompanyService, MembersService, InvitesService, ApiKeysService],
 })
 export class CompanyModule {}
