@@ -644,7 +644,8 @@
     "backToDashboard": "Panel completo",
     "quantity": "Cantidad",
     "logs": "Registros",
-    "punch": "Defectos"
+    "punch": "Defectos",
+    "cachedFrom": "Mostrando datos almacenados de {time}"
   },
   "subcontractors": {
     "title": "Costos de subcontratistas",

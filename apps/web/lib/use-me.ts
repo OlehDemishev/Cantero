@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { apiFetch } from "./api-client";
+import { fetchCached } from "./offline-cache";
 
 export interface MeResponse {
   user: { id: string; email: string; name: string; role: string };
@@ -26,8 +26,8 @@ export function useMe() {
 
   const reload = useCallback(() => {
     setLoading(true);
-    apiFetch<MeResponse>("/me")
-      .then(setData)
+    fetchCached<MeResponse>("me", "/me")
+      .then(({ data }) => setData(data))
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);

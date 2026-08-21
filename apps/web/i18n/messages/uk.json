@@ -644,7 +644,8 @@
     "backToDashboard": "Повна панель",
     "quantity": "Кількість",
     "logs": "Журнали",
-    "punch": "Дефекти"
+    "punch": "Дефекти",
+    "cachedFrom": "Показано дані з кешу за {time}"
   },
   "subcontractors": {
     "title": "Витрати на субпідрядників",

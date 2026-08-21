@@ -2,9 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch } from "./api-client";
-
-const DB_NAME = "cantero-offline";
-const STORE = "mutations";
+import { withStore, MUTATIONS_STORE } from "./offline-db";
 
 export interface QueuedMutation {
   id: number;
@@ -15,39 +13,29 @@ export interface QueuedMutation {
   createdAt: number;
 }
 
-function openDb(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 1);
-    req.onupgradeneeded = () => {
-      req.result.createObjectStore(STORE, { keyPath: "id", autoIncrement: true });
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
+const QUEUE_CHANGED_EVENT = "cantero-offline-queue-changed";
 
-async function withStore<T>(mode: IDBTransactionMode, fn: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
-  const db = await openDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE, mode);
-    const req = fn(tx.objectStore(STORE));
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
+/** Lets every mounted useOfflineQueue() instance react to a mutation queued or flushed anywhere in the tree. */
+function notifyQueueChanged(): void {
+  window.dispatchEvent(new Event(QUEUE_CHANGED_EVENT));
 }
 
 /** Queues a mutation for later delivery. Call this only when a request has already failed due to being offline. */
 export async function queueMutation(kind: string, path: string, method: "POST" | "PATCH", body: unknown): Promise<void> {
-  await withStore("readwrite", (store) => store.add({ kind, path, method, body, createdAt: Date.now() } as QueuedMutation));
+  await withStore(MUTATIONS_STORE, "readwrite", (store) =>
+    store.add({ kind, path, method, body, createdAt: Date.now() } as QueuedMutation),
+  );
+  notifyQueueChanged();
 }
 
 export async function listQueued(): Promise<QueuedMutation[]> {
-  const all = await withStore<QueuedMutation[]>("readonly", (store) => store.getAll());
+  const all = await withStore<QueuedMutation[]>(MUTATIONS_STORE, "readonly", (store) => store.getAll());
   return all.sort((a, b) => a.createdAt - b.createdAt);
 }
 
 async function removeQueued(id: number): Promise<void> {
-  await withStore("readwrite", (store) => store.delete(id));
+  await withStore(MUTATIONS_STORE, "readwrite", (store) => store.delete(id));
+  notifyQueueChanged();
 }
 
 /**
@@ -71,21 +59,36 @@ export async function submitOrQueue(kind: string, path: string, method: "POST" |
   }
 }
 
-/** Flushes queued mutations in order, stopping at the first failure so nothing is skipped or reordered. */
+let flushInFlight: Promise<{ flushed: number; remaining: number }> | null = null;
+
+/**
+ * Flushes queued mutations in order, stopping at the first failure so nothing is skipped or reordered.
+ * Guarded against concurrent calls (e.g. React StrictMode double-mounting useOfflineQueue, or multiple
+ * mounted instances of it) — without this, two overlapping passes could each read the same queued item
+ * before either had deleted it, submitting it to the server twice.
+ */
 export async function flushQueue(): Promise<{ flushed: number; remaining: number }> {
-  const items = await listQueued();
-  let flushed = 0;
-  for (const item of items) {
-    try {
-      await apiFetch(item.path, { method: item.method, body: JSON.stringify(item.body) });
-      await removeQueued(item.id);
-      flushed++;
-    } catch {
-      break;
+  if (flushInFlight) return flushInFlight;
+  flushInFlight = (async () => {
+    const items = await listQueued();
+    let flushed = 0;
+    for (const item of items) {
+      try {
+        await apiFetch(item.path, { method: item.method, body: JSON.stringify(item.body) });
+        await removeQueued(item.id);
+        flushed++;
+      } catch {
+        break;
+      }
     }
+    const remaining = (await listQueued()).length;
+    return { flushed, remaining };
+  })();
+  try {
+    return await flushInFlight;
+  } finally {
+    flushInFlight = null;
   }
-  const remaining = (await listQueued()).length;
-  return { flushed, remaining };
 }
 
 export function useOfflineQueue() {
@@ -113,7 +116,11 @@ export function useOfflineQueue() {
     refresh();
     if (navigator.onLine) flush();
     window.addEventListener("online", flush);
-    return () => window.removeEventListener("online", flush);
+    window.addEventListener(QUEUE_CHANGED_EVENT, refresh);
+    return () => {
+      window.removeEventListener("online", flush);
+      window.removeEventListener(QUEUE_CHANGED_EVENT, refresh);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

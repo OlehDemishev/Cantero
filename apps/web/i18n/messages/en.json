@@ -644,7 +644,8 @@
     "backToDashboard": "Full dashboard",
     "quantity": "Quantity",
     "logs": "Logs",
-    "punch": "Punch"
+    "punch": "Punch",
+    "cachedFrom": "Showing cached data from {time}"
   },
   "subcontractors": {
     "title": "Subcontractor costs",

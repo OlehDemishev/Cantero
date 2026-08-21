@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { WEATHER_CONDITIONS, type WeatherCondition } from "@cantero/shared";
-import { apiFetch, clearToken, getToken } from "@/lib/api-client";
+import { clearToken, getToken } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { submitOrQueue, useOfflineQueue } from "@/lib/offline-queue";
+import { fetchCached, updateCache } from "@/lib/offline-cache";
 import { DashboardIcon, LogoutIcon } from "@/components/nav-icons";
 
 type TaskStatus = "planned" | "in_progress" | "done";
@@ -69,8 +70,8 @@ export default function FieldPage() {
   }, []);
 
   useEffect(() => {
-    apiFetch<Project[]>("/projects")
-      .then((list) => {
+    fetchCached<Project[]>("field:projects", "/projects")
+      .then(({ data: list }) => {
         setProjects(list);
         const stored = localStorage.getItem(PROJECT_STORAGE_KEY);
         setProjectId(stored && list.some((p) => p.id === stored) ? stored : (list[0]?.id ?? ""));
@@ -180,18 +181,27 @@ function TasksTab({ projectId }: { projectId: string }) {
   const tc = useTranslations("common");
   const [tasks, setTasks] = useState<Task[] | null>(null);
   const [error, setError] = useState(false);
+  const [cachedAt, setCachedAt] = useState<number | null>(null);
+  const cacheKey = `field:tasks:${projectId}`;
 
   useEffect(() => {
     setTasks(null);
     setError(false);
-    apiFetch<Task[]>(`/tasks?projectId=${projectId}`)
-      .then(setTasks)
+    setCachedAt(null);
+    fetchCached<Task[]>(cacheKey, `/tasks?projectId=${projectId}`)
+      .then(({ data, stale, cachedAt: at }) => {
+        setTasks(data);
+        setCachedAt(stale ? at : null);
+      })
       .catch(() => setError(true));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
   async function advance(task: Task) {
     const next = STATUS_ORDER[(STATUS_ORDER.indexOf(task.status) + 1) % STATUS_ORDER.length];
-    setTasks((prev) => prev && prev.map((x) => (x.id === task.id ? { ...x, status: next } : x)));
+    const updated = (tasks ?? []).map((x) => (x.id === task.id ? { ...x, status: next } : x));
+    setTasks(updated);
+    updateCache(cacheKey, updated).catch(() => {});
     await submitOrQueue("task-status", `/tasks/${task.id}`, "PATCH", { status: next });
   }
 
@@ -201,6 +211,7 @@ function TasksTab({ projectId }: { projectId: string }) {
 
   return (
     <div>
+      <CachedNote cachedAt={cachedAt} />
       <p className="mb-3 text-xs text-gray-500">{t("tapToAdvance")}</p>
       <ul className="flex flex-col gap-2">
         {tasks.map((task) => (
@@ -214,6 +225,12 @@ function TasksTab({ projectId }: { projectId: string }) {
       </ul>
     </div>
   );
+}
+
+function CachedNote({ cachedAt }: { cachedAt: number | null }) {
+  const t = useTranslations("field");
+  if (cachedAt == null) return null;
+  return <p className="mb-2 text-xs text-warning-700">{t("cachedFrom", { time: new Date(cachedAt).toLocaleTimeString() })}</p>;
 }
 
 function StatusBadge({ status }: { status: TaskStatus }) {
@@ -238,18 +255,19 @@ function TimeTab({ projectId, meUserId }: { projectId: string; meUserId: string 
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    apiFetch<Worker[]>("/workers")
-      .then((list) => {
+    fetchCached<Worker[]>("field:workers", "/workers")
+      .then(({ data: list }) => {
         setWorkers(list);
         const mine = list.find((w) => w.userId === meUserId);
         setForm((f) => ({ ...f, workerId: (mine ?? list[0])?.id ?? "" }));
       })
       .catch(() => setError(true));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [meUserId]);
 
   useEffect(() => {
-    apiFetch<Task[]>(`/tasks?projectId=${projectId}`)
-      .then(setTasks)
+    fetchCached<Task[]>(`field:tasks:${projectId}`, `/tasks?projectId=${projectId}`)
+      .then(({ data }) => setTasks(data))
       .catch(() => setError(true));
     setForm((f) => ({ ...f, taskId: "" }));
   }, [projectId]);
@@ -343,14 +361,14 @@ function StockTab({ projectId }: { projectId: string }) {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    apiFetch<Warehouse[]>("/materials/warehouses")
-      .then((list) => {
+    fetchCached<Warehouse[]>("field:warehouses", "/materials/warehouses")
+      .then(({ data: list }) => {
         setWarehouses(list);
         setForm((f) => ({ ...f, warehouseId: list[0]?.id ?? "" }));
       })
       .catch(() => setError(true));
-    apiFetch<MaterialCatalogItem[]>("/materials/catalog")
-      .then((list) => {
+    fetchCached<MaterialCatalogItem[]>("field:materials", "/materials/catalog")
+      .then(({ data: list }) => {
         setMaterials(list);
         setForm((f) => ({ ...f, materialCatalogItemId: list[0]?.id ?? "" }));
       })
@@ -462,13 +480,16 @@ function LogsTab({ projectId }: { projectId: string }) {
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [cachedAt, setCachedAt] = useState<number | null>(null);
 
   useEffect(() => {
     setLoaded(false);
     setExistingId(null);
+    setCachedAt(null);
     setForm({ weatherCondition: "", crewCount: "", workPerformed: "", delays: "" });
-    apiFetch<DailyLog[]>(`/daily-logs?projectId=${projectId}`)
-      .then((list) => {
+    fetchCached<DailyLog[]>(`field:daily-logs:${projectId}`, `/daily-logs?projectId=${projectId}`)
+      .then(({ data: list, stale, cachedAt: at }) => {
+        setCachedAt(stale ? at : null);
         const today = list.find((l) => l.date.slice(0, 10) === TODAY);
         if (today) {
           setExistingId(today.id);
@@ -480,6 +501,7 @@ function LogsTab({ projectId }: { projectId: string }) {
           });
         }
       })
+      .catch(() => {})
       .finally(() => setLoaded(true));
   }, [projectId]);
 
@@ -507,6 +529,7 @@ function LogsTab({ projectId }: { projectId: string }) {
 
   return (
     <form onSubmit={submit} className="card flex flex-col gap-3">
+      <CachedNote cachedAt={cachedAt} />
       <p className="text-xs text-gray-500">{new Date().toLocaleDateString()}</p>
       <label className="flex flex-col gap-1.5 text-sm">
         <span className="font-medium text-gray-700">{td("weather")}</span>
@@ -575,9 +598,16 @@ function PunchTab({ projectId }: { projectId: string }) {
   const [form, setForm] = useState({ title: "", location: "" });
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [cachedAt, setCachedAt] = useState<number | null>(null);
+  const cacheKey = `field:punch-list:${projectId}`;
 
   function load() {
-    apiFetch<PunchListItem[]>(`/punch-list?projectId=${projectId}`).then(setItems).catch(() => setItems(null));
+    fetchCached<PunchListItem[]>(cacheKey, `/punch-list?projectId=${projectId}`)
+      .then(({ data, stale, cachedAt: at }) => {
+        setItems(data);
+        setCachedAt(stale ? at : null);
+      })
+      .catch(() => setItems(null));
   }
 
   useEffect(load, [projectId]);
@@ -594,6 +624,12 @@ function PunchTab({ projectId }: { projectId: string }) {
         location: form.location || undefined,
       });
       setMessage(queued ? t("queuedOffline") : tc("saved"));
+      if (queued) {
+        const optimistic: PunchListItem = { id: `queued-${Date.now()}`, title: form.title, location: form.location || null, status: "open" };
+        const updated = [...(items ?? []), optimistic];
+        setItems(updated);
+        updateCache(cacheKey, updated).catch(() => {});
+      }
       setForm({ title: "", location: "" });
       if (!queued) load();
     } finally {
@@ -603,13 +639,20 @@ function PunchTab({ projectId }: { projectId: string }) {
 
   async function resolve(id: string) {
     const { queued } = await submitOrQueue("punch-list-resolve", `/punch-list/${id}/resolve`, "POST", {});
-    if (!queued) load();
+    if (queued) {
+      const updated = (items ?? []).map((i) => (i.id === id ? { ...i, status: "resolved" as const } : i));
+      setItems(updated);
+      updateCache(cacheKey, updated).catch(() => {});
+    } else {
+      load();
+    }
   }
 
   const openAndResolved = (items ?? []).filter((i) => i.status !== "verified");
 
   return (
     <div className="flex flex-col gap-4">
+      <CachedNote cachedAt={cachedAt} />
       <form onSubmit={submit} className="card flex flex-col gap-3">
         <label className="flex flex-col gap-1.5 text-sm">
           <span className="font-medium text-gray-700">{tp("itemTitle")}</span>

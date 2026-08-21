@@ -644,7 +644,8 @@
     "backToDashboard": "Vollständiges Dashboard",
     "quantity": "Menge",
     "logs": "Protokolle",
-    "punch": "Mängel"
+    "punch": "Mängel",
+    "cachedFrom": "Zeigt zwischengespeicherte Daten von {time}"
   },
   "subcontractors": {
     "title": "Nachunternehmerkosten",
