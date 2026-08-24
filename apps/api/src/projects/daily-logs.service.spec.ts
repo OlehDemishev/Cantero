@@ -3,6 +3,7 @@ import { Test } from "@nestjs/testing";
 import { DailyLogsService } from "./daily-logs.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService } from "../common/audit/audit.service";
+import { WeatherService } from "../weather/weather.service";
 
 const COMPANY_A = "company-a";
 const ACTOR = { userId: "user-1", name: "Foreman" };
@@ -14,6 +15,7 @@ describe("DailyLogsService", () => {
     dailyLog: { findMany: jest.Mock; findFirst: jest.Mock; findUnique: jest.Mock; create: jest.Mock; update: jest.Mock };
   };
   let audit: { record: jest.Mock };
+  let weather: { forecastForDate: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -21,12 +23,14 @@ describe("DailyLogsService", () => {
       dailyLog: { findMany: jest.fn(), findFirst: jest.fn(), findUnique: jest.fn(), create: jest.fn(), update: jest.fn() },
     };
     audit = { record: jest.fn() };
+    weather = { forecastForDate: jest.fn().mockResolvedValue(null) };
 
     const module = await Test.createTestingModule({
       providers: [
         DailyLogsService,
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: audit },
+        { provide: WeatherService, useValue: weather },
       ],
     }).compile();
 
@@ -78,6 +82,42 @@ describe("DailyLogsService", () => {
         }),
       );
       expect(audit.record).toHaveBeenCalled();
+    });
+
+    it("auto-fills weather from the forecast when the caller didn't set it and the project has an address", async () => {
+      prisma.project.findFirst.mockResolvedValue({ id: "project-1", companyId: COMPANY_A, name: "Site A", address: "Main St 1, Berlin" });
+      prisma.dailyLog.findUnique.mockResolvedValue(null);
+      prisma.dailyLog.create.mockResolvedValue({ id: "log-1" });
+      weather.forecastForDate.mockResolvedValue({ date: "2026-08-20", condition: "rain", tempMaxC: 18, tempMinC: 10, risky: true });
+
+      await service.create(COMPANY_A, ACTOR, {
+        projectId: "project-1",
+        date: "2026-08-20T00:00:00.000Z",
+        workPerformed: "Poured footings",
+      });
+
+      expect(weather.forecastForDate).toHaveBeenCalledWith("Main St 1, Berlin", new Date("2026-08-20T00:00:00.000Z"));
+      expect(prisma.dailyLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ weatherCondition: "rain" }) }),
+      );
+    });
+
+    it("doesn't override weather the caller explicitly set", async () => {
+      prisma.project.findFirst.mockResolvedValue({ id: "project-1", companyId: COMPANY_A, name: "Site A", address: "Main St 1, Berlin" });
+      prisma.dailyLog.findUnique.mockResolvedValue(null);
+      prisma.dailyLog.create.mockResolvedValue({ id: "log-1" });
+
+      await service.create(COMPANY_A, ACTOR, {
+        projectId: "project-1",
+        date: "2026-08-20T00:00:00.000Z",
+        workPerformed: "Poured footings",
+        weatherCondition: "clear",
+      });
+
+      expect(weather.forecastForDate).not.toHaveBeenCalled();
+      expect(prisma.dailyLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ weatherCondition: "clear" }) }),
+      );
     });
   });
 

@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import type { CreateProjectInput, UpdateProjectWarrantyInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { WeatherService } from "../weather/weather.service";
 
 @Injectable()
 export class ProjectsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly weather: WeatherService,
+  ) {}
 
   list(companyId: string) {
     return this.prisma.project.findMany({
@@ -21,6 +25,18 @@ export class ProjectsService {
     });
     if (!project) throw new NotFoundException("Project not found");
     return project;
+  }
+
+  /** Best-effort 5-day-ahead forecast for the project's site, geocoded from its free-text address. `available: false` means no address is set or the location couldn't be resolved — not an error, just nothing to show. */
+  async weatherForecast(companyId: string, id: string) {
+    const project = await this.get(companyId, id);
+    if (!project.address) return { available: false as const, days: [] };
+
+    const coords = await this.weather.geocode(project.address);
+    if (!coords) return { available: false as const, days: [] };
+
+    const days = await this.weather.forecast(coords.lat, coords.lon, 0);
+    return { available: true as const, days };
   }
 
   async create(companyId: string, input: CreateProjectInput) {

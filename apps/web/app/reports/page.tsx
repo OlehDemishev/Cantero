@@ -2,6 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import {
+  SCHEDULED_REPORT_FREQUENCIES,
+  SCHEDULED_REPORT_TYPES,
+  type ScheduledReportFrequency,
+  type ScheduledReportType,
+} from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
@@ -68,6 +74,17 @@ interface CashFlowForecast {
   totals: { inflow: number; outflow: number; net: number };
 }
 
+interface ScheduledReport {
+  id: string;
+  name: string;
+  reportType: ScheduledReportType;
+  frequency: ScheduledReportFrequency;
+  recipientEmails: string[];
+  active: boolean;
+  nextRunAt: string;
+  lastSentAt: string | null;
+}
+
 function isoDaysAgo(days: number) {
   const d = new Date();
   d.setDate(d.getDate() - days);
@@ -88,6 +105,57 @@ export default function ReportsPage() {
   const [workload, setWorkload] = useState<LaborCostReport | null>(null);
   const [workloadFrom, setWorkloadFrom] = useState(isoDaysAgo(30));
   const [workloadTo, setWorkloadTo] = useState(isoDaysAgo(0));
+  const [scheduledReports, setScheduledReports] = useState<ScheduledReport[] | null>(null);
+  const [scheduleForm, setScheduleForm] = useState({
+    name: "",
+    reportType: "overview" as ScheduledReportType,
+    frequency: "weekly" as ScheduledReportFrequency,
+    recipientEmails: "",
+  });
+  const [scheduleBusy, setScheduleBusy] = useState(false);
+  const [sentNowId, setSentNowId] = useState<string | null>(null);
+
+  function loadScheduledReports() {
+    apiFetch<ScheduledReport[]>("/scheduled-reports").then(setScheduledReports);
+  }
+
+  async function createScheduledReport(e: React.FormEvent) {
+    e.preventDefault();
+    const recipientEmails = scheduleForm.recipientEmails
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (recipientEmails.length === 0) return;
+    setScheduleBusy(true);
+    try {
+      await apiFetch("/scheduled-reports", {
+        method: "POST",
+        body: JSON.stringify({ name: scheduleForm.name, reportType: scheduleForm.reportType, frequency: scheduleForm.frequency, recipientEmails }),
+      });
+      setScheduleForm({ name: "", reportType: "overview", frequency: "weekly", recipientEmails: "" });
+      loadScheduledReports();
+    } finally {
+      setScheduleBusy(false);
+    }
+  }
+
+  async function toggleScheduledReportActive(report: ScheduledReport) {
+    await apiFetch(`/scheduled-reports/${report.id}`, { method: "PATCH", body: JSON.stringify({ active: !report.active }) });
+    loadScheduledReports();
+  }
+
+  async function deleteScheduledReport(id: string) {
+    await apiFetch(`/scheduled-reports/${id}`, { method: "DELETE" });
+    loadScheduledReports();
+  }
+
+  async function sendScheduledReportNow(id: string) {
+    setSentNowId(null);
+    await apiFetch(`/scheduled-reports/${id}/send-now`, { method: "POST" });
+    setSentNowId(id);
+  }
+
+  useEffect(loadScheduledReports, []);
 
   useEffect(() => {
     apiFetch<ProjectMargin[]>("/reports/project-margins").then(setMargins);
@@ -418,6 +486,108 @@ export default function ReportsPage() {
             ))}
           </tbody>
         </table>
+      )}
+
+      <h2 className="mb-3 mt-10 text-sm font-semibold text-gray-700">{t("scheduledReports")}</h2>
+      <div className="card max-w-xl">
+        <form onSubmit={createScheduledReport} className="flex flex-col gap-3">
+          <input
+            required
+            placeholder={t("scheduleName")}
+            className="input"
+            value={scheduleForm.name}
+            onChange={(e) => setScheduleForm((f) => ({ ...f, name: e.target.value }))}
+          />
+          <div className="flex gap-3">
+            <label className="flex flex-1 flex-col gap-1.5 text-sm">
+              <span className="font-medium text-gray-700">{t("reportType")}</span>
+              <select
+                className="input"
+                value={scheduleForm.reportType}
+                onChange={(e) => setScheduleForm((f) => ({ ...f, reportType: e.target.value as ScheduledReportType }))}
+              >
+                {SCHEDULED_REPORT_TYPES.map((ty) => (
+                  <option key={ty} value={ty}>
+                    {t(`reportType_${ty}`)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-1 flex-col gap-1.5 text-sm">
+              <span className="font-medium text-gray-700">{t("frequency")}</span>
+              <select
+                className="input"
+                value={scheduleForm.frequency}
+                onChange={(e) => setScheduleForm((f) => ({ ...f, frequency: e.target.value as ScheduledReportFrequency }))}
+              >
+                {SCHEDULED_REPORT_FREQUENCIES.map((freq) => (
+                  <option key={freq} value={freq}>
+                    {t(`frequency_${freq}`)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <label className="flex flex-col gap-1.5 text-sm">
+            <span className="font-medium text-gray-700">{t("recipientEmails")}</span>
+            <input
+              required
+              placeholder={t("recipientEmailsPlaceholder")}
+              className="input"
+              value={scheduleForm.recipientEmails}
+              onChange={(e) => setScheduleForm((f) => ({ ...f, recipientEmails: e.target.value }))}
+            />
+          </label>
+          <button type="submit" disabled={scheduleBusy} className="btn-primary self-start">
+            {t("createSchedule")}
+          </button>
+        </form>
+      </div>
+
+      {!scheduledReports ? (
+        <p className="mt-4 text-gray-500">{tc("loading")}</p>
+      ) : scheduledReports.length === 0 ? (
+        <p className="mt-4 text-sm text-gray-400">{t("noScheduledReports")}</p>
+      ) : (
+        <ul className="mt-4 flex flex-col gap-2">
+          {scheduledReports.map((report) => (
+            <li key={report.id} className="card">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-gray-900">{report.name}</span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                        report.active ? "bg-success-50 text-success-700" : "bg-gray-100 text-gray-500"
+                      }`}
+                    >
+                      {report.active ? t("active") : t("paused")}
+                    </span>
+                  </div>
+                  <div className="mt-1 text-xs text-gray-500">
+                    {t(`reportType_${report.reportType}`)} · {t(`frequency_${report.frequency}`)} · {report.recipientEmails.join(", ")}
+                  </div>
+                  <div className="mt-1 text-xs text-gray-400">
+                    {t("nextRun", { date: new Date(report.nextRunAt).toLocaleDateString() })}
+                    {report.lastSentAt && ` · ${t("lastSent", { date: new Date(report.lastSentAt).toLocaleDateString() })}`}
+                  </div>
+                  {sentNowId === report.id && <p className="mt-1 text-xs text-success-700">{t("sentNowConfirmation")}</p>}
+                </div>
+                <div className="flex flex-none flex-col gap-1.5">
+                  <button onClick={() => sendScheduledReportNow(report.id)} className="btn-secondary px-2.5 py-1 text-xs">
+                    {t("sendNow")}
+                  </button>
+                  <button onClick={() => toggleScheduledReportActive(report)} className="btn-secondary px-2.5 py-1 text-xs">
+                    {report.active ? t("pause") : t("resume")}
+                  </button>
+                  <button onClick={() => deleteScheduledReport(report.id)} className="text-xs text-gray-400 hover:text-error-600">
+                    {tc("delete")}
+                  </button>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
       )}
     </AuthenticatedShell>
   );

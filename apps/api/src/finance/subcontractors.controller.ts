@@ -1,7 +1,9 @@
 import { Body, Controller, Delete, Get, Param, Post } from "@nestjs/common";
 import {
+  addSubcontractorDocumentSchema,
   assignSubcontractorSchema,
   createSubcontractorSchema,
+  type AddSubcontractorDocumentInput,
   type AssignSubcontractorInput,
   type AuthUser,
   type CreateSubcontractorInput,
@@ -44,5 +46,29 @@ export class SubcontractorsController {
   @Delete(":id/assignments/:assignmentId")
   unassign(@CurrentUser() user: AuthUser, @Param("id") id: string, @Param("assignmentId") assignmentId: string) {
     return this.service.unassign(user.companyId, id, assignmentId);
+  }
+
+  @Get(":id/documents")
+  listDocuments(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.listDocuments(user.companyId, id);
+  }
+
+  @Post(":id/documents")
+  addDocument(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(addSubcontractorDocumentSchema)) body: AddSubcontractorDocumentInput,
+  ) {
+    return this.service.addDocument(user.companyId, { userId: user.userId, name: user.name }, id, body);
+  }
+
+  @Delete(":id/documents/:documentId")
+  removeDocument(@CurrentUser() user: AuthUser, @Param("id") id: string, @Param("documentId") documentId: string) {
+    return this.service.deleteDocument(user.companyId, id, documentId);
+  }
+
+  @Get(":id/compliance")
+  complianceStatus(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.complianceStatus(user.companyId, id);
   }
 }

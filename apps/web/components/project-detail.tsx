@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { SchedulingPanel } from "@/components/scheduling-panel";
 import { DailyLogsPanel } from "@/components/daily-logs-panel";
+import { WeatherForecastPanel } from "@/components/weather-forecast-panel";
 import { PunchListPanel } from "@/components/punch-list-panel";
 import { RfiPanel } from "@/components/rfi-panel";
 import { SafetyPanel } from "@/components/safety-panel";
@@ -182,6 +183,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
       </div>
 
       <SchedulingPanel projectId={projectId} />
+      <WeatherForecastPanel projectId={projectId} />
       <DailyLogsPanel projectId={projectId} />
       <PunchListPanel projectId={projectId} />
       <RfiPanel projectId={projectId} />

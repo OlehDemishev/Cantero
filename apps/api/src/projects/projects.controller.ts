@@ -24,6 +24,11 @@ export class ProjectsController {
     return this.service.get(user.companyId, id);
   }
 
+  @Get(":id/weather-forecast")
+  weatherForecast(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.weatherForecast(user.companyId, id);
+  }
+
   @Post()
   create(
     @CurrentUser() user: AuthUser,

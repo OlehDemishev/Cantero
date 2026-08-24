@@ -40,7 +40,9 @@
     "settings": "Settings",
     "reports": "Reports",
     "portfolio": "Portfolio",
-    "resourcePlanning": "Resource planning"
+    "resourcePlanning": "Resource planning",
+    "templates": "Templates",
+    "subcontractors": "Subcontractors"
   },
   "auth": {
     "signupTitle": "Create your Cantero account",
@@ -194,7 +196,12 @@
     "webhookEvent_warranty_claim_resolved": "Warranty claim resolved",
     "webhookEvent_warranty_claim_denied": "Warranty claim denied",
     "webhookEvent_client_won": "Client marked as won",
-    "webhookEvent_client_lost": "Client marked as lost"
+    "webhookEvent_client_lost": "Client marked as lost",
+    "slaEscalation": "SLA escalation",
+    "slaEscalationHint": "RFIs and punch list items left open past this many days are automatically flagged and emailed to the company owner. Leave blank to disable.",
+    "rfiSlaDays": "RFI days",
+    "punchListSlaDays": "Punch list days",
+    "slaDaysPlaceholder": "e.g. 5"
   },
   "projects": {
     "title": "Projects",
@@ -268,7 +275,11 @@
     "laborCostReport": "Labor cost report",
     "noLaborCost": "No labor cost logged yet.",
     "total": "Total",
-    "confirmDeleteEntry": "Delete this time entry?"
+    "confirmDeleteEntry": "Delete this time entry?",
+    "certifications": "Certifications",
+    "noCertifications": "No certifications on file.",
+    "certificationNamePlaceholder": "Certification name (e.g. OSHA 30, Forklift operator)",
+    "addCertification": "Add certification"
   },
   "documents": {
     "title": "Documents",
@@ -707,7 +718,31 @@
     "net": "Net",
     "cumulativeNet": "Cumulative",
     "week": "Week",
-    "weekLabel": "W{n}"
+    "weekLabel": "W{n}",
+    "scheduledReports": "Scheduled reports",
+    "scheduleName": "Schedule name",
+    "reportType": "Report",
+    "frequency": "Frequency",
+    "recipientEmails": "Recipients",
+    "recipientEmailsPlaceholder": "email1@example.com, email2@example.com",
+    "createSchedule": "Create schedule",
+    "noScheduledReports": "No scheduled reports yet.",
+    "active": "Active",
+    "paused": "Paused",
+    "nextRun": "Next run {date}",
+    "lastSent": "Last sent {date}",
+    "sentNowConfirmation": "Sent!",
+    "sendNow": "Send now",
+    "pause": "Pause",
+    "resume": "Resume",
+    "reportType_overview": "Company overview",
+    "reportType_project_margins": "Project margins",
+    "reportType_warehouse_turnover": "Warehouse turnover",
+    "reportType_invoice_aging": "Invoice aging",
+    "reportType_portfolio": "Portfolio dashboard",
+    "reportType_cash_flow_forecast": "13-week cash flow forecast",
+    "frequency_weekly": "Weekly",
+    "frequency_monthly": "Monthly"
   },
   "notifications": {
     "title": "Notifications",
@@ -815,7 +850,10 @@
     "verifiedBy": "Verified by {name}",
     "resolvedBy": "Marked resolved by {name}",
     "bulkResolve": "Resolve selected",
-    "bulkVerify": "Verify selected"
+    "bulkVerify": "Verify selected",
+    "applyTemplate": "Apply",
+    "selectTemplate": "Apply template…",
+    "escalated": "Escalated"
   },
   "rfi": {
     "title": "RFIs",
@@ -839,7 +877,8 @@
     "close": "Close",
     "reopen": "Reopen",
     "closedBy": "Closed by {name}",
-    "bulkClose": "Close selected"
+    "bulkClose": "Close selected",
+    "escalated": "Escalated"
   },
   "safety": {
     "title": "Safety",
@@ -982,5 +1021,49 @@
     "calendar": "Calendar",
     "noAssignments": "No assignments yet.",
     "allAssignments": "All assignments"
+  },
+  "checklistTemplates": {
+    "title": "Templates",
+    "subtitle": "Reusable checklists and starting text for punch list items, RFIs, and safety briefings.",
+    "newTemplate": "New template",
+    "templateType": "Template type",
+    "templateName": "Template name",
+    "checklistItems": "Checklist items",
+    "itemTitlePlaceholder": "Item title",
+    "itemLocationPlaceholder": "Location (optional)",
+    "addItem": "+ Item",
+    "subject": "Subject",
+    "question": "Question",
+    "topic": "Topic",
+    "notes": "Notes",
+    "noTemplates": "No templates yet.",
+    "itemCount": "{count} item(s)",
+    "useTemplate": "Use template…",
+    "punch_list": "Punch list",
+    "rfi": "RFI",
+    "safety_briefing": "Safety briefing"
+  },
+  "subcontractorCompliance": {
+    "title": "Subcontractors",
+    "complianceSubtitle": "Insurance and license documents on file — a subcontractor can't be assigned to a project without current general liability and workers' comp coverage.",
+    "newSubcontractor": "New subcontractor",
+    "noSubcontractors": "No subcontractors yet.",
+    "compliant": "Compliant",
+    "nonCompliant": "Non-compliant",
+    "documents": "Documents",
+    "noDocuments": "No documents on file.",
+    "documentNamePlaceholder": "Document name / policy number",
+    "addDocument": "Add document",
+    "validUntil": "Valid until {date}",
+    "expiredOn": "Expired {date}",
+    "missing": "Missing",
+    "general_liability_insurance": "General liability insurance",
+    "workers_comp_insurance": "Workers' comp insurance",
+    "license": "License",
+    "other": "Other"
+  },
+  "weather": {
+    "title": "Weather forecast",
+    "riskWarning": "{count, plural, one {# day ahead has risky weather} other {# days ahead have risky weather}}"
   }
 }

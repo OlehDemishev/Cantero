@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import type { CreateWorkerInput, UpdateWorkerInput } from "@cantero/shared";
+import type { AddWorkerCertificationInput, CreateWorkerInput, UpdateWorkerInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 
@@ -88,5 +88,35 @@ export class WorkersService {
         .map((p) => ({ ...p, hours: Math.round(p.hours * 100) / 100, cost: Math.round(p.cost * 100) / 100 }))
         .sort((a, b) => b.hours - a.hours),
     };
+  }
+
+  listCertifications(companyId: string, workerId: string) {
+    return this.prisma.workerCertification.findMany({
+      where: { companyId, workerId },
+      orderBy: { expiresAt: "asc" },
+    });
+  }
+
+  async addCertification(companyId: string, actor: AuditActor, workerId: string, input: AddWorkerCertificationInput) {
+    const worker = await this.get(companyId, workerId);
+    const cert = await this.prisma.workerCertification.create({
+      data: { companyId, workerId, name: input.name, expiresAt: new Date(input.expiresAt) },
+    });
+    this.audit.record(
+      companyId,
+      actor,
+      "worker_certification.added",
+      "WorkerCertification",
+      cert.id,
+      `Added "${input.name}" for ${worker.name}, expires ${cert.expiresAt.toLocaleDateString()}`,
+    );
+    return cert;
+  }
+
+  async deleteCertification(companyId: string, workerId: string, certificationId: string) {
+    const cert = await this.prisma.workerCertification.findFirst({ where: { id: certificationId, workerId, companyId } });
+    if (!cert) throw new NotFoundException("Certification not found");
+    await this.prisma.workerCertification.delete({ where: { id: certificationId } });
+    return { ok: true };
   }
 }

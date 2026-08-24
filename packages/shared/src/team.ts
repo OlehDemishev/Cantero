@@ -30,3 +30,9 @@ export const updateTimeEntrySchema = z.object({
   taskId: z.string().uuid().nullable().optional(),
 });
 export type UpdateTimeEntryInput = z.infer<typeof updateTimeEntrySchema>;
+
+export const addWorkerCertificationSchema = z.object({
+  name: z.string().min(1).max(160),
+  expiresAt: z.string().datetime(),
+});
+export type AddWorkerCertificationInput = z.infer<typeof addWorkerCertificationSchema>;

@@ -1,9 +1,15 @@
-import { NotFoundException } from "@nestjs/common";
+import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { SubcontractorsService } from "./subcontractors.service";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { AuditService } from "../common/audit/audit.service";
 
 const COMPANY_A = "company-a";
+const ACTOR = { userId: "user-1", name: "PM" };
+
+function daysFromNow(days: number): Date {
+  return new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+}
 
 describe("SubcontractorsService", () => {
   let service: SubcontractorsService;
@@ -11,17 +17,21 @@ describe("SubcontractorsService", () => {
     subcontractor: { findFirst: jest.Mock };
     project: { findFirst: jest.Mock };
     subcontractorAssignment: { upsert: jest.Mock; findFirst: jest.Mock; delete: jest.Mock };
+    subcontractorDocument: { findFirst: jest.Mock; findMany: jest.Mock; create: jest.Mock; delete: jest.Mock };
   };
+  let audit: { record: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
       subcontractor: { findFirst: jest.fn() },
       project: { findFirst: jest.fn() },
       subcontractorAssignment: { upsert: jest.fn(), findFirst: jest.fn(), delete: jest.fn() },
+      subcontractorDocument: { findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), delete: jest.fn() },
     };
+    audit = { record: jest.fn() };
 
     const module = await Test.createTestingModule({
-      providers: [SubcontractorsService, { provide: PrismaService, useValue: prisma }],
+      providers: [SubcontractorsService, { provide: PrismaService, useValue: prisma }, { provide: AuditService, useValue: audit }],
     }).compile();
 
     service = module.get(SubcontractorsService);
@@ -36,11 +46,44 @@ describe("SubcontractorsService", () => {
     });
 
     it("rejects a projectId that belongs to another company", async () => {
-      prisma.subcontractor.findFirst.mockResolvedValue({ id: "sub-1", companyId: COMPANY_A });
+      prisma.subcontractor.findFirst.mockResolvedValue({ id: "sub-1", companyId: COMPANY_A, name: "Acme Electric" });
       prisma.project.findFirst.mockResolvedValue(null);
 
       await expect(service.assign(COMPANY_A, "sub-1", "foreign-project")).rejects.toThrow(NotFoundException);
       expect(prisma.subcontractorAssignment.upsert).not.toHaveBeenCalled();
+    });
+
+    it("blocks assignment when the subcontractor has no compliance documents on file", async () => {
+      prisma.subcontractor.findFirst.mockResolvedValue({ id: "sub-1", companyId: COMPANY_A, name: "Acme Electric" });
+      prisma.project.findFirst.mockResolvedValue({ id: "project-1", companyId: COMPANY_A });
+      prisma.subcontractorDocument.findMany.mockResolvedValue([]);
+
+      await expect(service.assign(COMPANY_A, "sub-1", "project-1")).rejects.toThrow(BadRequestException);
+      expect(prisma.subcontractorAssignment.upsert).not.toHaveBeenCalled();
+    });
+
+    it("blocks assignment when only one of the two required documents is current", async () => {
+      prisma.subcontractor.findFirst.mockResolvedValue({ id: "sub-1", companyId: COMPANY_A, name: "Acme Electric" });
+      prisma.project.findFirst.mockResolvedValue({ id: "project-1", companyId: COMPANY_A });
+      prisma.subcontractorDocument.findMany.mockResolvedValue([
+        { id: "doc-1", type: "general_liability_insurance", expiresAt: daysFromNow(60) },
+      ]);
+
+      await expect(service.assign(COMPANY_A, "sub-1", "project-1")).rejects.toThrow(BadRequestException);
+    });
+
+    it("allows assignment once both required documents are current", async () => {
+      prisma.subcontractor.findFirst.mockResolvedValue({ id: "sub-1", companyId: COMPANY_A, name: "Acme Electric" });
+      prisma.project.findFirst.mockResolvedValue({ id: "project-1", companyId: COMPANY_A });
+      prisma.subcontractorDocument.findMany.mockResolvedValue([
+        { id: "doc-1", type: "general_liability_insurance", expiresAt: daysFromNow(60) },
+        { id: "doc-2", type: "workers_comp_insurance", expiresAt: daysFromNow(90) },
+      ]);
+      prisma.subcontractorAssignment.upsert.mockResolvedValue({ id: "assign-1" });
+
+      await service.assign(COMPANY_A, "sub-1", "project-1");
+
+      expect(prisma.subcontractorAssignment.upsert).toHaveBeenCalled();
     });
   });
 
@@ -50,6 +93,71 @@ describe("SubcontractorsService", () => {
 
       await expect(service.unassign(COMPANY_A, "sub-1", "foreign-assignment")).rejects.toThrow(NotFoundException);
       expect(prisma.subcontractorAssignment.delete).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("complianceStatus()", () => {
+    it("reports missing, expired, and valid per requirement independently", async () => {
+      prisma.subcontractor.findFirst.mockResolvedValue({ id: "sub-1", companyId: COMPANY_A, name: "Acme Electric" });
+      prisma.subcontractorDocument.findMany.mockResolvedValue([
+        { id: "doc-1", type: "general_liability_insurance", expiresAt: daysFromNow(-10) },
+      ]);
+
+      const result = await service.complianceStatus(COMPANY_A, "sub-1");
+
+      expect(result.compliant).toBe(false);
+      const byType = Object.fromEntries(result.requirements.map((r) => [r.type, r.status]));
+      expect(byType.general_liability_insurance).toBe("expired");
+      expect(byType.workers_comp_insurance).toBe("missing");
+    });
+
+    it("is compliant when both required documents are current", async () => {
+      prisma.subcontractor.findFirst.mockResolvedValue({ id: "sub-1", companyId: COMPANY_A, name: "Acme Electric" });
+      prisma.subcontractorDocument.findMany.mockResolvedValue([
+        { id: "doc-1", type: "general_liability_insurance", expiresAt: daysFromNow(60) },
+        { id: "doc-2", type: "workers_comp_insurance", expiresAt: daysFromNow(90) },
+      ]);
+
+      const result = await service.complianceStatus(COMPANY_A, "sub-1");
+
+      expect(result.compliant).toBe(true);
+    });
+  });
+
+  describe("addDocument()", () => {
+    it("rejects when the subcontractor does not belong to this company", async () => {
+      prisma.subcontractor.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.addDocument(COMPANY_A, ACTOR, "sub-1", {
+          type: "general_liability_insurance",
+          name: "GL Policy",
+          expiresAt: daysFromNow(365).toISOString(),
+        }),
+      ).rejects.toThrow(NotFoundException);
+      expect(prisma.subcontractorDocument.create).not.toHaveBeenCalled();
+    });
+
+    it("records an audit entry on success", async () => {
+      prisma.subcontractor.findFirst.mockResolvedValue({ id: "sub-1", companyId: COMPANY_A, name: "Acme Electric" });
+      prisma.subcontractorDocument.create.mockResolvedValue({ id: "doc-1", expiresAt: daysFromNow(365) });
+
+      await service.addDocument(COMPANY_A, ACTOR, "sub-1", {
+        type: "general_liability_insurance",
+        name: "GL Policy",
+        expiresAt: daysFromNow(365).toISOString(),
+      });
+
+      expect(audit.record).toHaveBeenCalled();
+    });
+  });
+
+  describe("deleteDocument()", () => {
+    it("rejects deleting a document that doesn't belong to this company's subcontractor", async () => {
+      prisma.subcontractorDocument.findFirst.mockResolvedValue(null);
+
+      await expect(service.deleteDocument(COMPANY_A, "sub-1", "doc-1")).rejects.toThrow(NotFoundException);
+      expect(prisma.subcontractorDocument.delete).not.toHaveBeenCalled();
     });
   });
 });

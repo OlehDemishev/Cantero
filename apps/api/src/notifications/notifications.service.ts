@@ -14,7 +14,9 @@ export interface NotificationItem {
     | "submittal_pending"
     | "safety_incident"
     | "warranty_claim_open"
-    | "mention";
+    | "mention"
+    | "subcontractor_document_expiring"
+    | "worker_certification_expiring";
   severity: Severity;
   title: string;
   body: string;
@@ -23,6 +25,7 @@ export interface NotificationItem {
 }
 
 const REMINDER_LOOKAHEAD_DAYS = 3;
+const DOCUMENT_EXPIRY_LOOKAHEAD_DAYS = 30;
 
 /**
  * Notifications are fully derived from live data, not a persisted table —
@@ -36,19 +39,33 @@ export class NotificationsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async list(companyId: string, userId: string) {
-    const [lowStock, reminders, invoices, openRfis, openPunchItems, pendingSubmittals, incidents, openWarrantyClaims, mentions, membership] =
-      await Promise.all([
-        this.lowStockItems(companyId),
-        this.dueReminders(companyId),
-        this.overdueInvoices(companyId),
-        this.openRfis(companyId),
-        this.openPunchListItems(companyId),
-        this.pendingSubmittals(companyId),
-        this.safetyIncidents(companyId),
-        this.openWarrantyClaims(companyId),
-        this.mentions(companyId, userId),
-        this.prisma.membership.findFirst({ where: { companyId, userId } }),
-      ]);
+    const [
+      lowStock,
+      reminders,
+      invoices,
+      openRfis,
+      openPunchItems,
+      pendingSubmittals,
+      incidents,
+      openWarrantyClaims,
+      mentions,
+      expiringSubcontractorDocuments,
+      expiringWorkerCertifications,
+      membership,
+    ] = await Promise.all([
+      this.lowStockItems(companyId),
+      this.dueReminders(companyId),
+      this.overdueInvoices(companyId),
+      this.openRfis(companyId),
+      this.openPunchListItems(companyId),
+      this.pendingSubmittals(companyId),
+      this.safetyIncidents(companyId),
+      this.openWarrantyClaims(companyId),
+      this.mentions(companyId, userId),
+      this.expiringSubcontractorDocuments(companyId),
+      this.expiringWorkerCertifications(companyId),
+      this.prisma.membership.findFirst({ where: { companyId, userId } }),
+    ]);
 
     const items = [
       ...lowStock,
@@ -60,6 +77,8 @@ export class NotificationsService {
       ...incidents,
       ...openWarrantyClaims,
       ...mentions,
+      ...expiringSubcontractorDocuments,
+      ...expiringWorkerCertifications,
     ].sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
 
     const lastViewedAt = membership?.notificationsLastViewedAt ?? null;
@@ -284,5 +303,49 @@ export class NotificationsService {
         occurredAt: m.createdAt,
       };
     });
+  }
+
+  private async expiringSubcontractorDocuments(companyId: string): Promise<NotificationItem[]> {
+    const cutoff = new Date(Date.now() + DOCUMENT_EXPIRY_LOOKAHEAD_DAYS * 24 * 60 * 60 * 1000);
+    const docs = await this.prisma.subcontractorDocument.findMany({
+      where: { companyId, expiresAt: { lte: cutoff } },
+      include: { subcontractor: { select: { name: true } } },
+    });
+
+    const now = new Date();
+    return docs.map((doc) => ({
+      key: `subcontractor_document:${doc.id}`,
+      type: "subcontractor_document_expiring" as const,
+      severity: (doc.expiresAt < now ? "critical" : "warning") as Severity,
+      title: `${doc.name} — ${doc.subcontractor.name}`,
+      body:
+        doc.expiresAt < now
+          ? `Expired ${doc.expiresAt.toLocaleDateString()}`
+          : `Expires ${doc.expiresAt.toLocaleDateString()}`,
+      link: "/subcontractors",
+      occurredAt: doc.expiresAt,
+    }));
+  }
+
+  private async expiringWorkerCertifications(companyId: string): Promise<NotificationItem[]> {
+    const cutoff = new Date(Date.now() + DOCUMENT_EXPIRY_LOOKAHEAD_DAYS * 24 * 60 * 60 * 1000);
+    const certs = await this.prisma.workerCertification.findMany({
+      where: { companyId, expiresAt: { lte: cutoff } },
+      include: { worker: { select: { id: true, name: true } } },
+    });
+
+    const now = new Date();
+    return certs.map((cert) => ({
+      key: `worker_certification:${cert.id}`,
+      type: "worker_certification_expiring" as const,
+      severity: (cert.expiresAt < now ? "critical" : "warning") as Severity,
+      title: `${cert.name} — ${cert.worker.name}`,
+      body:
+        cert.expiresAt < now
+          ? `Expired ${cert.expiresAt.toLocaleDateString()}`
+          : `Expires ${cert.expiresAt.toLocaleDateString()}`,
+      link: `/team/${cert.worker.id}`,
+      occurredAt: cert.expiresAt,
+    }));
   }
 }

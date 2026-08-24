@@ -32,6 +32,9 @@ import { SubcontractorPortalModule } from "./subcontractor-portal/subcontractor-
 import { SafetyModule } from "./safety/safety.module";
 import { CommentsModule } from "./comments/comments.module";
 import { ResourcePlanningModule } from "./resource-planning/resource-planning.module";
+import { ChecklistTemplatesModule } from "./checklist-templates/checklist-templates.module";
+import { ScheduledReportsModule } from "./scheduled-reports/scheduled-reports.module";
+import { SlaEscalationModule } from "./sla-escalation/sla-escalation.module";
 
 @Module({
   imports: [
@@ -64,6 +67,9 @@ import { ResourcePlanningModule } from "./resource-planning/resource-planning.mo
     SafetyModule,
     CommentsModule,
     ResourcePlanningModule,
+    ChecklistTemplatesModule,
+    ScheduledReportsModule,
+    SlaEscalationModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

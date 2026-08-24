@@ -240,3 +240,24 @@ export function ResourcePlanningIcon(props: SVGProps<SVGSVGElement>) {
     </Icon>
   );
 }
+
+export function TemplatesIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <rect x="3" y="3" width="6" height="6" rx="1" />
+      <rect x="11" y="3" width="6" height="6" rx="1" />
+      <rect x="3" y="11" width="6" height="6" rx="1" />
+      <rect x="11" y="11" width="6" height="6" rx="1" />
+    </Icon>
+  );
+}
+
+export function SubcontractorsIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M6 8.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
+      <path d="M2 17c0-2.8 1.8-4.5 4-4.5s4 1.7 4 4.5" />
+      <path d="M13 3.5a2 2 0 0 1 0 4M17.5 17c0-2.3-1.4-3.8-3.5-4.2" />
+    </Icon>
+  );
+}

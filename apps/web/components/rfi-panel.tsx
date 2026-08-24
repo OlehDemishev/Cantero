@@ -6,6 +6,7 @@ import type { BulkActionResult, RfiPriority, RfiStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useBulkSelection } from "@/components/bulk-select";
 import { CommentsThread } from "@/components/comments-thread";
+import { TemplatePicker } from "@/components/template-picker";
 
 interface Rfi {
   id: string;
@@ -21,6 +22,7 @@ interface Rfi {
   answer: string | null;
   answeredByName: string | null;
   closedByName: string | null;
+  escalatedAt: string | null;
 }
 
 const STATUS_STYLES: Record<RfiStatus, string> = {
@@ -117,6 +119,7 @@ export function RfiPanel({ projectId }: { projectId: string }) {
 
       {creating && (
         <form onSubmit={submit} className="card mb-4 flex flex-col gap-3">
+          <TemplatePicker type="rfi" onSelect={(subject, body) => setForm((f) => ({ ...f, subject, question: body }))} />
           <label className="flex flex-col gap-1.5 text-sm">
             <span className="font-medium text-gray-700">{t("subject")}</span>
             <input
@@ -250,6 +253,11 @@ export function RfiPanel({ projectId }: { projectId: string }) {
                         {item.costImpact && (
                           <span className="rounded-full bg-error-50 px-2 py-0.5 text-xs font-medium text-error-700">
                             {t("costImpact")}
+                          </span>
+                        )}
+                        {item.escalatedAt && (
+                          <span className="rounded-full bg-error-50 px-2 py-0.5 text-xs font-medium text-error-700">
+                            {t("escalated")}
                           </span>
                         )}
                         {item.dueDate && <span className="text-xs text-gray-500">{new Date(item.dueDate).toLocaleDateString()}</span>}

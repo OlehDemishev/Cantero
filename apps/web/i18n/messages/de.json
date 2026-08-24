@@ -40,7 +40,9 @@
     "settings": "Einstellungen",
     "reports": "Berichte",
     "portfolio": "Portfolio",
-    "resourcePlanning": "Ressourcenplanung"
+    "resourcePlanning": "Ressourcenplanung",
+    "templates": "Vorlagen",
+    "subcontractors": "Subunternehmer"
   },
   "auth": {
     "signupTitle": "Cantero-Konto erstellen",
@@ -194,7 +196,12 @@
     "webhookEvent_warranty_claim_resolved": "Gewährleistungsfall behoben",
     "webhookEvent_warranty_claim_denied": "Gewährleistungsfall abgelehnt",
     "webhookEvent_client_won": "Kunde als gewonnen markiert",
-    "webhookEvent_client_lost": "Kunde als verloren markiert"
+    "webhookEvent_client_lost": "Kunde als verloren markiert",
+    "slaEscalation": "SLA-Eskalation",
+    "slaEscalationHint": "Anfragen (RFIs) und Mängelpunkte, die länger als diese Anzahl an Tagen offen bleiben, werden automatisch markiert und per E-Mail an den Firmeninhaber gemeldet. Leer lassen, um zu deaktivieren.",
+    "rfiSlaDays": "RFI-Tage",
+    "punchListSlaDays": "Mängelliste-Tage",
+    "slaDaysPlaceholder": "z. B. 5"
   },
   "projects": {
     "title": "Projekte",
@@ -268,7 +275,11 @@
     "laborCostReport": "Lohnkostenbericht",
     "noLaborCost": "Noch keine Lohnkosten erfasst.",
     "total": "Gesamt",
-    "confirmDeleteEntry": "Diesen Zeiteintrag löschen?"
+    "confirmDeleteEntry": "Diesen Zeiteintrag löschen?",
+    "certifications": "Zertifizierungen",
+    "noCertifications": "Keine Zertifizierungen hinterlegt.",
+    "certificationNamePlaceholder": "Name der Zertifizierung (z. B. OSHA 30, Staplerfahrer)",
+    "addCertification": "Zertifizierung hinzufügen"
   },
   "documents": {
     "title": "Dokumente",
@@ -707,7 +718,31 @@
     "net": "Saldo",
     "cumulativeNet": "Kumuliert",
     "week": "Woche",
-    "weekLabel": "W{n}"
+    "weekLabel": "W{n}",
+    "scheduledReports": "Geplante Berichte",
+    "scheduleName": "Name des Zeitplans",
+    "reportType": "Bericht",
+    "frequency": "Häufigkeit",
+    "recipientEmails": "Empfänger",
+    "recipientEmailsPlaceholder": "email1@beispiel.de, email2@beispiel.de",
+    "createSchedule": "Zeitplan erstellen",
+    "noScheduledReports": "Noch keine geplanten Berichte.",
+    "active": "Aktiv",
+    "paused": "Pausiert",
+    "nextRun": "Nächster Lauf {date}",
+    "lastSent": "Zuletzt gesendet {date}",
+    "sentNowConfirmation": "Gesendet!",
+    "sendNow": "Jetzt senden",
+    "pause": "Pausieren",
+    "resume": "Fortsetzen",
+    "reportType_overview": "Unternehmensübersicht",
+    "reportType_project_margins": "Projektmargen",
+    "reportType_warehouse_turnover": "Lagerumschlag",
+    "reportType_invoice_aging": "Rechnungsfälligkeit",
+    "reportType_portfolio": "Portfolio-Dashboard",
+    "reportType_cash_flow_forecast": "13-Wochen-Cashflow-Prognose",
+    "frequency_weekly": "Wöchentlich",
+    "frequency_monthly": "Monatlich"
   },
   "notifications": {
     "title": "Benachrichtigungen",
@@ -815,7 +850,10 @@
     "verifiedBy": "Geprüft von {name}",
     "resolvedBy": "Als behoben markiert von {name}",
     "bulkResolve": "Ausgewählte als erledigt markieren",
-    "bulkVerify": "Ausgewählte verifizieren"
+    "bulkVerify": "Ausgewählte verifizieren",
+    "applyTemplate": "Anwenden",
+    "selectTemplate": "Vorlage anwenden…",
+    "escalated": "Eskaliert"
   },
   "rfi": {
     "title": "Anfragen (RFI)",
@@ -839,7 +877,8 @@
     "close": "Schließen",
     "reopen": "Wieder öffnen",
     "closedBy": "Geschlossen von {name}",
-    "bulkClose": "Ausgewählte schließen"
+    "bulkClose": "Ausgewählte schließen",
+    "escalated": "Eskaliert"
   },
   "safety": {
     "title": "Arbeitssicherheit",
@@ -982,5 +1021,49 @@
     "calendar": "Kalender",
     "noAssignments": "Noch keine Zuweisungen.",
     "allAssignments": "Alle Zuweisungen"
+  },
+  "checklistTemplates": {
+    "title": "Vorlagen",
+    "subtitle": "Wiederverwendbare Checklisten und Starttexte für Mängelliste, RFIs und Sicherheitsunterweisungen.",
+    "newTemplate": "Neue Vorlage",
+    "templateType": "Vorlagentyp",
+    "templateName": "Vorlagenname",
+    "checklistItems": "Checklistenpunkte",
+    "itemTitlePlaceholder": "Titel des Punkts",
+    "itemLocationPlaceholder": "Ort (optional)",
+    "addItem": "+ Punkt",
+    "subject": "Betreff",
+    "question": "Frage",
+    "topic": "Thema",
+    "notes": "Notizen",
+    "noTemplates": "Noch keine Vorlagen.",
+    "itemCount": "{count} Punkt(e)",
+    "useTemplate": "Vorlage verwenden…",
+    "punch_list": "Mängelliste",
+    "rfi": "RFI",
+    "safety_briefing": "Sicherheitsunterweisung"
+  },
+  "subcontractorCompliance": {
+    "title": "Subunternehmer",
+    "complianceSubtitle": "Versicherungs- und Lizenzdokumente im Bestand — ohne gültige Betriebshaftpflicht- und Berufsgenossenschaftsversicherung kann ein Subunternehmer keinem Projekt zugewiesen werden.",
+    "newSubcontractor": "Neuer Subunternehmer",
+    "noSubcontractors": "Noch keine Subunternehmer.",
+    "compliant": "Konform",
+    "nonCompliant": "Nicht konform",
+    "documents": "Dokumente",
+    "noDocuments": "Keine Dokumente hinterlegt.",
+    "documentNamePlaceholder": "Dokumentname / Policennummer",
+    "addDocument": "Dokument hinzufügen",
+    "validUntil": "Gültig bis {date}",
+    "expiredOn": "Abgelaufen am {date}",
+    "missing": "Fehlt",
+    "general_liability_insurance": "Betriebshaftpflichtversicherung",
+    "workers_comp_insurance": "Berufsgenossenschaftsversicherung",
+    "license": "Lizenz",
+    "other": "Sonstiges"
+  },
+  "weather": {
+    "title": "Wettervorhersage",
+    "riskWarning": "{count, plural, one {# Tag mit riskantem Wetter voraus} other {# Tage mit riskantem Wetter voraus}}"
   }
 }

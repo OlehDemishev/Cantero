@@ -40,7 +40,9 @@
     "settings": "Налаштування",
     "reports": "Звіти",
     "portfolio": "Портфоліо",
-    "resourcePlanning": "Планування ресурсів"
+    "resourcePlanning": "Планування ресурсів",
+    "templates": "Шаблони",
+    "subcontractors": "Субпідрядники"
   },
   "auth": {
     "signupTitle": "Створіть обліковий запис Cantero",
@@ -194,7 +196,12 @@
     "webhookEvent_warranty_claim_resolved": "Гарантійне звернення усунено",
     "webhookEvent_warranty_claim_denied": "Гарантійне звернення відхилено",
     "webhookEvent_client_won": "Клієнта позначено як виграного",
-    "webhookEvent_client_lost": "Клієнта позначено як втраченого"
+    "webhookEvent_client_lost": "Клієнта позначено як втраченого",
+    "slaEscalation": "Ескалація SLA",
+    "slaEscalationHint": "Запити RFI та пункти переліку недоробок, що залишаються відкритими довше цієї кількості днів, автоматично позначаються та надсилаються електронною поштою власнику компанії. Залиште порожнім, щоб вимкнути.",
+    "rfiSlaDays": "Дні RFI",
+    "punchListSlaDays": "Дні переліку недоробок",
+    "slaDaysPlaceholder": "напр. 5"
   },
   "projects": {
     "title": "Проєкти",
@@ -268,7 +275,11 @@
     "laborCostReport": "Звіт про витрати на працю",
     "noLaborCost": "Витрат на працю ще не зафіксовано.",
     "total": "Разом",
-    "confirmDeleteEntry": "Видалити цей запис часу?"
+    "confirmDeleteEntry": "Видалити цей запис часу?",
+    "certifications": "Сертифікати",
+    "noCertifications": "Немає сертифікатів у картотеці.",
+    "certificationNamePlaceholder": "Назва сертифіката (напр. OSHA 30, оператор навантажувача)",
+    "addCertification": "Додати сертифікат"
   },
   "documents": {
     "title": "Документи",
@@ -707,7 +718,31 @@
     "net": "Баланс",
     "cumulativeNet": "Накопичено",
     "week": "Тиждень",
-    "weekLabel": "Т{n}"
+    "weekLabel": "Т{n}",
+    "scheduledReports": "Заплановані звіти",
+    "scheduleName": "Назва розкладу",
+    "reportType": "Звіт",
+    "frequency": "Періодичність",
+    "recipientEmails": "Отримувачі",
+    "recipientEmailsPlaceholder": "email1@example.com, email2@example.com",
+    "createSchedule": "Створити розклад",
+    "noScheduledReports": "Поки немає запланованих звітів.",
+    "active": "Активний",
+    "paused": "Призупинено",
+    "nextRun": "Наступний запуск {date}",
+    "lastSent": "Востаннє надіслано {date}",
+    "sentNowConfirmation": "Надіслано!",
+    "sendNow": "Надіслати зараз",
+    "pause": "Призупинити",
+    "resume": "Відновити",
+    "reportType_overview": "Огляд компанії",
+    "reportType_project_margins": "Маржа проєктів",
+    "reportType_warehouse_turnover": "Оборотність складу",
+    "reportType_invoice_aging": "Простроченість рахунків",
+    "reportType_portfolio": "Портфельна панель",
+    "reportType_cash_flow_forecast": "13-тижневий прогноз грошового потоку",
+    "frequency_weekly": "Щотижня",
+    "frequency_monthly": "Щомісяця"
   },
   "notifications": {
     "title": "Сповіщення",
@@ -815,7 +850,10 @@
     "verifiedBy": "Перевірено: {name}",
     "resolvedBy": "Позначено усуненим: {name}",
     "bulkResolve": "Позначити вибрані як вирішені",
-    "bulkVerify": "Перевірити вибрані"
+    "bulkVerify": "Перевірити вибрані",
+    "applyTemplate": "Застосувати",
+    "selectTemplate": "Застосувати шаблон…",
+    "escalated": "Ескальовано"
   },
   "rfi": {
     "title": "Запити на уточнення (RFI)",
@@ -839,7 +877,8 @@
     "close": "Закрити",
     "reopen": "Відкрити знову",
     "closedBy": "Закрито: {name}",
-    "bulkClose": "Закрити вибрані"
+    "bulkClose": "Закрити вибрані",
+    "escalated": "Ескальовано"
   },
   "safety": {
     "title": "Охорона праці",
@@ -982,5 +1021,49 @@
     "calendar": "Календар",
     "noAssignments": "Поки немає призначень.",
     "allAssignments": "Усі призначення"
+  },
+  "checklistTemplates": {
+    "title": "Шаблони",
+    "subtitle": "Багаторазові чек-листи та початкові тексти для списку дефектів, RFI та інструктажів з ТБ.",
+    "newTemplate": "Новий шаблон",
+    "templateType": "Тип шаблону",
+    "templateName": "Назва шаблону",
+    "checklistItems": "Пункти чек-листа",
+    "itemTitlePlaceholder": "Назва пункту",
+    "itemLocationPlaceholder": "Місце (необов'язково)",
+    "addItem": "+ Пункт",
+    "subject": "Тема",
+    "question": "Питання",
+    "topic": "Тема",
+    "notes": "Примітки",
+    "noTemplates": "Поки немає шаблонів.",
+    "itemCount": "{count} пункт(и/ів)",
+    "useTemplate": "Використати шаблон…",
+    "punch_list": "Список дефектів",
+    "rfi": "RFI",
+    "safety_briefing": "Інструктаж з ТБ"
+  },
+  "subcontractorCompliance": {
+    "title": "Субпідрядники",
+    "complianceSubtitle": "Страхові та ліцензійні документи в картотеці — субпідрядника не можна призначити на проєкт без чинного страхування цивільної відповідальності та страхування від нещасних випадків на виробництві.",
+    "newSubcontractor": "Новий субпідрядник",
+    "noSubcontractors": "Поки немає субпідрядників.",
+    "compliant": "Відповідає вимогам",
+    "nonCompliant": "Не відповідає вимогам",
+    "documents": "Документи",
+    "noDocuments": "Немає документів у картотеці.",
+    "documentNamePlaceholder": "Назва документа / номер полісу",
+    "addDocument": "Додати документ",
+    "validUntil": "Дійсний до {date}",
+    "expiredOn": "Закінчився {date}",
+    "missing": "Відсутній",
+    "general_liability_insurance": "Страхування цивільної відповідальності",
+    "workers_comp_insurance": "Страхування від нещасних випадків",
+    "license": "Ліцензія",
+    "other": "Інше"
+  },
+  "weather": {
+    "title": "Прогноз погоди",
+    "riskWarning": "{count, plural, one {# день з ризикованою погодою попереду} few {# дні з ризикованою погодою попереду} many {# днів з ризикованою погодою попереду} other {# дня з ризикованою погодою попереду}}"
   }
 }

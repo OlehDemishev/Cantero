@@ -1,7 +1,9 @@
-import { Body, Controller, Get, Param, Patch, Post } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post } from "@nestjs/common";
 import {
+  addWorkerCertificationSchema,
   createWorkerSchema,
   updateWorkerSchema,
+  type AddWorkerCertificationInput,
   type AuthUser,
   type CreateWorkerInput,
   type UpdateWorkerInput,
@@ -43,5 +45,28 @@ export class WorkersController {
     @Body(new ZodValidationPipe(updateWorkerSchema)) body: UpdateWorkerInput,
   ) {
     return this.service.update(user.companyId, { userId: user.userId, name: user.name }, id, body);
+  }
+
+  @Get(":id/certifications")
+  listCertifications(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.listCertifications(user.companyId, id);
+  }
+
+  @Post(":id/certifications")
+  addCertification(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(addWorkerCertificationSchema)) body: AddWorkerCertificationInput,
+  ) {
+    return this.service.addCertification(user.companyId, { userId: user.userId, name: user.name }, id, body);
+  }
+
+  @Delete(":id/certifications/:certificationId")
+  removeCertification(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Param("certificationId") certificationId: string,
+  ) {
+    return this.service.deleteCertification(user.companyId, id, certificationId);
   }
 }

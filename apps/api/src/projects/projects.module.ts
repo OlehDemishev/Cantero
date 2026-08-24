@@ -15,8 +15,10 @@ import { SubmittalsController } from "./submittals.controller";
 import { SubmittalsService } from "./submittals.service";
 import { WarrantyClaimsController } from "./warranty-claims.controller";
 import { WarrantyClaimsService } from "./warranty-claims.service";
+import { WeatherModule } from "../weather/weather.module";
 
 @Module({
+  imports: [WeatherModule],
   controllers: [
     ProjectsController,
     TasksController,
@@ -37,6 +39,6 @@ import { WarrantyClaimsService } from "./warranty-claims.service";
     SubmittalsService,
     WarrantyClaimsService,
   ],
-  exports: [ProjectsService],
+  exports: [ProjectsService, PunchListService],
 })
 export class ProjectsModule {}

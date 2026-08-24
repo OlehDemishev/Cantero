@@ -40,7 +40,9 @@
     "settings": "Ustawienia",
     "reports": "Raporty",
     "portfolio": "Portfolio",
-    "resourcePlanning": "Planowanie zasobów"
+    "resourcePlanning": "Planowanie zasobów",
+    "templates": "Szablony",
+    "subcontractors": "Podwykonawcy"
   },
   "auth": {
     "signupTitle": "Utwórz konto Cantero",
@@ -194,7 +196,12 @@
     "webhookEvent_warranty_claim_resolved": "Usunięto roszczenie gwarancyjne",
     "webhookEvent_warranty_claim_denied": "Odrzucono roszczenie gwarancyjne",
     "webhookEvent_client_won": "Klient oznaczony jako wygrany",
-    "webhookEvent_client_lost": "Klient oznaczony jako utracony"
+    "webhookEvent_client_lost": "Klient oznaczony jako utracony",
+    "slaEscalation": "Eskalacja SLA",
+    "slaEscalationHint": "Zapytania RFI i pozycje listy usterek pozostawione otwarte dłużej niż podana liczba dni są automatycznie oznaczane i zgłaszane e-mailem do właściciela firmy. Pozostaw puste, aby wyłączyć.",
+    "rfiSlaDays": "Dni RFI",
+    "punchListSlaDays": "Dni listy usterek",
+    "slaDaysPlaceholder": "np. 5"
   },
   "projects": {
     "title": "Projekty",
@@ -268,7 +275,11 @@
     "laborCostReport": "Raport kosztów pracy",
     "noLaborCost": "Brak zarejestrowanych kosztów pracy.",
     "total": "Razem",
-    "confirmDeleteEntry": "Usunąć ten wpis czasu pracy?"
+    "confirmDeleteEntry": "Usunąć ten wpis czasu pracy?",
+    "certifications": "Certyfikaty",
+    "noCertifications": "Brak certyfikatów w kartotece.",
+    "certificationNamePlaceholder": "Nazwa certyfikatu (np. OSHA 30, operator wózka widłowego)",
+    "addCertification": "Dodaj certyfikat"
   },
   "documents": {
     "title": "Dokumenty",
@@ -707,7 +718,31 @@
     "net": "Saldo",
     "cumulativeNet": "Skumulowane",
     "week": "Tydzień",
-    "weekLabel": "T{n}"
+    "weekLabel": "T{n}",
+    "scheduledReports": "Zaplanowane raporty",
+    "scheduleName": "Nazwa harmonogramu",
+    "reportType": "Raport",
+    "frequency": "Częstotliwość",
+    "recipientEmails": "Odbiorcy",
+    "recipientEmailsPlaceholder": "email1@przyklad.pl, email2@przyklad.pl",
+    "createSchedule": "Utwórz harmonogram",
+    "noScheduledReports": "Brak zaplanowanych raportów.",
+    "active": "Aktywny",
+    "paused": "Wstrzymany",
+    "nextRun": "Następne uruchomienie {date}",
+    "lastSent": "Ostatnio wysłano {date}",
+    "sentNowConfirmation": "Wysłano!",
+    "sendNow": "Wyślij teraz",
+    "pause": "Wstrzymaj",
+    "resume": "Wznów",
+    "reportType_overview": "Przegląd firmy",
+    "reportType_project_margins": "Marże projektów",
+    "reportType_warehouse_turnover": "Rotacja magazynu",
+    "reportType_invoice_aging": "Wiekowanie faktur",
+    "reportType_portfolio": "Panel portfela",
+    "reportType_cash_flow_forecast": "13-tygodniowa prognoza przepływów pieniężnych",
+    "frequency_weekly": "Co tydzień",
+    "frequency_monthly": "Co miesiąc"
   },
   "notifications": {
     "title": "Powiadomienia",
@@ -815,7 +850,10 @@
     "verifiedBy": "Zweryfikowane przez {name}",
     "resolvedBy": "Oznaczone jako usunięte przez {name}",
     "bulkResolve": "Oznacz wybrane jako rozwiązane",
-    "bulkVerify": "Zweryfikuj wybrane"
+    "bulkVerify": "Zweryfikuj wybrane",
+    "applyTemplate": "Zastosuj",
+    "selectTemplate": "Zastosuj szablon…",
+    "escalated": "Eskalowano"
   },
   "rfi": {
     "title": "Zapytania (RFI)",
@@ -839,7 +877,8 @@
     "close": "Zamknij",
     "reopen": "Otwórz ponownie",
     "closedBy": "Zamknięte przez {name}",
-    "bulkClose": "Zamknij wybrane"
+    "bulkClose": "Zamknij wybrane",
+    "escalated": "Eskalowano"
   },
   "safety": {
     "title": "Bezpieczeństwo",
@@ -982,5 +1021,49 @@
     "calendar": "Kalendarz",
     "noAssignments": "Brak przypisań.",
     "allAssignments": "Wszystkie przypisania"
+  },
+  "checklistTemplates": {
+    "title": "Szablony",
+    "subtitle": "Wielokrotnego użytku listy kontrolne i teksty startowe dla listy usterek, RFI i odpraw BHP.",
+    "newTemplate": "Nowy szablon",
+    "templateType": "Typ szablonu",
+    "templateName": "Nazwa szablonu",
+    "checklistItems": "Pozycje listy kontrolnej",
+    "itemTitlePlaceholder": "Tytuł pozycji",
+    "itemLocationPlaceholder": "Lokalizacja (opcjonalnie)",
+    "addItem": "+ Pozycja",
+    "subject": "Temat",
+    "question": "Pytanie",
+    "topic": "Temat",
+    "notes": "Notatki",
+    "noTemplates": "Brak szablonów.",
+    "itemCount": "{count} pozycja/e",
+    "useTemplate": "Użyj szablonu…",
+    "punch_list": "Lista usterek",
+    "rfi": "RFI",
+    "safety_briefing": "Odprawa BHP"
+  },
+  "subcontractorCompliance": {
+    "title": "Podwykonawcy",
+    "complianceSubtitle": "Dokumenty ubezpieczeniowe i licencyjne w kartotece — podwykonawcy nie można przypisać do projektu bez aktualnego ubezpieczenia OC i ubezpieczenia wypadkowego pracowników.",
+    "newSubcontractor": "Nowy podwykonawca",
+    "noSubcontractors": "Brak podwykonawców.",
+    "compliant": "Zgodny",
+    "nonCompliant": "Niezgodny",
+    "documents": "Dokumenty",
+    "noDocuments": "Brak dokumentów w kartotece.",
+    "documentNamePlaceholder": "Nazwa dokumentu / numer polisy",
+    "addDocument": "Dodaj dokument",
+    "validUntil": "Ważne do {date}",
+    "expiredOn": "Wygasło {date}",
+    "missing": "Brak",
+    "general_liability_insurance": "Ubezpieczenie OC",
+    "workers_comp_insurance": "Ubezpieczenie wypadkowe pracowników",
+    "license": "Licencja",
+    "other": "Inne"
+  },
+  "weather": {
+    "title": "Prognoza pogody",
+    "riskWarning": "{count, plural, one {# dzień z ryzykowną pogodą} few {# dni z ryzykowną pogodą} many {# dni z ryzykowną pogodą} other {# dnia z ryzykowną pogodą}}"
   }
 }

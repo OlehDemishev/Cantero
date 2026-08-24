@@ -12,6 +12,10 @@ interface Worker {
   id: string;
   name: string;
 }
+interface Template {
+  id: string;
+  name: string;
+}
 interface PunchListItem {
   id: string;
   title: string;
@@ -23,6 +27,7 @@ interface PunchListItem {
   createdByName: string;
   resolvedByName: string | null;
   verifiedByName: string | null;
+  escalatedAt: string | null;
 }
 
 const STATUS_STYLES: Record<PunchListItemStatus, string> = {
@@ -38,6 +43,8 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
 
   const [items, setItems] = useState<PunchListItem[] | null>(null);
   const [workers, setWorkers] = useState<Worker[]>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", location: "", assigneeWorkerId: "", dueDate: "" });
   const [busy, setBusy] = useState(false);
@@ -50,8 +57,25 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
   useEffect(() => {
     load();
     apiFetch<Worker[]>("/workers").then(setWorkers);
+    apiFetch<Template[]>("/checklist-templates?type=punch_list").then(setTemplates);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
+
+  async function applyTemplate() {
+    if (!selectedTemplateId) return;
+    setBusy(true);
+    try {
+      const result = await apiFetch<BulkActionResult>(`/checklist-templates/${selectedTemplateId}/apply`, {
+        method: "POST",
+        body: JSON.stringify({ projectId }),
+      });
+      bulk.setResult(result);
+      setSelectedTemplateId("");
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -93,11 +117,34 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
     <div className="mt-10">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-gray-700">{t("title")}</h2>
-        {!creating && (
-          <button onClick={() => setCreating(true)} className="btn-secondary px-3 py-1 text-xs">
-            {t("newItem")}
-          </button>
-        )}
+        <div className="flex items-center gap-1.5">
+          {templates.length > 0 && (
+            <>
+              <select
+                className="input w-auto py-1 text-xs"
+                value={selectedTemplateId}
+                onChange={(e) => setSelectedTemplateId(e.target.value)}
+              >
+                <option value="">{t("selectTemplate")}</option>
+                {templates.map((tpl) => (
+                  <option key={tpl.id} value={tpl.id}>
+                    {tpl.name}
+                  </option>
+                ))}
+              </select>
+              {selectedTemplateId && (
+                <button onClick={applyTemplate} disabled={busy} className="btn-secondary px-2.5 py-1 text-xs">
+                  {t("applyTemplate")}
+                </button>
+              )}
+            </>
+          )}
+          {!creating && (
+            <button onClick={() => setCreating(true)} className="btn-secondary px-3 py-1 text-xs">
+              {t("newItem")}
+            </button>
+          )}
+        </div>
       </div>
 
       {creating && (
@@ -214,6 +261,11 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[item.status]}`}>
                       {t(item.status)}
                     </span>
+                    {item.escalatedAt && (
+                      <span className="rounded-full bg-error-50 px-2 py-0.5 text-xs font-medium text-error-700">
+                        {t("escalated")}
+                      </span>
+                    )}
                   </div>
                   <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-gray-500">
                     {item.location && <span>{item.location}</span>}

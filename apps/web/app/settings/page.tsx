@@ -14,6 +14,8 @@ interface Company {
   brandColor: string | null;
   approvalThresholdAmount: string | null;
   requiredApprovalCount: number;
+  rfiSlaDays: number | null;
+  punchListSlaDays: number | null;
 }
 interface Plan {
   id: string;
@@ -82,12 +84,16 @@ export default function SettingsPage() {
     brandColor: string | null;
     approvalThresholdAmount: string;
     requiredApprovalCount: string;
+    rfiSlaDays: string;
+    punchListSlaDays: string;
   }>({
     name: "",
     locale: "en",
     brandColor: null,
     approvalThresholdAmount: "",
     requiredApprovalCount: "1",
+    rfiSlaDays: "",
+    punchListSlaDays: "",
   });
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [logoBusy, setLogoBusy] = useState(false);
@@ -129,6 +135,8 @@ export default function SettingsPage() {
         brandColor: c.brandColor,
         approvalThresholdAmount: c.approvalThresholdAmount ?? "",
         requiredApprovalCount: String(c.requiredApprovalCount),
+        rfiSlaDays: c.rfiSlaDays !== null ? String(c.rfiSlaDays) : "",
+        punchListSlaDays: c.punchListSlaDays !== null ? String(c.punchListSlaDays) : "",
       }),
     );
     loadLogo();
@@ -190,6 +198,8 @@ export default function SettingsPage() {
           brandColor: companyForm.brandColor,
           approvalThresholdAmount: companyForm.approvalThresholdAmount ? Number(companyForm.approvalThresholdAmount) : null,
           requiredApprovalCount: Number(companyForm.requiredApprovalCount) || 1,
+          rfiSlaDays: companyForm.rfiSlaDays ? Number(companyForm.rfiSlaDays) : null,
+          punchListSlaDays: companyForm.punchListSlaDays ? Number(companyForm.punchListSlaDays) : null,
         }),
       });
       document.cookie = `NEXT_LOCALE=${companyForm.locale};path=/;max-age=31536000`;
@@ -444,6 +454,38 @@ export default function SettingsPage() {
                     value={companyForm.requiredApprovalCount}
                     onChange={(e) => setCompanyForm((f) => ({ ...f, requiredApprovalCount: e.target.value }))}
                     disabled={!isManager || !companyForm.approvalThresholdAmount}
+                  />
+                </label>
+              </div>
+            </div>
+            <div className="border-t border-gray-100 pt-3">
+              <p className="mb-2 text-xs font-medium text-gray-700">{t("slaEscalation")}</p>
+              <p className="mb-2 text-xs text-gray-500">{t("slaEscalationHint")}</p>
+              <div className="flex gap-2">
+                <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500">
+                  {t("rfiSlaDays")}
+                  <input
+                    type="number"
+                    min="1"
+                    max="365"
+                    placeholder={t("slaDaysPlaceholder")}
+                    className="input"
+                    value={companyForm.rfiSlaDays}
+                    onChange={(e) => setCompanyForm((f) => ({ ...f, rfiSlaDays: e.target.value }))}
+                    disabled={!isManager}
+                  />
+                </label>
+                <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500">
+                  {t("punchListSlaDays")}
+                  <input
+                    type="number"
+                    min="1"
+                    max="365"
+                    placeholder={t("slaDaysPlaceholder")}
+                    className="input"
+                    value={companyForm.punchListSlaDays}
+                    onChange={(e) => setCompanyForm((f) => ({ ...f, punchListSlaDays: e.target.value }))}
+                    disabled={!isManager}
                   />
                 </label>
               </div>

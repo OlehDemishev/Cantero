@@ -33,6 +33,16 @@ export const assignSubcontractorSchema = z.object({
 });
 export type AssignSubcontractorInput = z.infer<typeof assignSubcontractorSchema>;
 
+export const SUBCONTRACTOR_DOCUMENT_TYPES = ["general_liability_insurance", "workers_comp_insurance", "license", "other"] as const;
+export type SubcontractorDocumentType = (typeof SUBCONTRACTOR_DOCUMENT_TYPES)[number];
+
+export const addSubcontractorDocumentSchema = z.object({
+  type: z.enum(SUBCONTRACTOR_DOCUMENT_TYPES),
+  name: z.string().min(1).max(160),
+  expiresAt: z.string().datetime(),
+});
+export type AddSubcontractorDocumentInput = z.infer<typeof addSubcontractorDocumentSchema>;
+
 export const createSubcontractorCostSchema = z.object({
   subcontractorId: z.string().uuid(),
   projectId: z.string().uuid(),

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { INCIDENT_SEVERITIES, type IncidentSeverity } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { PhotoAttachments } from "@/components/photo-attachments";
+import { TemplatePicker } from "@/components/template-picker";
 
 interface Worker {
   id: string;
@@ -260,6 +261,10 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
 
       {creatingBriefing && (
         <form onSubmit={submitBriefing} className="card mb-4 flex flex-col gap-3">
+          <TemplatePicker
+            type="safety_briefing"
+            onSelect={(subject, body) => setBriefingForm((f) => ({ ...f, topic: subject, notes: body }))}
+          />
           <div className="flex gap-3">
             <label className="flex flex-1 flex-col gap-1.5 text-sm">
               <span className="font-medium text-gray-700">{t("topic")}</span>

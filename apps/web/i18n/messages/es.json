@@ -40,7 +40,9 @@
     "settings": "Ajustes",
     "reports": "Informes",
     "portfolio": "Portafolio",
-    "resourcePlanning": "Planificación de recursos"
+    "resourcePlanning": "Planificación de recursos",
+    "templates": "Plantillas",
+    "subcontractors": "Subcontratistas"
   },
   "auth": {
     "signupTitle": "Crea tu cuenta de Cantero",
@@ -194,7 +196,12 @@
     "webhookEvent_warranty_claim_resolved": "Reclamación de garantía resuelta",
     "webhookEvent_warranty_claim_denied": "Reclamación de garantía rechazada",
     "webhookEvent_client_won": "Cliente marcado como ganado",
-    "webhookEvent_client_lost": "Cliente marcado como perdido"
+    "webhookEvent_client_lost": "Cliente marcado como perdido",
+    "slaEscalation": "Escalado de SLA",
+    "slaEscalationHint": "Las RFI y los elementos de la lista de pendientes que permanezcan abiertos más de este número de días se marcan automáticamente y se notifican por correo electrónico al propietario de la empresa. Déjalo en blanco para desactivar.",
+    "rfiSlaDays": "Días de RFI",
+    "punchListSlaDays": "Días de lista de pendientes",
+    "slaDaysPlaceholder": "p. ej. 5"
   },
   "projects": {
     "title": "Proyectos",
@@ -268,7 +275,11 @@
     "laborCostReport": "Informe de costo laboral",
     "noLaborCost": "Aún no se han registrado costos laborales.",
     "total": "Total",
-    "confirmDeleteEntry": "¿Eliminar este registro de horas?"
+    "confirmDeleteEntry": "¿Eliminar este registro de horas?",
+    "certifications": "Certificaciones",
+    "noCertifications": "No hay certificaciones registradas.",
+    "certificationNamePlaceholder": "Nombre de la certificación (p. ej. OSHA 30, operador de montacargas)",
+    "addCertification": "Agregar certificación"
   },
   "documents": {
     "title": "Documentos",
@@ -707,7 +718,31 @@
     "net": "Saldo",
     "cumulativeNet": "Acumulado",
     "week": "Semana",
-    "weekLabel": "S{n}"
+    "weekLabel": "S{n}",
+    "scheduledReports": "Informes programados",
+    "scheduleName": "Nombre de la programación",
+    "reportType": "Informe",
+    "frequency": "Frecuencia",
+    "recipientEmails": "Destinatarios",
+    "recipientEmailsPlaceholder": "email1@ejemplo.com, email2@ejemplo.com",
+    "createSchedule": "Crear programación",
+    "noScheduledReports": "Aún no hay informes programados.",
+    "active": "Activo",
+    "paused": "Pausado",
+    "nextRun": "Próxima ejecución {date}",
+    "lastSent": "Último envío {date}",
+    "sentNowConfirmation": "¡Enviado!",
+    "sendNow": "Enviar ahora",
+    "pause": "Pausar",
+    "resume": "Reanudar",
+    "reportType_overview": "Resumen de la empresa",
+    "reportType_project_margins": "Márgenes de proyecto",
+    "reportType_warehouse_turnover": "Rotación de almacén",
+    "reportType_invoice_aging": "Antigüedad de facturas",
+    "reportType_portfolio": "Panel de cartera",
+    "reportType_cash_flow_forecast": "Previsión de flujo de caja a 13 semanas",
+    "frequency_weekly": "Semanal",
+    "frequency_monthly": "Mensual"
   },
   "notifications": {
     "title": "Notificaciones",
@@ -815,7 +850,10 @@
     "verifiedBy": "Verificado por {name}",
     "resolvedBy": "Marcado como resuelto por {name}",
     "bulkResolve": "Resolver seleccionados",
-    "bulkVerify": "Verificar seleccionados"
+    "bulkVerify": "Verificar seleccionados",
+    "applyTemplate": "Aplicar",
+    "selectTemplate": "Aplicar plantilla…",
+    "escalated": "Escalado"
   },
   "rfi": {
     "title": "Solicitudes de información (RFI)",
@@ -839,7 +877,8 @@
     "close": "Cerrar",
     "reopen": "Reabrir",
     "closedBy": "Cerrada por {name}",
-    "bulkClose": "Cerrar seleccionados"
+    "bulkClose": "Cerrar seleccionados",
+    "escalated": "Escalado"
   },
   "safety": {
     "title": "Seguridad",
@@ -982,5 +1021,49 @@
     "calendar": "Calendario",
     "noAssignments": "Aún no hay asignaciones.",
     "allAssignments": "Todas las asignaciones"
+  },
+  "checklistTemplates": {
+    "title": "Plantillas",
+    "subtitle": "Listas de verificación y textos iniciales reutilizables para la lista de defectos, RFI e instrucciones de seguridad.",
+    "newTemplate": "Nueva plantilla",
+    "templateType": "Tipo de plantilla",
+    "templateName": "Nombre de la plantilla",
+    "checklistItems": "Elementos de la lista",
+    "itemTitlePlaceholder": "Título del elemento",
+    "itemLocationPlaceholder": "Ubicación (opcional)",
+    "addItem": "+ Elemento",
+    "subject": "Asunto",
+    "question": "Pregunta",
+    "topic": "Tema",
+    "notes": "Notas",
+    "noTemplates": "Aún no hay plantillas.",
+    "itemCount": "{count} elemento(s)",
+    "useTemplate": "Usar plantilla…",
+    "punch_list": "Lista de defectos",
+    "rfi": "RFI",
+    "safety_briefing": "Instrucción de seguridad"
+  },
+  "subcontractorCompliance": {
+    "title": "Subcontratistas",
+    "complianceSubtitle": "Documentos de seguro y licencia en archivo — un subcontratista no puede asignarse a un proyecto sin seguro de responsabilidad civil y de accidentes laborales vigentes.",
+    "newSubcontractor": "Nuevo subcontratista",
+    "noSubcontractors": "Aún no hay subcontratistas.",
+    "compliant": "Conforme",
+    "nonCompliant": "No conforme",
+    "documents": "Documentos",
+    "noDocuments": "No hay documentos registrados.",
+    "documentNamePlaceholder": "Nombre del documento / número de póliza",
+    "addDocument": "Agregar documento",
+    "validUntil": "Válido hasta {date}",
+    "expiredOn": "Vencido el {date}",
+    "missing": "Falta",
+    "general_liability_insurance": "Seguro de responsabilidad civil general",
+    "workers_comp_insurance": "Seguro de accidentes laborales",
+    "license": "Licencia",
+    "other": "Otro"
+  },
+  "weather": {
+    "title": "Pronóstico del tiempo",
+    "riskWarning": "{count, plural, one {# día con clima de riesgo por delante} other {# días con clima de riesgo por delante}}"
   }
 }

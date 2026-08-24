@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import type { CreateDailyLogInput, UpdateDailyLogInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
+import { WeatherService } from "../weather/weather.service";
 
 /** Normalizes any time-of-day to UTC midnight so `date` behaves as a calendar day for the unique constraint. */
 function toCalendarDay(iso: string): Date {
@@ -14,6 +15,7 @@ export class DailyLogsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly weather: WeatherService,
   ) {}
 
   async listForProject(companyId: string, projectId: string) {
@@ -36,6 +38,16 @@ export class DailyLogsService {
     });
     if (existing) throw new BadRequestException("A daily log already exists for this date — edit it instead");
 
+    let weatherCondition = input.weatherCondition;
+    let weatherNotes = input.weatherNotes;
+    if (!weatherCondition && project.address) {
+      const forecast = await this.weather.forecastForDate(project.address, date);
+      if (forecast) {
+        weatherCondition = forecast.condition;
+        weatherNotes = weatherNotes ?? `Auto-filled from forecast: ${forecast.tempMinC}–${forecast.tempMaxC}°C`;
+      }
+    }
+
     const log = await this.prisma.dailyLog.create({
       data: {
         companyId,
@@ -43,8 +55,8 @@ export class DailyLogsService {
         date,
         authorUserId: actor.userId,
         authorName: actor.name,
-        weatherCondition: input.weatherCondition,
-        weatherNotes: input.weatherNotes,
+        weatherCondition,
+        weatherNotes,
         crewCount: input.crewCount,
         crewNotes: input.crewNotes,
         workPerformed: input.workPerformed,

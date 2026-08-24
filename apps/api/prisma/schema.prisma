@@ -151,6 +151,10 @@ model Company {
   /// approvals before they can be finalized — null disables the chain (single-click approve).
   approvalThresholdAmount Decimal? @db.Decimal(14, 2)
   requiredApprovalCount   Int      @default(1)
+  /// Days after creation an open RFI/punch list item may stay unanswered/unresolved before
+  /// it's auto-escalated (flagged + emailed to the company owner) — null disables escalation.
+  rfiSlaDays        Int?
+  punchListSlaDays  Int?
 
   memberships  Membership[]
   invites      Invite[]
@@ -186,6 +190,10 @@ model Company {
   warrantyClaims       WarrantyClaim[]
   comments             Comment[]
   resourceAssignments  ResourceAssignment[]
+  checklistTemplates   ChecklistTemplate[]
+  subcontractorDocuments SubcontractorDocument[]
+  workerCertifications WorkerCertification[]
+  scheduledReports     ScheduledReport[]
 
   @@map("companies")
 }
@@ -959,6 +967,7 @@ model PunchListItem {
   verifiedByUserId String?
   verifiedByName   String?
   createdAt      DateTime            @default(now())
+  escalatedAt      DateTime?
 
   company  Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   project  Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -997,6 +1006,7 @@ model Rfi {
   closedByUserId     String?
   closedByName       String?
   createdAt          DateTime    @default(now())
+  escalatedAt        DateTime?
 
   company  Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   project  Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -1144,9 +1154,95 @@ model Subcontractor {
   costs       SubcontractorCost[]
   assignments SubcontractorAssignment[]
   portalLoginTokens SubcontractorPortalLoginToken[]
+  documents   SubcontractorDocument[]
 
   @@index([companyId])
   @@map("subcontractors")
+}
+
+enum SubcontractorDocumentType {
+  general_liability_insurance
+  workers_comp_insurance
+  license
+  other
+}
+
+/// An insurance certificate or license on file for a subcontractor, with an expiration date.
+/// SubcontractorsService.assign() checks for a current (non-expired) general_liability_insurance
+/// and workers_comp_insurance document before allowing a project assignment — the two documents
+/// virtually every jurisdiction requires before a sub can legally work on a job site.
+model SubcontractorDocument {
+  id              String                    @id @default(uuid())
+  companyId       String
+  subcontractorId String
+  type            SubcontractorDocumentType
+  name            String
+  expiresAt       DateTime
+  createdAt       DateTime                  @default(now())
+
+  company       Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  subcontractor Subcontractor @relation(fields: [subcontractorId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([subcontractorId])
+  @@map("subcontractor_documents")
+}
+
+/// A safety/skills certification on file for an internal Worker (OSHA 30, forklift operator,
+/// first aid/CPR, confined space, etc.) with an expiration date. Unlike SubcontractorDocument,
+/// there's no single fixed pair of universally-required types here — certifications vary too
+/// widely by trade and jurisdiction — so this is tracking + expiry notifications only, not a
+/// hard gate on any one action.
+model WorkerCertification {
+  id        String   @id @default(uuid())
+  companyId String
+  workerId  String
+  name      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  worker  Worker  @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([workerId])
+  @@map("worker_certifications")
+}
+
+enum ScheduledReportType {
+  overview
+  project_margins
+  warehouse_turnover
+  invoice_aging
+  portfolio
+  cash_flow_forecast
+}
+
+enum ScheduledReportFrequency {
+  weekly
+  monthly
+}
+
+/// Picks one of ReportsService's existing report methods and emails its headline numbers to a
+/// recipient list on a schedule — not a from-scratch query/column builder, which would be a much
+/// larger undertaking; this reuses the report logic that already exists and adds delivery on top.
+model ScheduledReport {
+  id              String                   @id @default(uuid())
+  companyId       String
+  name            String
+  reportType      ScheduledReportType
+  frequency       ScheduledReportFrequency
+  recipientEmails String[]
+  active          Boolean                  @default(true)
+  nextRunAt       DateTime
+  lastSentAt      DateTime?
+  createdAt       DateTime                 @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([active, nextRunAt])
+  @@map("scheduled_reports")
 }
 
 /// Which projects a subcontractor may see/log costs against from their portal — office staff
@@ -1321,6 +1417,7 @@ model Worker {
   warrantyClaims      WarrantyClaim[]
   ownedClients        Client[]
   resourceAssignments ResourceAssignment[]
+  certifications      WorkerCertification[]
 
   @@index([companyId])
   @@map("workers")
@@ -1702,4 +1799,44 @@ model ResourceAssignment {
   @@index([workerId])
   @@index([equipmentId])
   @@map("resource_assignments")
+}
+
+enum ChecklistTemplateType {
+  punch_list
+  rfi
+  safety_briefing
+}
+
+/// A reusable, company-defined template. Shape depends on `type`: punch_list templates carry
+/// multiple `items` that get bulk-applied onto a project's punch list in one action; rfi and
+/// safety_briefing templates are single-entry prefill text (defaultSubject/defaultBody) that the
+/// frontend copies into a new RFI/briefing form — there's nothing to "apply" server-side for those.
+model ChecklistTemplate {
+  id            String                @id @default(uuid())
+  companyId     String
+  type          ChecklistTemplateType
+  name          String
+  defaultSubject String?
+  defaultBody    String?
+  createdAt     DateTime              @default(now())
+
+  company Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  items   ChecklistTemplateItem[]
+
+  @@index([companyId])
+  @@map("checklist_templates")
+}
+
+model ChecklistTemplateItem {
+  id          String  @id @default(uuid())
+  templateId  String
+  title       String
+  description String?
+  location    String?
+  sortOrder   Int     @default(0)
+
+  template ChecklistTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([templateId])
+  @@map("checklist_template_items")
 }

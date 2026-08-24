@@ -14,7 +14,9 @@ type NotificationType =
   | "submittal_pending"
   | "safety_incident"
   | "warranty_claim_open"
-  | "mention";
+  | "mention"
+  | "subcontractor_document_expiring"
+  | "worker_certification_expiring";
 type Severity = "warning" | "critical";
 
 interface Notification {

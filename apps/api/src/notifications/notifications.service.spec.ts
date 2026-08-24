@@ -17,6 +17,8 @@ describe("NotificationsService.list", () => {
     incidentReport: { findMany: jest.Mock };
     warrantyClaim: { findMany: jest.Mock };
     commentMention: { findMany: jest.Mock };
+    subcontractorDocument: { findMany: jest.Mock };
+    workerCertification: { findMany: jest.Mock };
     membership: { findFirst: jest.Mock };
   };
 
@@ -31,6 +33,8 @@ describe("NotificationsService.list", () => {
       incidentReport: { findMany: jest.fn().mockResolvedValue([]) },
       warrantyClaim: { findMany: jest.fn().mockResolvedValue([]) },
       commentMention: { findMany: jest.fn().mockResolvedValue([]) },
+      subcontractorDocument: { findMany: jest.fn().mockResolvedValue([]) },
+      workerCertification: { findMany: jest.fn().mockResolvedValue([]) },
       membership: { findFirst: jest.fn().mockResolvedValue(null) },
     };
 
@@ -135,6 +139,32 @@ describe("NotificationsService.list", () => {
     expect(mention?.body).toContain("Door swing");
     expect(mention?.body).toContain("Site A");
     expect(mention?.link).toBe("/projects/project-1");
+  });
+
+  it("flags an already-expired subcontractor document as critical and one expiring soon as a warning", async () => {
+    prisma.subcontractorDocument.findMany.mockResolvedValue([
+      { id: "doc-1", name: "GL Policy", expiresAt: new Date(Date.now() - 86_400_000), subcontractor: { name: "Acme Electric" } },
+      { id: "doc-2", name: "WC Policy", expiresAt: new Date(Date.now() + 5 * 86_400_000), subcontractor: { name: "Acme Electric" } },
+    ]);
+
+    const { notifications } = await service.list(COMPANY_A, USER_A);
+    const byKey = Object.fromEntries(notifications.map((n) => [n.key, n]));
+
+    expect(byKey["subcontractor_document:doc-1"].severity).toBe("critical");
+    expect(byKey["subcontractor_document:doc-2"].severity).toBe("warning");
+  });
+
+  it("flags an already-expired worker certification as critical and one expiring soon as a warning", async () => {
+    prisma.workerCertification.findMany.mockResolvedValue([
+      { id: "cert-1", name: "OSHA 30", expiresAt: new Date(Date.now() - 86_400_000), worker: { id: "worker-1", name: "Peter Bauer" } },
+      { id: "cert-2", name: "Forklift", expiresAt: new Date(Date.now() + 5 * 86_400_000), worker: { id: "worker-1", name: "Peter Bauer" } },
+    ]);
+
+    const { notifications } = await service.list(COMPANY_A, USER_A);
+    const byKey = Object.fromEntries(notifications.map((n) => [n.key, n]));
+
+    expect(byKey["worker_certification:cert-1"].severity).toBe("critical");
+    expect(byKey["worker_certification:cert-2"].severity).toBe("warning");
   });
 
   it("includes results from every source, sorted newest first", async () => {

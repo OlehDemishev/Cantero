@@ -30,6 +30,8 @@ export const updateCompanySchema = z.object({
     .optional(),
   approvalThresholdAmount: z.number().nonnegative().nullable().optional(),
   requiredApprovalCount: z.number().int().min(1).max(10).optional(),
+  rfiSlaDays: z.number().int().min(1).max(365).nullable().optional(),
+  punchListSlaDays: z.number().int().min(1).max(365).nullable().optional(),
 });
 export type UpdateCompanyInput = z.infer<typeof updateCompanySchema>;
 

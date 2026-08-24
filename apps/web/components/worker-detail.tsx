@@ -25,6 +25,11 @@ interface Summary {
   totalCost: number;
   byProject: ProjectBreakdown[];
 }
+interface Certification {
+  id: string;
+  name: string;
+  expiresAt: string;
+}
 
 export function WorkerDetail({ workerId }: { workerId: string }) {
   const t = useTranslations("team");
@@ -32,6 +37,8 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
   const { data: me } = useMe();
 
   const [summary, setSummary] = useState<Summary | null>(null);
+  const [certifications, setCertifications] = useState<Certification[] | null>(null);
+  const [certForm, setCertForm] = useState({ name: "", expiresAt: "" });
   const [form, setForm] = useState({ name: "", role: "", hourlyCost: "" });
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -41,9 +48,31 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
       setSummary(s);
       setForm({ name: s.worker.name, role: s.worker.role ?? "", hourlyCost: s.worker.hourlyCost ?? "" });
     });
+    apiFetch<Certification[]>(`/workers/${workerId}/certifications`).then(setCertifications);
   }
 
   useEffect(load, [workerId]);
+
+  async function addCertification(e: React.FormEvent) {
+    e.preventDefault();
+    if (!certForm.name || !certForm.expiresAt) return;
+    setBusy(true);
+    try {
+      await apiFetch(`/workers/${workerId}/certifications`, {
+        method: "POST",
+        body: JSON.stringify({ name: certForm.name, expiresAt: new Date(certForm.expiresAt).toISOString() }),
+      });
+      setCertForm({ name: "", expiresAt: "" });
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removeCertification(certificationId: string) {
+    await apiFetch(`/workers/${workerId}/certifications/${certificationId}`, { method: "DELETE" });
+    load();
+  }
 
   async function saveProfile(e: React.FormEvent) {
     e.preventDefault();
@@ -156,6 +185,52 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
           <button onClick={toggleActive} disabled={busy} className="btn-secondary mt-3 w-full">
             {summary.worker.active ? t("deactivate") : t("reactivate")}
           </button>
+
+          <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700">{t("certifications")}</h2>
+          {certifications === null ? (
+            <p className="text-sm text-gray-400">{tc("loading")}</p>
+          ) : certifications.length === 0 ? (
+            <p className="text-sm text-gray-400">{t("noCertifications")}</p>
+          ) : (
+            <ul className="flex flex-col gap-1.5">
+              {certifications.map((cert) => {
+                const expired = new Date(cert.expiresAt) < new Date();
+                return (
+                  <li key={cert.id} className="card flex items-center justify-between text-sm">
+                    <span>
+                      {cert.name}
+                      {" — "}
+                      <span className={expired ? "text-error-700" : "text-gray-500"}>
+                        {new Date(cert.expiresAt).toLocaleDateString()}
+                      </span>
+                    </span>
+                    <button onClick={() => removeCertification(cert.id)} className="text-gray-400 hover:text-error-600">
+                      ×
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          <form onSubmit={addCertification} className="mt-3 flex flex-col gap-2">
+            <input
+              required
+              placeholder={t("certificationNamePlaceholder")}
+              className="input"
+              value={certForm.name}
+              onChange={(e) => setCertForm((f) => ({ ...f, name: e.target.value }))}
+            />
+            <input
+              required
+              type="date"
+              className="input"
+              value={certForm.expiresAt}
+              onChange={(e) => setCertForm((f) => ({ ...f, expiresAt: e.target.value }))}
+            />
+            <button type="submit" disabled={busy} className="btn-secondary self-start">
+              {t("addCertification")}
+            </button>
+          </form>
         </div>
 
         <div className="lg:col-span-2">
