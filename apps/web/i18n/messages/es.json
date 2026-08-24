@@ -39,7 +39,8 @@
     "documents": "Documentos",
     "settings": "Ajustes",
     "reports": "Informes",
-    "portfolio": "Portafolio"
+    "portfolio": "Portafolio",
+    "resourcePlanning": "Planificación de recursos"
   },
   "auth": {
     "signupTitle": "Crea tu cuenta de Cantero",
@@ -434,7 +435,8 @@
     "lastGenerated": "Última generada",
     "generateNow": "Generar ahora",
     "pause": "Pausar",
-    "resume": "Reanudar"
+    "resume": "Reanudar",
+    "cashFlowForecastLink": "Ver la previsión de flujo de caja a 13 semanas en Informes"
   },
   "portal": {
     "signInTitle": "Portal del cliente",
@@ -608,7 +610,8 @@
     "depType_start_to_start": "Inicio→Inicio",
     "depType_finish_to_finish": "Fin→Fin",
     "depType_start_to_finish": "Inicio→Fin",
-    "criticalPathLegend": "Ruta crítica — retrasar esto retrasa la finalización"
+    "criticalPathLegend": "Ruta crítica — retrasar esto retrasa la finalización",
+    "comments": "Comentarios"
   },
   "purchaseOrders": {
     "title": "Pedidos de compra",
@@ -663,16 +666,6 @@
     "unassign": "Quitar asignación",
     "assignToProject": "Asignar al proyecto"
   },
-  "cashFlow": {
-    "title": "Previsión de flujo de caja",
-    "hint": "Entrada esperada de facturas enviadas frente a la salida esperada de pedidos abiertos y costos de subcontratistas sin pagar.",
-    "inflow": "Entrada",
-    "outflow": "Salida",
-    "net": "Neto",
-    "runningBalance": "Saldo acumulado",
-    "overdue": "Vencido",
-    "unscheduled": "Sin programar"
-  },
   "reports": {
     "title": "Informes",
     "projectMargins": "Márgenes de proyecto",
@@ -703,7 +696,18 @@
     "outstanding": "Pendiente",
     "daysOverdue": "Días de retraso",
     "teamWorkload": "Carga de trabajo del equipo",
-    "noWorkload": "No se registraron horas en este período."
+    "noWorkload": "No se registraron horas en este período.",
+    "cashFlowForecast": "Previsión de flujo de caja a 13 semanas",
+    "projectedInflow": "Ingresos previstos",
+    "projectedOutflow": "Egresos previstos",
+    "projectedNet": "Saldo previsto",
+    "unscheduledNote": "Además, {inflow} {currency} de ingresos y {outflow} {currency} de egresos sin fecha de vencimiento, no incluidos en las semanas siguientes.",
+    "inflow": "Ingresos",
+    "outflow": "Egresos",
+    "net": "Saldo",
+    "cumulativeNet": "Acumulado",
+    "week": "Semana",
+    "weekLabel": "S{n}"
   },
   "notifications": {
     "title": "Notificaciones",
@@ -954,5 +958,29 @@
     "nSelected": "{count} seleccionados",
     "clearSelection": "Borrar selección",
     "resultSummary": "{succeeded} correctos, {failed} fallidos"
+  },
+  "comments": {
+    "title": "Comentarios",
+    "noComments": "Aún no hay comentarios.",
+    "addCommentPlaceholder": "Escribe un comentario… usa @ para mencionar a alguien",
+    "post": "Publicar"
+  },
+  "resourcePlanning": {
+    "title": "Planificación de recursos",
+    "subtitle": "Calendario entre proyectos para cuadrillas y equipos — las dobles asignaciones se detectan automáticamente.",
+    "newAssignment": "Nueva asignación",
+    "resourceType": "Tipo de recurso",
+    "worker": "Trabajador",
+    "equipment": "Equipo",
+    "project": "Proyecto",
+    "startDate": "Fecha de inicio",
+    "endDate": "Fecha de fin",
+    "note": "Nota",
+    "assign": "Asignar",
+    "newAssignmentConflict": "Se superpone con {count} otra(s) asignación(es) del mismo recurso:",
+    "conflictsDetected": "{count} conflicto(s) de programación detectado(s)",
+    "calendar": "Calendario",
+    "noAssignments": "Aún no hay asignaciones.",
+    "allAssignments": "Todas las asignaciones"
   }
 }

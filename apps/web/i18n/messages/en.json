@@ -39,7 +39,8 @@
     "documents": "Documents",
     "settings": "Settings",
     "reports": "Reports",
-    "portfolio": "Portfolio"
+    "portfolio": "Portfolio",
+    "resourcePlanning": "Resource planning"
   },
   "auth": {
     "signupTitle": "Create your Cantero account",
@@ -434,7 +435,8 @@
     "lastGenerated": "Last generated",
     "generateNow": "Generate now",
     "pause": "Pause",
-    "resume": "Resume"
+    "resume": "Resume",
+    "cashFlowForecastLink": "See the 13-week cash flow forecast in Reports"
   },
   "portal": {
     "signInTitle": "Client portal",
@@ -608,7 +610,8 @@
     "depType_start_to_start": "Start→Start",
     "depType_finish_to_finish": "Finish→Finish",
     "depType_start_to_finish": "Start→Finish",
-    "criticalPathLegend": "Critical path — delaying these delays the finish"
+    "criticalPathLegend": "Critical path — delaying these delays the finish",
+    "comments": "Comments"
   },
   "purchaseOrders": {
     "title": "Purchase orders",
@@ -663,16 +666,6 @@
     "unassign": "Unassign",
     "assignToProject": "Assign to project"
   },
-  "cashFlow": {
-    "title": "Cash flow forecast",
-    "hint": "Expected inflow from sent invoices against expected outflow from open purchase orders and unpaid subcontractor costs.",
-    "inflow": "Inflow",
-    "outflow": "Outflow",
-    "net": "Net",
-    "runningBalance": "Running balance",
-    "overdue": "Overdue",
-    "unscheduled": "Unscheduled"
-  },
   "reports": {
     "title": "Reports",
     "projectMargins": "Project margins",
@@ -703,7 +696,18 @@
     "outstanding": "Outstanding",
     "daysOverdue": "Days overdue",
     "teamWorkload": "Team workload",
-    "noWorkload": "No hours logged in this period."
+    "noWorkload": "No hours logged in this period.",
+    "cashFlowForecast": "13-week cash flow forecast",
+    "projectedInflow": "Projected inflow",
+    "projectedOutflow": "Projected outflow",
+    "projectedNet": "Projected net",
+    "unscheduledNote": "Plus {inflow} {currency} inflow and {outflow} {currency} outflow with no due date, not shown in the weeks below.",
+    "inflow": "Inflow",
+    "outflow": "Outflow",
+    "net": "Net",
+    "cumulativeNet": "Cumulative",
+    "week": "Week",
+    "weekLabel": "W{n}"
   },
   "notifications": {
     "title": "Notifications",
@@ -954,5 +958,29 @@
     "nSelected": "{count} selected",
     "clearSelection": "Clear selection",
     "resultSummary": "{succeeded} succeeded, {failed} failed"
+  },
+  "comments": {
+    "title": "Comments",
+    "noComments": "No comments yet.",
+    "addCommentPlaceholder": "Write a comment… use @ to mention someone",
+    "post": "Post"
+  },
+  "resourcePlanning": {
+    "title": "Resource planning",
+    "subtitle": "Cross-project calendar for crews and equipment — double-booking is flagged automatically.",
+    "newAssignment": "New assignment",
+    "resourceType": "Resource type",
+    "worker": "Worker",
+    "equipment": "Equipment",
+    "project": "Project",
+    "startDate": "Start date",
+    "endDate": "End date",
+    "note": "Note",
+    "assign": "Assign",
+    "newAssignmentConflict": "Overlaps {count} other assignment(s) for the same resource:",
+    "conflictsDetected": "{count} scheduling conflict(s) detected",
+    "calendar": "Calendar",
+    "noAssignments": "No assignments yet.",
+    "allAssignments": "All assignments"
   }
 }

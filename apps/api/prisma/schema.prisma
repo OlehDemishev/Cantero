@@ -184,6 +184,8 @@ model Company {
   safetyBriefings      SafetyBriefing[]
   submittals           Submittal[]
   warrantyClaims       WarrantyClaim[]
+  comments             Comment[]
+  resourceAssignments  ResourceAssignment[]
 
   @@map("companies")
 }
@@ -276,10 +278,12 @@ model User {
   name         String
   createdAt    DateTime @default(now())
 
-  memberships Membership[]
-  workers     Worker[]
-  documents   Document[]
-  dailyLogs   DailyLog[]
+  memberships     Membership[]
+  workers         Worker[]
+  documents       Document[]
+  dailyLogs       DailyLog[]
+  comments        Comment[]
+  commentMentions CommentMention[]
 
   @@map("users")
 }
@@ -842,6 +846,7 @@ model Project {
   safetyBriefings    SafetyBriefing[]
   submittals         Submittal[]
   warrantyClaims     WarrantyClaim[]
+  resourceAssignments ResourceAssignment[]
 
   @@index([companyId])
   @@map("projects")
@@ -864,6 +869,7 @@ model Task {
   predecessorLinks TaskDependency[] @relation("TaskSuccessor")
   /// Dependencies where this task is the predecessor (i.e. what waits on this task).
   successorLinks   TaskDependency[] @relation("TaskPredecessor")
+  comments         Comment[]
 
   @@index([projectId])
   @@map("tasks")
@@ -958,6 +964,7 @@ model PunchListItem {
   project  Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   assignee Worker? @relation(fields: [assigneeWorkerId], references: [id], onDelete: SetNull)
   photos   Document[]
+  comments Comment[]
 
   @@index([projectId])
   @@index([companyId])
@@ -991,8 +998,9 @@ model Rfi {
   closedByName       String?
   createdAt          DateTime    @default(now())
 
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  company  Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project  Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  comments Comment[]
 
   @@unique([projectId, number])
   @@index([companyId])
@@ -1312,6 +1320,7 @@ model Worker {
   safetyBriefingAttendance SafetyBriefingAttendance[]
   warrantyClaims      WarrantyClaim[]
   ownedClients        Client[]
+  resourceAssignments ResourceAssignment[]
 
   @@index([companyId])
   @@map("workers")
@@ -1420,6 +1429,7 @@ model Equipment {
   company             Company                      @relation(fields: [companyId], references: [id], onDelete: Cascade)
   assignments         EquipmentAssignment[]
   maintenanceRecords  EquipmentMaintenanceRecord[]
+  resourceAssignments ResourceAssignment[]
 
   @@index([companyId])
   @@map("equipment")
@@ -1618,4 +1628,78 @@ model WarrantyClaim {
   @@index([projectId])
   @@index([companyId])
   @@map("warranty_claims")
+}
+
+/// Threaded discussion on a Task/Rfi/PunchListItem — same "one nullable FK column per target
+/// model" polymorphic-attachment pattern already established by Document, rather than a generic
+/// polymorphic join table.
+model Comment {
+  id           String   @id @default(uuid())
+  companyId    String
+  authorUserId String?
+  authorName   String
+  content      String
+  createdAt    DateTime @default(now())
+
+  taskId          String?
+  rfiId           String?
+  punchListItemId String?
+
+  company       Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  author        User?            @relation(fields: [authorUserId], references: [id], onDelete: SetNull)
+  task          Task?            @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  rfi           Rfi?             @relation(fields: [rfiId], references: [id], onDelete: Cascade)
+  punchListItem PunchListItem?   @relation(fields: [punchListItemId], references: [id], onDelete: Cascade)
+  mentions      CommentMention[]
+
+  @@index([companyId])
+  @@index([taskId])
+  @@index([rfiId])
+  @@index([punchListItemId])
+  @@map("comments")
+}
+
+/// A user @mentioned in a Comment — explicit rows captured from the picker UI (not parsed out of
+/// free text) so a mentioned name containing spaces is never ambiguous. Feeds NotificationsService
+/// as another derived notification branch, same as the rest of that module.
+model CommentMention {
+  id        String   @id @default(uuid())
+  commentId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId])
+  @@index([userId])
+  @@map("comment_mentions")
+}
+
+/// A planned future allocation of a Worker OR Equipment to a Project over a date range — distinct
+/// from TimeEntry (actual hours already worked) and EquipmentAssignment (live checkout/checkin
+/// with no planned end date). Powers the cross-project resource-planning calendar; double-booking
+/// is detected by the service from overlapping date ranges on the same resource, not prevented at
+/// the schema level — a real scheduling conflict needs to be seen and resolved, not silently blocked.
+model ResourceAssignment {
+  id          String   @id @default(uuid())
+  companyId   String
+  projectId   String
+  workerId    String?
+  equipmentId String?
+  startDate   DateTime
+  endDate     DateTime
+  note        String?
+  createdAt   DateTime @default(now())
+
+  company   Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  worker    Worker?    @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  equipment Equipment? @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([projectId])
+  @@index([workerId])
+  @@index([equipmentId])
+  @@map("resource_assignments")
 }

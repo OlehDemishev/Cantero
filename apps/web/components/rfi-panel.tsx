@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import type { BulkActionResult, RfiPriority, RfiStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useBulkSelection } from "@/components/bulk-select";
+import { CommentsThread } from "@/components/comments-thread";
 
 interface Rfi {
   id: string;
@@ -308,6 +309,9 @@ export function RfiPanel({ projectId }: { projectId: string }) {
                         {t("reopen")}
                       </button>
                     )}
+                    <div className="mt-3 border-t border-gray-100 pt-3">
+                      <CommentsThread param="rfiId" entityId={item.id} />
+                    </div>
                   </div>
                 )}
               </li>

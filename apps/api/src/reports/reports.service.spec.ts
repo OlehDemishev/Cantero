@@ -126,3 +126,149 @@ describe("ReportsService.portfolio", () => {
     expect(result.summary.openRfiTotal).toBe(2);
   });
 });
+
+function daysFromNowUTC(days: number): Date {
+  const now = new Date();
+  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  return new Date(start.getTime() + days * 24 * 60 * 60 * 1000);
+}
+
+describe("ReportsService.cashFlowForecast", () => {
+  let service: ReportsService;
+  let prisma: {
+    invoice: { findMany: jest.Mock };
+    recurringInvoice: { findMany: jest.Mock };
+    subcontractorCost: { findMany: jest.Mock };
+    purchaseOrder: { findMany: jest.Mock };
+  };
+
+  beforeEach(async () => {
+    prisma = {
+      invoice: { findMany: jest.fn().mockResolvedValue([]) },
+      recurringInvoice: { findMany: jest.fn().mockResolvedValue([]) },
+      subcontractorCost: { findMany: jest.fn().mockResolvedValue([]) },
+      purchaseOrder: { findMany: jest.fn().mockResolvedValue([]) },
+    };
+
+    const module = await Test.createTestingModule({
+      providers: [ReportsService, { provide: PrismaService, useValue: prisma }],
+    }).compile();
+
+    service = module.get(ReportsService);
+  });
+
+  it("buckets an outstanding invoice's remaining balance into the week containing its due date", async () => {
+    prisma.invoice.findMany.mockResolvedValue([
+      { id: "inv-1", total: 1000, dueDate: daysFromNowUTC(10), payments: [{ amount: 400 }] },
+    ]);
+
+    const result = await service.cashFlowForecast(COMPANY_A);
+
+    expect(result.weeks[1].inflowBreakdown.invoices).toBe(600);
+    expect(result.weeks[0].inflowBreakdown.invoices).toBe(0);
+  });
+
+  it("collapses an overdue invoice into the current week instead of dropping it", async () => {
+    prisma.invoice.findMany.mockResolvedValue([
+      { id: "inv-1", total: 500, dueDate: daysFromNowUTC(-15), payments: [] },
+    ]);
+
+    const result = await service.cashFlowForecast(COMPANY_A);
+
+    expect(result.weeks[0].inflowBreakdown.invoices).toBe(500);
+  });
+
+  it("excludes an invoice with no due date from the weekly buckets but reports it as unscheduled", async () => {
+    prisma.invoice.findMany.mockResolvedValue([{ id: "inv-1", total: 750, dueDate: null, payments: [] }]);
+
+    const result = await service.cashFlowForecast(COMPANY_A);
+
+    expect(result.unscheduledInflow).toBe(750);
+    expect(result.weeks.every((w) => w.inflowBreakdown.invoices === 0)).toBe(true);
+  });
+
+  it("ignores a fully paid invoice", async () => {
+    prisma.invoice.findMany.mockResolvedValue([
+      { id: "inv-1", total: 500, dueDate: daysFromNowUTC(5), payments: [{ amount: 500 }] },
+    ]);
+
+    const result = await service.cashFlowForecast(COMPANY_A);
+
+    expect(result.totals.inflow).toBe(0);
+  });
+
+  it("projects a recurring invoice's upcoming occurrences valued from its lines and tax", async () => {
+    prisma.recurringInvoice.findMany.mockResolvedValue([
+      {
+        id: "rec-1",
+        frequency: "weekly",
+        taxPercent: 10,
+        nextRunDate: daysFromNowUTC(2),
+        endDate: null,
+        lines: [{ description: "Maintenance", quantity: 1, unitPrice: 100 }],
+      },
+    ]);
+
+    const result = await service.cashFlowForecast(COMPANY_A);
+
+    // 100 + 10% tax = 110, occurring at day 2 (week 0) and day 9 (week 1) within the 13-week window.
+    expect(result.weeks[0].inflowBreakdown.recurring).toBe(110);
+    expect(result.weeks[1].inflowBreakdown.recurring).toBe(110);
+  });
+
+  it("collapses an overdue recurring nextRunDate into the current week without replaying missed cycles", async () => {
+    prisma.recurringInvoice.findMany.mockResolvedValue([
+      {
+        id: "rec-1",
+        frequency: "weekly",
+        taxPercent: 0,
+        nextRunDate: daysFromNowUTC(-90), // ~13 missed weekly cycles
+        endDate: null,
+        lines: [{ description: "Maintenance", quantity: 1, unitPrice: 100 }],
+      },
+    ]);
+
+    const result = await service.cashFlowForecast(COMPANY_A);
+
+    // Exactly one occurrence in week 0 — not 13 stacked copies of the missed cycles.
+    expect(result.weeks[0].inflowBreakdown.recurring).toBe(100);
+  });
+
+  it("buckets an unpaid subcontractor cost by its due date", async () => {
+    prisma.subcontractorCost.findMany.mockResolvedValue([{ id: "cost-1", amount: 2000, dueDate: daysFromNowUTC(20) }]);
+
+    const result = await service.cashFlowForecast(COMPANY_A);
+
+    expect(result.weeks[2].outflowBreakdown.subcontractors).toBe(2000);
+  });
+
+  it("values a pending purchase order as the sum of quantity times unit price across its lines", async () => {
+    prisma.purchaseOrder.findMany.mockResolvedValue([
+      {
+        id: "po-1",
+        expectedDate: daysFromNowUTC(4),
+        lines: [
+          { quantity: 10, unitPrice: 5 },
+          { quantity: 2, unitPrice: 25 },
+        ],
+      },
+    ]);
+
+    const result = await service.cashFlowForecast(COMPANY_A);
+
+    expect(result.weeks[0].outflowBreakdown.purchaseOrders).toBe(100);
+  });
+
+  it("computes a running cumulative net across weeks", async () => {
+    prisma.invoice.findMany.mockResolvedValue([
+      { id: "inv-1", total: 1000, dueDate: daysFromNowUTC(1), payments: [] },
+    ]);
+    prisma.subcontractorCost.findMany.mockResolvedValue([{ id: "cost-1", amount: 300, dueDate: daysFromNowUTC(1) }]);
+
+    const result = await service.cashFlowForecast(COMPANY_A);
+
+    expect(result.weeks[0].net).toBe(700);
+    expect(result.weeks[0].cumulativeNet).toBe(700);
+    expect(result.weeks[1].cumulativeNet).toBe(700);
+  });
+});

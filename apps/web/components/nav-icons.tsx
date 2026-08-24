@@ -230,3 +230,13 @@ export function EquipmentIcon(props: SVGProps<SVGSVGElement>) {
     </Icon>
   );
 }
+
+export function ResourcePlanningIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <rect x="2.5" y="4" width="15" height="13.5" rx="1.5" />
+      <path d="M2.5 8h15M6.5 2.5v3M13.5 2.5v3" />
+      <path d="M6 11.5l1.5 1.5 3-3M11.5 12.5h3" />
+    </Icon>
+  );
+}

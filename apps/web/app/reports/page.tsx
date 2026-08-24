@@ -52,6 +52,21 @@ interface LaborCostReport {
   totalCost: number;
   byWorker: WorkloadRow[];
 }
+interface CashFlowWeek {
+  weekStart: string;
+  weekEnd: string;
+  inflow: number;
+  outflow: number;
+  net: number;
+  cumulativeNet: number;
+}
+interface CashFlowForecast {
+  windowWeeks: number;
+  unscheduledInflow: number;
+  unscheduledOutflow: number;
+  weeks: CashFlowWeek[];
+  totals: { inflow: number; outflow: number; net: number };
+}
 
 function isoDaysAgo(days: number) {
   const d = new Date();
@@ -69,6 +84,7 @@ export default function ReportsPage() {
   const [margins, setMargins] = useState<ProjectMargin[] | null>(null);
   const [turnover, setTurnover] = useState<TurnoverRow[] | null>(null);
   const [aging, setAging] = useState<InvoiceAging | null>(null);
+  const [cashFlow, setCashFlow] = useState<CashFlowForecast | null>(null);
   const [workload, setWorkload] = useState<LaborCostReport | null>(null);
   const [workloadFrom, setWorkloadFrom] = useState(isoDaysAgo(30));
   const [workloadTo, setWorkloadTo] = useState(isoDaysAgo(0));
@@ -77,6 +93,7 @@ export default function ReportsPage() {
     apiFetch<ProjectMargin[]>("/reports/project-margins").then(setMargins);
     apiFetch<TurnoverRow[]>("/reports/warehouse-turnover").then(setTurnover);
     apiFetch<InvoiceAging>("/reports/invoice-aging").then(setAging);
+    apiFetch<CashFlowForecast>("/reports/cash-flow-forecast").then(setCashFlow);
   }, []);
 
   useEffect(() => {
@@ -257,6 +274,108 @@ export default function ReportsPage() {
               </table>
             </div>
           )}
+        </>
+      )}
+
+      <h2 className="mb-3 mt-10 text-sm font-semibold text-gray-700">{t("cashFlowForecast")}</h2>
+      {!cashFlow ? (
+        <p className="text-gray-500">{tc("loading")}</p>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div className="card">
+              <div className="text-xs text-gray-500">{t("projectedInflow")}</div>
+              <div className="mt-1 text-lg font-semibold text-success-700">
+                {cashFlow.totals.inflow} {currency}
+              </div>
+            </div>
+            <div className="card">
+              <div className="text-xs text-gray-500">{t("projectedOutflow")}</div>
+              <div className="mt-1 text-lg font-semibold text-error-700">
+                {cashFlow.totals.outflow} {currency}
+              </div>
+            </div>
+            <div className="card">
+              <div className="text-xs text-gray-500">{t("projectedNet")}</div>
+              <div className={`mt-1 text-lg font-semibold ${cashFlow.totals.net < 0 ? "text-error-700" : "text-success-700"}`}>
+                {cashFlow.totals.net} {currency}
+              </div>
+            </div>
+          </div>
+
+          {(cashFlow.unscheduledInflow > 0 || cashFlow.unscheduledOutflow > 0) && (
+            <p className="mt-2 text-xs text-gray-500">
+              {t("unscheduledNote", { inflow: cashFlow.unscheduledInflow, outflow: cashFlow.unscheduledOutflow, currency })}
+            </p>
+          )}
+
+          <div className="mt-4 overflow-x-auto rounded-lg border border-gray-200 bg-white p-4">
+            <div className="mb-3 flex items-center gap-3 text-xs text-gray-500">
+              <span className="flex items-center gap-1">
+                <span className="inline-block h-2.5 w-2.5 rounded-sm bg-success-500" /> {t("inflow")}
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="inline-block h-2.5 w-2.5 rounded-sm bg-error-500" /> {t("outflow")}
+              </span>
+            </div>
+            {(() => {
+              const maxVal = Math.max(...cashFlow.weeks.flatMap((w) => [w.inflow, w.outflow]), 1);
+              return (
+                <div className="flex items-end gap-2" style={{ minWidth: cashFlow.weeks.length * 56 }}>
+                  {cashFlow.weeks.map((w, i) => (
+                    <div key={w.weekStart} className="flex flex-1 flex-col items-center gap-1">
+                      <div className="flex h-24 items-end gap-0.5">
+                        <div
+                          className="w-3 rounded-t bg-success-500"
+                          style={{ height: `${(w.inflow / maxVal) * 100}%` }}
+                          title={`${t("inflow")}: ${w.inflow} ${currency}`}
+                        />
+                        <div
+                          className="w-3 rounded-t bg-error-500"
+                          style={{ height: `${(w.outflow / maxVal) * 100}%` }}
+                          title={`${t("outflow")}: ${w.outflow} ${currency}`}
+                        />
+                      </div>
+                      <span className="text-[10px] text-gray-400">{t("weekLabel", { n: i + 1 })}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full min-w-[720px] border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 text-left text-gray-500">
+                  <th className="py-2">{t("week")}</th>
+                  <th className="text-right">{t("inflow")}</th>
+                  <th className="text-right">{t("outflow")}</th>
+                  <th className="text-right">{t("net")}</th>
+                  <th className="text-right">{t("cumulativeNet")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cashFlow.weeks.map((w) => (
+                  <tr key={w.weekStart} className="border-b border-gray-100">
+                    <td className="py-2">{new Date(w.weekStart).toLocaleDateString()}</td>
+                    <td className="text-right text-success-700">
+                      {w.inflow} {currency}
+                    </td>
+                    <td className="text-right text-error-700">
+                      {w.outflow} {currency}
+                    </td>
+                    <td className={`text-right ${w.net < 0 ? "text-error-700" : "text-gray-700"}`}>
+                      {w.net} {currency}
+                    </td>
+                    <td className={`text-right font-medium ${w.cumulativeNet < 0 ? "text-error-700" : "text-gray-900"}`}>
+                      {w.cumulativeNet} {currency}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </>
       )}
 

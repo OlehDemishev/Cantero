@@ -31,4 +31,9 @@ export class ReportsController {
   portfolio(@CurrentUser() user: AuthUser) {
     return this.service.portfolio(user.companyId);
   }
+
+  @Get("cash-flow-forecast")
+  cashFlowForecast(@CurrentUser() user: AuthUser) {
+    return this.service.cashFlowForecast(user.companyId);
+  }
 }

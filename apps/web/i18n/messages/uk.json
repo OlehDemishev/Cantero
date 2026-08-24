@@ -39,7 +39,8 @@
     "documents": "Документи",
     "settings": "Налаштування",
     "reports": "Звіти",
-    "portfolio": "Портфоліо"
+    "portfolio": "Портфоліо",
+    "resourcePlanning": "Планування ресурсів"
   },
   "auth": {
     "signupTitle": "Створіть обліковий запис Cantero",
@@ -434,7 +435,8 @@
     "lastGenerated": "Востаннє створено",
     "generateNow": "Створити зараз",
     "pause": "Призупинити",
-    "resume": "Відновити"
+    "resume": "Відновити",
+    "cashFlowForecastLink": "Переглянути 13-тижневий прогноз грошового потоку в звітах"
   },
   "portal": {
     "signInTitle": "Кабінет клієнта",
@@ -608,7 +610,8 @@
     "depType_start_to_start": "Початок→Початок",
     "depType_finish_to_finish": "Кінець→Кінець",
     "depType_start_to_finish": "Початок→Кінець",
-    "criticalPathLegend": "Критичний шлях — затримка тут зсуває завершення"
+    "criticalPathLegend": "Критичний шлях — затримка тут зсуває завершення",
+    "comments": "Коментарі"
   },
   "purchaseOrders": {
     "title": "Замовлення на закупівлю",
@@ -663,16 +666,6 @@
     "unassign": "Скасувати призначення",
     "assignToProject": "Призначити на проєкт"
   },
-  "cashFlow": {
-    "title": "Прогноз грошового потоку",
-    "hint": "Очікуване надходження від надісланих рахунків проти очікуваного витрачання за відкритими замовленнями на закупівлю та несплаченими витратами субпідрядників.",
-    "inflow": "Надходження",
-    "outflow": "Витрачання",
-    "net": "Чистий підсумок",
-    "runningBalance": "Наростаючий залишок",
-    "overdue": "Прострочено",
-    "unscheduled": "Без графіка"
-  },
   "reports": {
     "title": "Звіти",
     "projectMargins": "Маржа проєктів",
@@ -703,7 +696,18 @@
     "outstanding": "Не сплачено",
     "daysOverdue": "Днів прострочення",
     "teamWorkload": "Завантаженість команди",
-    "noWorkload": "За цей період годин не зафіксовано."
+    "noWorkload": "За цей період годин не зафіксовано.",
+    "cashFlowForecast": "13-тижневий прогноз грошового потоку",
+    "projectedInflow": "Очікувані надходження",
+    "projectedOutflow": "Очікувані витрати",
+    "projectedNet": "Очікуваний баланс",
+    "unscheduledNote": "Додатково {inflow} {currency} надходжень і {outflow} {currency} витрат без терміну — не показано в тижнях нижче.",
+    "inflow": "Надходження",
+    "outflow": "Витрати",
+    "net": "Баланс",
+    "cumulativeNet": "Накопичено",
+    "week": "Тиждень",
+    "weekLabel": "Т{n}"
   },
   "notifications": {
     "title": "Сповіщення",
@@ -954,5 +958,29 @@
     "nSelected": "Вибрано: {count}",
     "clearSelection": "Скасувати вибір",
     "resultSummary": "{succeeded} успішно, {failed} не вдалося"
+  },
+  "comments": {
+    "title": "Коментарі",
+    "noComments": "Поки немає коментарів.",
+    "addCommentPlaceholder": "Напишіть коментар… використайте @ щоб когось згадати",
+    "post": "Надіслати"
+  },
+  "resourcePlanning": {
+    "title": "Планування ресурсів",
+    "subtitle": "Міжпроєктний календар бригад і техніки — подвійне призначення виявляється автоматично.",
+    "newAssignment": "Нове призначення",
+    "resourceType": "Тип ресурсу",
+    "worker": "Працівник",
+    "equipment": "Техніка",
+    "project": "Проєкт",
+    "startDate": "Дата початку",
+    "endDate": "Дата завершення",
+    "note": "Примітка",
+    "assign": "Призначити",
+    "newAssignmentConflict": "Перетинається з {count} іншим(и) призначенням(и) того самого ресурсу:",
+    "conflictsDetected": "Виявлено {count} конфлікт(и) розкладу",
+    "calendar": "Календар",
+    "noAssignments": "Поки немає призначень.",
+    "allAssignments": "Усі призначення"
   }
 }

@@ -13,7 +13,8 @@ type NotificationType =
   | "punch_list_open"
   | "submittal_pending"
   | "safety_incident"
-  | "warranty_claim_open";
+  | "warranty_claim_open"
+  | "mention";
 type Severity = "warning" | "critical";
 
 interface Notification {

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { TASK_DEPENDENCY_TYPES, type TaskDependencyType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { CommentsThread } from "@/components/comments-thread";
 
 type TaskStatus = "planned" | "in_progress" | "done";
 const STATUSES: TaskStatus[] = ["planned", "in_progress", "done"];
@@ -46,6 +47,7 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
   const [depEditorTaskId, setDepEditorTaskId] = useState<string | null>(null);
   const [depForm, setDepForm] = useState({ predecessorId: "", type: "finish_to_start" as TaskDependencyType, lagDays: "0" });
   const [depError, setDepError] = useState<string | null>(null);
+  const [commentsTaskId, setCommentsTaskId] = useState<string | null>(null);
 
   function load() {
     apiFetch<Task[]>(`/tasks?projectId=${projectId}`).then(setTasks);
@@ -174,6 +176,12 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
                     <button onClick={() => openDepEditor(task.id)} className="btn-secondary px-2 py-0.5 text-xs">
                       {t("addDependency")}
                     </button>
+                    <button
+                      onClick={() => setCommentsTaskId(commentsTaskId === task.id ? null : task.id)}
+                      className="btn-secondary px-2 py-0.5 text-xs"
+                    >
+                      {t("comments")}
+                    </button>
                   </div>
 
                   {depEditorTaskId === task.id && (
@@ -215,6 +223,12 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
                       <button onClick={() => addDependency(task.id)} className="btn-primary px-2 py-1 text-xs">
                         {tc("save")}
                       </button>
+                    </div>
+                  )}
+
+                  {commentsTaskId === task.id && (
+                    <div className="mt-2 border-t border-gray-100 pt-2">
+                      <CommentsThread param="taskId" entityId={task.id} />
                     </div>
                   )}
                 </div>

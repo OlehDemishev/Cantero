@@ -30,6 +30,8 @@ import { PortalModule } from "./portal/portal.module";
 import { EquipmentModule } from "./equipment/equipment.module";
 import { SubcontractorPortalModule } from "./subcontractor-portal/subcontractor-portal.module";
 import { SafetyModule } from "./safety/safety.module";
+import { CommentsModule } from "./comments/comments.module";
+import { ResourcePlanningModule } from "./resource-planning/resource-planning.module";
 
 @Module({
   imports: [
@@ -60,6 +62,8 @@ import { SafetyModule } from "./safety/safety.module";
     EquipmentModule,
     SubcontractorPortalModule,
     SafetyModule,
+    CommentsModule,
+    ResourcePlanningModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

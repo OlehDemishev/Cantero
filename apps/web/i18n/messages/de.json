@@ -39,7 +39,8 @@
     "documents": "Dokumente",
     "settings": "Einstellungen",
     "reports": "Berichte",
-    "portfolio": "Portfolio"
+    "portfolio": "Portfolio",
+    "resourcePlanning": "Ressourcenplanung"
   },
   "auth": {
     "signupTitle": "Cantero-Konto erstellen",
@@ -434,7 +435,8 @@
     "lastGenerated": "Zuletzt erstellt",
     "generateNow": "Jetzt erstellen",
     "pause": "Pausieren",
-    "resume": "Fortsetzen"
+    "resume": "Fortsetzen",
+    "cashFlowForecastLink": "13-Wochen-Cashflow-Prognose in den Berichten ansehen"
   },
   "portal": {
     "signInTitle": "Kundenportal",
@@ -608,7 +610,8 @@
     "depType_start_to_start": "Anfang→Anfang",
     "depType_finish_to_finish": "Ende→Ende",
     "depType_start_to_finish": "Anfang→Ende",
-    "criticalPathLegend": "Kritischer Pfad — eine Verzögerung hier verschiebt den Endtermin"
+    "criticalPathLegend": "Kritischer Pfad — eine Verzögerung hier verschiebt den Endtermin",
+    "comments": "Kommentare"
   },
   "purchaseOrders": {
     "title": "Bestellungen",
@@ -663,16 +666,6 @@
     "unassign": "Zuweisung aufheben",
     "assignToProject": "Projekt zuweisen"
   },
-  "cashFlow": {
-    "title": "Liquiditätsprognose",
-    "hint": "Erwarteter Zufluss aus versendeten Rechnungen gegen erwarteten Abfluss aus offenen Bestellungen und unbezahlten Nachunternehmerkosten.",
-    "inflow": "Zufluss",
-    "outflow": "Abfluss",
-    "net": "Netto",
-    "runningBalance": "Laufender Saldo",
-    "overdue": "Überfällig",
-    "unscheduled": "Ungeplant"
-  },
   "reports": {
     "title": "Berichte",
     "projectMargins": "Projektmargen",
@@ -703,7 +696,18 @@
     "outstanding": "Offen",
     "daysOverdue": "Tage überfällig",
     "teamWorkload": "Teamauslastung",
-    "noWorkload": "In diesem Zeitraum keine Stunden erfasst."
+    "noWorkload": "In diesem Zeitraum keine Stunden erfasst.",
+    "cashFlowForecast": "13-Wochen-Cashflow-Prognose",
+    "projectedInflow": "Erwartete Einnahmen",
+    "projectedOutflow": "Erwartete Ausgaben",
+    "projectedNet": "Erwarteter Saldo",
+    "unscheduledNote": "Zusätzlich {inflow} {currency} Einnahmen und {outflow} {currency} Ausgaben ohne Fälligkeitsdatum, nicht in den Wochen unten dargestellt.",
+    "inflow": "Einnahmen",
+    "outflow": "Ausgaben",
+    "net": "Saldo",
+    "cumulativeNet": "Kumuliert",
+    "week": "Woche",
+    "weekLabel": "W{n}"
   },
   "notifications": {
     "title": "Benachrichtigungen",
@@ -954,5 +958,29 @@
     "nSelected": "{count} ausgewählt",
     "clearSelection": "Auswahl aufheben",
     "resultSummary": "{succeeded} erfolgreich, {failed} fehlgeschlagen"
+  },
+  "comments": {
+    "title": "Kommentare",
+    "noComments": "Noch keine Kommentare.",
+    "addCommentPlaceholder": "Kommentar schreiben… @ zum Erwähnen verwenden",
+    "post": "Absenden"
+  },
+  "resourcePlanning": {
+    "title": "Ressourcenplanung",
+    "subtitle": "Projektübergreifender Kalender für Teams und Technik — Doppelbelegungen werden automatisch erkannt.",
+    "newAssignment": "Neue Zuweisung",
+    "resourceType": "Ressourcentyp",
+    "worker": "Mitarbeiter",
+    "equipment": "Technik",
+    "project": "Projekt",
+    "startDate": "Startdatum",
+    "endDate": "Enddatum",
+    "note": "Notiz",
+    "assign": "Zuweisen",
+    "newAssignmentConflict": "Überschneidet sich mit {count} weiterer Zuweisung(en) derselben Ressource:",
+    "conflictsDetected": "{count} Terminkonflikt(e) erkannt",
+    "calendar": "Kalender",
+    "noAssignments": "Noch keine Zuweisungen.",
+    "allAssignments": "Alle Zuweisungen"
   }
 }

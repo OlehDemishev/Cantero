@@ -47,30 +47,11 @@ interface RecurringLineForm {
   quantity: string;
   unitPrice: string;
 }
-interface ForecastBucket {
-  bucket: string;
-  inflow: number;
-  outflow: number;
-  net: number;
-  runningBalance: number;
-}
-interface CashFlowForecast {
-  series: ForecastBucket[];
-}
-
-function bucketLabel(bucket: string, locale: string): string {
-  if (bucket === "overdue" || bucket === "unscheduled") return bucket;
-  const [year, month] = bucket.split("-").map(Number);
-  return new Date(year, month - 1, 1).toLocaleDateString(locale, { month: "short", year: "numeric" });
-}
-
 export default function InvoicesPage() {
   const t = useTranslations("invoices");
-  const tf = useTranslations("cashFlow");
   const tc = useTranslations("common");
   const { data: me } = useMe();
   const [invoices, setInvoices] = useState<Invoice[] | null>(null);
-  const [forecast, setForecast] = useState<CashFlowForecast | null>(null);
   const currency = me?.company.currency ?? "";
   const locale = me?.company.locale ?? "en";
 
@@ -96,7 +77,6 @@ export default function InvoicesPage() {
 
   useEffect(() => {
     apiFetch<Invoice[]>("/invoices").then(setInvoices);
-    apiFetch<CashFlowForecast>("/finance/cash-flow-forecast").then(setForecast);
     apiFetch<Project[]>("/projects").then(setProjects);
     apiFetch<Client[]>("/clients").then(setClients);
     loadRecurring();
@@ -394,54 +374,10 @@ export default function InvoicesPage() {
         </form>
       </div>
 
-      {forecast && (
-        <div className="mt-10">
-          <h2 className="mb-1 text-sm font-semibold text-gray-700">{tf("title")}</h2>
-          <p className="mb-3 text-xs text-gray-500">{tf("hint")}</p>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[560px] border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-gray-200 text-left text-gray-500">
-                  <th className="py-2"></th>
-                  <th className="text-right">{tf("inflow")}</th>
-                  <th className="text-right">{tf("outflow")}</th>
-                  <th className="text-right">{tf("net")}</th>
-                  <th className="text-right">{tf("runningBalance")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {forecast.series.map((row) => (
-                  <tr
-                    key={row.bucket}
-                    className={`border-b border-gray-100 ${row.bucket === "overdue" ? "bg-error-25" : ""}`}
-                  >
-                    <td className="py-1.5 font-medium capitalize">
-                      {row.bucket === "overdue" ? tf("overdue") : row.bucket === "unscheduled" ? tf("unscheduled") : bucketLabel(row.bucket, locale)}
-                    </td>
-                    <td className="text-right text-success-700">
-                      {row.inflow > 0 ? `+${row.inflow} ${currency}` : "—"}
-                    </td>
-                    <td className="text-right text-error-700">
-                      {row.outflow > 0 ? `-${row.outflow} ${currency}` : "—"}
-                    </td>
-                    <td className={`text-right ${row.net < 0 ? "text-error-700" : "text-gray-700"}`}>
-                      {row.net >= 0 ? "+" : ""}
-                      {row.net} {currency}
-                    </td>
-                    <td
-                      className={`text-right font-medium ${
-                        row.bucket === "unscheduled" ? "text-gray-400" : row.runningBalance < 0 ? "text-error-700" : "text-gray-900"
-                      }`}
-                    >
-                      {row.bucket === "unscheduled" ? "—" : `${row.runningBalance} ${currency}`}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+      <a href="/reports" className="card mt-10 block hover:border-gray-400">
+        <div className="text-sm font-medium text-gray-700">{t("cashFlowForecastLink")}</div>
+        <div className="mt-1 text-gray-900">→</div>
+      </a>
     </AuthenticatedShell>
   );
 }

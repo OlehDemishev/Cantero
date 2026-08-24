@@ -16,6 +16,7 @@ describe("NotificationsService.list", () => {
     submittal: { findMany: jest.Mock };
     incidentReport: { findMany: jest.Mock };
     warrantyClaim: { findMany: jest.Mock };
+    commentMention: { findMany: jest.Mock };
     membership: { findFirst: jest.Mock };
   };
 
@@ -29,6 +30,7 @@ describe("NotificationsService.list", () => {
       submittal: { findMany: jest.fn().mockResolvedValue([]) },
       incidentReport: { findMany: jest.fn().mockResolvedValue([]) },
       warrantyClaim: { findMany: jest.fn().mockResolvedValue([]) },
+      commentMention: { findMany: jest.fn().mockResolvedValue([]) },
       membership: { findFirst: jest.fn().mockResolvedValue(null) },
     };
 
@@ -107,6 +109,32 @@ describe("NotificationsService.list", () => {
 
     expect(byKey["warranty_claim:claim-1"].severity).toBe("critical");
     expect(byKey["warranty_claim:claim-2"].severity).toBe("warning");
+  });
+
+  it("surfaces a mention on an RFI comment, labelled with the commenter and the RFI's project", async () => {
+    const project = { id: "project-1", name: "Site A" };
+    prisma.commentMention.findMany.mockResolvedValue([
+      {
+        id: "mention-1",
+        createdAt: new Date("2026-06-01"),
+        comment: {
+          authorName: "Anke Müller",
+          content: "Can you take a look at this?",
+          task: null,
+          rfi: { subject: "Door swing", project },
+          punchListItem: null,
+        },
+      },
+    ]);
+
+    const { notifications } = await service.list(COMPANY_A, USER_A);
+    const mention = notifications.find((n) => n.key === "mention:mention-1");
+
+    expect(mention).toBeDefined();
+    expect(mention?.title).toBe("Anke Müller mentioned you");
+    expect(mention?.body).toContain("Door swing");
+    expect(mention?.body).toContain("Site A");
+    expect(mention?.link).toBe("/projects/project-1");
   });
 
   it("includes results from every source, sorted newest first", async () => {

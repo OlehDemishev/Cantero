@@ -22,3 +22,5 @@ export * from "./submittals";
 export * from "./task-dependencies";
 export * from "./warranty";
 export * from "./bulk-actions";
+export * from "./comments";
+export * from "./resource-planning";

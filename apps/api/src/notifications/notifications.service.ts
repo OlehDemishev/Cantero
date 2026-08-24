@@ -13,7 +13,8 @@ export interface NotificationItem {
     | "punch_list_open"
     | "submittal_pending"
     | "safety_incident"
-    | "warranty_claim_open";
+    | "warranty_claim_open"
+    | "mention";
   severity: Severity;
   title: string;
   body: string;
@@ -35,7 +36,7 @@ export class NotificationsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async list(companyId: string, userId: string) {
-    const [lowStock, reminders, invoices, openRfis, openPunchItems, pendingSubmittals, incidents, openWarrantyClaims, membership] =
+    const [lowStock, reminders, invoices, openRfis, openPunchItems, pendingSubmittals, incidents, openWarrantyClaims, mentions, membership] =
       await Promise.all([
         this.lowStockItems(companyId),
         this.dueReminders(companyId),
@@ -45,6 +46,7 @@ export class NotificationsService {
         this.pendingSubmittals(companyId),
         this.safetyIncidents(companyId),
         this.openWarrantyClaims(companyId),
+        this.mentions(companyId, userId),
         this.prisma.membership.findFirst({ where: { companyId, userId } }),
       ]);
 
@@ -57,6 +59,7 @@ export class NotificationsService {
       ...pendingSubmittals,
       ...incidents,
       ...openWarrantyClaims,
+      ...mentions,
     ].sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
 
     const lastViewedAt = membership?.notificationsLastViewedAt ?? null;
@@ -250,5 +253,36 @@ export class NotificationsService {
       link: `/projects/${claim.project.id}`,
       occurredAt: claim.createdAt,
     }));
+  }
+
+  /** The one branch of this service that's genuinely per-user, not company-wide — a mention is personal. */
+  private async mentions(companyId: string, userId: string): Promise<NotificationItem[]> {
+    const mentions = await this.prisma.commentMention.findMany({
+      where: { userId, comment: { companyId } },
+      include: {
+        comment: {
+          include: {
+            task: { include: { project: { select: { id: true, name: true } } } },
+            rfi: { include: { project: { select: { id: true, name: true } } } },
+            punchListItem: { include: { project: { select: { id: true, name: true } } } },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return mentions.map((m) => {
+      const project = m.comment.task?.project ?? m.comment.rfi?.project ?? m.comment.punchListItem?.project;
+      const targetLabel = m.comment.task?.name ?? m.comment.rfi?.subject ?? m.comment.punchListItem?.title ?? "";
+      return {
+        key: `mention:${m.id}`,
+        type: "mention" as const,
+        severity: "warning" as Severity,
+        title: `${m.comment.authorName} mentioned you`,
+        body: `${targetLabel}${project ? ` — ${project.name}` : ""}: ${m.comment.content.slice(0, 100)}`,
+        link: project ? `/projects/${project.id}` : "/dashboard",
+        occurredAt: m.createdAt,
+      };
+    });
   }
 }

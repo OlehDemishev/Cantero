@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import type { BulkActionResult, PunchListItemStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { PhotoAttachments } from "@/components/photo-attachments";
+import { CommentsThread } from "@/components/comments-thread";
 import { useBulkSelection } from "@/components/bulk-select";
 
 interface Worker {
@@ -228,6 +229,9 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
                   )}
                   <div className="mt-2">
                     <PhotoAttachments param="punchListItemId" entityId={item.id} />
+                  </div>
+                  <div className="mt-3 border-t border-gray-100 pt-3">
+                    <CommentsThread param="punchListItemId" entityId={item.id} />
                   </div>
                   </div>
                 </div>

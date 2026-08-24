@@ -1,6 +1,10 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { computeCriticalPath, type DependencyForCpm, type TaskForCpm } from "../projects/critical-path";
+import { advanceDate, calculateRecurringInvoice } from "../finance/recurring-invoice-schedule";
+
+const CASH_FLOW_WEEKS = 13;
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 /** Company-wide overview spanning every module — the "everything in one place" story for the dashboard. */
 @Injectable()
@@ -368,6 +372,131 @@ export class ReportsService {
     );
 
     return { projects: rows, summary };
+  }
+
+  /**
+   * A standard 13-week cash flow forecast: known future inflows (outstanding sent invoices,
+   * projected upcoming recurring-invoice generations) against known future outflows (unpaid
+   * subcontractor costs, pending/ordered purchase orders), bucketed by week. Payroll/labor isn't
+   * projected — TimeEntry only records hours already worked, not a forward schedule, so there's
+   * no clean data source for future labor cost the way there is a dueDate/expectedDate for money.
+   * There's no tracked bank balance in this system, so this reports flow, not an absolute balance:
+   * cumulativeNet assumes a starting position of 0 today.
+   */
+  async cashFlowForecast(companyId: string) {
+    const now = new Date();
+    const windowStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const windowEnd = new Date(windowStart.getTime() + CASH_FLOW_WEEKS * WEEK_MS);
+
+    const [invoices, recurringInvoices, subcontractorCosts, purchaseOrders] = await Promise.all([
+      this.prisma.invoice.findMany({ where: { companyId, status: "sent" }, include: { payments: true } }),
+      this.prisma.recurringInvoice.findMany({ where: { companyId, active: true }, include: { lines: true } }),
+      this.prisma.subcontractorCost.findMany({ where: { companyId, paid: false } }),
+      this.prisma.purchaseOrder.findMany({ where: { companyId, status: { in: ["draft", "ordered"] } }, include: { lines: true } }),
+    ]);
+
+    const buckets = Array.from({ length: CASH_FLOW_WEEKS }, (_, i) => {
+      const weekStart = new Date(windowStart.getTime() + i * WEEK_MS);
+      return {
+        weekStart,
+        weekEnd: new Date(weekStart.getTime() + WEEK_MS),
+        invoicesInflow: 0,
+        recurringInflow: 0,
+        subcontractorOutflow: 0,
+        purchaseOrderOutflow: 0,
+      };
+    });
+
+    // Anything already past due still gets collapsed into the current week ("expected any time
+    // now") rather than dropped — only a genuinely unscheduled (no date at all) amount is excluded
+    // from the buckets, and even then it's surfaced separately, not silently lost.
+    const bucketIndexFor = (date: Date) =>
+      date.getTime() < windowStart.getTime() ? 0 : Math.floor((date.getTime() - windowStart.getTime()) / WEEK_MS);
+
+    let unscheduledInflow = 0;
+    let unscheduledOutflow = 0;
+
+    for (const inv of invoices) {
+      const paid = inv.payments.reduce((sum, p) => sum + Number(p.amount), 0);
+      const outstanding = Number(inv.total) - paid;
+      if (outstanding <= 0.01) continue;
+      if (!inv.dueDate) {
+        unscheduledInflow += outstanding;
+        continue;
+      }
+      const idx = bucketIndexFor(inv.dueDate);
+      if (idx < CASH_FLOW_WEEKS) buckets[idx].invoicesInflow += outstanding;
+    }
+
+    for (const recurring of recurringInvoices) {
+      if (recurring.lines.length === 0) continue;
+      const calc = calculateRecurringInvoice(
+        recurring.lines.map((l) => ({ description: l.description, quantity: Number(l.quantity), unitPrice: Number(l.unitPrice) })),
+        Number(recurring.taxPercent),
+      );
+      // An overdue nextRunDate (the background job hasn't caught up yet) collapses to "due now"
+      // rather than replaying every missed cycle into week 0.
+      let occurrence = recurring.nextRunDate.getTime() < windowStart.getTime() ? windowStart : recurring.nextRunDate;
+      let iterations = 0;
+      while (occurrence.getTime() < windowEnd.getTime() && iterations < 60) {
+        iterations++;
+        if (recurring.endDate && occurrence.getTime() > recurring.endDate.getTime()) break;
+        const idx = bucketIndexFor(occurrence);
+        if (idx < CASH_FLOW_WEEKS) buckets[idx].recurringInflow += calc.total;
+        occurrence = advanceDate(occurrence, recurring.frequency);
+      }
+    }
+
+    for (const cost of subcontractorCosts) {
+      const amount = Number(cost.amount);
+      if (!cost.dueDate) {
+        unscheduledOutflow += amount;
+        continue;
+      }
+      const idx = bucketIndexFor(cost.dueDate);
+      if (idx < CASH_FLOW_WEEKS) buckets[idx].subcontractorOutflow += amount;
+    }
+
+    for (const po of purchaseOrders) {
+      const amount = po.lines.reduce((sum, l) => sum + Number(l.quantity) * Number(l.unitPrice), 0);
+      if (amount <= 0) continue;
+      if (!po.expectedDate) {
+        unscheduledOutflow += amount;
+        continue;
+      }
+      const idx = bucketIndexFor(po.expectedDate);
+      if (idx < CASH_FLOW_WEEKS) buckets[idx].purchaseOrderOutflow += amount;
+    }
+
+    let cumulativeNet = 0;
+    const weeks = buckets.map((b) => {
+      const inflow = b.invoicesInflow + b.recurringInflow;
+      const outflow = b.subcontractorOutflow + b.purchaseOrderOutflow;
+      const net = inflow - outflow;
+      cumulativeNet += net;
+      return {
+        weekStart: b.weekStart.toISOString(),
+        weekEnd: b.weekEnd.toISOString(),
+        inflow: round2(inflow),
+        outflow: round2(outflow),
+        net: round2(net),
+        cumulativeNet: round2(cumulativeNet),
+        inflowBreakdown: { invoices: round2(b.invoicesInflow), recurring: round2(b.recurringInflow) },
+        outflowBreakdown: { subcontractors: round2(b.subcontractorOutflow), purchaseOrders: round2(b.purchaseOrderOutflow) },
+      };
+    });
+
+    const totalInflow = weeks.reduce((sum, w) => sum + w.inflow, 0);
+    const totalOutflow = weeks.reduce((sum, w) => sum + w.outflow, 0);
+
+    return {
+      windowWeeks: CASH_FLOW_WEEKS,
+      generatedAt: now.toISOString(),
+      unscheduledInflow: round2(unscheduledInflow),
+      unscheduledOutflow: round2(unscheduledOutflow),
+      weeks,
+      totals: { inflow: round2(totalInflow), outflow: round2(totalOutflow), net: round2(totalInflow - totalOutflow) },
+    };
   }
 }
 

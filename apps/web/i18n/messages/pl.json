@@ -39,7 +39,8 @@
     "documents": "Dokumenty",
     "settings": "Ustawienia",
     "reports": "Raporty",
-    "portfolio": "Portfolio"
+    "portfolio": "Portfolio",
+    "resourcePlanning": "Planowanie zasobów"
   },
   "auth": {
     "signupTitle": "Utwórz konto Cantero",
@@ -434,7 +435,8 @@
     "lastGenerated": "Ostatnio wygenerowana",
     "generateNow": "Generuj teraz",
     "pause": "Wstrzymaj",
-    "resume": "Wznów"
+    "resume": "Wznów",
+    "cashFlowForecastLink": "Zobacz 13-tygodniową prognozę przepływów pieniężnych w Raportach"
   },
   "portal": {
     "signInTitle": "Portal klienta",
@@ -608,7 +610,8 @@
     "depType_start_to_start": "Początek→Początek",
     "depType_finish_to_finish": "Koniec→Koniec",
     "depType_start_to_finish": "Początek→Koniec",
-    "criticalPathLegend": "Ścieżka krytyczna — opóźnienie tutaj opóźnia zakończenie"
+    "criticalPathLegend": "Ścieżka krytyczna — opóźnienie tutaj opóźnia zakończenie",
+    "comments": "Komentarze"
   },
   "purchaseOrders": {
     "title": "Zamówienia zakupu",
@@ -663,16 +666,6 @@
     "unassign": "Usuń przypisanie",
     "assignToProject": "Przypisz do projektu"
   },
-  "cashFlow": {
-    "title": "Prognoza przepływów pieniężnych",
-    "hint": "Oczekiwany wpływ z wysłanych faktur wobec oczekiwanego wypływu z otwartych zamówień zakupu i nieopłaconych kosztów podwykonawców.",
-    "inflow": "Wpływ",
-    "outflow": "Wypływ",
-    "net": "Netto",
-    "runningBalance": "Saldo narastające",
-    "overdue": "Zaległe",
-    "unscheduled": "Nieuwzględnione w harmonogramie"
-  },
   "reports": {
     "title": "Raporty",
     "projectMargins": "Marże projektów",
@@ -703,7 +696,18 @@
     "outstanding": "Zaległe",
     "daysOverdue": "Dni zwłoki",
     "teamWorkload": "Obciążenie zespołu",
-    "noWorkload": "Brak zarejestrowanych godzin w tym okresie."
+    "noWorkload": "Brak zarejestrowanych godzin w tym okresie.",
+    "cashFlowForecast": "13-tygodniowa prognoza przepływów pieniężnych",
+    "projectedInflow": "Przewidywane wpływy",
+    "projectedOutflow": "Przewidywane wydatki",
+    "projectedNet": "Przewidywane saldo",
+    "unscheduledNote": "Dodatkowo {inflow} {currency} wpływów i {outflow} {currency} wydatków bez terminu płatności, nieuwzględnionych w poniższych tygodniach.",
+    "inflow": "Wpływy",
+    "outflow": "Wydatki",
+    "net": "Saldo",
+    "cumulativeNet": "Skumulowane",
+    "week": "Tydzień",
+    "weekLabel": "T{n}"
   },
   "notifications": {
     "title": "Powiadomienia",
@@ -954,5 +958,29 @@
     "nSelected": "Wybrano: {count}",
     "clearSelection": "Wyczyść zaznaczenie",
     "resultSummary": "{succeeded} powodzenie, {failed} niepowodzenie"
+  },
+  "comments": {
+    "title": "Komentarze",
+    "noComments": "Brak komentarzy.",
+    "addCommentPlaceholder": "Napisz komentarz… użyj @ aby kogoś oznaczyć",
+    "post": "Wyślij"
+  },
+  "resourcePlanning": {
+    "title": "Planowanie zasobów",
+    "subtitle": "Kalendarz zasobów między projektami dla ekip i sprzętu — podwójne przypisania są wykrywane automatycznie.",
+    "newAssignment": "Nowe przypisanie",
+    "resourceType": "Typ zasobu",
+    "worker": "Pracownik",
+    "equipment": "Sprzęt",
+    "project": "Projekt",
+    "startDate": "Data rozpoczęcia",
+    "endDate": "Data zakończenia",
+    "note": "Notatka",
+    "assign": "Przypisz",
+    "newAssignmentConflict": "Nakłada się na {count} inne przypisanie(a) tego samego zasobu:",
+    "conflictsDetected": "Wykryto {count} konflikt(y) harmonogramu",
+    "calendar": "Kalendarz",
+    "noAssignments": "Brak przypisań.",
+    "allAssignments": "Wszystkie przypisania"
   }
 }
