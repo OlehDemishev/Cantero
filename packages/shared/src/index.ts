@@ -26,3 +26,5 @@ export * from "./comments";
 export * from "./resource-planning";
 export * from "./checklist-templates";
 export * from "./scheduled-reports";
+export * from "./custom-fields";
+export * from "./saved-views";

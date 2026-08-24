@@ -210,7 +210,10 @@
     "client": "Клієнт",
     "noClient": "Без клієнта",
     "empty": "Ще немає проєктів — створіть перший.",
-    "viewEstimates": "Кошториси цього проєкту"
+    "viewEstimates": "Кошториси цього проєкту",
+    "searchPlaceholder": "Пошук за назвою чи адресою…",
+    "allClients": "Усі клієнти",
+    "noMatches": "Жоден проєкт не відповідає цим фільтрам."
   },
   "clients": {
     "title": "Клієнти",
@@ -244,7 +247,9 @@
     "confirmLoss": "Підтвердити втрату",
     "convertToProject": "Перетворити на проєкт",
     "projectName": "Назва проєкту",
-    "pipelineOverview": "Огляд пайплайну"
+    "pipelineOverview": "Огляд пайплайну",
+    "searchPlaceholder": "Пошук за іменем чи email…",
+    "allOwners": "Усі відповідальні"
   },
   "team": {
     "title": "Команда",
@@ -1140,5 +1145,27 @@
     "cancelBidRequest": "Скасувати тендер",
     "open": "Відкрито",
     "cancelled": "Скасовано"
+  },
+  "customFields": {
+    "title": "Користувацькі поля",
+    "hint": "Додайте власні поля до проєктів і клієнтів — вони з'являться в кожному записі цього типу.",
+    "noFields": "Користувацьких полів ще не визначено.",
+    "entityType": "Застосовується до",
+    "entityType_project": "Проєкти",
+    "entityType_client": "Клієнти",
+    "fieldType": "Тип поля",
+    "fieldType_text": "Текст",
+    "fieldType_number": "Число",
+    "fieldType_date": "Дата",
+    "fieldType_boolean": "Так/Ні",
+    "fieldType_select": "Випадний список",
+    "optionsCommaSeparated": "Варіанти (через кому)",
+    "optionsPlaceholder": "напр. Низький, Середній, Високий",
+    "addField": "Додати поле"
+  },
+  "savedViews": {
+    "nameThisView": "Назвіть цей вигляд",
+    "saveView": "Зберегти вигляд",
+    "removeView": "Видалити вигляд"
   }
 }

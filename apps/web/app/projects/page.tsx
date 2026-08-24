@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
+import { SavedViewsBar } from "@/components/saved-views-bar";
 import { apiFetch } from "@/lib/api-client";
 
 interface Client {
@@ -15,6 +16,12 @@ interface Project {
   address: string | null;
   client: Client | null;
 }
+interface ProjectFilters {
+  search: string;
+  clientId: string;
+}
+
+const EMPTY_FILTERS: ProjectFilters = { search: "", clientId: "" };
 
 export default function ProjectsPage() {
   const t = useTranslations("projects");
@@ -23,6 +30,7 @@ export default function ProjectsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [form, setForm] = useState({ name: "", address: "", clientId: "" });
   const [submitting, setSubmitting] = useState(false);
+  const [filters, setFilters] = useState<ProjectFilters>(EMPTY_FILTERS);
 
   function load() {
     apiFetch<Project[]>("/projects").then(setProjects);
@@ -51,6 +59,13 @@ export default function ProjectsPage() {
       setSubmitting(false);
     }
   }
+
+  const filtered = (projects ?? []).filter((p) => {
+    const q = filters.search.trim().toLowerCase();
+    const matchesSearch = !q || p.name.toLowerCase().includes(q) || (p.address ?? "").toLowerCase().includes(q);
+    const matchesClient = !filters.clientId || p.client?.id === filters.clientId;
+    return matchesSearch && matchesClient;
+  });
 
   return (
     <AuthenticatedShell>
@@ -92,13 +107,39 @@ export default function ProjectsPage() {
         </div>
 
         <div className="lg:col-span-2">
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <input
+              className="input w-auto flex-1"
+              placeholder={t("searchPlaceholder")}
+              value={filters.search}
+              onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
+            />
+            <select
+              className="input w-auto"
+              value={filters.clientId}
+              onChange={(e) => setFilters((f) => ({ ...f, clientId: e.target.value }))}
+            >
+              <option value="">{t("allClients")}</option>
+              {clients.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="mb-4">
+            <SavedViewsBar viewType="projects" currentFilters={filters} onApply={(f) => setFilters({ ...EMPTY_FILTERS, ...f })} />
+          </div>
+
           {!projects ? (
             <p className="text-gray-500">{tc("loading")}</p>
           ) : projects.length === 0 ? (
             <p className="text-gray-500">{t("empty")}</p>
+          ) : filtered.length === 0 ? (
+            <p className="text-gray-500">{t("noMatches")}</p>
           ) : (
             <ul className="flex flex-col gap-2">
-              {projects.map((p) => (
+              {filtered.map((p) => (
                 <li key={p.id}>
                   <a href={`/projects/${p.id}`} className="card block hover:border-gray-400">
                     <div className="font-medium">{p.name}</div>

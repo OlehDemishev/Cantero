@@ -7,6 +7,7 @@ import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch, apiUpload } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { isPushSupported, getExistingSubscription, enablePush, disablePush } from "@/lib/push";
+import { CustomFieldsSettingsPanel } from "@/components/custom-fields-settings-panel";
 
 interface Company {
   name: string;
@@ -879,6 +880,8 @@ export default function SettingsPage() {
             </form>
           </section>
         )}
+
+        <CustomFieldsSettingsPanel canManage={isManager} />
 
         {isManager && (
           <section className="card lg:col-span-2">

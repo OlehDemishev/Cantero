@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
+import { CustomFieldsValuesPanel } from "@/components/custom-fields-values-panel";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
@@ -297,6 +298,8 @@ export function ClientDetail({ clientId }: { clientId: string }) {
           </div>
         </form>
       </div>
+
+      <CustomFieldsValuesPanel entityType="client" entityId={clientId} />
 
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2">

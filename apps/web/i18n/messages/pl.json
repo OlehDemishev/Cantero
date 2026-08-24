@@ -210,7 +210,10 @@
     "client": "Klient",
     "noClient": "Brak klienta",
     "empty": "Brak projektów — utwórz pierwszy.",
-    "viewEstimates": "Kosztorysy dla tego projektu"
+    "viewEstimates": "Kosztorysy dla tego projektu",
+    "searchPlaceholder": "Szukaj po nazwie lub adresie…",
+    "allClients": "Wszyscy klienci",
+    "noMatches": "Żaden projekt nie pasuje do tych filtrów."
   },
   "clients": {
     "title": "Klienci",
@@ -244,7 +247,9 @@
     "confirmLoss": "Potwierdź utratę",
     "convertToProject": "Przekształć w projekt",
     "projectName": "Nazwa projektu",
-    "pipelineOverview": "Przegląd lejka sprzedaży"
+    "pipelineOverview": "Przegląd lejka sprzedaży",
+    "searchPlaceholder": "Szukaj po nazwie lub e-mailu…",
+    "allOwners": "Wszyscy właściciele"
   },
   "team": {
     "title": "Zespół",
@@ -1140,5 +1145,27 @@
     "cancelBidRequest": "Anuluj zapytanie ofertowe",
     "open": "Otwarte",
     "cancelled": "Anulowane"
+  },
+  "customFields": {
+    "title": "Pola niestandardowe",
+    "hint": "Dodaj własne pola do projektów i klientów — pojawią się na każdym rekordzie tego typu.",
+    "noFields": "Nie zdefiniowano jeszcze żadnych pól niestandardowych.",
+    "entityType": "Dotyczy",
+    "entityType_project": "Projekty",
+    "entityType_client": "Klienci",
+    "fieldType": "Typ pola",
+    "fieldType_text": "Tekst",
+    "fieldType_number": "Liczba",
+    "fieldType_date": "Data",
+    "fieldType_boolean": "Tak/Nie",
+    "fieldType_select": "Lista rozwijana",
+    "optionsCommaSeparated": "Opcje (oddzielone przecinkami)",
+    "optionsPlaceholder": "np. Niski, Średni, Wysoki",
+    "addField": "Dodaj pole"
+  },
+  "savedViews": {
+    "nameThisView": "Nazwij ten widok",
+    "saveView": "Zapisz widok",
+    "removeView": "Usuń widok"
   }
 }

@@ -210,7 +210,10 @@
     "client": "Client",
     "noClient": "No client",
     "empty": "No projects yet — create your first one.",
-    "viewEstimates": "Estimates for this project"
+    "viewEstimates": "Estimates for this project",
+    "searchPlaceholder": "Search by name or address…",
+    "allClients": "All clients",
+    "noMatches": "No projects match these filters."
   },
   "clients": {
     "title": "Clients",
@@ -244,7 +247,9 @@
     "confirmLoss": "Confirm loss",
     "convertToProject": "Convert to project",
     "projectName": "Project name",
-    "pipelineOverview": "Pipeline overview"
+    "pipelineOverview": "Pipeline overview",
+    "searchPlaceholder": "Search by name or email…",
+    "allOwners": "All owners"
   },
   "team": {
     "title": "Team",
@@ -1140,5 +1145,27 @@
     "cancelBidRequest": "Cancel bid request",
     "open": "Open",
     "cancelled": "Cancelled"
+  },
+  "customFields": {
+    "title": "Custom fields",
+    "hint": "Add your own fields to projects and clients — they'll show up on every record of that type.",
+    "noFields": "No custom fields defined yet.",
+    "entityType": "Applies to",
+    "entityType_project": "Projects",
+    "entityType_client": "Clients",
+    "fieldType": "Field type",
+    "fieldType_text": "Text",
+    "fieldType_number": "Number",
+    "fieldType_date": "Date",
+    "fieldType_boolean": "Yes/No",
+    "fieldType_select": "Dropdown",
+    "optionsCommaSeparated": "Options (comma-separated)",
+    "optionsPlaceholder": "e.g. Low, Medium, High",
+    "addField": "Add field"
+  },
+  "savedViews": {
+    "nameThisView": "Name this view",
+    "saveView": "Save view",
+    "removeView": "Remove view"
   }
 }

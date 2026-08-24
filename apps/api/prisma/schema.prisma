@@ -196,6 +196,8 @@ model Company {
   scheduledReports     ScheduledReport[]
   lienWaivers          LienWaiver[]
   bidRequests          BidRequest[]
+  customFieldDefinitions CustomFieldDefinition[]
+  savedViews             SavedView[]
 
   @@map("companies")
 }
@@ -294,6 +296,7 @@ model User {
   dailyLogs       DailyLog[]
   comments        Comment[]
   commentMentions CommentMention[]
+  savedViews      SavedView[]
 
   @@map("users")
 }
@@ -1963,4 +1966,72 @@ model ChecklistTemplateItem {
 
   @@index([templateId])
   @@map("checklist_template_items")
+}
+
+enum CustomFieldEntityType {
+  project
+  client
+}
+
+enum CustomFieldType {
+  text
+  number
+  date
+  boolean
+  select
+}
+
+/// Company-defined extra field on Project or Client records — "select" uses `options` as the
+/// allowed values; every other type stores free-form text and is validated client-side only.
+model CustomFieldDefinition {
+  id         String                @id @default(uuid())
+  companyId  String
+  entityType CustomFieldEntityType
+  name       String
+  type       CustomFieldType
+  options    String[]              @default([])
+  sortOrder  Int                   @default(0)
+  createdAt  DateTime              @default(now())
+
+  company Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  values  CustomFieldValue[]
+
+  @@unique([companyId, entityType, name])
+  @@index([companyId])
+  @@map("custom_field_definitions")
+}
+
+/// entityId is polymorphic (a Project.id or a Client.id, per the parent field's entityType) —
+/// one column can't FK two tables, so ownership is checked at the application layer instead.
+model CustomFieldValue {
+  id       String  @id @default(uuid())
+  fieldId  String
+  entityId String
+  value    String?
+
+  field CustomFieldDefinition @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+
+  @@unique([fieldId, entityId])
+  @@index([entityId])
+  @@map("custom_field_values")
+}
+
+/// A user's personal saved filter/sort configuration for a list page (viewType is a free-form
+/// key the frontend defines, e.g. "projects" or "clients"); `filters` is opaque JSON the
+/// frontend owns the shape of — the backend just stores and returns it.
+model SavedView {
+  id        String   @id @default(uuid())
+  companyId String
+  userId    String
+  viewType  String
+  name      String
+  filters   Json
+  createdAt DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, viewType, name])
+  @@index([companyId])
+  @@map("saved_views")
 }

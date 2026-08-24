@@ -210,7 +210,10 @@
     "client": "Cliente",
     "noClient": "Sin cliente",
     "empty": "Aún no hay proyectos — crea el primero.",
-    "viewEstimates": "Presupuestos de este proyecto"
+    "viewEstimates": "Presupuestos de este proyecto",
+    "searchPlaceholder": "Buscar por nombre o dirección…",
+    "allClients": "Todos los clientes",
+    "noMatches": "Ningún proyecto coincide con estos filtros."
   },
   "clients": {
     "title": "Clientes",
@@ -244,7 +247,9 @@
     "confirmLoss": "Confirmar pérdida",
     "convertToProject": "Convertir en proyecto",
     "projectName": "Nombre del proyecto",
-    "pipelineOverview": "Resumen del pipeline"
+    "pipelineOverview": "Resumen del pipeline",
+    "searchPlaceholder": "Buscar por nombre o correo…",
+    "allOwners": "Todos los responsables"
   },
   "team": {
     "title": "Equipo",
@@ -1140,5 +1145,27 @@
     "cancelBidRequest": "Cancelar licitación",
     "open": "Abierta",
     "cancelled": "Cancelada"
+  },
+  "customFields": {
+    "title": "Campos personalizados",
+    "hint": "Añada sus propios campos a proyectos y clientes — aparecerán en todos los registros de ese tipo.",
+    "noFields": "Aún no hay campos personalizados definidos.",
+    "entityType": "Se aplica a",
+    "entityType_project": "Proyectos",
+    "entityType_client": "Clientes",
+    "fieldType": "Tipo de campo",
+    "fieldType_text": "Texto",
+    "fieldType_number": "Número",
+    "fieldType_date": "Fecha",
+    "fieldType_boolean": "Sí/No",
+    "fieldType_select": "Lista desplegable",
+    "optionsCommaSeparated": "Opciones (separadas por comas)",
+    "optionsPlaceholder": "p. ej. Baja, Media, Alta",
+    "addField": "Añadir campo"
+  },
+  "savedViews": {
+    "nameThisView": "Nombrar esta vista",
+    "saveView": "Guardar vista",
+    "removeView": "Eliminar vista"
   }
 }

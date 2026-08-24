@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { CsvImportButton } from "@/components/csv-import-button";
+import { SavedViewsBar } from "@/components/saved-views-bar";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
@@ -34,6 +35,12 @@ interface PipelineSummaryRow {
   count: number;
   totalValue: number;
 }
+interface ClientFilters {
+  search: string;
+  ownerWorkerId: string;
+}
+
+const EMPTY_FILTERS: ClientFilters = { search: "", ownerWorkerId: "" };
 
 export default function ClientsPage() {
   const t = useTranslations("clients");
@@ -53,6 +60,7 @@ export default function ClientsPage() {
   const [lostReasonDraft, setLostReasonDraft] = useState("");
   const [convertingId, setConvertingId] = useState<string | null>(null);
   const [convertForm, setConvertForm] = useState({ name: "", address: "" });
+  const [filters, setFilters] = useState<ClientFilters>(EMPTY_FILTERS);
 
   function load() {
     apiFetch<Client[]>("/clients").then(setClients);
@@ -119,6 +127,13 @@ export default function ClientsPage() {
     });
     window.location.href = `/projects/${project.id}`;
   }
+
+  const filteredClients = (clients ?? []).filter((c) => {
+    const q = filters.search.trim().toLowerCase();
+    const matchesSearch = !q || c.name.toLowerCase().includes(q) || (c.email ?? "").toLowerCase().includes(q);
+    const matchesOwner = !filters.ownerWorkerId || c.owner?.id === filters.ownerWorkerId;
+    return matchesSearch && matchesOwner;
+  });
 
   return (
     <AuthenticatedShell>
@@ -216,6 +231,30 @@ export default function ClientsPage() {
       </div>
 
       <div className="mt-8">
+        {clients && clients.length > 0 && (
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <input
+              className="input w-auto flex-1"
+              placeholder={t("searchPlaceholder")}
+              value={filters.search}
+              onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
+            />
+            <select
+              className="input w-auto"
+              value={filters.ownerWorkerId}
+              onChange={(e) => setFilters((f) => ({ ...f, ownerWorkerId: e.target.value }))}
+            >
+              <option value="">{t("allOwners")}</option>
+              {workers.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name}
+                </option>
+              ))}
+            </select>
+            <SavedViewsBar viewType="clients" currentFilters={filters} onApply={(f) => setFilters({ ...EMPTY_FILTERS, ...f })} />
+          </div>
+        )}
+
         {!clients ? (
           <p className="text-gray-500">{tc("loading")}</p>
         ) : clients.length === 0 ? (
@@ -226,7 +265,7 @@ export default function ClientsPage() {
               <div key={stage} className="rounded-lg border border-gray-200 bg-gray-50 p-3">
                 <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{t(stage)}</div>
                 <div className="flex flex-col gap-2">
-                  {clients
+                  {filteredClients
                     .filter((c) => c.stage === stage)
                     .map((c) => (
                       <div key={c.id} className="card">

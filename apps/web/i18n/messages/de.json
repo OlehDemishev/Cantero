@@ -210,7 +210,10 @@
     "client": "Kunde",
     "noClient": "Kein Kunde",
     "empty": "Noch keine Projekte — erstellen Sie Ihr erstes.",
-    "viewEstimates": "Kostenvoranschläge für dieses Projekt"
+    "viewEstimates": "Kostenvoranschläge für dieses Projekt",
+    "searchPlaceholder": "Suche nach Name oder Adresse…",
+    "allClients": "Alle Kunden",
+    "noMatches": "Keine Projekte entsprechen diesen Filtern."
   },
   "clients": {
     "title": "Kunden",
@@ -244,7 +247,9 @@
     "confirmLoss": "Verlust bestätigen",
     "convertToProject": "In Projekt umwandeln",
     "projectName": "Projektname",
-    "pipelineOverview": "Pipeline-Übersicht"
+    "pipelineOverview": "Pipeline-Übersicht",
+    "searchPlaceholder": "Suche nach Name oder E-Mail…",
+    "allOwners": "Alle Verantwortlichen"
   },
   "team": {
     "title": "Team",
@@ -1140,5 +1145,27 @@
     "cancelBidRequest": "Ausschreibung abbrechen",
     "open": "Offen",
     "cancelled": "Abgebrochen"
+  },
+  "customFields": {
+    "title": "Benutzerdefinierte Felder",
+    "hint": "Fügen Sie eigene Felder zu Projekten und Kunden hinzu — sie erscheinen bei jedem Datensatz dieses Typs.",
+    "noFields": "Noch keine benutzerdefinierten Felder angelegt.",
+    "entityType": "Gilt für",
+    "entityType_project": "Projekte",
+    "entityType_client": "Kunden",
+    "fieldType": "Feldtyp",
+    "fieldType_text": "Text",
+    "fieldType_number": "Zahl",
+    "fieldType_date": "Datum",
+    "fieldType_boolean": "Ja/Nein",
+    "fieldType_select": "Auswahlliste",
+    "optionsCommaSeparated": "Optionen (kommagetrennt)",
+    "optionsPlaceholder": "z. B. Niedrig, Mittel, Hoch",
+    "addField": "Feld hinzufügen"
+  },
+  "savedViews": {
+    "nameThisView": "Ansicht benennen",
+    "saveView": "Ansicht speichern",
+    "removeView": "Ansicht entfernen"
   }
 }

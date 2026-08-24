@@ -36,6 +36,8 @@ import { ChecklistTemplatesModule } from "./checklist-templates/checklist-templa
 import { ScheduledReportsModule } from "./scheduled-reports/scheduled-reports.module";
 import { SlaEscalationModule } from "./sla-escalation/sla-escalation.module";
 import { BiddingModule } from "./bidding/bidding.module";
+import { CustomFieldsModule } from "./custom-fields/custom-fields.module";
+import { SavedViewsModule } from "./saved-views/saved-views.module";
 
 @Module({
   imports: [
@@ -72,6 +74,8 @@ import { BiddingModule } from "./bidding/bidding.module";
     ScheduledReportsModule,
     SlaEscalationModule,
     BiddingModule,
+    CustomFieldsModule,
+    SavedViewsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

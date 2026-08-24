@@ -8,6 +8,7 @@ import { SchedulingPanel } from "@/components/scheduling-panel";
 import { DailyLogsPanel } from "@/components/daily-logs-panel";
 import { WeatherForecastPanel } from "@/components/weather-forecast-panel";
 import { GeofencePanel } from "@/components/geofence-panel";
+import { CustomFieldsValuesPanel } from "@/components/custom-fields-values-panel";
 import { PunchListPanel } from "@/components/punch-list-panel";
 import { RfiPanel } from "@/components/rfi-panel";
 import { SafetyPanel } from "@/components/safety-panel";
@@ -187,6 +188,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
       <SchedulingPanel projectId={projectId} />
       <WeatherForecastPanel projectId={projectId} />
       <GeofencePanel projectId={projectId} />
+      <CustomFieldsValuesPanel entityType="project" entityId={projectId} />
       <DailyLogsPanel projectId={projectId} />
       <PunchListPanel projectId={projectId} />
       <RfiPanel projectId={projectId} />
