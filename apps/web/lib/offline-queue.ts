@@ -43,10 +43,15 @@ async function removeQueued(id: number): Promise<void> {
  * (not because the server rejected it), the mutation is queued for later instead
  * of surfacing an error to the user.
  */
-export async function submitOrQueue(kind: string, path: string, method: "POST" | "PATCH", body: unknown): Promise<{ queued: boolean }> {
+export async function submitOrQueue<T = unknown>(
+  kind: string,
+  path: string,
+  method: "POST" | "PATCH",
+  body: unknown,
+): Promise<{ queued: boolean; data?: T }> {
   try {
-    await apiFetch(path, { method, body: JSON.stringify(body) });
-    return { queued: false };
+    const data = await apiFetch<T>(path, { method, body: JSON.stringify(body) });
+    return { queued: false, data };
   } catch (err) {
     if (err instanceof TypeError) {
       // fetch() throws a plain TypeError for network failures (offline, DNS, etc.) —

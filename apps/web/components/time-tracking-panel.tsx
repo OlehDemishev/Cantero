@@ -18,6 +18,7 @@ interface TimeEntry {
   date: string;
   worker: Worker;
   task: Task | null;
+  withinGeofence: boolean | null;
 }
 
 export function TimeTrackingPanel({ projectId }: { projectId: string }) {
@@ -109,6 +110,13 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
                 <td className="py-1">{new Date(entry.date).toLocaleDateString()}</td>
                 <td>{entry.worker.name}</td>
                 <td>{entry.task?.name ?? "—"}</td>
+                <td>
+                  {entry.withinGeofence === false && (
+                    <span className="rounded-full bg-warning-50 px-2 py-0.5 text-xs font-medium text-warning-700">
+                      {t("outsideGeofence")}
+                    </span>
+                  )}
+                </td>
                 <td className="text-right">
                   {editingId === entry.id ? (
                     <input

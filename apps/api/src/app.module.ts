@@ -35,6 +35,7 @@ import { ResourcePlanningModule } from "./resource-planning/resource-planning.mo
 import { ChecklistTemplatesModule } from "./checklist-templates/checklist-templates.module";
 import { ScheduledReportsModule } from "./scheduled-reports/scheduled-reports.module";
 import { SlaEscalationModule } from "./sla-escalation/sla-escalation.module";
+import { BiddingModule } from "./bidding/bidding.module";
 
 @Module({
   imports: [
@@ -70,6 +71,7 @@ import { SlaEscalationModule } from "./sla-escalation/sla-escalation.module";
     ChecklistTemplatesModule,
     ScheduledReportsModule,
     SlaEscalationModule,
+    BiddingModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import type { CreateProjectInput, UpdateProjectWarrantyInput } from "@cantero/shared";
+import type { CreateProjectInput, UpdateProjectGeofenceInput, UpdateProjectWarrantyInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { WeatherService } from "../weather/weather.service";
 
@@ -45,6 +45,24 @@ export class ProjectsService {
       if (!client) throw new NotFoundException("Client not found");
     }
     return this.prisma.project.create({ data: { ...input, companyId } });
+  }
+
+  /** Best-effort lat/lng for the project's free-text address, to pre-fill the geofence-setup form. Returns null if there's no address or it can't be resolved. */
+  async geocode(companyId: string, id: string) {
+    const project = await this.get(companyId, id);
+    if (!project.address) return null;
+    return this.weather.geocode(project.address);
+  }
+
+  async updateGeofence(companyId: string, id: string, input: UpdateProjectGeofenceInput) {
+    await this.get(companyId, id);
+    return this.prisma.project.update({
+      where: { id },
+      data: input
+        ? { geofenceLat: input.lat, geofenceLng: input.lng, geofenceRadiusMeters: input.radiusMeters }
+        : { geofenceLat: null, geofenceLng: null, geofenceRadiusMeters: null },
+      include: { client: true },
+    });
   }
 
   async updateWarranty(companyId: string, id: string, input: UpdateProjectWarrantyInput) {

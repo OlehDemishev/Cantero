@@ -10,6 +10,21 @@ import { submitOrQueue, useOfflineQueue } from "@/lib/offline-queue";
 import { fetchCached, updateCache } from "@/lib/offline-cache";
 import { DashboardIcon, LogoutIcon } from "@/components/nav-icons";
 
+/** Best-effort current position — resolves null (never rejects) on denial, timeout, or an unsupported browser, so logging time never blocks on location. */
+function getCurrentPositionSafe(): Promise<{ lat: number; lng: number } | null> {
+  return new Promise((resolve) => {
+    if (!("geolocation" in navigator)) {
+      resolve(null);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => resolve(null),
+      { timeout: 8000, maximumAge: 60_000 },
+    );
+  });
+}
+
 type TaskStatus = "planned" | "in_progress" | "done";
 const STATUS_ORDER: TaskStatus[] = ["planned", "in_progress", "done"];
 
@@ -252,6 +267,7 @@ function TimeTab({ projectId, meUserId }: { projectId: string; meUserId: string 
   const [form, setForm] = useState({ workerId: "", taskId: "", hours: "8", date: new Date().toISOString().slice(0, 10) });
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [outsideGeofence, setOutsideGeofence] = useState(false);
   const [error, setError] = useState(false);
 
   useEffect(() => {
@@ -277,15 +293,26 @@ function TimeTab({ projectId, meUserId }: { projectId: string; meUserId: string 
     if (!form.workerId) return;
     setBusy(true);
     setMessage(null);
+    setOutsideGeofence(false);
     try {
-      const { queued } = await submitOrQueue("time-entry", "/time-entries", "POST", {
+      const position = await getCurrentPositionSafe();
+      const { queued, data } = await submitOrQueue<{ withinGeofence: boolean | null }>("time-entry", "/time-entries", "POST", {
         workerId: form.workerId,
         projectId,
         taskId: form.taskId || undefined,
         hours: Number(form.hours),
         date: new Date(form.date).toISOString(),
+        clockInLat: position?.lat,
+        clockInLng: position?.lng,
       });
-      setMessage(queued ? t("queuedOffline") : tc("saved"));
+      if (queued) {
+        setMessage(t("queuedOffline"));
+      } else if (data?.withinGeofence === false) {
+        setMessage(t("loggedOutsideGeofence"));
+        setOutsideGeofence(true);
+      } else {
+        setMessage(tc("saved"));
+      }
       setForm((f) => ({ ...f, hours: "8" }));
     } finally {
       setBusy(false);
@@ -344,7 +371,7 @@ function TimeTab({ projectId, meUserId }: { projectId: string; meUserId: string 
       <button type="submit" disabled={busy} className="btn-primary mt-1">
         {t("logTimeButton")}
       </button>
-      {message && <p className="text-xs text-success-700">{message}</p>}
+      {message && <p className={`text-xs ${outsideGeofence ? "text-warning-700" : "text-success-700"}`}>{message}</p>}
     </form>
   );
 }

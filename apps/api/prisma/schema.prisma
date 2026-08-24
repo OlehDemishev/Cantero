@@ -194,6 +194,8 @@ model Company {
   subcontractorDocuments SubcontractorDocument[]
   workerCertifications WorkerCertification[]
   scheduledReports     ScheduledReport[]
+  lienWaivers          LienWaiver[]
+  bidRequests          BidRequest[]
 
   @@map("companies")
 }
@@ -833,6 +835,11 @@ model Project {
   handoverDate   DateTime?
   /// Warranty length in months from handoverDate; null means no warranty is configured yet.
   warrantyMonths Int?
+  /// Site geofence center + radius for field-app clock-in proximity checks — all three null
+  /// disables the check entirely (TimeEntry.withinGeofence stays null for this project's entries).
+  geofenceLat          Float?
+  geofenceLng          Float?
+  geofenceRadiusMeters Int?
 
   company            Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
   client             Client?             @relation(fields: [clientId], references: [id], onDelete: SetNull)
@@ -855,6 +862,8 @@ model Project {
   submittals         Submittal[]
   warrantyClaims     WarrantyClaim[]
   resourceAssignments ResourceAssignment[]
+  lienWaivers        LienWaiver[]
+  bidRequests        BidRequest[]
 
   @@index([companyId])
   @@map("projects")
@@ -1034,6 +1043,14 @@ model Invoice {
   total              Decimal       @db.Decimal(14, 2)
   dueDate            DateTime?
   createdAt          DateTime      @default(now())
+  /// Cumulative % of the linked estimate billed as of this draw — set only on progress-billing
+  /// invoices (see InvoicesService.generateProgressInvoice), null for ordinary invoices.
+  percentComplete    Decimal?      @db.Decimal(5, 2)
+  retainagePercent   Decimal?      @db.Decimal(5, 2)
+  /// Amount withheld from this draw, held until releaseRetainage() generates a release invoice.
+  retainageAmount    Decimal       @default(0) @db.Decimal(14, 2)
+  /// True for the one-off invoice that pays out retainage withheld across prior progress draws.
+  isRetainageRelease Boolean       @default(false)
 
   company          Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
   project          Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -1155,6 +1172,9 @@ model Subcontractor {
   assignments SubcontractorAssignment[]
   portalLoginTokens SubcontractorPortalLoginToken[]
   documents   SubcontractorDocument[]
+  lienWaivers LienWaiver[]
+  bidInvites  BidInvite[]
+  bids        Bid[]
 
   @@index([companyId])
   @@map("subcontractors")
@@ -1297,11 +1317,109 @@ model SubcontractorCost {
   company       Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
   subcontractor Subcontractor @relation(fields: [subcontractorId], references: [id], onDelete: Restrict)
   project       Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  lienWaiver    LienWaiver?
 
   @@index([companyId])
   @@index([projectId])
   @@index([subcontractorId])
   @@map("subcontractor_costs")
+}
+
+enum LienWaiverType {
+  conditional_progress
+  unconditional_progress
+  conditional_final
+  unconditional_final
+}
+
+/// A subcontractor's waiver of their right to file a mechanic's lien against the project for a
+/// specific payment — "conditional" is signed before payment clears, "unconditional" after.
+/// Snapshotted at request time from SubcontractorCost.paid, so it doesn't retroactively change
+/// if the cost's paid status changes later.
+model LienWaiver {
+  id                  String         @id @default(uuid())
+  companyId           String
+  projectId           String
+  subcontractorId     String
+  subcontractorCostId String         @unique
+  type                LienWaiverType
+  amount              Decimal        @db.Decimal(14, 2)
+  requestedAt         DateTime       @default(now())
+  signedAt            DateTime?
+  signerName          String?
+  signatureImageKey   String?
+  signedIp            String?
+
+  company           Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project           Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  subcontractor     Subcontractor     @relation(fields: [subcontractorId], references: [id], onDelete: Cascade)
+  subcontractorCost SubcontractorCost @relation(fields: [subcontractorCostId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([subcontractorId])
+  @@map("lien_waivers")
+}
+
+enum BidRequestStatus {
+  open
+  awarded
+  cancelled
+}
+
+/// A scope of work put out to competing subcontractors for pricing, before any SubcontractorAssignment
+/// exists — awarding a bid creates the assignment (via SubcontractorsService.assign, so the usual
+/// insurance-compliance gate still applies) and locks the request against further submissions.
+model BidRequest {
+  id          String           @id @default(uuid())
+  companyId   String
+  projectId   String
+  title       String
+  description String?
+  dueDate     DateTime?
+  status      BidRequestStatus @default(open)
+  createdAt   DateTime         @default(now())
+
+  company Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  invites BidInvite[]
+  bids    Bid[]
+
+  @@index([companyId])
+  @@index([projectId])
+  @@map("bid_requests")
+}
+
+/// Which subcontractors were invited to bid — only invited subs can see/submit against a BidRequest from their portal.
+model BidInvite {
+  id              String   @id @default(uuid())
+  bidRequestId    String
+  subcontractorId String
+  createdAt       DateTime @default(now())
+
+  bidRequest    BidRequest    @relation(fields: [bidRequestId], references: [id], onDelete: Cascade)
+  subcontractor Subcontractor @relation(fields: [subcontractorId], references: [id], onDelete: Cascade)
+
+  @@unique([bidRequestId, subcontractorId])
+  @@index([subcontractorId])
+  @@map("bid_invites")
+}
+
+model Bid {
+  id              String   @id @default(uuid())
+  bidRequestId    String
+  subcontractorId String
+  amount          Decimal  @db.Decimal(14, 2)
+  notes           String?
+  isAwarded       Boolean  @default(false)
+  submittedAt     DateTime @default(now())
+
+  bidRequest    BidRequest    @relation(fields: [bidRequestId], references: [id], onDelete: Cascade)
+  subcontractor Subcontractor @relation(fields: [subcontractorId], references: [id], onDelete: Cascade)
+
+  @@unique([bidRequestId, subcontractorId])
+  @@index([bidRequestId])
+  @@index([subcontractorId])
+  @@map("bids")
 }
 
 // ---------- CRM (thin in Phase 1) ----------
@@ -1434,6 +1552,12 @@ model TimeEntry {
   createdAt          DateTime @default(now())
   /// Worker.hourlyCost captured at creation time, so past labor-cost reports don't shift when a worker's rate later changes.
   hourlyCostSnapshot Decimal? @db.Decimal(10, 2)
+  /// Captured from the field app's Geolocation API at submission time; null for entries logged from the office.
+  clockInLat              Float?
+  clockInLng              Float?
+  /// Distance from the project's geofence center, and whether it's within radius — null for either field means no geofence was configured on the project at submission time (nothing to evaluate), not that the check failed.
+  distanceFromSiteMeters  Int?
+  withinGeofence          Boolean?
 
   worker  Worker  @relation(fields: [workerId], references: [id], onDelete: Cascade)
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)

@@ -279,7 +279,8 @@
     "certifications": "Certificaciones",
     "noCertifications": "No hay certificaciones registradas.",
     "certificationNamePlaceholder": "Nombre de la certificación (p. ej. OSHA 30, operador de montacargas)",
-    "addCertification": "Agregar certificación"
+    "addCertification": "Agregar certificación",
+    "outsideGeofence": "Fuera de la geocerca"
   },
   "documents": {
     "title": "Documentos",
@@ -447,7 +448,9 @@
     "generateNow": "Generar ahora",
     "pause": "Pausar",
     "resume": "Reanudar",
-    "cashFlowForecastLink": "Ver la previsión de flujo de caja a 13 semanas en Informes"
+    "cashFlowForecastLink": "Ver la previsión de flujo de caja a 13 semanas en Informes",
+    "exportQuickBooks": "Exportar a QuickBooks",
+    "exportXero": "Exportar a Xero"
   },
   "portal": {
     "signInTitle": "Portal del cliente",
@@ -539,7 +542,32 @@
     "amount": "Importe",
     "incurredDate": "Fecha",
     "paid": "Pagado",
-    "unpaid": "Sin pagar"
+    "unpaid": "Sin pagar",
+    "lienWaivers": "Renuncias de gravamen",
+    "noLienWaivers": "Aún no hay renuncias de gravamen.",
+    "signWaiver": "Firmar renuncia",
+    "signed": "Firmada",
+    "awaitingSignature": "Esperando su firma",
+    "signerNameLabel": "Su nombre completo",
+    "signerNamePlaceholder": "p. ej. Juana Pérez",
+    "clearSignature": "Borrar",
+    "confirmSignature": "Confirmar firma",
+    "cancel": "Cancelar",
+    "lienWaiverType_conditional_progress": "Renuncia condicional por pago de avance",
+    "lienWaiverType_unconditional_progress": "Renuncia incondicional por pago de avance",
+    "lienWaiverType_conditional_final": "Renuncia condicional por pago final",
+    "lienWaiverType_unconditional_final": "Renuncia incondicional por pago final",
+    "bidRequests": "Licitaciones",
+    "noBidRequests": "Aún no hay licitaciones.",
+    "youWon": "Ha ganado esta licitación",
+    "bidStatus_open": "Abierta",
+    "bidStatus_awarded": "Adjudicada a otro oferente",
+    "bidStatus_cancelled": "Cancelada",
+    "yourBidAmount": "Importe de su oferta",
+    "notes": "Notas",
+    "submitBid": "Enviar oferta",
+    "updateBid": "Actualizar oferta",
+    "yourBidWas": "Su oferta: {amount} {currency}"
   },
   "budget": {
     "title": "Presupuesto vs. real",
@@ -659,7 +687,8 @@
     "quantity": "Cantidad",
     "logs": "Registros",
     "punch": "Defectos",
-    "cachedFrom": "Mostrando datos almacenados de {time}"
+    "cachedFrom": "Mostrando datos almacenados de {time}",
+    "loggedOutsideGeofence": "Guardado — pero registrado fuera de la geocerca del proyecto"
   },
   "subcontractors": {
     "title": "Costos de subcontratistas",
@@ -675,7 +704,11 @@
     "assignmentsHint": "Solo los subcontratistas asignados pueden ver este proyecto y registrar costos en él desde su propio portal.",
     "noAssignedSubcontractors": "Aún no hay subcontratistas asignados a este proyecto.",
     "unassign": "Quitar asignación",
-    "assignToProject": "Asignar al proyecto"
+    "assignToProject": "Asignar al proyecto",
+    "requestWaiver": "Solicitar renuncia de gravamen",
+    "finalWaiver": "Final",
+    "downloadWaiver": "Descargar renuncia",
+    "waiverAwaitingSignature": "Pendiente de firma"
   },
   "reports": {
     "title": "Informes",
@@ -1065,5 +1098,47 @@
   "weather": {
     "title": "Pronóstico del tiempo",
     "riskWarning": "{count, plural, one {# día con clima de riesgo por delante} other {# días con clima de riesgo por delante}}"
+  },
+  "progressBilling": {
+    "title": "Facturación por avance",
+    "hint": "Facture al cliente en certificaciones según el avance de la obra, reteniendo un porcentaje de retención hasta la finalización.",
+    "percentBilled": "{percent}% facturado",
+    "billedOfContract": "{billed} de {total} {currency} del contrato",
+    "retainageHeld": "Retención acumulada",
+    "drawLabel": "Certificación hasta {percent}%",
+    "retainageReleaseLabel": "Liberación de retención",
+    "percentComplete": "% de avance",
+    "retainagePercent": "% de retención",
+    "generateDraw": "Generar certificación",
+    "releaseRetainage": "Liberar retención ({amount} {currency})",
+    "retainageAlreadyReleased": "La retención ya ha sido liberada."
+  },
+  "geofence": {
+    "title": "Geocerca",
+    "hint": "Los registros de horas de la app de campo fuera de este radio se marcan para revisión — el registro se realiza de todos modos.",
+    "activeSummary": "Activa: {lat}, {lng} · radio de {radius} m",
+    "lat": "Latitud",
+    "lng": "Longitud",
+    "radiusMeters": "Radio (m)",
+    "detectFromAddress": "Detectar desde la dirección",
+    "detectFailed": "No se pudieron obtener las coordenadas a partir de la dirección del proyecto — introdúzcalas manualmente.",
+    "clear": "Borrar"
+  },
+  "bidding": {
+    "title": "Licitaciones",
+    "newBidRequest": "Nueva licitación",
+    "scopeTitle": "Título del alcance",
+    "dueDate": "Fecha límite",
+    "inviteSubcontractors": "Invitar subcontratistas",
+    "noSubcontractors": "Agregue primero un subcontratista para invitarlo a licitar.",
+    "sendBidRequest": "Enviar licitación",
+    "noBidRequests": "Aún no hay licitaciones.",
+    "bidCount": "{count} de {total} oferta(s) recibidas",
+    "noBidYet": "Sin oferta aún",
+    "award": "Adjudicar",
+    "awarded": "Adjudicado",
+    "cancelBidRequest": "Cancelar licitación",
+    "open": "Abierta",
+    "cancelled": "Cancelada"
   }
 }

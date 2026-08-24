@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
 const NEW_SUBCONTRACTOR = "__new__";
@@ -10,6 +10,10 @@ const NEW_SUBCONTRACTOR = "__new__";
 interface Subcontractor {
   id: string;
   name: string;
+}
+interface LienWaiver {
+  id: string;
+  signedAt: string | null;
 }
 interface SubcontractorCost {
   id: string;
@@ -19,6 +23,7 @@ interface SubcontractorCost {
   dueDate: string | null;
   paid: boolean;
   subcontractor: Subcontractor;
+  lienWaiver: LienWaiver | null;
 }
 
 export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
@@ -37,6 +42,7 @@ export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
     dueDate: "",
   });
   const [busy, setBusy] = useState(false);
+  const [finalFlags, setFinalFlags] = useState<Record<string, boolean>>({});
 
   function load() {
     apiFetch<SubcontractorCost[]>(`/finance/subcontractor-costs?projectId=${projectId}`).then(setCosts);
@@ -90,6 +96,19 @@ export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
     load();
   }
 
+  async function requestWaiver(id: string) {
+    await apiFetch(`/finance/subcontractor-costs/${id}/lien-waiver`, {
+      method: "POST",
+      body: JSON.stringify({ isFinal: !!finalFlags[id] }),
+    });
+    load();
+  }
+
+  async function downloadWaiverPdf(id: string, description: string) {
+    const blob = await apiFetch<Blob>(`/finance/subcontractor-costs/${id}/lien-waiver/pdf`);
+    downloadBlob(blob, `lien-waiver-${description}.pdf`);
+  }
+
   return (
     <div className="mt-10">
       <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("title")}</h2>
@@ -122,6 +141,31 @@ export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
                     <button onClick={() => markPaid(c.id)} className="btn-secondary px-2 py-1 text-xs">
                       {t("markPaid")}
                     </button>
+                  )}
+                </td>
+                <td className="text-right">
+                  {!c.lienWaiver ? (
+                    <div className="flex items-center justify-end gap-1.5">
+                      <label className="flex items-center gap-1 text-xs text-gray-500">
+                        <input
+                          type="checkbox"
+                          checked={!!finalFlags[c.id]}
+                          onChange={(e) => setFinalFlags((f) => ({ ...f, [c.id]: e.target.checked }))}
+                        />
+                        {t("finalWaiver")}
+                      </label>
+                      <button onClick={() => requestWaiver(c.id)} className="btn-secondary px-2 py-1 text-xs">
+                        {t("requestWaiver")}
+                      </button>
+                    </div>
+                  ) : c.lienWaiver.signedAt ? (
+                    <button onClick={() => downloadWaiverPdf(c.id, c.description)} className="btn-secondary px-2 py-1 text-xs">
+                      {t("downloadWaiver")}
+                    </button>
+                  ) : (
+                    <span className="rounded-full bg-warning-50 px-2 py-0.5 text-xs font-medium text-warning-700">
+                      {t("waiverAwaitingSignature")}
+                    </span>
                   )}
                 </td>
               </tr>

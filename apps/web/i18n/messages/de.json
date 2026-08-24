@@ -279,7 +279,8 @@
     "certifications": "Zertifizierungen",
     "noCertifications": "Keine Zertifizierungen hinterlegt.",
     "certificationNamePlaceholder": "Name der Zertifizierung (z. B. OSHA 30, Staplerfahrer)",
-    "addCertification": "Zertifizierung hinzufügen"
+    "addCertification": "Zertifizierung hinzufügen",
+    "outsideGeofence": "Außerhalb des Geofence"
   },
   "documents": {
     "title": "Dokumente",
@@ -447,7 +448,9 @@
     "generateNow": "Jetzt erstellen",
     "pause": "Pausieren",
     "resume": "Fortsetzen",
-    "cashFlowForecastLink": "13-Wochen-Cashflow-Prognose in den Berichten ansehen"
+    "cashFlowForecastLink": "13-Wochen-Cashflow-Prognose in den Berichten ansehen",
+    "exportQuickBooks": "Nach QuickBooks exportieren",
+    "exportXero": "Nach Xero exportieren"
   },
   "portal": {
     "signInTitle": "Kundenportal",
@@ -539,7 +542,32 @@
     "amount": "Betrag",
     "incurredDate": "Datum",
     "paid": "Bezahlt",
-    "unpaid": "Unbezahlt"
+    "unpaid": "Unbezahlt",
+    "lienWaivers": "Verzichtserklärungen",
+    "noLienWaivers": "Noch keine Verzichtserklärungen.",
+    "signWaiver": "Verzichtserklärung unterschreiben",
+    "signed": "Unterschrieben",
+    "awaitingSignature": "Wartet auf Ihre Unterschrift",
+    "signerNameLabel": "Ihr vollständiger Name",
+    "signerNamePlaceholder": "z. B. Jane Schmidt",
+    "clearSignature": "Löschen",
+    "confirmSignature": "Unterschrift bestätigen",
+    "cancel": "Abbrechen",
+    "lienWaiverType_conditional_progress": "Bedingter Verzicht bei Abschlagszahlung",
+    "lienWaiverType_unconditional_progress": "Unbedingter Verzicht bei Abschlagszahlung",
+    "lienWaiverType_conditional_final": "Bedingter Verzicht bei Schlusszahlung",
+    "lienWaiverType_unconditional_final": "Unbedingter Verzicht bei Schlusszahlung",
+    "bidRequests": "Ausschreibungen",
+    "noBidRequests": "Noch keine Ausschreibungen.",
+    "youWon": "Sie haben den Zuschlag erhalten",
+    "bidStatus_open": "Offen",
+    "bidStatus_awarded": "An einen anderen Bieter vergeben",
+    "bidStatus_cancelled": "Abgebrochen",
+    "yourBidAmount": "Ihr Angebotsbetrag",
+    "notes": "Notizen",
+    "submitBid": "Angebot abgeben",
+    "updateBid": "Angebot aktualisieren",
+    "yourBidWas": "Ihr Angebot: {amount} {currency}"
   },
   "budget": {
     "title": "Budget vs. Ist",
@@ -659,7 +687,8 @@
     "quantity": "Menge",
     "logs": "Protokolle",
     "punch": "Mängel",
-    "cachedFrom": "Zeigt zwischengespeicherte Daten von {time}"
+    "cachedFrom": "Zeigt zwischengespeicherte Daten von {time}",
+    "loggedOutsideGeofence": "Gespeichert — jedoch außerhalb des Geofence des Projekts erfasst"
   },
   "subcontractors": {
     "title": "Nachunternehmerkosten",
@@ -675,7 +704,11 @@
     "assignmentsHint": "Nur zugewiesene Subunternehmer können dieses Projekt sehen und über ihr eigenes Portal Kosten dafür erfassen.",
     "noAssignedSubcontractors": "Diesem Projekt sind noch keine Subunternehmer zugewiesen.",
     "unassign": "Zuweisung aufheben",
-    "assignToProject": "Projekt zuweisen"
+    "assignToProject": "Projekt zuweisen",
+    "requestWaiver": "Verzichtserklärung anfordern",
+    "finalWaiver": "Endgültig",
+    "downloadWaiver": "Verzichtserklärung herunterladen",
+    "waiverAwaitingSignature": "Unterschrift ausstehend"
   },
   "reports": {
     "title": "Berichte",
@@ -1065,5 +1098,47 @@
   "weather": {
     "title": "Wettervorhersage",
     "riskWarning": "{count, plural, one {# Tag mit riskantem Wetter voraus} other {# Tage mit riskantem Wetter voraus}}"
+  },
+  "progressBilling": {
+    "title": "Abschlagsrechnungen",
+    "hint": "Stellen Sie dem Kunden Abschlagszahlungen nach Baufortschritt, wobei bis zur Fertigstellung ein Einbehalt zurückgehalten wird.",
+    "percentBilled": "{percent}% abgerechnet",
+    "billedOfContract": "{billed} von {total} {currency} Vertragssumme",
+    "retainageHeld": "Einbehalt zurückgehalten",
+    "drawLabel": "Abschlag bis {percent}%",
+    "retainageReleaseLabel": "Freigabe des Einbehalts",
+    "percentComplete": "% fertig",
+    "retainagePercent": "Einbehalt %",
+    "generateDraw": "Abschlagsrechnung erstellen",
+    "releaseRetainage": "Einbehalt freigeben ({amount} {currency})",
+    "retainageAlreadyReleased": "Der Einbehalt wurde bereits freigegeben."
+  },
+  "geofence": {
+    "title": "Geofence",
+    "hint": "Zeiterfassungen aus der Feld-App außerhalb dieses Radius werden zur Überprüfung markiert — die Erfassung gelingt trotzdem.",
+    "activeSummary": "Aktiv: {lat}, {lng} · {radius} m Radius",
+    "lat": "Breitengrad",
+    "lng": "Längengrad",
+    "radiusMeters": "Radius (m)",
+    "detectFromAddress": "Aus Adresse ermitteln",
+    "detectFailed": "Koordinaten konnten nicht aus der Projektadresse ermittelt werden — bitte manuell eingeben.",
+    "clear": "Löschen"
+  },
+  "bidding": {
+    "title": "Ausschreibungen",
+    "newBidRequest": "Neue Ausschreibung",
+    "scopeTitle": "Titel des Leistungsumfangs",
+    "dueDate": "Frist",
+    "inviteSubcontractors": "Subunternehmer einladen",
+    "noSubcontractors": "Legen Sie zuerst einen Subunternehmer an, um ihn zur Ausschreibung einzuladen.",
+    "sendBidRequest": "Ausschreibung senden",
+    "noBidRequests": "Noch keine Ausschreibungen.",
+    "bidCount": "{count} von {total} Angebot(en) eingegangen",
+    "noBidYet": "Noch kein Angebot",
+    "award": "Vergeben",
+    "awarded": "Vergeben",
+    "cancelBidRequest": "Ausschreibung abbrechen",
+    "open": "Offen",
+    "cancelled": "Abgebrochen"
   }
 }

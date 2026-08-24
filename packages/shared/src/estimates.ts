@@ -47,6 +47,16 @@ export const updateProjectWarrantySchema = z.object({
 });
 export type UpdateProjectWarrantyInput = z.infer<typeof updateProjectWarrantySchema>;
 
+/// null clears the geofence (disables the check); a value sets/replaces it wholesale — no partial updates.
+export const updateProjectGeofenceSchema = z
+  .object({
+    lat: z.number().min(-90).max(90),
+    lng: z.number().min(-180).max(180),
+    radiusMeters: z.number().int().min(10).max(5000),
+  })
+  .nullable();
+export type UpdateProjectGeofenceInput = z.infer<typeof updateProjectGeofenceSchema>;
+
 export const createClientSchema = z.object({
   name: z.string().min(1).max(160),
   email: z.string().email().optional(),

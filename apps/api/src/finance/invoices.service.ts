@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import type { AddInstallmentInput, RecordPaymentInput, UpdateInvoiceInput } from "@cantero/shared";
+import type { AddInstallmentInput, GenerateProgressInvoiceInput, RecordPaymentInput, UpdateInvoiceInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { PdfService } from "../common/pdf/pdf.service";
 import { StorageService } from "../common/storage/storage.service";
@@ -8,6 +8,7 @@ import { toCsv } from "../common/csv";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
 import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { calculateProgressDraw, round2 } from "./progress-billing";
 
 @Injectable()
 export class InvoicesService {
@@ -79,6 +80,111 @@ export class InvoicesService {
     });
 
     return invoice;
+  }
+
+  /** Generates one progress-billing draw against an estimate, withholding retainage on the incremental amount billed since the last draw. */
+  async generateProgressInvoice(companyId: string, estimateId: string, input: GenerateProgressInvoiceInput) {
+    const estimate = await this.assertInvoiceableEstimate(companyId, estimateId);
+
+    const lastDraw = await this.prisma.invoice.findFirst({
+      where: { companyId, estimateId, isRetainageRelease: false, percentComplete: { not: null } },
+      orderBy: { percentComplete: "desc" },
+    });
+    const previousPercent = lastDraw ? Number(lastDraw.percentComplete) : 0;
+    if (input.percentComplete <= previousPercent) {
+      throw new BadRequestException(`Percent complete must be greater than the last draw's ${previousPercent}%`);
+    }
+
+    const calc = calculateProgressDraw(Number(estimate.grandTotal), previousPercent, input.percentComplete, input.retainagePercent);
+    const number = await this.nextInvoiceNumber(companyId);
+
+    return this.prisma.invoice.create({
+      data: {
+        companyId,
+        projectId: estimate.project!.id,
+        clientId: estimate.project!.clientId!,
+        estimateId: estimate.id,
+        number,
+        status: "draft",
+        subtotal: calc.grossAmount,
+        taxAmount: 0,
+        total: calc.netAmount,
+        percentComplete: input.percentComplete,
+        retainagePercent: input.retainagePercent,
+        retainageAmount: calc.retainageAmount,
+        lines: {
+          create: [
+            {
+              description: `Progress billing — ${previousPercent}% → ${input.percentComplete}% complete`,
+              quantity: 1,
+              unitPrice: calc.grossAmount,
+              lineTotal: calc.grossAmount,
+            },
+          ],
+        },
+      },
+      include: { lines: true, client: true, project: true },
+    });
+  }
+
+  /** Pays out all retainage withheld across an estimate's progress draws in one final invoice. Can only be done once per estimate. */
+  async releaseRetainage(companyId: string, estimateId: string) {
+    const estimate = await this.assertInvoiceableEstimate(companyId, estimateId);
+
+    const alreadyReleased = await this.prisma.invoice.findFirst({ where: { companyId, estimateId, isRetainageRelease: true } });
+    if (alreadyReleased) throw new BadRequestException("Retainage has already been released for this estimate");
+
+    const progressDraws = await this.prisma.invoice.findMany({ where: { companyId, estimateId, isRetainageRelease: false } });
+    const totalHeld = round2(progressDraws.reduce((sum, inv) => sum + Number(inv.retainageAmount), 0));
+    if (totalHeld <= 0) throw new BadRequestException("No retainage held on this estimate to release");
+
+    const number = await this.nextInvoiceNumber(companyId);
+    return this.prisma.invoice.create({
+      data: {
+        companyId,
+        projectId: estimate.project!.id,
+        clientId: estimate.project!.clientId!,
+        estimateId: estimate.id,
+        number,
+        status: "draft",
+        subtotal: totalHeld,
+        taxAmount: 0,
+        total: totalHeld,
+        isRetainageRelease: true,
+        lines: { create: [{ description: "Retainage release", quantity: 1, unitPrice: totalHeld, lineTotal: totalHeld }] },
+      },
+      include: { lines: true, client: true, project: true },
+    });
+  }
+
+  async progressBillingSummary(companyId: string, estimateId: string) {
+    const estimate = await this.prisma.estimate.findFirst({ where: { id: estimateId, companyId } });
+    if (!estimate) throw new NotFoundException("Estimate not found");
+
+    const invoices = await this.prisma.invoice.findMany({
+      where: { companyId, estimateId, OR: [{ percentComplete: { not: null } }, { isRetainageRelease: true }] },
+      orderBy: { createdAt: "asc" },
+    });
+    const progressDraws = invoices.filter((i) => !i.isRetainageRelease);
+    const releaseInvoice = invoices.find((i) => i.isRetainageRelease) ?? null;
+    const percentBilled = progressDraws.length ? Math.max(...progressDraws.map((i) => Number(i.percentComplete))) : 0;
+
+    return {
+      contractTotal: Number(estimate.grandTotal),
+      percentBilled,
+      totalBilledGross: round2(progressDraws.reduce((sum, i) => sum + Number(i.subtotal), 0)),
+      totalRetainageHeld: round2(progressDraws.reduce((sum, i) => sum + Number(i.retainageAmount), 0)),
+      retainageReleased: !!releaseInvoice,
+      invoices: invoices.map((i) => ({
+        id: i.id,
+        number: i.number,
+        status: i.status,
+        percentComplete: i.percentComplete !== null ? Number(i.percentComplete) : null,
+        retainageAmount: Number(i.retainageAmount),
+        total: Number(i.total),
+        isRetainageRelease: i.isRetainageRelease,
+      })),
+    };
   }
 
   async send(companyId: string, actor: AuditActor, id: string) {
@@ -239,6 +345,94 @@ export class InvoicesService {
     });
 
     return toCsv(header, rows);
+  }
+
+  /**
+   * QuickBooks Online's bulk-invoice-import CSV format (one row per invoice line, invoice
+   * fields repeated per row — QBO groups rows back into one invoice by matching InvoiceNo).
+   * "Item" is left as a generic "Services" placeholder — the importing user maps it to a real
+   * QBO product/service item during import. Only sent/paid invoices are included; drafts aren't
+   * real transactions yet, so they'd have nothing to import.
+   */
+  async exportQuickBooksCsv(companyId: string): Promise<string> {
+    const invoices = await this.prisma.invoice.findMany({
+      where: { companyId, status: { not: "draft" } },
+      include: { client: true, lines: true },
+      orderBy: { number: "asc" },
+    });
+
+    const header = ["InvoiceNo", "Customer", "InvoiceDate", "DueDate", "Item", "ItemDescription", "ItemQuantity", "ItemRate", "ItemAmount"];
+    const rows = invoices.flatMap((inv) =>
+      inv.lines.map((line) => [
+        inv.number,
+        inv.client.name,
+        inv.createdAt.toISOString().slice(0, 10),
+        (inv.dueDate ?? inv.createdAt).toISOString().slice(0, 10),
+        "Services",
+        line.description,
+        line.quantity.toString(),
+        line.unitPrice.toString(),
+        line.lineTotal.toString(),
+      ]),
+    );
+    return toCsv(header, rows);
+  }
+
+  /**
+   * Xero's Sales Invoices import CSV format (one row per invoice line). AccountCode "200" is
+   * Xero's default chart-of-accounts code for Sales in a standard chart — the importing user
+   * remaps it if their chart differs. TaxType "NONE" leaves tax handling to Xero's own rules
+   * rather than guessing a tax rate name that may not exist in the target organisation.
+   */
+  async exportXeroCsv(companyId: string): Promise<string> {
+    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    const invoices = await this.prisma.invoice.findMany({
+      where: { companyId, status: { not: "draft" } },
+      include: { client: true, lines: true },
+      orderBy: { number: "asc" },
+    });
+
+    const header = [
+      "*ContactName",
+      "*InvoiceNumber",
+      "*InvoiceDate",
+      "*DueDate",
+      "*Description",
+      "*Quantity",
+      "*UnitAmount",
+      "*AccountCode",
+      "*TaxType",
+      "Currency",
+    ];
+    const rows = invoices.flatMap((inv) =>
+      inv.lines.map((line) => [
+        inv.client.name,
+        inv.number,
+        inv.createdAt.toISOString().slice(0, 10),
+        (inv.dueDate ?? inv.createdAt).toISOString().slice(0, 10),
+        line.description,
+        line.quantity.toString(),
+        line.unitPrice.toString(),
+        "200",
+        "NONE",
+        company.currency,
+      ]),
+    );
+    return toCsv(header, rows);
+  }
+
+  private async assertInvoiceableEstimate(companyId: string, estimateId: string) {
+    const estimate = await this.prisma.estimate.findFirst({ where: { id: estimateId, companyId }, include: { project: true } });
+    if (!estimate) throw new NotFoundException("Estimate not found");
+    if (!estimate.project) throw new NotFoundException("Estimate has no project — templates can't be invoiced directly");
+    if (!estimate.project.clientId) throw new NotFoundException("Project has no client — add a client before invoicing");
+    if (estimate.status !== "approved") throw new NotFoundException("Estimate must be approved before it can be invoiced");
+    return estimate;
+  }
+
+  private async nextInvoiceNumber(companyId: string): Promise<string> {
+    const invoiceCount = await this.prisma.invoice.count({ where: { companyId } });
+    return `INV-${String(invoiceCount + 1).padStart(4, "0")}`;
   }
 
   private async findOrThrow(companyId: string, id: string) {

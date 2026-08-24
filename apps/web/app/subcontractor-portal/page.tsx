@@ -8,6 +8,7 @@ import {
   subcontractorPortalApiFetch,
   clearSubcontractorPortalToken,
 } from "@/lib/subcontractor-portal-api-client";
+import { SignaturePad } from "@/components/signature-pad";
 
 interface Me {
   name: string;
@@ -26,6 +27,31 @@ interface Cost {
   paid: boolean;
   project: { name: string };
 }
+type LienWaiverType = "conditional_progress" | "unconditional_progress" | "conditional_final" | "unconditional_final";
+interface LienWaiver {
+  id: string;
+  type: LienWaiverType;
+  amount: string;
+  requestedAt: string;
+  signedAt: string | null;
+  signerName: string | null;
+  project: { name: string };
+}
+type BidRequestStatus = "open" | "awarded" | "cancelled";
+interface MyBid {
+  amount: string;
+  notes: string | null;
+  isAwarded: boolean;
+}
+interface BidRequest {
+  id: string;
+  title: string;
+  description: string | null;
+  dueDate: string | null;
+  status: BidRequestStatus;
+  project: { name: string };
+  bids: MyBid[];
+}
 
 export default function SubcontractorPortalDashboardPage() {
   const t = useTranslations("subcontractorPortal");
@@ -34,12 +60,39 @@ export default function SubcontractorPortalDashboardPage() {
   const [me, setMe] = useState<Me | null>(null);
   const [assignments, setAssignments] = useState<Assignment[] | null>(null);
   const [costs, setCosts] = useState<Cost[] | null>(null);
+  const [waivers, setWaivers] = useState<LienWaiver[] | null>(null);
+  const [signingId, setSigningId] = useState<string | null>(null);
+  const [signerName, setSignerName] = useState("");
+  const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
+  const [bidRequests, setBidRequests] = useState<BidRequest[] | null>(null);
+  const [bidForms, setBidForms] = useState<Record<string, { amount: string; notes: string }>>({});
+  const [bidBusyId, setBidBusyId] = useState<string | null>(null);
   const [form, setForm] = useState({ projectId: "", description: "", amount: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function loadCosts() {
     subcontractorPortalApiFetch<Cost[]>("/subcontractor-portal/costs").then(setCosts);
+  }
+
+  function loadWaivers() {
+    subcontractorPortalApiFetch<LienWaiver[]>("/subcontractor-portal/lien-waivers").then(setWaivers);
+  }
+
+  function loadBidRequests() {
+    subcontractorPortalApiFetch<BidRequest[]>("/subcontractor-portal/bid-requests").then((list) => {
+      setBidRequests(list);
+      setBidForms((prev) => {
+        const next = { ...prev };
+        for (const r of list) {
+          if (!next[r.id]) {
+            const mine = r.bids[0];
+            next[r.id] = { amount: mine?.amount ?? "", notes: mine?.notes ?? "" };
+          }
+        }
+        return next;
+      });
+    });
   }
 
   useEffect(() => {
@@ -53,6 +106,8 @@ export default function SubcontractorPortalDashboardPage() {
       if (list[0]) setForm((f) => ({ ...f, projectId: f.projectId || list[0].project.id }));
     });
     loadCosts();
+    loadWaivers();
+    loadBidRequests();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -80,6 +135,44 @@ export default function SubcontractorPortalDashboardPage() {
       setError(err instanceof Error ? err.message : t("verifyError"));
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function signWaiver(waiverId: string) {
+    if (!signerName.trim() || !signatureDataUrl) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await subcontractorPortalApiFetch(`/subcontractor-portal/lien-waivers/${waiverId}/sign`, {
+        method: "POST",
+        body: JSON.stringify({ signerName: signerName.trim(), signatureDataUrl }),
+      });
+      setSigningId(null);
+      setSignerName("");
+      setSignatureDataUrl(null);
+      loadWaivers();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("verifyError"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submitBid(bidRequestId: string) {
+    const form = bidForms[bidRequestId];
+    if (!form || !form.amount) return;
+    setBidBusyId(bidRequestId);
+    setError(null);
+    try {
+      await subcontractorPortalApiFetch(`/subcontractor-portal/bid-requests/${bidRequestId}/bid`, {
+        method: "POST",
+        body: JSON.stringify({ amount: Number(form.amount), notes: form.notes || undefined }),
+      });
+      loadBidRequests();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("verifyError"));
+    } finally {
+      setBidBusyId(null);
     }
   }
 
@@ -188,6 +281,147 @@ export default function SubcontractorPortalDashboardPage() {
                 {t("submitCost")}
               </button>
             </form>
+          )}
+        </section>
+
+        <section className="card mt-6">
+          <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("bidRequests")}</h2>
+          {!bidRequests || bidRequests.length === 0 ? (
+            <p className="text-sm text-gray-400">{t("noBidRequests")}</p>
+          ) : (
+            <ul className="flex flex-col gap-3">
+              {bidRequests.map((r) => {
+                const myBid = r.bids[0];
+                const form = bidForms[r.id] ?? { amount: "", notes: "" };
+                return (
+                  <li key={r.id} className="rounded-md border border-gray-200 p-3 text-sm">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-gray-900">{r.title}</p>
+                        <p className="text-xs text-gray-500">{r.project.name}</p>
+                      </div>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                          r.status === "open"
+                            ? "bg-brand-50 text-brand-700"
+                            : r.status === "awarded" && myBid?.isAwarded
+                              ? "bg-success-50 text-success-700"
+                              : "bg-gray-100 text-gray-500"
+                        }`}
+                      >
+                        {r.status === "awarded" && myBid?.isAwarded ? t("youWon") : t(`bidStatus_${r.status}`)}
+                      </span>
+                    </div>
+                    {r.description && <p className="mt-1.5 text-xs text-gray-500">{r.description}</p>}
+
+                    {r.status === "open" ? (
+                      <div className="mt-2 flex flex-wrap items-end gap-2">
+                        <label className="flex flex-col gap-1 text-xs text-gray-500">
+                          {t("yourBidAmount")}
+                          <input
+                            type="number"
+                            step="0.01"
+                            className="input w-28"
+                            value={form.amount}
+                            onChange={(e) => setBidForms((f) => ({ ...f, [r.id]: { ...form, amount: e.target.value } }))}
+                          />
+                        </label>
+                        <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500">
+                          {t("notes")}
+                          <input
+                            className="input"
+                            value={form.notes}
+                            onChange={(e) => setBidForms((f) => ({ ...f, [r.id]: { ...form, notes: e.target.value } }))}
+                          />
+                        </label>
+                        <button
+                          onClick={() => submitBid(r.id)}
+                          disabled={bidBusyId === r.id || !form.amount}
+                          className="btn-primary px-3 py-1.5 text-xs"
+                        >
+                          {myBid ? t("updateBid") : t("submitBid")}
+                        </button>
+                      </div>
+                    ) : (
+                      myBid && (
+                        <p className="mt-2 text-xs text-gray-600">
+                          {t("yourBidWas", { amount: myBid.amount, currency: me.currency })}
+                        </p>
+                      )
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+
+        <section className="card mt-6">
+          <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("lienWaivers")}</h2>
+          {!waivers || waivers.length === 0 ? (
+            <p className="text-sm text-gray-400">{t("noLienWaivers")}</p>
+          ) : (
+            <ul className="flex flex-col gap-3">
+              {waivers.map((w) => (
+                <li key={w.id} className="rounded-md border border-gray-200 p-3 text-sm">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-900">{t(`lienWaiverType_${w.type}`)}</p>
+                      <p className="text-xs text-gray-500">
+                        {w.project.name} · {w.amount} {me.currency}
+                      </p>
+                    </div>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                        w.signedAt ? "bg-success-50 text-success-700" : "bg-warning-50 text-warning-700"
+                      }`}
+                    >
+                      {w.signedAt ? t("signed") : t("awaitingSignature")}
+                    </span>
+                  </div>
+
+                  {!w.signedAt && signingId !== w.id && (
+                    <button
+                      onClick={() => {
+                        setSigningId(w.id);
+                        setSignerName("");
+                        setSignatureDataUrl(null);
+                      }}
+                      className="btn-secondary mt-2 px-3 py-1 text-xs"
+                    >
+                      {t("signWaiver")}
+                    </button>
+                  )}
+
+                  {signingId === w.id && (
+                    <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 pt-3">
+                      <label className="flex flex-col gap-1 text-xs text-gray-500">
+                        {t("signerNameLabel")}
+                        <input
+                          className="input"
+                          placeholder={t("signerNamePlaceholder")}
+                          value={signerName}
+                          onChange={(e) => setSignerName(e.target.value)}
+                        />
+                      </label>
+                      <SignaturePad onChange={setSignatureDataUrl} clearLabel={t("clearSignature")} />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => signWaiver(w.id)}
+                          disabled={busy || !signerName.trim() || !signatureDataUrl}
+                          className="btn-primary"
+                        >
+                          {t("confirmSignature")}
+                        </button>
+                        <button onClick={() => setSigningId(null)} className="btn-secondary">
+                          {t("cancel")}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
           )}
         </section>
       </div>

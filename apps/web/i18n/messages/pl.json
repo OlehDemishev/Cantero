@@ -279,7 +279,8 @@
     "certifications": "Certyfikaty",
     "noCertifications": "Brak certyfikatów w kartotece.",
     "certificationNamePlaceholder": "Nazwa certyfikatu (np. OSHA 30, operator wózka widłowego)",
-    "addCertification": "Dodaj certyfikat"
+    "addCertification": "Dodaj certyfikat",
+    "outsideGeofence": "Poza geofencingiem"
   },
   "documents": {
     "title": "Dokumenty",
@@ -447,7 +448,9 @@
     "generateNow": "Generuj teraz",
     "pause": "Wstrzymaj",
     "resume": "Wznów",
-    "cashFlowForecastLink": "Zobacz 13-tygodniową prognozę przepływów pieniężnych w Raportach"
+    "cashFlowForecastLink": "Zobacz 13-tygodniową prognozę przepływów pieniężnych w Raportach",
+    "exportQuickBooks": "Eksportuj do QuickBooks",
+    "exportXero": "Eksportuj do Xero"
   },
   "portal": {
     "signInTitle": "Portal klienta",
@@ -539,7 +542,32 @@
     "amount": "Kwota",
     "incurredDate": "Data",
     "paid": "Opłacone",
-    "unpaid": "Nieopłacone"
+    "unpaid": "Nieopłacone",
+    "lienWaivers": "Zrzeczenia się zastawu",
+    "noLienWaivers": "Brak zrzeczeń się zastawu.",
+    "signWaiver": "Podpisz zrzeczenie",
+    "signed": "Podpisano",
+    "awaitingSignature": "Oczekuje na Twój podpis",
+    "signerNameLabel": "Twoje imię i nazwisko",
+    "signerNamePlaceholder": "np. Jan Kowalski",
+    "clearSignature": "Wyczyść",
+    "confirmSignature": "Potwierdź podpis",
+    "cancel": "Anuluj",
+    "lienWaiverType_conditional_progress": "Warunkowe zrzeczenie przy płatności etapowej",
+    "lienWaiverType_unconditional_progress": "Bezwarunkowe zrzeczenie przy płatności etapowej",
+    "lienWaiverType_conditional_final": "Warunkowe zrzeczenie przy płatności końcowej",
+    "lienWaiverType_unconditional_final": "Bezwarunkowe zrzeczenie przy płatności końcowej",
+    "bidRequests": "Zapytania ofertowe",
+    "noBidRequests": "Brak zapytań ofertowych.",
+    "youWon": "Wygrałeś ten przetarg",
+    "bidStatus_open": "Otwarte",
+    "bidStatus_awarded": "Przyznano innemu oferentowi",
+    "bidStatus_cancelled": "Anulowane",
+    "yourBidAmount": "Kwota Twojej oferty",
+    "notes": "Uwagi",
+    "submitBid": "Złóż ofertę",
+    "updateBid": "Zaktualizuj ofertę",
+    "yourBidWas": "Twoja oferta: {amount} {currency}"
   },
   "budget": {
     "title": "Budżet vs. wykonanie",
@@ -659,7 +687,8 @@
     "quantity": "Ilość",
     "logs": "Dzienniki",
     "punch": "Usterki",
-    "cachedFrom": "Wyświetlane dane z pamięci podręcznej z {time}"
+    "cachedFrom": "Wyświetlane dane z pamięci podręcznej z {time}",
+    "loggedOutsideGeofence": "Zapisano — ale zarejestrowano poza geofencingiem projektu"
   },
   "subcontractors": {
     "title": "Koszty podwykonawców",
@@ -675,7 +704,11 @@
     "assignmentsHint": "Tylko przypisani podwykonawcy mogą widzieć ten projekt i rejestrować koszty w nim ze swojego portalu.",
     "noAssignedSubcontractors": "Do tego projektu nie przypisano jeszcze żadnego podwykonawcy.",
     "unassign": "Usuń przypisanie",
-    "assignToProject": "Przypisz do projektu"
+    "assignToProject": "Przypisz do projektu",
+    "requestWaiver": "Poproś o zrzeczenie się zastawu",
+    "finalWaiver": "Końcowe",
+    "downloadWaiver": "Pobierz zrzeczenie",
+    "waiverAwaitingSignature": "Oczekuje na podpis"
   },
   "reports": {
     "title": "Raporty",
@@ -1065,5 +1098,47 @@
   "weather": {
     "title": "Prognoza pogody",
     "riskWarning": "{count, plural, one {# dzień z ryzykowną pogodą} few {# dni z ryzykowną pogodą} many {# dni z ryzykowną pogodą} other {# dnia z ryzykowną pogodą}}"
+  },
+  "progressBilling": {
+    "title": "Fakturowanie etapowe",
+    "hint": "Wystawiaj klientowi faktury etapowe według postępu prac, zatrzymując procent kaucji gwarancyjnej do zakończenia.",
+    "percentBilled": "Zafakturowano {percent}%",
+    "billedOfContract": "{billed} z {total} {currency} kontraktu",
+    "retainageHeld": "Zatrzymana kaucja",
+    "drawLabel": "Etap do {percent}%",
+    "retainageReleaseLabel": "Zwrot kaucji",
+    "percentComplete": "% ukończenia",
+    "retainagePercent": "% kaucji",
+    "generateDraw": "Wystaw fakturę etapową",
+    "releaseRetainage": "Zwróć kaucję ({amount} {currency})",
+    "retainageAlreadyReleased": "Kaucja została już zwrócona."
+  },
+  "geofence": {
+    "title": "Geofencing",
+    "hint": "Wpisy czasu z aplikacji terenowej poza tym promieniem są oznaczane do przeglądu — zapis i tak się powiedzie.",
+    "activeSummary": "Aktywne: {lat}, {lng} · promień {radius} m",
+    "lat": "Szerokość geogr.",
+    "lng": "Długość geogr.",
+    "radiusMeters": "Promień (m)",
+    "detectFromAddress": "Wykryj z adresu",
+    "detectFailed": "Nie udało się ustalić współrzędnych z adresu projektu — wprowadź je ręcznie.",
+    "clear": "Wyczyść"
+  },
+  "bidding": {
+    "title": "Zapytania ofertowe",
+    "newBidRequest": "Nowe zapytanie ofertowe",
+    "scopeTitle": "Tytuł zakresu prac",
+    "dueDate": "Termin",
+    "inviteSubcontractors": "Zaproś podwykonawców",
+    "noSubcontractors": "Najpierw dodaj podwykonawcę, aby zaprosić go do złożenia oferty.",
+    "sendBidRequest": "Wyślij zapytanie ofertowe",
+    "noBidRequests": "Brak zapytań ofertowych.",
+    "bidCount": "{count} z {total} otrzymanych ofert",
+    "noBidYet": "Brak oferty",
+    "award": "Przyznaj",
+    "awarded": "Przyznano",
+    "cancelBidRequest": "Anuluj zapytanie ofertowe",
+    "open": "Otwarte",
+    "cancelled": "Anulowane"
   }
 }

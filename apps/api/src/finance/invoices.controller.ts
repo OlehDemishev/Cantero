@@ -3,10 +3,12 @@ import { IsUUID } from "class-validator";
 import type { Response } from "express";
 import {
   addInstallmentSchema,
+  generateProgressInvoiceSchema,
   recordPaymentSchema,
   updateInvoiceSchema,
   type AddInstallmentInput,
   type AuthUser,
+  type GenerateProgressInvoiceInput,
   type RecordPaymentInput,
   type UpdateInvoiceInput,
 } from "@cantero/shared";
@@ -37,6 +39,20 @@ export class InvoicesController {
     return this.service.exportCsv(user.companyId);
   }
 
+  @Get("export/quickbooks.csv")
+  @Header("Content-Type", "text/csv")
+  async exportQuickBooksCsv(@CurrentUser() user: AuthUser, @Res({ passthrough: true }) res: Response) {
+    res.set("Content-Disposition", 'attachment; filename="invoices-quickbooks.csv"');
+    return this.service.exportQuickBooksCsv(user.companyId);
+  }
+
+  @Get("export/xero.csv")
+  @Header("Content-Type", "text/csv")
+  async exportXeroCsv(@CurrentUser() user: AuthUser, @Res({ passthrough: true }) res: Response) {
+    res.set("Content-Disposition", 'attachment; filename="invoices-xero.csv"');
+    return this.service.exportXeroCsv(user.companyId);
+  }
+
   @Get(":id")
   get(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.get(user.companyId, id);
@@ -45,6 +61,24 @@ export class InvoicesController {
   @Post("from-estimate")
   generateFromEstimate(@CurrentUser() user: AuthUser, @Body() body: GenerateFromEstimateDto) {
     return this.service.generateFromEstimate(user.companyId, body.estimateId);
+  }
+
+  @Get("progress-billing/:estimateId")
+  progressBillingSummary(@CurrentUser() user: AuthUser, @Param("estimateId") estimateId: string) {
+    return this.service.progressBillingSummary(user.companyId, estimateId);
+  }
+
+  @Post("progress-billing")
+  generateProgressInvoice(
+    @CurrentUser() user: AuthUser,
+    @Body(new ZodValidationPipe(generateProgressInvoiceSchema)) body: GenerateProgressInvoiceInput,
+  ) {
+    return this.service.generateProgressInvoice(user.companyId, body.estimateId, body);
+  }
+
+  @Post("progress-billing/:estimateId/release-retainage")
+  releaseRetainage(@CurrentUser() user: AuthUser, @Param("estimateId") estimateId: string) {
+    return this.service.releaseRetainage(user.companyId, estimateId);
   }
 
   @Patch(":id")

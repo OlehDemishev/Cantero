@@ -279,7 +279,8 @@
     "certifications": "Certifications",
     "noCertifications": "No certifications on file.",
     "certificationNamePlaceholder": "Certification name (e.g. OSHA 30, Forklift operator)",
-    "addCertification": "Add certification"
+    "addCertification": "Add certification",
+    "outsideGeofence": "Outside geofence"
   },
   "documents": {
     "title": "Documents",
@@ -447,7 +448,9 @@
     "generateNow": "Generate now",
     "pause": "Pause",
     "resume": "Resume",
-    "cashFlowForecastLink": "See the 13-week cash flow forecast in Reports"
+    "cashFlowForecastLink": "See the 13-week cash flow forecast in Reports",
+    "exportQuickBooks": "Export to QuickBooks",
+    "exportXero": "Export to Xero"
   },
   "portal": {
     "signInTitle": "Client portal",
@@ -539,7 +542,32 @@
     "amount": "Amount",
     "incurredDate": "Date",
     "paid": "Paid",
-    "unpaid": "Unpaid"
+    "unpaid": "Unpaid",
+    "lienWaivers": "Lien waivers",
+    "noLienWaivers": "No lien waivers yet.",
+    "signWaiver": "Sign waiver",
+    "signed": "Signed",
+    "awaitingSignature": "Awaiting your signature",
+    "signerNameLabel": "Your full name",
+    "signerNamePlaceholder": "e.g. Jane Smith",
+    "clearSignature": "Clear",
+    "confirmSignature": "Confirm signature",
+    "cancel": "Cancel",
+    "lienWaiverType_conditional_progress": "Conditional waiver on progress payment",
+    "lienWaiverType_unconditional_progress": "Unconditional waiver on progress payment",
+    "lienWaiverType_conditional_final": "Conditional waiver on final payment",
+    "lienWaiverType_unconditional_final": "Unconditional waiver on final payment",
+    "bidRequests": "Bid requests",
+    "noBidRequests": "No bid requests yet.",
+    "youWon": "You won this bid",
+    "bidStatus_open": "Open",
+    "bidStatus_awarded": "Awarded to another bidder",
+    "bidStatus_cancelled": "Cancelled",
+    "yourBidAmount": "Your bid amount",
+    "notes": "Notes",
+    "submitBid": "Submit bid",
+    "updateBid": "Update bid",
+    "yourBidWas": "Your bid: {amount} {currency}"
   },
   "budget": {
     "title": "Budget vs. actual",
@@ -659,7 +687,8 @@
     "quantity": "Quantity",
     "logs": "Logs",
     "punch": "Punch",
-    "cachedFrom": "Showing cached data from {time}"
+    "cachedFrom": "Showing cached data from {time}",
+    "loggedOutsideGeofence": "Saved — but logged outside the project's geofence"
   },
   "subcontractors": {
     "title": "Subcontractor costs",
@@ -675,7 +704,11 @@
     "assignmentsHint": "Only assigned subcontractors can see this project and log costs against it from their own portal.",
     "noAssignedSubcontractors": "No subcontractors assigned to this project yet.",
     "unassign": "Unassign",
-    "assignToProject": "Assign to project"
+    "assignToProject": "Assign to project",
+    "requestWaiver": "Request lien waiver",
+    "finalWaiver": "Final",
+    "downloadWaiver": "Download waiver",
+    "waiverAwaitingSignature": "Awaiting signature"
   },
   "reports": {
     "title": "Reports",
@@ -1065,5 +1098,47 @@
   "weather": {
     "title": "Weather forecast",
     "riskWarning": "{count, plural, one {# day ahead has risky weather} other {# days ahead have risky weather}}"
+  },
+  "progressBilling": {
+    "title": "Progress billing",
+    "hint": "Bill the client in draws as work progresses, withholding a retainage percentage until completion.",
+    "percentBilled": "{percent}% billed",
+    "billedOfContract": "{billed} of {total} {currency} contract",
+    "retainageHeld": "Retainage held",
+    "drawLabel": "Draw to {percent}%",
+    "retainageReleaseLabel": "Retainage release",
+    "percentComplete": "% complete",
+    "retainagePercent": "Retainage %",
+    "generateDraw": "Generate draw invoice",
+    "releaseRetainage": "Release retainage ({amount} {currency})",
+    "retainageAlreadyReleased": "Retainage has been released."
+  },
+  "geofence": {
+    "title": "Geofence",
+    "hint": "Field-app time entries logged outside this radius are flagged for review — logging still succeeds either way.",
+    "activeSummary": "Active: {lat}, {lng} · {radius}m radius",
+    "lat": "Latitude",
+    "lng": "Longitude",
+    "radiusMeters": "Radius (m)",
+    "detectFromAddress": "Detect from address",
+    "detectFailed": "Couldn't resolve coordinates from the project address — enter them manually.",
+    "clear": "Clear"
+  },
+  "bidding": {
+    "title": "Bid requests",
+    "newBidRequest": "New bid request",
+    "scopeTitle": "Scope title",
+    "dueDate": "Due date",
+    "inviteSubcontractors": "Invite subcontractors",
+    "noSubcontractors": "Add a subcontractor first to invite them to bid.",
+    "sendBidRequest": "Send bid request",
+    "noBidRequests": "No bid requests yet.",
+    "bidCount": "{count} of {total} bid(s) in",
+    "noBidYet": "No bid yet",
+    "award": "Award",
+    "awarded": "Awarded",
+    "cancelBidRequest": "Cancel bid request",
+    "open": "Open",
+    "cancelled": "Cancelled"
   }
 }

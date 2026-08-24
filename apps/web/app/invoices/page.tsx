@@ -87,6 +87,16 @@ export default function InvoicesPage() {
     downloadBlob(blob, "invoices.csv");
   }
 
+  async function exportQuickBooksCsv() {
+    const blob = await apiFetch<Blob>("/invoices/export/quickbooks.csv");
+    downloadBlob(blob, "invoices-quickbooks.csv");
+  }
+
+  async function exportXeroCsv() {
+    const blob = await apiFetch<Blob>("/invoices/export/xero.csv");
+    downloadBlob(blob, "invoices-xero.csv");
+  }
+
   function updateRecurringLine(index: number, field: keyof RecurringLineForm, value: string) {
     setRecurringLines((lines) => lines.map((l, i) => (i === index ? { ...l, [field]: value } : l)));
   }
@@ -158,9 +168,17 @@ export default function InvoicesPage() {
     <AuthenticatedShell>
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{t("title")}</h1>
-        <button onClick={exportCsv} className="btn-secondary">
-          {t("exportCsv")}
-        </button>
+        <div className="flex gap-2">
+          <button onClick={exportCsv} className="btn-secondary">
+            {t("exportCsv")}
+          </button>
+          <button onClick={exportQuickBooksCsv} className="btn-secondary">
+            {t("exportQuickBooks")}
+          </button>
+          <button onClick={exportXeroCsv} className="btn-secondary">
+            {t("exportXero")}
+          </button>
+        </div>
       </div>
 
       <div className="mt-6">

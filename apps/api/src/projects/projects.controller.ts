@@ -1,9 +1,11 @@
 import { Body, Controller, Get, Param, Patch, Post } from "@nestjs/common";
 import {
   createProjectSchema,
+  updateProjectGeofenceSchema,
   updateProjectWarrantySchema,
   type AuthUser,
   type CreateProjectInput,
+  type UpdateProjectGeofenceInput,
   type UpdateProjectWarrantyInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
@@ -29,6 +31,11 @@ export class ProjectsController {
     return this.service.weatherForecast(user.companyId, id);
   }
 
+  @Get(":id/geocode")
+  geocode(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.geocode(user.companyId, id);
+  }
+
   @Post()
   create(
     @CurrentUser() user: AuthUser,
@@ -44,5 +51,14 @@ export class ProjectsController {
     @Body(new ZodValidationPipe(updateProjectWarrantySchema)) body: UpdateProjectWarrantyInput,
   ) {
     return this.service.updateWarranty(user.companyId, id, body);
+  }
+
+  @Patch(":id/geofence")
+  updateGeofence(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(updateProjectGeofenceSchema)) body: UpdateProjectGeofenceInput,
+  ) {
+    return this.service.updateGeofence(user.companyId, id, body);
   }
 }

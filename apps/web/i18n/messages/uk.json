@@ -279,7 +279,8 @@
     "certifications": "Сертифікати",
     "noCertifications": "Немає сертифікатів у картотеці.",
     "certificationNamePlaceholder": "Назва сертифіката (напр. OSHA 30, оператор навантажувача)",
-    "addCertification": "Додати сертифікат"
+    "addCertification": "Додати сертифікат",
+    "outsideGeofence": "Поза геозоною"
   },
   "documents": {
     "title": "Документи",
@@ -447,7 +448,9 @@
     "generateNow": "Створити зараз",
     "pause": "Призупинити",
     "resume": "Відновити",
-    "cashFlowForecastLink": "Переглянути 13-тижневий прогноз грошового потоку в звітах"
+    "cashFlowForecastLink": "Переглянути 13-тижневий прогноз грошового потоку в звітах",
+    "exportQuickBooks": "Експортувати в QuickBooks",
+    "exportXero": "Експортувати в Xero"
   },
   "portal": {
     "signInTitle": "Кабінет клієнта",
@@ -539,7 +542,32 @@
     "amount": "Сума",
     "incurredDate": "Дата",
     "paid": "Оплачено",
-    "unpaid": "Не оплачено"
+    "unpaid": "Не оплачено",
+    "lienWaivers": "Відмови від застави",
+    "noLienWaivers": "Поки що немає відмов від застави.",
+    "signWaiver": "Підписати відмову",
+    "signed": "Підписано",
+    "awaitingSignature": "Очікує вашого підпису",
+    "signerNameLabel": "Ваше повне ім'я",
+    "signerNamePlaceholder": "напр. Іван Петренко",
+    "clearSignature": "Очистити",
+    "confirmSignature": "Підтвердити підпис",
+    "cancel": "Скасувати",
+    "lienWaiverType_conditional_progress": "Умовна відмова при проміжному платежі",
+    "lienWaiverType_unconditional_progress": "Безумовна відмова при проміжному платежі",
+    "lienWaiverType_conditional_final": "Умовна відмова при остаточному платежі",
+    "lienWaiverType_unconditional_final": "Безумовна відмова при остаточному платежі",
+    "bidRequests": "Тендери",
+    "noBidRequests": "Поки що немає тендерів.",
+    "youWon": "Ви виграли цей тендер",
+    "bidStatus_open": "Відкрито",
+    "bidStatus_awarded": "Присуджено іншому учаснику",
+    "bidStatus_cancelled": "Скасовано",
+    "yourBidAmount": "Сума вашої пропозиції",
+    "notes": "Примітки",
+    "submitBid": "Подати пропозицію",
+    "updateBid": "Оновити пропозицію",
+    "yourBidWas": "Ваша пропозиція: {amount} {currency}"
   },
   "budget": {
     "title": "Бюджет проти факту",
@@ -659,7 +687,8 @@
     "quantity": "Кількість",
     "logs": "Журнали",
     "punch": "Дефекти",
-    "cachedFrom": "Показано дані з кешу за {time}"
+    "cachedFrom": "Показано дані з кешу за {time}",
+    "loggedOutsideGeofence": "Збережено — але зафіксовано поза геозоною проєкту"
   },
   "subcontractors": {
     "title": "Витрати на субпідрядників",
@@ -675,7 +704,11 @@
     "assignmentsHint": "Лише призначені субпідрядники можуть бачити цей проєкт і фіксувати витрати по ньому зі свого кабінету.",
     "noAssignedSubcontractors": "На цей проєкт ще не призначено субпідрядників.",
     "unassign": "Скасувати призначення",
-    "assignToProject": "Призначити на проєкт"
+    "assignToProject": "Призначити на проєкт",
+    "requestWaiver": "Запросити відмову від застави",
+    "finalWaiver": "Фінальна",
+    "downloadWaiver": "Завантажити відмову",
+    "waiverAwaitingSignature": "Очікує підпису"
   },
   "reports": {
     "title": "Звіти",
@@ -1065,5 +1098,47 @@
   "weather": {
     "title": "Прогноз погоди",
     "riskWarning": "{count, plural, one {# день з ризикованою погодою попереду} few {# дні з ризикованою погодою попереду} many {# днів з ризикованою погодою попереду} other {# дня з ризикованою погодою попереду}}"
+  },
+  "progressBilling": {
+    "title": "Поетапне виставлення рахунків",
+    "hint": "Виставляйте клієнту рахунки за етапами відповідно до прогресу робіт, утримуючи відсоток гарантійного утримання до завершення.",
+    "percentBilled": "Виставлено {percent}%",
+    "billedOfContract": "{billed} з {total} {currency} контракту",
+    "retainageHeld": "Утримано гарантійних коштів",
+    "drawLabel": "Етап до {percent}%",
+    "retainageReleaseLabel": "Повернення утримання",
+    "percentComplete": "% завершення",
+    "retainagePercent": "% утримання",
+    "generateDraw": "Виставити рахунок за етап",
+    "releaseRetainage": "Повернути утримання ({amount} {currency})",
+    "retainageAlreadyReleased": "Утримання вже повернуто."
+  },
+  "geofence": {
+    "title": "Геозона",
+    "hint": "Записи часу з польового додатка поза цим радіусом позначаються для перевірки — запис усе одно збережеться.",
+    "activeSummary": "Активна: {lat}, {lng} · радіус {radius} м",
+    "lat": "Широта",
+    "lng": "Довгота",
+    "radiusMeters": "Радіус (м)",
+    "detectFromAddress": "Визначити за адресою",
+    "detectFailed": "Не вдалося визначити координати за адресою проєкту — введіть їх вручну.",
+    "clear": "Очистити"
+  },
+  "bidding": {
+    "title": "Тендери",
+    "newBidRequest": "Новий тендер",
+    "scopeTitle": "Назва обсягу робіт",
+    "dueDate": "Термін",
+    "inviteSubcontractors": "Запросити субпідрядників",
+    "noSubcontractors": "Спочатку додайте субпідрядника, щоб запросити його на тендер.",
+    "sendBidRequest": "Надіслати тендер",
+    "noBidRequests": "Поки що немає тендерів.",
+    "bidCount": "{count} з {total} отриманих пропозицій",
+    "noBidYet": "Ще немає пропозиції",
+    "award": "Присудити",
+    "awarded": "Присуджено",
+    "cancelBidRequest": "Скасувати тендер",
+    "open": "Відкрито",
+    "cancelled": "Скасовано"
   }
 }

@@ -21,6 +21,9 @@ export const createTimeEntrySchema = z.object({
   taskId: z.string().uuid().optional(),
   hours: z.number().positive().max(24),
   date: z.string().datetime(),
+  /// Captured from the browser Geolocation API when logged from the field app — absent for entries logged from the office.
+  clockInLat: z.number().min(-90).max(90).optional(),
+  clockInLng: z.number().min(-180).max(180).optional(),
 });
 export type CreateTimeEntryInput = z.infer<typeof createTimeEntrySchema>;
 

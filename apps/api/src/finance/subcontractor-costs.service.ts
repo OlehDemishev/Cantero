@@ -1,15 +1,30 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
-import type { CreateSubcontractorCostInput } from "@cantero/shared";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import type { CreateSubcontractorCostInput, RequestLienWaiverInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { PdfService } from "../common/pdf/pdf.service";
+import { StorageService } from "../common/storage/storage.service";
+import { AuditService, type AuditActor } from "../common/audit/audit.service";
+
+const LIEN_WAIVER_TYPE_LABELS: Record<string, string> = {
+  conditional_progress: "Conditional waiver on progress payment",
+  unconditional_progress: "Unconditional waiver on progress payment",
+  conditional_final: "Conditional waiver on final payment",
+  unconditional_final: "Unconditional waiver on final payment",
+};
 
 @Injectable()
 export class SubcontractorCostsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly pdfService: PdfService,
+    private readonly storage: StorageService,
+    private readonly audit: AuditService,
+  ) {}
 
   list(companyId: string, projectId?: string) {
     return this.prisma.subcontractorCost.findMany({
       where: { companyId, ...(projectId ? { projectId } : {}) },
-      include: { subcontractor: true },
+      include: { subcontractor: true, lienWaiver: true },
       orderBy: { incurredDate: "desc" },
     });
   }
@@ -43,6 +58,73 @@ export class SubcontractorCostsService {
       where: { id },
       data: { paid: true },
       include: { subcontractor: true },
+    });
+  }
+
+  /** Requests a lien waiver for this cost's payment — type (conditional/unconditional) is snapshotted from the cost's paid status right now, not re-derived later. */
+  async requestLienWaiver(companyId: string, actor: AuditActor, costId: string, input: RequestLienWaiverInput) {
+    const cost = await this.prisma.subcontractorCost.findFirst({
+      where: { id: costId, companyId },
+      include: { subcontractor: true },
+    });
+    if (!cost) throw new NotFoundException("Subcontractor cost not found");
+
+    const existing = await this.prisma.lienWaiver.findUnique({ where: { subcontractorCostId: costId } });
+    if (existing) throw new BadRequestException("A lien waiver already exists for this cost");
+
+    const type = `${cost.paid ? "unconditional" : "conditional"}_${input.isFinal ? "final" : "progress"}` as const;
+
+    const waiver = await this.prisma.lienWaiver.create({
+      data: {
+        companyId,
+        projectId: cost.projectId,
+        subcontractorId: cost.subcontractorId,
+        subcontractorCostId: cost.id,
+        type,
+        amount: cost.amount,
+      },
+    });
+    this.audit.record(
+      companyId,
+      actor,
+      "lien_waiver.requested",
+      "LienWaiver",
+      waiver.id,
+      `Requested a ${LIEN_WAIVER_TYPE_LABELS[type]} from ${cost.subcontractor.name} for ${cost.amount}`,
+    );
+    return waiver;
+  }
+
+  getLienWaiver(companyId: string, costId: string) {
+    return this.prisma.lienWaiver.findFirst({ where: { companyId, subcontractorCostId: costId } });
+  }
+
+  async getLienWaiverPdf(companyId: string, costId: string): Promise<Buffer> {
+    const waiver = await this.prisma.lienWaiver.findFirst({
+      where: { companyId, subcontractorCostId: costId },
+      include: { subcontractor: true, project: true },
+    });
+    if (!waiver) throw new NotFoundException("No lien waiver on file for this cost");
+
+    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    const logoBuffer = company.logoStorageKey ? await this.storage.read(company.logoStorageKey) : undefined;
+    const signatureImageBuffer = waiver.signatureImageKey ? await this.storage.read(waiver.signatureImageKey) : undefined;
+
+    return this.pdfService.render({
+      title: LIEN_WAIVER_TYPE_LABELS[waiver.type],
+      subtitle: `${waiver.subcontractor.name} — ${waiver.project.name}`,
+      meta: [
+        { label: "Status", value: waiver.signedAt ? "Signed" : "Awaiting signature" },
+        { label: "Currency", value: company.currency },
+      ],
+      tableHeader: ["Description", "Amount"],
+      tableRows: [{ cells: [`Payment waived for work through ${waiver.requestedAt.toISOString().slice(0, 10)}`, waiver.amount.toString()] }],
+      totals: [{ label: "Amount waived", value: `${waiver.amount} ${company.currency}`, emphasize: true }],
+      branding: { logoBuffer, accentColor: company.brandColor ?? undefined },
+      signature:
+        waiver.signedAt && waiver.signerName
+          ? { imageBuffer: signatureImageBuffer, signerName: waiver.signerName, signedAt: waiver.signedAt }
+          : undefined,
     });
   }
 }

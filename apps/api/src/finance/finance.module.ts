@@ -27,6 +27,6 @@ import { RecurringInvoicesProcessor } from "./recurring-invoices.processor";
     RecurringInvoicesService,
     RecurringInvoicesProcessor,
   ],
-  exports: [InvoicesService],
+  exports: [InvoicesService, SubcontractorsService],
 })
 export class FinanceModule {}

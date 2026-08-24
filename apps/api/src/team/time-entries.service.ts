@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import type { CreateTimeEntryInput, UpdateTimeEntryInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { checkGeofence } from "./geofence";
 
 export interface TimeEntryFilter {
   projectId?: string;
@@ -45,6 +46,14 @@ export class TimeEntriesService {
       if (!task) throw new BadRequestException("Task does not belong to this project");
     }
 
+    let distanceFromSiteMeters: number | undefined;
+    let withinGeofence: boolean | undefined;
+    if (input.clockInLat !== undefined && input.clockInLng !== undefined && project.geofenceLat !== null && project.geofenceLng !== null && project.geofenceRadiusMeters !== null) {
+      const check = checkGeofence(input.clockInLat, input.clockInLng, project.geofenceLat, project.geofenceLng, project.geofenceRadiusMeters);
+      distanceFromSiteMeters = check.distanceMeters;
+      withinGeofence = check.withinGeofence;
+    }
+
     return this.prisma.timeEntry.create({
       data: {
         companyId,
@@ -54,6 +63,10 @@ export class TimeEntriesService {
         hours: input.hours,
         date: new Date(input.date),
         hourlyCostSnapshot: worker.hourlyCost,
+        clockInLat: input.clockInLat,
+        clockInLng: input.clockInLng,
+        distanceFromSiteMeters,
+        withinGeofence,
       },
       include: { worker: true, task: true },
     });

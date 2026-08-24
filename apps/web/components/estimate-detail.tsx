@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
+import { ProgressBillingPanel } from "@/components/progress-billing-panel";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
@@ -978,6 +979,8 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
             </button>
             {estimate.status === "draft" && <p className="text-xs text-gray-400">{t("approveFirst")}</p>}
           </div>
+
+          {estimate.status === "approved" && <ProgressBillingPanel estimateId={estimateId} currency={currency} />}
 
           {estimate.sentAt && estimate.clientAccessToken && (
             <div className="mt-4 border-t border-gray-100 pt-4">

@@ -14,6 +14,13 @@ export const updateInvoiceSchema = z.object({
 });
 export type UpdateInvoiceInput = z.infer<typeof updateInvoiceSchema>;
 
+export const generateProgressInvoiceSchema = z.object({
+  estimateId: z.string().uuid(),
+  percentComplete: z.number().min(0.01).max(100),
+  retainagePercent: z.number().min(0).max(100).default(0),
+});
+export type GenerateProgressInvoiceInput = z.infer<typeof generateProgressInvoiceSchema>;
+
 export const addInstallmentSchema = z.object({
   label: z.string().min(1).max(160),
   amount: z.number().positive(),
@@ -52,6 +59,39 @@ export const createSubcontractorCostSchema = z.object({
   dueDate: z.string().datetime().optional(),
 });
 export type CreateSubcontractorCostInput = z.infer<typeof createSubcontractorCostSchema>;
+
+export const LIEN_WAIVER_TYPES = ["conditional_progress", "unconditional_progress", "conditional_final", "unconditional_final"] as const;
+export type LienWaiverType = (typeof LIEN_WAIVER_TYPES)[number];
+
+export const requestLienWaiverSchema = z.object({
+  isFinal: z.boolean().default(false),
+});
+export type RequestLienWaiverInput = z.infer<typeof requestLienWaiverSchema>;
+
+export const signLienWaiverSchema = z.object({
+  signerName: z.string().min(1).max(160),
+  /// Drawn signature exported from a <canvas> as a base64 PNG data URL — capped well above a typical hand-drawn trace.
+  signatureDataUrl: z
+    .string()
+    .regex(/^data:image\/png;base64,/, "Signature must be a PNG data URL")
+    .max(300_000),
+});
+export type SignLienWaiverInput = z.infer<typeof signLienWaiverSchema>;
+
+export const createBidRequestSchema = z.object({
+  projectId: z.string().uuid(),
+  title: z.string().min(1).max(160),
+  description: z.string().max(2000).optional(),
+  dueDate: z.string().datetime().optional(),
+  subcontractorIds: z.array(z.string().uuid()).min(1),
+});
+export type CreateBidRequestInput = z.infer<typeof createBidRequestSchema>;
+
+export const submitBidSchema = z.object({
+  amount: z.number().positive(),
+  notes: z.string().max(2000).optional(),
+});
+export type SubmitBidInput = z.infer<typeof submitBidSchema>;
 
 export const RECURRING_INVOICE_FREQUENCIES = ["weekly", "monthly", "quarterly", "yearly"] as const;
 export type RecurringInvoiceFrequency = (typeof RECURRING_INVOICE_FREQUENCIES)[number];
