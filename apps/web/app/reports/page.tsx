@@ -10,7 +10,7 @@ import {
 } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { CustomReportsPanel } from "@/components/custom-reports-panel";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
 interface ProjectMargin {
@@ -90,6 +90,11 @@ interface CashFlowForecast {
   totals: { inflow: number; outflow: number; net: number };
 }
 
+interface RevenueTrendRow {
+  month: string;
+  revenue: number;
+}
+
 interface ScheduledReport {
   id: string;
   name: string;
@@ -119,6 +124,7 @@ export default function ReportsPage() {
   const [turnover, setTurnover] = useState<TurnoverRow[] | null>(null);
   const [aging, setAging] = useState<InvoiceAging | null>(null);
   const [cashFlow, setCashFlow] = useState<CashFlowForecast | null>(null);
+  const [revenueTrend, setRevenueTrend] = useState<RevenueTrendRow[] | null>(null);
   const [workload, setWorkload] = useState<LaborCostReport | null>(null);
   const [workloadFrom, setWorkloadFrom] = useState(isoDaysAgo(30));
   const [workloadTo, setWorkloadTo] = useState(isoDaysAgo(0));
@@ -180,6 +186,7 @@ export default function ReportsPage() {
     apiFetch<TurnoverRow[]>("/reports/warehouse-turnover").then(setTurnover);
     apiFetch<InvoiceAging>("/reports/invoice-aging").then(setAging);
     apiFetch<CashFlowForecast>("/reports/cash-flow-forecast").then(setCashFlow);
+    apiFetch<RevenueTrendRow[]>("/reports/revenue-trend").then(setRevenueTrend);
   }, []);
 
   useEffect(() => {
@@ -187,6 +194,23 @@ export default function ReportsPage() {
       `/team/labor-cost-report?from=${new Date(workloadFrom).toISOString()}&to=${new Date(workloadTo).toISOString()}`,
     ).then(setWorkload);
   }, [workloadFrom, workloadTo]);
+
+  async function downloadTaxSummary() {
+    const blob = await apiFetch<Blob>("/reports/tax-summary");
+    downloadBlob(blob, "tax-summary.csv");
+  }
+
+  async function downloadPayrollExport() {
+    const blob = await apiFetch<Blob>(
+      `/team/labor-cost-report/payroll-export?from=${new Date(workloadFrom).toISOString()}&to=${new Date(workloadTo).toISOString()}`,
+    );
+    downloadBlob(blob, "payroll-export.csv");
+  }
+
+  async function downloadSafetyExport() {
+    const blob = await apiFetch<Blob>("/safety/incidents/export");
+    downloadBlob(blob, "incident-report-export.csv");
+  }
 
   return (
     <AuthenticatedShell>
@@ -517,11 +541,45 @@ export default function ReportsPage() {
       )}
 
       <div className="mb-3 mt-10 flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-sm font-semibold text-gray-700">{t("revenueTrend")}</h2>
+        <button onClick={downloadTaxSummary} className="btn-secondary px-3 py-1 text-xs">
+          {t("downloadTaxSummary")}
+        </button>
+      </div>
+      {!revenueTrend ? (
+        <p className="text-gray-500">{tc("loading")}</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <div className="flex items-end gap-2" style={{ minWidth: revenueTrend.length * 56 }}>
+            {revenueTrend.map((r) => {
+              const maxVal = Math.max(...revenueTrend.map((row) => row.revenue), 1);
+              return (
+                <div key={r.month} className="flex w-12 flex-col items-center gap-1">
+                  <div className="text-[10px] text-gray-500">{r.revenue}</div>
+                  <div
+                    className="w-6 rounded-t bg-brand-500"
+                    style={{ height: `${Math.max((r.revenue / maxVal) * 96, 2)}px` }}
+                  />
+                  <div className="text-[10px] text-gray-400">{r.month.slice(5)}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <div className="mb-3 mt-10 flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-semibold text-gray-700">{t("teamWorkload")}</h2>
         <div className="flex items-center gap-2 text-xs text-gray-500">
           <input type="date" className="input w-auto" value={workloadFrom} onChange={(e) => setWorkloadFrom(e.target.value)} />
           <span>–</span>
           <input type="date" className="input w-auto" value={workloadTo} onChange={(e) => setWorkloadTo(e.target.value)} />
+          <button onClick={downloadPayrollExport} className="btn-secondary px-3 py-1 text-xs">
+            {t("downloadPayrollExport")}
+          </button>
+          <button onClick={downloadSafetyExport} className="btn-secondary px-3 py-1 text-xs">
+            {t("downloadSafetyExport")}
+          </button>
         </div>
       </div>
       {!workload ? (

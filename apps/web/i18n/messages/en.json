@@ -45,7 +45,8 @@
     "templates": "Templates",
     "subcontractors": "Subcontractors",
     "expenses": "Expenses",
-    "serviceContracts": "Service Contracts"
+    "serviceContracts": "Service Contracts",
+    "bankReconciliation": "Bank reconciliation"
   },
   "auth": {
     "signupTitle": "Create your Cantero account",
@@ -252,7 +253,14 @@
     "total": "Total",
     "generateLinkCode": "Generate link code",
     "linkToParentCode": "Parent's link code",
-    "linkToParent": "Link to parent"
+    "linkToParent": "Link to parent",
+    "reportingCurrency": "Reporting currency",
+    "reportingCurrencyHint": "Currency used to roll up branch revenue in the franchise overview",
+    "reportingIn": "Reporting in {currency}",
+    "apiKeyExpires": "Expires",
+    "apiKeyScopes": "Scopes",
+    "apiKeyScopesHint": "Scopes (none selected = unrestricted):",
+    "apiKeyUnrestricted": "Unrestricted"
   },
   "projects": {
     "title": "Projects",
@@ -305,7 +313,20 @@
     "searchPlaceholder": "Search by name or email…",
     "allOwners": "All owners",
     "referredBy": "Referred by",
-    "referrals": "Referrals"
+    "referrals": "Referrals",
+    "probability": "Win probability",
+    "probabilityPlaceholder": "0-100%",
+    "expectedCloseDate": "Expected close date",
+    "pipelineForecast": "Pipeline forecast",
+    "weightedPipelineValue": "Weighted pipeline value",
+    "unscheduledWeightedValue": "{value} {currency} with no expected close date",
+    "funnelReport": "Funnel report",
+    "winRate": "Win rate",
+    "winLossCount": "{won} won · {lost} lost",
+    "avgDays": "avg {days}d",
+    "ownerLeaderboard": "Owner leaderboard",
+    "wonSummary": "Won: {count} · {value} {currency}",
+    "openSummary": "Open: {count} · {value} {currency}"
   },
   "team": {
     "title": "Team",
@@ -350,7 +371,17 @@
     "expires": "Expires",
     "certStatus_expired": "Expired",
     "certStatus_expiring_soon": "Expiring soon",
-    "certStatus_valid": "Valid"
+    "certStatus_valid": "Valid",
+    "ptoBalance": "PTO balance",
+    "ptoDeltaHoursPlaceholder": "Hours (+/-)",
+    "ptoReasonPlaceholder": "Reason",
+    "adjustPtoBalance": "Adjust balance",
+    "onboardingChecklist": "Onboarding checklist",
+    "noOnboardingTasks": "No onboarding tasks",
+    "onboardingTemplate": "Onboarding checklist template",
+    "onboardingTemplateHint": "Tasks here are cloned onto every new worker's onboarding checklist when they're created",
+    "onboardingTaskTitlePlaceholder": "Task title",
+    "addOnboardingTask": "Add task"
   },
   "documents": {
     "title": "Documents",
@@ -464,7 +495,15 @@
     "signatureRequired": "Please type your name and draw your signature to approve.",
     "signature": "Signature",
     "signedBy": "Signed by {name}",
-    "suggestedLines": "Suggested lines"
+    "suggestedLines": "Suggested lines",
+    "coverLetter": "Cover letter",
+    "coverLetterPlaceholder": "Optional intro text shown on a title page before the estimate PDF",
+    "compareRevisions": "Compare revisions",
+    "from": "From",
+    "to": "To",
+    "compare": "Compare",
+    "grandTotalDelta": "Grand total change",
+    "noDifferences": "No differences between these revisions"
   },
   "invoices": {
     "title": "Invoices",
@@ -736,7 +775,8 @@
     "depType_start_to_finish": "Start→Finish",
     "criticalPathLegend": "Critical path — delaying these delays the finish",
     "comments": "Comments",
-    "outdoorWork": "Outdoor work"
+    "outdoorWork": "Outdoor work",
+    "ganttDragHint": "Drag a bar to reschedule it, or its right edge to resize it"
   },
   "purchaseOrders": {
     "title": "Purchase orders",
@@ -870,7 +910,11 @@
     "estimateAtCompletionShort": "EAC",
     "varianceAtCompletion": "Variance",
     "projectedMargin": "Projected margin",
-    "marginErosion": "Margin erosion"
+    "marginErosion": "Margin erosion",
+    "revenueTrend": "Revenue trend",
+    "downloadTaxSummary": "Download tax summary",
+    "downloadPayrollExport": "Download payroll export",
+    "downloadSafetyExport": "Download incident export"
   },
   "notifications": {
     "title": "Notifications",
@@ -933,7 +977,8 @@
     "importClients": "Import CSV",
     "importMaterials": "Import materials CSV",
     "importRateItems": "Import rate items CSV",
-    "importProjects": "Import projects CSV"
+    "importProjects": "Import projects CSV",
+    "importBankTransactions": "Import bank transactions"
   },
   "dailyLogs": {
     "title": "Daily logs",
@@ -1119,7 +1164,11 @@
     "title": "Photos",
     "addPhoto": "+ Add photo",
     "uploading": "Uploading…",
-    "noPhotos": "No photos yet."
+    "noPhotos": "No photos yet.",
+    "annotate": "Annotate",
+    "clearMarkup": "Clear",
+    "saveMarkup": "Save markup",
+    "openFullSize": "Open full size"
   },
   "bulk": {
     "selectAll": "Select all",
@@ -1149,7 +1198,12 @@
     "conflictsDetected": "{count} scheduling conflict(s) detected",
     "calendar": "Calendar",
     "noAssignments": "No assignments yet.",
-    "allAssignments": "All assignments"
+    "allAssignments": "All assignments",
+    "task": "Task",
+    "wholeProject": "Whole project",
+    "workloadHeatmap": "Workload heatmap",
+    "workloadHeatmapHint": "Assigned hours per worker per day over the next 4 weeks — a darker cell means more hours assigned that day",
+    "overallocated": "overallocated"
   },
   "checklistTemplates": {
     "title": "Templates",
@@ -1478,5 +1532,66 @@
     "visits": "Visits",
     "completed": "Completed",
     "markComplete": "Mark complete"
+  },
+  "assemblies": {
+    "title": "Assemblies",
+    "hint": "Bundle rate catalog items into a reusable kit you can add to an estimate in one step",
+    "newAssembly": "New assembly",
+    "code": "Code",
+    "unit": "Unit",
+    "items": "Items",
+    "addItem": "Add item",
+    "addToEstimate": "Add to estimate"
+  },
+  "bankReconciliation": {
+    "title": "Bank reconciliation",
+    "hint": "Import a CSV of bank transactions and match each one against an invoice or expense",
+    "unreconciled": "Unreconciled",
+    "all": "All",
+    "noTransactions": "No transactions",
+    "matchedTo": "Matched to",
+    "unmatch": "Unmatch",
+    "invoice": "Invoice",
+    "expense": "Expense",
+    "match": "Match"
+  },
+  "quality": {
+    "title": "Quality control",
+    "inspections": "Inspections",
+    "newInspection": "New inspection",
+    "adHocChecklist": "Ad hoc checklist",
+    "trade": "Trade",
+    "phase": "Phase",
+    "inspector": "Inspector",
+    "adHocItemsPlaceholder": "One checklist item per line",
+    "status_open": "Open",
+    "status_passed": "Passed",
+    "status_failed": "Failed",
+    "inspectorLabel": "Inspector: {name}",
+    "result_pending": "Pending",
+    "result_pass": "Pass",
+    "result_fail": "Fail",
+    "result_na": "N/A",
+    "raiseDeficiency": "Raise deficiency",
+    "completeInspection": "Complete inspection",
+    "noInspections": "No inspections yet",
+    "deficiencies": "Deficiencies",
+    "noDeficiencies": "No deficiencies",
+    "severity_minor": "Minor",
+    "severity_major": "Major",
+    "severity_critical": "Critical",
+    "deficiencyStatus_open": "Open",
+    "deficiencyStatus_resolved": "Resolved",
+    "deficiencyStatus_verified": "Verified",
+    "assignee": "Assignee",
+    "assignedTo": "Assigned to {name}",
+    "markResolved": "Mark resolved",
+    "verifyFix": "Verify fix",
+    "reopen": "Reopen",
+    "inspectionTemplates": "Inspection checklist templates",
+    "inspectionTemplatesHint": "Reusable per-trade checklists — cloned into a fresh inspection each time one is started from a template",
+    "checklistItems": "Checklist items",
+    "checklistItemPlaceholder": "Item description",
+    "addChecklistItem": "Add item"
   }
 }

@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Query } from "@nestjs/common";
 import { createResourceAssignmentSchema, type AuthUser, type CreateResourceAssignmentInput } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
@@ -11,6 +11,12 @@ export class ResourcePlanningController {
   @Get("calendar")
   calendar(@CurrentUser() user: AuthUser) {
     return this.service.calendar(user.companyId);
+  }
+
+  @Get("workload-heatmap")
+  workloadHeatmap(@CurrentUser() user: AuthUser, @Query("from") from?: string, @Query("to") to?: string) {
+    if (!from || !to) throw new BadRequestException("from and to are required");
+    return this.service.workloadHeatmap(user.companyId, new Date(from), new Date(to));
   }
 
   @Post("assignments")

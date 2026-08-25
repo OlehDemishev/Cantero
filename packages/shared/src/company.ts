@@ -37,6 +37,8 @@ export const updateCompanySchema = z.object({
   ipAllowlist: z.array(z.string().min(1).max(64)).max(50).optional(),
   slackWebhookUrl: z.string().url().nullable().optional(),
   teamsWebhookUrl: z.string().url().nullable().optional(),
+  ptoAccrualHoursPerMonth: z.number().nonnegative().nullable().optional(),
+  reportingCurrency: z.enum(SUPPORTED_CURRENCIES).nullable().optional(),
 });
 export type UpdateCompanyInput = z.infer<typeof updateCompanySchema>;
 
@@ -75,7 +77,23 @@ export const updateSeatsSchema = z.object({
 });
 export type UpdateSeatsInput = z.infer<typeof updateSeatsSchema>;
 
+/** The public API's readable resources — matches the datasets exposed under /api/v1/*. */
+export const API_KEY_SCOPES = [
+  "projects",
+  "clients",
+  "invoices",
+  "estimates",
+  "workers",
+  "materials",
+  "time-entries",
+  "budget",
+] as const;
+export type ApiKeyScope = (typeof API_KEY_SCOPES)[number];
+
 export const createApiKeySchema = z.object({
   name: z.string().min(1).max(80),
+  /// Empty/omitted = unrestricted (full read access to every /v1 dataset).
+  scopes: z.array(z.enum(API_KEY_SCOPES)).max(API_KEY_SCOPES.length).optional(),
+  expiresAt: z.string().datetime().optional(),
 });
 export type CreateApiKeyInput = z.infer<typeof createApiKeySchema>;

@@ -4,6 +4,7 @@ import { PrismaService } from "../common/prisma/prisma.service";
 import { StorageService } from "../common/storage/storage.service";
 import { AuditService } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
+import { ExchangeRateService } from "../common/exchange-rate/exchange-rate.service";
 
 describe("CompanyService — deletion request", () => {
   let service: CompanyService;
@@ -23,6 +24,7 @@ describe("CompanyService — deletion request", () => {
         { provide: StorageService, useValue: {} },
         { provide: AuditService, useValue: audit },
         { provide: MailService, useValue: mail },
+        { provide: ExchangeRateService, useValue: {} },
       ],
     }).compile();
 

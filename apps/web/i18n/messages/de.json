@@ -45,7 +45,8 @@
     "templates": "Vorlagen",
     "subcontractors": "Subunternehmer",
     "expenses": "Spesen",
-    "serviceContracts": "Serviceverträge"
+    "serviceContracts": "Serviceverträge",
+    "bankReconciliation": "Kontoabgleich"
   },
   "auth": {
     "signupTitle": "Cantero-Konto erstellen",
@@ -252,7 +253,14 @@
     "total": "Gesamt",
     "generateLinkCode": "Verknüpfungscode erzeugen",
     "linkToParentCode": "Code der Muttergesellschaft",
-    "linkToParent": "Mit Mutterunternehmen verknüpfen"
+    "linkToParent": "Mit Mutterunternehmen verknüpfen",
+    "reportingCurrency": "Berichtswährung",
+    "reportingCurrencyHint": "Währung für die Zusammenfassung des Filialumsatzes in der Franchise-Übersicht",
+    "reportingIn": "Berichterstattung in {currency}",
+    "apiKeyExpires": "Läuft ab",
+    "apiKeyScopes": "Berechtigungen",
+    "apiKeyScopesHint": "Berechtigungen (keine ausgewählt = uneingeschränkt):",
+    "apiKeyUnrestricted": "Uneingeschränkt"
   },
   "projects": {
     "title": "Projekte",
@@ -305,7 +313,20 @@
     "searchPlaceholder": "Suche nach Name oder E-Mail…",
     "allOwners": "Alle Verantwortlichen",
     "referredBy": "Empfohlen von",
-    "referrals": "Empfehlungen"
+    "referrals": "Empfehlungen",
+    "probability": "Gewinnwahrscheinlichkeit",
+    "probabilityPlaceholder": "0-100%",
+    "expectedCloseDate": "Voraussichtlicher Abschluss",
+    "pipelineForecast": "Pipeline-Prognose",
+    "weightedPipelineValue": "Gewichteter Pipeline-Wert",
+    "unscheduledWeightedValue": "{value} {currency} ohne voraussichtlichen Abschlusstermin",
+    "funnelReport": "Trichterbericht",
+    "winRate": "Gewinnrate",
+    "winLossCount": "{won} gewonnen · {lost} verloren",
+    "avgDays": "Ø {days}T",
+    "ownerLeaderboard": "Vertriebsrangliste",
+    "wonSummary": "Gewonnen: {count} · {value} {currency}",
+    "openSummary": "Offen: {count} · {value} {currency}"
   },
   "team": {
     "title": "Team",
@@ -350,7 +371,17 @@
     "expires": "Läuft ab",
     "certStatus_expired": "Abgelaufen",
     "certStatus_expiring_soon": "Läuft bald ab",
-    "certStatus_valid": "Gültig"
+    "certStatus_valid": "Gültig",
+    "ptoBalance": "Urlaubskonto",
+    "ptoDeltaHoursPlaceholder": "Stunden (+/-)",
+    "ptoReasonPlaceholder": "Grund",
+    "adjustPtoBalance": "Konto anpassen",
+    "onboardingChecklist": "Onboarding-Checkliste",
+    "noOnboardingTasks": "Keine Onboarding-Aufgaben",
+    "onboardingTemplate": "Onboarding-Checklistenvorlage",
+    "onboardingTemplateHint": "Aufgaben hier werden bei der Erstellung auf die Onboarding-Checkliste jedes neuen Mitarbeiters übertragen",
+    "onboardingTaskTitlePlaceholder": "Aufgabentitel",
+    "addOnboardingTask": "Aufgabe hinzufügen"
   },
   "documents": {
     "title": "Dokumente",
@@ -464,7 +495,15 @@
     "signatureRequired": "Bitte geben Sie Ihren Namen ein und unterschreiben Sie, um zuzustimmen.",
     "signature": "Unterschrift",
     "signedBy": "Unterschrieben von {name}",
-    "suggestedLines": "Vorgeschlagene Positionen"
+    "suggestedLines": "Vorgeschlagene Positionen",
+    "coverLetter": "Anschreiben",
+    "coverLetterPlaceholder": "Optionaler Einleitungstext auf einer Titelseite vor dem Kostenvoranschlag-PDF",
+    "compareRevisions": "Revisionen vergleichen",
+    "from": "Von",
+    "to": "Bis",
+    "compare": "Vergleichen",
+    "grandTotalDelta": "Änderung der Gesamtsumme",
+    "noDifferences": "Keine Unterschiede zwischen diesen Revisionen"
   },
   "invoices": {
     "title": "Rechnungen",
@@ -736,7 +775,8 @@
     "depType_start_to_finish": "Anfang→Ende",
     "criticalPathLegend": "Kritischer Pfad — eine Verzögerung hier verschiebt den Endtermin",
     "comments": "Kommentare",
-    "outdoorWork": "Arbeit im Freien"
+    "outdoorWork": "Arbeit im Freien",
+    "ganttDragHint": "Ziehen Sie einen Balken, um ihn zu verschieben, oder den rechten Rand, um ihn zu verlängern"
   },
   "purchaseOrders": {
     "title": "Bestellungen",
@@ -870,7 +910,11 @@
     "estimateAtCompletionShort": "EAC",
     "varianceAtCompletion": "Abweichung",
     "projectedMargin": "Prognostizierte Marge",
-    "marginErosion": "Margenerosion"
+    "marginErosion": "Margenerosion",
+    "revenueTrend": "Umsatzentwicklung",
+    "downloadTaxSummary": "Steuerübersicht herunterladen",
+    "downloadPayrollExport": "Lohnexport herunterladen",
+    "downloadSafetyExport": "Vorfallexport herunterladen"
   },
   "notifications": {
     "title": "Benachrichtigungen",
@@ -933,7 +977,8 @@
     "importClients": "CSV importieren",
     "importMaterials": "Materialien per CSV importieren",
     "importRateItems": "Leistungspositionen per CSV importieren",
-    "importProjects": "Projekte per CSV importieren"
+    "importProjects": "Projekte per CSV importieren",
+    "importBankTransactions": "Bankbuchungen importieren"
   },
   "dailyLogs": {
     "title": "Bautagebuch",
@@ -1119,7 +1164,11 @@
     "title": "Fotos",
     "addPhoto": "+ Foto hinzufügen",
     "uploading": "Wird hochgeladen…",
-    "noPhotos": "Noch keine Fotos."
+    "noPhotos": "Noch keine Fotos.",
+    "annotate": "Beschriften",
+    "clearMarkup": "Löschen",
+    "saveMarkup": "Markierung speichern",
+    "openFullSize": "In voller Größe öffnen"
   },
   "bulk": {
     "selectAll": "Alle auswählen",
@@ -1149,7 +1198,12 @@
     "conflictsDetected": "{count} Terminkonflikt(e) erkannt",
     "calendar": "Kalender",
     "noAssignments": "Noch keine Zuweisungen.",
-    "allAssignments": "Alle Zuweisungen"
+    "allAssignments": "Alle Zuweisungen",
+    "task": "Aufgabe",
+    "wholeProject": "Gesamtes Projekt",
+    "workloadHeatmap": "Auslastungs-Heatmap",
+    "workloadHeatmapHint": "Zugewiesene Stunden pro Mitarbeiter und Tag für die nächsten 4 Wochen — je dunkler die Zelle, desto mehr Stunden an diesem Tag",
+    "overallocated": "überlastet"
   },
   "checklistTemplates": {
     "title": "Vorlagen",
@@ -1478,5 +1532,66 @@
     "visits": "Besuche",
     "completed": "Abgeschlossen",
     "markComplete": "Als erledigt markieren"
+  },
+  "assemblies": {
+    "title": "Baugruppen",
+    "hint": "Fassen Sie Leistungspositionen zu einem wiederverwendbaren Paket zusammen, das Sie in einem Schritt zu einem Kostenvoranschlag hinzufügen können",
+    "newAssembly": "Neue Baugruppe",
+    "code": "Code",
+    "unit": "Einheit",
+    "items": "Positionen",
+    "addItem": "Position hinzufügen",
+    "addToEstimate": "Zum Kostenvoranschlag hinzufügen"
+  },
+  "bankReconciliation": {
+    "title": "Kontoabgleich",
+    "hint": "Importieren Sie eine CSV-Datei mit Bankbuchungen und ordnen Sie jede einer Rechnung oder Ausgabe zu",
+    "unreconciled": "Nicht abgeglichen",
+    "all": "Alle",
+    "noTransactions": "Keine Buchungen",
+    "matchedTo": "Zugeordnet zu",
+    "unmatch": "Zuordnung aufheben",
+    "invoice": "Rechnung",
+    "expense": "Ausgabe",
+    "match": "Zuordnen"
+  },
+  "quality": {
+    "title": "Qualitätssicherung",
+    "inspections": "Inspektionen",
+    "newInspection": "Neue Inspektion",
+    "adHocChecklist": "Ad-hoc-Checkliste",
+    "trade": "Gewerk",
+    "phase": "Phase",
+    "inspector": "Prüfer",
+    "adHocItemsPlaceholder": "Ein Checklistenpunkt pro Zeile",
+    "status_open": "Offen",
+    "status_passed": "Bestanden",
+    "status_failed": "Nicht bestanden",
+    "inspectorLabel": "Prüfer: {name}",
+    "result_pending": "Ausstehend",
+    "result_pass": "Bestanden",
+    "result_fail": "Nicht bestanden",
+    "result_na": "N/A",
+    "raiseDeficiency": "Mangel melden",
+    "completeInspection": "Inspektion abschließen",
+    "noInspections": "Noch keine Inspektionen",
+    "deficiencies": "Mängel",
+    "noDeficiencies": "Keine Mängel",
+    "severity_minor": "Gering",
+    "severity_major": "Erheblich",
+    "severity_critical": "Kritisch",
+    "deficiencyStatus_open": "Offen",
+    "deficiencyStatus_resolved": "Behoben",
+    "deficiencyStatus_verified": "Geprüft",
+    "assignee": "Zuständig",
+    "assignedTo": "Zugewiesen an {name}",
+    "markResolved": "Als behoben markieren",
+    "verifyFix": "Behebung prüfen",
+    "reopen": "Wieder öffnen",
+    "inspectionTemplates": "Inspektions-Checklistenvorlagen",
+    "inspectionTemplatesHint": "Wiederverwendbare Checklisten pro Gewerk — werden bei jeder Verwendung in eine neue Inspektion kopiert",
+    "checklistItems": "Checklistenpunkte",
+    "checklistItemPlaceholder": "Beschreibung des Punkts",
+    "addChecklistItem": "Punkt hinzufügen"
   }
 }

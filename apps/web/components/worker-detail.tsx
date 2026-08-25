@@ -12,6 +12,12 @@ interface Worker {
   role: string | null;
   hourlyCost: string | null;
   active: boolean;
+  ptoBalanceHours: string;
+}
+interface OnboardingTask {
+  id: string;
+  title: string;
+  done: boolean;
 }
 interface ProjectBreakdown {
   projectId: string;
@@ -43,15 +49,42 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  const [onboardingTasks, setOnboardingTasks] = useState<OnboardingTask[] | null>(null);
+  const [ptoForm, setPtoForm] = useState({ deltaHours: "", reason: "" });
+  const [ptoBusy, setPtoBusy] = useState(false);
+
   function load() {
     apiFetch<Summary>(`/workers/${workerId}/summary`).then((s) => {
       setSummary(s);
       setForm({ name: s.worker.name, role: s.worker.role ?? "", hourlyCost: s.worker.hourlyCost ?? "" });
     });
     apiFetch<Certification[]>(`/workers/${workerId}/certifications`).then(setCertifications);
+    apiFetch<OnboardingTask[]>(`/workers/${workerId}/onboarding-tasks`).then(setOnboardingTasks);
   }
 
   useEffect(load, [workerId]);
+
+  async function adjustPto(e: React.FormEvent) {
+    e.preventDefault();
+    const deltaHours = Number(ptoForm.deltaHours);
+    if (!deltaHours || !ptoForm.reason) return;
+    setPtoBusy(true);
+    try {
+      await apiFetch(`/workers/${workerId}/pto-balance/adjust`, {
+        method: "POST",
+        body: JSON.stringify({ deltaHours, reason: ptoForm.reason }),
+      });
+      setPtoForm({ deltaHours: "", reason: "" });
+      load();
+    } finally {
+      setPtoBusy(false);
+    }
+  }
+
+  async function toggleOnboardingTask(taskId: string) {
+    await apiFetch(`/workers/${workerId}/onboarding-tasks/${taskId}/toggle`, { method: "POST" });
+    load();
+  }
 
   async function addCertification(e: React.FormEvent) {
     e.preventDefault();
@@ -146,6 +179,10 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
             {summary.totalCost} {currency}
           </div>
         </div>
+        <div className="card flex-1">
+          <div className="text-xs text-gray-500">{t("ptoBalance")}</div>
+          <div className="mt-1 text-lg font-semibold">{summary.worker.ptoBalanceHours}h</div>
+        </div>
       </div>
 
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
@@ -231,6 +268,45 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
               {t("addCertification")}
             </button>
           </form>
+
+          <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700">{t("ptoBalance")}</h2>
+          <form onSubmit={adjustPto} className="card flex flex-col gap-2">
+            <input
+              required
+              type="number"
+              step="0.5"
+              placeholder={t("ptoDeltaHoursPlaceholder")}
+              className="input"
+              value={ptoForm.deltaHours}
+              onChange={(e) => setPtoForm((f) => ({ ...f, deltaHours: e.target.value }))}
+            />
+            <input
+              required
+              placeholder={t("ptoReasonPlaceholder")}
+              className="input"
+              value={ptoForm.reason}
+              onChange={(e) => setPtoForm((f) => ({ ...f, reason: e.target.value }))}
+            />
+            <button type="submit" disabled={ptoBusy} className="btn-secondary self-start">
+              {t("adjustPtoBalance")}
+            </button>
+          </form>
+
+          <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700">{t("onboardingChecklist")}</h2>
+          {onboardingTasks === null ? (
+            <p className="text-sm text-gray-400">{tc("loading")}</p>
+          ) : onboardingTasks.length === 0 ? (
+            <p className="text-sm text-gray-400">{t("noOnboardingTasks")}</p>
+          ) : (
+            <ul className="flex flex-col gap-1.5">
+              {onboardingTasks.map((task) => (
+                <li key={task.id} className="card flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={task.done} onChange={() => toggleOnboardingTask(task.id)} />
+                  <span className={task.done ? "text-gray-400 line-through" : "text-gray-900"}>{task.title}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         <div className="lg:col-span-2">

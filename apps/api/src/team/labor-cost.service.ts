@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { toCsv } from "../common/csv";
 
 export interface LaborCostReportFilter {
   from?: string;
@@ -88,5 +89,28 @@ export class LaborCostService {
         .map((r) => ({ ...r, hours: round(r.hours), cost: round(r.cost) }))
         .sort((a, b) => b.cost - a.cost),
     };
+  }
+
+  /** One row per worker for the given period — generic enough to import into ADP, Gusto, or
+   * QuickBooks Payroll's "hours + rate" CSV import, rather than any one provider's exact schema. */
+  async payrollExportCsv(companyId: string, filter: LaborCostReportFilter): Promise<string> {
+    const { byWorker } = await this.report(companyId, filter);
+    const workers = await this.prisma.worker.findMany({
+      where: { companyId, id: { in: byWorker.map((w) => w.workerId) } },
+      include: { user: { select: { email: true } } },
+    });
+    const emailByWorkerId = new Map(workers.map((w) => [w.id, w.user?.email ?? ""]));
+
+    return toCsv(
+      ["Worker", "Email", "Role", "Hours", "Rate", "Gross Pay"],
+      byWorker.map((w) => [
+        w.workerName,
+        emailByWorkerId.get(w.workerId) ?? "",
+        w.role ?? "",
+        w.hours.toString(),
+        w.hours > 0 ? (w.cost / w.hours).toFixed(2) : "0.00",
+        w.cost.toFixed(2),
+      ]),
+    );
   }
 }

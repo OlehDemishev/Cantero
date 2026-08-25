@@ -1,16 +1,20 @@
-import { Body, Controller, Get, Header, Param, Post, StreamableFile } from "@nestjs/common";
+import { Body, Controller, Get, Header, Param, Patch, Post, Query, StreamableFile } from "@nestjs/common";
 import {
+  addAssemblyToEstimateSchema,
   createEstimateLineSchema,
   createEstimateSchema,
   createFromTemplateSchema,
   createVariantSchema,
   saveAsTemplateSchema,
+  updateEstimateCoverLetterSchema,
+  type AddAssemblyToEstimateInput,
   type AuthUser,
   type CreateEstimateInput,
   type CreateEstimateLineInput,
   type CreateFromTemplateInput,
   type CreateVariantInput,
   type SaveAsTemplateInput,
+  type UpdateEstimateCoverLetterInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
@@ -67,6 +71,24 @@ export class EstimatesController {
     return this.service.addLine(user.companyId, id, body);
   }
 
+  @Post(":id/lines/from-assembly")
+  addAssembly(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(addAssemblyToEstimateSchema)) body: AddAssemblyToEstimateInput,
+  ) {
+    return this.service.addAssemblyToEstimate(user.companyId, id, body);
+  }
+
+  @Patch(":id/cover-letter")
+  updateCoverLetter(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(updateEstimateCoverLetterSchema)) body: UpdateEstimateCoverLetterInput,
+  ) {
+    return this.service.updateCoverLetter(user.companyId, id, body);
+  }
+
   @Post(":id/recalculate")
   recalculate(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.recalculate(user.companyId, id);
@@ -89,6 +111,17 @@ export class EstimatesController {
   @Get(":id/revisions")
   listRevisions(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.listRevisions(user.companyId, id);
+  }
+
+  // Declared before ":revisionId" so "diff" isn't swallowed as a revision id.
+  @Get(":id/revisions/diff")
+  diffRevisions(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Query("from") from: string,
+    @Query("to") to: string,
+  ) {
+    return this.service.diffRevisions(user.companyId, id, from, to);
   }
 
   @Get(":id/revisions/:revisionId")

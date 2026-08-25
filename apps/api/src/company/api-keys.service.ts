@@ -21,7 +21,7 @@ export class ApiKeysService {
   list(companyId: string) {
     return this.prisma.apiKey.findMany({
       where: { companyId },
-      select: { id: true, name: true, keyPrefix: true, createdAt: true, lastUsedAt: true, revokedAt: true },
+      select: { id: true, name: true, keyPrefix: true, scopes: true, expiresAt: true, createdAt: true, lastUsedAt: true, revokedAt: true },
       orderBy: { createdAt: "desc" },
     });
   }
@@ -35,8 +35,10 @@ export class ApiKeysService {
         name: input.name,
         keyPrefix: rawKey.slice(0, PREFIX_DISPLAY_LENGTH),
         keyHash: hashApiKey(rawKey),
+        scopes: input.scopes ?? [],
+        expiresAt: input.expiresAt ? new Date(input.expiresAt) : undefined,
       },
-      select: { id: true, name: true, keyPrefix: true, createdAt: true },
+      select: { id: true, name: true, keyPrefix: true, scopes: true, expiresAt: true, createdAt: true },
     });
     this.audit.record(companyId, actor, "api_key.created", "ApiKey", apiKey.id, `Created API key "${apiKey.name}"`);
     return { ...apiKey, key: rawKey };

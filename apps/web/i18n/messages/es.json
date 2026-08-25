@@ -45,7 +45,8 @@
     "templates": "Plantillas",
     "subcontractors": "Subcontratistas",
     "expenses": "Gastos",
-    "serviceContracts": "Contratos de servicio"
+    "serviceContracts": "Contratos de servicio",
+    "bankReconciliation": "Conciliación bancaria"
   },
   "auth": {
     "signupTitle": "Crea tu cuenta de Cantero",
@@ -252,7 +253,14 @@
     "total": "Total",
     "generateLinkCode": "Generar código de vinculación",
     "linkToParentCode": "Código de la matriz",
-    "linkToParent": "Vincular a la matriz"
+    "linkToParent": "Vincular a la matriz",
+    "reportingCurrency": "Moneda de informe",
+    "reportingCurrencyHint": "Moneda utilizada para consolidar los ingresos de las sucursales en el resumen de franquicia",
+    "reportingIn": "Informe en {currency}",
+    "apiKeyExpires": "Caduca",
+    "apiKeyScopes": "Alcances",
+    "apiKeyScopesHint": "Alcances (ninguno seleccionado = sin restricción):",
+    "apiKeyUnrestricted": "Sin restricción"
   },
   "projects": {
     "title": "Proyectos",
@@ -305,7 +313,20 @@
     "searchPlaceholder": "Buscar por nombre o correo…",
     "allOwners": "Todos los responsables",
     "referredBy": "Referido por",
-    "referrals": "Referencias"
+    "referrals": "Referencias",
+    "probability": "Probabilidad de ganar",
+    "probabilityPlaceholder": "0-100%",
+    "expectedCloseDate": "Fecha de cierre prevista",
+    "pipelineForecast": "Previsión de cartera",
+    "weightedPipelineValue": "Valor ponderado de la cartera",
+    "unscheduledWeightedValue": "{value} {currency} sin fecha de cierre prevista",
+    "funnelReport": "Informe de embudo",
+    "winRate": "Tasa de éxito",
+    "winLossCount": "{won} ganados · {lost} perdidos",
+    "avgDays": "media {days}d",
+    "ownerLeaderboard": "Clasificación por comercial",
+    "wonSummary": "Ganados: {count} · {value} {currency}",
+    "openSummary": "Abiertos: {count} · {value} {currency}"
   },
   "team": {
     "title": "Equipo",
@@ -350,7 +371,17 @@
     "expires": "Caduca",
     "certStatus_expired": "Caducada",
     "certStatus_expiring_soon": "Caduca pronto",
-    "certStatus_valid": "Vigente"
+    "certStatus_valid": "Vigente",
+    "ptoBalance": "Saldo de vacaciones",
+    "ptoDeltaHoursPlaceholder": "Horas (+/-)",
+    "ptoReasonPlaceholder": "Motivo",
+    "adjustPtoBalance": "Ajustar saldo",
+    "onboardingChecklist": "Lista de incorporación",
+    "noOnboardingTasks": "Sin tareas de incorporación",
+    "onboardingTemplate": "Plantilla de lista de incorporación",
+    "onboardingTemplateHint": "Las tareas aquí se copian a la lista de incorporación de cada nuevo trabajador al crearlo",
+    "onboardingTaskTitlePlaceholder": "Título de la tarea",
+    "addOnboardingTask": "Añadir tarea"
   },
   "documents": {
     "title": "Documentos",
@@ -464,7 +495,15 @@
     "signatureRequired": "Escriba su nombre y dibuje su firma para aprobar.",
     "signature": "Firma",
     "signedBy": "Firmado por {name}",
-    "suggestedLines": "Líneas sugeridas"
+    "suggestedLines": "Líneas sugeridas",
+    "coverLetter": "Carta de presentación",
+    "coverLetterPlaceholder": "Texto introductorio opcional mostrado en una portada antes del PDF del presupuesto",
+    "compareRevisions": "Comparar revisiones",
+    "from": "Desde",
+    "to": "Hasta",
+    "compare": "Comparar",
+    "grandTotalDelta": "Cambio en el total general",
+    "noDifferences": "No hay diferencias entre estas revisiones"
   },
   "invoices": {
     "title": "Facturas",
@@ -736,7 +775,8 @@
     "depType_start_to_finish": "Inicio→Fin",
     "criticalPathLegend": "Ruta crítica — retrasar esto retrasa la finalización",
     "comments": "Comentarios",
-    "outdoorWork": "Trabajo al aire libre"
+    "outdoorWork": "Trabajo al aire libre",
+    "ganttDragHint": "Arrastre una barra para reprogramarla, o su borde derecho para cambiar su duración"
   },
   "purchaseOrders": {
     "title": "Pedidos de compra",
@@ -870,7 +910,11 @@
     "estimateAtCompletionShort": "EAC",
     "varianceAtCompletion": "Variación",
     "projectedMargin": "Margen proyectado",
-    "marginErosion": "Erosión de margen"
+    "marginErosion": "Erosión de margen",
+    "revenueTrend": "Tendencia de ingresos",
+    "downloadTaxSummary": "Descargar resumen fiscal",
+    "downloadPayrollExport": "Descargar exportación de nómina",
+    "downloadSafetyExport": "Descargar exportación de incidentes"
   },
   "notifications": {
     "title": "Notificaciones",
@@ -933,7 +977,8 @@
     "importClients": "Importar CSV",
     "importMaterials": "Importar materiales CSV",
     "importRateItems": "Importar partidas CSV",
-    "importProjects": "Importar proyectos CSV"
+    "importProjects": "Importar proyectos CSV",
+    "importBankTransactions": "Importar movimientos bancarios"
   },
   "dailyLogs": {
     "title": "Partes diarios",
@@ -1119,7 +1164,11 @@
     "title": "Fotos",
     "addPhoto": "+ Añadir foto",
     "uploading": "Subiendo…",
-    "noPhotos": "Aún no hay fotos."
+    "noPhotos": "Aún no hay fotos.",
+    "annotate": "Anotar",
+    "clearMarkup": "Borrar",
+    "saveMarkup": "Guardar anotación",
+    "openFullSize": "Abrir a tamaño completo"
   },
   "bulk": {
     "selectAll": "Seleccionar todo",
@@ -1149,7 +1198,12 @@
     "conflictsDetected": "{count} conflicto(s) de programación detectado(s)",
     "calendar": "Calendario",
     "noAssignments": "Aún no hay asignaciones.",
-    "allAssignments": "Todas las asignaciones"
+    "allAssignments": "Todas las asignaciones",
+    "task": "Tarea",
+    "wholeProject": "Todo el proyecto",
+    "workloadHeatmap": "Mapa de calor de carga de trabajo",
+    "workloadHeatmapHint": "Horas asignadas por trabajador y día en las próximas 4 semanas — una celda más oscura indica más horas asignadas ese día",
+    "overallocated": "sobreasignado"
   },
   "checklistTemplates": {
     "title": "Plantillas",
@@ -1478,5 +1532,66 @@
     "visits": "Visitas",
     "completed": "Completada",
     "markComplete": "Marcar como completada"
+  },
+  "assemblies": {
+    "title": "Conjuntos",
+    "hint": "Agrupe partidas del catálogo de precios en un kit reutilizable que puede añadir a un presupuesto en un solo paso",
+    "newAssembly": "Nuevo conjunto",
+    "code": "Código",
+    "unit": "Unidad",
+    "items": "Partidas",
+    "addItem": "Añadir partida",
+    "addToEstimate": "Añadir al presupuesto"
+  },
+  "bankReconciliation": {
+    "title": "Conciliación bancaria",
+    "hint": "Importe un CSV de movimientos bancarios y concilie cada uno con una factura o gasto",
+    "unreconciled": "Sin conciliar",
+    "all": "Todos",
+    "noTransactions": "Sin movimientos",
+    "matchedTo": "Conciliado con",
+    "unmatch": "Desconciliar",
+    "invoice": "Factura",
+    "expense": "Gasto",
+    "match": "Conciliar"
+  },
+  "quality": {
+    "title": "Control de calidad",
+    "inspections": "Inspecciones",
+    "newInspection": "Nueva inspección",
+    "adHocChecklist": "Lista de verificación ad hoc",
+    "trade": "Oficio",
+    "phase": "Fase",
+    "inspector": "Inspector",
+    "adHocItemsPlaceholder": "Un punto de la lista por línea",
+    "status_open": "Abierta",
+    "status_passed": "Aprobada",
+    "status_failed": "Fallida",
+    "inspectorLabel": "Inspector: {name}",
+    "result_pending": "Pendiente",
+    "result_pass": "Aprobado",
+    "result_fail": "Fallido",
+    "result_na": "N/A",
+    "raiseDeficiency": "Registrar deficiencia",
+    "completeInspection": "Completar inspección",
+    "noInspections": "Aún no hay inspecciones",
+    "deficiencies": "Deficiencias",
+    "noDeficiencies": "Sin deficiencias",
+    "severity_minor": "Menor",
+    "severity_major": "Mayor",
+    "severity_critical": "Crítica",
+    "deficiencyStatus_open": "Abierta",
+    "deficiencyStatus_resolved": "Resuelta",
+    "deficiencyStatus_verified": "Verificada",
+    "assignee": "Responsable",
+    "assignedTo": "Asignado a {name}",
+    "markResolved": "Marcar como resuelta",
+    "verifyFix": "Verificar solución",
+    "reopen": "Reabrir",
+    "inspectionTemplates": "Plantillas de listas de inspección",
+    "inspectionTemplatesHint": "Listas reutilizables por oficio — se copian a una nueva inspección cada vez que se inician desde una plantilla",
+    "checklistItems": "Puntos de la lista",
+    "checklistItemPlaceholder": "Descripción del punto",
+    "addChecklistItem": "Añadir punto"
   }
 }

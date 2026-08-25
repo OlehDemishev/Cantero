@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { CsvImportButton } from "@/components/csv-import-button";
 import { SavedViewsBar } from "@/components/saved-views-bar";
+import { CrmPipelinePanel } from "@/components/crm-pipeline-panel";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
@@ -61,6 +62,8 @@ export default function ClientsPage() {
   const [convertingId, setConvertingId] = useState<string | null>(null);
   const [convertForm, setConvertForm] = useState({ name: "", address: "" });
   const [filters, setFilters] = useState<ClientFilters>(EMPTY_FILTERS);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dragOverStage, setDragOverStage] = useState<ClientStage | null>(null);
 
   function load() {
     apiFetch<Client[]>("/clients").then(setClients);
@@ -262,13 +265,34 @@ export default function ClientsPage() {
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
             {STAGES.map((stage) => (
-              <div key={stage} className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+              <div
+                key={stage}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragOverStage(stage);
+                }}
+                onDragLeave={() => setDragOverStage((s) => (s === stage ? null : s))}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDragOverStage(null);
+                  if (draggedId) moveStage(draggedId, stage);
+                }}
+                className={`rounded-lg border p-3 transition-colors ${
+                  dragOverStage === stage ? "border-brand-400 bg-brand-50" : "border-gray-200 bg-gray-50"
+                }`}
+              >
                 <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{t(stage)}</div>
                 <div className="flex flex-col gap-2">
                   {filteredClients
                     .filter((c) => c.stage === stage)
                     .map((c) => (
-                      <div key={c.id} className="card">
+                      <div
+                        key={c.id}
+                        draggable
+                        onDragStart={() => setDraggedId(c.id)}
+                        onDragEnd={() => setDraggedId(null)}
+                        className={`card cursor-grab active:cursor-grabbing ${draggedId === c.id ? "opacity-50" : ""}`}
+                      >
                         <a href={`/clients/${c.id}`} className="text-sm font-medium hover:underline">
                           {c.name}
                         </a>
@@ -350,6 +374,8 @@ export default function ClientsPage() {
           </div>
         )}
       </div>
+
+      <CrmPipelinePanel />
     </AuthenticatedShell>
   );
 }

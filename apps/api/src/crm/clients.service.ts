@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import {
+  CLIENT_STAGE_DEFAULT_PROBABILITY,
   CLIENT_STAGES,
   type AddClientActivityInput,
   type AddClientReminderInput,
@@ -48,7 +49,17 @@ export class ClientsService {
   async create(companyId: string, input: CreateClientInput) {
     if (input.ownerWorkerId) await this.assertWorker(companyId, input.ownerWorkerId);
     if (input.referredByClientId) await this.assertClient(companyId, input.referredByClientId);
-    return this.prisma.client.create({ data: { ...input, companyId } });
+    const client = await this.prisma.client.create({
+      data: {
+        ...input,
+        companyId,
+        expectedCloseDate: input.expectedCloseDate ? new Date(input.expectedCloseDate) : undefined,
+      },
+    });
+    await this.prisma.clientStageHistory.create({
+      data: { companyId, clientId: client.id, fromStage: null, toStage: client.stage },
+    });
+    return client;
   }
 
   async update(companyId: string, id: string, input: UpdateClientInput) {
@@ -58,7 +69,14 @@ export class ClientsService {
       if (input.referredByClientId === id) throw new BadRequestException("A client can't refer itself");
       await this.assertClient(companyId, input.referredByClientId);
     }
-    return this.prisma.client.update({ where: { id }, data: input });
+    return this.prisma.client.update({
+      where: { id },
+      data: {
+        ...input,
+        expectedCloseDate:
+          input.expectedCloseDate === undefined ? undefined : input.expectedCloseDate ? new Date(input.expectedCloseDate) : null,
+      },
+    });
   }
 
   /** Stage transitions are the only path to won/lost — this is where wonAt/lostAt/lostReason and audit/webhooks live. */
@@ -75,6 +93,9 @@ export class ClientsService {
         lostReason: input.stage === "lost" ? input.lostReason : null,
       },
       include: { owner: { select: { id: true, name: true } } },
+    });
+    await this.prisma.clientStageHistory.create({
+      data: { companyId, clientId: client.id, fromStage: client.stage, toStage: input.stage },
     });
     this.audit.record(companyId, actor, "client.stage_changed", "Client", client.id, `Moved "${client.name}" to ${input.stage}`);
     if (input.stage === "won") this.webhooks.trigger(companyId, "client.won", { clientId: client.id, name: client.name });
@@ -105,6 +126,124 @@ export class ClientsService {
         totalValue: inStage.reduce((sum, c) => sum + Number(c.estimatedValue ?? 0), 0),
       };
     });
+  }
+
+  /** Weighted pipeline value for still-open deals — estimatedValue x probability (manual override,
+   * falling back to the stage's default), bucketed by expected close month so "how much might we
+   * close, and when" reads directly off the report. */
+  async pipelineForecast(companyId: string) {
+    const clients = await this.prisma.client.findMany({
+      where: { companyId, stage: { in: ["lead", "contacted", "qualified"] } },
+      select: { id: true, name: true, stage: true, estimatedValue: true, probability: true, expectedCloseDate: true },
+    });
+
+    const deals = clients.map((c) => {
+      const probability = c.probability ?? CLIENT_STAGE_DEFAULT_PROBABILITY[c.stage];
+      const weightedValue = (Number(c.estimatedValue ?? 0) * probability) / 100;
+      return {
+        clientId: c.id,
+        name: c.name,
+        stage: c.stage,
+        estimatedValue: Number(c.estimatedValue ?? 0),
+        probability,
+        expectedCloseDate: c.expectedCloseDate,
+        weightedValue,
+      };
+    });
+
+    const byMonth = new Map<string, number>();
+    let unscheduled = 0;
+    for (const deal of deals) {
+      if (!deal.expectedCloseDate) {
+        unscheduled += deal.weightedValue;
+        continue;
+      }
+      const key = `${deal.expectedCloseDate.getFullYear()}-${String(deal.expectedCloseDate.getMonth() + 1).padStart(2, "0")}`;
+      byMonth.set(key, (byMonth.get(key) ?? 0) + deal.weightedValue);
+    }
+
+    return {
+      totalWeightedValue: deals.reduce((sum, d) => sum + d.weightedValue, 0),
+      unscheduledWeightedValue: unscheduled,
+      byMonth: Array.from(byMonth.entries())
+        .sort(([a], [b]) => (a < b ? -1 : 1))
+        .map(([month, weightedValue]) => ({ month, weightedValue })),
+      deals: deals.sort((a, b) => b.weightedValue - a.weightedValue),
+    };
+  }
+
+  /** Win rate + average days spent in each stage, computed from the ClientStageHistory trail
+   * rather than the generic AuditLog — gives real pipeline-velocity numbers, not just a snapshot. */
+  async funnelReport(companyId: string) {
+    const [clients, history] = await Promise.all([
+      this.prisma.client.findMany({ where: { companyId }, select: { id: true, stage: true, wonAt: true, lostAt: true } }),
+      this.prisma.clientStageHistory.findMany({ where: { companyId }, orderBy: { changedAt: "asc" } }),
+    ]);
+
+    const wonCount = clients.filter((c) => c.stage === "won").length;
+    const lostCount = clients.filter((c) => c.stage === "lost").length;
+    const decidedCount = wonCount + lostCount;
+    const winRatePercent = decidedCount > 0 ? (wonCount / decidedCount) * 100 : null;
+
+    const everReachedStage = new Map<string, Set<string>>();
+    for (const stage of CLIENT_STAGES) everReachedStage.set(stage, new Set());
+    const byClient = new Map<string, typeof history>();
+    for (const row of history) {
+      everReachedStage.get(row.toStage)!.add(row.clientId);
+      if (!byClient.has(row.clientId)) byClient.set(row.clientId, []);
+      byClient.get(row.clientId)!.push(row);
+    }
+
+    const stageDurationsMs = new Map<string, number[]>();
+    for (const stage of CLIENT_STAGES) stageDurationsMs.set(stage, []);
+    for (const rows of byClient.values()) {
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const next = rows[i + 1];
+        const end = next ? next.changedAt : new Date();
+        stageDurationsMs.get(row.toStage)!.push(end.getTime() - row.changedAt.getTime());
+      }
+    }
+
+    const dayMs = 24 * 60 * 60 * 1000;
+    const funnel = CLIENT_STAGES.map((stage) => {
+      const durations = stageDurationsMs.get(stage)!;
+      return {
+        stage,
+        everReachedCount: everReachedStage.get(stage)!.size,
+        avgDaysInStage: durations.length > 0 ? durations.reduce((sum, ms) => sum + ms, 0) / durations.length / dayMs : null,
+      };
+    });
+
+    return { winRatePercent, wonCount, lostCount, funnel };
+  }
+
+  /** Per-owner snapshot: how much each salesperson currently has open vs. has closed won,
+   * for a simple performance leaderboard. */
+  async ownerLeaderboard(companyId: string) {
+    const clients = await this.prisma.client.findMany({
+      where: { companyId, ownerWorkerId: { not: null } },
+      select: { ownerWorkerId: true, owner: { select: { name: true } }, stage: true, estimatedValue: true },
+    });
+
+    const byOwner = new Map<string, { ownerWorkerId: string; ownerName: string; openCount: number; openValue: number; wonCount: number; wonValue: number }>();
+    for (const c of clients) {
+      const key = c.ownerWorkerId!;
+      if (!byOwner.has(key)) {
+        byOwner.set(key, { ownerWorkerId: key, ownerName: c.owner?.name ?? "—", openCount: 0, openValue: 0, wonCount: 0, wonValue: 0 });
+      }
+      const entry = byOwner.get(key)!;
+      const value = Number(c.estimatedValue ?? 0);
+      if (c.stage === "won") {
+        entry.wonCount++;
+        entry.wonValue += value;
+      } else if (c.stage !== "lost") {
+        entry.openCount++;
+        entry.openValue += value;
+      }
+    }
+
+    return Array.from(byOwner.values()).sort((a, b) => b.wonValue - a.wonValue);
   }
 
   private async assertWorker(companyId: string, workerId: string) {

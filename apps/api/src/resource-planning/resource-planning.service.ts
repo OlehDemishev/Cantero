@@ -35,14 +35,20 @@ export class ResourcePlanningService {
       this.prisma.worker.findMany({
         where: { companyId, active: true },
         include: {
-          resourceAssignments: { include: { project: { select: { id: true, name: true } } }, orderBy: { startDate: "asc" } },
+          resourceAssignments: {
+            include: { project: { select: { id: true, name: true } }, task: { select: { id: true, name: true } } },
+            orderBy: { startDate: "asc" },
+          },
         },
         orderBy: { name: "asc" },
       }),
       this.prisma.equipment.findMany({
         where: { companyId, status: { not: "retired" } },
         include: {
-          resourceAssignments: { include: { project: { select: { id: true, name: true } } }, orderBy: { startDate: "asc" } },
+          resourceAssignments: {
+            include: { project: { select: { id: true, name: true } }, task: { select: { id: true, name: true } } },
+            orderBy: { startDate: "asc" },
+          },
         },
         orderBy: { name: "asc" },
       }),
@@ -99,6 +105,8 @@ export class ResourcePlanningService {
           id: a.id,
           projectId: a.project.id,
           projectName: a.project.name,
+          taskId: a.task?.id ?? null,
+          taskName: a.task?.name ?? null,
           startDate: a.startDate.toISOString(),
           endDate: a.endDate.toISOString(),
           note: a.note,
@@ -120,11 +128,16 @@ export class ResourcePlanningService {
       const equipment = await this.prisma.equipment.findFirst({ where: { id: input.equipmentId, companyId } });
       if (!equipment) throw new NotFoundException("Equipment not found");
     }
+    if (input.taskId) {
+      const task = await this.prisma.task.findFirst({ where: { id: input.taskId, projectId: input.projectId } });
+      if (!task) throw new NotFoundException("Task not found on this project");
+    }
 
     const assignment = await this.prisma.resourceAssignment.create({
       data: {
         companyId,
         projectId: input.projectId,
+        taskId: input.taskId,
         workerId: input.workerId,
         equipmentId: input.equipmentId,
         startDate: new Date(input.startDate),
@@ -156,6 +169,39 @@ export class ResourcePlanningService {
       },
       conflicts,
     };
+  }
+
+  /** Assigned hours per worker per day over a date range — assumes 8h for each day an assignment
+   * spans, so a day where a worker has two overlapping assignments totals >8h and is flagged
+   * overallocated. This is a density view of ResourceAssignment, not actual logged TimeEntry hours. */
+  async workloadHeatmap(companyId: string, from: Date, to: Date) {
+    const HOURS_PER_DAY = 8;
+    const assignments = await this.prisma.resourceAssignment.findMany({
+      where: { companyId, workerId: { not: null }, startDate: { lte: to }, endDate: { gte: from } },
+      include: { worker: { select: { id: true, name: true } } },
+    });
+
+    const byWorker = new Map<string, { workerId: string; workerName: string; days: Map<string, number> }>();
+    for (const a of assignments) {
+      if (!a.worker) continue;
+      if (!byWorker.has(a.worker.id)) byWorker.set(a.worker.id, { workerId: a.worker.id, workerName: a.worker.name, days: new Map() });
+      const entry = byWorker.get(a.worker.id)!;
+
+      const start = a.startDate > from ? a.startDate : from;
+      const end = a.endDate < to ? a.endDate : to;
+      for (let d = new Date(start); d.getTime() <= end.getTime(); d.setDate(d.getDate() + 1)) {
+        const key = d.toISOString().slice(0, 10);
+        entry.days.set(key, (entry.days.get(key) ?? 0) + HOURS_PER_DAY);
+      }
+    }
+
+    return Array.from(byWorker.values()).map((entry) => ({
+      workerId: entry.workerId,
+      workerName: entry.workerName,
+      days: Array.from(entry.days.entries())
+        .sort(([a], [b]) => (a < b ? -1 : 1))
+        .map(([date, hours]) => ({ date, hours, overallocated: hours > HOURS_PER_DAY })),
+    }));
   }
 
   async delete(companyId: string, id: string) {

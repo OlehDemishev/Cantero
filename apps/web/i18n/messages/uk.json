@@ -45,7 +45,8 @@
     "templates": "Шаблони",
     "subcontractors": "Субпідрядники",
     "expenses": "Витрати",
-    "serviceContracts": "Сервісні контракти"
+    "serviceContracts": "Сервісні контракти",
+    "bankReconciliation": "Звірка банку"
   },
   "auth": {
     "signupTitle": "Створіть обліковий запис Cantero",
@@ -252,7 +253,14 @@
     "total": "Разом",
     "generateLinkCode": "Згенерувати код прив'язки",
     "linkToParentCode": "Код батьківської компанії",
-    "linkToParent": "Прив'язати до батьківської"
+    "linkToParent": "Прив'язати до батьківської",
+    "reportingCurrency": "Валюта звітності",
+    "reportingCurrencyHint": "Валюта, у якій підсумовується виручка філій в огляді франшизи",
+    "reportingIn": "Звітність у {currency}",
+    "apiKeyExpires": "Термін дії",
+    "apiKeyScopes": "Області доступу",
+    "apiKeyScopesHint": "Області доступу (нічого не вибрано = без обмежень):",
+    "apiKeyUnrestricted": "Без обмежень"
   },
   "projects": {
     "title": "Проєкти",
@@ -305,7 +313,20 @@
     "searchPlaceholder": "Пошук за іменем чи email…",
     "allOwners": "Усі відповідальні",
     "referredBy": "Рекомендований",
-    "referrals": "Рекомендації"
+    "referrals": "Рекомендації",
+    "probability": "Ймовірність виграшу",
+    "probabilityPlaceholder": "0-100%",
+    "expectedCloseDate": "Очікувана дата закриття",
+    "pipelineForecast": "Прогноз воронки продажів",
+    "weightedPipelineValue": "Зважена вартість воронки",
+    "unscheduledWeightedValue": "{value} {currency} без очікуваної дати закриття",
+    "funnelReport": "Звіт по воронці",
+    "winRate": "Відсоток виграшів",
+    "winLossCount": "{won} виграно · {lost} програно",
+    "avgDays": "у сер. {days}дн",
+    "ownerLeaderboard": "Рейтинг менеджерів",
+    "wonSummary": "Виграно: {count} · {value} {currency}",
+    "openSummary": "Відкрито: {count} · {value} {currency}"
   },
   "team": {
     "title": "Команда",
@@ -350,7 +371,17 @@
     "expires": "Закінчується",
     "certStatus_expired": "Прострочено",
     "certStatus_expiring_soon": "Скоро закінчується",
-    "certStatus_valid": "Чинна"
+    "certStatus_valid": "Чинна",
+    "ptoBalance": "Баланс відпустки",
+    "ptoDeltaHoursPlaceholder": "Години (+/-)",
+    "ptoReasonPlaceholder": "Причина",
+    "adjustPtoBalance": "Скоригувати баланс",
+    "onboardingChecklist": "Чек-лист адаптації",
+    "noOnboardingTasks": "Немає завдань адаптації",
+    "onboardingTemplate": "Шаблон чек-листа адаптації",
+    "onboardingTemplateHint": "Завдання звідси копіюються в чек-лист адаптації кожного нового працівника під час його створення",
+    "onboardingTaskTitlePlaceholder": "Назва завдання",
+    "addOnboardingTask": "Додати завдання"
   },
   "documents": {
     "title": "Документи",
@@ -464,7 +495,15 @@
     "signatureRequired": "Введіть ім'я та поставте підпис, щоб погодити.",
     "signature": "Підпис",
     "signedBy": "Підписано {name}",
-    "suggestedLines": "Пропоновані рядки"
+    "suggestedLines": "Пропоновані рядки",
+    "coverLetter": "Супровідний лист",
+    "coverLetterPlaceholder": "Необов'язковий вступний текст на титульній сторінці перед PDF кошторису",
+    "compareRevisions": "Порівняти версії",
+    "from": "Від",
+    "to": "До",
+    "compare": "Порівняти",
+    "grandTotalDelta": "Зміна загальної суми",
+    "noDifferences": "Немає відмінностей між цими версіями"
   },
   "invoices": {
     "title": "Рахунки",
@@ -736,7 +775,8 @@
     "depType_start_to_finish": "Початок→Кінець",
     "criticalPathLegend": "Критичний шлях — затримка тут зсуває завершення",
     "comments": "Коментарі",
-    "outdoorWork": "Робота на відкритому повітрі"
+    "outdoorWork": "Робота на відкритому повітрі",
+    "ganttDragHint": "Перетягніть смугу, щоб перенести її, або її правий край, щоб змінити тривалість"
   },
   "purchaseOrders": {
     "title": "Замовлення на закупівлю",
@@ -870,7 +910,11 @@
     "estimateAtCompletionShort": "EAC",
     "varianceAtCompletion": "Відхилення",
     "projectedMargin": "Прогнозована маржа",
-    "marginErosion": "Ерозія маржі"
+    "marginErosion": "Ерозія маржі",
+    "revenueTrend": "Динаміка доходу",
+    "downloadTaxSummary": "Завантажити податковий звіт",
+    "downloadPayrollExport": "Завантажити експорт зарплати",
+    "downloadSafetyExport": "Завантажити експорт інцидентів"
   },
   "notifications": {
     "title": "Сповіщення",
@@ -933,7 +977,8 @@
     "importClients": "Імпортувати CSV",
     "importMaterials": "Імпортувати матеріали CSV",
     "importRateItems": "Імпортувати позиції розцінок CSV",
-    "importProjects": "Імпортувати проєкти CSV"
+    "importProjects": "Імпортувати проєкти CSV",
+    "importBankTransactions": "Імпортувати банківські транзакції"
   },
   "dailyLogs": {
     "title": "Журнал робіт",
@@ -1119,7 +1164,11 @@
     "title": "Фото",
     "addPhoto": "+ Додати фото",
     "uploading": "Завантаження…",
-    "noPhotos": "Поки немає фото."
+    "noPhotos": "Поки немає фото.",
+    "annotate": "Анотувати",
+    "clearMarkup": "Очистити",
+    "saveMarkup": "Зберегти анотацію",
+    "openFullSize": "Відкрити повний розмір"
   },
   "bulk": {
     "selectAll": "Вибрати всі",
@@ -1149,7 +1198,12 @@
     "conflictsDetected": "Виявлено {count} конфлікт(и) розкладу",
     "calendar": "Календар",
     "noAssignments": "Поки немає призначень.",
-    "allAssignments": "Усі призначення"
+    "allAssignments": "Усі призначення",
+    "task": "Завдання",
+    "wholeProject": "Весь проєкт",
+    "workloadHeatmap": "Теплова карта завантаженості",
+    "workloadHeatmapHint": "Призначені години на працівника за день на найближчі 4 тижні — темніша клітинка означає більше годин того дня",
+    "overallocated": "перевантажено"
   },
   "checklistTemplates": {
     "title": "Шаблони",
@@ -1478,5 +1532,66 @@
     "visits": "Візити",
     "completed": "Завершено",
     "markComplete": "Позначити виконаним"
+  },
+  "assemblies": {
+    "title": "Комплекти",
+    "hint": "Об'єднайте позиції каталогу розцінок у багаторазовий комплект, який можна додати до кошторису одним кроком",
+    "newAssembly": "Новий комплект",
+    "code": "Код",
+    "unit": "Одиниця",
+    "items": "Позиції",
+    "addItem": "Додати позицію",
+    "addToEstimate": "Додати до кошторису"
+  },
+  "bankReconciliation": {
+    "title": "Звірка банку",
+    "hint": "Імпортуйте CSV з банківськими транзакціями та зіставте кожну з рахунком або витратою",
+    "unreconciled": "Незвірені",
+    "all": "Усі",
+    "noTransactions": "Немає транзакцій",
+    "matchedTo": "Зіставлено з",
+    "unmatch": "Скасувати зіставлення",
+    "invoice": "Рахунок",
+    "expense": "Витрата",
+    "match": "Зіставити"
+  },
+  "quality": {
+    "title": "Контроль якості",
+    "inspections": "Інспекції",
+    "newInspection": "Нова інспекція",
+    "adHocChecklist": "Довільний чек-лист",
+    "trade": "Спеціалізація",
+    "phase": "Етап",
+    "inspector": "Інспектор",
+    "adHocItemsPlaceholder": "Один пункт чек-листа на рядок",
+    "status_open": "Відкрита",
+    "status_passed": "Пройдена",
+    "status_failed": "Не пройдена",
+    "inspectorLabel": "Інспектор: {name}",
+    "result_pending": "Очікує",
+    "result_pass": "Пройдено",
+    "result_fail": "Не пройдено",
+    "result_na": "Н/З",
+    "raiseDeficiency": "Зафіксувати дефект",
+    "completeInspection": "Завершити інспекцію",
+    "noInspections": "Ще немає інспекцій",
+    "deficiencies": "Дефекти",
+    "noDeficiencies": "Немає дефектів",
+    "severity_minor": "Незначний",
+    "severity_major": "Значний",
+    "severity_critical": "Критичний",
+    "deficiencyStatus_open": "Відкритий",
+    "deficiencyStatus_resolved": "Усунено",
+    "deficiencyStatus_verified": "Перевірено",
+    "assignee": "Відповідальний",
+    "assignedTo": "Призначено {name}",
+    "markResolved": "Позначити усуненим",
+    "verifyFix": "Перевірити усунення",
+    "reopen": "Відкрити знову",
+    "inspectionTemplates": "Шаблони чек-листів інспекцій",
+    "inspectionTemplatesHint": "Багаторазові чек-листи для кожної спеціалізації — копіюються в нову інспекцію щоразу при використанні шаблону",
+    "checklistItems": "Пункти чек-листа",
+    "checklistItemPlaceholder": "Опис пункту",
+    "addChecklistItem": "Додати пункт"
   }
 }

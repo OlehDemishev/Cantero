@@ -11,6 +11,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { NotificationBell } from "@/components/notification-bell";
 import { GlobalSearch } from "@/components/global-search";
 import {
+  BankReconciliationIcon,
   ChevronDownIcon,
   ClientsIcon,
   CloseIcon,
@@ -53,6 +54,7 @@ const NAV_ITEMS = [
   { href: "/purchase-orders", key: "purchaseOrders", icon: PurchaseOrdersIcon },
   { href: "/invoices", key: "invoices", icon: InvoicesIcon },
   { href: "/expenses", key: "expenses", icon: ExpensesIcon },
+  { href: "/bank-reconciliation", key: "bankReconciliation", icon: BankReconciliationIcon },
   { href: "/service-contracts", key: "serviceContracts", icon: ServiceContractsIcon },
   { href: "/team", key: "team", icon: TeamIcon },
   { href: "/documents", key: "documents", icon: DocumentsIcon },

@@ -30,6 +30,8 @@ interface Client {
   stage: ClientStage;
   notes: string | null;
   estimatedValue: number | null;
+  probability: number | null;
+  expectedCloseDate: string | null;
   owner: Worker | null;
   lostReason: string | null;
   referredBy: { id: string; name: string } | null;
@@ -60,7 +62,13 @@ export function ClientDetail({ clientId }: { clientId: string }) {
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [allClients, setAllClients] = useState<ReferralClient[]>([]);
   const [notesInput, setNotesInput] = useState("");
-  const [dealForm, setDealForm] = useState({ estimatedValue: "", ownerWorkerId: "", referredByClientId: "" });
+  const [dealForm, setDealForm] = useState({
+    estimatedValue: "",
+    ownerWorkerId: "",
+    referredByClientId: "",
+    probability: "",
+    expectedCloseDate: "",
+  });
   const [dealSaved, setDealSaved] = useState(false);
   const [activityForm, setActivityForm] = useState({ type: "note" as ActivityType, content: "" });
   const [reminderForm, setReminderForm] = useState({ title: "", dueDate: "" });
@@ -79,6 +87,8 @@ export function ClientDetail({ clientId }: { clientId: string }) {
         estimatedValue: c.estimatedValue?.toString() ?? "",
         ownerWorkerId: c.owner?.id ?? "",
         referredByClientId: c.referredBy?.id ?? "",
+        probability: c.probability?.toString() ?? "",
+        expectedCloseDate: c.expectedCloseDate ? c.expectedCloseDate.slice(0, 10) : "",
       });
     });
     apiFetch<Activity[]>(`/clients/${clientId}/activities`).then(setActivities);
@@ -159,6 +169,8 @@ export function ClientDetail({ clientId }: { clientId: string }) {
           estimatedValue: dealForm.estimatedValue ? Number(dealForm.estimatedValue) : null,
           ownerWorkerId: dealForm.ownerWorkerId || null,
           referredByClientId: dealForm.referredByClientId || null,
+          probability: dealForm.probability ? Number(dealForm.probability) : null,
+          expectedCloseDate: dealForm.expectedCloseDate ? new Date(dealForm.expectedCloseDate).toISOString() : null,
         }),
       });
       setDealSaved(true);
@@ -304,6 +316,27 @@ export function ClientDetail({ clientId }: { clientId: string }) {
               </option>
             ))}
           </select>
+          <label className="text-xs text-gray-500">
+            {t("probability")}
+            <input
+              type="number"
+              min="0"
+              max="100"
+              className="input mt-1"
+              placeholder={t("probabilityPlaceholder")}
+              value={dealForm.probability}
+              onChange={(e) => setDealForm((f) => ({ ...f, probability: e.target.value }))}
+            />
+          </label>
+          <label className="text-xs text-gray-500">
+            {t("expectedCloseDate")}
+            <input
+              type="date"
+              className="input mt-1"
+              value={dealForm.expectedCloseDate}
+              onChange={(e) => setDealForm((f) => ({ ...f, expectedCloseDate: e.target.value }))}
+            />
+          </label>
           <label className="text-xs text-gray-500">
             {t("referredBy")}
             <select

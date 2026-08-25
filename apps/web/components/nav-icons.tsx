@@ -279,3 +279,13 @@ export function ServiceContractsIcon(props: SVGProps<SVGSVGElement>) {
     </Icon>
   );
 }
+
+export function BankReconciliationIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M10 2.5 2.5 6.5v1.5h15V6.5z" />
+      <path d="M4 8v6.5M8 8v6.5M12 8v6.5M16 8v6.5" />
+      <path d="M2.5 15h15v1.5h-15z" />
+    </Icon>
+  );
+}

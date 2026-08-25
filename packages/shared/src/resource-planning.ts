@@ -3,6 +3,7 @@ import { z } from "zod";
 export const createResourceAssignmentSchema = z
   .object({
     projectId: z.string().uuid(),
+    taskId: z.string().uuid().optional(),
     workerId: z.string().uuid().optional(),
     equipmentId: z.string().uuid().optional(),
     startDate: z.string().datetime(),

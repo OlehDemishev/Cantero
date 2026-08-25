@@ -22,6 +22,8 @@ export interface PdfSignature {
 export interface PdfDocumentSpec {
   title: string;
   subtitle?: string;
+  /** Client-facing intro text rendered as its own page ahead of everything else — absent means no cover page. */
+  coverLetter?: string;
   meta: { label: string; value: string }[];
   tableHeader: string[];
   tableRows: PdfTableRow[];
@@ -49,6 +51,21 @@ export class PdfService {
 
       const accentColor = spec.branding?.accentColor ?? DEFAULT_TEXT_COLOR;
       const dividerColor = spec.branding?.accentColor ?? DEFAULT_DIVIDER_COLOR;
+
+      if (spec.coverLetter) {
+        if (spec.branding?.logoBuffer) {
+          try {
+            doc.image(spec.branding.logoBuffer, doc.page.width - 50 - LOGO_MAX_WIDTH, 50, {
+              fit: [LOGO_MAX_WIDTH, LOGO_MAX_HEIGHT],
+            });
+          } catch {
+            // A corrupt/unsupported image shouldn't block the rest of the document from rendering.
+          }
+        }
+        doc.fillColor(accentColor).fontSize(22).text(spec.title, 50, 140);
+        doc.fillColor(DEFAULT_TEXT_COLOR).fontSize(12).moveDown(2).text(spec.coverLetter, { width: doc.page.width - 100 });
+        doc.addPage();
+      }
 
       if (spec.branding?.logoBuffer) {
         try {

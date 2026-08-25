@@ -90,3 +90,110 @@ describe("WorkersService certifications", () => {
     });
   });
 });
+
+describe("WorkersService — PTO and onboarding", () => {
+  let service: WorkersService;
+  let prisma: {
+    worker: { findFirst: jest.Mock; create: jest.Mock; update: jest.Mock };
+    onboardingTemplateItem: { findMany: jest.Mock };
+    workerOnboardingTask: { createMany: jest.Mock; findMany: jest.Mock; findFirst: jest.Mock; update: jest.Mock };
+  };
+  let audit: { record: jest.Mock };
+
+  beforeEach(async () => {
+    prisma = {
+      worker: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
+      onboardingTemplateItem: { findMany: jest.fn() },
+      workerOnboardingTask: { createMany: jest.fn(), findMany: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
+    };
+    audit = { record: jest.fn() };
+
+    const module = await Test.createTestingModule({
+      providers: [WorkersService, { provide: PrismaService, useValue: prisma }, { provide: AuditService, useValue: audit }],
+    }).compile();
+
+    service = module.get(WorkersService);
+  });
+
+  describe("create()", () => {
+    it("clones the onboarding template into fresh tasks for the new worker", async () => {
+      prisma.worker.create.mockResolvedValue({ id: "worker-1", name: "Sam" });
+      prisma.onboardingTemplateItem.findMany.mockResolvedValue([
+        { title: "Sign handbook", sortOrder: 0 },
+        { title: "Issue badge", sortOrder: 1 },
+      ]);
+
+      await service.create(COMPANY_A, { name: "Sam" });
+
+      expect(prisma.workerOnboardingTask.createMany).toHaveBeenCalledWith({
+        data: [
+          { companyId: COMPANY_A, workerId: "worker-1", title: "Sign handbook", sortOrder: 0 },
+          { companyId: COMPANY_A, workerId: "worker-1", title: "Issue badge", sortOrder: 1 },
+        ],
+      });
+    });
+
+    it("skips task creation entirely when the company has no onboarding template", async () => {
+      prisma.worker.create.mockResolvedValue({ id: "worker-1", name: "Sam" });
+      prisma.onboardingTemplateItem.findMany.mockResolvedValue([]);
+
+      await service.create(COMPANY_A, { name: "Sam" });
+
+      expect(prisma.workerOnboardingTask.createMany).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("adjustPtoBalance()", () => {
+    it("increments the balance by deltaHours and audits the reason", async () => {
+      prisma.worker.findFirst.mockResolvedValue({ id: "worker-1", name: "Sam" });
+      prisma.worker.update.mockResolvedValue({ id: "worker-1", ptoBalanceHours: "48" });
+
+      await service.adjustPtoBalance(COMPANY_A, ACTOR, "worker-1", { deltaHours: 8, reason: "Comp time" });
+
+      expect(prisma.worker.update).toHaveBeenCalledWith({
+        where: { id: "worker-1" },
+        data: { ptoBalanceHours: { increment: 8 } },
+      });
+      expect(audit.record).toHaveBeenCalledWith(
+        COMPANY_A,
+        ACTOR,
+        "worker.pto_balance_adjusted",
+        "Worker",
+        "worker-1",
+        expect.stringContaining("Comp time"),
+        expect.objectContaining({ deltaHours: 8, reason: "Comp time" }),
+      );
+    });
+  });
+
+  describe("toggleOnboardingTask()", () => {
+    it("throws when the task doesn't belong to this worker/company", async () => {
+      prisma.workerOnboardingTask.findFirst.mockResolvedValue(null);
+      await expect(service.toggleOnboardingTask(COMPANY_A, "worker-1", "task-1")).rejects.toThrow(NotFoundException);
+    });
+
+    it("marks an undone task done, stamping completedAt", async () => {
+      prisma.workerOnboardingTask.findFirst.mockResolvedValue({ id: "task-1", done: false });
+      prisma.workerOnboardingTask.update.mockResolvedValue({ id: "task-1", done: true });
+
+      await service.toggleOnboardingTask(COMPANY_A, "worker-1", "task-1");
+
+      expect(prisma.workerOnboardingTask.update).toHaveBeenCalledWith({
+        where: { id: "task-1" },
+        data: { done: true, completedAt: expect.any(Date) },
+      });
+    });
+
+    it("marks a done task undone, clearing completedAt", async () => {
+      prisma.workerOnboardingTask.findFirst.mockResolvedValue({ id: "task-1", done: true });
+      prisma.workerOnboardingTask.update.mockResolvedValue({ id: "task-1", done: false });
+
+      await service.toggleOnboardingTask(COMPANY_A, "worker-1", "task-1");
+
+      expect(prisma.workerOnboardingTask.update).toHaveBeenCalledWith({
+        where: { id: "task-1" },
+        data: { done: false, completedAt: null },
+      });
+    });
+  });
+});

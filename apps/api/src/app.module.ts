@@ -9,6 +9,7 @@ import { AuditModule } from "./common/audit/audit.module";
 import { MailModule } from "./common/mail/mail.module";
 import { WebhooksModule } from "./common/webhooks/webhooks.module";
 import { SessionsModule } from "./common/sessions/sessions.module";
+import { ExchangeRateModule } from "./common/exchange-rate/exchange-rate.module";
 import { JwtAuthGuard } from "./common/guards/jwt-auth.guard";
 import { IpAllowlistGuard } from "./common/guards/ip-allowlist.guard";
 import { SubscriptionGuard } from "./common/guards/subscription.guard";
@@ -47,6 +48,8 @@ import { InvoiceRemindersModule } from "./invoice-reminders/invoice-reminders.mo
 import { InsightsModule } from "./insights/insights.module";
 import { CalendarFeedModule } from "./calendar-feed/calendar-feed.module";
 import { ServiceModule } from "./service/service.module";
+import { BankReconciliationModule } from "./bank-reconciliation/bank-reconciliation.module";
+import { QualityModule } from "./quality/quality.module";
 
 @Module({
   imports: [
@@ -59,6 +62,7 @@ import { ServiceModule } from "./service/service.module";
     MailModule,
     WebhooksModule,
     SessionsModule,
+    ExchangeRateModule,
     AuthModule,
     BillingModule,
     MeModule,
@@ -93,6 +97,8 @@ import { ServiceModule } from "./service/service.module";
     InsightsModule,
     CalendarFeedModule,
     ServiceModule,
+    BankReconciliationModule,
+    QualityModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

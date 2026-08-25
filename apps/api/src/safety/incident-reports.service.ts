@@ -3,6 +3,7 @@ import type { CreateIncidentReportInput, UpdateIncidentReportInput } from "@cant
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { toCsv } from "../common/csv";
 
 @Injectable()
 export class IncidentReportsService {
@@ -65,6 +66,32 @@ export class IncidentReportsService {
         correctiveActions: input.correctiveActions,
       },
     });
+  }
+
+  /** Columns mirror the shape of an OSHA 300 log (case, date, location, description,
+   * classification) closely enough to hand to a safety officer for their own filing — this is
+   * not an official OSHA-compliant export, just a familiar starting layout. */
+  async exportCsv(companyId: string): Promise<string> {
+    const reports = await this.prisma.incidentReport.findMany({
+      where: { companyId },
+      include: { project: { select: { name: true } } },
+      orderBy: { occurredAt: "asc" },
+    });
+
+    return toCsv(
+      ["Case No.", "Date", "Project", "Location", "Classification", "Description", "Involved Persons", "Corrective Actions", "Reported By"],
+      reports.map((r, i) => [
+        String(i + 1),
+        r.occurredAt.toISOString().slice(0, 10),
+        r.project.name,
+        r.location ?? "",
+        r.severity.replace(/_/g, " "),
+        r.description,
+        r.involvedPersons ?? "",
+        r.correctiveActions ?? "",
+        r.reportedByName,
+      ]),
+    );
   }
 
   private async assertProject(companyId: string, projectId: string) {

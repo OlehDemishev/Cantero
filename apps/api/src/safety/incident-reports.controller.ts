@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common";
+import { Controller, Get, Header, Body, Param, Patch, Post, Query } from "@nestjs/common";
 import {
   createIncidentReportSchema,
   updateIncidentReportSchema,
@@ -17,6 +17,13 @@ export class IncidentReportsController {
   @Get()
   list(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string) {
     return this.service.listForProject(user.companyId, projectId);
+  }
+
+  // Declared before ":id" so "export" isn't swallowed as an incident id.
+  @Get("export")
+  @Header("Content-Type", "text/csv")
+  export(@CurrentUser() user: AuthUser) {
+    return this.service.exportCsv(user.companyId);
   }
 
   @Get(":id")

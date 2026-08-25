@@ -7,6 +7,8 @@ import { EstimatesService } from "./estimates.service";
 import { ChangeOrdersController } from "./change-orders.controller";
 import { PublicChangeOrdersController } from "./public-change-orders.controller";
 import { ChangeOrdersService } from "./change-orders.service";
+import { AssembliesController } from "./assemblies.controller";
+import { AssembliesService } from "./assemblies.service";
 
 @Module({
   controllers: [
@@ -15,8 +17,9 @@ import { ChangeOrdersService } from "./change-orders.service";
     PublicEstimatesController,
     ChangeOrdersController,
     PublicChangeOrdersController,
+    AssembliesController,
   ],
-  providers: [RateCatalogService, EstimatesService, ChangeOrdersService],
+  providers: [RateCatalogService, EstimatesService, ChangeOrdersService, AssembliesService],
   exports: [EstimatesService, ChangeOrdersService],
 })
 export class EstimatesModule {}

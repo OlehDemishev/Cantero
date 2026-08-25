@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { CsvImportButton } from "@/components/csv-import-button";
+import { AssembliesPanel } from "@/components/assemblies-panel";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
@@ -202,6 +203,8 @@ export default function RateCatalogPage() {
           )}
         </div>
       </div>
+
+      <AssembliesPanel />
     </AuthenticatedShell>
   );
 }

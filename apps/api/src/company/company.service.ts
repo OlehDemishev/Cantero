@@ -5,6 +5,7 @@ import { PrismaService } from "../common/prisma/prisma.service";
 import { StorageService } from "../common/storage/storage.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
+import { ExchangeRateService } from "../common/exchange-rate/exchange-rate.service";
 
 const MAX_LOGO_SIZE_BYTES = 1 * 1024 * 1024; // 1MB — a logo, not a photo
 // pdfkit only rasterizes JPEG/PNG, so SVG (however common for logos) isn't accepted here.
@@ -17,6 +18,7 @@ export class CompanyService {
     private readonly storage: StorageService,
     private readonly audit: AuditService,
     private readonly mail: MailService,
+    private readonly exchangeRates: ExchangeRateService,
   ) {}
 
   get(companyId: string) {
@@ -122,8 +124,11 @@ export class CompanyService {
    * count, and headcount — computed live per child rather than cached, since a franchise owner
    * checking this dashboard wants current numbers, not yesterday's. */
   async franchiseOverview(companyId: string) {
+    const parent = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
     const children = await this.prisma.company.findMany({ where: { parentCompanyId: companyId }, orderBy: { name: "asc" } });
-    if (children.length === 0) return { branches: [] };
+    if (children.length === 0) return { branches: [], reportingCurrency: parent.reportingCurrency ?? parent.currency };
+
+    const reportingCurrency = parent.reportingCurrency ?? parent.currency;
 
     const branches = await Promise.all(
       children.map(async (child) => {
@@ -132,10 +137,14 @@ export class CompanyService {
           this.prisma.project.count({ where: { companyId: child.id } }),
           this.prisma.membership.count({ where: { companyId: child.id } }),
         ]);
+        const rawRevenue = Number(revenue._sum.total ?? 0);
+        const revenueConverted = await this.exchangeRates.convert(rawRevenue, child.currency, reportingCurrency);
         return {
           companyId: child.id,
           name: child.name,
-          revenue: Number(revenue._sum.total ?? 0),
+          currency: child.currency,
+          revenue: rawRevenue,
+          revenueConverted,
           projectCount,
           memberCount,
         };
@@ -144,8 +153,9 @@ export class CompanyService {
 
     return {
       branches,
+      reportingCurrency,
       totals: {
-        revenue: branches.reduce((sum, b) => sum + b.revenue, 0),
+        revenue: branches.reduce((sum, b) => sum + b.revenueConverted, 0),
         projectCount: branches.reduce((sum, b) => sum + b.projectCount, 0),
         memberCount: branches.reduce((sum, b) => sum + b.memberCount, 0),
       },

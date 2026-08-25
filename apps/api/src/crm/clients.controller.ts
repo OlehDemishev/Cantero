@@ -39,6 +39,21 @@ export class ClientsController {
     return this.service.pipelineSummary(user.companyId);
   }
 
+  @Get("pipeline-forecast")
+  pipelineForecast(@CurrentUser() user: AuthUser) {
+    return this.service.pipelineForecast(user.companyId);
+  }
+
+  @Get("funnel-report")
+  funnelReport(@CurrentUser() user: AuthUser) {
+    return this.service.funnelReport(user.companyId);
+  }
+
+  @Get("owner-leaderboard")
+  ownerLeaderboard(@CurrentUser() user: AuthUser) {
+    return this.service.ownerLeaderboard(user.companyId);
+  }
+
   @Get(":id")
   get(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.get(user.companyId, id);

@@ -200,4 +200,48 @@ describe("ResourcePlanningService", () => {
       expect(result.conflicts).toEqual([]);
     });
   });
+
+  describe("workloadHeatmap()", () => {
+    it("assumes 8h for each day a single assignment spans", async () => {
+      prisma.resourceAssignment.findMany.mockResolvedValue([
+        {
+          startDate: new Date("2026-09-01T00:00:00.000Z"),
+          endDate: new Date("2026-09-03T00:00:00.000Z"),
+          worker: { id: "w-1", name: "Peter Bauer" },
+        },
+      ]);
+
+      const result = await service.workloadHeatmap(COMPANY_A, new Date("2026-09-01"), new Date("2026-09-10"));
+
+      expect(result).toHaveLength(1);
+      expect(result[0].days).toEqual([
+        { date: "2026-09-01", hours: 8, overallocated: false },
+        { date: "2026-09-02", hours: 8, overallocated: false },
+        { date: "2026-09-03", hours: 8, overallocated: false },
+      ]);
+    });
+
+    it("flags a day as overallocated when two assignments overlap on it", async () => {
+      prisma.resourceAssignment.findMany.mockResolvedValue([
+        { startDate: new Date("2026-09-01T00:00:00.000Z"), endDate: new Date("2026-09-02T00:00:00.000Z"), worker: { id: "w-1", name: "Peter Bauer" } },
+        { startDate: new Date("2026-09-02T00:00:00.000Z"), endDate: new Date("2026-09-03T00:00:00.000Z"), worker: { id: "w-1", name: "Peter Bauer" } },
+      ]);
+
+      const result = await service.workloadHeatmap(COMPANY_A, new Date("2026-09-01"), new Date("2026-09-10"));
+      const sep2 = result[0].days.find((d) => d.date === "2026-09-02");
+
+      expect(sep2?.hours).toBe(16);
+      expect(sep2?.overallocated).toBe(true);
+    });
+
+    it("ignores equipment-only assignments (no worker)", async () => {
+      prisma.resourceAssignment.findMany.mockResolvedValue([
+        { startDate: new Date("2026-09-01T00:00:00.000Z"), endDate: new Date("2026-09-01T00:00:00.000Z"), worker: null },
+      ]);
+
+      const result = await service.workloadHeatmap(COMPANY_A, new Date("2026-09-01"), new Date("2026-09-10"));
+
+      expect(result).toEqual([]);
+    });
+  });
 });

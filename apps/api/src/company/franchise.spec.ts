@@ -5,6 +5,7 @@ import { PrismaService } from "../common/prisma/prisma.service";
 import { StorageService } from "../common/storage/storage.service";
 import { AuditService } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
+import { ExchangeRateService } from "../common/exchange-rate/exchange-rate.service";
 
 const COMPANY_A = "company-a";
 const ACTOR = { userId: "owner-1", name: "Jane" };
@@ -18,6 +19,7 @@ describe("CompanyService — franchise linking", () => {
     membership: { count: jest.Mock };
   };
   let audit: { record: jest.Mock };
+  let exchangeRates: { convert: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -33,6 +35,8 @@ describe("CompanyService — franchise linking", () => {
       membership: { count: jest.fn() },
     };
     audit = { record: jest.fn() };
+    // Identity conversion by default — tests that care about real conversion override this.
+    exchangeRates = { convert: jest.fn((amount: number) => Promise.resolve(amount)) };
 
     const module = await Test.createTestingModule({
       providers: [
@@ -41,6 +45,7 @@ describe("CompanyService — franchise linking", () => {
         { provide: StorageService, useValue: {} },
         { provide: AuditService, useValue: audit },
         { provide: MailService, useValue: { send: jest.fn() } },
+        { provide: ExchangeRateService, useValue: exchangeRates },
       ],
     }).compile();
 
@@ -103,23 +108,42 @@ describe("CompanyService — franchise linking", () => {
 
   describe("franchiseOverview", () => {
     it("returns an empty list when this company has no branches", async () => {
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ id: COMPANY_A, currency: "EUR", reportingCurrency: null });
       prisma.company.findMany.mockResolvedValue([]);
 
       const result = await service.franchiseOverview(COMPANY_A);
 
-      expect(result).toEqual({ branches: [] });
+      expect(result).toEqual({ branches: [], reportingCurrency: "EUR" });
     });
 
-    it("aggregates revenue, projects, and members per branch plus totals", async () => {
-      prisma.company.findMany.mockResolvedValue([{ id: "child-1", name: "Branch A" }]);
+    it("aggregates revenue, projects, and members per branch plus totals, in the same currency", async () => {
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ id: COMPANY_A, currency: "EUR", reportingCurrency: null });
+      prisma.company.findMany.mockResolvedValue([{ id: "child-1", name: "Branch A", currency: "EUR" }]);
       prisma.invoice.aggregate.mockResolvedValue({ _sum: { total: "500" } });
       prisma.project.count.mockResolvedValue(3);
       prisma.membership.count.mockResolvedValue(4);
 
       const result = await service.franchiseOverview(COMPANY_A);
 
-      expect(result.branches).toEqual([{ companyId: "child-1", name: "Branch A", revenue: 500, projectCount: 3, memberCount: 4 }]);
+      expect(result.branches).toEqual([
+        { companyId: "child-1", name: "Branch A", currency: "EUR", revenue: 500, revenueConverted: 500, projectCount: 3, memberCount: 4 },
+      ]);
       expect(result.totals).toEqual({ revenue: 500, projectCount: 3, memberCount: 4 });
+    });
+
+    it("converts each branch's revenue into the parent's reporting currency before summing", async () => {
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ id: COMPANY_A, currency: "EUR", reportingCurrency: null });
+      prisma.company.findMany.mockResolvedValue([{ id: "child-1", name: "Branch USD", currency: "USD" }]);
+      prisma.invoice.aggregate.mockResolvedValue({ _sum: { total: "100" } });
+      prisma.project.count.mockResolvedValue(1);
+      prisma.membership.count.mockResolvedValue(1);
+      exchangeRates.convert.mockResolvedValue(93); // 100 USD -> 93 EUR, say
+
+      const result = await service.franchiseOverview(COMPANY_A);
+
+      expect(exchangeRates.convert).toHaveBeenCalledWith(100, "USD", "EUR");
+      expect(result.branches[0].revenueConverted).toBe(93);
+      expect(result.totals!.revenue).toBe(93);
     });
   });
 });

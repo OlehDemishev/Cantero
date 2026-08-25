@@ -3,11 +3,13 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import { ConfigService } from "@nestjs/config";
 import type { Estimate } from "@prisma/client";
 import type {
+  AddAssemblyToEstimateInput,
   ClientDecisionInput,
   CreateEstimateInput,
   CreateEstimateLineInput,
   CreateFromTemplateInput,
   CreateVariantInput,
+  UpdateEstimateCoverLetterInput,
 } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { PdfService } from "../common/pdf/pdf.service";
@@ -98,6 +100,33 @@ export class EstimatesService {
       },
     });
     return this.recalculate(companyId, estimateId);
+  }
+
+  /** Expands an Assembly into ordinary EstimateLines — one per AssemblyItem, quantity scaled by
+   * how many units of the assembly were added. Nothing downstream (recalc, PDF, revisions) needs
+   * to know the lines came from an assembly rather than being added one at a time. */
+  async addAssemblyToEstimate(companyId: string, estimateId: string, input: AddAssemblyToEstimateInput) {
+    await this.findOrThrow(companyId, estimateId);
+    const assembly = await this.prisma.assembly.findFirst({
+      where: { id: input.assemblyId, companyId },
+      include: { items: true },
+    });
+    if (!assembly) throw new NotFoundException("Assembly not found");
+
+    await this.prisma.estimateLine.createMany({
+      data: assembly.items.map((item) => ({
+        estimateId,
+        rateCatalogItemId: item.rateCatalogItemId,
+        quantity: Number(item.quantityPerUnit) * input.quantity,
+        sectionId: input.sectionId,
+      })),
+    });
+    return this.recalculate(companyId, estimateId);
+  }
+
+  async updateCoverLetter(companyId: string, estimateId: string, input: UpdateEstimateCoverLetterInput) {
+    await this.findOrThrow(companyId, estimateId);
+    return this.prisma.estimate.update({ where: { id: estimateId }, data: { coverLetter: input.coverLetter } });
   }
 
   /** Re-runs the pure calc engine over every line and persists the resulting costs/totals. */
@@ -292,6 +321,41 @@ export class EstimatesService {
     const revision = await this.prisma.estimateRevision.findFirst({ where: { id: revisionId, estimateId } });
     if (!revision) throw new NotFoundException("Revision not found");
     return revision;
+  }
+
+  /** Line-by-line diff between two revisions, matched by rateCatalogItemCode (stable identity —
+   * the code doesn't change even if the catalog item's name is edited later). Lines present in
+   * only one revision are "added"/"removed"; lines in both with a different quantity or total are
+   * "changed"; everything else is left out entirely rather than reported as unchanged noise. */
+  async diffRevisions(companyId: string, estimateId: string, fromRevisionId: string, toRevisionId: string) {
+    const [from, to] = await Promise.all([
+      this.getRevision(companyId, estimateId, fromRevisionId),
+      this.getRevision(companyId, estimateId, toRevisionId),
+    ]);
+
+    type LineSnapshot = { rateCatalogItemCode: string; rateCatalogItemName: string; unit: string; quantity: number; lineTotal: number };
+    const fromLines = from.lines as unknown as LineSnapshot[];
+    const toLines = to.lines as unknown as LineSnapshot[];
+    const fromByCode = new Map(fromLines.map((l) => [l.rateCatalogItemCode, l]));
+    const toByCode = new Map(toLines.map((l) => [l.rateCatalogItemCode, l]));
+
+    const added = toLines.filter((l) => !fromByCode.has(l.rateCatalogItemCode));
+    const removed = fromLines.filter((l) => !toByCode.has(l.rateCatalogItemCode));
+    const changed = toLines
+      .filter((l) => {
+        const prev = fromByCode.get(l.rateCatalogItemCode);
+        return prev && (prev.quantity !== l.quantity || prev.lineTotal !== l.lineTotal);
+      })
+      .map((l) => ({ ...l, previousQuantity: fromByCode.get(l.rateCatalogItemCode)!.quantity, previousLineTotal: fromByCode.get(l.rateCatalogItemCode)!.lineTotal }));
+
+    return {
+      from: { versionNumber: from.versionNumber, grandTotal: from.grandTotal },
+      to: { versionNumber: to.versionNumber, grandTotal: to.grandTotal },
+      grandTotalDelta: Number(to.grandTotal) - Number(from.grandTotal),
+      added,
+      removed,
+      changed,
+    };
   }
 
   /** Generates (or regenerates) the public review link, emails it to the client if one is on file, and resets any prior client decision. */
@@ -591,6 +655,7 @@ export class EstimatesService {
     return this.pdfService.render({
       title: `Estimate — ${estimate.name}`,
       subtitle: estimate.project?.name ?? "",
+      coverLetter: estimate.coverLetter ?? undefined,
       meta: [
         { label: "Status", value: estimate.status },
         { label: "Currency", value: company.currency },

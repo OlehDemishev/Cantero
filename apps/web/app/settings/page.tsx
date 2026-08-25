@@ -2,7 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { SUPPORTED_LOCALES, MEMBERSHIP_ROLES_MANAGEABLE, WEBHOOK_EVENTS, type WebhookEvent } from "@cantero/shared";
+import {
+  SUPPORTED_LOCALES,
+  SUPPORTED_CURRENCIES,
+  MEMBERSHIP_ROLES_MANAGEABLE,
+  WEBHOOK_EVENTS,
+  API_KEY_SCOPES,
+  type WebhookEvent,
+  type ApiKeyScope,
+} from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch, apiUpload } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
@@ -15,6 +23,8 @@ import { AccountingSyncPanel } from "@/components/accounting-sync-panel";
 import { TwoFactorSettingsPanel } from "@/components/two-factor-settings-panel";
 import { SessionsPanel } from "@/components/sessions-panel";
 import { IntegrationsPanel } from "@/components/integrations-panel";
+import { OnboardingTemplatePanel } from "@/components/onboarding-template-panel";
+import { InspectionTemplatesPanel } from "@/components/inspection-templates-panel";
 
 interface Company {
   name: string;
@@ -27,6 +37,7 @@ interface Company {
   invoiceRemindersEnabled: boolean;
   publicLeadFormToken: string | null;
   reviewRequestUrl: string | null;
+  reportingCurrency: string | null;
 }
 interface Plan {
   id: string;
@@ -43,12 +54,15 @@ interface Subscription {
 interface FranchiseBranch {
   companyId: string;
   name: string;
+  currency: string;
   revenue: number;
+  revenueConverted: number;
   projectCount: number;
   memberCount: number;
 }
 interface FranchiseOverview {
   branches: FranchiseBranch[];
+  reportingCurrency?: string;
   totals?: { revenue: number; projectCount: number; memberCount: number };
 }
 interface CustomRole {
@@ -73,6 +87,8 @@ interface ApiKey {
   id: string;
   name: string;
   keyPrefix: string;
+  scopes: string[];
+  expiresAt: string | null;
   createdAt: string;
   lastUsedAt: string | null;
   revokedAt: string | null;
@@ -118,6 +134,7 @@ export default function SettingsPage() {
     punchListSlaDays: string;
     invoiceRemindersEnabled: boolean;
     reviewRequestUrl: string;
+    reportingCurrency: string;
   }>({
     name: "",
     locale: "en",
@@ -128,6 +145,7 @@ export default function SettingsPage() {
     punchListSlaDays: "",
     invoiceRemindersEnabled: false,
     reviewRequestUrl: "",
+    reportingCurrency: "",
   });
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [logoBusy, setLogoBusy] = useState(false);
@@ -143,6 +161,8 @@ export default function SettingsPage() {
   const [inviteForm, setInviteForm] = useState({ email: "", role: "worker" });
   const [apiKeys, setApiKeys] = useState<ApiKey[] | null>(null);
   const [newKeyName, setNewKeyName] = useState("");
+  const [newKeyScopes, setNewKeyScopes] = useState<ApiKeyScope[]>([]);
+  const [newKeyExpiresAt, setNewKeyExpiresAt] = useState("");
   const [createdKey, setCreatedKey] = useState<string | null>(null);
   const [keyCopied, setKeyCopied] = useState(false);
   const [auditLog, setAuditLog] = useState<AuditLogEntry[] | null>(null);
@@ -189,6 +209,7 @@ export default function SettingsPage() {
         punchListSlaDays: c.punchListSlaDays !== null ? String(c.punchListSlaDays) : "",
         invoiceRemindersEnabled: c.invoiceRemindersEnabled,
         reviewRequestUrl: c.reviewRequestUrl ?? "",
+        reportingCurrency: c.reportingCurrency ?? "",
       });
       setLeadFormToken(c.publicLeadFormToken);
     });
@@ -277,6 +298,7 @@ export default function SettingsPage() {
           punchListSlaDays: companyForm.punchListSlaDays ? Number(companyForm.punchListSlaDays) : null,
           invoiceRemindersEnabled: companyForm.invoiceRemindersEnabled,
           reviewRequestUrl: companyForm.reviewRequestUrl || null,
+          reportingCurrency: companyForm.reportingCurrency || null,
         }),
       });
       document.cookie = `NEXT_LOCALE=${companyForm.locale};path=/;max-age=31536000`;
@@ -444,10 +466,16 @@ export default function SettingsPage() {
     try {
       const created = await apiFetch<{ key: string }>("/company/api-keys", {
         method: "POST",
-        body: JSON.stringify({ name: newKeyName }),
+        body: JSON.stringify({
+          name: newKeyName,
+          scopes: newKeyScopes.length > 0 ? newKeyScopes : undefined,
+          expiresAt: newKeyExpiresAt ? new Date(newKeyExpiresAt).toISOString() : undefined,
+        }),
       });
       setCreatedKey(created.key);
       setNewKeyName("");
+      setNewKeyScopes([]);
+      setNewKeyExpiresAt("");
       loadAll();
     } finally {
       setBusy(false);
@@ -692,6 +720,25 @@ export default function SettingsPage() {
                 />
               </label>
             </div>
+            <div className="border-t border-gray-100 pt-3">
+              <label className="flex flex-col gap-1 text-xs text-gray-700">
+                <span className="font-medium text-gray-700">{t("reportingCurrency")}</span>
+                <span className="text-gray-500">{t("reportingCurrencyHint")}</span>
+                <select
+                  className="input mt-1"
+                  value={companyForm.reportingCurrency}
+                  onChange={(e) => setCompanyForm((f) => ({ ...f, reportingCurrency: e.target.value }))}
+                  disabled={!isManager}
+                >
+                  <option value="">{tc("none")}</option>
+                  {SUPPORTED_CURRENCIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
             {isManager && (
               <button type="submit" disabled={busy} className="btn-primary">
                 {t("save")}
@@ -809,34 +856,46 @@ export default function SettingsPage() {
             {franchiseError && <p className="mb-3 text-xs text-red-600">{franchiseError}</p>}
 
             {franchiseOverview && franchiseOverview.branches.length > 0 ? (
-              <table className="w-full border-collapse text-sm">
-                <thead>
-                  <tr className="border-b border-gray-200 text-left text-gray-500">
-                    <th className="py-2">{tc("name")}</th>
-                    <th className="py-2">{t("branchRevenue")}</th>
-                    <th className="py-2">{t("branchProjects")}</th>
-                    <th className="py-2">{t("branchMembers")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {franchiseOverview.branches.map((b) => (
-                    <tr key={b.companyId} className="border-b border-gray-100">
-                      <td className="py-2">{b.name}</td>
-                      <td className="py-2">{b.revenue}</td>
-                      <td className="py-2">{b.projectCount}</td>
-                      <td className="py-2">{b.memberCount}</td>
+              <>
+                <p className="mb-2 text-xs text-gray-500">{t("reportingIn", { currency: franchiseOverview.reportingCurrency ?? "" })}</p>
+                <table className="w-full border-collapse text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-200 text-left text-gray-500">
+                      <th className="py-2">{tc("name")}</th>
+                      <th className="py-2">{t("branchRevenue")}</th>
+                      <th className="py-2">{t("branchProjects")}</th>
+                      <th className="py-2">{t("branchMembers")}</th>
                     </tr>
-                  ))}
-                  {franchiseOverview.totals && (
-                    <tr className="font-medium text-gray-700">
-                      <td className="py-2">{t("total")}</td>
-                      <td className="py-2">{franchiseOverview.totals.revenue}</td>
-                      <td className="py-2">{franchiseOverview.totals.projectCount}</td>
-                      <td className="py-2">{franchiseOverview.totals.memberCount}</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {franchiseOverview.branches.map((b) => (
+                      <tr key={b.companyId} className="border-b border-gray-100">
+                        <td className="py-2">{b.name}</td>
+                        <td className="py-2">
+                          {b.revenueConverted.toFixed(2)} {franchiseOverview.reportingCurrency}
+                          {b.currency !== franchiseOverview.reportingCurrency && (
+                            <span className="ml-1 text-xs text-gray-400">
+                              ({b.revenue.toFixed(2)} {b.currency})
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-2">{b.projectCount}</td>
+                        <td className="py-2">{b.memberCount}</td>
+                      </tr>
+                    ))}
+                    {franchiseOverview.totals && (
+                      <tr className="font-medium text-gray-700">
+                        <td className="py-2">{t("total")}</td>
+                        <td className="py-2">
+                          {franchiseOverview.totals.revenue.toFixed(2)} {franchiseOverview.reportingCurrency}
+                        </td>
+                        <td className="py-2">{franchiseOverview.totals.projectCount}</td>
+                        <td className="py-2">{franchiseOverview.totals.memberCount}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </>
             ) : (
               <div className="flex flex-col gap-4">
                 <div>
@@ -1080,6 +1139,8 @@ export default function SettingsPage() {
                   <tr className="border-b border-gray-200 text-left text-gray-500">
                     <th className="py-2">{tc("name")}</th>
                     <th>{t("apiKeyPrefix")}</th>
+                    <th>{t("apiKeyScopes")}</th>
+                    <th>{t("apiKeyExpires")}</th>
                     <th>{t("apiKeyLastUsed")}</th>
                     <th></th>
                   </tr>
@@ -1089,6 +1150,8 @@ export default function SettingsPage() {
                     <tr key={k.id} className="border-b border-gray-100">
                       <td className="py-2">{k.name}</td>
                       <td className="font-mono text-xs text-gray-500">{k.keyPrefix}…</td>
+                      <td className="text-xs text-gray-500">{k.scopes.length > 0 ? k.scopes.join(", ") : t("apiKeyUnrestricted")}</td>
+                      <td className="text-xs text-gray-500">{k.expiresAt ? new Date(k.expiresAt).toLocaleDateString() : "—"}</td>
                       <td className="text-xs text-gray-500">
                         {k.revokedAt
                           ? t("apiKeyRevoked")
@@ -1109,17 +1172,49 @@ export default function SettingsPage() {
               </table>
             )}
 
-            <form onSubmit={createApiKey} className="mt-4 flex items-end gap-2">
-              <input
-                required
-                placeholder={t("apiKeyNamePlaceholder")}
-                className="input"
-                value={newKeyName}
-                onChange={(e) => setNewKeyName(e.target.value)}
-              />
-              <button type="submit" disabled={busy} className="btn-primary shrink-0">
-                {t("createApiKey")}
-              </button>
+            <form onSubmit={createApiKey} className="mt-4 flex flex-col gap-2">
+              <div className="flex flex-wrap items-end gap-2">
+                <input
+                  required
+                  placeholder={t("apiKeyNamePlaceholder")}
+                  className="input"
+                  value={newKeyName}
+                  onChange={(e) => setNewKeyName(e.target.value)}
+                />
+                <label className="text-xs text-gray-500">
+                  {t("apiKeyExpires")}
+                  <input
+                    type="date"
+                    className="input mt-1"
+                    value={newKeyExpiresAt}
+                    onChange={(e) => setNewKeyExpiresAt(e.target.value)}
+                  />
+                </label>
+                <button type="submit" disabled={busy} className="btn-primary shrink-0">
+                  {t("createApiKey")}
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <span className="text-xs text-gray-500">{t("apiKeyScopesHint")}</span>
+                {API_KEY_SCOPES.map((scope) => (
+                  <label
+                    key={scope}
+                    className={`cursor-pointer rounded-full border px-2.5 py-0.5 text-xs ${
+                      newKeyScopes.includes(scope) ? "border-brand-500 bg-brand-50 text-brand-700" : "border-gray-200 text-gray-600"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      className="hidden"
+                      checked={newKeyScopes.includes(scope)}
+                      onChange={() =>
+                        setNewKeyScopes((prev) => (prev.includes(scope) ? prev.filter((s) => s !== scope) : [...prev, scope]))
+                      }
+                    />
+                    {scope}
+                  </label>
+                ))}
+              </div>
             </form>
           </section>
         )}
@@ -1284,6 +1379,9 @@ export default function SettingsPage() {
             )}
           </section>
         )}
+
+        {isManager && <OnboardingTemplatePanel />}
+        {isManager && <InspectionTemplatesPanel />}
       </div>
     </AuthenticatedShell>
   );

@@ -272,3 +272,48 @@ describe("ReportsService.cashFlowForecast", () => {
     expect(result.weeks[1].cumulativeNet).toBe(700);
   });
 });
+
+describe("ReportsService.revenueTrend", () => {
+  let service: ReportsService;
+  let prisma: { payment: { findMany: jest.Mock } };
+
+  beforeEach(async () => {
+    prisma = { payment: { findMany: jest.fn().mockResolvedValue([]) } };
+
+    const module = await Test.createTestingModule({
+      providers: [ReportsService, { provide: PrismaService, useValue: prisma }],
+    }).compile();
+
+    service = module.get(ReportsService);
+  });
+
+  it("returns one bucket per month over the trailing window, oldest first", async () => {
+    const result = await service.revenueTrend(COMPANY_A, 3);
+    expect(result).toHaveLength(3);
+    // Strictly increasing year-month keys, oldest to newest.
+    const keys = result.map((r) => r.month);
+    expect(keys).toEqual([...keys].sort());
+  });
+
+  it("buckets a payment into the month it was actually paid", async () => {
+    const now = new Date();
+    const thisMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    prisma.payment.findMany.mockResolvedValue([{ amount: "250.5", paidAt: now }]);
+
+    const result = await service.revenueTrend(COMPANY_A, 3);
+
+    expect(result.find((r) => r.month === thisMonthKey)?.revenue).toBe(250.5);
+  });
+
+  it("sums multiple payments landing in the same month", async () => {
+    const now = new Date();
+    prisma.payment.findMany.mockResolvedValue([
+      { amount: "100", paidAt: now },
+      { amount: "50", paidAt: now },
+    ]);
+
+    const result = await service.revenueTrend(COMPANY_A, 1);
+
+    expect(result[0].revenue).toBe(150);
+  });
+});

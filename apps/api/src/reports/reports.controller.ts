@@ -1,4 +1,4 @@
-import { Controller, Get } from "@nestjs/common";
+import { Controller, Get, Header } from "@nestjs/common";
 import type { AuthUser } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ReportsService } from "./reports.service";
@@ -40,5 +40,16 @@ export class ReportsController {
   @Get("estimate-at-completion")
   estimateAtCompletion(@CurrentUser() user: AuthUser) {
     return this.service.estimateAtCompletion(user.companyId);
+  }
+
+  @Get("revenue-trend")
+  revenueTrend(@CurrentUser() user: AuthUser) {
+    return this.service.revenueTrend(user.companyId);
+  }
+
+  @Get("tax-summary")
+  @Header("Content-Type", "text/csv")
+  taxSummary(@CurrentUser() user: AuthUser) {
+    return this.service.taxSummaryCsv(user.companyId);
   }
 }

@@ -3,6 +3,7 @@ import { PrismaService } from "../common/prisma/prisma.service";
 import { computeCriticalPath, type DependencyForCpm, type TaskForCpm } from "../projects/critical-path";
 import { advanceDate, calculateRecurringInvoice } from "../finance/recurring-invoice-schedule";
 import { calculateEac } from "./estimate-at-completion";
+import { toCsv } from "../common/csv";
 
 const CASH_FLOW_WEEKS = 13;
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -560,6 +561,54 @@ export class ReportsService {
       weeks,
       totals: { inflow: round2(totalInflow), outflow: round2(totalOutflow), net: round2(totalInflow - totalOutflow) },
     };
+  }
+
+  /** Paid-invoice revenue by month over the trailing `months` window, oldest first — the
+   * simplest honest trend line (no revenue-recognition smoothing, just when payment happened). */
+  async revenueTrend(companyId: string, months = 12) {
+    const now = new Date();
+    const windowStart = new Date(now.getFullYear(), now.getMonth() - (months - 1), 1);
+
+    const payments = await this.prisma.payment.findMany({
+      where: { invoice: { companyId }, paidAt: { gte: windowStart } },
+      select: { amount: true, paidAt: true },
+    });
+
+    const buckets = new Map<string, number>();
+    for (let i = 0; i < months; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - (months - 1 - i), 1);
+      buckets.set(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`, 0);
+    }
+    for (const p of payments) {
+      const key = `${p.paidAt.getFullYear()}-${String(p.paidAt.getMonth() + 1).padStart(2, "0")}`;
+      if (buckets.has(key)) buckets.set(key, buckets.get(key)! + Number(p.amount));
+    }
+
+    return [...buckets.entries()].map(([month, revenue]) => ({ month, revenue: round2(revenue) }));
+  }
+
+  /** Tax collected by month, based on invoiced amounts (not payment timing) — the number a
+   * bookkeeper reconciles against a VAT/sales-tax return, not a cash-flow figure. */
+  async taxSummaryCsv(companyId: string, months = 12): Promise<string> {
+    const now = new Date();
+    const windowStart = new Date(now.getFullYear(), now.getMonth() - (months - 1), 1);
+
+    const invoices = await this.prisma.invoice.findMany({
+      where: { companyId, status: { not: "draft" }, createdAt: { gte: windowStart } },
+      select: { number: true, createdAt: true, subtotal: true, taxAmount: true, total: true },
+      orderBy: { createdAt: "asc" },
+    });
+
+    return toCsv(
+      ["Invoice", "Date", "Subtotal", "Tax", "Total"],
+      invoices.map((i) => [
+        i.number,
+        i.createdAt.toISOString().slice(0, 10),
+        i.subtotal.toString(),
+        i.taxAmount.toString(),
+        i.total.toString(),
+      ]),
+    );
   }
 }
 

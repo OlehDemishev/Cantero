@@ -308,3 +308,129 @@ describe("EstimatesService.suggestedLines", () => {
     expect(result.map((r) => r.item.id)).toEqual(["item-c"]);
   });
 });
+
+describe("EstimatesService.addAssemblyToEstimate", () => {
+  let service: EstimatesService;
+  let prisma: {
+    estimate: { findFirst: jest.Mock; update: jest.Mock };
+    assembly: { findFirst: jest.Mock };
+    estimateLine: { createMany: jest.Mock };
+  };
+
+  beforeEach(async () => {
+    prisma = {
+      estimate: { findFirst: jest.fn(), update: jest.fn() },
+      assembly: { findFirst: jest.fn() },
+      estimateLine: { createMany: jest.fn() },
+    };
+
+    const module = await Test.createTestingModule({
+      providers: [
+        EstimatesService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: PdfService, useValue: { render: jest.fn() } },
+        { provide: StorageService, useValue: { save: jest.fn(), read: jest.fn() } },
+        { provide: AuditService, useValue: { record: jest.fn(), list: jest.fn() } },
+        { provide: ConfigService, useValue: { get: jest.fn(), getOrThrow: jest.fn() } },
+        { provide: MailService, useValue: { send: jest.fn() } },
+        { provide: WebhooksService, useValue: { trigger: jest.fn() } },
+      ],
+    }).compile();
+
+    service = module.get(EstimatesService);
+  });
+
+  it("throws when the assembly doesn't belong to this company", async () => {
+    prisma.estimate.findFirst.mockResolvedValue({ id: "e1", companyId: COMPANY_A, lines: [], sections: [], requirements: [], project: null });
+    prisma.assembly.findFirst.mockResolvedValue(null);
+
+    await expect(service.addAssemblyToEstimate(COMPANY_A, "e1", { assemblyId: "assembly-1", quantity: 1 })).rejects.toThrow(
+      NotFoundException,
+    );
+    expect(prisma.estimateLine.createMany).not.toHaveBeenCalled();
+  });
+
+  it("expands the assembly into one EstimateLine per item, scaled by the quantity entered", async () => {
+    prisma.estimate.findFirst
+      .mockResolvedValueOnce({ id: "e1", companyId: COMPANY_A, lines: [], sections: [], requirements: [], project: null })
+      .mockResolvedValueOnce({ id: "e1", companyId: COMPANY_A, lines: [], sections: [], requirements: [], project: null });
+    prisma.assembly.findFirst.mockResolvedValue({
+      id: "assembly-1",
+      items: [
+        { rateCatalogItemId: "item-a", quantityPerUnit: "2" },
+        { rateCatalogItemId: "item-b", quantityPerUnit: "1.5" },
+      ],
+    });
+    prisma.estimate.update.mockResolvedValue({ id: "e1", lines: [], sections: [] });
+
+    await service.addAssemblyToEstimate(COMPANY_A, "e1", { assemblyId: "assembly-1", quantity: 3 });
+
+    expect(prisma.estimateLine.createMany).toHaveBeenCalledWith({
+      data: [
+        { estimateId: "e1", rateCatalogItemId: "item-a", quantity: 6, sectionId: undefined },
+        { estimateId: "e1", rateCatalogItemId: "item-b", quantity: 4.5, sectionId: undefined },
+      ],
+    });
+  });
+});
+
+describe("EstimatesService.diffRevisions", () => {
+  let service: EstimatesService;
+  let prisma: {
+    estimate: { findFirst: jest.Mock };
+    estimateRevision: { findFirst: jest.Mock };
+  };
+
+  beforeEach(async () => {
+    prisma = {
+      estimate: { findFirst: jest.fn() },
+      estimateRevision: { findFirst: jest.fn() },
+    };
+
+    const module = await Test.createTestingModule({
+      providers: [
+        EstimatesService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: PdfService, useValue: { render: jest.fn() } },
+        { provide: StorageService, useValue: { save: jest.fn(), read: jest.fn() } },
+        { provide: AuditService, useValue: { record: jest.fn(), list: jest.fn() } },
+        { provide: ConfigService, useValue: { get: jest.fn(), getOrThrow: jest.fn() } },
+        { provide: MailService, useValue: { send: jest.fn() } },
+        { provide: WebhooksService, useValue: { trigger: jest.fn() } },
+      ],
+    }).compile();
+
+    service = module.get(EstimatesService);
+  });
+
+  it("classifies lines as added, removed, or changed by rateCatalogItemCode", async () => {
+    prisma.estimate.findFirst.mockResolvedValue({ id: "e1", companyId: COMPANY_A, lines: [], sections: [], requirements: [], project: null });
+    prisma.estimateRevision.findFirst
+      .mockResolvedValueOnce({
+        id: "rev-1",
+        versionNumber: 1,
+        grandTotal: "1000",
+        lines: [
+          { rateCatalogItemCode: "TILE", rateCatalogItemName: "Tile", unit: "m2", quantity: 10, lineTotal: 500 },
+          { rateCatalogItemCode: "REMOVED-ITEM", rateCatalogItemName: "Old", unit: "ea", quantity: 1, lineTotal: 100 },
+        ],
+      })
+      .mockResolvedValueOnce({
+        id: "rev-2",
+        versionNumber: 2,
+        grandTotal: "1200",
+        lines: [
+          { rateCatalogItemCode: "TILE", rateCatalogItemName: "Tile", unit: "m2", quantity: 15, lineTotal: 750 },
+          { rateCatalogItemCode: "NEW-ITEM", rateCatalogItemName: "New", unit: "ea", quantity: 1, lineTotal: 200 },
+        ],
+      });
+
+    const result = await service.diffRevisions(COMPANY_A, "e1", "rev-1", "rev-2");
+
+    expect(result.added.map((l) => l.rateCatalogItemCode)).toEqual(["NEW-ITEM"]);
+    expect(result.removed.map((l) => l.rateCatalogItemCode)).toEqual(["REMOVED-ITEM"]);
+    expect(result.changed).toHaveLength(1);
+    expect(result.changed[0]).toMatchObject({ rateCatalogItemCode: "TILE", previousQuantity: 10, quantity: 15 });
+    expect(result.grandTotalDelta).toBe(200);
+  });
+});

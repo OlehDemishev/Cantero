@@ -10,14 +10,14 @@ const ACTOR = { userId: "admin-1", name: "Admin" };
 describe("TimeOffService", () => {
   let service: TimeOffService;
   let prisma: {
-    worker: { findFirst: jest.Mock };
+    worker: { findFirst: jest.Mock; update: jest.Mock };
     timeOffRequest: { create: jest.Mock; findFirst: jest.Mock; update: jest.Mock };
   };
   let audit: { record: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
-      worker: { findFirst: jest.fn() },
+      worker: { findFirst: jest.fn(), update: jest.fn() },
       timeOffRequest: { create: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
     };
     audit = { record: jest.fn() };
@@ -116,6 +116,82 @@ describe("TimeOffService", () => {
         "req-1",
         expect.stringContaining("Approved"),
       );
+    });
+
+    it("deducts business-day hours from the worker's PTO balance when a vacation request is approved", async () => {
+      // Monday 2026-06-01 through Friday 2026-06-05 — 5 weekdays, no weekend inside the range.
+      prisma.timeOffRequest.findFirst.mockResolvedValue({
+        id: "req-1",
+        status: "pending",
+        type: "vacation",
+        workerId: "worker-1",
+        startDate: new Date("2026-06-01T00:00:00.000Z"),
+        endDate: new Date("2026-06-05T00:00:00.000Z"),
+        worker: { name: "Sam" },
+      });
+      prisma.timeOffRequest.update.mockResolvedValue({ id: "req-1", status: "approved" });
+
+      await service.decide(COMPANY_A, ACTOR, "req-1", { approve: true });
+
+      expect(prisma.worker.update).toHaveBeenCalledWith({
+        where: { id: "worker-1" },
+        data: { ptoBalanceHours: { decrement: 40 } }, // 5 weekdays * 8h
+      });
+    });
+
+    it("excludes weekend days from the PTO deduction", async () => {
+      // Friday 2026-06-05 through Monday 2026-06-08 — only Fri + Mon are weekdays (2 days).
+      prisma.timeOffRequest.findFirst.mockResolvedValue({
+        id: "req-1",
+        status: "pending",
+        type: "vacation",
+        workerId: "worker-1",
+        startDate: new Date("2026-06-05T00:00:00.000Z"),
+        endDate: new Date("2026-06-08T00:00:00.000Z"),
+        worker: { name: "Sam" },
+      });
+      prisma.timeOffRequest.update.mockResolvedValue({ id: "req-1", status: "approved" });
+
+      await service.decide(COMPANY_A, ACTOR, "req-1", { approve: true });
+
+      expect(prisma.worker.update).toHaveBeenCalledWith({
+        where: { id: "worker-1" },
+        data: { ptoBalanceHours: { decrement: 16 } }, // 2 weekdays * 8h
+      });
+    });
+
+    it("does not touch the PTO balance for a sick or unpaid request", async () => {
+      prisma.timeOffRequest.findFirst.mockResolvedValue({
+        id: "req-1",
+        status: "pending",
+        type: "sick",
+        workerId: "worker-1",
+        startDate: new Date("2026-06-01T00:00:00.000Z"),
+        endDate: new Date("2026-06-02T00:00:00.000Z"),
+        worker: { name: "Sam" },
+      });
+      prisma.timeOffRequest.update.mockResolvedValue({ id: "req-1", status: "approved" });
+
+      await service.decide(COMPANY_A, ACTOR, "req-1", { approve: true });
+
+      expect(prisma.worker.update).not.toHaveBeenCalled();
+    });
+
+    it("does not touch the PTO balance when a vacation request is denied", async () => {
+      prisma.timeOffRequest.findFirst.mockResolvedValue({
+        id: "req-1",
+        status: "pending",
+        type: "vacation",
+        workerId: "worker-1",
+        startDate: new Date("2026-06-01T00:00:00.000Z"),
+        endDate: new Date("2026-06-02T00:00:00.000Z"),
+        worker: { name: "Sam" },
+      });
+      prisma.timeOffRequest.update.mockResolvedValue({ id: "req-1", status: "denied" });
+
+      await service.decide(COMPANY_A, ACTOR, "req-1", { approve: false });
+
+      expect(prisma.worker.update).not.toHaveBeenCalled();
     });
   });
 });

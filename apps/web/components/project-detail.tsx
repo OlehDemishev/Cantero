@@ -12,6 +12,7 @@ import { CustomFieldsValuesPanel } from "@/components/custom-fields-values-panel
 import { PunchListPanel } from "@/components/punch-list-panel";
 import { RfiPanel } from "@/components/rfi-panel";
 import { SafetyPanel } from "@/components/safety-panel";
+import { QualityPanel } from "@/components/quality-panel";
 import { SubmittalsPanel } from "@/components/submittals-panel";
 import { WarrantyPanel } from "@/components/warranty-panel";
 import { ProjectCloseoutPanel } from "@/components/project-closeout-panel";
@@ -199,6 +200,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
       <PunchListPanel projectId={projectId} />
       <RfiPanel projectId={projectId} />
       <SafetyPanel projectId={projectId} />
+      <QualityPanel projectId={projectId} />
       <SubmittalsPanel projectId={projectId} />
       <WarrantyPanel projectId={projectId} />
       <TimeTrackingPanel projectId={projectId} />

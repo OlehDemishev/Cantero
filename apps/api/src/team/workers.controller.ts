@@ -1,9 +1,11 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post } from "@nestjs/common";
 import {
   addWorkerCertificationSchema,
+  adjustPtoBalanceSchema,
   createWorkerSchema,
   updateWorkerSchema,
   type AddWorkerCertificationInput,
+  type AdjustPtoBalanceInput,
   type AuthUser,
   type CreateWorkerInput,
   type UpdateWorkerInput,
@@ -74,5 +76,25 @@ export class WorkersController {
     @Param("certificationId") certificationId: string,
   ) {
     return this.service.deleteCertification(user.companyId, id, certificationId);
+  }
+
+  @Roles("owner", "admin")
+  @Post(":id/pto-balance/adjust")
+  adjustPtoBalance(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(adjustPtoBalanceSchema)) body: AdjustPtoBalanceInput,
+  ) {
+    return this.service.adjustPtoBalance(user.companyId, { userId: user.userId, name: user.name }, id, body);
+  }
+
+  @Get(":id/onboarding-tasks")
+  listOnboardingTasks(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.listOnboardingTasks(user.companyId, id);
+  }
+
+  @Post(":id/onboarding-tasks/:taskId/toggle")
+  toggleOnboardingTask(@CurrentUser() user: AuthUser, @Param("id") id: string, @Param("taskId") taskId: string) {
+    return this.service.toggleOnboardingTask(user.companyId, id, taskId);
   }
 }

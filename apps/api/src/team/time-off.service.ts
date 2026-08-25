@@ -3,6 +3,21 @@ import type { CreateTimeOffRequestInput, DecideTimeOffRequestInput } from "@cant
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 
+const HOURS_PER_DAY = 8;
+
+/** Weekday count between two dates, inclusive of both ends — the simplest honest approximation
+ * of "PTO days used" without a holiday calendar to subtract against. */
+function businessDaysInclusive(start: Date, end: Date): number {
+  let count = 0;
+  const cursor = new Date(start);
+  while (cursor <= end) {
+    const day = cursor.getDay();
+    if (day !== 0 && day !== 6) count++;
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return count;
+}
+
 @Injectable()
 export class TimeOffService {
   constructor(
@@ -56,6 +71,12 @@ export class TimeOffService {
       },
       include: { worker: { select: { id: true, name: true } } },
     });
+
+    // Only paid vacation draws down the balance — sick and unpaid leave don't touch it.
+    if (input.approve && request.type === "vacation") {
+      const hours = businessDaysInclusive(request.startDate, request.endDate) * HOURS_PER_DAY;
+      await this.prisma.worker.update({ where: { id: request.workerId }, data: { ptoBalanceHours: { decrement: hours } } });
+    }
 
     this.audit.record(
       companyId,

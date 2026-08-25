@@ -56,3 +56,20 @@ export const decideTimeOffRequestSchema = z.object({
   approve: z.boolean(),
 });
 export type DecideTimeOffRequestInput = z.infer<typeof decideTimeOffRequestSchema>;
+
+export const adjustPtoBalanceSchema = z.object({
+  deltaHours: z.number().refine((n) => n !== 0, "deltaHours can't be zero"),
+  reason: z.string().min(1).max(300),
+});
+export type AdjustPtoBalanceInput = z.infer<typeof adjustPtoBalanceSchema>;
+
+export const createOnboardingTemplateItemSchema = z.object({
+  title: z.string().min(1).max(200),
+});
+export type CreateOnboardingTemplateItemInput = z.infer<typeof createOnboardingTemplateItemSchema>;
+
+export const updateOnboardingTemplateItemSchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  sortOrder: z.number().int().optional(),
+});
+export type UpdateOnboardingTemplateItemInput = z.infer<typeof updateOnboardingTemplateItemSchema>;

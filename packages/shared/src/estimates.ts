@@ -64,6 +64,8 @@ export const createClientSchema = z.object({
   estimatedValue: z.number().nonnegative().max(100_000_000).optional(),
   ownerWorkerId: z.string().uuid().optional(),
   referredByClientId: z.string().uuid().optional(),
+  probability: z.number().int().min(0).max(100).optional(),
+  expectedCloseDate: z.string().datetime().optional(),
 });
 export type CreateClientInput = z.infer<typeof createClientSchema>;
 
@@ -96,6 +98,39 @@ export const createFromTemplateSchema = z.object({
   taxPercent: z.number().min(0).max(100).default(0),
 });
 export type CreateFromTemplateInput = z.infer<typeof createFromTemplateSchema>;
+
+export const updateEstimateCoverLetterSchema = z.object({
+  coverLetter: z.string().max(8000).nullable(),
+});
+export type UpdateEstimateCoverLetterInput = z.infer<typeof updateEstimateCoverLetterSchema>;
+
+export const assemblyItemInputSchema = z.object({
+  rateCatalogItemId: z.string().uuid(),
+  quantityPerUnit: z.number().positive(),
+});
+export type AssemblyItemInput = z.infer<typeof assemblyItemInputSchema>;
+
+export const createAssemblySchema = z.object({
+  code: z.string().min(1).max(40),
+  name: z.string().min(1).max(160),
+  unit: z.string().min(1).max(20),
+  items: z.array(assemblyItemInputSchema).min(1).max(50),
+});
+export type CreateAssemblyInput = z.infer<typeof createAssemblySchema>;
+
+export const updateAssemblySchema = z.object({
+  name: z.string().min(1).max(160).optional(),
+  unit: z.string().min(1).max(20).optional(),
+  items: z.array(assemblyItemInputSchema).min(1).max(50).optional(),
+});
+export type UpdateAssemblyInput = z.infer<typeof updateAssemblySchema>;
+
+export const addAssemblyToEstimateSchema = z.object({
+  assemblyId: z.string().uuid(),
+  quantity: z.number().positive(),
+  sectionId: z.string().uuid().optional(),
+});
+export type AddAssemblyToEstimateInput = z.infer<typeof addAssemblyToEstimateSchema>;
 
 export const createVariantSchema = z.object({
   label: z.string().min(1).max(80),

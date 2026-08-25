@@ -29,6 +29,7 @@ export interface DocumentListFilter {
   incidentReportId?: string;
   warrantyClaimId?: string;
   subcontractorDocumentId?: string;
+  deficiencyId?: string;
   category?: string;
   search?: string;
 }
@@ -41,6 +42,7 @@ export interface DocumentAttachmentMeta {
   incidentReportId?: string;
   warrantyClaimId?: string;
   subcontractorDocumentId?: string;
+  deficiencyId?: string;
   category?: string;
 }
 
@@ -67,6 +69,7 @@ export class DocumentsService {
         ...(filter.incidentReportId ? { incidentReportId: filter.incidentReportId } : {}),
         ...(filter.warrantyClaimId ? { warrantyClaimId: filter.warrantyClaimId } : {}),
         ...(filter.subcontractorDocumentId ? { subcontractorDocumentId: filter.subcontractorDocumentId } : {}),
+        ...(filter.deficiencyId ? { deficiencyId: filter.deficiencyId } : {}),
         ...(category ? { category } : {}),
         ...(filter.search ? { name: { contains: filter.search, mode: "insensitive" as const } } : {}),
       },
@@ -119,6 +122,10 @@ export class DocumentsService {
       const doc = await this.prisma.subcontractorDocument.findFirst({ where: { id: meta.subcontractorDocumentId, companyId } });
       if (!doc) throw new NotFoundException("Subcontractor document not found");
     }
+    if (meta.deficiencyId) {
+      const deficiency = await this.prisma.deficiency.findFirst({ where: { id: meta.deficiencyId, companyId } });
+      if (!deficiency) throw new NotFoundException("Deficiency not found");
+    }
     const category: DocumentCategory = meta.category ? documentCategorySchema.parse(meta.category) : "other";
 
     const stored = await this.storage.save(companyId, file.originalname, file.buffer);
@@ -133,6 +140,7 @@ export class DocumentsService {
         incidentReportId: meta.incidentReportId,
         warrantyClaimId: meta.warrantyClaimId,
         subcontractorDocumentId: meta.subcontractorDocumentId,
+        deficiencyId: meta.deficiencyId,
         name: file.originalname,
         storageKey: stored.storageKey,
         mimeType: file.mimetype,
@@ -166,6 +174,8 @@ export class DocumentsService {
         dailyLogId: current.dailyLogId,
         incidentReportId: current.incidentReportId,
         warrantyClaimId: current.warrantyClaimId,
+        subcontractorDocumentId: current.subcontractorDocumentId,
+        deficiencyId: current.deficiencyId,
         name: file.originalname,
         storageKey: stored.storageKey,
         mimeType: file.mimetype,

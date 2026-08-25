@@ -30,6 +30,8 @@ async function main() {
   const growthPlan = plans.find((p) => p.code === "growth")!;
   console.log(`Seeded ${plans.length} plans`);
 
+  await seedExchangeRates();
+
   await seedCompany({
     companyName: "Cantero Demo GmbH",
     ownerEmail: "demo-eu@cantero.dev",
@@ -59,6 +61,33 @@ async function main() {
   console.log("\nDemo logins (password for both): " + DEMO_PASSWORD);
   console.log("  EU (metric/EUR/de): demo-eu@cantero.dev");
   console.log("  US (imperial/USD/en): demo-us@cantero.dev");
+}
+
+/** Plausible, hand-picked cross rates (not live) — see ExchangeRateService for why there's no
+ * live feed. USD_PER expresses each currency's value in USD; every directed pair is derived from
+ * that single table so the rates are internally consistent (EUR->USD and USD->EUR truly invert). */
+async function seedExchangeRates() {
+  const USD_PER: Record<string, number> = { EUR: 1.08, USD: 1.0, GBP: 1.25, CHF: 1.15, CAD: 0.74 };
+  const currencies = Object.keys(USD_PER);
+
+  const rows: { fromCurrency: string; toCurrency: string; rate: number }[] = [];
+  for (const from of currencies) {
+    for (const to of currencies) {
+      if (from === to) continue;
+      rows.push({ fromCurrency: from, toCurrency: to, rate: USD_PER[from] / USD_PER[to] });
+    }
+  }
+
+  await Promise.all(
+    rows.map((r) =>
+      prisma.exchangeRate.upsert({
+        where: { fromCurrency_toCurrency: { fromCurrency: r.fromCurrency as never, toCurrency: r.toCurrency as never } },
+        update: { rate: r.rate },
+        create: { fromCurrency: r.fromCurrency as never, toCurrency: r.toCurrency as never, rate: r.rate },
+      }),
+    ),
+  );
+  console.log(`Seeded ${rows.length} exchange rate pairs`);
 }
 
 async function seedCompany(args: {

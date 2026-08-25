@@ -11,8 +11,20 @@ export const updateClientSchema = z.object({
   estimatedValue: z.number().nonnegative().max(100_000_000).nullable().optional(),
   ownerWorkerId: z.string().uuid().nullable().optional(),
   referredByClientId: z.string().uuid().nullable().optional(),
+  probability: z.number().int().min(0).max(100).nullable().optional(),
+  expectedCloseDate: z.string().datetime().nullable().optional(),
 });
 export type UpdateClientInput = z.infer<typeof updateClientSchema>;
+
+/** Default win-likelihood per stage, used for pipeline forecasting whenever a client has no
+ * manually-set probability — so every open deal contributes a sensible weighted value. */
+export const CLIENT_STAGE_DEFAULT_PROBABILITY: Record<ClientStage, number> = {
+  lead: 10,
+  contacted: 25,
+  qualified: 60,
+  won: 100,
+  lost: 0,
+};
 
 export const moveClientStageSchema = z
   .object({

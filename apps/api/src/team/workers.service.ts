@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import type { AddWorkerCertificationInput, CreateWorkerInput, UpdateWorkerInput } from "@cantero/shared";
+import type { AddWorkerCertificationInput, AdjustPtoBalanceInput, CreateWorkerInput, UpdateWorkerInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 
@@ -20,8 +20,26 @@ export class WorkersService {
     return worker;
   }
 
-  create(companyId: string, input: CreateWorkerInput) {
-    return this.prisma.worker.create({ data: { ...input, companyId } });
+  /** Clones the company's onboarding template into fresh tasks for this worker — a snapshot at
+   * creation time, so editing the template later never rewrites tasks already assigned. */
+  async create(companyId: string, input: CreateWorkerInput) {
+    const worker = await this.prisma.worker.create({ data: { ...input, companyId } });
+
+    const templateItems = await this.prisma.onboardingTemplateItem.findMany({
+      where: { companyId },
+      orderBy: { sortOrder: "asc" },
+    });
+    if (templateItems.length > 0) {
+      await this.prisma.workerOnboardingTask.createMany({
+        data: templateItems.map((item) => ({
+          companyId,
+          workerId: worker.id,
+          title: item.title,
+          sortOrder: item.sortOrder,
+        })),
+      });
+    }
+    return worker;
   }
 
   async update(companyId: string, actor: AuditActor, id: string, input: UpdateWorkerInput) {
@@ -148,5 +166,39 @@ export class WorkersService {
         valid: bucketed.filter((c) => c.status === "valid").length,
       },
     };
+  }
+
+  async adjustPtoBalance(companyId: string, actor: AuditActor, workerId: string, input: AdjustPtoBalanceInput) {
+    const worker = await this.get(companyId, workerId);
+    const updated = await this.prisma.worker.update({
+      where: { id: workerId },
+      data: { ptoBalanceHours: { increment: input.deltaHours } },
+    });
+    this.audit.record(
+      companyId,
+      actor,
+      "worker.pto_balance_adjusted",
+      "Worker",
+      workerId,
+      `${input.deltaHours > 0 ? "Added" : "Deducted"} ${Math.abs(input.deltaHours)}h ${input.deltaHours > 0 ? "to" : "from"} ${worker.name}'s PTO balance — ${input.reason}`,
+      { deltaHours: input.deltaHours, reason: input.reason },
+    );
+    return updated;
+  }
+
+  listOnboardingTasks(companyId: string, workerId: string) {
+    return this.prisma.workerOnboardingTask.findMany({
+      where: { companyId, workerId },
+      orderBy: { sortOrder: "asc" },
+    });
+  }
+
+  async toggleOnboardingTask(companyId: string, workerId: string, taskId: string) {
+    const task = await this.prisma.workerOnboardingTask.findFirst({ where: { id: taskId, companyId, workerId } });
+    if (!task) throw new NotFoundException("Onboarding task not found");
+    return this.prisma.workerOnboardingTask.update({
+      where: { id: taskId },
+      data: { done: !task.done, completedAt: !task.done ? new Date() : null },
+    });
   }
 }

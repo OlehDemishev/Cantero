@@ -19,13 +19,29 @@ interface Equipment {
   id: string;
   name: string;
 }
+interface TaskOption {
+  id: string;
+  name: string;
+}
 interface Assignment {
   id: string;
   projectId: string;
   projectName: string;
+  taskId: string | null;
+  taskName: string | null;
   startDate: string;
   endDate: string;
   note: string | null;
+}
+interface HeatmapDay {
+  date: string;
+  hours: number;
+  overallocated: boolean;
+}
+interface HeatmapRow {
+  workerId: string;
+  workerName: string;
+  days: HeatmapDay[];
 }
 interface ResourceRow {
   resourceType: ResourceType;
@@ -56,7 +72,13 @@ interface CreateConflict {
   endDate: string;
 }
 
-const EMPTY_FORM = { resourceType: "worker" as ResourceType, resourceId: "", projectId: "", startDate: "", endDate: "", note: "" };
+const EMPTY_FORM = { resourceType: "worker" as ResourceType, resourceId: "", projectId: "", taskId: "", startDate: "", endDate: "", note: "" };
+
+function isoDaysFromNow(days: number) {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
 
 export default function ResourcePlanningPage() {
   const t = useTranslations("resourcePlanning");
@@ -67,11 +89,18 @@ export default function ResourcePlanningPage() {
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [projectTasks, setProjectTasks] = useState<TaskOption[]>([]);
   const [busy, setBusy] = useState(false);
   const [newAssignmentConflicts, setNewAssignmentConflicts] = useState<CreateConflict[] | null>(null);
+  const [heatmap, setHeatmap] = useState<HeatmapRow[] | null>(null);
+  const [heatmapFrom] = useState(isoDaysFromNow(0));
+  const [heatmapTo] = useState(isoDaysFromNow(27));
 
   function load() {
     apiFetch<Calendar>("/resource-planning/calendar").then(setCalendar);
+    apiFetch<HeatmapRow[]>(
+      `/resource-planning/workload-heatmap?from=${new Date(heatmapFrom).toISOString()}&to=${new Date(heatmapTo).toISOString()}`,
+    ).then(setHeatmap);
   }
 
   useEffect(() => {
@@ -87,6 +116,15 @@ export default function ResourcePlanningPage() {
     apiFetch<Equipment[]>("/equipment").then(setEquipment);
   }, []);
 
+  useEffect(() => {
+    if (!form.projectId) {
+      setProjectTasks([]);
+      return;
+    }
+    apiFetch<TaskOption[]>(`/tasks?projectId=${form.projectId}`).then(setProjectTasks);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.projectId]);
+
   function switchResourceType(resourceType: ResourceType) {
     const list = resourceType === "worker" ? workers : equipment;
     setForm((f) => ({ ...f, resourceType, resourceId: list[0]?.id ?? "" }));
@@ -100,6 +138,7 @@ export default function ResourcePlanningPage() {
     try {
       const body = {
         projectId: form.projectId,
+        taskId: form.taskId || undefined,
         [form.resourceType === "worker" ? "workerId" : "equipmentId"]: form.resourceId,
         startDate: new Date(form.startDate).toISOString(),
         endDate: new Date(form.endDate).toISOString(),
@@ -157,7 +196,11 @@ export default function ResourcePlanningPage() {
           </div>
           <label className="flex flex-col gap-1.5 text-sm">
             <span className="font-medium text-gray-700">{t("project")}</span>
-            <select className="input" value={form.projectId} onChange={(e) => setForm((f) => ({ ...f, projectId: e.target.value }))}>
+            <select
+              className="input"
+              value={form.projectId}
+              onChange={(e) => setForm((f) => ({ ...f, projectId: e.target.value, taskId: "" }))}
+            >
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
@@ -165,6 +208,19 @@ export default function ResourcePlanningPage() {
               ))}
             </select>
           </label>
+          {projectTasks.length > 0 && (
+            <label className="flex flex-col gap-1.5 text-sm">
+              <span className="font-medium text-gray-700">{t("task")}</span>
+              <select className="input" value={form.taskId} onChange={(e) => setForm((f) => ({ ...f, taskId: e.target.value }))}>
+                <option value="">{t("wholeProject")}</option>
+                {projectTasks.map((task) => (
+                  <option key={task.id} value={task.id}>
+                    {task.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <div className="flex gap-3">
             <label className="flex flex-1 flex-col gap-1.5 text-sm">
               <span className="font-medium text-gray-700">{t("startDate")}</span>
@@ -248,7 +304,9 @@ export default function ResourcePlanningPage() {
                     {r.assignments.map((a) => (
                       <li key={a.id} className="flex items-center justify-between text-xs text-gray-600">
                         <span>
-                          {a.projectName} — {new Date(a.startDate).toLocaleDateString()} – {new Date(a.endDate).toLocaleDateString()}
+                          {a.projectName}
+                          {a.taskName && <span className="text-gray-400"> / {a.taskName}</span>} —{" "}
+                          {new Date(a.startDate).toLocaleDateString()} – {new Date(a.endDate).toLocaleDateString()}
                           {a.note && <span className="text-gray-400"> · {a.note}</span>}
                         </span>
                         <button onClick={() => removeAssignment(a.id)} className="text-gray-400 hover:text-error-600">
@@ -260,9 +318,65 @@ export default function ResourcePlanningPage() {
                 </div>
               ))}
           </div>
+
+          <h2 className="mb-3 mt-10 text-sm font-semibold text-gray-700">{t("workloadHeatmap")}</h2>
+          <p className="mb-3 text-xs text-gray-400">{t("workloadHeatmapHint")}</p>
+          {!heatmap ? (
+            <p className="text-sm text-gray-400">{tc("loading")}</p>
+          ) : heatmap.length === 0 ? (
+            <p className="text-sm text-gray-400">{t("noAssignments")}</p>
+          ) : (
+            <WorkloadHeatmap rows={heatmap} />
+          )}
         </>
       )}
     </AuthenticatedShell>
+  );
+}
+
+function WorkloadHeatmap({ rows }: { rows: HeatmapRow[] }) {
+  const t = useTranslations("resourcePlanning");
+  const allDates = Array.from(new Set(rows.flatMap((r) => r.days.map((d) => d.date)))).sort();
+
+  function cellFor(row: HeatmapRow, date: string) {
+    return row.days.find((d) => d.date === date);
+  }
+
+  return (
+    <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white p-4">
+      <table className="border-collapse text-xs">
+        <thead>
+          <tr>
+            <th className="sticky left-0 bg-white pr-3 text-left font-medium text-gray-500">{t("worker")}</th>
+            {allDates.map((date) => (
+              <th key={date} className="px-1 py-1 text-center font-normal text-gray-400">
+                {new Date(date).toLocaleDateString(undefined, { day: "numeric", month: "numeric" })}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.workerId}>
+              <td className="sticky left-0 bg-white pr-3 py-1 font-medium text-gray-700">{row.workerName}</td>
+              {allDates.map((date) => {
+                const cell = cellFor(row, date);
+                const hours = cell?.hours ?? 0;
+                const bg = !cell ? "bg-gray-50" : cell.overallocated ? "bg-error-500" : hours >= 8 ? "bg-brand-500" : hours > 0 ? "bg-brand-200" : "bg-gray-50";
+                return (
+                  <td key={date} className="p-0.5">
+                    <div
+                      className={`h-6 w-6 rounded ${bg}`}
+                      title={cell ? `${row.workerName}: ${hours}h${cell.overallocated ? ` (${t("overallocated")})` : ""}` : undefined}
+                    />
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 

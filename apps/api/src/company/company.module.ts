@@ -13,6 +13,8 @@ import { DataExportController } from "./data-export.controller";
 import { DataExportService } from "./data-export.service";
 import { CustomRolesController } from "./custom-roles.controller";
 import { CustomRolesService } from "./custom-roles.service";
+import { OnboardingTemplateController } from "./onboarding-template.controller";
+import { OnboardingTemplateService } from "./onboarding-template.service";
 
 @Module({
   controllers: [
@@ -24,7 +26,8 @@ import { CustomRolesService } from "./custom-roles.service";
     WebhooksController,
     DataExportController,
     CustomRolesController,
+    OnboardingTemplateController,
   ],
-  providers: [CompanyService, MembersService, InvitesService, ApiKeysService, DataExportService, CustomRolesService],
+  providers: [CompanyService, MembersService, InvitesService, ApiKeysService, DataExportService, CustomRolesService, OnboardingTemplateService],
 })
 export class CompanyModule {}

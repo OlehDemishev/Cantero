@@ -6,6 +6,8 @@ import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { ProgressBillingPanel } from "@/components/progress-billing-panel";
 import { EstimateSuggestionsPanel } from "@/components/estimate-suggestions-panel";
+import { AssemblyQuickAddPanel } from "@/components/assembly-quick-add-panel";
+import { RevisionDiffPanel } from "@/components/revision-diff-panel";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
@@ -72,6 +74,7 @@ interface Estimate {
   clientAccessToken: string | null;
   variantOfId: string | null;
   variantLabel: string | null;
+  coverLetter: string | null;
   signerName: string | null;
   approvals: EstimateApproval[];
 }
@@ -205,13 +208,30 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
   const [estimateSignatureUrl, setEstimateSignatureUrl] = useState<string | null>(null);
   const [coSignatureUrls, setCoSignatureUrls] = useState<Record<string, string>>({});
 
+  const [coverLetterDraft, setCoverLetterDraft] = useState("");
+  const [savingCoverLetter, setSavingCoverLetter] = useState(false);
+
   function load() {
     apiFetch<Estimate>(`/estimates/${estimateId}`).then((e) => {
       setEstimate(e);
+      setCoverLetterDraft(e.coverLetter ?? "");
       if (e.clientDecision === "approved" && e.signerName) {
         apiFetch<Blob>(`/estimates/${estimateId}/signature`).then((blob) => setEstimateSignatureUrl(URL.createObjectURL(blob)));
       }
     });
+  }
+
+  async function saveCoverLetter() {
+    setSavingCoverLetter(true);
+    try {
+      await apiFetch(`/estimates/${estimateId}/cover-letter`, {
+        method: "PATCH",
+        body: JSON.stringify({ coverLetter: coverLetterDraft || null }),
+      });
+      load();
+    } finally {
+      setSavingCoverLetter(false);
+    }
   }
 
   function loadRevisions() {
@@ -592,6 +612,8 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
             </form>
           )}
 
+          {estimate.status === "draft" && <AssemblyQuickAddPanel estimateId={estimateId} onAdded={load} />}
+
           {estimate.status === "draft" && <EstimateSuggestionsPanel estimateId={estimateId} onAdded={load} />}
 
           {estimate.status === "approved" && (
@@ -721,6 +743,8 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
                   </table>
                 </div>
               )}
+
+              {revisions && <RevisionDiffPanel estimateId={estimateId} revisions={revisions} currency={currency} />}
             </div>
           )}
 
@@ -982,6 +1006,26 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
             </button>
             {estimate.status === "draft" && <p className="text-xs text-gray-400">{t("approveFirst")}</p>}
           </div>
+
+          {estimate.status === "draft" && (
+            <div className="mt-4 border-t border-gray-100 pt-4">
+              <label className="text-xs font-medium text-gray-500">{t("coverLetter")}</label>
+              <textarea
+                className="input mt-2 w-full"
+                rows={4}
+                placeholder={t("coverLetterPlaceholder")}
+                value={coverLetterDraft}
+                onChange={(e) => setCoverLetterDraft(e.target.value)}
+              />
+              <button
+                onClick={saveCoverLetter}
+                disabled={savingCoverLetter || coverLetterDraft === (estimate.coverLetter ?? "")}
+                className="btn-secondary mt-2 px-3 py-1 text-xs"
+              >
+                {tc("save")}
+              </button>
+            </div>
+          )}
 
           {estimate.status === "approved" && <ProgressBillingPanel estimateId={estimateId} currency={currency} />}
 
