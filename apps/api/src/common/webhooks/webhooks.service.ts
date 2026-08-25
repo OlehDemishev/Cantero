@@ -1,18 +1,29 @@
 import { createHmac, randomBytes } from "node:crypto";
-import { Injectable, NotFoundException } from "@nestjs/common";
-import type { CreateWebhookEndpointInput, UpdateWebhookEndpointInput, WebhookEvent } from "@cantero/shared";
+import { Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { WEBHOOK_EVENTS, type CreateWebhookEndpointInput, type UpdateWebhookEndpointInput, type WebhookEvent } from "@cantero/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuditService, type AuditActor } from "../audit/audit.service";
 import { assertPublicWebhookUrl } from "./webhook-url";
 
 const DELIVERY_TIMEOUT_MS = 8000;
 
+const eventLabel = (event: string) => event.replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
 @Injectable()
 export class WebhooksService {
+  private readonly logger = new Logger(WebhooksService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
   ) {}
+
+  /** Every event name available to subscribe to, for a Zapier/Make setup screen or similar —
+   * the delivery envelope itself is always `{ event, data, timestamp }`, HMAC-SHA256-signed over
+   * the JSON body in the X-Cantero-Signature header (secret shown once at endpoint creation). */
+  catalog() {
+    return WEBHOOK_EVENTS.map((event) => ({ event, label: eventLabel(event) }));
+  }
 
   list(companyId: string) {
     return this.prisma.webhookEndpoint.findMany({
@@ -90,6 +101,31 @@ export class WebhooksService {
         }
       })
       .catch(() => {});
+
+    this.notifyChat(companyId, event, payload).catch(() => {});
+  }
+
+  /** Posts the same event that just fired to whichever chat webhooks the company has
+   * configured — same simple `{"text": "..."}` payload shape both Slack and (legacy) Microsoft
+   * Teams incoming webhooks accept, so one formatter covers both without per-provider branching. */
+  private async notifyChat(companyId: string, event: WebhookEvent, payload: Record<string, unknown>): Promise<void> {
+    const company = await this.prisma.company.findUnique({
+      where: { id: companyId },
+      select: { slackWebhookUrl: true, teamsWebhookUrl: true },
+    });
+    if (!company?.slackWebhookUrl && !company?.teamsWebhookUrl) return;
+
+    const detail = Object.entries(payload)
+      .slice(0, 4)
+      .map(([k, v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : v}`)
+      .join(", ");
+    const text = `*Cantero* — ${eventLabel(event)}${detail ? `\n${detail}` : ""}`;
+
+    for (const url of [company.slackWebhookUrl, company.teamsWebhookUrl].filter((u): u is string => !!u)) {
+      fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) }).catch((err) =>
+        this.logger.warn(`Chat webhook delivery failed for company ${companyId}: ${(err as Error).message}`),
+      );
+    }
   }
 
   private async deliver(

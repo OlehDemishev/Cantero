@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { ProgressBillingPanel } from "@/components/progress-billing-panel";
+import { EstimateSuggestionsPanel } from "@/components/estimate-suggestions-panel";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
@@ -590,6 +591,8 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
               </button>
             </form>
           )}
+
+          {estimate.status === "draft" && <EstimateSuggestionsPanel estimateId={estimateId} onAdded={load} />}
 
           {estimate.status === "approved" && (
             <div className="mt-8">

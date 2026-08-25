@@ -44,7 +44,8 @@
     "resourcePlanning": "Planowanie zasobów",
     "templates": "Szablony",
     "subcontractors": "Podwykonawcy",
-    "expenses": "Wydatki"
+    "expenses": "Wydatki",
+    "serviceContracts": "Umowy serwisowe"
   },
   "auth": {
     "signupTitle": "Utwórz konto Cantero",
@@ -70,7 +71,19 @@
     "useSsoPasswordInstead": "Zaloguj się hasłem",
     "ssoError": "Nie udało się rozpocząć logowania SSO — sprawdź domenę e-mail lub skontaktuj się z administratorem.",
     "ssoSigningIn": "Logowanie…",
-    "backToLogin": "Powrót do logowania"
+    "backToLogin": "Powrót do logowania",
+    "forgotPassword": "Nie pamiętasz hasła?",
+    "forgotPasswordTitle": "Zresetuj hasło",
+    "forgotPasswordHint": "Podaj swój adres e-mail, a wyślemy Ci link do zresetowania hasła.",
+    "forgotPasswordSent": "Jeśli konto z tym adresem e-mail istnieje, link do resetu jest już w drodze.",
+    "sendResetLink": "Wyślij link resetujący",
+    "resetPasswordTitle": "Ustaw nowe hasło",
+    "resetPasswordDone": "Twoje hasło zostało zresetowane. Możesz się teraz zalogować.",
+    "resetPasswordInvalidLink": "Ten link jest nieprawidłowy lub wygasł.",
+    "newPassword": "Nowe hasło",
+    "resetPassword": "Zresetuj hasło",
+    "twoFactorCode": "Kod uwierzytelniający",
+    "verify": "Zweryfikuj"
   },
   "billing": {
     "title": "Aktywuj subskrypcję",
@@ -95,7 +108,8 @@
     "stockValue": "Wartość magazynu",
     "lowStockCount": "niski stan",
     "workersTotal": "Pracownicy",
-    "fieldMode": "Tryb terenowy"
+    "fieldMode": "Tryb terenowy",
+    "triageTitle": "Wymaga uwagi"
   },
   "settings": {
     "title": "Ustawienia",
@@ -250,7 +264,10 @@
     "viewEstimates": "Kosztorysy dla tego projektu",
     "searchPlaceholder": "Szukaj po nazwie lub adresie…",
     "allClients": "Wszyscy klienci",
-    "noMatches": "Żaden projekt nie pasuje do tych filtrów."
+    "noMatches": "Żaden projekt nie pasuje do tych filtrów.",
+    "health_good": "Na dobrej drodze",
+    "health_watch": "Do obserwacji",
+    "health_at_risk": "Zagrożony"
   },
   "clients": {
     "title": "Klienci",
@@ -446,7 +463,8 @@
     "clearSignature": "Wyczyść",
     "signatureRequired": "Wpisz imię i nazwisko oraz złóż podpis, aby zatwierdzić.",
     "signature": "Podpis",
-    "signedBy": "Podpisano przez {name}"
+    "signedBy": "Podpisano przez {name}",
+    "suggestedLines": "Sugerowane pozycje"
   },
   "invoices": {
     "title": "Faktury",
@@ -1403,5 +1421,62 @@
     "pending": "Oczekujący",
     "approved": "Zatwierdzony",
     "denied": "Odrzucony"
+  },
+  "twoFactor": {
+    "title": "Uwierzytelnianie dwuskładnikowe",
+    "hint": "Wymaga kodu z aplikacji uwierzytelniającej przy logowaniu, oprócz hasła.",
+    "enable": "Włącz 2FA",
+    "backupCodesTitle": "Zapisz kody zapasowe",
+    "backupCodesHint": "Każdy kod można użyć raz, jeśli stracisz dostęp do aplikacji uwierzytelniającej. Przechowuj je w bezpiecznym miejscu — nie zostaną ponownie wyświetlone.",
+    "scanHint": "Zeskanuj to w swojej aplikacji uwierzytelniającej lub wpisz kod ręcznie:",
+    "codeLabel": "Wpisz 6-cyfrowy kod z aplikacji",
+    "confirm": "Potwierdź",
+    "passwordToDisable": "Hasło",
+    "disable": "Wyłącz 2FA",
+    "invalidCode": "Nieprawidłowy kod"
+  },
+  "sessions": {
+    "title": "Aktywne sesje",
+    "hint": "Urządzenia obecnie zalogowane na Twoje konto.",
+    "unknownDevice": "Nieznane urządzenie",
+    "lastSeen": "ostatnio aktywne {date}",
+    "revoke": "Wyloguj"
+  },
+  "integrations": {
+    "title": "Integracje",
+    "hint": "Połącz powiadomienia czatu i subskrybowalny kanał kalendarza.",
+    "slackWebhookUrl": "URL webhooka Slack",
+    "teamsWebhookUrl": "URL webhooka Microsoft Teams",
+    "ipAllowlist": "Lista dozwolonych adresów IP",
+    "ipAllowlistHint": "Jeden adres IP lub blok CIDR na linię. Pozostaw puste, aby zezwolić na dowolny adres IP.",
+    "calendarFeed": "Kanał kalendarza",
+    "calendarFeedHint": "Zasubskrybuj ten adres URL w Google Calendar, Outlook lub Apple Calendar, aby zobaczyć terminy zadań i kamieni milowych.",
+    "generateCalendarFeed": "Wygeneruj URL kanału",
+    "regenerateCalendarFeed": "Wygeneruj ponownie URL kanału"
+  },
+  "serviceFeedback": {
+    "title": "Jak przebiegła wizyta serwisowa?",
+    "thanks": "Dziękujemy za opinię!",
+    "error": "Coś poszło nie tak podczas wysyłania opinii.",
+    "starRating": "{n} gwiazdek",
+    "comment": "Komentarze (opcjonalnie)",
+    "submit": "Wyślij opinię"
+  },
+  "serviceContracts": {
+    "title": "Umowy serwisowe",
+    "newContract": "Nowa umowa",
+    "selectProject": "Wybierz projekt",
+    "selectClient": "Wybierz klienta",
+    "frequencyMonths": "Częstotliwość wizyt (miesiące)",
+    "startDate": "Data rozpoczęcia",
+    "contracts": "Umowy",
+    "nextVisit": "Następna wizyta",
+    "scheduleVisit": "Zaplanuj wizytę",
+    "visitDate": "Data wizyty",
+    "selectTechnician": "Wybierz technika",
+    "schedule": "Zaplanuj",
+    "visits": "Wizyty",
+    "completed": "Zakończona",
+    "markComplete": "Oznacz jako zakończoną"
   }
 }

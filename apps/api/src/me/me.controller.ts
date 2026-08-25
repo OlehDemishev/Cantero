@@ -23,8 +23,9 @@ export class MeController {
       where: { userId_companyId: { userId: user.userId, companyId: user.companyId } },
       select: { emailDigestFrequency: true },
     });
+    const userRecord = await this.prisma.user.findUniqueOrThrow({ where: { id: user.userId }, select: { totpEnabledAt: true } });
     return {
-      user: { id: user.userId, email: user.email, name: user.name, role: user.role },
+      user: { id: user.userId, email: user.email, name: user.name, role: user.role, totpEnabled: userRecord.totpEnabledAt !== null },
       company,
       subscriptionStatus: subscription?.status ?? "incomplete",
       emailDigestFrequency: membership.emailDigestFrequency,

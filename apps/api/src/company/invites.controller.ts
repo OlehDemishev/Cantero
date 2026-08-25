@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Param, Post } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Post, Req } from "@nestjs/common";
+import type { Request } from "express";
 import { acceptInviteSchema, createInviteSchema, type AcceptInviteInput, type AuthUser, type CreateInviteInput } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Public } from "../common/decorators/public.decorator";
@@ -36,7 +37,7 @@ export class InvitesController {
 
   @Public()
   @Post("invites/accept")
-  accept(@Body(new ZodValidationPipe(acceptInviteSchema)) body: AcceptInviteInput) {
-    return this.service.accept(body);
+  accept(@Body(new ZodValidationPipe(acceptInviteSchema)) body: AcceptInviteInput, @Req() req: Request) {
+    return this.service.accept(body, { userAgent: req.headers["user-agent"], ipAddress: req.ip });
   }
 }

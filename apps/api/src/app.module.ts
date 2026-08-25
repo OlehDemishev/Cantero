@@ -8,7 +8,9 @@ import { StorageModule } from "./common/storage/storage.module";
 import { AuditModule } from "./common/audit/audit.module";
 import { MailModule } from "./common/mail/mail.module";
 import { WebhooksModule } from "./common/webhooks/webhooks.module";
+import { SessionsModule } from "./common/sessions/sessions.module";
 import { JwtAuthGuard } from "./common/guards/jwt-auth.guard";
+import { IpAllowlistGuard } from "./common/guards/ip-allowlist.guard";
 import { SubscriptionGuard } from "./common/guards/subscription.guard";
 import { RolesGuard } from "./common/guards/roles.guard";
 import { AuthModule } from "./auth/auth.module";
@@ -42,6 +44,9 @@ import { LeadsModule } from "./leads/leads.module";
 import { SsoModule } from "./sso/sso.module";
 import { AccountingModule } from "./accounting/accounting.module";
 import { InvoiceRemindersModule } from "./invoice-reminders/invoice-reminders.module";
+import { InsightsModule } from "./insights/insights.module";
+import { CalendarFeedModule } from "./calendar-feed/calendar-feed.module";
+import { ServiceModule } from "./service/service.module";
 
 @Module({
   imports: [
@@ -53,6 +58,7 @@ import { InvoiceRemindersModule } from "./invoice-reminders/invoice-reminders.mo
     AuditModule,
     MailModule,
     WebhooksModule,
+    SessionsModule,
     AuthModule,
     BillingModule,
     MeModule,
@@ -84,9 +90,13 @@ import { InvoiceRemindersModule } from "./invoice-reminders/invoice-reminders.mo
     SsoModule,
     AccountingModule,
     InvoiceRemindersModule,
+    InsightsModule,
+    CalendarFeedModule,
+    ServiceModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: IpAllowlistGuard },
     { provide: APP_GUARD, useClass: SubscriptionGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
   ],

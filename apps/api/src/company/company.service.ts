@@ -82,6 +82,15 @@ export class CompanyService {
     return updated;
   }
 
+  /** Generates (or replaces) the token embedded in this company's public ICS calendar-subscription
+   * URL. Regenerating invalidates any URL shared previously — useful if a link leaks. */
+  async generateCalendarFeedToken(companyId: string, actor: AuditActor) {
+    const token = randomBytes(16).toString("hex");
+    const updated = await this.prisma.company.update({ where: { id: companyId }, data: { calendarFeedToken: token } });
+    this.audit.record(companyId, actor, "company.calendar_feed_token_generated", "Company", companyId, "Generated a calendar feed token");
+    return { calendarFeedToken: updated.calendarFeedToken };
+  }
+
   /** Generates (or replaces) the one-time code a prospective branch redeems to link under this
    * company. Regenerating invalidates any code shared previously. */
   async generateFranchiseLinkCode(companyId: string, actor: AuditActor) {

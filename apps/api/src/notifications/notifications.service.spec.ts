@@ -2,6 +2,7 @@ import { Test } from "@nestjs/testing";
 import { NotificationsService } from "./notifications.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { WeatherService } from "../weather/weather.service";
+import { BudgetService } from "../finance/budget.service";
 
 const COMPANY_A = "company-a";
 const USER_A = "user-a";
@@ -21,9 +22,11 @@ describe("NotificationsService.list", () => {
     subcontractorDocument: { findMany: jest.Mock };
     workerCertification: { findMany: jest.Mock };
     task: { findMany: jest.Mock };
+    project: { findMany: jest.Mock };
     membership: { findFirst: jest.Mock };
   };
   let weather: { geocode: jest.Mock; forecast: jest.Mock };
+  let budget: { getForProject: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -39,15 +42,18 @@ describe("NotificationsService.list", () => {
       subcontractorDocument: { findMany: jest.fn().mockResolvedValue([]) },
       workerCertification: { findMany: jest.fn().mockResolvedValue([]) },
       task: { findMany: jest.fn().mockResolvedValue([]) },
+      project: { findMany: jest.fn().mockResolvedValue([]) },
       membership: { findFirst: jest.fn().mockResolvedValue(null) },
     };
     weather = { geocode: jest.fn(), forecast: jest.fn() };
+    budget = { getForProject: jest.fn() };
 
     const module = await Test.createTestingModule({
       providers: [
         NotificationsService,
         { provide: PrismaService, useValue: prisma },
         { provide: WeatherService, useValue: weather },
+        { provide: BudgetService, useValue: budget },
       ],
     }).compile();
 
@@ -272,5 +278,34 @@ describe("NotificationsService.list", () => {
 
     expect(notifications.some((n) => n.key === "weather_risk:task-4")).toBe(false);
     expect(weather.geocode).not.toHaveBeenCalled();
+  });
+
+  it("flags a project at or above the budget-overrun threshold, critical once it's over 100%", async () => {
+    prisma.project.findMany.mockResolvedValue([{ id: "project-over", name: "Over Budget Site" }]);
+    budget.getForProject.mockResolvedValue({
+      grandTotalBudget: 1000,
+      materialsCostActual: 700,
+      laborCostActual: 400,
+      subcontractorCostActual: 0,
+    });
+
+    const { notifications } = await service.list(COMPANY_A, USER_A);
+
+    const item = notifications.find((n) => n.key === "budget_overrun:project-over");
+    expect(item?.severity).toBe("critical");
+  });
+
+  it("does not flag a project with no approved-estimate budget to compare against", async () => {
+    prisma.project.findMany.mockResolvedValue([{ id: "project-unestimated", name: "No Estimate Site" }]);
+    budget.getForProject.mockResolvedValue({
+      grandTotalBudget: 0,
+      materialsCostActual: 500,
+      laborCostActual: 0,
+      subcontractorCostActual: 0,
+    });
+
+    const { notifications } = await service.list(COMPANY_A, USER_A);
+
+    expect(notifications.some((n) => n.key === "budget_overrun:project-unestimated")).toBe(false);
   });
 });

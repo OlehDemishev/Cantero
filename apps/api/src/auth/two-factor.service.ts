@@ -1,0 +1,113 @@
+import { BadRequestException, Injectable, UnauthorizedException } from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import { authenticator } from "otplib";
+import * as bcrypt from "bcryptjs";
+import type { LoginResult } from "@cantero/shared";
+import { PrismaService } from "../common/prisma/prisma.service";
+import type { SessionMeta } from "../common/sessions/sessions.service";
+import { AuthService } from "./auth.service";
+
+const BACKUP_CODE_COUNT = 8;
+const BCRYPT_ROUNDS = 10;
+
+function randomBackupCode(): string {
+  return Array.from({ length: 10 }, () => Math.floor(Math.random() * 36).toString(36)).join("").toUpperCase();
+}
+
+@Injectable()
+export class TwoFactorService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
+    private readonly authService: AuthService,
+  ) {}
+
+  /** Generates a fresh secret and stashes it on the user, unconfirmed — 2FA only actually turns
+   * on once enable() verifies a code generated from it. Re-running this before enabling just
+   * overwrites the pending secret, which is fine: nothing depended on the old one yet. */
+  async setup(userId: string, email: string): Promise<{ secret: string; otpauthUrl: string }> {
+    const secret = authenticator.generateSecret();
+    await this.prisma.user.update({ where: { id: userId }, data: { totpSecret: secret } });
+    const otpauthUrl = authenticator.keyuri(email, "Cantero", secret);
+    return { secret, otpauthUrl };
+  }
+
+  async enable(userId: string, code: string): Promise<{ backupCodes: string[] }> {
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    if (!user.totpSecret) throw new BadRequestException("Call setup first");
+    if (!authenticator.verify({ token: code, secret: user.totpSecret })) {
+      throw new BadRequestException("Invalid code");
+    }
+
+    const backupCodes = Array.from({ length: BACKUP_CODE_COUNT }, randomBackupCode);
+    const hashed = await Promise.all(backupCodes.map((c) => bcrypt.hash(c, BCRYPT_ROUNDS)));
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { totpEnabledAt: new Date(), totpBackupCodes: hashed },
+    });
+    return { backupCodes };
+  }
+
+  async disable(userId: string, password: string): Promise<{ ok: true }> {
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    const passwordOk = await bcrypt.compare(password, user.passwordHash);
+    if (!passwordOk) throw new UnauthorizedException("Invalid password");
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { totpSecret: null, totpEnabledAt: null, totpBackupCodes: [] },
+    });
+    return { ok: true };
+  }
+
+  /** Redeems a 2FA login challenge — the code can be either a live TOTP code or a one-time
+   * backup code (consumed on use). Issues a normal access token exactly like a 2FA-less login. */
+  async verifyChallenge(challengeToken: string, code: string, meta: SessionMeta): Promise<LoginResult> {
+    let userId: string;
+    try {
+      const payload = await this.jwtService.verifyAsync<{ userId: string; kind?: string }>(challengeToken);
+      if (payload.kind !== "2fa_challenge") throw new Error("wrong kind");
+      userId = payload.userId;
+    } catch {
+      throw new UnauthorizedException("Invalid or expired challenge");
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { memberships: { include: { customRole: true } } },
+    });
+    if (!user || !user.totpSecret || !user.totpEnabledAt) throw new UnauthorizedException("2FA is not active on this account");
+
+    const totpOk = authenticator.verify({ token: code, secret: user.totpSecret });
+    if (!totpOk) {
+      const matchIndex = await this.findBackupCodeIndex(user.totpBackupCodes, code);
+      if (matchIndex === -1) throw new UnauthorizedException("Invalid code");
+      const remaining = [...user.totpBackupCodes];
+      remaining.splice(matchIndex, 1);
+      await this.prisma.user.update({ where: { id: userId }, data: { totpBackupCodes: remaining } });
+    }
+
+    const membership = user.memberships[0];
+    if (!membership) throw new UnauthorizedException("This account has no company membership");
+
+    const accessToken = await this.authService.issueAccessToken(
+      {
+        userId: user.id,
+        companyId: membership.companyId,
+        email: user.email,
+        name: user.name,
+        role: membership.role,
+        additionalRoles: membership.customRole?.basePermissions,
+      },
+      meta,
+    );
+    return { accessToken, companyId: membership.companyId };
+  }
+
+  private async findBackupCodeIndex(hashedCodes: string[], candidate: string): Promise<number> {
+    for (let i = 0; i < hashedCodes.length; i++) {
+      if (await bcrypt.compare(candidate.toUpperCase(), hashedCodes[i])) return i;
+    }
+    return -1;
+  }
+}

@@ -44,7 +44,8 @@
     "resourcePlanning": "Планування ресурсів",
     "templates": "Шаблони",
     "subcontractors": "Субпідрядники",
-    "expenses": "Витрати"
+    "expenses": "Витрати",
+    "serviceContracts": "Сервісні контракти"
   },
   "auth": {
     "signupTitle": "Створіть обліковий запис Cantero",
@@ -70,7 +71,19 @@
     "useSsoPasswordInstead": "Увійти за паролем",
     "ssoError": "Не вдалося розпочати вхід через SSO — перевірте домен пошти або зверніться до адміністратора.",
     "ssoSigningIn": "Виконується вхід…",
-    "backToLogin": "Повернутися до входу"
+    "backToLogin": "Повернутися до входу",
+    "forgotPassword": "Забули пароль?",
+    "forgotPasswordTitle": "Скидання пароля",
+    "forgotPasswordHint": "Введіть свою електронну адресу, і ми надішлемо посилання для скидання пароля.",
+    "forgotPasswordSent": "Якщо акаунт із такою адресою існує, посилання для скидання вже в дорозі.",
+    "sendResetLink": "Надіслати посилання",
+    "resetPasswordTitle": "Встановити новий пароль",
+    "resetPasswordDone": "Ваш пароль скинуто. Тепер ви можете увійти.",
+    "resetPasswordInvalidLink": "Це посилання недійсне або застаріло.",
+    "newPassword": "Новий пароль",
+    "resetPassword": "Скинути пароль",
+    "twoFactorCode": "Код автентифікації",
+    "verify": "Підтвердити"
   },
   "billing": {
     "title": "Активуйте підписку",
@@ -95,7 +108,8 @@
     "stockValue": "Вартість запасів",
     "lowStockCount": "низький залишок",
     "workersTotal": "Працівники",
-    "fieldMode": "Польовий режим"
+    "fieldMode": "Польовий режим",
+    "triageTitle": "Потребує уваги"
   },
   "settings": {
     "title": "Налаштування",
@@ -250,7 +264,10 @@
     "viewEstimates": "Кошториси цього проєкту",
     "searchPlaceholder": "Пошук за назвою чи адресою…",
     "allClients": "Усі клієнти",
-    "noMatches": "Жоден проєкт не відповідає цим фільтрам."
+    "noMatches": "Жоден проєкт не відповідає цим фільтрам.",
+    "health_good": "Все гаразд",
+    "health_watch": "Слідкувати",
+    "health_at_risk": "Під загрозою"
   },
   "clients": {
     "title": "Клієнти",
@@ -446,7 +463,8 @@
     "clearSignature": "Очистити",
     "signatureRequired": "Введіть ім'я та поставте підпис, щоб погодити.",
     "signature": "Підпис",
-    "signedBy": "Підписано {name}"
+    "signedBy": "Підписано {name}",
+    "suggestedLines": "Пропоновані рядки"
   },
   "invoices": {
     "title": "Рахунки",
@@ -1403,5 +1421,62 @@
     "pending": "Очікує",
     "approved": "Схвалено",
     "denied": "Відхилено"
+  },
+  "twoFactor": {
+    "title": "Двофакторна автентифікація",
+    "hint": "Вимагає код з додатку-автентифікатора під час входу, на додачу до пароля.",
+    "enable": "Увімкнути 2FA",
+    "backupCodesTitle": "Збережіть резервні коди",
+    "backupCodesHint": "Кожен код можна використати один раз, якщо ви втратите доступ до додатку-автентифікатора. Зберігайте їх у надійному місці — вони більше не показуватимуться.",
+    "scanHint": "Відскануйте це у своєму додатку-автентифікаторі або введіть код вручну:",
+    "codeLabel": "Введіть 6-значний код із додатку",
+    "confirm": "Підтвердити",
+    "passwordToDisable": "Пароль",
+    "disable": "Вимкнути 2FA",
+    "invalidCode": "Невірний код"
+  },
+  "sessions": {
+    "title": "Активні сеанси",
+    "hint": "Пристрої, які зараз увійшли у ваш акаунт.",
+    "unknownDevice": "Невідомий пристрій",
+    "lastSeen": "востаннє активний {date}",
+    "revoke": "Вийти"
+  },
+  "integrations": {
+    "title": "Інтеграції",
+    "hint": "Підключіть сповіщення в чаті та календарну стрічку для підписки.",
+    "slackWebhookUrl": "URL вебхука Slack",
+    "teamsWebhookUrl": "URL вебхука Microsoft Teams",
+    "ipAllowlist": "Список дозволених IP",
+    "ipAllowlistHint": "Одна IP-адреса або блок CIDR на рядок. Залиште порожнім, щоб дозволити будь-яку IP.",
+    "calendarFeed": "Календарна стрічка",
+    "calendarFeedHint": "Підпишіться на цю URL-адресу в Google Calendar, Outlook або Apple Calendar, щоб бачити терміни завдань і етапів.",
+    "generateCalendarFeed": "Згенерувати URL стрічки",
+    "regenerateCalendarFeed": "Перегенерувати URL стрічки"
+  },
+  "serviceFeedback": {
+    "title": "Як пройшов сервісний візит?",
+    "thanks": "Дякуємо за ваш відгук!",
+    "error": "Під час надсилання відгуку щось пішло не так.",
+    "starRating": "{n} зірок",
+    "comment": "Коментар (необов'язково)",
+    "submit": "Надіслати відгук"
+  },
+  "serviceContracts": {
+    "title": "Сервісні контракти",
+    "newContract": "Новий контракт",
+    "selectProject": "Оберіть проєкт",
+    "selectClient": "Оберіть клієнта",
+    "frequencyMonths": "Періодичність візитів (місяців)",
+    "startDate": "Дата початку",
+    "contracts": "Контракти",
+    "nextVisit": "Наступний візит",
+    "scheduleVisit": "Запланувати візит",
+    "visitDate": "Дата візиту",
+    "selectTechnician": "Оберіть техніка",
+    "schedule": "Запланувати",
+    "visits": "Візити",
+    "completed": "Завершено",
+    "markComplete": "Позначити виконаним"
   }
 }

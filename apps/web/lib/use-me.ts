@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { fetchCached } from "./offline-cache";
 
 export interface MeResponse {
-  user: { id: string; email: string; name: string; role: string };
+  user: { id: string; email: string; name: string; role: string; totpEnabled: boolean };
   company: {
     id: string;
     name: string;

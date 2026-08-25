@@ -1,6 +1,6 @@
-import { Body, Controller, Delete, Get, Header, Param, Patch, Post, Res } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Header, Param, Patch, Post, Req, Res } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import type { Response } from "express";
+import type { Request, Response } from "express";
 import { updateSsoConfigSchema, startSsoLoginSchema, type AuthUser, type StartSsoLoginInput, type UpdateSsoConfigInput } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
@@ -52,10 +52,18 @@ export class SsoController {
   /** The IdP POSTs the SAML assertion here directly (a real browser top-level navigation, not an XHR) — so success/failure is communicated by redirecting the browser back to the frontend rather than returning JSON. */
   @Public()
   @Post("auth/sso/acs/:companyId")
-  async acs(@Param("companyId") companyId: string, @Body("SAMLResponse") samlResponse: string, @Res() res: Response) {
+  async acs(
+    @Param("companyId") companyId: string,
+    @Body("SAMLResponse") samlResponse: string,
+    @Res() res: Response,
+    @Req() req: Request,
+  ) {
     const webOrigin = this.config.get<string>("WEB_ORIGIN") ?? "http://localhost:3000";
     try {
-      const { accessToken } = await this.service.handleAcs(companyId, samlResponse);
+      const { accessToken } = await this.service.handleAcs(companyId, samlResponse, {
+        userAgent: req.headers["user-agent"],
+        ipAddress: req.ip,
+      });
       res.redirect(`${webOrigin}/sso/callback?token=${encodeURIComponent(accessToken)}`);
     } catch (err) {
       const message = err instanceof Error ? err.message : "SSO sign-in failed";

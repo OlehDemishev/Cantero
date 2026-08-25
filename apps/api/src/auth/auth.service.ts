@@ -1,8 +1,9 @@
 import { ConflictException, Injectable, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcryptjs";
-import type { AuthUser, LoginInput, SignupInput } from "@cantero/shared";
+import type { AuthUser, LoginInput, LoginResult, SignupInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { SessionsService, type SessionMeta } from "../common/sessions/sessions.service";
 
 const BCRYPT_ROUNDS = 12;
 
@@ -11,9 +12,10 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly sessions: SessionsService,
   ) {}
 
-  async signup(input: SignupInput): Promise<{ accessToken: string; companyId: string }> {
+  async signup(input: SignupInput, meta: SessionMeta): Promise<{ accessToken: string; companyId: string }> {
     const existing = await this.prisma.user.findUnique({ where: { email: input.email } });
     if (existing) throw new ConflictException("An account with this email already exists");
 
@@ -44,17 +46,20 @@ export class AuthService {
       return { user, company, membership };
     });
 
-    const accessToken = this.issueToken({
-      userId: user.id,
-      companyId: company.id,
-      email: user.email,
-      name: user.name,
-      role: membership.role,
-    });
+    const accessToken = await this.issueAccessToken(
+      {
+        userId: user.id,
+        companyId: company.id,
+        email: user.email,
+        name: user.name,
+        role: membership.role,
+      },
+      meta,
+    );
     return { accessToken, companyId: company.id };
   }
 
-  async login(input: LoginInput): Promise<{ accessToken: string; companyId: string }> {
+  async login(input: LoginInput, meta: SessionMeta): Promise<LoginResult> {
     const user = await this.prisma.user.findUnique({
       where: { email: input.email },
       include: { memberships: { include: { customRole: true } } },
@@ -69,18 +74,27 @@ export class AuthService {
     const membership = user.memberships[0];
     if (!membership) throw new UnauthorizedException("This account has no company membership");
 
-    const accessToken = this.issueToken({
-      userId: user.id,
-      companyId: membership.companyId,
-      email: user.email,
-      name: user.name,
-      role: membership.role,
-      additionalRoles: membership.customRole?.basePermissions,
-    });
+    if (user.totpEnabledAt) {
+      const challengeToken = this.jwtService.sign({ userId: user.id, kind: "2fa_challenge" }, { expiresIn: "10m" });
+      return { requires2fa: true, challengeToken };
+    }
+
+    const accessToken = await this.issueAccessToken(
+      {
+        userId: user.id,
+        companyId: membership.companyId,
+        email: user.email,
+        name: user.name,
+        role: membership.role,
+        additionalRoles: membership.customRole?.basePermissions,
+      },
+      meta,
+    );
     return { accessToken, companyId: membership.companyId };
   }
 
-  private issueToken(user: AuthUser): string {
-    return this.jwtService.sign(user);
+  async issueAccessToken(user: Omit<AuthUser, "sid">, meta: SessionMeta): Promise<string> {
+    const sid = await this.sessions.create(user.userId, meta);
+    return this.jwtService.sign({ ...user, sid } satisfies AuthUser);
   }
 }

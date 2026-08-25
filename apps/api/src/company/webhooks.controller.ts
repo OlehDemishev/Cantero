@@ -21,6 +21,11 @@ export class WebhooksController {
     return this.service.list(user.companyId);
   }
 
+  @Get("catalog")
+  catalog() {
+    return this.service.catalog();
+  }
+
   @Post()
   create(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(createWebhookEndpointSchema)) body: CreateWebhookEndpointInput) {
     return this.service.create(user.companyId, { userId: user.userId, name: user.name }, body);

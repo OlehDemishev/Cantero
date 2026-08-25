@@ -190,6 +190,14 @@ model Company {
   /// One-time code the parent shares out-of-band; a prospective branch redeems it via
   /// POST /company/link-to-parent to set its own parentCompanyId. Regenerating clears the old code.
   franchiseLinkCode         String?    @unique
+  /// Exact IPs or CIDR blocks (e.g. "203.0.113.4" or "203.0.113.0/24") allowed to sign in —
+  /// empty means unrestricted. Checked in IpAllowlistGuard, after authentication succeeds.
+  ipAllowlist               String[]   @default([])
+  /// Incoming webhook URLs for chat notifications on key events — null disables that channel.
+  slackWebhookUrl           String?
+  teamsWebhookUrl           String?
+  /// Token embedded in the company's public ICS calendar-subscription URL — null disables the feed.
+  calendarFeedToken         String?    @unique
 
   memberships    Membership[]
   invites        Invite[]
@@ -241,6 +249,8 @@ model Company {
   materialRfqs           MaterialRfq[]
   customRoles            CustomRole[]
   timeOffRequests        TimeOffRequest[]
+  serviceContracts       ServiceContract[]
+  serviceVisits          ServiceVisit[]
 
   @@map("companies")
 }
@@ -327,22 +337,60 @@ model WebhookDelivery {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String
-  name         String
-  createdAt    DateTime @default(now())
+  id              String    @id @default(uuid())
+  email           String    @unique
+  passwordHash    String
+  name            String
+  createdAt       DateTime  @default(now())
+  /// TOTP secret (base32), set once the user completes 2FA setup — null means 2FA is off.
+  totpSecret      String?
+  totpEnabledAt   DateTime?
+  /// Bcrypt-hashed one-time recovery codes, consumed (removed) as they're used.
+  totpBackupCodes String[]  @default([])
 
-  memberships     Membership[]
-  workers         Worker[]
-  documents       Document[]
-  dailyLogs       DailyLog[]
-  comments        Comment[]
-  commentMentions CommentMention[]
-  savedViews      SavedView[]
-  customReports   CustomReport[]
+  memberships         Membership[]
+  workers             Worker[]
+  documents           Document[]
+  dailyLogs           DailyLog[]
+  comments            Comment[]
+  commentMentions     CommentMention[]
+  savedViews          SavedView[]
+  customReports       CustomReport[]
+  sessions            UserSession[]
+  passwordResetTokens PasswordResetToken[]
 
   @@map("users")
+}
+
+/// A revocable JWT-backed session, keyed by the token's own `sid` claim — lets a user see and
+/// sign out individual devices without making the whole auth scheme stateful.
+model UserSession {
+  id         String    @id @default(uuid())
+  userId     String
+  createdAt  DateTime  @default(now())
+  lastSeenAt DateTime  @default(now())
+  userAgent  String?
+  ipAddress  String?
+  revokedAt  DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_sessions")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
 }
 
 model Membership {
@@ -1010,6 +1058,7 @@ model Project {
   lienWaivers              LienWaiver[]
   bidRequests              BidRequest[]
   materialRfqs             MaterialRfq[]
+  serviceContracts         ServiceContract[]
 
   @@index([companyId])
   @@map("projects")
@@ -1648,6 +1697,7 @@ model Client {
   reminders         ClientReminder[]
   portalLoginTokens ClientPortalLoginToken[]
   warrantyClaims    WarrantyClaim[]
+  serviceContracts  ServiceContract[]
 
   @@index([companyId])
   @@index([ownerWorkerId])
@@ -1738,6 +1788,7 @@ model Worker {
   resourceAssignments      ResourceAssignment[]
   certifications           WorkerCertification[]
   timeOffRequests          TimeOffRequest[]
+  serviceVisits            ServiceVisit[]
 
   @@index([companyId])
   @@map("workers")
@@ -2115,6 +2166,55 @@ model WarrantyClaim {
   @@index([projectId])
   @@index([companyId])
   @@map("warranty_claims")
+}
+
+/// A recurring maintenance agreement beyond the initial warranty window — e.g. quarterly HVAC
+/// service. nextVisitDate drives the reminder job (see ServiceVisitsSchedulerService) and is
+/// advanced whenever a ServiceVisit under this contract is scheduled.
+model ServiceContract {
+  id              String   @id @default(uuid())
+  companyId       String
+  projectId       String
+  clientId        String
+  title           String
+  frequencyMonths Int
+  startDate       DateTime
+  nextVisitDate   DateTime
+  active          Boolean  @default(true)
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  company Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  client  Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  visits  ServiceVisit[]
+
+  @@index([companyId])
+  @@index([projectId])
+  @@map("service_contracts")
+}
+
+model ServiceVisit {
+  id                  String    @id @default(uuid())
+  serviceContractId   String
+  companyId           String
+  scheduledDate       DateTime
+  completedAt         DateTime?
+  notes               String?
+  technicianWorkerId  String?
+  /// Unauthenticated token embedded in the post-visit satisfaction survey link.
+  feedbackToken       String    @unique
+  satisfactionRating  Int?
+  satisfactionComment String?
+  createdAt           DateTime  @default(now())
+
+  serviceContract ServiceContract @relation(fields: [serviceContractId], references: [id], onDelete: Cascade)
+  company         Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  technician      Worker?         @relation(fields: [technicianWorkerId], references: [id], onDelete: SetNull)
+
+  @@index([serviceContractId])
+  @@index([companyId])
+  @@map("service_visits")
 }
 
 /// Threaded discussion on a Task/Rfi/PunchListItem — same "one nullable FK column per target

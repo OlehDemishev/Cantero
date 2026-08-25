@@ -632,6 +632,49 @@ export class EstimatesService {
     return this.storage.read(estimate.signatureImageKey);
   }
 
+  /**
+   * "Companies who used X also used Y" for rate items — a co-occurrence heuristic over the
+   * company's own approved-estimate history, not a real ML model. With no lines yet on this
+   * estimate, falls back to the company's most-used rate items overall so a blank estimate still
+   * gets useful suggestions.
+   */
+  async suggestedLines(companyId: string, estimateId: string, limit = 8) {
+    const estimate = await this.findOrThrow(companyId, estimateId);
+    const currentItemIds = new Set(estimate.lines.map((l) => l.rateCatalogItemId));
+
+    let siblingLines: { rateCatalogItemId: string }[];
+    if (currentItemIds.size === 0) {
+      siblingLines = await this.prisma.estimateLine.findMany({
+        where: { estimate: { companyId, status: "approved" } },
+        select: { rateCatalogItemId: true },
+      });
+    } else {
+      const matches = await this.prisma.estimateLine.findMany({
+        where: { estimate: { companyId, status: "approved" }, rateCatalogItemId: { in: [...currentItemIds] } },
+        select: { estimateId: true },
+      });
+      siblingLines = await this.prisma.estimateLine.findMany({
+        where: { estimateId: { in: [...new Set(matches.map((m) => m.estimateId))] } },
+        select: { rateCatalogItemId: true },
+      });
+    }
+
+    const counts = new Map<string, number>();
+    for (const line of siblingLines) {
+      if (currentItemIds.has(line.rateCatalogItemId)) continue;
+      counts.set(line.rateCatalogItemId, (counts.get(line.rateCatalogItemId) ?? 0) + 1);
+    }
+
+    const rankedIds = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit);
+    if (rankedIds.length === 0) return [];
+
+    const items = await this.prisma.rateCatalogItem.findMany({ where: { id: { in: rankedIds.map(([id]) => id) } } });
+    const itemById = new Map(items.map((i) => [i.id, i]));
+    return rankedIds
+      .map(([id, count]) => ({ item: itemById.get(id), count }))
+      .filter((r): r is { item: NonNullable<typeof r.item>; count: number } => !!r.item);
+  }
+
   private async findOrThrow(companyId: string, id: string) {
     const estimate = await this.prisma.estimate.findFirst({
       where: { id, companyId },

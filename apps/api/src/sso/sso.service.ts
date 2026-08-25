@@ -7,6 +7,7 @@ import { SAML } from "@node-saml/node-saml";
 import type { AuthUser, UpdateSsoConfigInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
+import { SessionsService, type SessionMeta } from "../common/sessions/sessions.service";
 
 interface SsoConfig {
   ssoDomain: string | null;
@@ -22,6 +23,7 @@ export class SsoService {
     private readonly audit: AuditService,
     private readonly config: ConfigService,
     private readonly jwt: JwtService,
+    private readonly sessions: SessionsService,
   ) {}
 
   async getConfig(companyId: string) {
@@ -82,7 +84,7 @@ export class SsoService {
   }
 
   /** Validates the IdP's SAML response, just-in-time provisions the user (as "worker") on first sign-in, and returns our own access token. */
-  async handleAcs(companyId: string, samlResponse: string): Promise<{ accessToken: string }> {
+  async handleAcs(companyId: string, samlResponse: string, meta: SessionMeta): Promise<{ accessToken: string }> {
     const company = await this.prisma.company.findUnique({ where: { id: companyId } });
     if (!company?.ssoEntryPoint || !company.ssoIssuer || !company.ssoCert) {
       throw new NotFoundException("SSO isn't configured for this company");
@@ -126,6 +128,7 @@ export class SsoService {
     }
 
     const membership = user.memberships[0];
+    const sid = await this.sessions.create(user.id, meta);
     const accessToken = this.jwt.sign({
       userId: user.id,
       companyId,
@@ -133,6 +136,7 @@ export class SsoService {
       name: user.name,
       role: membership.role,
       additionalRoles: membership.customRole?.basePermissions,
+      sid,
     } satisfies AuthUser);
 
     return { accessToken };

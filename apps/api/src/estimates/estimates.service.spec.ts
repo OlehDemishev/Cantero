@@ -239,3 +239,72 @@ describe("EstimatesService — approval chains", () => {
     );
   });
 });
+
+describe("EstimatesService.suggestedLines", () => {
+  let service: EstimatesService;
+  let prisma: {
+    estimate: { findFirst: jest.Mock };
+    estimateLine: { findMany: jest.Mock };
+    rateCatalogItem: { findMany: jest.Mock };
+  };
+
+  beforeEach(async () => {
+    prisma = {
+      estimate: { findFirst: jest.fn() },
+      estimateLine: { findMany: jest.fn() },
+      rateCatalogItem: { findMany: jest.fn() },
+    };
+
+    const module = await Test.createTestingModule({
+      providers: [
+        EstimatesService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: PdfService, useValue: { render: jest.fn() } },
+        { provide: StorageService, useValue: { save: jest.fn(), read: jest.fn() } },
+        { provide: AuditService, useValue: { record: jest.fn(), list: jest.fn() } },
+        { provide: ConfigService, useValue: { get: jest.fn(), getOrThrow: jest.fn() } },
+        { provide: MailService, useValue: { send: jest.fn() } },
+        { provide: WebhooksService, useValue: { trigger: jest.fn() } },
+      ],
+    }).compile();
+
+    service = module.get(EstimatesService);
+  });
+
+  it("falls back to company-wide popularity when the estimate has no lines yet", async () => {
+    prisma.estimate.findFirst.mockResolvedValue({ id: "e1", companyId: COMPANY_A, lines: [], sections: [], requirements: [], project: null });
+    prisma.estimateLine.findMany.mockResolvedValue([
+      { rateCatalogItemId: "item-a" },
+      { rateCatalogItemId: "item-a" },
+      { rateCatalogItemId: "item-b" },
+    ]);
+    prisma.rateCatalogItem.findMany.mockResolvedValue([
+      { id: "item-a", name: "Tile floor" },
+      { id: "item-b", name: "Paint wall" },
+    ]);
+
+    const result = await service.suggestedLines(COMPANY_A, "e1");
+
+    expect(result[0].item.id).toBe("item-a");
+    expect(result[0].count).toBe(2);
+  });
+
+  it("excludes rate items already on the estimate", async () => {
+    prisma.estimate.findFirst.mockResolvedValue({
+      id: "e1",
+      companyId: COMPANY_A,
+      lines: [{ rateCatalogItemId: "item-a" }],
+      sections: [],
+      requirements: [],
+      project: null,
+    });
+    prisma.estimateLine.findMany
+      .mockResolvedValueOnce([{ estimateId: "other-estimate" }])
+      .mockResolvedValueOnce([{ rateCatalogItemId: "item-a" }, { rateCatalogItemId: "item-c" }]);
+    prisma.rateCatalogItem.findMany.mockResolvedValue([{ id: "item-c", name: "Grout" }]);
+
+    const result = await service.suggestedLines(COMPANY_A, "e1");
+
+    expect(result.map((r) => r.item.id)).toEqual(["item-c"]);
+  });
+});

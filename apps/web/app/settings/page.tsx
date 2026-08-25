@@ -12,6 +12,9 @@ import { LeadFormSettingsPanel } from "@/components/lead-form-settings-panel";
 import { SsoSettingsPanel } from "@/components/sso-settings-panel";
 import { DataPrivacyPanel } from "@/components/data-privacy-panel";
 import { AccountingSyncPanel } from "@/components/accounting-sync-panel";
+import { TwoFactorSettingsPanel } from "@/components/two-factor-settings-panel";
+import { SessionsPanel } from "@/components/sessions-panel";
+import { IntegrationsPanel } from "@/components/integrations-panel";
 
 interface Company {
   name: string;
@@ -1246,6 +1249,12 @@ export default function SettingsPage() {
         <SsoSettingsPanel canManage={isManager} />
 
         <AccountingSyncPanel canManage={canManageAccounting} />
+
+        <TwoFactorSettingsPanel />
+
+        <SessionsPanel />
+
+        <IntegrationsPanel canManage={isManager} />
 
         <DataPrivacyPanel canManage={isManager} />
 

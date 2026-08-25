@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { WeatherService } from "../weather/weather.service";
+import { BudgetService } from "../finance/budget.service";
 
 export type Severity = "warning" | "critical";
 
@@ -18,7 +19,8 @@ export interface NotificationItem {
     | "mention"
     | "subcontractor_document_expiring"
     | "worker_certification_expiring"
-    | "weather_risk";
+    | "weather_risk"
+    | "budget_overrun";
   severity: Severity;
   title: string;
   body: string;
@@ -29,6 +31,9 @@ export interface NotificationItem {
 const REMINDER_LOOKAHEAD_DAYS = 3;
 const DOCUMENT_EXPIRY_LOOKAHEAD_DAYS = 30;
 const WEATHER_RISK_LOOKAHEAD_DAYS = 7;
+/** A project at or above this fraction of its budgeted grand total (materials + labor +
+ * subcontractor actuals combined) gets flagged — "at risk", not necessarily already over. */
+const BUDGET_OVERRUN_THRESHOLD = 0.9;
 
 /**
  * Notifications are fully derived from live data, not a persisted table —
@@ -42,6 +47,7 @@ export class NotificationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly weather: WeatherService,
+    private readonly budget: BudgetService,
   ) {}
 
   async list(companyId: string, userId: string) {
@@ -58,6 +64,7 @@ export class NotificationsService {
       expiringSubcontractorDocuments,
       expiringWorkerCertifications,
       weatherRisks,
+      budgetOverruns,
       membership,
     ] = await Promise.all([
       this.lowStockItems(companyId),
@@ -72,6 +79,7 @@ export class NotificationsService {
       this.expiringSubcontractorDocuments(companyId),
       this.expiringWorkerCertifications(companyId),
       this.weatherRiskTasks(companyId),
+      this.budgetOverruns(companyId),
       this.prisma.membership.findFirst({ where: { companyId, userId } }),
     ]);
 
@@ -88,6 +96,7 @@ export class NotificationsService {
       ...expiringSubcontractorDocuments,
       ...expiringWorkerCertifications,
       ...weatherRisks,
+      ...budgetOverruns,
     ].sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
 
     const lastViewedAt = membership?.notificationsLastViewedAt ?? null;
@@ -415,6 +424,34 @@ export class NotificationsService {
           occurredAt: startOfToday,
         });
       }
+    }
+    return items;
+  }
+
+  /** Flags any project whose combined actual cost (materials + labor + subcontractor) has
+   * reached BUDGET_OVERRUN_THRESHOLD of its budgeted grand total — only projects with at least
+   * one approved estimate have a budget to compare against, so unestimated projects are silent. */
+  private async budgetOverruns(companyId: string): Promise<NotificationItem[]> {
+    const projects = await this.prisma.project.findMany({ where: { companyId }, select: { id: true, name: true } });
+
+    const items: NotificationItem[] = [];
+    for (const project of projects) {
+      const b = await this.budget.getForProject(companyId, project.id);
+      if (b.grandTotalBudget <= 0) continue;
+
+      const actualTotal = b.materialsCostActual + b.laborCostActual + b.subcontractorCostActual;
+      const ratio = actualTotal / b.grandTotalBudget;
+      if (ratio < BUDGET_OVERRUN_THRESHOLD) continue;
+
+      items.push({
+        key: `budget_overrun:${project.id}`,
+        type: "budget_overrun" as const,
+        severity: (ratio >= 1 ? "critical" : "warning") as Severity,
+        title: `${project.name} is ${ratio >= 1 ? "over budget" : "close to its budget"}`,
+        body: `${Math.round(ratio * 100)}% of budget spent (${actualTotal.toFixed(2)} of ${b.grandTotalBudget.toFixed(2)})`,
+        link: `/projects/${project.id}`,
+        occurredAt: new Date(),
+      });
     }
     return items;
   }

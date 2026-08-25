@@ -5,6 +5,7 @@ import { JwtService } from "@nestjs/jwt";
 import { SsoService } from "./sso.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService } from "../common/audit/audit.service";
+import { SessionsService } from "../common/sessions/sessions.service";
 
 const validatePostResponseAsync = jest.fn();
 const getAuthorizeUrlAsync = jest.fn();
@@ -44,6 +45,7 @@ describe("SsoService", () => {
         { provide: AuditService, useValue: audit },
         { provide: ConfigService, useValue: { get: jest.fn().mockReturnValue(undefined) } },
         { provide: JwtService, useValue: { sign: jest.fn().mockReturnValue("signed-jwt") } },
+        { provide: SessionsService, useValue: { create: jest.fn().mockResolvedValue("session-1") } },
       ],
     }).compile();
 
@@ -101,14 +103,14 @@ describe("SsoService", () => {
     it("rejects when SSO isn't configured for the company", async () => {
       prisma.company.findUnique.mockResolvedValue({ id: COMPANY_A, ssoEntryPoint: null });
 
-      await expect(service.handleAcs(COMPANY_A, "response")).rejects.toThrow(NotFoundException);
+      await expect(service.handleAcs(COMPANY_A, "response", {})).rejects.toThrow(NotFoundException);
     });
 
     it("rejects an assertion whose email domain doesn't match the company's configured SSO domain", async () => {
       prisma.company.findUnique.mockResolvedValue(configuredCompany);
       validatePostResponseAsync.mockResolvedValue({ profile: { nameID: "user@other.com", email: "user@other.com" } });
 
-      await expect(service.handleAcs(COMPANY_A, "response")).rejects.toThrow(BadRequestException);
+      await expect(service.handleAcs(COMPANY_A, "response", {})).rejects.toThrow(BadRequestException);
       expect(prisma.user.create).not.toHaveBeenCalled();
     });
 
@@ -117,7 +119,7 @@ describe("SsoService", () => {
       validatePostResponseAsync.mockResolvedValue({ profile: { nameID: "user@acme.com", email: "user@acme.com" } });
       prisma.user.findUnique.mockResolvedValue({ id: "existing-user", email: "user@acme.com", memberships: [] });
 
-      await expect(service.handleAcs(COMPANY_A, "response")).rejects.toThrow(BadRequestException);
+      await expect(service.handleAcs(COMPANY_A, "response", {})).rejects.toThrow(BadRequestException);
     });
 
     it("just-in-time provisions a new user as worker on first sign-in", async () => {
@@ -131,7 +133,7 @@ describe("SsoService", () => {
         memberships: [{ role: "worker" }],
       });
 
-      const result = await service.handleAcs(COMPANY_A, "response");
+      const result = await service.handleAcs(COMPANY_A, "response", {});
 
       expect(result.accessToken).toBe("signed-jwt");
       expect(prisma.user.create).toHaveBeenCalledWith(
@@ -154,7 +156,7 @@ describe("SsoService", () => {
         memberships: [{ role: "admin" }],
       });
 
-      const result = await service.handleAcs(COMPANY_A, "response");
+      const result = await service.handleAcs(COMPANY_A, "response", {});
 
       expect(result.accessToken).toBe("signed-jwt");
       expect(prisma.user.create).not.toHaveBeenCalled();

@@ -22,6 +22,7 @@ import { SubcontractorAssignmentsPanel } from "@/components/subcontractor-assign
 import { BidRequestsPanel } from "@/components/bid-requests-panel";
 import { DocumentsPanel } from "@/components/documents-panel";
 import { GalleryPanel } from "@/components/gallery-panel";
+import { ProjectHealthBadge } from "@/components/project-health-badge";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
@@ -94,7 +95,10 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
       <a href="/projects" className="text-sm text-gray-500 hover:underline">
         ← {tc("back")}
       </a>
-      <h1 className="mt-2 text-2xl font-semibold">{project?.name ?? tc("loading")}</h1>
+      <div className="mt-2 flex items-center gap-3">
+        <h1 className="text-2xl font-semibold">{project?.name ?? tc("loading")}</h1>
+        {project && <ProjectHealthBadge projectId={projectId} />}
+      </div>
       {project?.client && <p className="text-sm text-gray-500">{project.client.name}</p>}
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">

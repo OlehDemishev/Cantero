@@ -44,7 +44,8 @@
     "resourcePlanning": "Planificación de recursos",
     "templates": "Plantillas",
     "subcontractors": "Subcontratistas",
-    "expenses": "Gastos"
+    "expenses": "Gastos",
+    "serviceContracts": "Contratos de servicio"
   },
   "auth": {
     "signupTitle": "Crea tu cuenta de Cantero",
@@ -70,7 +71,19 @@
     "useSsoPasswordInstead": "Iniciar sesión con contraseña",
     "ssoError": "No se pudo iniciar el inicio de sesión SSO — verifique el dominio de correo o contacte a su administrador.",
     "ssoSigningIn": "Iniciando sesión…",
-    "backToLogin": "Volver al inicio de sesión"
+    "backToLogin": "Volver al inicio de sesión",
+    "forgotPassword": "¿Olvidó su contraseña?",
+    "forgotPasswordTitle": "Restablecer contraseña",
+    "forgotPasswordHint": "Introduzca su correo electrónico y le enviaremos un enlace para restablecerla.",
+    "forgotPasswordSent": "Si existe una cuenta con ese correo, un enlace para restablecerla está en camino.",
+    "sendResetLink": "Enviar enlace",
+    "resetPasswordTitle": "Establecer nueva contraseña",
+    "resetPasswordDone": "Su contraseña se ha restablecido. Ya puede iniciar sesión.",
+    "resetPasswordInvalidLink": "Este enlace no es válido o ha caducado.",
+    "newPassword": "Nueva contraseña",
+    "resetPassword": "Restablecer contraseña",
+    "twoFactorCode": "Código de autenticación",
+    "verify": "Verificar"
   },
   "billing": {
     "title": "Activa tu suscripción",
@@ -95,7 +108,8 @@
     "stockValue": "Valor de existencias",
     "lowStockCount": "stock bajo",
     "workersTotal": "Trabajadores",
-    "fieldMode": "Modo de campo"
+    "fieldMode": "Modo de campo",
+    "triageTitle": "Requiere atención"
   },
   "settings": {
     "title": "Ajustes",
@@ -250,7 +264,10 @@
     "viewEstimates": "Presupuestos de este proyecto",
     "searchPlaceholder": "Buscar por nombre o dirección…",
     "allClients": "Todos los clientes",
-    "noMatches": "Ningún proyecto coincide con estos filtros."
+    "noMatches": "Ningún proyecto coincide con estos filtros.",
+    "health_good": "En curso",
+    "health_watch": "A vigilar",
+    "health_at_risk": "En riesgo"
   },
   "clients": {
     "title": "Clientes",
@@ -446,7 +463,8 @@
     "clearSignature": "Borrar",
     "signatureRequired": "Escriba su nombre y dibuje su firma para aprobar.",
     "signature": "Firma",
-    "signedBy": "Firmado por {name}"
+    "signedBy": "Firmado por {name}",
+    "suggestedLines": "Líneas sugeridas"
   },
   "invoices": {
     "title": "Facturas",
@@ -1403,5 +1421,62 @@
     "pending": "Pendiente",
     "approved": "Aprobada",
     "denied": "Rechazada"
+  },
+  "twoFactor": {
+    "title": "Autenticación de dos factores",
+    "hint": "Exige un código de una app de autenticación al iniciar sesión, además de la contraseña.",
+    "enable": "Activar 2FA",
+    "backupCodesTitle": "Guarde sus códigos de respaldo",
+    "backupCodesHint": "Cada código se puede usar una vez si pierde acceso a su app de autenticación. Guárdelos en un lugar seguro — no se volverán a mostrar.",
+    "scanHint": "Escanee esto en su app de autenticación, o introduzca el código manualmente:",
+    "codeLabel": "Introduzca el código de 6 dígitos de su app",
+    "confirm": "Confirmar",
+    "passwordToDisable": "Contraseña",
+    "disable": "Desactivar 2FA",
+    "invalidCode": "Código inválido"
+  },
+  "sessions": {
+    "title": "Sesiones activas",
+    "hint": "Dispositivos actualmente conectados a su cuenta.",
+    "unknownDevice": "Dispositivo desconocido",
+    "lastSeen": "activo por última vez {date}",
+    "revoke": "Cerrar sesión"
+  },
+  "integrations": {
+    "title": "Integraciones",
+    "hint": "Conecte notificaciones de chat y un feed de calendario suscribible.",
+    "slackWebhookUrl": "URL del webhook de Slack",
+    "teamsWebhookUrl": "URL del webhook de Microsoft Teams",
+    "ipAllowlist": "Lista blanca de IP",
+    "ipAllowlistHint": "Una IP o bloque CIDR por línea. Déjelo vacío para permitir cualquier IP.",
+    "calendarFeed": "Feed de calendario",
+    "calendarFeedHint": "Suscríbase a esta URL desde Google Calendar, Outlook o Apple Calendar para ver las fechas de tareas e hitos.",
+    "generateCalendarFeed": "Generar URL del feed",
+    "regenerateCalendarFeed": "Regenerar URL del feed"
+  },
+  "serviceFeedback": {
+    "title": "¿Qué le pareció su visita de servicio?",
+    "thanks": "¡Gracias por su opinión!",
+    "error": "Algo salió mal al enviar su opinión.",
+    "starRating": "{n} estrellas",
+    "comment": "Comentarios (opcional)",
+    "submit": "Enviar opinión"
+  },
+  "serviceContracts": {
+    "title": "Contratos de servicio",
+    "newContract": "Nuevo contrato",
+    "selectProject": "Seleccionar un proyecto",
+    "selectClient": "Seleccionar un cliente",
+    "frequencyMonths": "Frecuencia de visitas (meses)",
+    "startDate": "Fecha de inicio",
+    "contracts": "Contratos",
+    "nextVisit": "Próxima visita",
+    "scheduleVisit": "Programar una visita",
+    "visitDate": "Fecha de la visita",
+    "selectTechnician": "Seleccionar un técnico",
+    "schedule": "Programar",
+    "visits": "Visitas",
+    "completed": "Completada",
+    "markComplete": "Marcar como completada"
   }
 }

@@ -5,6 +5,7 @@ import { JwtService } from "@nestjs/jwt";
 import { InvitesService } from "./invites.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { MailService } from "../common/mail/mail.service";
+import { SessionsService } from "../common/sessions/sessions.service";
 
 const COMPANY_A = "company-a";
 
@@ -36,6 +37,7 @@ describe("InvitesService", () => {
         { provide: JwtService, useValue: { sign: jest.fn() } },
         { provide: ConfigService, useValue: { get: jest.fn() } },
         { provide: MailService, useValue: mail },
+        { provide: SessionsService, useValue: { create: jest.fn().mockResolvedValue("session-1") } },
       ],
     }).compile();
 
@@ -107,7 +109,7 @@ describe("InvitesService", () => {
       prisma.invite.count.mockResolvedValue(0);
 
       await expect(
-        service.accept({ token: "abc123", name: "Invitee", password: "password123" }),
+        service.accept({ token: "abc123", name: "Invitee", password: "password123" }, {}),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -120,7 +122,7 @@ describe("InvitesService", () => {
       prisma.membership.findFirst.mockResolvedValue({ id: "membership-1", userId: "user-1", companyId: COMPANY_A });
 
       await expect(
-        service.accept({ token: "abc123", name: "Invitee", password: "password123" }),
+        service.accept({ token: "abc123", name: "Invitee", password: "password123" }, {}),
       ).rejects.toThrow(ConflictException);
     });
   });

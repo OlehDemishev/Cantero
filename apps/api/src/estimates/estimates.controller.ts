@@ -45,6 +45,11 @@ export class EstimatesController {
     return this.service.get(user.companyId, id);
   }
 
+  @Get(":id/suggested-lines")
+  suggestedLines(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.suggestedLines(user.companyId, id);
+  }
+
   @Post()
   create(
     @CurrentUser() user: AuthUser,

@@ -44,7 +44,8 @@
     "resourcePlanning": "Resource planning",
     "templates": "Templates",
     "subcontractors": "Subcontractors",
-    "expenses": "Expenses"
+    "expenses": "Expenses",
+    "serviceContracts": "Service Contracts"
   },
   "auth": {
     "signupTitle": "Create your Cantero account",
@@ -70,7 +71,19 @@
     "useSsoPasswordInstead": "Sign in with a password instead",
     "ssoError": "Couldn't start SSO sign-in — check the email domain or contact your administrator.",
     "ssoSigningIn": "Signing you in…",
-    "backToLogin": "Back to sign in"
+    "backToLogin": "Back to sign in",
+    "forgotPassword": "Forgot password?",
+    "forgotPasswordTitle": "Reset your password",
+    "forgotPasswordHint": "Enter your email and we'll send you a reset link.",
+    "forgotPasswordSent": "If an account exists for that email, a reset link is on its way.",
+    "sendResetLink": "Send reset link",
+    "resetPasswordTitle": "Set a new password",
+    "resetPasswordDone": "Your password has been reset. You can now sign in.",
+    "resetPasswordInvalidLink": "This reset link is invalid or has expired.",
+    "newPassword": "New password",
+    "resetPassword": "Reset password",
+    "twoFactorCode": "Authentication code",
+    "verify": "Verify"
   },
   "billing": {
     "title": "Activate your subscription",
@@ -95,7 +108,8 @@
     "stockValue": "Stock value",
     "lowStockCount": "low stock",
     "workersTotal": "Workers",
-    "fieldMode": "Field mode"
+    "fieldMode": "Field mode",
+    "triageTitle": "Needs attention"
   },
   "settings": {
     "title": "Settings",
@@ -250,7 +264,10 @@
     "viewEstimates": "Estimates for this project",
     "searchPlaceholder": "Search by name or address…",
     "allClients": "All clients",
-    "noMatches": "No projects match these filters."
+    "noMatches": "No projects match these filters.",
+    "health_good": "On track",
+    "health_watch": "Watch",
+    "health_at_risk": "At risk"
   },
   "clients": {
     "title": "Clients",
@@ -446,7 +463,8 @@
     "clearSignature": "Clear",
     "signatureRequired": "Please type your name and draw your signature to approve.",
     "signature": "Signature",
-    "signedBy": "Signed by {name}"
+    "signedBy": "Signed by {name}",
+    "suggestedLines": "Suggested lines"
   },
   "invoices": {
     "title": "Invoices",
@@ -1403,5 +1421,62 @@
     "pending": "Pending",
     "approved": "Approved",
     "denied": "Denied"
+  },
+  "twoFactor": {
+    "title": "Two-factor authentication",
+    "hint": "Require an authenticator app code at sign-in, in addition to your password.",
+    "enable": "Enable 2FA",
+    "backupCodesTitle": "Save your backup codes",
+    "backupCodesHint": "Each code can be used once if you lose access to your authenticator app. Store them somewhere safe — they won't be shown again.",
+    "scanHint": "Scan this into your authenticator app, or enter the code manually:",
+    "codeLabel": "Enter the 6-digit code from your app",
+    "confirm": "Confirm",
+    "passwordToDisable": "Password",
+    "disable": "Disable 2FA",
+    "invalidCode": "Invalid code"
+  },
+  "sessions": {
+    "title": "Active sessions",
+    "hint": "Devices currently signed in to your account.",
+    "unknownDevice": "Unknown device",
+    "lastSeen": "last active {date}",
+    "revoke": "Sign out"
+  },
+  "integrations": {
+    "title": "Integrations",
+    "hint": "Connect chat notifications and a subscribable calendar feed.",
+    "slackWebhookUrl": "Slack webhook URL",
+    "teamsWebhookUrl": "Microsoft Teams webhook URL",
+    "ipAllowlist": "IP allowlist",
+    "ipAllowlistHint": "One IP or CIDR block per line. Leave empty to allow any IP.",
+    "calendarFeed": "Calendar feed",
+    "calendarFeedHint": "Subscribe to this URL from Google Calendar, Outlook, or Apple Calendar to see task and milestone due dates.",
+    "generateCalendarFeed": "Generate feed URL",
+    "regenerateCalendarFeed": "Regenerate feed URL"
+  },
+  "serviceFeedback": {
+    "title": "How was your service visit?",
+    "thanks": "Thank you for your feedback!",
+    "error": "Something went wrong submitting your feedback.",
+    "starRating": "{n} stars",
+    "comment": "Comments (optional)",
+    "submit": "Submit feedback"
+  },
+  "serviceContracts": {
+    "title": "Service Contracts",
+    "newContract": "New contract",
+    "selectProject": "Select a project",
+    "selectClient": "Select a client",
+    "frequencyMonths": "Visit frequency (months)",
+    "startDate": "Start date",
+    "contracts": "Contracts",
+    "nextVisit": "Next visit",
+    "scheduleVisit": "Schedule a visit",
+    "visitDate": "Visit date",
+    "selectTechnician": "Select a technician",
+    "schedule": "Schedule",
+    "visits": "Visits",
+    "completed": "Completed",
+    "markComplete": "Mark complete"
   }
 }

@@ -71,6 +71,12 @@ export class CompanyController {
     return this.service.cancelDeletionRequest(user.companyId, { userId: user.userId, name: user.name });
   }
 
+  @Roles("owner", "admin")
+  @Post("calendar-feed-token")
+  generateCalendarFeedToken(@CurrentUser() user: AuthUser) {
+    return this.service.generateCalendarFeedToken(user.companyId, { userId: user.userId, name: user.name });
+  }
+
   @Roles("owner")
   @Post("franchise-link-code")
   generateFranchiseLinkCode(@CurrentUser() user: AuthUser) {

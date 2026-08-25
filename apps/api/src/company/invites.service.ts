@@ -6,6 +6,7 @@ import { ConfigService } from "@nestjs/config";
 import type { AcceptInviteInput, AuthUser, CreateInviteInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { MailService } from "../common/mail/mail.service";
+import { SessionsService, type SessionMeta } from "../common/sessions/sessions.service";
 
 const INVITE_TTL_DAYS = 14;
 const BCRYPT_ROUNDS = 12;
@@ -17,6 +18,7 @@ export class InvitesService {
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
     private readonly mail: MailService,
+    private readonly sessions: SessionsService,
   ) {}
 
   listPending(companyId: string) {
@@ -77,7 +79,7 @@ export class InvitesService {
     return invite;
   }
 
-  async accept(input: AcceptInviteInput): Promise<{ accessToken: string; companyId: string }> {
+  async accept(input: AcceptInviteInput, meta: SessionMeta): Promise<{ accessToken: string; companyId: string }> {
     const invite = await this.getByToken(input.token);
     await this.assertSeatAvailable(invite.companyId);
 
@@ -102,12 +104,14 @@ export class InvitesService {
       return { user, membership };
     });
 
+    const sid = await this.sessions.create(user.id, meta);
     const authUser: AuthUser = {
       userId: user.id,
       companyId: invite.companyId,
       email: user.email,
       name: user.name,
       role: membership.role,
+      sid,
     };
     return { accessToken: this.jwtService.sign(authUser), companyId: invite.companyId };
   }

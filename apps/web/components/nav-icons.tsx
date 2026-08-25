@@ -271,3 +271,11 @@ export function ExpensesIcon(props: SVGProps<SVGSVGElement>) {
     </Icon>
   );
 }
+
+export function ServiceContractsIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M12.5 3.5a3 3 0 0 0-4 4L3 13v2.5h2.5L11 10a3 3 0 0 0 4-4l-2 2-2-1-1-2z" />
+    </Icon>
+  );
+}

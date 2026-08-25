@@ -1,6 +1,7 @@
 export * from "./roles";
 export * from "./auth";
 export * from "./company";
+export * from "./service";
 export * from "./estimates";
 export * from "./materials";
 export * from "./scheduling";

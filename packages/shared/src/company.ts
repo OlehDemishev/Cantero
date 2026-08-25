@@ -34,6 +34,9 @@ export const updateCompanySchema = z.object({
   punchListSlaDays: z.number().int().min(1).max(365).nullable().optional(),
   invoiceRemindersEnabled: z.boolean().optional(),
   reviewRequestUrl: z.string().url().nullable().optional(),
+  ipAllowlist: z.array(z.string().min(1).max(64)).max(50).optional(),
+  slackWebhookUrl: z.string().url().nullable().optional(),
+  teamsWebhookUrl: z.string().url().nullable().optional(),
 });
 export type UpdateCompanyInput = z.infer<typeof updateCompanySchema>;
 
