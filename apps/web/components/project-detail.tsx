@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
+import { CommentsThread } from "@/components/comments-thread";
 import { SchedulingPanel } from "@/components/scheduling-panel";
 import { DailyLogsPanel } from "@/components/daily-logs-panel";
 import { WeatherForecastPanel } from "@/components/weather-forecast-panel";
@@ -101,6 +102,13 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
         {project && <ProjectHealthBadge projectId={projectId} />}
       </div>
       {project?.client && <p className="text-sm text-gray-500">{project.client.name}</p>}
+
+      <div className="mt-6">
+        <h2 className="mb-3 text-sm font-semibold text-gray-700">{tp("projectChannel")}</h2>
+        <div className="card">
+          <CommentsThread param="projectId" entityId={projectId} />
+        </div>
+      </div>
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="card lg:col-span-1">

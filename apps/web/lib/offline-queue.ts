@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { apiFetch } from "./api-client";
+import { apiFetch, apiUpload } from "./api-client";
 import { withStore, MUTATIONS_STORE } from "./offline-db";
 
 export interface QueuedMutation {
@@ -11,6 +11,9 @@ export interface QueuedMutation {
   method: "POST" | "PATCH";
   body: unknown;
   createdAt: number;
+  /** Set only for a queued file upload — IndexedDB can store a Blob directly via structured clone. */
+  file?: Blob;
+  fileName?: string;
 }
 
 const QUEUE_CHANGED_EVENT = "cantero-offline-queue-changed";
@@ -24,6 +27,15 @@ function notifyQueueChanged(): void {
 export async function queueMutation(kind: string, path: string, method: "POST" | "PATCH", body: unknown): Promise<void> {
   await withStore(MUTATIONS_STORE, "readwrite", (store) =>
     store.add({ kind, path, method, body, createdAt: Date.now() } as QueuedMutation),
+  );
+  notifyQueueChanged();
+}
+
+/** Queues a file upload for later delivery (e.g. an expense receipt photo taken while offline) — same
+ * "only call after a real network failure" contract as queueMutation. */
+export async function queueFileUpload(kind: string, path: string, file: Blob, fileName: string): Promise<void> {
+  await withStore(MUTATIONS_STORE, "readwrite", (store) =>
+    store.add({ kind, path, method: "POST", body: null, file, fileName, createdAt: Date.now() } as QueuedMutation),
   );
   notifyQueueChanged();
 }
@@ -64,6 +76,25 @@ export async function submitOrQueue<T = unknown>(
   }
 }
 
+/** Upload variant of submitOrQueue — tries the network first, queues the Blob itself on a real
+ * network failure instead of silently dropping it (the previous behavior for e.g. expense receipts). */
+export async function submitOrQueueUpload<T = unknown>(
+  kind: string,
+  path: string,
+  file: File,
+): Promise<{ queued: boolean; data?: T }> {
+  try {
+    const data = await apiUpload<T>(path, file);
+    return { queued: false, data };
+  } catch (err) {
+    if (err instanceof TypeError) {
+      await queueFileUpload(kind, path, file, file.name);
+      return { queued: true };
+    }
+    throw err;
+  }
+}
+
 let flushInFlight: Promise<{ flushed: number; remaining: number }> | null = null;
 
 /**
@@ -79,7 +110,11 @@ export async function flushQueue(): Promise<{ flushed: number; remaining: number
     let flushed = 0;
     for (const item of items) {
       try {
-        await apiFetch(item.path, { method: item.method, body: JSON.stringify(item.body) });
+        if (item.file) {
+          await apiUpload(item.path, new File([item.file], item.fileName ?? "upload", { type: item.file.type }));
+        } else {
+          await apiFetch(item.path, { method: item.method, body: JSON.stringify(item.body) });
+        }
         await removeQueued(item.id);
         flushed++;
       } catch {

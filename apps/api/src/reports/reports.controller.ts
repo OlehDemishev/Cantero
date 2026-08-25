@@ -1,4 +1,4 @@
-import { Controller, Get, Header } from "@nestjs/common";
+import { Controller, Get, Header, Query } from "@nestjs/common";
 import type { AuthUser } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ReportsService } from "./reports.service";
@@ -45,6 +45,11 @@ export class ReportsController {
   @Get("revenue-trend")
   revenueTrend(@CurrentUser() user: AuthUser) {
     return this.service.revenueTrend(user.companyId);
+  }
+
+  @Get("period-comparison")
+  periodComparison(@CurrentUser() user: AuthUser, @Query("months") months?: string) {
+    return this.service.periodComparison(user.companyId, months ? Number(months) : undefined);
   }
 
   @Get("tax-summary")

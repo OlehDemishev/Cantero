@@ -110,7 +110,27 @@
     "lowStockCount": "low stock",
     "workersTotal": "Workers",
     "fieldMode": "Field mode",
-    "triageTitle": "Needs attention"
+    "triageTitle": "Needs attention",
+    "myWidgets": "My widgets",
+    "downloadDashboardPdf": "Download PDF summary",
+    "addWidget": "Add widget",
+    "noWidgets": "No widgets yet — add one above",
+    "noData": "No data",
+    "selectCustomReport": "Select a saved report",
+    "widgetType_revenue_trend": "Revenue trend",
+    "widgetType_cash_flow_forecast": "Cash flow forecast",
+    "widgetType_project_margins": "Project margins",
+    "widgetType_portfolio_summary": "Portfolio summary",
+    "widgetType_invoice_aging": "Invoice aging",
+    "widgetType_warehouse_turnover": "Warehouse turnover",
+    "widgetType_labor_cost": "Labor cost",
+    "widgetType_custom_report": "Custom report",
+    "widgetIn": "In",
+    "widgetOut": "Out",
+    "widgetNet": "Net",
+    "widgetProjects": "Projects",
+    "widgetAtRisk": "At risk",
+    "widgetOpenRfis": "Open RFIs"
   },
   "settings": {
     "title": "Settings",
@@ -275,7 +295,8 @@
     "noMatches": "No projects match these filters.",
     "health_good": "On track",
     "health_watch": "Watch",
-    "health_at_risk": "At risk"
+    "health_at_risk": "At risk",
+    "projectChannel": "Project channel"
   },
   "clients": {
     "title": "Clients",
@@ -409,7 +430,12 @@
     "category_other": "Other",
     "category_insurance_certificate": "Insurance certificate",
     "category_gallery_before": "Gallery (before)",
-    "category_gallery_after": "Gallery (after)"
+    "category_gallery_after": "Gallery (after)",
+    "tagFilterPlaceholder": "Filter by tag",
+    "editTags": "Edit tags",
+    "tagsPlaceholder": "Tags, comma separated",
+    "compareVersions": "Compare versions",
+    "noPreview": "No preview available for this file type"
   },
   "rateCatalog": {
     "title": "Rate catalog",
@@ -815,7 +841,9 @@
     "punch": "Punch",
     "cachedFrom": "Showing cached data from {time}",
     "loggedOutsideGeofence": "Saved — but logged outside the project's geofence",
-    "expenses": "Expenses"
+    "expenses": "Expenses",
+    "queuedOfflineNoReceipt": "Saved offline — the receipt photo will need to be added once you're back online",
+    "receiptQueuedOffline": "Saved — receipt photo will upload once you're back online"
   },
   "subcontractors": {
     "title": "Subcontractor costs",
@@ -919,7 +947,22 @@
   "notifications": {
     "title": "Notifications",
     "loading": "Loading…",
-    "empty": "You're all caught up."
+    "empty": "You're all caught up.",
+    "markAllRead": "Mark all read",
+    "markRead": "Mark read",
+    "type_low_stock": "Low stock",
+    "type_reminder_due": "Reminders",
+    "type_invoice_overdue": "Overdue invoices",
+    "type_rfi_open": "Open RFIs",
+    "type_punch_list_open": "Punch list",
+    "type_submittal_pending": "Submittals",
+    "type_safety_incident": "Safety incidents",
+    "type_warranty_claim_open": "Warranty claims",
+    "type_mention": "Mentions",
+    "type_subcontractor_document_expiring": "Subcontractor documents",
+    "type_worker_certification_expiring": "Certifications",
+    "type_weather_risk": "Weather risk",
+    "type_budget_overrun": "Budget overruns"
   },
   "search": {
     "placeholder": "Search everything…",

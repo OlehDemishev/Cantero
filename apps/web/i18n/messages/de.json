@@ -110,7 +110,27 @@
     "lowStockCount": "niedriger Bestand",
     "workersTotal": "Mitarbeiter",
     "fieldMode": "Vor-Ort-Modus",
-    "triageTitle": "Braucht Aufmerksamkeit"
+    "triageTitle": "Braucht Aufmerksamkeit",
+    "myWidgets": "Meine Widgets",
+    "downloadDashboardPdf": "PDF-Zusammenfassung herunterladen",
+    "addWidget": "Widget hinzufügen",
+    "noWidgets": "Noch keine Widgets — fügen Sie oben eines hinzu",
+    "noData": "Keine Daten",
+    "selectCustomReport": "Gespeicherten Bericht auswählen",
+    "widgetType_revenue_trend": "Umsatzentwicklung",
+    "widgetType_cash_flow_forecast": "Cashflow-Prognose",
+    "widgetType_project_margins": "Projektmargen",
+    "widgetType_portfolio_summary": "Portfolio-Übersicht",
+    "widgetType_invoice_aging": "Rechnungsfälligkeit",
+    "widgetType_warehouse_turnover": "Lagerumschlag",
+    "widgetType_labor_cost": "Lohnkosten",
+    "widgetType_custom_report": "Benutzerdefinierter Bericht",
+    "widgetIn": "Eingang",
+    "widgetOut": "Ausgang",
+    "widgetNet": "Netto",
+    "widgetProjects": "Projekte",
+    "widgetAtRisk": "Gefährdet",
+    "widgetOpenRfis": "Offene Anfragen"
   },
   "settings": {
     "title": "Einstellungen",
@@ -275,7 +295,8 @@
     "noMatches": "Keine Projekte entsprechen diesen Filtern.",
     "health_good": "Im Plan",
     "health_watch": "Beobachten",
-    "health_at_risk": "Gefährdet"
+    "health_at_risk": "Gefährdet",
+    "projectChannel": "Projekt-Kanal"
   },
   "clients": {
     "title": "Kunden",
@@ -409,7 +430,12 @@
     "category_other": "Sonstiges",
     "category_insurance_certificate": "Versicherungsnachweis",
     "category_gallery_before": "Galerie (vorher)",
-    "category_gallery_after": "Galerie (nachher)"
+    "category_gallery_after": "Galerie (nachher)",
+    "tagFilterPlaceholder": "Nach Tag filtern",
+    "editTags": "Tags bearbeiten",
+    "tagsPlaceholder": "Tags, durch Komma getrennt",
+    "compareVersions": "Versionen vergleichen",
+    "noPreview": "Keine Vorschau für diesen Dateityp verfügbar"
   },
   "rateCatalog": {
     "title": "Leistungskatalog",
@@ -815,7 +841,9 @@
     "punch": "Mängel",
     "cachedFrom": "Zeigt zwischengespeicherte Daten von {time}",
     "loggedOutsideGeofence": "Gespeichert — jedoch außerhalb des Geofence des Projekts erfasst",
-    "expenses": "Spesen"
+    "expenses": "Spesen",
+    "queuedOfflineNoReceipt": "Offline gespeichert — das Belegfoto muss hinzugefügt werden, sobald Sie wieder online sind",
+    "receiptQueuedOffline": "Gespeichert — Belegfoto wird hochgeladen, sobald Sie wieder online sind"
   },
   "subcontractors": {
     "title": "Nachunternehmerkosten",
@@ -919,7 +947,22 @@
   "notifications": {
     "title": "Benachrichtigungen",
     "loading": "Lädt…",
-    "empty": "Alles erledigt."
+    "empty": "Alles erledigt.",
+    "markAllRead": "Alle als gelesen markieren",
+    "markRead": "Als gelesen markieren",
+    "type_low_stock": "Niedriger Bestand",
+    "type_reminder_due": "Erinnerungen",
+    "type_invoice_overdue": "Überfällige Rechnungen",
+    "type_rfi_open": "Offene Anfragen",
+    "type_punch_list_open": "Mängelliste",
+    "type_submittal_pending": "Freigaben",
+    "type_safety_incident": "Sicherheitsvorfälle",
+    "type_warranty_claim_open": "Gewährleistungsfälle",
+    "type_mention": "Erwähnungen",
+    "type_subcontractor_document_expiring": "Nachunternehmer-Dokumente",
+    "type_worker_certification_expiring": "Zertifizierungen",
+    "type_weather_risk": "Wetterrisiko",
+    "type_budget_overrun": "Budgetüberschreitungen"
   },
   "search": {
     "placeholder": "Alles durchsuchen…",

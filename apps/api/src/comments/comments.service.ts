@@ -7,6 +7,7 @@ export interface CommentListFilter {
   taskId?: string;
   rfiId?: string;
   punchListItemId?: string;
+  projectId?: string;
 }
 
 @Injectable()
@@ -24,6 +25,7 @@ export class CommentsService {
         ...(filter.taskId ? { taskId: filter.taskId } : {}),
         ...(filter.rfiId ? { rfiId: filter.rfiId } : {}),
         ...(filter.punchListItemId ? { punchListItemId: filter.punchListItemId } : {}),
+        ...(filter.projectId ? { projectId: filter.projectId } : {}),
       },
       include: { mentions: { include: { user: { select: { id: true, name: true } } } } },
       orderBy: { createdAt: "asc" },
@@ -43,6 +45,7 @@ export class CommentsService {
         taskId: input.taskId,
         rfiId: input.rfiId,
         punchListItemId: input.punchListItemId,
+        projectId: input.projectId,
         mentions: { create: mentionUserIds.map((userId) => ({ userId })) },
       },
       include: { mentions: { include: { user: { select: { id: true, name: true } } } } },
@@ -63,6 +66,10 @@ export class CommentsService {
     if (target.punchListItemId) {
       const item = await this.prisma.punchListItem.findFirst({ where: { id: target.punchListItemId, companyId } });
       if (!item) throw new NotFoundException("Punch list item not found");
+    }
+    if (target.projectId) {
+      const project = await this.prisma.project.findFirst({ where: { id: target.projectId, companyId } });
+      if (!project) throw new NotFoundException("Project not found");
     }
   }
 

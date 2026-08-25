@@ -7,6 +7,6 @@ import { CustomReportsService } from "./custom-reports.service";
 @Module({
   controllers: [ReportsController, CustomReportsController],
   providers: [ReportsService, CustomReportsService],
-  exports: [ReportsService],
+  exports: [ReportsService, CustomReportsService],
 })
 export class ReportsModule {}

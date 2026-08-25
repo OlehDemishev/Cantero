@@ -110,7 +110,27 @@
     "lowStockCount": "низький залишок",
     "workersTotal": "Працівники",
     "fieldMode": "Польовий режим",
-    "triageTitle": "Потребує уваги"
+    "triageTitle": "Потребує уваги",
+    "myWidgets": "Мої віджети",
+    "downloadDashboardPdf": "Завантажити зведення PDF",
+    "addWidget": "Додати віджет",
+    "noWidgets": "Ще немає віджетів — додайте один вище",
+    "noData": "Немає даних",
+    "selectCustomReport": "Виберіть збережений звіт",
+    "widgetType_revenue_trend": "Динаміка доходу",
+    "widgetType_cash_flow_forecast": "Прогноз грошового потоку",
+    "widgetType_project_margins": "Маржа проєктів",
+    "widgetType_portfolio_summary": "Огляд портфеля",
+    "widgetType_invoice_aging": "Термін давності рахунків",
+    "widgetType_warehouse_turnover": "Оборотність складу",
+    "widgetType_labor_cost": "Витрати на працю",
+    "widgetType_custom_report": "Довільний звіт",
+    "widgetIn": "Надходження",
+    "widgetOut": "Витрати",
+    "widgetNet": "Нетто",
+    "widgetProjects": "Проєкти",
+    "widgetAtRisk": "Під ризиком",
+    "widgetOpenRfis": "Відкриті запити"
   },
   "settings": {
     "title": "Налаштування",
@@ -275,7 +295,8 @@
     "noMatches": "Жоден проєкт не відповідає цим фільтрам.",
     "health_good": "Все гаразд",
     "health_watch": "Слідкувати",
-    "health_at_risk": "Під загрозою"
+    "health_at_risk": "Під загрозою",
+    "projectChannel": "Канал проєкту"
   },
   "clients": {
     "title": "Клієнти",
@@ -409,7 +430,12 @@
     "category_other": "Інше",
     "category_insurance_certificate": "Страховий сертифікат",
     "category_gallery_before": "Галерея (до)",
-    "category_gallery_after": "Галерея (після)"
+    "category_gallery_after": "Галерея (після)",
+    "tagFilterPlaceholder": "Фільтр за тегом",
+    "editTags": "Редагувати теги",
+    "tagsPlaceholder": "Теги через кому",
+    "compareVersions": "Порівняти версії",
+    "noPreview": "Попередній перегляд недоступний для цього типу файлу"
   },
   "rateCatalog": {
     "title": "Прайс-лист",
@@ -815,7 +841,9 @@
     "punch": "Дефекти",
     "cachedFrom": "Показано дані з кешу за {time}",
     "loggedOutsideGeofence": "Збережено — але зафіксовано поза геозоною проєкту",
-    "expenses": "Витрати"
+    "expenses": "Витрати",
+    "queuedOfflineNoReceipt": "Збережено офлайн — фото чека потрібно буде додати після відновлення з'єднання",
+    "receiptQueuedOffline": "Збережено — фото чека завантажиться після відновлення з'єднання"
   },
   "subcontractors": {
     "title": "Витрати на субпідрядників",
@@ -919,7 +947,22 @@
   "notifications": {
     "title": "Сповіщення",
     "loading": "Завантаження…",
-    "empty": "Все переглянуто."
+    "empty": "Все переглянуто.",
+    "markAllRead": "Позначити все як прочитане",
+    "markRead": "Позначити прочитаним",
+    "type_low_stock": "Низький залишок",
+    "type_reminder_due": "Нагадування",
+    "type_invoice_overdue": "Прострочені рахунки",
+    "type_rfi_open": "Відкриті запити",
+    "type_punch_list_open": "Список недоробок",
+    "type_submittal_pending": "Подання",
+    "type_safety_incident": "Інциденти з безпеки",
+    "type_warranty_claim_open": "Гарантійні випадки",
+    "type_mention": "Згадки",
+    "type_subcontractor_document_expiring": "Документи субпідрядників",
+    "type_worker_certification_expiring": "Сертифікації",
+    "type_weather_risk": "Погодний ризик",
+    "type_budget_overrun": "Перевищення бюджету"
   },
   "search": {
     "placeholder": "Пошук по всьому…",

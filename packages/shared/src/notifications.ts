@@ -21,3 +21,13 @@ export const updateNotificationPreferencesSchema = z.object({
   emailDigestFrequency: z.enum(EMAIL_DIGEST_FREQUENCIES),
 });
 export type UpdateNotificationPreferencesInput = z.infer<typeof updateNotificationPreferencesSchema>;
+
+export const markNotificationReadSchema = z.object({
+  notificationKey: z.string().min(1),
+});
+export type MarkNotificationReadInput = z.infer<typeof markNotificationReadSchema>;
+
+export const markAllNotificationsReadSchema = z.object({
+  notificationKeys: z.array(z.string().min(1)).max(200),
+});
+export type MarkAllNotificationsReadInput = z.infer<typeof markAllNotificationsReadSchema>;

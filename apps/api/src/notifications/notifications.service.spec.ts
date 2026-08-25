@@ -24,6 +24,7 @@ describe("NotificationsService.list", () => {
     task: { findMany: jest.Mock };
     project: { findMany: jest.Mock };
     membership: { findFirst: jest.Mock };
+    notificationRead: { findMany: jest.Mock };
   };
   let weather: { geocode: jest.Mock; forecast: jest.Mock };
   let budget: { getForProject: jest.Mock };
@@ -44,6 +45,7 @@ describe("NotificationsService.list", () => {
       task: { findMany: jest.fn().mockResolvedValue([]) },
       project: { findMany: jest.fn().mockResolvedValue([]) },
       membership: { findFirst: jest.fn().mockResolvedValue(null) },
+      notificationRead: { findMany: jest.fn().mockResolvedValue([]) },
     };
     weather = { geocode: jest.fn(), forecast: jest.fn() };
     budget = { getForProject: jest.fn() };
@@ -307,5 +309,101 @@ describe("NotificationsService.list", () => {
     const { notifications } = await service.list(COMPANY_A, USER_A);
 
     expect(notifications.some((n) => n.key === "budget_overrun:project-unestimated")).toBe(false);
+  });
+});
+
+describe("NotificationsService — read tracking", () => {
+  let service: NotificationsService;
+  let prisma: {
+    materialCatalogItem: { findMany: jest.Mock };
+    clientReminder: { findMany: jest.Mock };
+    invoice: { findMany: jest.Mock };
+    rfi: { findMany: jest.Mock };
+    punchListItem: { findMany: jest.Mock };
+    submittal: { findMany: jest.Mock };
+    incidentReport: { findMany: jest.Mock };
+    warrantyClaim: { findMany: jest.Mock };
+    commentMention: { findMany: jest.Mock };
+    subcontractorDocument: { findMany: jest.Mock };
+    workerCertification: { findMany: jest.Mock };
+    task: { findMany: jest.Mock };
+    project: { findMany: jest.Mock };
+    membership: { findFirst: jest.Mock };
+    notificationRead: { findMany: jest.Mock; upsert: jest.Mock; createMany: jest.Mock };
+  };
+
+  beforeEach(async () => {
+    prisma = {
+      materialCatalogItem: { findMany: jest.fn().mockResolvedValue([]) },
+      clientReminder: { findMany: jest.fn().mockResolvedValue([]) },
+      invoice: { findMany: jest.fn().mockResolvedValue([]) },
+      rfi: { findMany: jest.fn().mockResolvedValue([]) },
+      punchListItem: { findMany: jest.fn().mockResolvedValue([]) },
+      submittal: { findMany: jest.fn().mockResolvedValue([]) },
+      incidentReport: { findMany: jest.fn().mockResolvedValue([]) },
+      warrantyClaim: { findMany: jest.fn().mockResolvedValue([]) },
+      commentMention: { findMany: jest.fn().mockResolvedValue([]) },
+      subcontractorDocument: { findMany: jest.fn().mockResolvedValue([]) },
+      workerCertification: { findMany: jest.fn().mockResolvedValue([]) },
+      task: { findMany: jest.fn().mockResolvedValue([]) },
+      project: { findMany: jest.fn().mockResolvedValue([]) },
+      membership: { findFirst: jest.fn().mockResolvedValue(null) },
+      notificationRead: { findMany: jest.fn().mockResolvedValue([]), upsert: jest.fn(), createMany: jest.fn() },
+    };
+
+    const module = await Test.createTestingModule({
+      providers: [
+        NotificationsService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: WeatherService, useValue: { geocode: jest.fn(), forecast: jest.fn() } },
+        { provide: BudgetService, useValue: { getForProject: jest.fn() } },
+      ],
+    }).compile();
+
+    service = module.get(NotificationsService);
+  });
+
+  it("marks a notification item read via upsert, so re-marking the same key never errors", async () => {
+    await service.markRead(COMPANY_A, USER_A, "low_stock:item-1");
+
+    expect(prisma.notificationRead.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId_notificationKey: { userId: USER_A, notificationKey: "low_stock:item-1" } },
+      }),
+    );
+  });
+
+  it("marks a batch of keys read in one call, skipping ones already marked", async () => {
+    await service.markAllRead(COMPANY_A, USER_A, ["a", "b", "c"]);
+
+    expect(prisma.notificationRead.createMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: [
+          { companyId: COMPANY_A, userId: USER_A, notificationKey: "a" },
+          { companyId: COMPANY_A, userId: USER_A, notificationKey: "b" },
+          { companyId: COMPANY_A, userId: USER_A, notificationKey: "c" },
+        ],
+        skipDuplicates: true,
+      }),
+    );
+  });
+
+  it("flags a notification item as read in list() once a NotificationRead row exists for it", async () => {
+    prisma.clientReminder.findMany.mockResolvedValue([
+      {
+        id: "r-1",
+        clientId: "c-1",
+        title: "Call back",
+        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        createdAt: new Date(),
+        client: { id: "c-1", name: "Acme" },
+      },
+    ]);
+    prisma.notificationRead.findMany.mockResolvedValue([{ notificationKey: "reminder:r-1" }]);
+
+    const { notifications } = await service.list(COMPANY_A, USER_A);
+
+    const item = notifications.find((n) => n.key === "reminder:r-1");
+    expect(item?.read).toBe(true);
   });
 });

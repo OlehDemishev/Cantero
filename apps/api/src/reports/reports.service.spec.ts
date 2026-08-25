@@ -317,3 +317,45 @@ describe("ReportsService.revenueTrend", () => {
     expect(result[0].revenue).toBe(150);
   });
 });
+
+describe("ReportsService.periodComparison", () => {
+  let service: ReportsService;
+  let prisma: { payment: { findMany: jest.Mock } };
+
+  beforeEach(async () => {
+    prisma = { payment: { findMany: jest.fn().mockResolvedValue([]) } };
+
+    const module = await Test.createTestingModule({
+      providers: [ReportsService, { provide: PrismaService, useValue: prisma }],
+    }).compile();
+
+    service = module.get(ReportsService);
+  });
+
+  it("computes a positive percent change when the current period out-earns the previous one", async () => {
+    const now = new Date();
+    prisma.payment.findMany.mockImplementation(({ where }) => {
+      // The service issues two findMany calls in parallel — the one with an upper bound (`lt`)
+      // is the previous period, the one without is the current period.
+      if (where.paidAt.lt) return Promise.resolve([{ amount: "100" }]);
+      return Promise.resolve([{ amount: "150" }]);
+    });
+
+    const result = await service.periodComparison(COMPANY_A, 1);
+
+    expect(result.currentPeriod.revenue).toBe(150);
+    expect(result.previousPeriod.revenue).toBe(100);
+    expect(result.changePercent).toBe(50);
+  });
+
+  it("returns a null percent change when the previous period had zero revenue", async () => {
+    prisma.payment.findMany.mockImplementation(({ where }) => {
+      if (where.paidAt.lt) return Promise.resolve([]);
+      return Promise.resolve([{ amount: "100" }]);
+    });
+
+    const result = await service.periodComparison(COMPANY_A, 1);
+
+    expect(result.changePercent).toBeNull();
+  });
+});

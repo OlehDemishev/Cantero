@@ -32,6 +32,7 @@ export interface DocumentListFilter {
   deficiencyId?: string;
   category?: string;
   search?: string;
+  tag?: string;
 }
 
 export interface DocumentAttachmentMeta {
@@ -44,6 +45,7 @@ export interface DocumentAttachmentMeta {
   subcontractorDocumentId?: string;
   deficiencyId?: string;
   category?: string;
+  tags?: string[];
 }
 
 @Injectable()
@@ -71,6 +73,7 @@ export class DocumentsService {
         ...(filter.subcontractorDocumentId ? { subcontractorDocumentId: filter.subcontractorDocumentId } : {}),
         ...(filter.deficiencyId ? { deficiencyId: filter.deficiencyId } : {}),
         ...(category ? { category } : {}),
+        ...(filter.tag ? { tags: { has: filter.tag } } : {}),
         ...(filter.search ? { name: { contains: filter.search, mode: "insensitive" as const } } : {}),
       },
       include: { uploadedBy: { select: { id: true, name: true } }, project: true },
@@ -146,8 +149,18 @@ export class DocumentsService {
         mimeType: file.mimetype,
         size: file.size,
         category,
+        tags: meta.tags ?? [],
         uploadedByUserId,
       },
+      include: { uploadedBy: { select: { id: true, name: true } } },
+    });
+  }
+
+  async updateTags(companyId: string, id: string, tags: string[]) {
+    await this.findOrThrow(companyId, id);
+    return this.prisma.document.update({
+      where: { id },
+      data: { tags },
       include: { uploadedBy: { select: { id: true, name: true } } },
     });
   }
@@ -181,6 +194,7 @@ export class DocumentsService {
         mimeType: file.mimetype,
         size: file.size,
         category: current.category,
+        tags: current.tags,
         version: current.version + 1,
         rootDocumentId: rootId,
         uploadedByUserId,

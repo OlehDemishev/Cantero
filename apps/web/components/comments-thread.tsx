@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 
-type CommentParam = "taskId" | "rfiId" | "punchListItemId";
+type CommentParam = "taskId" | "rfiId" | "punchListItemId" | "projectId";
 
 interface Member {
   id: string;

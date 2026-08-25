@@ -1,10 +1,12 @@
 import {
   BadRequestException,
+  Body,
   Controller,
   Delete,
   Get,
   Header,
   Param,
+  Patch,
   Post,
   Query,
   StreamableFile,
@@ -12,9 +14,10 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import type { AuthUser } from "@cantero/shared";
+import { updateDocumentTagsSchema, type AuthUser, type UpdateDocumentTagsInput } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
+import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { DocumentsService } from "./documents.service";
 
 @Controller("documents")
@@ -34,6 +37,7 @@ export class DocumentsController {
     @Query("deficiencyId") deficiencyId?: string,
     @Query("category") category?: string,
     @Query("search") search?: string,
+    @Query("tag") tag?: string,
   ) {
     return this.service.list(user.companyId, {
       projectId,
@@ -46,6 +50,7 @@ export class DocumentsController {
       deficiencyId,
       category,
       search,
+      tag,
     });
   }
 
@@ -63,6 +68,7 @@ export class DocumentsController {
     @Query("subcontractorDocumentId") subcontractorDocumentId?: string,
     @Query("deficiencyId") deficiencyId?: string,
     @Query("category") category?: string,
+    @Query("tags") tags?: string,
   ) {
     if (!file) throw new BadRequestException("No file provided");
     return this.service.upload(user.companyId, user.userId, file, {
@@ -75,6 +81,7 @@ export class DocumentsController {
       subcontractorDocumentId,
       deficiencyId,
       category,
+      tags: tags ? tags.split(",").map((t) => t.trim()).filter(Boolean) : undefined,
     });
   }
 
@@ -83,6 +90,15 @@ export class DocumentsController {
   async replace(@CurrentUser() user: AuthUser, @Param("id") id: string, @UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException("No file provided");
     return this.service.replace(user.companyId, id, user.userId, file);
+  }
+
+  @Patch(":id/tags")
+  updateTags(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(updateDocumentTagsSchema)) body: UpdateDocumentTagsInput,
+  ) {
+    return this.service.updateTags(user.companyId, id, body.tags);
   }
 
   @Get(":id/versions")

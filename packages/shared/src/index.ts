@@ -38,3 +38,4 @@ export * from "./material-rfqs";
 export * from "./custom-roles";
 export * from "./bank-reconciliation";
 export * from "./quality";
+export * from "./dashboard";

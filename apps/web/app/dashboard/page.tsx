@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { TriagePanel } from "@/components/triage-panel";
+import { DashboardWidgetsPanel } from "@/components/dashboard-widgets-panel";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
@@ -67,6 +68,7 @@ export default function DashboardPage() {
       </div>
 
       <TriagePanel />
+      <DashboardWidgetsPanel />
     </AuthenticatedShell>
   );
 }

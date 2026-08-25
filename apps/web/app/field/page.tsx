@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { EXPENSE_CATEGORIES, WEATHER_CONDITIONS, type ExpenseCategory, type WeatherCondition } from "@cantero/shared";
-import { apiUpload, clearToken, getToken } from "@/lib/api-client";
+import { clearToken, getToken } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
-import { submitOrQueue, useOfflineQueue } from "@/lib/offline-queue";
+import { submitOrQueue, submitOrQueueUpload, useOfflineQueue } from "@/lib/offline-queue";
 import { fetchCached, updateCache } from "@/lib/offline-cache";
 import { DashboardIcon, LogoutIcon } from "@/components/nav-icons";
 
@@ -421,16 +421,20 @@ function ExpensesTab({ projectId, meUserId }: { projectId: string; meUserId: str
         incurredAt: new Date(form.incurredAt).toISOString(),
       });
       if (queued) {
-        setMessage(t("queuedOffline"));
+        // The expense record itself doesn't exist on the server yet, so there's nothing to attach
+        // a receipt to — queuing a dependent upload against an id that doesn't exist yet isn't supported.
+        setMessage(receipt ? t("queuedOfflineNoReceipt") : t("queuedOffline"));
       } else {
+        let resultMessage = te("submitted");
         if (receipt && data?.id) {
           try {
-            await apiUpload(`/expenses/${data.id}/receipt`, receipt);
+            const { queued: receiptQueued } = await submitOrQueueUpload("expense-receipt", `/expenses/${data.id}/receipt`, receipt);
+            if (receiptQueued) resultMessage = t("receiptQueuedOffline");
           } catch {
             // The expense itself is already saved — a failed receipt upload shouldn't look like the whole submission failed.
           }
         }
-        setMessage(te("submitted"));
+        setMessage(resultMessage);
       }
       setForm((f) => ({ ...f, amount: "", description: "" }));
       setReceipt(null);

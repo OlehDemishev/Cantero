@@ -110,7 +110,27 @@
     "lowStockCount": "stock bajo",
     "workersTotal": "Trabajadores",
     "fieldMode": "Modo de campo",
-    "triageTitle": "Requiere atención"
+    "triageTitle": "Requiere atención",
+    "myWidgets": "Mis widgets",
+    "downloadDashboardPdf": "Descargar resumen en PDF",
+    "addWidget": "Añadir widget",
+    "noWidgets": "Aún no hay widgets — añada uno arriba",
+    "noData": "Sin datos",
+    "selectCustomReport": "Seleccionar un informe guardado",
+    "widgetType_revenue_trend": "Tendencia de ingresos",
+    "widgetType_cash_flow_forecast": "Previsión de flujo de caja",
+    "widgetType_project_margins": "Márgenes de proyecto",
+    "widgetType_portfolio_summary": "Resumen de cartera",
+    "widgetType_invoice_aging": "Antigüedad de facturas",
+    "widgetType_warehouse_turnover": "Rotación de almacén",
+    "widgetType_labor_cost": "Coste de mano de obra",
+    "widgetType_custom_report": "Informe personalizado",
+    "widgetIn": "Entradas",
+    "widgetOut": "Salidas",
+    "widgetNet": "Neto",
+    "widgetProjects": "Proyectos",
+    "widgetAtRisk": "En riesgo",
+    "widgetOpenRfis": "Solicitudes abiertas"
   },
   "settings": {
     "title": "Ajustes",
@@ -275,7 +295,8 @@
     "noMatches": "Ningún proyecto coincide con estos filtros.",
     "health_good": "En curso",
     "health_watch": "A vigilar",
-    "health_at_risk": "En riesgo"
+    "health_at_risk": "En riesgo",
+    "projectChannel": "Canal del proyecto"
   },
   "clients": {
     "title": "Clientes",
@@ -409,7 +430,12 @@
     "category_other": "Otro",
     "category_insurance_certificate": "Certificado de seguro",
     "category_gallery_before": "Galería (antes)",
-    "category_gallery_after": "Galería (después)"
+    "category_gallery_after": "Galería (después)",
+    "tagFilterPlaceholder": "Filtrar por etiqueta",
+    "editTags": "Editar etiquetas",
+    "tagsPlaceholder": "Etiquetas, separadas por comas",
+    "compareVersions": "Comparar versiones",
+    "noPreview": "No hay vista previa disponible para este tipo de archivo"
   },
   "rateCatalog": {
     "title": "Catálogo de precios",
@@ -815,7 +841,9 @@
     "punch": "Defectos",
     "cachedFrom": "Mostrando datos almacenados de {time}",
     "loggedOutsideGeofence": "Guardado — pero registrado fuera de la geocerca del proyecto",
-    "expenses": "Gastos"
+    "expenses": "Gastos",
+    "queuedOfflineNoReceipt": "Guardado sin conexión — la foto del recibo deberá añadirse cuando vuelva a estar en línea",
+    "receiptQueuedOffline": "Guardado — la foto del recibo se subirá cuando vuelva a estar en línea"
   },
   "subcontractors": {
     "title": "Costos de subcontratistas",
@@ -919,7 +947,22 @@
   "notifications": {
     "title": "Notificaciones",
     "loading": "Cargando…",
-    "empty": "Todo al día."
+    "empty": "Todo al día.",
+    "markAllRead": "Marcar todo como leído",
+    "markRead": "Marcar como leído",
+    "type_low_stock": "Stock bajo",
+    "type_reminder_due": "Recordatorios",
+    "type_invoice_overdue": "Facturas vencidas",
+    "type_rfi_open": "Solicitudes abiertas",
+    "type_punch_list_open": "Lista de deficiencias",
+    "type_submittal_pending": "Presentaciones",
+    "type_safety_incident": "Incidentes de seguridad",
+    "type_warranty_claim_open": "Reclamaciones de garantía",
+    "type_mention": "Menciones",
+    "type_subcontractor_document_expiring": "Documentos de subcontratistas",
+    "type_worker_certification_expiring": "Certificaciones",
+    "type_weather_risk": "Riesgo climático",
+    "type_budget_overrun": "Sobrecostes de presupuesto"
   },
   "search": {
     "placeholder": "Buscar en todo…",

@@ -14,8 +14,9 @@ export class CommentsController {
     @Query("taskId") taskId?: string,
     @Query("rfiId") rfiId?: string,
     @Query("punchListItemId") punchListItemId?: string,
+    @Query("projectId") projectId?: string,
   ) {
-    return this.service.list(user.companyId, { taskId, rfiId, punchListItemId });
+    return this.service.list(user.companyId, { taskId, rfiId, punchListItemId, projectId });
   }
 
   @Post()

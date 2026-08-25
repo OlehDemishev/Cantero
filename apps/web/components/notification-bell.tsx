@@ -17,7 +17,8 @@ type NotificationType =
   | "mention"
   | "subcontractor_document_expiring"
   | "worker_certification_expiring"
-  | "weather_risk";
+  | "weather_risk"
+  | "budget_overrun";
 type Severity = "warning" | "critical";
 
 interface Notification {
@@ -28,6 +29,7 @@ interface Notification {
   body: string;
   link: string;
   occurredAt: string;
+  read: boolean;
 }
 
 interface NotificationsResponse {
@@ -70,7 +72,29 @@ export function NotificationBell() {
     }
   }
 
+  async function markRead(key: string) {
+    setData((d) => (d ? { ...d, notifications: d.notifications.map((n) => (n.key === key ? { ...n, read: true } : n)) } : d));
+    await apiFetch("/notifications/mark-read", { method: "POST", body: JSON.stringify({ notificationKey: key }) });
+  }
+
+  async function markAllRead() {
+    if (!data) return;
+    const keys = data.notifications.filter((n) => !n.read).map((n) => n.key);
+    if (keys.length === 0) return;
+    setData((d) => (d ? { ...d, notifications: d.notifications.map((n) => ({ ...n, read: true })) } : d));
+    await apiFetch("/notifications/mark-all-read", { method: "POST", body: JSON.stringify({ notificationKeys: keys }) });
+  }
+
   const unread = data?.unreadCount ?? 0;
+
+  const grouped: { type: NotificationType; items: Notification[] }[] = [];
+  if (data) {
+    for (const n of data.notifications) {
+      const group = grouped.find((g) => g.type === n.type);
+      if (group) group.items.push(n);
+      else grouped.push({ type: n.type, items: [n] });
+    }
+  }
 
   return (
     <div className="relative" ref={ref}>
@@ -89,35 +113,56 @@ export function NotificationBell() {
 
       {open && (
         <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto rounded-xl border border-gray-200 bg-white p-2 shadow-theme-md dark:border-gray-800 dark:bg-gray-900">
-          <div className="px-2 py-1.5 text-sm font-semibold text-gray-700 dark:text-gray-300">{t("title")}</div>
+          <div className="flex items-center justify-between px-2 py-1.5">
+            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t("title")}</span>
+            {data && data.notifications.some((n) => !n.read) && (
+              <button onClick={markAllRead} className="text-xs text-brand-700 hover:underline">
+                {t("markAllRead")}
+              </button>
+            )}
+          </div>
           {!data ? (
             <p className="px-2 py-3 text-sm text-gray-400">{t("loading")}</p>
           ) : data.notifications.length === 0 ? (
             <p className="px-2 py-3 text-sm text-gray-400">{t("empty")}</p>
           ) : (
-            <ul className="flex flex-col gap-0.5">
-              {data.notifications.map((n) => (
-                <li key={n.key}>
-                  <a
-                    href={n.link}
-                    onClick={() => setOpen(false)}
-                    className="block rounded-lg px-2 py-2 hover:bg-gray-100 dark:hover:bg-white/5"
-                  >
-                    <div className="flex items-start gap-2">
-                      <span
-                        className={`mt-1 h-2 w-2 flex-shrink-0 rounded-full ${
-                          n.severity === "critical" ? "bg-error-500" : "bg-warning-500"
-                        }`}
-                      />
-                      <div>
-                        <div className="text-sm font-medium text-gray-800 dark:text-white/90">{n.title}</div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">{n.body}</div>
-                      </div>
-                    </div>
-                  </a>
-                </li>
+            <div className="flex flex-col gap-2">
+              {grouped.map((g) => (
+                <div key={g.type}>
+                  <div className="px-2 pb-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                    {t(`type_${g.type}`)}
+                  </div>
+                  <ul className="flex flex-col gap-0.5">
+                    {g.items.map((n) => (
+                      <li key={n.key} className={`flex items-start gap-1 rounded-lg px-1 hover:bg-gray-100 dark:hover:bg-white/5 ${n.read ? "opacity-50" : ""}`}>
+                        <a href={n.link} onClick={() => setOpen(false)} className="block flex-1 px-1 py-2">
+                          <div className="flex items-start gap-2">
+                            <span
+                              className={`mt-1 h-2 w-2 flex-shrink-0 rounded-full ${
+                                n.severity === "critical" ? "bg-error-500" : "bg-warning-500"
+                              }`}
+                            />
+                            <div>
+                              <div className="text-sm font-medium text-gray-800 dark:text-white/90">{n.title}</div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">{n.body}</div>
+                            </div>
+                          </div>
+                        </a>
+                        {!n.read && (
+                          <button
+                            onClick={() => markRead(n.key)}
+                            title={t("markRead")}
+                            className="mt-2 flex-shrink-0 text-xs text-gray-400 hover:text-brand-700"
+                          >
+                            ✓
+                          </button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               ))}
-            </ul>
+            </div>
           )}
         </div>
       )}

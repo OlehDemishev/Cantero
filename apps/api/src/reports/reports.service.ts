@@ -587,6 +587,34 @@ export class ReportsService {
     return [...buckets.entries()].map(([month, revenue]) => ({ month, revenue: round2(revenue) }));
   }
 
+  /** Revenue in the trailing `months`-month window vs. the equal-length window immediately
+   * before it — the simplest honest period-over-period comparison (same payment-timing basis
+   * as revenueTrend, not a revenue-recognition estimate). */
+  async periodComparison(companyId: string, months = 1) {
+    const now = new Date();
+    const currentStart = new Date(now.getFullYear(), now.getMonth() - months + 1, 1);
+    const previousStart = new Date(now.getFullYear(), now.getMonth() - 2 * months + 1, 1);
+
+    const [currentPayments, previousPayments] = await Promise.all([
+      this.prisma.payment.findMany({ where: { invoice: { companyId }, paidAt: { gte: currentStart } }, select: { amount: true } }),
+      this.prisma.payment.findMany({
+        where: { invoice: { companyId }, paidAt: { gte: previousStart, lt: currentStart } },
+        select: { amount: true },
+      }),
+    ]);
+
+    const currentRevenue = currentPayments.reduce((sum, p) => sum + Number(p.amount), 0);
+    const previousRevenue = previousPayments.reduce((sum, p) => sum + Number(p.amount), 0);
+    const changePercent = previousRevenue > 0 ? ((currentRevenue - previousRevenue) / previousRevenue) * 100 : null;
+
+    return {
+      months,
+      currentPeriod: { start: currentStart.toISOString(), revenue: round2(currentRevenue) },
+      previousPeriod: { start: previousStart.toISOString(), revenue: round2(previousRevenue) },
+      changePercent: changePercent !== null ? round2(changePercent) : null,
+    };
+  }
+
   /** Tax collected by month, based on invoiced amounts (not payment timing) — the number a
    * bookkeeper reconciles against a VAT/sales-tax return, not a cash-flow figure. */
   async taxSummaryCsv(companyId: string, months = 12): Promise<string> {

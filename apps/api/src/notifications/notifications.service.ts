@@ -104,7 +104,14 @@ export class NotificationsService {
       ? items.filter((n) => n.occurredAt.getTime() > lastViewedAt.getTime()).length
       : items.length;
 
-    return { unreadCount, notifications: items };
+    const readRows = await this.prisma.notificationRead.findMany({
+      where: { userId, notificationKey: { in: items.map((i) => i.key) } },
+      select: { notificationKey: true },
+    });
+    const readKeys = new Set(readRows.map((r) => r.notificationKey));
+    const notifications = items.map((i) => ({ ...i, read: readKeys.has(i.key) }));
+
+    return { unreadCount, notifications };
   }
 
   async markSeen(companyId: string, userId: string) {
@@ -113,6 +120,25 @@ export class NotificationsService {
     await this.prisma.membership.update({
       where: { id: membership.id },
       data: { notificationsLastViewedAt: new Date() },
+    });
+    return { ok: true };
+  }
+
+  /** Individually dismissing/marking-read one derived item — upsert since the same key can be
+   * marked read more than once (e.g. re-clicked) without erroring. */
+  async markRead(companyId: string, userId: string, notificationKey: string) {
+    await this.prisma.notificationRead.upsert({
+      where: { userId_notificationKey: { userId, notificationKey } },
+      create: { companyId, userId, notificationKey },
+      update: {},
+    });
+    return { ok: true };
+  }
+
+  async markAllRead(companyId: string, userId: string, notificationKeys: string[]) {
+    await this.prisma.notificationRead.createMany({
+      data: notificationKeys.map((notificationKey) => ({ companyId, userId, notificationKey })),
+      skipDuplicates: true,
     });
     return { ok: true };
   }

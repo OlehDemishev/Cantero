@@ -280,6 +280,8 @@ model Company {
   inspectionTemplates     InspectionTemplate[]
   inspectionChecklists    InspectionChecklist[]
   deficiencies            Deficiency[]
+  notificationReads       NotificationRead[]
+  dashboardWidgets        DashboardWidget[]
 
   @@map("companies")
 }
@@ -391,6 +393,8 @@ model User {
   customReports       CustomReport[]
   sessions            UserSession[]
   passwordResetTokens PasswordResetToken[]
+  notificationReads   NotificationRead[]
+  dashboardWidgets    DashboardWidget[]
 
   @@map("users")
 }
@@ -1132,6 +1136,7 @@ model Project {
   serviceContracts         ServiceContract[]
   inspectionChecklists     InspectionChecklist[]
   deficiencies             Deficiency[]
+  comments                 Comment[]
 
   @@index([companyId])
   @@map("projects")
@@ -2063,6 +2068,9 @@ model Document {
   mimeType                String
   size                    Int              @default(0)
   category                DocumentCategory @default(other)
+  /// Free-form cross-cutting labels alongside the single required category — e.g. a "permit"
+  /// category document can also be tagged ["electrical", "phase-2"].
+  tags                    String[]         @default([])
   /// 1 on the first upload of a file; each replace() call increments this within the same version chain.
   version                 Int              @default(1)
   /// Null on the first version of a chain (the root); every later version points back to the root's id,
@@ -2394,19 +2402,73 @@ model Comment {
   taskId          String?
   rfiId           String?
   punchListItemId String?
+  /// A project-wide channel — the general "group chat" attachment point, alongside the
+  /// narrower task/RFI/punch-list threads above.
+  projectId       String?
 
   company       Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
   author        User?            @relation(fields: [authorUserId], references: [id], onDelete: SetNull)
   task          Task?            @relation(fields: [taskId], references: [id], onDelete: Cascade)
   rfi           Rfi?             @relation(fields: [rfiId], references: [id], onDelete: Cascade)
   punchListItem PunchListItem?   @relation(fields: [punchListItemId], references: [id], onDelete: Cascade)
+  project       Project?         @relation(fields: [projectId], references: [id], onDelete: Cascade)
   mentions      CommentMention[]
 
   @@index([companyId])
   @@index([taskId])
   @@index([rfiId])
   @@index([punchListItemId])
+  @@index([projectId])
   @@map("comments")
+}
+
+/// Marks one derived notification item (identified by its stable NotificationItem.key) as read
+/// by a user. The notification feed itself is computed on the fly (see NotificationsService) —
+/// this is the only persisted state, so "unread" is just "no row here yet".
+model NotificationRead {
+  id              String   @id @default(uuid())
+  companyId       String
+  userId          String
+  notificationKey String
+  readAt          DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, notificationKey])
+  @@index([companyId])
+  @@map("notification_reads")
+}
+
+enum DashboardWidgetType {
+  revenue_trend
+  cash_flow_forecast
+  project_margins
+  portfolio_summary
+  invoice_aging
+  warehouse_turnover
+  labor_cost
+  custom_report
+}
+
+/// One tile on a user's own configurable dashboard. Every widget renders from an *existing*
+/// report/insight endpoint (see ReportsService) rather than a new query engine — config just
+/// carries the extra parameter a given type needs (e.g. customReportId, or a trailing-months window).
+model DashboardWidget {
+  id        String              @id @default(uuid())
+  companyId String
+  userId    String
+  type      DashboardWidgetType
+  config    Json?
+  sortOrder Int                 @default(0)
+  createdAt DateTime            @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([userId])
+  @@map("dashboard_widgets")
 }
 
 /// A user @mentioned in a Comment — explicit rows captured from the picker UI (not parsed out of

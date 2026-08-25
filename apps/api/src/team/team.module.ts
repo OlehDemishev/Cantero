@@ -13,6 +13,6 @@ import { TimeOffService } from "./time-off.service";
 @Module({
   controllers: [WorkersController, TimeEntriesController, LaborCostController, ExpensesController, TimeOffController],
   providers: [WorkersService, TimeEntriesService, LaborCostService, ExpensesService, TimeOffService],
-  exports: [WorkersService, TimeEntriesService],
+  exports: [WorkersService, TimeEntriesService, LaborCostService],
 })
 export class TeamModule {}

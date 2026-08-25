@@ -50,6 +50,7 @@ import { CalendarFeedModule } from "./calendar-feed/calendar-feed.module";
 import { ServiceModule } from "./service/service.module";
 import { BankReconciliationModule } from "./bank-reconciliation/bank-reconciliation.module";
 import { QualityModule } from "./quality/quality.module";
+import { DashboardModule } from "./dashboard/dashboard.module";
 
 @Module({
   imports: [
@@ -99,6 +100,7 @@ import { QualityModule } from "./quality/quality.module";
     ServiceModule,
     BankReconciliationModule,
     QualityModule,
+    DashboardModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

@@ -13,6 +13,7 @@ describe("CommentsService", () => {
     task: { findFirst: jest.Mock };
     rfi: { findFirst: jest.Mock };
     punchListItem: { findFirst: jest.Mock };
+    project: { findFirst: jest.Mock };
     membership: { findMany: jest.Mock };
     comment: { findMany: jest.Mock; create: jest.Mock };
   };
@@ -23,6 +24,7 @@ describe("CommentsService", () => {
       task: { findFirst: jest.fn() },
       rfi: { findFirst: jest.fn() },
       punchListItem: { findFirst: jest.fn() },
+      project: { findFirst: jest.fn() },
       membership: { findMany: jest.fn() },
       comment: { findMany: jest.fn(), create: jest.fn() },
     };
@@ -79,6 +81,24 @@ describe("CommentsService", () => {
       await service.create(COMPANY_A, ACTOR, { rfiId: "rfi-1", content: "Answered in the field" });
 
       expect(audit.record).toHaveBeenCalledWith(COMPANY_A, ACTOR, "comment.created", "Comment", "comment-1", expect.any(String));
+    });
+
+    it("posts to a project-wide channel when projectId is given", async () => {
+      prisma.project.findFirst.mockResolvedValue({ id: "project-1", companyId: COMPANY_A });
+      prisma.comment.create.mockResolvedValue({ id: "comment-1", mentions: [] });
+
+      await service.create(COMPANY_A, ACTOR, { projectId: "project-1", content: "Site update for everyone" });
+
+      expect(prisma.comment.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ projectId: "project-1" }) }),
+      );
+    });
+
+    it("rejects when the target project does not belong to this company", async () => {
+      prisma.project.findFirst.mockResolvedValue(null);
+
+      await expect(service.create(COMPANY_A, ACTOR, { projectId: "project-x", content: "Hi" })).rejects.toThrow(NotFoundException);
+      expect(prisma.comment.create).not.toHaveBeenCalled();
     });
   });
 });
