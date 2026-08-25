@@ -4,11 +4,13 @@ import {
   checkOutEquipmentSchema,
   createEquipmentSchema,
   updateEquipmentSchema,
+  updateMaintenanceScheduleSchema,
   type AddMaintenanceRecordInput,
   type AuthUser,
   type CheckOutEquipmentInput,
   type CreateEquipmentInput,
   type UpdateEquipmentInput,
+  type UpdateMaintenanceScheduleInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
@@ -64,6 +66,15 @@ export class EquipmentController {
   @Post(":id/maintenance/complete")
   completeMaintenance(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.completeMaintenance(user.companyId, { userId: user.userId, name: user.name }, id);
+  }
+
+  @Patch(":id/maintenance-schedule")
+  updateMaintenanceSchedule(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(updateMaintenanceScheduleSchema)) body: UpdateMaintenanceScheduleInput,
+  ) {
+    return this.service.updateMaintenanceSchedule(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
   @Post(":id/retire")

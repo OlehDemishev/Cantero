@@ -38,6 +38,8 @@ import { SlaEscalationModule } from "./sla-escalation/sla-escalation.module";
 import { BiddingModule } from "./bidding/bidding.module";
 import { CustomFieldsModule } from "./custom-fields/custom-fields.module";
 import { SavedViewsModule } from "./saved-views/saved-views.module";
+import { LeadsModule } from "./leads/leads.module";
+import { SsoModule } from "./sso/sso.module";
 
 @Module({
   imports: [
@@ -76,6 +78,8 @@ import { SavedViewsModule } from "./saved-views/saved-views.module";
     BiddingModule,
     CustomFieldsModule,
     SavedViewsModule,
+    LeadsModule,
+    SsoModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

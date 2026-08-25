@@ -12,6 +12,23 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [ssoMode, setSsoMode] = useState(false);
+
+  async function handleSsoStart(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await apiFetch<{ redirectUrl: string }>("/auth/sso/start", {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      });
+      window.location.href = res.redirectUrl;
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t("ssoError"));
+      setSubmitting(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -51,31 +68,60 @@ export default function LoginPage() {
 
           {error && <p className="mt-4 rounded-lg bg-error-50 px-3 py-2 text-sm text-error-700">{error}</p>}
 
-          <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{tc("email")}</span>
-              <input
-                required
-                type="email"
-                className="input"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </label>
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("password")}</span>
-              <input
-                required
-                type="password"
-                className="input"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </label>
-            <button type="submit" disabled={submitting} className="btn-primary mt-2">
-              {submitting ? tc("loading") : t("login")}
-            </button>
-          </form>
+          {ssoMode ? (
+            <form onSubmit={handleSsoStart} className="mt-6 flex flex-col gap-4">
+              <label className="flex flex-col gap-1.5 text-sm">
+                <span className="font-medium text-gray-700">{tc("email")}</span>
+                <input
+                  required
+                  type="email"
+                  className="input"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </label>
+              <button type="submit" disabled={submitting} className="btn-primary mt-2">
+                {submitting ? tc("loading") : t("continueWithSso")}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
+              <label className="flex flex-col gap-1.5 text-sm">
+                <span className="font-medium text-gray-700">{tc("email")}</span>
+                <input
+                  required
+                  type="email"
+                  className="input"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </label>
+              <label className="flex flex-col gap-1.5 text-sm">
+                <span className="font-medium text-gray-700">{t("password")}</span>
+                <input
+                  required
+                  type="password"
+                  className="input"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </label>
+              <button type="submit" disabled={submitting} className="btn-primary mt-2">
+                {submitting ? tc("loading") : t("login")}
+              </button>
+            </form>
+          )}
+
+          <button
+            type="button"
+            onClick={() => {
+              setSsoMode((v) => !v);
+              setError(null);
+            }}
+            className="mt-4 w-full text-center text-xs text-gray-500 hover:text-gray-700"
+          >
+            {ssoMode ? t("useSsoPasswordInstead") : t("useSsoInstead")}
+          </button>
         </div>
 
         <p className="mt-6 text-center text-sm text-gray-600">

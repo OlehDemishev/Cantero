@@ -4,6 +4,7 @@ import type {
   CheckOutEquipmentInput,
   CreateEquipmentInput,
   UpdateEquipmentInput,
+  UpdateMaintenanceScheduleInput,
 } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
@@ -129,8 +130,45 @@ export class EquipmentService {
     if (equipment.status !== "maintenance") {
       throw new BadRequestException("Equipment is not in maintenance");
     }
-    await this.prisma.equipment.update({ where: { id }, data: { status: "available" } });
+    await this.prisma.equipment.update({
+      where: { id },
+      data: {
+        status: "available",
+        // Advances relative to completion time, not the old due date, so a late service doesn't
+        // permanently shift the schedule earlier than intended — same approach as
+        // RecurringInvoicesService.generateInvoice's nextRunDate advance.
+        nextMaintenanceDueAt: equipment.maintenanceIntervalDays
+          ? new Date(Date.now() + equipment.maintenanceIntervalDays * 24 * 60 * 60 * 1000)
+          : undefined,
+        maintenanceOverdueNotifiedAt: null,
+      },
+    });
     this.audit.record(companyId, actor, "equipment.maintenance_completed", "Equipment", id, `Completed maintenance on "${equipment.name}"`);
+    return this.findOrThrow(companyId, id);
+  }
+
+  /** null intervalDays disables scheduling entirely; setting an interval (re)starts the countdown from now. */
+  async updateMaintenanceSchedule(companyId: string, actor: AuditActor, id: string, input: UpdateMaintenanceScheduleInput) {
+    const equipment = await this.findOrThrow(companyId, id);
+    await this.prisma.equipment.update({
+      where: { id },
+      data: {
+        maintenanceIntervalDays: input.intervalDays,
+        nextMaintenanceDueAt: input.intervalDays
+          ? new Date(Date.now() + input.intervalDays * 24 * 60 * 60 * 1000)
+          : null,
+      },
+    });
+    this.audit.record(
+      companyId,
+      actor,
+      "equipment.maintenance_schedule_updated",
+      "Equipment",
+      id,
+      input.intervalDays
+        ? `Scheduled preventive maintenance for "${equipment.name}" every ${input.intervalDays} day(s)`
+        : `Disabled preventive maintenance scheduling for "${equipment.name}"`,
+    );
     return this.findOrThrow(companyId, id);
   }
 

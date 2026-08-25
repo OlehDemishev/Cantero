@@ -29,6 +29,8 @@ interface Equipment {
   status: EquipmentStatus;
   notes: string | null;
   assignments: AssignmentSummary[];
+  maintenanceIntervalDays: number | null;
+  nextMaintenanceDueAt: string | null;
 }
 interface Assignment {
   id: string;
@@ -66,11 +68,15 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
   const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[] | null>(null);
   const [checkOutForm, setCheckOutForm] = useState({ projectId: "", workerId: "" });
   const [maintenanceForm, setMaintenanceForm] = useState({ description: "", cost: "" });
+  const [scheduleIntervalDays, setScheduleIntervalDays] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function load() {
-    apiFetch<Equipment>(`/equipment/${id}`).then(setEquipment);
+    apiFetch<Equipment>(`/equipment/${id}`).then((e) => {
+      setEquipment(e);
+      setScheduleIntervalDays(e.maintenanceIntervalDays !== null ? String(e.maintenanceIntervalDays) : "");
+    });
     apiFetch<Assignment[]>(`/equipment/${id}/assignments`).then(setAssignments);
     apiFetch<MaintenanceRecord[]>(`/equipment/${id}/maintenance-records`).then(setMaintenanceRecords);
   }
@@ -121,6 +127,31 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
   async function retire() {
     await apiFetch(`/equipment/${id}/retire`, { method: "POST" });
     load();
+  }
+
+  async function saveSchedule(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      await apiFetch(`/equipment/${id}/maintenance-schedule`, {
+        method: "PATCH",
+        body: JSON.stringify({ intervalDays: scheduleIntervalDays ? Number(scheduleIntervalDays) : null }),
+      });
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function clearSchedule() {
+    setBusy(true);
+    try {
+      await apiFetch(`/equipment/${id}/maintenance-schedule`, { method: "PATCH", body: JSON.stringify({ intervalDays: null }) });
+      setScheduleIntervalDays("");
+      load();
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function addMaintenanceRecord(e: React.FormEvent) {
@@ -229,6 +260,42 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
               </button>
             )}
           </div>
+        </section>
+
+        <section className="card">
+          <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("maintenanceSchedule")}</h2>
+          <p className="mb-3 text-xs text-gray-500">{t("maintenanceScheduleHint")}</p>
+          {equipment.nextMaintenanceDueAt && (
+            <p
+              className={`mb-3 text-sm ${
+                new Date(equipment.nextMaintenanceDueAt) < new Date() ? "font-medium text-error-600" : "text-gray-700"
+              }`}
+            >
+              {t("nextDue", { date: new Date(equipment.nextMaintenanceDueAt).toLocaleDateString() })}
+            </p>
+          )}
+          <form onSubmit={saveSchedule} className="flex flex-wrap items-end gap-2">
+            <label className="flex flex-col gap-1 text-xs text-gray-500">
+              {t("intervalDays")}
+              <input
+                type="number"
+                min="1"
+                max="3650"
+                placeholder={t("intervalDaysPlaceholder")}
+                className="input w-32"
+                value={scheduleIntervalDays}
+                onChange={(e) => setScheduleIntervalDays(e.target.value)}
+              />
+            </label>
+            <button type="submit" disabled={busy} className="btn-secondary">
+              {tc("save")}
+            </button>
+            {equipment.maintenanceIntervalDays !== null && (
+              <button type="button" onClick={clearSchedule} disabled={busy} className="btn-secondary">
+                {t("disableSchedule")}
+              </button>
+            )}
+          </form>
         </section>
 
         <section className="card">

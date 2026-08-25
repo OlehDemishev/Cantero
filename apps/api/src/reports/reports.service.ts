@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { computeCriticalPath, type DependencyForCpm, type TaskForCpm } from "../projects/critical-path";
 import { advanceDate, calculateRecurringInvoice } from "../finance/recurring-invoice-schedule";
+import { calculateEac } from "./estimate-at-completion";
 
 const CASH_FLOW_WEEKS = 13;
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -135,6 +136,68 @@ export class ReportsService {
         actualCost: round2(actualCost),
         margin: round2(margin),
         marginPercent: invoicedTotal > 0 ? round2((margin / invoicedTotal) * 100) : null,
+      };
+    });
+  }
+
+  /**
+   * Estimate-at-completion per project: standard EVM forecast of total cost and margin if the
+   * remaining work continues at the same cost efficiency observed so far. `percentComplete` is
+   * read from the furthest progress-billing draw on the project (see Phase 60's Invoice
+   * .percentComplete) — projects with no progress draws yet report 0% and the EAC conservatively
+   * assumes on-budget completion until real progress data exists.
+   */
+  async estimateAtCompletion(companyId: string) {
+    const projects = await this.prisma.project.findMany({
+      where: { companyId },
+      include: {
+        estimates: { where: { status: "approved" } },
+        invoices: true,
+        stockMovements: { where: { type: { in: ["issue", "write_off"] } }, include: { materialCatalogItem: true } },
+        timeEntries: { include: { worker: true } },
+        subcontractorCosts: true,
+      },
+      orderBy: { name: "asc" },
+    });
+
+    return projects.map((project) => {
+      const contractValue = project.estimates.reduce((sum, e) => sum + Number(e.grandTotal), 0);
+      const budgetedCost = project.estimates.reduce(
+        (sum, e) => sum + Number(e.materialsCostTotal) + Number(e.laborCostTotal),
+        0,
+      );
+
+      const materialsCostActual = project.stockMovements.reduce(
+        (sum, m) => sum + Number(m.quantity) * Number(m.materialCatalogItem.defaultUnitPrice),
+        0,
+      );
+      const laborCostActual = project.timeEntries.reduce((sum, entry) => {
+        const rate =
+          entry.hourlyCostSnapshot !== null
+            ? Number(entry.hourlyCostSnapshot)
+            : entry.worker.hourlyCost !== null
+              ? Number(entry.worker.hourlyCost)
+              : 0;
+        return sum + Number(entry.hours) * rate;
+      }, 0);
+      const subcontractorCostActual = project.subcontractorCosts.reduce((sum, c) => sum + Number(c.amount), 0);
+      const actualCost = materialsCostActual + laborCostActual + subcontractorCostActual;
+
+      const percentComplete = project.invoices.reduce(
+        (max, inv) => (inv.percentComplete !== null ? Math.max(max, Number(inv.percentComplete)) : max),
+        0,
+      );
+
+      const eac = calculateEac({ contractValue, budgetedCost, actualCost, percentComplete });
+
+      return {
+        projectId: project.id,
+        projectName: project.name,
+        contractValue: round2(contractValue),
+        budgetedCost: round2(budgetedCost),
+        actualCost: round2(actualCost),
+        percentComplete,
+        ...eac,
       };
     });
   }

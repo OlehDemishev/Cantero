@@ -58,9 +58,16 @@ export class ProjectsService {
     await this.get(companyId, id);
     return this.prisma.project.update({
       where: { id },
-      data: input
-        ? { geofenceLat: input.lat, geofenceLng: input.lng, geofenceRadiusMeters: input.radiusMeters }
-        : { geofenceLat: null, geofenceLng: null, geofenceRadiusMeters: null },
+      data: { geofenceLat: input.lat, geofenceLng: input.lng, geofenceRadiusMeters: input.radiusMeters },
+      include: { client: true },
+    });
+  }
+
+  async clearGeofence(companyId: string, id: string) {
+    await this.get(companyId, id);
+    return this.prisma.project.update({
+      where: { id },
+      data: { geofenceLat: null, geofenceLng: null, geofenceRadiusMeters: null },
       include: { client: true },
     });
   }

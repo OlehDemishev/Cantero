@@ -62,7 +62,13 @@
     "haveAccount": "Masz już konto?",
     "noAccount": "Potrzebujesz konta?",
     "signupError": "Nie udało się utworzyć konta",
-    "loginError": "Nieprawidłowy e-mail lub hasło"
+    "loginError": "Nieprawidłowy e-mail lub hasło",
+    "continueWithSso": "Kontynuuj",
+    "useSsoInstead": "Zaloguj się przez firmowe SSO",
+    "useSsoPasswordInstead": "Zaloguj się hasłem",
+    "ssoError": "Nie udało się rozpocząć logowania SSO — sprawdź domenę e-mail lub skontaktuj się z administratorem.",
+    "ssoSigningIn": "Logowanie…",
+    "backToLogin": "Powrót do logowania"
   },
   "billing": {
     "title": "Aktywuj subskrypcję",
@@ -201,7 +207,8 @@
     "slaEscalationHint": "Zapytania RFI i pozycje listy usterek pozostawione otwarte dłużej niż podana liczba dni są automatycznie oznaczane i zgłaszane e-mailem do właściciela firmy. Pozostaw puste, aby wyłączyć.",
     "rfiSlaDays": "Dni RFI",
     "punchListSlaDays": "Dni listy usterek",
-    "slaDaysPlaceholder": "np. 5"
+    "slaDaysPlaceholder": "np. 5",
+    "webhookEvent_client_lead_captured": "Nowy lead ze strony internetowej"
   },
   "projects": {
     "title": "Projekty",
@@ -523,7 +530,13 @@
     "performedAt": "Data",
     "checkedOutAt": "Wydano",
     "checkedInAt": "Zwrócono",
-    "stillOut": "Nadal wydany"
+    "stillOut": "Nadal wydany",
+    "maintenanceSchedule": "Konserwacja zapobiegawcza",
+    "maintenanceScheduleHint": "Ustaw cykliczny interwał — po upływie terminu sprzęt zostanie automatycznie oznaczony, a jeśli jest wtedy dostępny, automatycznie wycofany z eksploatacji.",
+    "nextDue": "Następny termin: {date}",
+    "intervalDays": "Co (dni)",
+    "intervalDaysPlaceholder": "np. 90",
+    "disableSchedule": "Wyłącz harmonogram"
   },
   "subcontractorPortal": {
     "signInTitle": "Portal podwykonawcy",
@@ -780,7 +793,15 @@
     "reportType_portfolio": "Panel portfela",
     "reportType_cash_flow_forecast": "13-tygodniowa prognoza przepływów pieniężnych",
     "frequency_weekly": "Co tydzień",
-    "frequency_monthly": "Co miesiąc"
+    "frequency_monthly": "Co miesiąc",
+    "estimateAtCompletion": "Prognoza kosztów na zakończenie",
+    "estimateAtCompletionHint": "Prognozuje całkowity koszt i marżę, jeśli pozostałe prace będą kontynuowane z dotychczasową efektywnością kosztową. % ukończenia pochodzi z faktur etapowych — 0% do czasu wystawienia pierwszej faktury etapowej.",
+    "percentComplete": "% ukończenia",
+    "costPerformanceIndex": "CPI",
+    "estimateAtCompletionShort": "EAC",
+    "varianceAtCompletion": "Odchylenie",
+    "projectedMargin": "Prognozowana marża",
+    "marginErosion": "Erozja marży"
   },
   "notifications": {
     "title": "Powiadomienia",
@@ -1167,5 +1188,37 @@
     "nameThisView": "Nazwij ten widok",
     "saveView": "Zapisz widok",
     "removeView": "Usuń widok"
+  },
+  "leadForm": {
+    "title": "Formularz pozyskiwania leadów",
+    "hint": "Publiczny formularz internetowy dla strony Twojej firmy — każde zgłoszenie automatycznie tworzy nowego leada w Twoim pipeline CRM.",
+    "copyLink": "Kopiuj link",
+    "regenerateLink": "Wygeneruj nowy link",
+    "disableForm": "Wyłącz formularz",
+    "enableForm": "Włącz formularz pozyskiwania leadów",
+    "notEnabled": "Nie włączono — właściciel lub administrator może to włączyć.",
+    "loading": "Ładowanie…",
+    "formNotFound": "Ten link do formularza nie jest już aktywny.",
+    "formTitle": "Skontaktuj się z {company}",
+    "formHint": "Opowiedz nam krótko o swoim projekcie, a skontaktujemy się z Tobą.",
+    "thankYou": "Dziękujemy! Otrzymaliśmy Twoją wiadomość i wkrótce się skontaktujemy.",
+    "namePlaceholder": "Twoje imię",
+    "emailPlaceholder": "Adres e-mail",
+    "phonePlaceholder": "Numer telefonu",
+    "messagePlaceholder": "Opowiedz nam o swoim projekcie…",
+    "submit": "Wyślij",
+    "submitError": "Coś poszło nie tak — spróbuj ponownie."
+  },
+  "sso": {
+    "title": "Firmowe SSO (SAML)",
+    "hint": "Pozwól wszystkim w Twojej firmie logować się przez własnego dostawcę tożsamości (Okta, Azure AD, Google Workspace itp.) zamiast hasła Cantero. Nowe logowania są automatycznie dodawane jako członek przy pierwszym logowaniu.",
+    "activeSummary": "Aktywne dla adresów e-mail @{domain}",
+    "downloadMetadata": "Pobierz metadane SP",
+    "domain": "Domena e-mail",
+    "entryPoint": "URL logowania IdP",
+    "issuer": "Identyfikator jednostki IdP",
+    "issuerPlaceholder": "np. https://idp.example.com/saml/metadata",
+    "cert": "Certyfikat podpisujący IdP",
+    "disable": "Wyłącz SSO"
   }
 }

@@ -24,6 +24,7 @@ export const WEBHOOK_EVENTS = [
   "warranty_claim.denied",
   "client.won",
   "client.lost",
+  "client.lead_captured",
 ] as const;
 export type WebhookEvent = (typeof WEBHOOK_EVENTS)[number];
 

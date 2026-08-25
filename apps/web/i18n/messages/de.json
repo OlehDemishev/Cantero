@@ -62,7 +62,13 @@
     "haveAccount": "Bereits ein Konto?",
     "noAccount": "Noch kein Konto?",
     "signupError": "Konto konnte nicht erstellt werden",
-    "loginError": "Ungültige E-Mail oder Passwort"
+    "loginError": "Ungültige E-Mail oder Passwort",
+    "continueWithSso": "Weiter",
+    "useSsoInstead": "Stattdessen mit Unternehmens-SSO anmelden",
+    "useSsoPasswordInstead": "Stattdessen mit Passwort anmelden",
+    "ssoError": "SSO-Anmeldung konnte nicht gestartet werden — prüfen Sie die E-Mail-Domain oder wenden Sie sich an Ihren Administrator.",
+    "ssoSigningIn": "Sie werden angemeldet…",
+    "backToLogin": "Zurück zur Anmeldung"
   },
   "billing": {
     "title": "Abonnement aktivieren",
@@ -201,7 +207,8 @@
     "slaEscalationHint": "Anfragen (RFIs) und Mängelpunkte, die länger als diese Anzahl an Tagen offen bleiben, werden automatisch markiert und per E-Mail an den Firmeninhaber gemeldet. Leer lassen, um zu deaktivieren.",
     "rfiSlaDays": "RFI-Tage",
     "punchListSlaDays": "Mängelliste-Tage",
-    "slaDaysPlaceholder": "z. B. 5"
+    "slaDaysPlaceholder": "z. B. 5",
+    "webhookEvent_client_lead_captured": "Neuer Website-Lead erfasst"
   },
   "projects": {
     "title": "Projekte",
@@ -523,7 +530,13 @@
     "performedAt": "Datum",
     "checkedOutAt": "Ausgegeben",
     "checkedInAt": "Zurückgegeben",
-    "stillOut": "Noch unterwegs"
+    "stillOut": "Noch unterwegs",
+    "maintenanceSchedule": "Vorbeugende Wartung",
+    "maintenanceScheduleHint": "Legen Sie ein wiederkehrendes Intervall fest — bei Fälligkeit wird das Gerät automatisch markiert und, falls gerade verfügbar, automatisch außer Betrieb genommen.",
+    "nextDue": "Nächste Fälligkeit: {date}",
+    "intervalDays": "Alle (Tage)",
+    "intervalDaysPlaceholder": "z. B. 90",
+    "disableSchedule": "Zeitplan deaktivieren"
   },
   "subcontractorPortal": {
     "signInTitle": "Subunternehmer-Portal",
@@ -780,7 +793,15 @@
     "reportType_portfolio": "Portfolio-Dashboard",
     "reportType_cash_flow_forecast": "13-Wochen-Cashflow-Prognose",
     "frequency_weekly": "Wöchentlich",
-    "frequency_monthly": "Monatlich"
+    "frequency_monthly": "Monatlich",
+    "estimateAtCompletion": "Kostenprognose bei Fertigstellung",
+    "estimateAtCompletionHint": "Prognostiziert Gesamtkosten und Marge, wenn die restliche Arbeit mit der bisher beobachteten Kosteneffizienz fortgesetzt wird. % fertig stammt aus Abschlagsrechnungen — 0 %, bis der erste Abschlag gestellt wurde.",
+    "percentComplete": "% fertig",
+    "costPerformanceIndex": "CPI",
+    "estimateAtCompletionShort": "EAC",
+    "varianceAtCompletion": "Abweichung",
+    "projectedMargin": "Prognostizierte Marge",
+    "marginErosion": "Margenerosion"
   },
   "notifications": {
     "title": "Benachrichtigungen",
@@ -1167,5 +1188,37 @@
     "nameThisView": "Ansicht benennen",
     "saveView": "Ansicht speichern",
     "removeView": "Ansicht entfernen"
+  },
+  "leadForm": {
+    "title": "Formular zur Lead-Erfassung",
+    "hint": "Ein öffentliches Webformular für die Website Ihres Unternehmens — jede Übermittlung legt automatisch einen neuen Lead in Ihrer CRM-Pipeline an.",
+    "copyLink": "Link kopieren",
+    "regenerateLink": "Link neu generieren",
+    "disableForm": "Formular deaktivieren",
+    "enableForm": "Lead-Formular aktivieren",
+    "notEnabled": "Nicht aktiviert — ein Inhaber oder Administrator kann dies einschalten.",
+    "loading": "Wird geladen…",
+    "formNotFound": "Dieser Formularlink ist nicht mehr aktiv.",
+    "formTitle": "Kontaktieren Sie {company}",
+    "formHint": "Erzählen Sie uns kurz von Ihrem Projekt, wir melden uns bei Ihnen.",
+    "thankYou": "Danke! Wir haben Ihre Nachricht erhalten und melden uns in Kürze.",
+    "namePlaceholder": "Ihr Name",
+    "emailPlaceholder": "E-Mail-Adresse",
+    "phonePlaceholder": "Telefonnummer",
+    "messagePlaceholder": "Erzählen Sie uns von Ihrem Projekt…",
+    "submit": "Senden",
+    "submitError": "Etwas ist schiefgelaufen — bitte versuchen Sie es erneut."
+  },
+  "sso": {
+    "title": "Unternehmens-SSO (SAML)",
+    "hint": "Lassen Sie alle in Ihrem Unternehmen sich über Ihren eigenen Identitätsanbieter anmelden (Okta, Azure AD, Google Workspace usw.) statt mit einem Cantero-Passwort. Neue Anmeldungen werden beim ersten Login automatisch als Mitglied hinzugefügt.",
+    "activeSummary": "Aktiv für E-Mail-Adressen von @{domain}",
+    "downloadMetadata": "SP-Metadaten herunterladen",
+    "domain": "E-Mail-Domain",
+    "entryPoint": "IdP-Anmelde-URL",
+    "issuer": "IdP-Entity-ID",
+    "issuerPlaceholder": "z. B. https://idp.example.com/saml/metadata",
+    "cert": "IdP-Signaturzertifikat",
+    "disable": "SSO deaktivieren"
   }
 }

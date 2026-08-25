@@ -155,6 +155,17 @@ model Company {
   /// it's auto-escalated (flagged + emailed to the company owner) — null disables escalation.
   rfiSlaDays        Int?
   punchListSlaDays  Int?
+  /// Public, unauthenticated token embedded in the company's lead-capture form URL — null disables the form entirely.
+  publicLeadFormToken String? @unique
+  /// Enterprise SSO (SAML 2.0) — all four null means SSO is off for this company. When set,
+  /// a user whose email matches ssoDomain is routed to the IdP at ssoEntryPoint instead of
+  /// password login, and is just-in-time provisioned (as "worker") on first successful sign-in.
+  /// ssoIssuer/ssoCert describe the IdP (its entity ID and signing certificate) — our own SP
+  /// entity ID is derived per-company, not stored here.
+  ssoDomain     String? @unique
+  ssoEntryPoint String?
+  ssoIssuer     String?
+  ssoCert       String?
 
   memberships  Membership[]
   invites      Invite[]
@@ -1649,6 +1660,15 @@ model Equipment {
   status        EquipmentStatus @default(available)
   notes         String?
   createdAt     DateTime        @default(now())
+  /// Recurring preventive-maintenance interval — null disables scheduling entirely for this
+  /// piece of equipment. nextMaintenanceDueAt advances by this many days each time maintenance
+  /// completes, mirroring RecurringInvoice.nextRunDate's advance-on-completion pattern.
+  maintenanceIntervalDays Int?
+  nextMaintenanceDueAt    DateTime?
+  /// Set once an overdue-while-in-use notification email has gone out, so the hourly pass
+  /// doesn't re-send it every hour until the equipment is checked in and can actually be
+  /// pulled into maintenance status. Cleared whenever maintenance completes.
+  maintenanceOverdueNotifiedAt DateTime?
 
   company             Company                      @relation(fields: [companyId], references: [id], onDelete: Cascade)
   assignments         EquipmentAssignment[]

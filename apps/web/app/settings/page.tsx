@@ -8,6 +8,8 @@ import { apiFetch, apiUpload } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { isPushSupported, getExistingSubscription, enablePush, disablePush } from "@/lib/push";
 import { CustomFieldsSettingsPanel } from "@/components/custom-fields-settings-panel";
+import { LeadFormSettingsPanel } from "@/components/lead-form-settings-panel";
+import { SsoSettingsPanel } from "@/components/sso-settings-panel";
 
 interface Company {
   name: string;
@@ -17,6 +19,7 @@ interface Company {
   requiredApprovalCount: number;
   rfiSlaDays: number | null;
   punchListSlaDays: number | null;
+  publicLeadFormToken: string | null;
 }
 interface Plan {
   id: string;
@@ -121,6 +124,11 @@ export default function SettingsPage() {
   const [pushError, setPushError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [leadFormToken, setLeadFormToken] = useState<string | null>(null);
+
+  function loadLeadFormToken() {
+    apiFetch<Company>("/company").then((c) => setLeadFormToken(c.publicLeadFormToken));
+  }
 
   function loadLogo() {
     apiFetch<Blob>("/company/logo")
@@ -129,7 +137,7 @@ export default function SettingsPage() {
   }
 
   function loadAll() {
-    apiFetch<Company>("/company").then((c) =>
+    apiFetch<Company>("/company").then((c) => {
       setCompanyForm({
         name: c.name,
         locale: c.locale,
@@ -138,8 +146,9 @@ export default function SettingsPage() {
         requiredApprovalCount: String(c.requiredApprovalCount),
         rfiSlaDays: c.rfiSlaDays !== null ? String(c.rfiSlaDays) : "",
         punchListSlaDays: c.punchListSlaDays !== null ? String(c.punchListSlaDays) : "",
-      }),
-    );
+      });
+      setLeadFormToken(c.publicLeadFormToken);
+    });
     loadLogo();
     apiFetch<Subscription>("/billing/subscription").then((s) => {
       setSubscription(s);
@@ -882,6 +891,10 @@ export default function SettingsPage() {
         )}
 
         <CustomFieldsSettingsPanel canManage={isManager} />
+
+        <LeadFormSettingsPanel token={leadFormToken} canManage={isManager} onChange={loadLeadFormToken} />
+
+        <SsoSettingsPanel canManage={isManager} />
 
         {isManager && (
           <section className="card lg:col-span-2">

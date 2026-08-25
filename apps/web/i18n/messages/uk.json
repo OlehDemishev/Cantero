@@ -62,7 +62,13 @@
     "haveAccount": "Вже є обліковий запис?",
     "noAccount": "Потрібен обліковий запис?",
     "signupError": "Не вдалося створити обліковий запис",
-    "loginError": "Неправильна ел. пошта або пароль"
+    "loginError": "Неправильна ел. пошта або пароль",
+    "continueWithSso": "Продовжити",
+    "useSsoInstead": "Увійти через корпоративний SSO",
+    "useSsoPasswordInstead": "Увійти за паролем",
+    "ssoError": "Не вдалося розпочати вхід через SSO — перевірте домен пошти або зверніться до адміністратора.",
+    "ssoSigningIn": "Виконується вхід…",
+    "backToLogin": "Повернутися до входу"
   },
   "billing": {
     "title": "Активуйте підписку",
@@ -201,7 +207,8 @@
     "slaEscalationHint": "Запити RFI та пункти переліку недоробок, що залишаються відкритими довше цієї кількості днів, автоматично позначаються та надсилаються електронною поштою власнику компанії. Залиште порожнім, щоб вимкнути.",
     "rfiSlaDays": "Дні RFI",
     "punchListSlaDays": "Дні переліку недоробок",
-    "slaDaysPlaceholder": "напр. 5"
+    "slaDaysPlaceholder": "напр. 5",
+    "webhookEvent_client_lead_captured": "Новий лід із сайту"
   },
   "projects": {
     "title": "Проєкти",
@@ -523,7 +530,13 @@
     "performedAt": "Дата",
     "checkedOutAt": "Видано",
     "checkedInAt": "Повернено",
-    "stillOut": "Ще не повернено"
+    "stillOut": "Ще не повернено",
+    "maintenanceSchedule": "Плановe ТО",
+    "maintenanceScheduleHint": "Встановіть повторюваний інтервал — коли настане термін, техніка автоматично позначається та, якщо на той момент вільна, автоматично виводиться з експлуатації.",
+    "nextDue": "Наступний термін: {date}",
+    "intervalDays": "Кожні (днів)",
+    "intervalDaysPlaceholder": "напр. 90",
+    "disableSchedule": "Вимкнути розклад"
   },
   "subcontractorPortal": {
     "signInTitle": "Кабінет субпідрядника",
@@ -780,7 +793,15 @@
     "reportType_portfolio": "Портфельна панель",
     "reportType_cash_flow_forecast": "13-тижневий прогноз грошового потоку",
     "frequency_weekly": "Щотижня",
-    "frequency_monthly": "Щомісяця"
+    "frequency_monthly": "Щомісяця",
+    "estimateAtCompletion": "Прогноз витрат на завершення",
+    "estimateAtCompletionHint": "Прогнозує загальні витрати та маржу, якщо решта робіт триватиме з тією ж ефективністю витрат, що спостерігалася досі. % завершення береться з поетапних рахунків — 0%, доки не виставлено перший етапний рахунок.",
+    "percentComplete": "% завершення",
+    "costPerformanceIndex": "CPI",
+    "estimateAtCompletionShort": "EAC",
+    "varianceAtCompletion": "Відхилення",
+    "projectedMargin": "Прогнозована маржа",
+    "marginErosion": "Ерозія маржі"
   },
   "notifications": {
     "title": "Сповіщення",
@@ -1167,5 +1188,37 @@
     "nameThisView": "Назвіть цей вигляд",
     "saveView": "Зберегти вигляд",
     "removeView": "Видалити вигляд"
+  },
+  "leadForm": {
+    "title": "Форма збору лідів",
+    "hint": "Публічна веб-форма для сайту вашої компанії — кожне надсилання автоматично створює нового ліда у вашому CRM-пайплайні.",
+    "copyLink": "Копіювати посилання",
+    "regenerateLink": "Створити нове посилання",
+    "disableForm": "Вимкнути форму",
+    "enableForm": "Увімкнути форму збору лідів",
+    "notEnabled": "Не увімкнено — власник або адміністратор може це зробити.",
+    "loading": "Завантаження…",
+    "formNotFound": "Це посилання на форму більше не активне.",
+    "formTitle": "Зв'яжіться з {company}",
+    "formHint": "Розкажіть коротко про свій проєкт, і ми з вами зв'яжемося.",
+    "thankYou": "Дякуємо! Ми отримали ваше повідомлення і незабаром зв'яжемося з вами.",
+    "namePlaceholder": "Ваше ім'я",
+    "emailPlaceholder": "Електронна пошта",
+    "phonePlaceholder": "Номер телефону",
+    "messagePlaceholder": "Розкажіть про свій проєкт…",
+    "submit": "Надіслати",
+    "submitError": "Щось пішло не так — спробуйте ще раз."
+  },
+  "sso": {
+    "title": "Корпоративний SSO (SAML)",
+    "hint": "Дозвольте всім у вашій компанії входити через власного постачальника ідентифікації (Okta, Azure AD, Google Workspace тощо) замість пароля Cantero. Нові входи автоматично додаються як учасник під час першого входу.",
+    "activeSummary": "Активно для адрес @{domain}",
+    "downloadMetadata": "Завантажити метадані SP",
+    "domain": "Домен пошти",
+    "entryPoint": "URL входу IdP",
+    "issuer": "Ідентифікатор IdP",
+    "issuerPlaceholder": "напр. https://idp.example.com/saml/metadata",
+    "cert": "Сертифікат підпису IdP",
+    "disable": "Вимкнути SSO"
   }
 }

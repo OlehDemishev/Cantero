@@ -36,4 +36,9 @@ export class ReportsController {
   cashFlowForecast(@CurrentUser() user: AuthUser) {
     return this.service.cashFlowForecast(user.companyId);
   }
+
+  @Get("estimate-at-completion")
+  estimateAtCompletion(@CurrentUser() user: AuthUser) {
+    return this.service.estimateAtCompletion(user.companyId);
+  }
 }

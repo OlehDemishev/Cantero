@@ -67,7 +67,7 @@ export function GeofencePanel({ projectId }: { projectId: string }) {
   async function clearGeofence() {
     setBusy(true);
     try {
-      await apiFetch(`/projects/${projectId}/geofence`, { method: "PATCH", body: "null" });
+      await apiFetch(`/projects/${projectId}/geofence`, { method: "DELETE" });
       load();
     } finally {
       setBusy(false);

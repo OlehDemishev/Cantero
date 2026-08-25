@@ -62,7 +62,13 @@
     "haveAccount": "Already have an account?",
     "noAccount": "Need an account?",
     "signupError": "Could not create the account",
-    "loginError": "Invalid email or password"
+    "loginError": "Invalid email or password",
+    "continueWithSso": "Continue",
+    "useSsoInstead": "Sign in with company SSO instead",
+    "useSsoPasswordInstead": "Sign in with a password instead",
+    "ssoError": "Couldn't start SSO sign-in — check the email domain or contact your administrator.",
+    "ssoSigningIn": "Signing you in…",
+    "backToLogin": "Back to sign in"
   },
   "billing": {
     "title": "Activate your subscription",
@@ -201,7 +207,8 @@
     "slaEscalationHint": "RFIs and punch list items left open past this many days are automatically flagged and emailed to the company owner. Leave blank to disable.",
     "rfiSlaDays": "RFI days",
     "punchListSlaDays": "Punch list days",
-    "slaDaysPlaceholder": "e.g. 5"
+    "slaDaysPlaceholder": "e.g. 5",
+    "webhookEvent_client_lead_captured": "New website lead captured"
   },
   "projects": {
     "title": "Projects",
@@ -523,7 +530,13 @@
     "performedAt": "Date",
     "checkedOutAt": "Checked out",
     "checkedInAt": "Checked in",
-    "stillOut": "Still out"
+    "stillOut": "Still out",
+    "maintenanceSchedule": "Preventive maintenance",
+    "maintenanceScheduleHint": "Set a recurring interval and this equipment gets auto-flagged for service when it's due — pulled out of service automatically if it's available at the time.",
+    "nextDue": "Next due: {date}",
+    "intervalDays": "Every (days)",
+    "intervalDaysPlaceholder": "e.g. 90",
+    "disableSchedule": "Disable schedule"
   },
   "subcontractorPortal": {
     "signInTitle": "Subcontractor portal",
@@ -780,7 +793,15 @@
     "reportType_portfolio": "Portfolio dashboard",
     "reportType_cash_flow_forecast": "13-week cash flow forecast",
     "frequency_weekly": "Weekly",
-    "frequency_monthly": "Monthly"
+    "frequency_monthly": "Monthly",
+    "estimateAtCompletion": "Estimate at completion",
+    "estimateAtCompletionHint": "Forecasts total cost and margin if the remaining work continues at the same cost efficiency observed so far. % complete comes from progress-billing draws — 0% until the first draw is issued.",
+    "percentComplete": "% complete",
+    "costPerformanceIndex": "CPI",
+    "estimateAtCompletionShort": "EAC",
+    "varianceAtCompletion": "Variance",
+    "projectedMargin": "Projected margin",
+    "marginErosion": "Margin erosion"
   },
   "notifications": {
     "title": "Notifications",
@@ -1167,5 +1188,37 @@
     "nameThisView": "Name this view",
     "saveView": "Save view",
     "removeView": "Remove view"
+  },
+  "leadForm": {
+    "title": "Lead capture form",
+    "hint": "A public web form for your company's website — every submission creates a new lead in your CRM pipeline automatically.",
+    "copyLink": "Copy link",
+    "regenerateLink": "Regenerate link",
+    "disableForm": "Disable form",
+    "enableForm": "Enable lead capture form",
+    "notEnabled": "Not enabled — an owner or admin can turn this on.",
+    "loading": "Loading…",
+    "formNotFound": "This form link is no longer active.",
+    "formTitle": "Get in touch with {company}",
+    "formHint": "Tell us a bit about your project and we'll get back to you.",
+    "thankYou": "Thanks! We've received your message and will be in touch soon.",
+    "namePlaceholder": "Your name",
+    "emailPlaceholder": "Email address",
+    "phonePlaceholder": "Phone number",
+    "messagePlaceholder": "Tell us about your project…",
+    "submit": "Send",
+    "submitError": "Something went wrong — please try again."
+  },
+  "sso": {
+    "title": "Enterprise SSO (SAML)",
+    "hint": "Let everyone at your company sign in through your own identity provider (Okta, Azure AD, Google Workspace, etc.) instead of a Cantero password. New sign-ins are added as a member automatically on first login.",
+    "activeSummary": "Active for @{domain} email addresses",
+    "downloadMetadata": "Download SP metadata",
+    "domain": "Email domain",
+    "entryPoint": "IdP sign-in URL",
+    "issuer": "IdP entity ID",
+    "issuerPlaceholder": "e.g. https://idp.example.com/saml/metadata",
+    "cert": "IdP signing certificate",
+    "disable": "Disable SSO"
   }
 }

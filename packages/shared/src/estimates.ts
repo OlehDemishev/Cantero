@@ -47,14 +47,14 @@ export const updateProjectWarrantySchema = z.object({
 });
 export type UpdateProjectWarrantyInput = z.infer<typeof updateProjectWarrantySchema>;
 
-/// null clears the geofence (disables the check); a value sets/replaces it wholesale — no partial updates.
-export const updateProjectGeofenceSchema = z
-  .object({
-    lat: z.number().min(-90).max(90),
-    lng: z.number().min(-180).max(180),
-    radiusMeters: z.number().int().min(10).max(5000),
-  })
-  .nullable();
+/// Sets/replaces the geofence wholesale — no partial updates. To disable it, call the dedicated
+/// DELETE endpoint instead of PATCHing a null body (Express's strict JSON parser rejects a bare
+/// `null` top-level body before it ever reaches validation).
+export const updateProjectGeofenceSchema = z.object({
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180),
+  radiusMeters: z.number().int().min(10).max(5000),
+});
 export type UpdateProjectGeofenceInput = z.infer<typeof updateProjectGeofenceSchema>;
 
 export const createClientSchema = z.object({

@@ -82,6 +82,61 @@ describe("EquipmentService", () => {
       await expect(service.completeMaintenance(COMPANY_A, { name: "Owner" }, "eq-1")).rejects.toThrow(BadRequestException);
       expect(prisma.equipment.update).not.toHaveBeenCalled();
     });
+
+    it("advances nextMaintenanceDueAt from now and clears the overdue-notified flag when an interval is set", async () => {
+      prisma.equipment.findFirst.mockResolvedValue({
+        id: "eq-1",
+        companyId: COMPANY_A,
+        name: "Drill",
+        status: "maintenance",
+        maintenanceIntervalDays: 30,
+      });
+
+      await service.completeMaintenance(COMPANY_A, { name: "Owner" }, "eq-1");
+
+      const updateArg = prisma.equipment.update.mock.calls[0][0];
+      expect(updateArg.data.status).toBe("available");
+      expect(updateArg.data.maintenanceOverdueNotifiedAt).toBeNull();
+      expect(updateArg.data.nextMaintenanceDueAt.getTime()).toBeGreaterThan(Date.now());
+    });
+
+    it("leaves nextMaintenanceDueAt untouched when no interval is configured", async () => {
+      prisma.equipment.findFirst.mockResolvedValue({
+        id: "eq-1",
+        companyId: COMPANY_A,
+        name: "Drill",
+        status: "maintenance",
+        maintenanceIntervalDays: null,
+      });
+
+      await service.completeMaintenance(COMPANY_A, { name: "Owner" }, "eq-1");
+
+      const updateArg = prisma.equipment.update.mock.calls[0][0];
+      expect(updateArg.data.nextMaintenanceDueAt).toBeUndefined();
+    });
+  });
+
+  describe("updateMaintenanceSchedule()", () => {
+    it("sets the interval and computes a due date roughly `intervalDays` from now", async () => {
+      prisma.equipment.findFirst.mockResolvedValue({ id: "eq-1", companyId: COMPANY_A, name: "Drill", status: "available" });
+
+      await service.updateMaintenanceSchedule(COMPANY_A, { name: "Owner" }, "eq-1", { intervalDays: 90 });
+
+      const updateArg = prisma.equipment.update.mock.calls[0][0];
+      expect(updateArg.data.maintenanceIntervalDays).toBe(90);
+      const expected = Date.now() + 90 * 24 * 60 * 60 * 1000;
+      expect(Math.abs(updateArg.data.nextMaintenanceDueAt.getTime() - expected)).toBeLessThan(5000);
+    });
+
+    it("clears both the interval and the due date when passed null", async () => {
+      prisma.equipment.findFirst.mockResolvedValue({ id: "eq-1", companyId: COMPANY_A, name: "Drill", status: "available" });
+
+      await service.updateMaintenanceSchedule(COMPANY_A, { name: "Owner" }, "eq-1", { intervalDays: null });
+
+      expect(prisma.equipment.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { maintenanceIntervalDays: null, nextMaintenanceDueAt: null } }),
+      );
+    });
   });
 
   describe("retire()", () => {

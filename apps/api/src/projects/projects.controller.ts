@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post } from "@nestjs/common";
 import {
   createProjectSchema,
   updateProjectGeofenceSchema,
@@ -60,5 +60,10 @@ export class ProjectsController {
     @Body(new ZodValidationPipe(updateProjectGeofenceSchema)) body: UpdateProjectGeofenceInput,
   ) {
     return this.service.updateGeofence(user.companyId, id, body);
+  }
+
+  @Delete(":id/geofence")
+  clearGeofence(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.clearGeofence(user.companyId, id);
   }
 }

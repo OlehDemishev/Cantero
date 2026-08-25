@@ -62,7 +62,13 @@
     "haveAccount": "¿Ya tienes una cuenta?",
     "noAccount": "¿Necesitas una cuenta?",
     "signupError": "No se pudo crear la cuenta",
-    "loginError": "Correo electrónico o contraseña inválidos"
+    "loginError": "Correo electrónico o contraseña inválidos",
+    "continueWithSso": "Continuar",
+    "useSsoInstead": "Iniciar sesión con el SSO de la empresa",
+    "useSsoPasswordInstead": "Iniciar sesión con contraseña",
+    "ssoError": "No se pudo iniciar el inicio de sesión SSO — verifique el dominio de correo o contacte a su administrador.",
+    "ssoSigningIn": "Iniciando sesión…",
+    "backToLogin": "Volver al inicio de sesión"
   },
   "billing": {
     "title": "Activa tu suscripción",
@@ -201,7 +207,8 @@
     "slaEscalationHint": "Las RFI y los elementos de la lista de pendientes que permanezcan abiertos más de este número de días se marcan automáticamente y se notifican por correo electrónico al propietario de la empresa. Déjalo en blanco para desactivar.",
     "rfiSlaDays": "Días de RFI",
     "punchListSlaDays": "Días de lista de pendientes",
-    "slaDaysPlaceholder": "p. ej. 5"
+    "slaDaysPlaceholder": "p. ej. 5",
+    "webhookEvent_client_lead_captured": "Nuevo lead del sitio web capturado"
   },
   "projects": {
     "title": "Proyectos",
@@ -523,7 +530,13 @@
     "performedAt": "Fecha",
     "checkedOutAt": "Retirado",
     "checkedInAt": "Devuelto",
-    "stillOut": "Aún fuera"
+    "stillOut": "Aún fuera",
+    "maintenanceSchedule": "Mantenimiento preventivo",
+    "maintenanceScheduleHint": "Establezca un intervalo recurrente y este equipo se marcará automáticamente para servicio cuando venza — se retira del servicio automáticamente si está disponible en ese momento.",
+    "nextDue": "Próximo vencimiento: {date}",
+    "intervalDays": "Cada (días)",
+    "intervalDaysPlaceholder": "p. ej. 90",
+    "disableSchedule": "Desactivar programación"
   },
   "subcontractorPortal": {
     "signInTitle": "Portal de subcontratistas",
@@ -780,7 +793,15 @@
     "reportType_portfolio": "Panel de cartera",
     "reportType_cash_flow_forecast": "Previsión de flujo de caja a 13 semanas",
     "frequency_weekly": "Semanal",
-    "frequency_monthly": "Mensual"
+    "frequency_monthly": "Mensual",
+    "estimateAtCompletion": "Estimación al finalizar",
+    "estimateAtCompletionHint": "Pronostica el costo total y el margen si el trabajo restante continúa con la misma eficiencia de costos observada hasta ahora. El % de avance proviene de las certificaciones de facturación por avance — 0% hasta la primera certificación.",
+    "percentComplete": "% de avance",
+    "costPerformanceIndex": "CPI",
+    "estimateAtCompletionShort": "EAC",
+    "varianceAtCompletion": "Variación",
+    "projectedMargin": "Margen proyectado",
+    "marginErosion": "Erosión de margen"
   },
   "notifications": {
     "title": "Notificaciones",
@@ -1167,5 +1188,37 @@
     "nameThisView": "Nombrar esta vista",
     "saveView": "Guardar vista",
     "removeView": "Eliminar vista"
+  },
+  "leadForm": {
+    "title": "Formulario de captación de leads",
+    "hint": "Un formulario web público para el sitio de su empresa — cada envío crea automáticamente un nuevo lead en su pipeline de CRM.",
+    "copyLink": "Copiar enlace",
+    "regenerateLink": "Regenerar enlace",
+    "disableForm": "Desactivar formulario",
+    "enableForm": "Activar formulario de captación",
+    "notEnabled": "No activado — un propietario o administrador puede activarlo.",
+    "loading": "Cargando…",
+    "formNotFound": "Este enlace de formulario ya no está activo.",
+    "formTitle": "Póngase en contacto con {company}",
+    "formHint": "Cuéntenos un poco sobre su proyecto y nos pondremos en contacto.",
+    "thankYou": "¡Gracias! Hemos recibido su mensaje y nos pondremos en contacto pronto.",
+    "namePlaceholder": "Su nombre",
+    "emailPlaceholder": "Correo electrónico",
+    "phonePlaceholder": "Número de teléfono",
+    "messagePlaceholder": "Cuéntenos sobre su proyecto…",
+    "submit": "Enviar",
+    "submitError": "Algo salió mal — inténtelo de nuevo."
+  },
+  "sso": {
+    "title": "SSO empresarial (SAML)",
+    "hint": "Permita que todos en su empresa inicien sesión a través de su propio proveedor de identidad (Okta, Azure AD, Google Workspace, etc.) en lugar de una contraseña de Cantero. Los nuevos inicios de sesión se añaden como miembro automáticamente en el primer acceso.",
+    "activeSummary": "Activo para direcciones de correo de @{domain}",
+    "downloadMetadata": "Descargar metadatos de SP",
+    "domain": "Dominio de correo",
+    "entryPoint": "URL de inicio de sesión del IdP",
+    "issuer": "ID de entidad del IdP",
+    "issuerPlaceholder": "p. ej. https://idp.example.com/saml/metadata",
+    "cert": "Certificado de firma del IdP",
+    "disable": "Desactivar SSO"
   }
 }

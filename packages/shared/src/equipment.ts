@@ -40,3 +40,8 @@ export const addMaintenanceRecordSchema = z.object({
   performedAt: z.string().datetime().optional(),
 });
 export type AddMaintenanceRecordInput = z.infer<typeof addMaintenanceRecordSchema>;
+
+export const updateMaintenanceScheduleSchema = z.object({
+  intervalDays: z.number().int().min(1).max(3650).nullable(),
+});
+export type UpdateMaintenanceScheduleInput = z.infer<typeof updateMaintenanceScheduleSchema>;
