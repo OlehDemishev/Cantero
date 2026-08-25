@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
+import { MaterialRfqsPanel } from "@/components/material-rfqs-panel";
 import { apiFetch } from "@/lib/api-client";
 
 interface Supplier {
@@ -93,6 +94,8 @@ export default function SuppliersPage() {
           )}
         </div>
       </div>
+
+      <MaterialRfqsPanel />
     </AuthenticatedShell>
   );
 }

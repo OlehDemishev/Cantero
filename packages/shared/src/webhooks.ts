@@ -25,6 +25,7 @@ export const WEBHOOK_EVENTS = [
   "client.won",
   "client.lost",
   "client.lead_captured",
+  "expense.approved",
 ] as const;
 export type WebhookEvent = (typeof WEBHOOK_EVENTS)[number];
 

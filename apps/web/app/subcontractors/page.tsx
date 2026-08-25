@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { SubcontractorDocumentType } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
+import { CertificateAttachment } from "@/components/certificate-attachment";
 import { apiFetch } from "@/lib/api-client";
 
 const DOCUMENT_TYPES: SubcontractorDocumentType[] = ["general_liability_insurance", "workers_comp_insurance", "license", "other"];
@@ -192,9 +193,12 @@ export default function SubcontractorsPage() {
                                       {new Date(doc.expiresAt).toLocaleDateString()}
                                     </span>
                                   </span>
-                                  <button onClick={() => removeDocument(s.id, doc.id)} className="text-gray-400 hover:text-error-600">
-                                    ×
-                                  </button>
+                                  <span className="flex items-center gap-2">
+                                    <CertificateAttachment subcontractorDocumentId={doc.id} />
+                                    <button onClick={() => removeDocument(s.id, doc.id)} className="text-gray-400 hover:text-error-600">
+                                      ×
+                                    </button>
+                                  </span>
                                 </li>
                               );
                             })}

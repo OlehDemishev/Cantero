@@ -10,6 +10,8 @@ import { isPushSupported, getExistingSubscription, enablePush, disablePush } fro
 import { CustomFieldsSettingsPanel } from "@/components/custom-fields-settings-panel";
 import { LeadFormSettingsPanel } from "@/components/lead-form-settings-panel";
 import { SsoSettingsPanel } from "@/components/sso-settings-panel";
+import { DataPrivacyPanel } from "@/components/data-privacy-panel";
+import { AccountingSyncPanel } from "@/components/accounting-sync-panel";
 
 interface Company {
   name: string;
@@ -19,6 +21,7 @@ interface Company {
   requiredApprovalCount: number;
   rfiSlaDays: number | null;
   punchListSlaDays: number | null;
+  invoiceRemindersEnabled: boolean;
   publicLeadFormToken: string | null;
 }
 interface Plan {
@@ -33,10 +36,17 @@ interface Subscription {
   status: string;
   plan: Plan;
 }
+interface CustomRole {
+  id: string;
+  name: string;
+  basePermissions: string[];
+  _count: { memberships: number };
+}
 interface Member {
   userId: string;
   role: string;
   user: { id: string; email: string; name: string };
+  customRole: { id: string; name: string } | null;
 }
 interface Invite {
   id: string;
@@ -81,6 +91,7 @@ export default function SettingsPage() {
   const tc = useTranslations("common");
   const { data: me } = useMe();
   const isManager = me?.user.role === "owner" || me?.user.role === "admin";
+  const canManageAccounting = isManager || me?.user.role === "accountant";
 
   const [companyForm, setCompanyForm] = useState<{
     name: string;
@@ -90,6 +101,7 @@ export default function SettingsPage() {
     requiredApprovalCount: string;
     rfiSlaDays: string;
     punchListSlaDays: string;
+    invoiceRemindersEnabled: boolean;
   }>({
     name: "",
     locale: "en",
@@ -98,6 +110,7 @@ export default function SettingsPage() {
     requiredApprovalCount: "1",
     rfiSlaDays: "",
     punchListSlaDays: "",
+    invoiceRemindersEnabled: false,
   });
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [logoBusy, setLogoBusy] = useState(false);
@@ -106,6 +119,9 @@ export default function SettingsPage() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [seatsInput, setSeatsInput] = useState("1");
   const [members, setMembers] = useState<Member[] | null>(null);
+  const [customRoles, setCustomRoles] = useState<CustomRole[] | null>(null);
+  const [customRoleForm, setCustomRoleForm] = useState({ name: "", basePermissions: [] as string[] });
+  const [creatingCustomRole, setCreatingCustomRole] = useState(false);
   const [invites, setInvites] = useState<Invite[] | null>(null);
   const [inviteForm, setInviteForm] = useState({ email: "", role: "worker" });
   const [apiKeys, setApiKeys] = useState<ApiKey[] | null>(null);
@@ -122,6 +138,9 @@ export default function SettingsPage() {
   const [pushStatus, setPushStatus] = useState<"checking" | "unsupported" | "enabled" | "disabled">("checking");
   const [pushBusy, setPushBusy] = useState(false);
   const [pushError, setPushError] = useState<string | null>(null);
+  const [digestFrequency, setDigestFrequency] = useState<"off" | "daily" | "weekly">("off");
+  const [digestBusy, setDigestBusy] = useState(false);
+  const [digestSaved, setDigestSaved] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [leadFormToken, setLeadFormToken] = useState<string | null>(null);
@@ -146,6 +165,7 @@ export default function SettingsPage() {
         requiredApprovalCount: String(c.requiredApprovalCount),
         rfiSlaDays: c.rfiSlaDays !== null ? String(c.rfiSlaDays) : "",
         punchListSlaDays: c.punchListSlaDays !== null ? String(c.punchListSlaDays) : "",
+        invoiceRemindersEnabled: c.invoiceRemindersEnabled,
       });
       setLeadFormToken(c.publicLeadFormToken);
     });
@@ -156,6 +176,7 @@ export default function SettingsPage() {
     });
     apiFetch<Plan[]>("/billing/plans").then(setPlans);
     apiFetch<Member[]>("/company/members").then(setMembers);
+    apiFetch<CustomRole[]>("/company/custom-roles").then(setCustomRoles);
     if (isManager) {
       apiFetch<Invite[]>("/company/invites").then(setInvites);
       apiFetch<ApiKey[]>("/company/api-keys").then(setApiKeys);
@@ -177,6 +198,10 @@ export default function SettingsPage() {
     getExistingSubscription().then((sub) => setPushStatus(sub ? "enabled" : "disabled"));
   }, []);
 
+  useEffect(() => {
+    if (me) setDigestFrequency(me.emailDigestFrequency);
+  }, [me]);
+
   async function togglePush() {
     setPushBusy(true);
     setPushError(null);
@@ -195,6 +220,22 @@ export default function SettingsPage() {
     }
   }
 
+  async function saveDigestFrequency(next: "off" | "daily" | "weekly") {
+    setDigestFrequency(next);
+    setDigestBusy(true);
+    setDigestSaved(false);
+    try {
+      await apiFetch("/me/notification-preferences", {
+        method: "PATCH",
+        body: JSON.stringify({ emailDigestFrequency: next }),
+      });
+      setDigestSaved(true);
+      setTimeout(() => setDigestSaved(false), 2000);
+    } finally {
+      setDigestBusy(false);
+    }
+  }
+
   async function saveCompany(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -210,6 +251,7 @@ export default function SettingsPage() {
           requiredApprovalCount: Number(companyForm.requiredApprovalCount) || 1,
           rfiSlaDays: companyForm.rfiSlaDays ? Number(companyForm.rfiSlaDays) : null,
           punchListSlaDays: companyForm.punchListSlaDays ? Number(companyForm.punchListSlaDays) : null,
+          invoiceRemindersEnabled: companyForm.invoiceRemindersEnabled,
         }),
       });
       document.cookie = `NEXT_LOCALE=${companyForm.locale};path=/;max-age=31536000`;
@@ -269,6 +311,42 @@ export default function SettingsPage() {
 
   async function removeMember(userId: string) {
     await apiFetch(`/company/members/${userId}`, { method: "DELETE" });
+    loadAll();
+  }
+
+  async function assignCustomRole(userId: string, customRoleId: string) {
+    await apiFetch(`/company/members/${userId}/custom-role`, {
+      method: "PATCH",
+      body: JSON.stringify({ customRoleId: customRoleId || null }),
+    });
+    loadAll();
+  }
+
+  function toggleCustomRolePermission(role: string) {
+    setCustomRoleForm((f) => ({
+      ...f,
+      basePermissions: f.basePermissions.includes(role)
+        ? f.basePermissions.filter((r) => r !== role)
+        : [...f.basePermissions, role],
+    }));
+  }
+
+  async function createCustomRole(e: React.FormEvent) {
+    e.preventDefault();
+    if (!customRoleForm.name.trim() || customRoleForm.basePermissions.length === 0) return;
+    setBusy(true);
+    try {
+      await apiFetch("/company/custom-roles", { method: "POST", body: JSON.stringify(customRoleForm) });
+      setCustomRoleForm({ name: "", basePermissions: [] });
+      setCreatingCustomRole(false);
+      loadAll();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteCustomRole(id: string) {
+    await apiFetch(`/company/custom-roles/${id}`, { method: "DELETE" });
     loadAll();
   }
 
@@ -408,6 +486,24 @@ export default function SettingsPage() {
         </section>
       )}
 
+      <section className="card mt-6">
+        <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("emailDigest")}</h2>
+        <p className="mb-4 text-xs text-gray-500">{t("emailDigestHint")}</p>
+        <div className="flex items-center gap-3">
+          <select
+            className="input w-auto"
+            value={digestFrequency}
+            disabled={digestBusy}
+            onChange={(e) => saveDigestFrequency(e.target.value as "off" | "daily" | "weekly")}
+          >
+            <option value="off">{t("digestOff")}</option>
+            <option value="daily">{t("digestDaily")}</option>
+            <option value="weekly">{t("digestWeekly")}</option>
+          </select>
+          {digestSaved && <span className="text-sm text-green-700">{tc("saved")}</span>}
+        </div>
+      </section>
+
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <section className="card">
           <h2 className="mb-4 text-sm font-semibold text-gray-700">{t("company")}</h2>
@@ -499,6 +595,21 @@ export default function SettingsPage() {
                   />
                 </label>
               </div>
+            </div>
+            <div className="border-t border-gray-100 pt-3">
+              <label className="flex items-start gap-2 text-xs text-gray-700">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={companyForm.invoiceRemindersEnabled}
+                  onChange={(e) => setCompanyForm((f) => ({ ...f, invoiceRemindersEnabled: e.target.checked }))}
+                  disabled={!isManager}
+                />
+                <span>
+                  <span className="font-medium text-gray-700">{t("invoiceReminders")}</span>
+                  <span className="mt-0.5 block text-gray-500">{t("invoiceRemindersHint")}</span>
+                </span>
+              </label>
             </div>
             {isManager && (
               <button type="submit" disabled={busy} className="btn-primary">
@@ -614,6 +725,7 @@ export default function SettingsPage() {
                   <th className="py-2">{tc("name")}</th>
                   <th>{tc("email")}</th>
                   <th>{t("role")}</th>
+                  <th>{t("customRole")}</th>
                   {isManager && <th></th>}
                 </tr>
               </thead>
@@ -639,6 +751,24 @@ export default function SettingsPage() {
                         t(m.role as any)
                       )}
                     </td>
+                    <td>
+                      {isManager && m.role !== "owner" ? (
+                        <select
+                          className="input w-auto"
+                          value={m.customRole?.id ?? ""}
+                          onChange={(e) => assignCustomRole(m.userId, e.target.value)}
+                        >
+                          <option value="">{t("noCustomRole")}</option>
+                          {(customRoles ?? []).map((cr) => (
+                            <option key={cr.id} value={cr.id}>
+                              {cr.name}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        m.customRole?.name ?? "—"
+                      )}
+                    </td>
                     {isManager && (
                       <td>
                         {m.role !== "owner" && (
@@ -652,6 +782,76 @@ export default function SettingsPage() {
                 ))}
               </tbody>
             </table>
+          )}
+        </section>
+
+        <section className="card lg:col-span-2">
+          <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("customRoles")}</h2>
+          <p className="mb-4 text-xs text-gray-500">{t("customRolesHint")}</p>
+
+          {!customRoles || customRoles.length === 0 ? (
+            <p className="text-sm text-gray-400">{t("noCustomRoles")}</p>
+          ) : (
+            <ul className="mb-3 flex flex-col gap-2">
+              {customRoles.map((cr) => (
+                <li key={cr.id} className="flex items-center justify-between rounded-md border border-gray-200 px-3 py-2">
+                  <span className="text-sm">
+                    <span className="font-medium text-gray-800">{cr.name}</span>{" "}
+                    <span className="text-xs text-gray-500">({cr.basePermissions.map((p) => t(p as any)).join(" + ")})</span>
+                    {cr._count.memberships > 0 && (
+                      <span className="ml-1.5 text-xs text-gray-400">
+                        {t("assignedToCount", { count: cr._count.memberships })}
+                      </span>
+                    )}
+                  </span>
+                  {isManager && (
+                    <button onClick={() => deleteCustomRole(cr.id)} className="text-xs text-gray-400 hover:text-error-600">
+                      {tc("delete")}
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {isManager && (
+            <>
+              {!creatingCustomRole ? (
+                <button onClick={() => setCreatingCustomRole(true)} className="btn-secondary px-3 py-1 text-xs">
+                  {t("newCustomRole")}
+                </button>
+              ) : (
+                <form onSubmit={createCustomRole} className="flex flex-col gap-3">
+                  <input
+                    required
+                    placeholder={t("customRoleNamePlaceholder")}
+                    className="input"
+                    value={customRoleForm.name}
+                    onChange={(e) => setCustomRoleForm((f) => ({ ...f, name: e.target.value }))}
+                  />
+                  <div className="flex flex-wrap gap-3">
+                    {MEMBERSHIP_ROLES_MANAGEABLE.map((r) => (
+                      <label key={r} className="flex items-center gap-1.5 text-xs text-gray-600">
+                        <input
+                          type="checkbox"
+                          checked={customRoleForm.basePermissions.includes(r)}
+                          onChange={() => toggleCustomRolePermission(r)}
+                        />
+                        {t(r)}
+                      </label>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <button type="submit" disabled={busy} className="btn-primary">
+                      {tc("create")}
+                    </button>
+                    <button type="button" onClick={() => setCreatingCustomRole(false)} className="btn-secondary">
+                      {tc("cancel")}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </>
           )}
         </section>
 
@@ -895,6 +1095,10 @@ export default function SettingsPage() {
         <LeadFormSettingsPanel token={leadFormToken} canManage={isManager} onChange={loadLeadFormToken} />
 
         <SsoSettingsPanel canManage={isManager} />
+
+        <AccountingSyncPanel canManage={canManageAccounting} />
+
+        <DataPrivacyPanel canManage={isManager} />
 
         {isManager && (
           <section className="card lg:col-span-2">

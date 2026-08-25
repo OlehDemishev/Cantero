@@ -57,7 +57,7 @@ export class AuthService {
   async login(input: LoginInput): Promise<{ accessToken: string; companyId: string }> {
     const user = await this.prisma.user.findUnique({
       where: { email: input.email },
-      include: { memberships: true },
+      include: { memberships: { include: { customRole: true } } },
     });
     if (!user) throw new UnauthorizedException("Invalid email or password");
 
@@ -75,6 +75,7 @@ export class AuthService {
       email: user.email,
       name: user.name,
       role: membership.role,
+      additionalRoles: membership.customRole?.basePermissions,
     });
     return { accessToken, companyId: membership.companyId };
   }

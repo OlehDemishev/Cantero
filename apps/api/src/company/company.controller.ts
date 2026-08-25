@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Header,
   Patch,
@@ -50,5 +51,17 @@ export class CompanyController {
   async logo(@CurrentUser() user: AuthUser) {
     const { buffer, mimeType } = await this.service.getLogo(user.companyId);
     return new StreamableFile(buffer, { type: mimeType });
+  }
+
+  @Roles("owner", "admin")
+  @Post("deletion-request")
+  requestDeletion(@CurrentUser() user: AuthUser) {
+    return this.service.requestDeletion(user.companyId, { userId: user.userId, name: user.name }, user.email);
+  }
+
+  @Roles("owner", "admin")
+  @Delete("deletion-request")
+  cancelDeletionRequest(@CurrentUser() user: AuthUser) {
+    return this.service.cancelDeletionRequest(user.companyId, { userId: user.userId, name: user.name });
   }
 }

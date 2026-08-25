@@ -1,6 +1,7 @@
 import { Test } from "@nestjs/testing";
 import { NotificationsService } from "./notifications.service";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { WeatherService } from "../weather/weather.service";
 
 const COMPANY_A = "company-a";
 const USER_A = "user-a";
@@ -19,8 +20,10 @@ describe("NotificationsService.list", () => {
     commentMention: { findMany: jest.Mock };
     subcontractorDocument: { findMany: jest.Mock };
     workerCertification: { findMany: jest.Mock };
+    task: { findMany: jest.Mock };
     membership: { findFirst: jest.Mock };
   };
+  let weather: { geocode: jest.Mock; forecast: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -35,11 +38,17 @@ describe("NotificationsService.list", () => {
       commentMention: { findMany: jest.fn().mockResolvedValue([]) },
       subcontractorDocument: { findMany: jest.fn().mockResolvedValue([]) },
       workerCertification: { findMany: jest.fn().mockResolvedValue([]) },
+      task: { findMany: jest.fn().mockResolvedValue([]) },
       membership: { findFirst: jest.fn().mockResolvedValue(null) },
     };
+    weather = { geocode: jest.fn(), forecast: jest.fn() };
 
     const module = await Test.createTestingModule({
-      providers: [NotificationsService, { provide: PrismaService, useValue: prisma }],
+      providers: [
+        NotificationsService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: WeatherService, useValue: weather },
+      ],
     }).compile();
 
     service = module.get(NotificationsService);
@@ -179,5 +188,89 @@ describe("NotificationsService.list", () => {
     const { notifications } = await service.list(COMPANY_A, USER_A);
 
     expect(notifications.map((n) => n.key)).toEqual(["rfi:rfi-1", "punch_list:punch-1"]);
+  });
+
+  it("flags an outdoor task whose start date lands on a risky forecast day", async () => {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() + 2);
+    const dateStr = startDate.toISOString().slice(0, 10);
+
+    prisma.task.findMany.mockResolvedValue([
+      {
+        id: "task-1",
+        projectId: "project-1",
+        name: "Pour foundation",
+        startDate,
+        project: { id: "project-1", name: "Site A", address: "1 River Rd, Berlin" },
+      },
+    ]);
+    weather.geocode.mockResolvedValue({ lat: 52.5, lon: 13.4 });
+    weather.forecast.mockResolvedValue([{ date: dateStr, condition: "rain", tempMaxC: 10, tempMinC: 5, risky: true }]);
+
+    const { notifications } = await service.list(COMPANY_A, USER_A);
+    const risk = notifications.find((n) => n.key === "weather_risk:task-1");
+
+    expect(risk).toBeDefined();
+    expect(risk?.severity).toBe("warning");
+    expect(risk?.link).toBe("/projects/project-1");
+  });
+
+  it("escalates severity to critical for extreme conditions", async () => {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() + 1);
+    const dateStr = startDate.toISOString().slice(0, 10);
+
+    prisma.task.findMany.mockResolvedValue([
+      {
+        id: "task-2",
+        projectId: "project-1",
+        name: "Roof shingling",
+        startDate,
+        project: { id: "project-1", name: "Site A", address: "1 River Rd, Berlin" },
+      },
+    ]);
+    weather.geocode.mockResolvedValue({ lat: 52.5, lon: 13.4 });
+    weather.forecast.mockResolvedValue([{ date: dateStr, condition: "extreme_heat", tempMaxC: 40, tempMinC: 28, risky: true }]);
+
+    const { notifications } = await service.list(COMPANY_A, USER_A);
+    const risk = notifications.find((n) => n.key === "weather_risk:task-2");
+
+    expect(risk?.severity).toBe("critical");
+  });
+
+  it("does not flag an outdoor task when its forecast day isn't risky", async () => {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() + 1);
+    const dateStr = startDate.toISOString().slice(0, 10);
+
+    prisma.task.findMany.mockResolvedValue([
+      {
+        id: "task-3",
+        projectId: "project-1",
+        name: "Framing",
+        startDate,
+        project: { id: "project-1", name: "Site A", address: "1 River Rd, Berlin" },
+      },
+    ]);
+    weather.geocode.mockResolvedValue({ lat: 52.5, lon: 13.4 });
+    weather.forecast.mockResolvedValue([{ date: dateStr, condition: "clear", tempMaxC: 20, tempMinC: 10, risky: false }]);
+
+    const { notifications } = await service.list(COMPANY_A, USER_A);
+
+    expect(notifications.some((n) => n.key === "weather_risk:task-3")).toBe(false);
+  });
+
+  it("skips a project with no address rather than failing the whole pass", async () => {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() + 1);
+
+    prisma.task.findMany.mockResolvedValue([
+      { id: "task-4", projectId: "project-1", name: "Excavation", startDate, project: { id: "project-1", name: "Site A", address: null } },
+    ]);
+
+    const { notifications } = await service.list(COMPANY_A, USER_A);
+
+    expect(notifications.some((n) => n.key === "weather_risk:task-4")).toBe(false);
+    expect(weather.geocode).not.toHaveBeenCalled();
   });
 });

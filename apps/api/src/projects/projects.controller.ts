@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, Header, Param, Patch, Post, StreamableFile, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
 import {
   createProjectSchema,
   updateProjectGeofenceSchema,
@@ -11,10 +12,14 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { ProjectsService } from "./projects.service";
+import { ProjectCloseoutService } from "./project-closeout.service";
 
 @Controller("projects")
 export class ProjectsController {
-  constructor(private readonly service: ProjectsService) {}
+  constructor(
+    private readonly service: ProjectsService,
+    private readonly closeout: ProjectCloseoutService,
+  ) {}
 
   @Get()
   list(@CurrentUser() user: AuthUser) {
@@ -44,6 +49,13 @@ export class ProjectsController {
     return this.service.create(user.companyId, body);
   }
 
+  @Post("import")
+  @UseInterceptors(FileInterceptor("file"))
+  importCsv(@CurrentUser() user: AuthUser, @UploadedFile() file: Express.Multer.File) {
+    if (!file) throw new BadRequestException("No file provided");
+    return this.service.importCsv(user.companyId, { userId: user.userId, name: user.name }, file.buffer.toString("utf-8"));
+  }
+
   @Patch(":id/warranty")
   updateWarranty(
     @CurrentUser() user: AuthUser,
@@ -65,5 +77,12 @@ export class ProjectsController {
   @Delete(":id/geofence")
   clearGeofence(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.clearGeofence(user.companyId, id);
+  }
+
+  @Get(":id/closeout-package")
+  @Header("Content-Type", "application/zip")
+  async closeoutPackage(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    const buffer = await this.closeout.buildPackage(user.companyId, id);
+    return new StreamableFile(buffer);
   }
 }

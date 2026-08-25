@@ -14,6 +14,7 @@ import { RfiPanel } from "@/components/rfi-panel";
 import { SafetyPanel } from "@/components/safety-panel";
 import { SubmittalsPanel } from "@/components/submittals-panel";
 import { WarrantyPanel } from "@/components/warranty-panel";
+import { ProjectCloseoutPanel } from "@/components/project-closeout-panel";
 import { BudgetPanel } from "@/components/budget-panel";
 import { TimeTrackingPanel } from "@/components/time-tracking-panel";
 import { SubcontractorCostsPanel } from "@/components/subcontractor-costs-panel";
@@ -201,6 +202,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
       <SubcontractorCostsPanel projectId={projectId} />
       <BudgetPanel projectId={projectId} />
       <DocumentsPanel projectId={projectId} />
+      <ProjectCloseoutPanel projectId={projectId} />
     </AuthenticatedShell>
   );
 }

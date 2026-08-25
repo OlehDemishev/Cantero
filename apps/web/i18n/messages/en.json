@@ -20,7 +20,8 @@
     "delete": "Delete",
     "emailedTo": "Emailed to {email}.",
     "noClientEmail": "No email on file for this client — share the link manually.",
-    "none": "None"
+    "none": "None",
+    "close": "Close"
   },
   "nav": {
     "menu": "Menu",
@@ -42,7 +43,8 @@
     "portfolio": "Portfolio",
     "resourcePlanning": "Resource planning",
     "templates": "Templates",
-    "subcontractors": "Subcontractors"
+    "subcontractors": "Subcontractors",
+    "expenses": "Expenses"
   },
   "auth": {
     "signupTitle": "Create your Cantero account",
@@ -208,7 +210,23 @@
     "rfiSlaDays": "RFI days",
     "punchListSlaDays": "Punch list days",
     "slaDaysPlaceholder": "e.g. 5",
-    "webhookEvent_client_lead_captured": "New website lead captured"
+    "webhookEvent_client_lead_captured": "New website lead captured",
+    "emailDigest": "Email digest",
+    "emailDigestHint": "Get an email summary of what's new (overdue RFIs, low stock, mentions, and more) instead of checking the notification bell.",
+    "digestOff": "Off",
+    "digestDaily": "Daily",
+    "digestWeekly": "Weekly",
+    "invoiceReminders": "Automatic overdue invoice reminders",
+    "invoiceRemindersHint": "Sends escalating reminder emails to the client at 3, 7, 14, and 30 days past the due date.",
+    "webhookEvent_expense_approved": "Expense approved",
+    "customRole": "Custom role",
+    "noCustomRole": "None",
+    "customRoles": "Custom roles",
+    "customRolesHint": "Combine permission tiers under one name — e.g. \"Site Lead\" = Foreman + Estimator — for a member who needs more than one fixed role. Purely additive: it never takes away what a member's own role already grants.",
+    "noCustomRoles": "No custom roles yet.",
+    "assignedToCount": "· assigned to {count}",
+    "newCustomRole": "New custom role",
+    "customRoleNamePlaceholder": "Role name (e.g. Site Lead)"
   },
   "projects": {
     "title": "Projects",
@@ -317,7 +335,8 @@
     "category_permit": "Permit",
     "category_photo": "Photo",
     "category_invoice_scan": "Invoice scan",
-    "category_other": "Other"
+    "category_other": "Other",
+    "category_insurance_certificate": "Insurance certificate"
   },
   "rateCatalog": {
     "title": "Rate catalog",
@@ -668,7 +687,8 @@
     "depType_finish_to_finish": "Finish→Finish",
     "depType_start_to_finish": "Start→Finish",
     "criticalPathLegend": "Critical path — delaying these delays the finish",
-    "comments": "Comments"
+    "comments": "Comments",
+    "outdoorWork": "Outdoor work"
   },
   "purchaseOrders": {
     "title": "Purchase orders",
@@ -706,7 +726,8 @@
     "logs": "Logs",
     "punch": "Punch",
     "cachedFrom": "Showing cached data from {time}",
-    "loggedOutsideGeofence": "Saved — but logged outside the project's geofence"
+    "loggedOutsideGeofence": "Saved — but logged outside the project's geofence",
+    "expenses": "Expenses"
   },
   "subcontractors": {
     "title": "Subcontractor costs",
@@ -863,7 +884,8 @@
     "more": "more",
     "importClients": "Import CSV",
     "importMaterials": "Import materials CSV",
-    "importRateItems": "Import rate items CSV"
+    "importRateItems": "Import rate items CSV",
+    "importProjects": "Import projects CSV"
   },
   "dailyLogs": {
     "title": "Daily logs",
@@ -1119,7 +1141,10 @@
     "general_liability_insurance": "General liability insurance",
     "workers_comp_insurance": "Workers' comp insurance",
     "license": "License",
-    "other": "Other"
+    "other": "Other",
+    "viewCertificate": "View certificate",
+    "uploadCertificate": "Upload certificate",
+    "uploading": "Uploading…"
   },
   "weather": {
     "title": "Weather forecast",
@@ -1220,5 +1245,108 @@
     "issuerPlaceholder": "e.g. https://idp.example.com/saml/metadata",
     "cert": "IdP signing certificate",
     "disable": "Disable SSO"
+  },
+  "closeout": {
+    "title": "Closeout package",
+    "description": "Bundle the final invoice, warranty status, and project documents into one ZIP for client handoff.",
+    "download": "Download closeout package",
+    "preparing": "Preparing…",
+    "error": "Couldn't generate the closeout package. Try again."
+  },
+  "dataPrivacy": {
+    "title": "Data & privacy",
+    "hint": "Export a portable copy of your company's data, or request account deletion.",
+    "exportTitle": "Data export",
+    "exportHint": "Download a ZIP with your company profile, team, clients, projects, estimates, invoices, and field-ops records as JSON files.",
+    "exportButton": "Download data export",
+    "exporting": "Preparing…",
+    "deletionTitle": "Account deletion",
+    "deletionHint": "Request deletion of your company account and its data. Our support team will follow up to confirm retention/legal requirements before proceeding.",
+    "requestDeletion": "Request account deletion",
+    "confirmRequest": "Request deletion of this company account? Support will follow up before anything is deleted.",
+    "deletionPending": "Deletion requested on {date} — our support team will follow up.",
+    "cancelRequest": "Cancel deletion request"
+  },
+  "customReports": {
+    "title": "Custom reports",
+    "hint": "Pick a dataset, choose columns, optionally filter by date range and status, then preview or save it as a reusable report.",
+    "dataset": "Dataset",
+    "dataset_projects": "Projects",
+    "dataset_invoices": "Invoices",
+    "dataset_estimates": "Estimates",
+    "dataset_time_entries": "Time entries",
+    "dataset_punch_list": "Punch list",
+    "dataset_rfis": "RFIs",
+    "dateFrom": "From",
+    "dateTo": "To",
+    "statusEquals": "Status equals",
+    "statusPlaceholder": "e.g. paid, open, approved",
+    "columns": "Columns",
+    "preview": "Preview",
+    "reportNamePlaceholder": "Report name",
+    "noRows": "No rows match this report.",
+    "savedReports": "Saved reports",
+    "noSavedReports": "No saved reports yet.",
+    "createdBy": "by {name}",
+    "run": "Run",
+    "exportCsv": "Export CSV"
+  },
+  "accountingSync": {
+    "title": "Accounting sync",
+    "hint": "Connect QuickBooks or Xero to automatically push invoices into your books.",
+    "connect": "Connect {provider}",
+    "connectFailed": "Couldn't start the connection. Try again.",
+    "connectedSummary": "Connected to {provider} on {date}.",
+    "syncNow": "Sync now",
+    "disconnect": "Disconnect",
+    "syncResult": "Synced {synced}, failed {failed}."
+  },
+  "expenses": {
+    "title": "Expenses",
+    "subtitle": "Field-submitted out-of-pocket expenses awaiting approval and reimbursement.",
+    "pendingTotal": "{amount} {currency} pending approval",
+    "allProjects": "All projects",
+    "allStatuses": "All statuses",
+    "empty": "No expenses submitted yet.",
+    "pending": "Pending",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "materials": "Materials",
+    "fuel": "Fuel",
+    "tools": "Tools",
+    "permits": "Permits",
+    "meals": "Meals",
+    "other": "Other",
+    "category": "Category",
+    "amount": "Amount",
+    "date": "Date",
+    "description": "Description",
+    "receipt": "Receipt",
+    "submit": "Submit expense",
+    "submitted": "Expense submitted",
+    "viewReceipt": "View receipt",
+    "approve": "Approve",
+    "reject": "Reject",
+    "rejectReasonPlaceholder": "Reason for rejecting",
+    "confirmReject": "Confirm rejection",
+    "rejectedReasonLabel": "Rejected"
+  },
+  "materialRfqs": {
+    "title": "Material RFQs",
+    "hint": "Request quotes from multiple suppliers for a material list and compare prices side by side before ordering.",
+    "newRfq": "New RFQ",
+    "rfqTitlePlaceholder": "RFQ title",
+    "companyWide": "Company-wide",
+    "addLine": "+ Add material",
+    "noRfqs": "No RFQs yet.",
+    "open": "Open",
+    "closed": "Closed",
+    "noQuotesYet": "No quotes yet.",
+    "awarded": "Awarded",
+    "award": "Award",
+    "selectSupplier": "Select supplier",
+    "unitPricePlaceholder": "Unit price",
+    "addQuote": "Add quote",
+    "closeRfq": "Close RFQ"
   }
 }

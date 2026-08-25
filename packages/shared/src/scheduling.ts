@@ -9,6 +9,7 @@ export const createTaskSchema = z.object({
   estimateLineId: z.string().uuid().optional(),
   startDate: z.string().datetime().optional(),
   dueDate: z.string().datetime().optional(),
+  isOutdoorWork: z.boolean().optional(),
 });
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 
@@ -17,6 +18,7 @@ export const updateTaskSchema = z.object({
   startDate: z.string().datetime().optional(),
   dueDate: z.string().datetime().optional(),
   sortOrder: z.number().int().optional(),
+  isOutdoorWork: z.boolean().optional(),
 });
 export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;
 

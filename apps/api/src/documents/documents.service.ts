@@ -28,6 +28,7 @@ export interface DocumentListFilter {
   dailyLogId?: string;
   incidentReportId?: string;
   warrantyClaimId?: string;
+  subcontractorDocumentId?: string;
   category?: string;
   search?: string;
 }
@@ -39,6 +40,7 @@ export interface DocumentAttachmentMeta {
   dailyLogId?: string;
   incidentReportId?: string;
   warrantyClaimId?: string;
+  subcontractorDocumentId?: string;
   category?: string;
 }
 
@@ -64,6 +66,7 @@ export class DocumentsService {
         ...(filter.dailyLogId ? { dailyLogId: filter.dailyLogId } : {}),
         ...(filter.incidentReportId ? { incidentReportId: filter.incidentReportId } : {}),
         ...(filter.warrantyClaimId ? { warrantyClaimId: filter.warrantyClaimId } : {}),
+        ...(filter.subcontractorDocumentId ? { subcontractorDocumentId: filter.subcontractorDocumentId } : {}),
         ...(category ? { category } : {}),
         ...(filter.search ? { name: { contains: filter.search, mode: "insensitive" as const } } : {}),
       },
@@ -112,6 +115,10 @@ export class DocumentsService {
       const claim = await this.prisma.warrantyClaim.findFirst({ where: { id: meta.warrantyClaimId, companyId } });
       if (!claim) throw new NotFoundException("Warranty claim not found");
     }
+    if (meta.subcontractorDocumentId) {
+      const doc = await this.prisma.subcontractorDocument.findFirst({ where: { id: meta.subcontractorDocumentId, companyId } });
+      if (!doc) throw new NotFoundException("Subcontractor document not found");
+    }
     const category: DocumentCategory = meta.category ? documentCategorySchema.parse(meta.category) : "other";
 
     const stored = await this.storage.save(companyId, file.originalname, file.buffer);
@@ -125,6 +132,7 @@ export class DocumentsService {
         dailyLogId: meta.dailyLogId,
         incidentReportId: meta.incidentReportId,
         warrantyClaimId: meta.warrantyClaimId,
+        subcontractorDocumentId: meta.subcontractorDocumentId,
         name: file.originalname,
         storageKey: stored.storageKey,
         mimeType: file.mimetype,

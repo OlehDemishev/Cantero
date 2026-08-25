@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { SavedViewsBar } from "@/components/saved-views-bar";
+import { CsvImportButton } from "@/components/csv-import-button";
 import { apiFetch } from "@/lib/api-client";
 
 interface Client {
@@ -26,6 +27,7 @@ const EMPTY_FILTERS: ProjectFilters = { search: "", clientId: "" };
 export default function ProjectsPage() {
   const t = useTranslations("projects");
   const tc = useTranslations("common");
+  const ti = useTranslations("import");
   const [projects, setProjects] = useState<Project[] | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
   const [form, setForm] = useState({ name: "", address: "", clientId: "" });
@@ -69,7 +71,10 @@ export default function ProjectsPage() {
 
   return (
     <AuthenticatedShell>
-      <h1 className="text-2xl font-semibold">{t("title")}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">{t("title")}</h1>
+        <CsvImportButton endpoint="/projects/import" label={ti("importProjects")} onDone={load} />
+      </div>
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="card lg:col-span-1">

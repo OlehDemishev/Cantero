@@ -17,6 +17,7 @@ describe("DocumentsService.upload — field attachments", () => {
     dailyLog: { findFirst: jest.Mock };
     incidentReport: { findFirst: jest.Mock };
     warrantyClaim: { findFirst: jest.Mock };
+    subcontractorDocument: { findFirst: jest.Mock };
     document: { create: jest.Mock };
   };
   let storage: { save: jest.Mock };
@@ -29,6 +30,7 @@ describe("DocumentsService.upload — field attachments", () => {
       dailyLog: { findFirst: jest.fn() },
       incidentReport: { findFirst: jest.fn() },
       warrantyClaim: { findFirst: jest.fn() },
+      subcontractorDocument: { findFirst: jest.fn() },
       document: { create: jest.fn() },
     };
     storage = { save: jest.fn().mockResolvedValue({ storageKey: "company-a/x-photo.jpg", size: 1 }) };
@@ -81,6 +83,28 @@ describe("DocumentsService.upload — field attachments", () => {
 
     expect(prisma.document.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ punchListItemId: "item-1", category: "photo" }) }),
+    );
+  });
+
+  it("rejects when the subcontractor document does not belong to this company", async () => {
+    prisma.subcontractorDocument.findFirst.mockResolvedValue(null);
+
+    await expect(service.upload(COMPANY_A, "user-1", FILE, { subcontractorDocumentId: "sub-doc-1" })).rejects.toThrow(
+      NotFoundException,
+    );
+    expect(prisma.document.create).not.toHaveBeenCalled();
+  });
+
+  it("attaches the certificate scan to the subcontractor document once ownership is confirmed", async () => {
+    prisma.subcontractorDocument.findFirst.mockResolvedValue({ id: "sub-doc-1", companyId: COMPANY_A });
+    prisma.document.create.mockResolvedValue({ id: "doc-1" });
+
+    await service.upload(COMPANY_A, "user-1", FILE, { subcontractorDocumentId: "sub-doc-1", category: "insurance_certificate" });
+
+    expect(prisma.document.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ subcontractorDocumentId: "sub-doc-1", category: "insurance_certificate" }),
+      }),
     );
   });
 });

@@ -9,6 +9,8 @@ export const RECURRING_INVOICES_QUEUE = "recurring-invoices";
 export const SCHEDULED_REPORTS_QUEUE = "scheduled-reports";
 export const SLA_ESCALATION_QUEUE = "sla-escalation";
 export const EQUIPMENT_MAINTENANCE_QUEUE = "equipment-maintenance";
+export const NOTIFICATION_DIGEST_QUEUE = "notification-digest";
+export const INVOICE_REMINDERS_QUEUE = "invoice-reminders";
 
 @Global()
 @Module({
@@ -27,6 +29,8 @@ export const EQUIPMENT_MAINTENANCE_QUEUE = "equipment-maintenance";
     BullModule.registerQueue({ name: SCHEDULED_REPORTS_QUEUE }),
     BullModule.registerQueue({ name: SLA_ESCALATION_QUEUE }),
     BullModule.registerQueue({ name: EQUIPMENT_MAINTENANCE_QUEUE }),
+    BullModule.registerQueue({ name: NOTIFICATION_DIGEST_QUEUE }),
+    BullModule.registerQueue({ name: INVOICE_REMINDERS_QUEUE }),
   ],
   exports: [BullModule],
 })

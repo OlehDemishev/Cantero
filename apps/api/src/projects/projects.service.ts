@@ -1,13 +1,16 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import type { CreateProjectInput, UpdateProjectGeofenceInput, UpdateProjectWarrantyInput } from "@cantero/shared";
+import type { CreateProjectInput, ImportResult, UpdateProjectGeofenceInput, UpdateProjectWarrantyInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { WeatherService } from "../weather/weather.service";
+import { parseCsvRecords } from "../common/csv";
+import { AuditService, type AuditActor } from "../common/audit/audit.service";
 
 @Injectable()
 export class ProjectsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly weather: WeatherService,
+    private readonly audit: AuditService,
   ) {}
 
   list(companyId: string) {
@@ -82,5 +85,50 @@ export class ProjectsService {
       },
       include: { client: true },
     });
+  }
+
+  /**
+   * CSV columns: name (required), address, client (optional — matched case-insensitively
+   * against this company's existing client names). An unmatched client name doesn't fail the
+   * row: the project is still created without a client link, since the name/address are still
+   * useful data and a typo in one column shouldn't sink an otherwise-good bulk import.
+   */
+  async importCsv(companyId: string, actor: AuditActor, csv: string): Promise<ImportResult> {
+    const records = parseCsvRecords(csv);
+    const result: ImportResult = { created: 0, skipped: 0, errors: [] };
+
+    const clients = await this.prisma.client.findMany({ where: { companyId }, select: { id: true, name: true } });
+    const clientIdByName = new Map(clients.map((c) => [c.name.trim().toLowerCase(), c.id]));
+
+    const toCreate: { name: string; address: string | null; clientId: string | null }[] = [];
+
+    records.forEach((record, index) => {
+      const row = index + 2; // header is row 1
+      const name = record.name?.trim();
+      if (!name) {
+        result.skipped++;
+        result.errors.push({ row, message: "Missing name" });
+        return;
+      }
+      const clientName = record.client?.trim();
+      const clientId = clientName ? (clientIdByName.get(clientName.toLowerCase()) ?? null) : null;
+      toCreate.push({ name, address: record.address?.trim() || null, clientId });
+    });
+
+    if (toCreate.length > 0) {
+      await this.prisma.project.createMany({ data: toCreate.map((p) => ({ ...p, companyId })) });
+      result.created = toCreate.length;
+    }
+
+    this.audit.record(
+      companyId,
+      actor,
+      "projects.imported",
+      "Company",
+      companyId,
+      `Imported ${result.created} projects from CSV (${result.skipped} skipped)`,
+    );
+
+    return result;
   }
 }

@@ -20,7 +20,8 @@
     "delete": "Usuń",
     "emailedTo": "Wysłano e-mailem do {email}.",
     "noClientEmail": "Brak adresu e-mail tego klienta — udostępnij link ręcznie.",
-    "none": "Brak"
+    "none": "Brak",
+    "close": "Zamknij"
   },
   "nav": {
     "menu": "Menu",
@@ -42,7 +43,8 @@
     "portfolio": "Portfolio",
     "resourcePlanning": "Planowanie zasobów",
     "templates": "Szablony",
-    "subcontractors": "Podwykonawcy"
+    "subcontractors": "Podwykonawcy",
+    "expenses": "Wydatki"
   },
   "auth": {
     "signupTitle": "Utwórz konto Cantero",
@@ -208,7 +210,23 @@
     "rfiSlaDays": "Dni RFI",
     "punchListSlaDays": "Dni listy usterek",
     "slaDaysPlaceholder": "np. 5",
-    "webhookEvent_client_lead_captured": "Nowy lead ze strony internetowej"
+    "webhookEvent_client_lead_captured": "Nowy lead ze strony internetowej",
+    "emailDigest": "Podsumowanie e-mail",
+    "emailDigestHint": "Otrzymuj e-mailowe podsumowanie nowości (zaległe RFI, niski stan magazynowy, wzmianki i więcej) zamiast sprawdzać dzwonek powiadomień.",
+    "digestOff": "Wyłączone",
+    "digestDaily": "Codziennie",
+    "digestWeekly": "Co tydzień",
+    "invoiceReminders": "Automatyczne przypomnienia o zaległych fakturach",
+    "invoiceRemindersHint": "Wysyła do klienta coraz bardziej stanowcze e-maile przypominające po 3, 7, 14 i 30 dniach po terminie płatności.",
+    "webhookEvent_expense_approved": "Wydatek zatwierdzony",
+    "customRole": "Rola niestandardowa",
+    "noCustomRole": "Brak",
+    "customRoles": "Role niestandardowe",
+    "customRolesHint": "Połącz poziomy uprawnień pod jedną nazwą — np. „Kierownik budowy” = Brygadzista + Kosztorysant — dla osoby potrzebującej więcej niż jednej stałej roli. Działa wyłącznie addytywnie: nigdy nie odbiera tego, co daje już własna rola danej osoby.",
+    "noCustomRoles": "Brak ról niestandardowych.",
+    "assignedToCount": "· przypisano do {count}",
+    "newCustomRole": "Nowa rola niestandardowa",
+    "customRoleNamePlaceholder": "Nazwa roli (np. Kierownik budowy)"
   },
   "projects": {
     "title": "Projekty",
@@ -317,7 +335,8 @@
     "category_permit": "Pozwolenie",
     "category_photo": "Zdjęcie",
     "category_invoice_scan": "Skan faktury",
-    "category_other": "Inne"
+    "category_other": "Inne",
+    "category_insurance_certificate": "Certyfikat ubezpieczenia"
   },
   "rateCatalog": {
     "title": "Cennik",
@@ -668,7 +687,8 @@
     "depType_finish_to_finish": "Koniec→Koniec",
     "depType_start_to_finish": "Początek→Koniec",
     "criticalPathLegend": "Ścieżka krytyczna — opóźnienie tutaj opóźnia zakończenie",
-    "comments": "Komentarze"
+    "comments": "Komentarze",
+    "outdoorWork": "Praca na zewnątrz"
   },
   "purchaseOrders": {
     "title": "Zamówienia zakupu",
@@ -706,7 +726,8 @@
     "logs": "Dzienniki",
     "punch": "Usterki",
     "cachedFrom": "Wyświetlane dane z pamięci podręcznej z {time}",
-    "loggedOutsideGeofence": "Zapisano — ale zarejestrowano poza geofencingiem projektu"
+    "loggedOutsideGeofence": "Zapisano — ale zarejestrowano poza geofencingiem projektu",
+    "expenses": "Wydatki"
   },
   "subcontractors": {
     "title": "Koszty podwykonawców",
@@ -863,7 +884,8 @@
     "more": "więcej",
     "importClients": "Importuj CSV",
     "importMaterials": "Importuj materiały CSV",
-    "importRateItems": "Importuj pozycje cennika CSV"
+    "importRateItems": "Importuj pozycje cennika CSV",
+    "importProjects": "Importuj projekty CSV"
   },
   "dailyLogs": {
     "title": "Dziennik budowy",
@@ -1119,7 +1141,10 @@
     "general_liability_insurance": "Ubezpieczenie OC",
     "workers_comp_insurance": "Ubezpieczenie wypadkowe pracowników",
     "license": "Licencja",
-    "other": "Inne"
+    "other": "Inne",
+    "viewCertificate": "Zobacz certyfikat",
+    "uploadCertificate": "Prześlij certyfikat",
+    "uploading": "Przesyłanie…"
   },
   "weather": {
     "title": "Prognoza pogody",
@@ -1220,5 +1245,108 @@
     "issuerPlaceholder": "np. https://idp.example.com/saml/metadata",
     "cert": "Certyfikat podpisujący IdP",
     "disable": "Wyłącz SSO"
+  },
+  "closeout": {
+    "title": "Pakiet zamknięcia projektu",
+    "description": "Łączy fakturę końcową, status gwarancji i dokumenty projektu w jeden plik ZIP do przekazania klientowi.",
+    "download": "Pobierz pakiet zamknięcia",
+    "preparing": "Przygotowywanie…",
+    "error": "Nie udało się wygenerować pakietu zamknięcia. Spróbuj ponownie."
+  },
+  "dataPrivacy": {
+    "title": "Dane i prywatność",
+    "hint": "Wyeksportuj przenośną kopię danych firmy lub złóż wniosek o usunięcie konta.",
+    "exportTitle": "Eksport danych",
+    "exportHint": "Pobierz plik ZIP z profilem firmy, zespołem, klientami, projektami, kosztorysami, fakturami i danymi z terenu w formacie JSON.",
+    "exportButton": "Pobierz eksport danych",
+    "exporting": "Przygotowywanie…",
+    "deletionTitle": "Usunięcie konta",
+    "deletionHint": "Złóż wniosek o usunięcie konta firmy i jej danych. Nasz zespół wsparcia skontaktuje się, aby potwierdzić wymogi dotyczące przechowywania danych/wymogi prawne przed usunięciem.",
+    "requestDeletion": "Złóż wniosek o usunięcie konta",
+    "confirmRequest": "Złożyć wniosek o usunięcie tego konta firmy? Wsparcie skontaktuje się, zanim cokolwiek zostanie usunięte.",
+    "deletionPending": "Usunięcie zgłoszono {date} — nasz zespół wsparcia skontaktuje się.",
+    "cancelRequest": "Anuluj wniosek o usunięcie"
+  },
+  "customReports": {
+    "title": "Raporty niestandardowe",
+    "hint": "Wybierz zbiór danych i kolumny, opcjonalnie filtruj po zakresie dat i statusie, a następnie podejrzyj lub zapisz raport do ponownego użycia.",
+    "dataset": "Zbiór danych",
+    "dataset_projects": "Projekty",
+    "dataset_invoices": "Faktury",
+    "dataset_estimates": "Kosztorysy",
+    "dataset_time_entries": "Wpisy czasu pracy",
+    "dataset_punch_list": "Lista usterek",
+    "dataset_rfis": "Zapytania (RFI)",
+    "dateFrom": "Od",
+    "dateTo": "Do",
+    "statusEquals": "Status równy",
+    "statusPlaceholder": "np. paid, open, approved",
+    "columns": "Kolumny",
+    "preview": "Podgląd",
+    "reportNamePlaceholder": "Nazwa raportu",
+    "noRows": "Żaden wiersz nie pasuje do tego raportu.",
+    "savedReports": "Zapisane raporty",
+    "noSavedReports": "Brak zapisanych raportów.",
+    "createdBy": "przez {name}",
+    "run": "Uruchom",
+    "exportCsv": "Eksportuj CSV"
+  },
+  "accountingSync": {
+    "title": "Synchronizacja księgowa",
+    "hint": "Połącz QuickBooks lub Xero, aby automatycznie przesyłać faktury do księgowości.",
+    "connect": "Połącz {provider}",
+    "connectFailed": "Nie udało się rozpocząć połączenia. Spróbuj ponownie.",
+    "connectedSummary": "Połączono z {provider} dnia {date}.",
+    "syncNow": "Synchronizuj teraz",
+    "disconnect": "Rozłącz",
+    "syncResult": "Zsynchronizowano {synced}, nieudanych {failed}."
+  },
+  "expenses": {
+    "title": "Wydatki",
+    "subtitle": "Wydatki zgłoszone z terenu, oczekujące na zatwierdzenie i zwrot.",
+    "pendingTotal": "{amount} {currency} oczekuje na zatwierdzenie",
+    "allProjects": "Wszystkie projekty",
+    "allStatuses": "Wszystkie statusy",
+    "empty": "Nie zgłoszono jeszcze żadnych wydatków.",
+    "pending": "Oczekujący",
+    "approved": "Zatwierdzony",
+    "rejected": "Odrzucony",
+    "materials": "Materiały",
+    "fuel": "Paliwo",
+    "tools": "Narzędzia",
+    "permits": "Pozwolenia",
+    "meals": "Posiłki",
+    "other": "Inne",
+    "category": "Kategoria",
+    "amount": "Kwota",
+    "date": "Data",
+    "description": "Opis",
+    "receipt": "Paragon",
+    "submit": "Zgłoś wydatek",
+    "submitted": "Wydatek zgłoszony",
+    "viewReceipt": "Zobacz paragon",
+    "approve": "Zatwierdź",
+    "reject": "Odrzuć",
+    "rejectReasonPlaceholder": "Powód odrzucenia",
+    "confirmReject": "Potwierdź odrzucenie",
+    "rejectedReasonLabel": "Odrzucono"
+  },
+  "materialRfqs": {
+    "title": "Zapytania ofertowe na materiały",
+    "hint": "Poproś o wyceny od kilku dostawców dla listy materiałów i porównaj ceny przed zamówieniem.",
+    "newRfq": "Nowe zapytanie",
+    "rfqTitlePlaceholder": "Tytuł zapytania",
+    "companyWide": "Ogólnofirmowe",
+    "addLine": "+ Dodaj materiał",
+    "noRfqs": "Brak zapytań ofertowych.",
+    "open": "Otwarte",
+    "closed": "Zamknięte",
+    "noQuotesYet": "Brak ofert.",
+    "awarded": "Przyznano",
+    "award": "Przyznaj",
+    "selectSupplier": "Wybierz dostawcę",
+    "unitPricePlaceholder": "Cena jednostkowa",
+    "addQuote": "Dodaj ofertę",
+    "closeRfq": "Zamknij zapytanie"
   }
 }

@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import type { UpdateMemberRoleInput } from "@cantero/shared";
+import type { AssignCustomRoleInput, UpdateMemberRoleInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 
@@ -13,7 +13,7 @@ export class MembersService {
   list(companyId: string) {
     return this.prisma.membership.findMany({
       where: { companyId },
-      include: { user: { select: { id: true, email: true, name: true } } },
+      include: { user: { select: { id: true, email: true, name: true } }, customRole: true },
       orderBy: { createdAt: "asc" },
     });
   }
@@ -36,6 +36,32 @@ export class MembersService {
       updated.userId,
       `Changed ${updated.user.name}'s role from ${membership.role} to ${input.role}`,
       { before: membership.role, after: input.role },
+    );
+    return updated;
+  }
+
+  async assignCustomRole(companyId: string, actor: AuditActor, userId: string, input: AssignCustomRoleInput) {
+    const membership = await this.findOrThrow(companyId, userId);
+
+    if (input.customRoleId) {
+      const customRole = await this.prisma.customRole.findFirst({ where: { id: input.customRoleId, companyId } });
+      if (!customRole) throw new NotFoundException("Custom role not found");
+    }
+
+    const updated = await this.prisma.membership.update({
+      where: { id: membership.id },
+      data: { customRoleId: input.customRoleId },
+      include: { user: { select: { id: true, email: true, name: true } }, customRole: true },
+    });
+    this.audit.record(
+      companyId,
+      actor,
+      "member.custom_role_assigned",
+      "Membership",
+      updated.userId,
+      input.customRoleId
+        ? `Assigned custom role "${updated.customRole?.name}" to ${updated.user.name}`
+        : `Removed ${updated.user.name}'s custom role`,
     );
     return updated;
   }

@@ -26,4 +26,6 @@ export interface AuthUser {
   email: string;
   name: string;
   role: string;
+  /** Extra permission tiers granted via a company-defined CustomRole, additive on top of `role` — see CustomRole in schema.prisma. Absent or empty means no custom role assigned. */
+  additionalRoles?: string[];
 }

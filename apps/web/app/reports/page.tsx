@@ -9,6 +9,7 @@ import {
   type ScheduledReportType,
 } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
+import { CustomReportsPanel } from "@/components/custom-reports-panel";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
@@ -657,6 +658,8 @@ export default function ReportsPage() {
           ))}
         </ul>
       )}
+
+      <CustomReportsPanel />
     </AuthenticatedShell>
   );
 }

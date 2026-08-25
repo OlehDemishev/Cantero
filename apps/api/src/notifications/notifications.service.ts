@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { WeatherService } from "../weather/weather.service";
 
 export type Severity = "warning" | "critical";
 
@@ -16,7 +17,8 @@ export interface NotificationItem {
     | "warranty_claim_open"
     | "mention"
     | "subcontractor_document_expiring"
-    | "worker_certification_expiring";
+    | "worker_certification_expiring"
+    | "weather_risk";
   severity: Severity;
   title: string;
   body: string;
@@ -26,6 +28,7 @@ export interface NotificationItem {
 
 const REMINDER_LOOKAHEAD_DAYS = 3;
 const DOCUMENT_EXPIRY_LOOKAHEAD_DAYS = 30;
+const WEATHER_RISK_LOOKAHEAD_DAYS = 7;
 
 /**
  * Notifications are fully derived from live data, not a persisted table —
@@ -36,7 +39,10 @@ const DOCUMENT_EXPIRY_LOOKAHEAD_DAYS = 30;
  */
 @Injectable()
 export class NotificationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly weather: WeatherService,
+  ) {}
 
   async list(companyId: string, userId: string) {
     const [
@@ -51,6 +57,7 @@ export class NotificationsService {
       mentions,
       expiringSubcontractorDocuments,
       expiringWorkerCertifications,
+      weatherRisks,
       membership,
     ] = await Promise.all([
       this.lowStockItems(companyId),
@@ -64,6 +71,7 @@ export class NotificationsService {
       this.mentions(companyId, userId),
       this.expiringSubcontractorDocuments(companyId),
       this.expiringWorkerCertifications(companyId),
+      this.weatherRiskTasks(companyId),
       this.prisma.membership.findFirst({ where: { companyId, userId } }),
     ]);
 
@@ -79,6 +87,7 @@ export class NotificationsService {
       ...mentions,
       ...expiringSubcontractorDocuments,
       ...expiringWorkerCertifications,
+      ...weatherRisks,
     ].sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
 
     const lastViewedAt = membership?.notificationsLastViewedAt ?? null;
@@ -347,5 +356,66 @@ export class NotificationsService {
       link: `/team/${cert.worker.id}`,
       occurredAt: cert.expiresAt,
     }));
+  }
+
+  /**
+   * Flags outdoor-marked tasks starting within the forecast window (Open-Meteo only covers
+   * ~7 days out) whose start date lands on a risky forecast day. One geocode+forecast call
+   * per project, not per task. occurredAt is floored to today rather than the (future)
+   * startDate — same reasoning as dueReminders: a future occurredAt would make the unread
+   * check permanently true. Flooring to today (not task.createdAt) means a risk resurfaces
+   * once per day for as long as it's forecast, which matches how weather itself changes —
+   * unlike the other sources here, this one doesn't self-clear from a single stable fact.
+   */
+  private async weatherRiskTasks(companyId: string): Promise<NotificationItem[]> {
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const cutoff = new Date(startOfToday.getTime() + WEATHER_RISK_LOOKAHEAD_DAYS * 24 * 60 * 60 * 1000);
+
+    const tasks = await this.prisma.task.findMany({
+      where: {
+        isOutdoorWork: true,
+        status: { not: "done" },
+        startDate: { gte: startOfToday, lte: cutoff },
+        project: { companyId },
+      },
+      include: { project: { select: { id: true, name: true, address: true } } },
+    });
+    if (tasks.length === 0) return [];
+
+    const tasksByProject = new Map<string, typeof tasks>();
+    for (const task of tasks) {
+      if (!task.project.address) continue;
+      const list = tasksByProject.get(task.projectId) ?? [];
+      list.push(task);
+      tasksByProject.set(task.projectId, list);
+    }
+
+    const items: NotificationItem[] = [];
+    for (const projectTasks of tasksByProject.values()) {
+      const project = projectTasks[0].project;
+      const coords = await this.weather.geocode(project.address!);
+      if (!coords) continue;
+      const days = await this.weather.forecast(coords.lat, coords.lon, 0);
+
+      for (const task of projectTasks) {
+        const dateStr = task.startDate!.toISOString().slice(0, 10);
+        const day = days.find((d) => d.date === dateStr);
+        if (!day?.risky) continue;
+
+        items.push({
+          key: `weather_risk:${task.id}`,
+          type: "weather_risk" as const,
+          severity: (day.condition === "extreme_heat" || day.condition === "extreme_cold" || day.condition === "snow"
+            ? "critical"
+            : "warning") as Severity,
+          title: `${task.name} may be affected by weather`,
+          body: `${project.name} — ${day.condition.replace("_", " ")} forecast on ${task.startDate!.toLocaleDateString()}`,
+          link: `/projects/${project.id}`,
+          occurredAt: startOfToday,
+        });
+      }
+    }
+    return items;
   }
 }

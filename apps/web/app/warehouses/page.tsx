@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
+import { CsvImportButton } from "@/components/csv-import-button";
 import { apiFetch } from "@/lib/api-client";
 
 interface Warehouse {
@@ -63,6 +64,7 @@ const GENERIC_MOVEMENT_TYPES = ["receipt", "issue", "write_off"] as const;
 export default function WarehousesPage() {
   const t = useTranslations("warehouses");
   const tc = useTranslations("common");
+  const ti = useTranslations("import");
 
   const [warehouses, setWarehouses] = useState<Warehouse[] | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
@@ -95,7 +97,14 @@ export default function WarehousesPage() {
 
   return (
     <AuthenticatedShell>
-      <h1 className="text-2xl font-semibold">{t("title")}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">{t("title")}</h1>
+        <CsvImportButton
+          endpoint="/materials/catalog/import"
+          label={ti("importMaterials")}
+          onDone={() => window.location.reload()}
+        />
+      </div>
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="card lg:col-span-1 h-fit">

@@ -21,6 +21,7 @@ interface Task {
   status: TaskStatus;
   startDate: string | null;
   dueDate: string | null;
+  isOutdoorWork: boolean;
   predecessorLinks: DependencyLink[];
 }
 interface Milestone {
@@ -41,7 +42,7 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
   const [tasks, setTasks] = useState<Task[] | null>(null);
   const [milestones, setMilestones] = useState<Milestone[] | null>(null);
   const [criticalPath, setCriticalPath] = useState<CpmResult[]>([]);
-  const [taskForm, setTaskForm] = useState({ name: "", startDate: "", dueDate: "" });
+  const [taskForm, setTaskForm] = useState({ name: "", startDate: "", dueDate: "", isOutdoorWork: false });
   const [milestoneForm, setMilestoneForm] = useState({ name: "", dueDate: "" });
   const [busy, setBusy] = useState(false);
   const [depEditorTaskId, setDepEditorTaskId] = useState<string | null>(null);
@@ -70,9 +71,10 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
           name: taskForm.name,
           startDate: taskForm.startDate ? new Date(taskForm.startDate).toISOString() : undefined,
           dueDate: taskForm.dueDate ? new Date(taskForm.dueDate).toISOString() : undefined,
+          isOutdoorWork: taskForm.isOutdoorWork,
         }),
       });
-      setTaskForm({ name: "", startDate: "", dueDate: "" });
+      setTaskForm({ name: "", startDate: "", dueDate: "", isOutdoorWork: false });
       load();
     } finally {
       setBusy(false);
@@ -144,6 +146,11 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
                     {criticalTaskIds.has(task.id) && (
                       <span className="rounded-full bg-error-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-error-700">
                         {t("critical")}
+                      </span>
+                    )}
+                    {task.isOutdoorWork && (
+                      <span className="rounded-full bg-brand-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-700">
+                        {t("outdoorWork")}
                       </span>
                     )}
                   </div>
@@ -263,6 +270,14 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
             value={taskForm.dueDate}
             onChange={(e) => setTaskForm((f) => ({ ...f, dueDate: e.target.value }))}
           />
+        </label>
+        <label className="flex items-center gap-1.5 text-xs text-gray-500">
+          <input
+            type="checkbox"
+            checked={taskForm.isOutdoorWork}
+            onChange={(e) => setTaskForm((f) => ({ ...f, isOutdoorWork: e.target.checked }))}
+          />
+          {t("outdoorWork")}
         </label>
         <button type="submit" disabled={busy} className="btn-primary">
           {t("newTask")}

@@ -18,6 +18,12 @@ enum MembershipRole {
   worker
 }
 
+enum EmailDigestFrequency {
+  off
+  daily
+  weekly
+}
+
 enum UnitSystem {
   metric
   imperial
@@ -155,6 +161,9 @@ model Company {
   /// it's auto-escalated (flagged + emailed to the company owner) — null disables escalation.
   rfiSlaDays        Int?
   punchListSlaDays  Int?
+  /// When true, overdue invoices get automatic escalating reminder emails to the client (see
+  /// InvoiceReminderService) — off by default since it sends unsolicited email on the company's behalf.
+  invoiceRemindersEnabled Boolean @default(false)
   /// Public, unauthenticated token embedded in the company's lead-capture form URL — null disables the form entirely.
   publicLeadFormToken String? @unique
   /// Enterprise SSO (SAML 2.0) — all four null means SSO is off for this company. When set,
@@ -166,6 +175,11 @@ model Company {
   ssoEntryPoint String?
   ssoIssuer     String?
   ssoCert       String?
+  /// GDPR Art. 17 account-deletion request — set when an owner/admin asks to close the
+  /// account; null means no request is pending. Actual deletion is a manual support-team
+  /// process (retention/legal review), not an automated hard delete from this flag alone.
+  deletionRequestedAt       DateTime?
+  deletionRequestedByUserId String?
 
   memberships  Membership[]
   invites      Invite[]
@@ -209,6 +223,11 @@ model Company {
   bidRequests          BidRequest[]
   customFieldDefinitions CustomFieldDefinition[]
   savedViews             SavedView[]
+  customReports          CustomReport[]
+  accountingConnection   AccountingConnection?
+  expenses               Expense[]
+  materialRfqs            MaterialRfq[]
+  customRoles              CustomRole[]
 
   @@map("companies")
 }
@@ -308,6 +327,7 @@ model User {
   comments        Comment[]
   commentMentions CommentMention[]
   savedViews      SavedView[]
+  customReports   CustomReport[]
 
   @@map("users")
 }
@@ -323,14 +343,45 @@ model Membership {
   /// When this member was last sent a web push notification — drives which newly-derived
   /// notifications (see NotificationsService) still need pushing, separate from the "seen" cursor above.
   pushNotificationsLastSentAt DateTime?
+  /// Opt-in email summary of new notifications — "off" by default. emailDigestLastSentAt is a
+  /// third independent cursor (own read/push cursors above), advanced once per due digest pass
+  /// regardless of whether anything new was found, so the daily/weekly clock always resets cleanly.
+  emailDigestFrequency  EmailDigestFrequency @default(off)
+  emailDigestLastSentAt DateTime?
+  /// Grants this member every permission tier listed in the custom role's basePermissions, on
+  /// top of whatever `role` above already allows — never a reduction, always additive. Null
+  /// means no custom role; `role` alone still governs, exactly as before this feature existed.
+  customRoleId String?
 
   user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   company           Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
   pushSubscriptions PushSubscription[]
+  customRole        CustomRole?        @relation(fields: [customRoleId], references: [id], onDelete: SetNull)
 
   @@unique([userId, companyId])
   @@index([companyId])
   @@map("memberships")
+}
+
+/// A company-defined named permission bundle — e.g. "Site Lead" = foreman + estimator tiers —
+/// for when one person needs the combined permissions of more than one fixed MembershipRole.
+/// Purely additive: it layers on top of the member's own `role`, never replaces or restricts it,
+/// so every existing @Roles(...) check across the app keeps working unchanged. basePermissions
+/// is deliberately restricted to the non-owner manageable tiers (see MEMBERSHIP_ROLES_MANAGEABLE)
+/// — a custom role can never grant owner-level access.
+model CustomRole {
+  id              String           @id @default(uuid())
+  companyId       String
+  name            String
+  basePermissions MembershipRole[]
+  createdAt       DateTime         @default(now())
+
+  company     Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  memberships Membership[]
+
+  @@unique([companyId, name])
+  @@index([companyId])
+  @@map("custom_roles")
 }
 
 /// A browser's Push API subscription for one membership (device-specific — a user
@@ -426,6 +477,7 @@ model MaterialCatalogItem {
   purchaseOrderLines  PurchaseOrderLine[]
   requirementLines    EstimateMaterialRequirement[]
   stockCountLines     StockCountLine[]
+  rfqLines            MaterialRfqLine[]
 
   @@unique([companyId, code])
   @@index([companyId])
@@ -797,9 +849,71 @@ model Supplier {
   company           Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
   purchaseOrders    PurchaseOrder[]
   preferredForItems MaterialCatalogItem[]
+  rfqQuotes         MaterialRfqQuote[]
 
   @@index([companyId])
   @@map("suppliers")
+}
+
+enum MaterialRfqStatus {
+  open
+  closed
+}
+
+/// A request-for-quote for a material list — the office records what each invited supplier
+/// quoted (per line, since one supplier can beat another on some materials but not others) and
+/// compares them side by side. Deliberately internal-only (no supplier self-service portal, unlike
+/// BidRequest's subcontractor-portal submission flow) — quotes typically arrive by phone/email and
+/// get keyed in, which is the actual workflow this is meant to speed up.
+model MaterialRfq {
+  id        String            @id @default(uuid())
+  companyId String
+  projectId String?
+  title     String
+  dueDate   DateTime?
+  status    MaterialRfqStatus @default(open)
+  createdAt DateTime          @default(now())
+
+  company Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  lines   MaterialRfqLine[]
+
+  @@index([companyId])
+  @@index([projectId])
+  @@map("material_rfqs")
+}
+
+model MaterialRfqLine {
+  id                    String  @id @default(uuid())
+  rfqId                 String
+  materialCatalogItemId String
+  quantity              Decimal @db.Decimal(14, 4)
+
+  rfq                 MaterialRfq         @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  materialCatalogItem MaterialCatalogItem @relation(fields: [materialCatalogItemId], references: [id], onDelete: Restrict)
+  quotes              MaterialRfqQuote[]
+
+  @@index([rfqId])
+  @@map("material_rfq_lines")
+}
+
+/// One supplier's quoted unit price for one RFQ line. isAwarded marks the winner for that line
+/// specifically — awarding is per-line, not per-RFQ, since the cheapest supplier can differ by material.
+model MaterialRfqQuote {
+  id          String   @id @default(uuid())
+  rfqLineId   String
+  supplierId  String
+  unitPrice   Decimal  @db.Decimal(12, 4)
+  notes       String?
+  isAwarded   Boolean  @default(false)
+  submittedAt DateTime @default(now())
+
+  rfqLine  MaterialRfqLine @relation(fields: [rfqLineId], references: [id], onDelete: Cascade)
+  supplier Supplier        @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@unique([rfqLineId, supplierId])
+  @@index([supplierId])
+  @@map("material_rfq_quotes")
 }
 
 model PurchaseOrder {
@@ -864,6 +978,7 @@ model Project {
   milestones         Milestone[]
   stockMovements     StockMovement[]
   timeEntries        TimeEntry[]
+  expenses           Expense[]
   documents          Document[]
   subcontractorCosts SubcontractorCost[]
   equipmentAssignments EquipmentAssignment[]
@@ -878,6 +993,7 @@ model Project {
   resourceAssignments ResourceAssignment[]
   lienWaivers        LienWaiver[]
   bidRequests        BidRequest[]
+  materialRfqs       MaterialRfq[]
 
   @@index([companyId])
   @@map("projects")
@@ -892,6 +1008,9 @@ model Task {
   startDate      DateTime?
   dueDate        DateTime?
   sortOrder      Int        @default(0)
+  /// Marks work exposed to the elements (framing, roofing, concrete pour, etc.) so the
+  /// weather-risk notification can flag it when the forecast for its startDate turns bad.
+  isOutdoorWork  Boolean    @default(false)
 
   project      Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
   estimateLine EstimateLine? @relation(fields: [estimateLineId], references: [id], onDelete: SetNull)
@@ -1065,6 +1184,14 @@ model Invoice {
   retainageAmount    Decimal       @default(0) @db.Decimal(14, 2)
   /// True for the one-off invoice that pays out retainage withheld across prior progress draws.
   isRetainageRelease Boolean       @default(false)
+  /// Set once this invoice has been pushed to the connected accounting system (QuickBooks/Xero) —
+  /// the external record's own ID, used to skip it on the next sync pass. Null means not yet synced.
+  externalAccountingId       String?
+  externalAccountingSyncedAt DateTime?
+  /// Escalating overdue-reminder cadence (see InvoiceReminderService) — count of reminders sent
+  /// so far (caps at the cadence's length) and when the last one went out.
+  reminderCount     Int       @default(0)
+  lastReminderSentAt DateTime?
 
   company          Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
   project          Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -1216,6 +1343,9 @@ model SubcontractorDocument {
 
   company       Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
   subcontractor Subcontractor @relation(fields: [subcontractorId], references: [id], onDelete: Cascade)
+  /// The actual scanned certificate/policy file, if one's been uploaded — this record itself
+  /// (type/name/expiresAt) is just the trackable metadata; the file is optional.
+  attachments   Document[]
 
   @@index([companyId])
   @@index([subcontractorId])
@@ -1543,6 +1673,7 @@ model Worker {
   company             Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
   user                User?                 @relation(fields: [userId], references: [id], onDelete: SetNull)
   timeEntries         TimeEntry[]
+  expenses            Expense[]
   equipmentAssignments EquipmentAssignment[]
   punchListItems      PunchListItem[]
   safetyBriefingAttendance SafetyBriefingAttendance[]
@@ -1582,6 +1713,54 @@ model TimeEntry {
   @@map("time_entries")
 }
 
+enum ExpenseCategory {
+  materials
+  fuel
+  tools
+  permits
+  meals
+  other
+}
+
+enum ExpenseStatus {
+  pending
+  approved
+  rejected
+}
+
+/// An out-of-pocket expense a field worker submits against a project, with an optional receipt
+/// photo, awaiting office approval — distinct from SubcontractorCost (a sub's invoiced cost) and
+/// StockMovement (materials from the company's own warehouse); this is cash a worker spent and
+/// needs reimbursed.
+model Expense {
+  id          String          @id @default(uuid())
+  companyId   String
+  projectId   String
+  workerId    String
+  category    ExpenseCategory @default(other)
+  amount      Decimal         @db.Decimal(12, 2)
+  description String?
+  incurredAt  DateTime
+  status      ExpenseStatus   @default(pending)
+  /// Receipt photo/scan, stored directly here (like Company.logoStorageKey) rather than via the
+  /// generic Document table — an expense has at most one receipt, not a variable attachment set.
+  receiptStorageKey String?
+  receiptMimeType   String?
+  approvedByUserId  String?
+  approvedAt        DateTime?
+  rejectedReason    String?
+  createdAt         DateTime  @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  worker  Worker  @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([projectId])
+  @@index([workerId])
+  @@map("expenses")
+}
+
 // ---------- Documents (schema-only until Phase 5) ----------
 
 enum DocumentCategory {
@@ -1589,6 +1768,7 @@ enum DocumentCategory {
   permit
   photo
   invoice_scan
+  insurance_certificate
   other
 }
 
@@ -1597,14 +1777,15 @@ model Document {
   companyId        String
   projectId        String?
   invoiceId        String?
-  /// The following four are alternative attachment points alongside project/invoice — a photo of
-  /// a defect, a daily-log condition shot, incident evidence, or a warranty claim photo. Exactly
-  /// one of these (or project/invoice) is set per document in practice, though nothing enforces
-  /// that at the schema level, same as project/invoice today.
+  /// The following five are alternative attachment points alongside project/invoice — a photo of
+  /// a defect, a daily-log condition shot, incident evidence, a warranty claim photo, or a scanned
+  /// insurance certificate. Exactly one of these (or project/invoice) is set per document in
+  /// practice, though nothing enforces that at the schema level, same as project/invoice today.
   punchListItemId  String?
   dailyLogId       String?
   incidentReportId String?
   warrantyClaimId  String?
+  subcontractorDocumentId String?
   name             String
   storageKey       String
   mimeType         String
@@ -1627,6 +1808,7 @@ model Document {
   dailyLog       DailyLog?      @relation(fields: [dailyLogId], references: [id], onDelete: Cascade)
   incidentReport IncidentReport? @relation(fields: [incidentReportId], references: [id], onDelete: Cascade)
   warrantyClaim  WarrantyClaim? @relation(fields: [warrantyClaimId], references: [id], onDelete: Cascade)
+  subcontractorDocument SubcontractorDocument? @relation(fields: [subcontractorDocumentId], references: [id], onDelete: Cascade)
   uploadedBy     User?          @relation(fields: [uploadedByUserId], references: [id], onDelete: SetNull)
   rootDocument   Document?      @relation("DocumentVersions", fields: [rootDocumentId], references: [id], onDelete: Cascade)
   versions       Document[]     @relation("DocumentVersions")
@@ -1637,6 +1819,7 @@ model Document {
   @@index([dailyLogId])
   @@index([incidentReportId])
   @@index([warrantyClaimId])
+  @@index([subcontractorDocumentId])
   @@map("documents")
 }
 
@@ -2054,4 +2237,60 @@ model SavedView {
   @@unique([userId, viewType, name])
   @@index([companyId])
   @@map("saved_views")
+}
+
+enum ReportDataset {
+  projects
+  invoices
+  estimates
+  time_entries
+  punch_list
+  rfis
+}
+
+/// A saved custom-report definition: pick a dataset, pick columns from that dataset's fixed
+/// field list, optionally filter by date range (each dataset has one built-in date field) and
+/// by status (ignored for datasets with no status field). Company-wide, not per-user — reports
+/// are a team asset, unlike SavedView's personal list filters.
+model CustomReport {
+  id           String        @id @default(uuid())
+  companyId    String
+  userId       String
+  name         String
+  dataset      ReportDataset
+  columns      String[]
+  dateFrom     DateTime?
+  dateTo       DateTime?
+  statusEquals String?
+  createdAt    DateTime      @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@map("custom_reports")
+}
+
+enum AccountingProvider {
+  quickbooks
+  xero
+}
+
+/// One connected accounting system per company. Absence of a row means "not connected" — no
+/// nullable-flag-on-Company needed since the row itself carries the provider + tokens.
+model AccountingConnection {
+  id             String             @id @default(uuid())
+  companyId      String             @unique
+  provider       AccountingProvider
+  accessToken    String
+  refreshToken   String
+  tokenExpiresAt DateTime
+  /// QuickBooks: realm (company) ID, returned on the OAuth callback. Xero: tenant ID, fetched
+  /// from GET /connections right after token exchange since Xero doesn't return it on the callback.
+  externalAccountId String
+  connectedAt       DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("accounting_connections")
 }

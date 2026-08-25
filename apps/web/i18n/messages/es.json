@@ -20,7 +20,8 @@
     "delete": "Eliminar",
     "emailedTo": "Enviado por correo a {email}.",
     "noClientEmail": "No hay correo registrado para este cliente — comparta el enlace manualmente.",
-    "none": "Ninguno"
+    "none": "Ninguno",
+    "close": "Cerrar"
   },
   "nav": {
     "menu": "Menú",
@@ -42,7 +43,8 @@
     "portfolio": "Portafolio",
     "resourcePlanning": "Planificación de recursos",
     "templates": "Plantillas",
-    "subcontractors": "Subcontratistas"
+    "subcontractors": "Subcontratistas",
+    "expenses": "Gastos"
   },
   "auth": {
     "signupTitle": "Crea tu cuenta de Cantero",
@@ -208,7 +210,23 @@
     "rfiSlaDays": "Días de RFI",
     "punchListSlaDays": "Días de lista de pendientes",
     "slaDaysPlaceholder": "p. ej. 5",
-    "webhookEvent_client_lead_captured": "Nuevo lead del sitio web capturado"
+    "webhookEvent_client_lead_captured": "Nuevo lead del sitio web capturado",
+    "emailDigest": "Resumen por correo",
+    "emailDigestHint": "Reciba un resumen por correo de las novedades (RFI atrasadas, stock bajo, menciones y más) en lugar de revisar la campana de notificaciones.",
+    "digestOff": "Desactivado",
+    "digestDaily": "Diario",
+    "digestWeekly": "Semanal",
+    "invoiceReminders": "Recordatorios automáticos de facturas vencidas",
+    "invoiceRemindersHint": "Envía correos de recordatorio cada vez más firmes al cliente a los 3, 7, 14 y 30 días de vencida la factura.",
+    "webhookEvent_expense_approved": "Gasto aprobado",
+    "customRole": "Rol personalizado",
+    "noCustomRole": "Ninguno",
+    "customRoles": "Roles personalizados",
+    "customRolesHint": "Combina niveles de permisos bajo un nombre — p. ej. \"Jefe de obra\" = Capataz + Presupuestista — para un miembro que necesita más de un rol fijo. Es puramente aditivo: nunca quita lo que el propio rol de un miembro ya otorga.",
+    "noCustomRoles": "Aún no hay roles personalizados.",
+    "assignedToCount": "· asignado a {count}",
+    "newCustomRole": "Nuevo rol personalizado",
+    "customRoleNamePlaceholder": "Nombre del rol (p. ej. Jefe de obra)"
   },
   "projects": {
     "title": "Proyectos",
@@ -317,7 +335,8 @@
     "category_permit": "Permiso",
     "category_photo": "Foto",
     "category_invoice_scan": "Escaneo de factura",
-    "category_other": "Otro"
+    "category_other": "Otro",
+    "category_insurance_certificate": "Certificado de seguro"
   },
   "rateCatalog": {
     "title": "Catálogo de precios",
@@ -668,7 +687,8 @@
     "depType_finish_to_finish": "Fin→Fin",
     "depType_start_to_finish": "Inicio→Fin",
     "criticalPathLegend": "Ruta crítica — retrasar esto retrasa la finalización",
-    "comments": "Comentarios"
+    "comments": "Comentarios",
+    "outdoorWork": "Trabajo al aire libre"
   },
   "purchaseOrders": {
     "title": "Pedidos de compra",
@@ -706,7 +726,8 @@
     "logs": "Registros",
     "punch": "Defectos",
     "cachedFrom": "Mostrando datos almacenados de {time}",
-    "loggedOutsideGeofence": "Guardado — pero registrado fuera de la geocerca del proyecto"
+    "loggedOutsideGeofence": "Guardado — pero registrado fuera de la geocerca del proyecto",
+    "expenses": "Gastos"
   },
   "subcontractors": {
     "title": "Costos de subcontratistas",
@@ -863,7 +884,8 @@
     "more": "más",
     "importClients": "Importar CSV",
     "importMaterials": "Importar materiales CSV",
-    "importRateItems": "Importar partidas CSV"
+    "importRateItems": "Importar partidas CSV",
+    "importProjects": "Importar proyectos CSV"
   },
   "dailyLogs": {
     "title": "Partes diarios",
@@ -1119,7 +1141,10 @@
     "general_liability_insurance": "Seguro de responsabilidad civil general",
     "workers_comp_insurance": "Seguro de accidentes laborales",
     "license": "Licencia",
-    "other": "Otro"
+    "other": "Otro",
+    "viewCertificate": "Ver certificado",
+    "uploadCertificate": "Subir certificado",
+    "uploading": "Subiendo…"
   },
   "weather": {
     "title": "Pronóstico del tiempo",
@@ -1220,5 +1245,108 @@
     "issuerPlaceholder": "p. ej. https://idp.example.com/saml/metadata",
     "cert": "Certificado de firma del IdP",
     "disable": "Desactivar SSO"
+  },
+  "closeout": {
+    "title": "Paquete de cierre",
+    "description": "Agrupa la factura final, el estado de la garantía y los documentos del proyecto en un ZIP para la entrega al cliente.",
+    "download": "Descargar paquete de cierre",
+    "preparing": "Preparando…",
+    "error": "No se pudo generar el paquete de cierre. Inténtalo de nuevo."
+  },
+  "dataPrivacy": {
+    "title": "Datos y privacidad",
+    "hint": "Exporta una copia portátil de los datos de tu empresa o solicita la eliminación de la cuenta.",
+    "exportTitle": "Exportación de datos",
+    "exportHint": "Descarga un ZIP con el perfil de la empresa, equipo, clientes, proyectos, presupuestos, facturas y registros de campo en archivos JSON.",
+    "exportButton": "Descargar exportación de datos",
+    "exporting": "Preparando…",
+    "deletionTitle": "Eliminación de cuenta",
+    "deletionHint": "Solicita la eliminación de la cuenta de tu empresa y sus datos. Nuestro equipo de soporte se pondrá en contacto para confirmar los requisitos legales/de retención antes de proceder.",
+    "requestDeletion": "Solicitar eliminación de cuenta",
+    "confirmRequest": "¿Solicitar la eliminación de esta cuenta de empresa? Soporte se pondrá en contacto antes de eliminar nada.",
+    "deletionPending": "Eliminación solicitada el {date} — nuestro equipo de soporte se pondrá en contacto.",
+    "cancelRequest": "Cancelar solicitud de eliminación"
+  },
+  "customReports": {
+    "title": "Informes personalizados",
+    "hint": "Elige un conjunto de datos y columnas, filtra opcionalmente por rango de fechas y estado, y previsualiza o guarda el informe para reutilizarlo.",
+    "dataset": "Conjunto de datos",
+    "dataset_projects": "Proyectos",
+    "dataset_invoices": "Facturas",
+    "dataset_estimates": "Presupuestos",
+    "dataset_time_entries": "Registros de tiempo",
+    "dataset_punch_list": "Lista de defectos",
+    "dataset_rfis": "Solicitudes (RFI)",
+    "dateFrom": "Desde",
+    "dateTo": "Hasta",
+    "statusEquals": "Estado igual a",
+    "statusPlaceholder": "p. ej. paid, open, approved",
+    "columns": "Columnas",
+    "preview": "Vista previa",
+    "reportNamePlaceholder": "Nombre del informe",
+    "noRows": "Ninguna fila coincide con este informe.",
+    "savedReports": "Informes guardados",
+    "noSavedReports": "Aún no hay informes guardados.",
+    "createdBy": "por {name}",
+    "run": "Ejecutar",
+    "exportCsv": "Exportar CSV"
+  },
+  "accountingSync": {
+    "title": "Sincronización contable",
+    "hint": "Conecta QuickBooks o Xero para enviar automáticamente las facturas a tu contabilidad.",
+    "connect": "Conectar {provider}",
+    "connectFailed": "No se pudo iniciar la conexión. Inténtalo de nuevo.",
+    "connectedSummary": "Conectado a {provider} el {date}.",
+    "syncNow": "Sincronizar ahora",
+    "disconnect": "Desconectar",
+    "syncResult": "{synced} sincronizadas, {failed} fallidas."
+  },
+  "expenses": {
+    "title": "Gastos",
+    "subtitle": "Gastos personales enviados desde el terreno, pendientes de aprobación y reembolso.",
+    "pendingTotal": "{amount} {currency} pendientes de aprobación",
+    "allProjects": "Todos los proyectos",
+    "allStatuses": "Todos los estados",
+    "empty": "Aún no se han enviado gastos.",
+    "pending": "Pendiente",
+    "approved": "Aprobado",
+    "rejected": "Rechazado",
+    "materials": "Materiales",
+    "fuel": "Combustible",
+    "tools": "Herramientas",
+    "permits": "Permisos",
+    "meals": "Comidas",
+    "other": "Otro",
+    "category": "Categoría",
+    "amount": "Importe",
+    "date": "Fecha",
+    "description": "Descripción",
+    "receipt": "Recibo",
+    "submit": "Enviar gasto",
+    "submitted": "Gasto enviado",
+    "viewReceipt": "Ver recibo",
+    "approve": "Aprobar",
+    "reject": "Rechazar",
+    "rejectReasonPlaceholder": "Motivo del rechazo",
+    "confirmReject": "Confirmar rechazo",
+    "rejectedReasonLabel": "Rechazado"
+  },
+  "materialRfqs": {
+    "title": "Solicitudes de cotización de materiales",
+    "hint": "Solicita cotizaciones de varios proveedores para una lista de materiales y compara precios antes de pedir.",
+    "newRfq": "Nueva solicitud",
+    "rfqTitlePlaceholder": "Título de la solicitud",
+    "companyWide": "Toda la empresa",
+    "addLine": "+ Añadir material",
+    "noRfqs": "Aún no hay solicitudes.",
+    "open": "Abierta",
+    "closed": "Cerrada",
+    "noQuotesYet": "Aún no hay cotizaciones.",
+    "awarded": "Adjudicado",
+    "award": "Adjudicar",
+    "selectSupplier": "Seleccionar proveedor",
+    "unitPricePlaceholder": "Precio unitario",
+    "addQuote": "Añadir cotización",
+    "closeRfq": "Cerrar solicitud"
   }
 }

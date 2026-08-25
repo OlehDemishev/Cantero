@@ -40,6 +40,8 @@ import { CustomFieldsModule } from "./custom-fields/custom-fields.module";
 import { SavedViewsModule } from "./saved-views/saved-views.module";
 import { LeadsModule } from "./leads/leads.module";
 import { SsoModule } from "./sso/sso.module";
+import { AccountingModule } from "./accounting/accounting.module";
+import { InvoiceRemindersModule } from "./invoice-reminders/invoice-reminders.module";
 
 @Module({
   imports: [
@@ -80,6 +82,8 @@ import { SsoModule } from "./sso/sso.module";
     SavedViewsModule,
     LeadsModule,
     SsoModule,
+    AccountingModule,
+    InvoiceRemindersModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

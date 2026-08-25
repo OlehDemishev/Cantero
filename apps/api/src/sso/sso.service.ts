@@ -100,7 +100,10 @@ export class SsoService {
       throw new BadRequestException("The signed-in email doesn't match this company's SSO domain");
     }
 
-    let user = await this.prisma.user.findUnique({ where: { email }, include: { memberships: { where: { companyId } } } });
+    let user = await this.prisma.user.findUnique({
+      where: { email },
+      include: { memberships: { where: { companyId }, include: { customRole: true } } },
+    });
     if (user && user.memberships.length === 0) {
       throw new BadRequestException("This email belongs to an account in a different company — contact your administrator");
     }
@@ -116,7 +119,7 @@ export class SsoService {
           name: (profile?.["displayName"] as string | undefined) ?? email,
           memberships: { create: { companyId, role: "worker" } },
         },
-        include: { memberships: { where: { companyId } } },
+        include: { memberships: { where: { companyId }, include: { customRole: true } } },
       });
       user = created;
       this.audit.record(companyId, { name: "SSO" }, "sso.user_provisioned", "User", created.id, `Provisioned ${email} via SSO`);
@@ -129,6 +132,7 @@ export class SsoService {
       email: user.email,
       name: user.name,
       role: membership.role,
+      additionalRoles: membership.customRole?.basePermissions,
     } satisfies AuthUser);
 
     return { accessToken };

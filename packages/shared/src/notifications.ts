@@ -13,3 +13,11 @@ export const pushUnsubscribeSchema = z.object({
   endpoint: z.string().url(),
 });
 export type PushUnsubscribeInput = z.infer<typeof pushUnsubscribeSchema>;
+
+export const EMAIL_DIGEST_FREQUENCIES = ["off", "daily", "weekly"] as const;
+export type EmailDigestFrequency = (typeof EMAIL_DIGEST_FREQUENCIES)[number];
+
+export const updateNotificationPreferencesSchema = z.object({
+  emailDigestFrequency: z.enum(EMAIL_DIGEST_FREQUENCIES),
+});
+export type UpdateNotificationPreferencesInput = z.infer<typeof updateNotificationPreferencesSchema>;

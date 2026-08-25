@@ -17,6 +17,7 @@ export interface MeResponse {
     requiredApprovalCount: number;
   };
   subscriptionStatus: "incomplete" | "active" | "past_due" | "canceled";
+  emailDigestFrequency: "off" | "daily" | "weekly";
 }
 
 export function useMe() {

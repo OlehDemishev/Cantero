@@ -1,5 +1,11 @@
 import { Body, Controller, Delete, Get, Param, Patch } from "@nestjs/common";
-import { updateMemberRoleSchema, type AuthUser, type UpdateMemberRoleInput } from "@cantero/shared";
+import {
+  assignCustomRoleSchema,
+  updateMemberRoleSchema,
+  type AssignCustomRoleInput,
+  type AuthUser,
+  type UpdateMemberRoleInput,
+} from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
@@ -22,6 +28,16 @@ export class MembersController {
     @Body(new ZodValidationPipe(updateMemberRoleSchema)) body: UpdateMemberRoleInput,
   ) {
     return this.service.updateRole(user.companyId, { userId: user.userId, name: user.name }, userId, body);
+  }
+
+  @Roles("owner", "admin")
+  @Patch(":userId/custom-role")
+  assignCustomRole(
+    @CurrentUser() user: AuthUser,
+    @Param("userId") userId: string,
+    @Body(new ZodValidationPipe(assignCustomRoleSchema)) body: AssignCustomRoleInput,
+  ) {
+    return this.service.assignCustomRole(user.companyId, { userId: user.userId, name: user.name }, userId, body);
   }
 
   @Roles("owner", "admin")

@@ -19,7 +19,11 @@ export class RolesGuard implements CanActivate {
     const user = request.user as AuthUser | undefined;
     if (!user) return false;
 
-    if (!requiredRoles.includes(user.role as MembershipRole)) {
+    const hasBaseRole = requiredRoles.includes(user.role as MembershipRole);
+    // additionalRoles come from a company-defined CustomRole (see CustomRole in schema.prisma) —
+    // purely additive on top of the member's own role, never a substitute or restriction.
+    const hasAdditionalRole = user.additionalRoles?.some((r) => requiredRoles.includes(r as MembershipRole)) ?? false;
+    if (!hasBaseRole && !hasAdditionalRole) {
       throw new ForbiddenException(`Requires one of these roles: ${requiredRoles.join(", ")}`);
     }
     return true;

@@ -261,3 +261,13 @@ export function SubcontractorsIcon(props: SVGProps<SVGSVGElement>) {
     </Icon>
   );
 }
+
+export function ExpensesIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <rect x="2.5" y="5" width="15" height="10.5" rx="1.5" />
+      <path d="M2.5 8.5h15" />
+      <circle cx="14" cy="12" r="1.5" />
+    </Icon>
+  );
+}

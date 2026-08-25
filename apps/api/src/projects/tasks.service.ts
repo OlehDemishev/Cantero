@@ -43,6 +43,7 @@ export class TasksService {
         estimateLineId: input.estimateLineId,
         startDate: input.startDate ? new Date(input.startDate) : undefined,
         dueDate: input.dueDate ? new Date(input.dueDate) : undefined,
+        isOutdoorWork: input.isOutdoorWork,
         sortOrder: (maxSort._max.sortOrder ?? 0) + 1,
       },
       include: INCLUDE_DEPENDENCIES,
@@ -62,6 +63,7 @@ export class TasksService {
         startDate: input.startDate ? new Date(input.startDate) : undefined,
         dueDate: input.dueDate ? new Date(input.dueDate) : undefined,
         sortOrder: input.sortOrder,
+        isOutdoorWork: input.isOutdoorWork,
       },
       include: INCLUDE_DEPENDENCIES,
     });

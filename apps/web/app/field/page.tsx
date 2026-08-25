@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { WEATHER_CONDITIONS, type WeatherCondition } from "@cantero/shared";
-import { clearToken, getToken } from "@/lib/api-client";
+import { EXPENSE_CATEGORIES, WEATHER_CONDITIONS, type ExpenseCategory, type WeatherCondition } from "@cantero/shared";
+import { apiUpload, clearToken, getToken } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { submitOrQueue, useOfflineQueue } from "@/lib/offline-queue";
 import { fetchCached, updateCache } from "@/lib/offline-cache";
@@ -66,7 +66,7 @@ export default function FieldPage() {
   const [projects, setProjects] = useState<Project[] | null>(null);
   const [projectsError, setProjectsError] = useState(false);
   const [projectId, setProjectId] = useState("");
-  const [tab, setTab] = useState<"tasks" | "time" | "stock" | "logs" | "punch">("tasks");
+  const [tab, setTab] = useState<"tasks" | "time" | "stock" | "logs" | "punch" | "expenses">("tasks");
 
   useEffect(() => {
     if (!getToken()) router.replace("/login");
@@ -163,8 +163,8 @@ export default function FieldPage() {
               </select>
             </label>
 
-            <div className="mt-4 grid grid-cols-5 gap-1 rounded-lg bg-gray-100 p-1">
-              {(["tasks", "time", "stock", "logs", "punch"] as const).map((key) => (
+            <div className="mt-4 grid grid-cols-6 gap-1 rounded-lg bg-gray-100 p-1">
+              {(["tasks", "time", "stock", "logs", "punch", "expenses"] as const).map((key) => (
                 <button
                   key={key}
                   onClick={() => setTab(key)}
@@ -183,6 +183,7 @@ export default function FieldPage() {
               {tab === "stock" && <StockTab projectId={projectId} />}
               {tab === "logs" && <LogsTab projectId={projectId} />}
               {tab === "punch" && <PunchTab projectId={projectId} />}
+              {tab === "expenses" && <ExpensesTab projectId={projectId} meUserId={me.user.id} />}
             </div>
           </>
         )}
@@ -372,6 +373,145 @@ function TimeTab({ projectId, meUserId }: { projectId: string; meUserId: string 
         {t("logTimeButton")}
       </button>
       {message && <p className={`text-xs ${outsideGeofence ? "text-warning-700" : "text-success-700"}`}>{message}</p>}
+    </form>
+  );
+}
+
+function ExpensesTab({ projectId, meUserId }: { projectId: string; meUserId: string }) {
+  const t = useTranslations("field");
+  const tt = useTranslations("team");
+  const te = useTranslations("expenses");
+  const tc = useTranslations("common");
+  const [workers, setWorkers] = useState<Worker[]>([]);
+  const [form, setForm] = useState({
+    workerId: "",
+    category: "materials" as ExpenseCategory,
+    amount: "",
+    description: "",
+    incurredAt: new Date().toISOString().slice(0, 10),
+  });
+  const [receipt, setReceipt] = useState<File | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    fetchCached<Worker[]>("field:workers", "/workers")
+      .then(({ data: list }) => {
+        setWorkers(list);
+        const mine = list.find((w) => w.userId === meUserId);
+        setForm((f) => ({ ...f, workerId: (mine ?? list[0])?.id ?? "" }));
+      })
+      .catch(() => setError(true));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [meUserId]);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!form.workerId || !form.amount) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      const { queued, data } = await submitOrQueue<{ id: string }>("expense", "/expenses", "POST", {
+        projectId,
+        workerId: form.workerId,
+        category: form.category,
+        amount: Number(form.amount),
+        description: form.description || undefined,
+        incurredAt: new Date(form.incurredAt).toISOString(),
+      });
+      if (queued) {
+        setMessage(t("queuedOffline"));
+      } else {
+        if (receipt && data?.id) {
+          try {
+            await apiUpload(`/expenses/${data.id}/receipt`, receipt);
+          } catch {
+            // The expense itself is already saved — a failed receipt upload shouldn't look like the whole submission failed.
+          }
+        }
+        setMessage(te("submitted"));
+      }
+      setForm((f) => ({ ...f, amount: "", description: "" }));
+      setReceipt(null);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (error) return <p className="text-sm text-gray-400">{t("offline")}</p>;
+  if (workers.length === 0) return <p className="text-sm text-gray-400">{tc("loading")}</p>;
+
+  return (
+    <form onSubmit={submit} className="card flex flex-col gap-3">
+      <label className="flex flex-col gap-1.5 text-sm">
+        <span className="font-medium text-gray-700">{tt("worker")}</span>
+        <select className="input" value={form.workerId} onChange={(e) => setForm((f) => ({ ...f, workerId: e.target.value }))}>
+          {workers.map((w) => (
+            <option key={w.id} value={w.id}>
+              {w.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="flex flex-col gap-1.5 text-sm">
+        <span className="font-medium text-gray-700">{te("category")}</span>
+        <select
+          className="input"
+          value={form.category}
+          onChange={(e) => setForm((f) => ({ ...f, category: e.target.value as ExpenseCategory }))}
+        >
+          {EXPENSE_CATEGORIES.map((c) => (
+            <option key={c} value={c}>
+              {te(c)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <div className="flex gap-3">
+        <label className="flex flex-1 flex-col gap-1.5 text-sm">
+          <span className="font-medium text-gray-700">{te("amount")}</span>
+          <input
+            required
+            type="number"
+            step="0.01"
+            min="0.01"
+            className="input"
+            value={form.amount}
+            onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
+          />
+        </label>
+        <label className="flex flex-1 flex-col gap-1.5 text-sm">
+          <span className="font-medium text-gray-700">{te("date")}</span>
+          <input
+            type="date"
+            className="input"
+            value={form.incurredAt}
+            onChange={(e) => setForm((f) => ({ ...f, incurredAt: e.target.value }))}
+          />
+        </label>
+      </div>
+      <label className="flex flex-col gap-1.5 text-sm">
+        <span className="font-medium text-gray-700">{te("description")}</span>
+        <input
+          className="input"
+          value={form.description}
+          onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+        />
+      </label>
+      <label className="flex flex-col gap-1.5 text-sm">
+        <span className="font-medium text-gray-700">{te("receipt")}</span>
+        <input
+          type="file"
+          accept="image/*,application/pdf"
+          className="input"
+          onChange={(e) => setReceipt(e.target.files?.[0] ?? null)}
+        />
+      </label>
+      <button type="submit" disabled={busy} className="btn-primary mt-1">
+        {te("submit")}
+      </button>
+      {message && <p className="text-xs text-success-700">{message}</p>}
     </form>
   );
 }

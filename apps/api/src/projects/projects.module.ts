@@ -15,10 +15,13 @@ import { SubmittalsController } from "./submittals.controller";
 import { SubmittalsService } from "./submittals.service";
 import { WarrantyClaimsController } from "./warranty-claims.controller";
 import { WarrantyClaimsService } from "./warranty-claims.service";
+import { ProjectCloseoutService } from "./project-closeout.service";
 import { WeatherModule } from "../weather/weather.module";
+import { FinanceModule } from "../finance/finance.module";
+import { DocumentsModule } from "../documents/documents.module";
 
 @Module({
-  imports: [WeatherModule],
+  imports: [WeatherModule, FinanceModule, DocumentsModule],
   controllers: [
     ProjectsController,
     TasksController,
@@ -38,6 +41,7 @@ import { WeatherModule } from "../weather/weather.module";
     RfiService,
     SubmittalsService,
     WarrantyClaimsService,
+    ProjectCloseoutService,
   ],
   exports: [ProjectsService, PunchListService],
 })

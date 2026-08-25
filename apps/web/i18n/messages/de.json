@@ -20,7 +20,8 @@
     "delete": "Löschen",
     "emailedTo": "Per E-Mail gesendet an {email}.",
     "noClientEmail": "Für diesen Kunden ist keine E-Mail-Adresse hinterlegt — teilen Sie den Link manuell.",
-    "none": "Keine"
+    "none": "Keine",
+    "close": "Schließen"
   },
   "nav": {
     "menu": "Menü",
@@ -42,7 +43,8 @@
     "portfolio": "Portfolio",
     "resourcePlanning": "Ressourcenplanung",
     "templates": "Vorlagen",
-    "subcontractors": "Subunternehmer"
+    "subcontractors": "Subunternehmer",
+    "expenses": "Spesen"
   },
   "auth": {
     "signupTitle": "Cantero-Konto erstellen",
@@ -208,7 +210,23 @@
     "rfiSlaDays": "RFI-Tage",
     "punchListSlaDays": "Mängelliste-Tage",
     "slaDaysPlaceholder": "z. B. 5",
-    "webhookEvent_client_lead_captured": "Neuer Website-Lead erfasst"
+    "webhookEvent_client_lead_captured": "Neuer Website-Lead erfasst",
+    "emailDigest": "E-Mail-Zusammenfassung",
+    "emailDigestHint": "Erhalten Sie eine E-Mail-Zusammenfassung der Neuigkeiten (überfällige RFIs, niedriger Bestand, Erwähnungen und mehr), statt die Benachrichtigungsglocke zu prüfen.",
+    "digestOff": "Aus",
+    "digestDaily": "Täglich",
+    "digestWeekly": "Wöchentlich",
+    "invoiceReminders": "Automatische Zahlungserinnerungen",
+    "invoiceRemindersHint": "Sendet dem Kunden eskalierende Erinnerungs-E-Mails 3, 7, 14 und 30 Tage nach Fälligkeit.",
+    "webhookEvent_expense_approved": "Spese genehmigt",
+    "customRole": "Benutzerdefinierte Rolle",
+    "noCustomRole": "Keine",
+    "customRoles": "Benutzerdefinierte Rollen",
+    "customRolesHint": "Kombinieren Sie Berechtigungsstufen unter einem Namen — z. B. \"Bauleiter\" = Vorarbeiter + Kalkulator — für ein Mitglied, das mehr als eine feste Rolle benötigt. Rein additiv: Es nimmt nie etwas weg, was die eigene Rolle eines Mitglieds bereits gewährt.",
+    "noCustomRoles": "Noch keine benutzerdefinierten Rollen.",
+    "assignedToCount": "· zugewiesen an {count}",
+    "newCustomRole": "Neue benutzerdefinierte Rolle",
+    "customRoleNamePlaceholder": "Rollenname (z. B. Bauleiter)"
   },
   "projects": {
     "title": "Projekte",
@@ -317,7 +335,8 @@
     "category_permit": "Genehmigung",
     "category_photo": "Foto",
     "category_invoice_scan": "Rechnungsscan",
-    "category_other": "Sonstiges"
+    "category_other": "Sonstiges",
+    "category_insurance_certificate": "Versicherungsnachweis"
   },
   "rateCatalog": {
     "title": "Leistungskatalog",
@@ -668,7 +687,8 @@
     "depType_finish_to_finish": "Ende→Ende",
     "depType_start_to_finish": "Anfang→Ende",
     "criticalPathLegend": "Kritischer Pfad — eine Verzögerung hier verschiebt den Endtermin",
-    "comments": "Kommentare"
+    "comments": "Kommentare",
+    "outdoorWork": "Arbeit im Freien"
   },
   "purchaseOrders": {
     "title": "Bestellungen",
@@ -706,7 +726,8 @@
     "logs": "Protokolle",
     "punch": "Mängel",
     "cachedFrom": "Zeigt zwischengespeicherte Daten von {time}",
-    "loggedOutsideGeofence": "Gespeichert — jedoch außerhalb des Geofence des Projekts erfasst"
+    "loggedOutsideGeofence": "Gespeichert — jedoch außerhalb des Geofence des Projekts erfasst",
+    "expenses": "Spesen"
   },
   "subcontractors": {
     "title": "Nachunternehmerkosten",
@@ -863,7 +884,8 @@
     "more": "weitere",
     "importClients": "CSV importieren",
     "importMaterials": "Materialien per CSV importieren",
-    "importRateItems": "Leistungspositionen per CSV importieren"
+    "importRateItems": "Leistungspositionen per CSV importieren",
+    "importProjects": "Projekte per CSV importieren"
   },
   "dailyLogs": {
     "title": "Bautagebuch",
@@ -1119,7 +1141,10 @@
     "general_liability_insurance": "Betriebshaftpflichtversicherung",
     "workers_comp_insurance": "Berufsgenossenschaftsversicherung",
     "license": "Lizenz",
-    "other": "Sonstiges"
+    "other": "Sonstiges",
+    "viewCertificate": "Zertifikat ansehen",
+    "uploadCertificate": "Zertifikat hochladen",
+    "uploading": "Wird hochgeladen…"
   },
   "weather": {
     "title": "Wettervorhersage",
@@ -1220,5 +1245,108 @@
     "issuerPlaceholder": "z. B. https://idp.example.com/saml/metadata",
     "cert": "IdP-Signaturzertifikat",
     "disable": "SSO deaktivieren"
+  },
+  "closeout": {
+    "title": "Abschlusspaket",
+    "description": "Bündelt die Schlussrechnung, den Gewährleistungsstatus und die Projektdokumente in einer ZIP-Datei zur Übergabe an den Kunden.",
+    "download": "Abschlusspaket herunterladen",
+    "preparing": "Wird vorbereitet…",
+    "error": "Das Abschlusspaket konnte nicht erstellt werden. Bitte erneut versuchen."
+  },
+  "dataPrivacy": {
+    "title": "Daten & Datenschutz",
+    "hint": "Exportieren Sie eine portable Kopie der Unternehmensdaten oder beantragen Sie die Löschung des Kontos.",
+    "exportTitle": "Datenexport",
+    "exportHint": "Laden Sie eine ZIP-Datei mit Unternehmensprofil, Team, Kunden, Projekten, Kostenvoranschlägen, Rechnungen und Baustellendaten als JSON-Dateien herunter.",
+    "exportButton": "Datenexport herunterladen",
+    "exporting": "Wird vorbereitet…",
+    "deletionTitle": "Konto löschen",
+    "deletionHint": "Beantragen Sie die Löschung Ihres Unternehmenskontos und der zugehörigen Daten. Unser Support-Team meldet sich, um Aufbewahrungs-/Rechtsanforderungen zu klären, bevor etwas gelöscht wird.",
+    "requestDeletion": "Kontolöschung beantragen",
+    "confirmRequest": "Löschung dieses Unternehmenskontos beantragen? Der Support meldet sich, bevor etwas gelöscht wird.",
+    "deletionPending": "Löschung beantragt am {date} — unser Support-Team meldet sich.",
+    "cancelRequest": "Löschantrag zurückziehen"
+  },
+  "customReports": {
+    "title": "Benutzerdefinierte Berichte",
+    "hint": "Wählen Sie einen Datensatz und Spalten, filtern Sie optional nach Zeitraum und Status, und sehen Sie eine Vorschau oder speichern Sie den Bericht zur Wiederverwendung.",
+    "dataset": "Datensatz",
+    "dataset_projects": "Projekte",
+    "dataset_invoices": "Rechnungen",
+    "dataset_estimates": "Kostenvoranschläge",
+    "dataset_time_entries": "Zeiterfassungen",
+    "dataset_punch_list": "Mängelliste",
+    "dataset_rfis": "Anfragen (RFI)",
+    "dateFrom": "Von",
+    "dateTo": "Bis",
+    "statusEquals": "Status ist",
+    "statusPlaceholder": "z. B. paid, open, approved",
+    "columns": "Spalten",
+    "preview": "Vorschau",
+    "reportNamePlaceholder": "Berichtsname",
+    "noRows": "Keine Zeilen entsprechen diesem Bericht.",
+    "savedReports": "Gespeicherte Berichte",
+    "noSavedReports": "Noch keine gespeicherten Berichte.",
+    "createdBy": "von {name}",
+    "run": "Ausführen",
+    "exportCsv": "CSV exportieren"
+  },
+  "accountingSync": {
+    "title": "Buchhaltungs-Synchronisierung",
+    "hint": "Verbinden Sie QuickBooks oder Xero, um Rechnungen automatisch in Ihre Buchhaltung zu übertragen.",
+    "connect": "{provider} verbinden",
+    "connectFailed": "Verbindung konnte nicht gestartet werden. Bitte erneut versuchen.",
+    "connectedSummary": "Verbunden mit {provider} am {date}.",
+    "syncNow": "Jetzt synchronisieren",
+    "disconnect": "Trennen",
+    "syncResult": "{synced} synchronisiert, {failed} fehlgeschlagen."
+  },
+  "expenses": {
+    "title": "Spesen",
+    "subtitle": "Von der Baustelle eingereichte Auslagen, die auf Genehmigung und Erstattung warten.",
+    "pendingTotal": "{amount} {currency} ausstehend zur Genehmigung",
+    "allProjects": "Alle Projekte",
+    "allStatuses": "Alle Status",
+    "empty": "Noch keine Spesen eingereicht.",
+    "pending": "Ausstehend",
+    "approved": "Genehmigt",
+    "rejected": "Abgelehnt",
+    "materials": "Material",
+    "fuel": "Treibstoff",
+    "tools": "Werkzeug",
+    "permits": "Genehmigungen",
+    "meals": "Verpflegung",
+    "other": "Sonstiges",
+    "category": "Kategorie",
+    "amount": "Betrag",
+    "date": "Datum",
+    "description": "Beschreibung",
+    "receipt": "Beleg",
+    "submit": "Spese einreichen",
+    "submitted": "Spese eingereicht",
+    "viewReceipt": "Beleg ansehen",
+    "approve": "Genehmigen",
+    "reject": "Ablehnen",
+    "rejectReasonPlaceholder": "Ablehnungsgrund",
+    "confirmReject": "Ablehnung bestätigen",
+    "rejectedReasonLabel": "Abgelehnt"
+  },
+  "materialRfqs": {
+    "title": "Material-Ausschreibungen",
+    "hint": "Holen Sie Angebote mehrerer Lieferanten für eine Materialliste ein und vergleichen Sie die Preise vor der Bestellung.",
+    "newRfq": "Neue Ausschreibung",
+    "rfqTitlePlaceholder": "Titel der Ausschreibung",
+    "companyWide": "Unternehmensweit",
+    "addLine": "+ Material hinzufügen",
+    "noRfqs": "Noch keine Ausschreibungen.",
+    "open": "Offen",
+    "closed": "Geschlossen",
+    "noQuotesYet": "Noch keine Angebote.",
+    "awarded": "Vergeben",
+    "award": "Vergeben",
+    "selectSupplier": "Lieferant wählen",
+    "unitPricePlaceholder": "Einzelpreis",
+    "addQuote": "Angebot hinzufügen",
+    "closeRfq": "Ausschreibung schließen"
   }
 }

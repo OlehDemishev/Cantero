@@ -20,7 +20,8 @@
     "delete": "Видалити",
     "emailedTo": "Надіслано на {email}.",
     "noClientEmail": "У цього клієнта немає email — поділіться посиланням вручну.",
-    "none": "Немає"
+    "none": "Немає",
+    "close": "Закрити"
   },
   "nav": {
     "menu": "Меню",
@@ -42,7 +43,8 @@
     "portfolio": "Портфоліо",
     "resourcePlanning": "Планування ресурсів",
     "templates": "Шаблони",
-    "subcontractors": "Субпідрядники"
+    "subcontractors": "Субпідрядники",
+    "expenses": "Витрати"
   },
   "auth": {
     "signupTitle": "Створіть обліковий запис Cantero",
@@ -208,7 +210,23 @@
     "rfiSlaDays": "Дні RFI",
     "punchListSlaDays": "Дні переліку недоробок",
     "slaDaysPlaceholder": "напр. 5",
-    "webhookEvent_client_lead_captured": "Новий лід із сайту"
+    "webhookEvent_client_lead_captured": "Новий лід із сайту",
+    "emailDigest": "Дайджест на пошту",
+    "emailDigestHint": "Отримуйте на пошту зведення новин (прострочені RFI, низький залишок, згадки тощо) замість перевірки дзвіночка сповіщень.",
+    "digestOff": "Вимкнено",
+    "digestDaily": "Щодня",
+    "digestWeekly": "Щотижня",
+    "invoiceReminders": "Автоматичні нагадування про прострочені рахунки",
+    "invoiceRemindersHint": "Надсилає клієнту дедалі наполегливіші листи-нагадування через 3, 7, 14 та 30 днів після терміну оплати.",
+    "webhookEvent_expense_approved": "Витрату затверджено",
+    "customRole": "Користувацька роль",
+    "noCustomRole": "Немає",
+    "customRoles": "Користувацькі ролі",
+    "customRolesHint": "Об'єднайте рівні прав під однією назвою — напр. «Керівник об'єкта» = Виконроб + Кошторисник — для учасника, якому потрібна не одна фіксована роль. Суто адитивно: ніколи не забирає те, що вже надає власна роль учасника.",
+    "noCustomRoles": "Ще немає користувацьких ролей.",
+    "assignedToCount": "· призначено {count}",
+    "newCustomRole": "Нова користувацька роль",
+    "customRoleNamePlaceholder": "Назва ролі (напр. Керівник об'єкта)"
   },
   "projects": {
     "title": "Проєкти",
@@ -317,7 +335,8 @@
     "category_permit": "Дозвіл",
     "category_photo": "Фото",
     "category_invoice_scan": "Скан рахунку",
-    "category_other": "Інше"
+    "category_other": "Інше",
+    "category_insurance_certificate": "Страховий сертифікат"
   },
   "rateCatalog": {
     "title": "Прайс-лист",
@@ -668,7 +687,8 @@
     "depType_finish_to_finish": "Кінець→Кінець",
     "depType_start_to_finish": "Початок→Кінець",
     "criticalPathLegend": "Критичний шлях — затримка тут зсуває завершення",
-    "comments": "Коментарі"
+    "comments": "Коментарі",
+    "outdoorWork": "Робота на відкритому повітрі"
   },
   "purchaseOrders": {
     "title": "Замовлення на закупівлю",
@@ -706,7 +726,8 @@
     "logs": "Журнали",
     "punch": "Дефекти",
     "cachedFrom": "Показано дані з кешу за {time}",
-    "loggedOutsideGeofence": "Збережено — але зафіксовано поза геозоною проєкту"
+    "loggedOutsideGeofence": "Збережено — але зафіксовано поза геозоною проєкту",
+    "expenses": "Витрати"
   },
   "subcontractors": {
     "title": "Витрати на субпідрядників",
@@ -863,7 +884,8 @@
     "more": "ще",
     "importClients": "Імпортувати CSV",
     "importMaterials": "Імпортувати матеріали CSV",
-    "importRateItems": "Імпортувати позиції розцінок CSV"
+    "importRateItems": "Імпортувати позиції розцінок CSV",
+    "importProjects": "Імпортувати проєкти CSV"
   },
   "dailyLogs": {
     "title": "Журнал робіт",
@@ -1119,7 +1141,10 @@
     "general_liability_insurance": "Страхування цивільної відповідальності",
     "workers_comp_insurance": "Страхування від нещасних випадків",
     "license": "Ліцензія",
-    "other": "Інше"
+    "other": "Інше",
+    "viewCertificate": "Переглянути сертифікат",
+    "uploadCertificate": "Завантажити сертифікат",
+    "uploading": "Завантаження…"
   },
   "weather": {
     "title": "Прогноз погоди",
@@ -1220,5 +1245,108 @@
     "issuerPlaceholder": "напр. https://idp.example.com/saml/metadata",
     "cert": "Сертифікат підпису IdP",
     "disable": "Вимкнути SSO"
+  },
+  "closeout": {
+    "title": "Пакет закриття проєкту",
+    "description": "Об'єднує фінальний рахунок, статус гарантії та документи проєкту в один ZIP-архів для передачі клієнту.",
+    "download": "Завантажити пакет закриття",
+    "preparing": "Підготовка…",
+    "error": "Не вдалося сформувати пакет закриття. Спробуйте ще раз."
+  },
+  "dataPrivacy": {
+    "title": "Дані та приватність",
+    "hint": "Експортуйте портативну копію даних вашої компанії або надішліть запит на видалення облікового запису.",
+    "exportTitle": "Експорт даних",
+    "exportHint": "Завантажте ZIP-архів із профілем компанії, командою, клієнтами, проєктами, кошторисами, рахунками та польовими даними у форматі JSON.",
+    "exportButton": "Завантажити експорт даних",
+    "exporting": "Підготовка…",
+    "deletionTitle": "Видалення облікового запису",
+    "deletionHint": "Надішліть запит на видалення облікового запису компанії та її даних. Наша команда підтримки зв'яжеться з вами, щоб узгодити вимоги щодо зберігання даних/юридичні вимоги, перш ніж щось видаляти.",
+    "requestDeletion": "Запит на видалення облікового запису",
+    "confirmRequest": "Надіслати запит на видалення цього облікового запису компанії? Підтримка зв'яжеться з вами, перш ніж щось видаляти.",
+    "deletionPending": "Видалення запитано {date} — наша команда підтримки зв'яжеться з вами.",
+    "cancelRequest": "Скасувати запит на видалення"
+  },
+  "customReports": {
+    "title": "Користувацькі звіти",
+    "hint": "Оберіть набір даних і колонки, за бажанням відфільтруйте за періодом і статусом, потім перегляньте або збережіть звіт для повторного використання.",
+    "dataset": "Набір даних",
+    "dataset_projects": "Проєкти",
+    "dataset_invoices": "Рахунки",
+    "dataset_estimates": "Кошториси",
+    "dataset_time_entries": "Записи часу",
+    "dataset_punch_list": "Список дефектів",
+    "dataset_rfis": "Запити (RFI)",
+    "dateFrom": "Від",
+    "dateTo": "До",
+    "statusEquals": "Статус дорівнює",
+    "statusPlaceholder": "напр. paid, open, approved",
+    "columns": "Колонки",
+    "preview": "Попередній перегляд",
+    "reportNamePlaceholder": "Назва звіту",
+    "noRows": "Жоден рядок не відповідає цьому звіту.",
+    "savedReports": "Збережені звіти",
+    "noSavedReports": "Ще немає збережених звітів.",
+    "createdBy": "від {name}",
+    "run": "Виконати",
+    "exportCsv": "Експортувати CSV"
+  },
+  "accountingSync": {
+    "title": "Синхронізація з бухгалтерією",
+    "hint": "Підключіть QuickBooks або Xero, щоб автоматично надсилати рахунки до вашого обліку.",
+    "connect": "Підключити {provider}",
+    "connectFailed": "Не вдалося розпочати підключення. Спробуйте ще раз.",
+    "connectedSummary": "Підключено до {provider} {date}.",
+    "syncNow": "Синхронізувати зараз",
+    "disconnect": "Відключити",
+    "syncResult": "Синхронізовано {synced}, помилок {failed}."
+  },
+  "expenses": {
+    "title": "Витрати",
+    "subtitle": "Витрати, подані з об'єкта, що очікують на затвердження та відшкодування.",
+    "pendingTotal": "{amount} {currency} очікує затвердження",
+    "allProjects": "Усі проєкти",
+    "allStatuses": "Усі статуси",
+    "empty": "Витрат ще не подано.",
+    "pending": "Очікує",
+    "approved": "Затверджено",
+    "rejected": "Відхилено",
+    "materials": "Матеріали",
+    "fuel": "Пальне",
+    "tools": "Інструменти",
+    "permits": "Дозволи",
+    "meals": "Харчування",
+    "other": "Інше",
+    "category": "Категорія",
+    "amount": "Сума",
+    "date": "Дата",
+    "description": "Опис",
+    "receipt": "Чек",
+    "submit": "Подати витрату",
+    "submitted": "Витрату подано",
+    "viewReceipt": "Переглянути чек",
+    "approve": "Затвердити",
+    "reject": "Відхилити",
+    "rejectReasonPlaceholder": "Причина відхилення",
+    "confirmReject": "Підтвердити відхилення",
+    "rejectedReasonLabel": "Відхилено"
+  },
+  "materialRfqs": {
+    "title": "Запити цін на матеріали",
+    "hint": "Запитайте ціни у кількох постачальників на список матеріалів і порівняйте їх перед замовленням.",
+    "newRfq": "Новий запит",
+    "rfqTitlePlaceholder": "Назва запиту",
+    "companyWide": "Загальнокорпоративний",
+    "addLine": "+ Додати матеріал",
+    "noRfqs": "Ще немає запитів цін.",
+    "open": "Відкрито",
+    "closed": "Закрито",
+    "noQuotesYet": "Ще немає пропозицій.",
+    "awarded": "Присуджено",
+    "award": "Присудити",
+    "selectSupplier": "Оберіть постачальника",
+    "unitPricePlaceholder": "Ціна за одиницю",
+    "addQuote": "Додати пропозицію",
+    "closeRfq": "Закрити запит"
   }
 }

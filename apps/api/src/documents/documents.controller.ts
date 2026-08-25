@@ -30,6 +30,7 @@ export class DocumentsController {
     @Query("dailyLogId") dailyLogId?: string,
     @Query("incidentReportId") incidentReportId?: string,
     @Query("warrantyClaimId") warrantyClaimId?: string,
+    @Query("subcontractorDocumentId") subcontractorDocumentId?: string,
     @Query("category") category?: string,
     @Query("search") search?: string,
   ) {
@@ -40,6 +41,7 @@ export class DocumentsController {
       dailyLogId,
       incidentReportId,
       warrantyClaimId,
+      subcontractorDocumentId,
       category,
       search,
     });
@@ -56,6 +58,7 @@ export class DocumentsController {
     @Query("dailyLogId") dailyLogId?: string,
     @Query("incidentReportId") incidentReportId?: string,
     @Query("warrantyClaimId") warrantyClaimId?: string,
+    @Query("subcontractorDocumentId") subcontractorDocumentId?: string,
     @Query("category") category?: string,
   ) {
     if (!file) throw new BadRequestException("No file provided");
@@ -66,6 +69,7 @@ export class DocumentsController {
       dailyLogId,
       incidentReportId,
       warrantyClaimId,
+      subcontractorDocumentId,
       category,
     });
   }
