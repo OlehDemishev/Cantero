@@ -226,7 +226,19 @@
     "noCustomRoles": "Brak ról niestandardowych.",
     "assignedToCount": "· przypisano do {count}",
     "newCustomRole": "Nowa rola niestandardowa",
-    "customRoleNamePlaceholder": "Nazwa roli (np. Kierownik budowy)"
+    "customRoleNamePlaceholder": "Nazwa roli (np. Kierownik budowy)",
+    "reviewRequestUrl": "Link do opinii",
+    "reviewRequestUrlHint": "Udostępniany klientom przy prośbie o opinię po zamknięciu projektu.",
+    "manageBilling": "Zarządzaj rozliczeniami",
+    "franchise": "Franczyza",
+    "franchiseHint": "Połącz tę firmę z firmą nadrzędną albo wygeneruj kod, aby inna firma mogła połączyć się z Twoją.",
+    "branchRevenue": "Przychód",
+    "branchProjects": "Projekty",
+    "branchMembers": "Członkowie",
+    "total": "Razem",
+    "generateLinkCode": "Wygeneruj kod połączenia",
+    "linkToParentCode": "Kod firmy nadrzędnej",
+    "linkToParent": "Połącz z firmą nadrzędną"
   },
   "projects": {
     "title": "Projekty",
@@ -274,7 +286,9 @@
     "projectName": "Nazwa projektu",
     "pipelineOverview": "Przegląd lejka sprzedaży",
     "searchPlaceholder": "Szukaj po nazwie lub e-mailu…",
-    "allOwners": "Wszyscy właściciele"
+    "allOwners": "Wszyscy właściciele",
+    "referredBy": "Polecony przez",
+    "referrals": "Polecenia"
   },
   "team": {
     "title": "Zespół",
@@ -310,7 +324,16 @@
     "noCertifications": "Brak certyfikatów w kartotece.",
     "certificationNamePlaceholder": "Nazwa certyfikatu (np. OSHA 30, operator wózka widłowego)",
     "addCertification": "Dodaj certyfikat",
-    "outsideGeofence": "Poza geofencingiem"
+    "outsideGeofence": "Poza geofencingiem",
+    "certificationsDashboard": "Przegląd certyfikatów",
+    "certExpired": "{count} wygasłych",
+    "certExpiringSoon": "{count} wkrótce wygasa",
+    "certValid": "{count} ważnych",
+    "certification": "Certyfikat",
+    "expires": "Wygasa",
+    "certStatus_expired": "Wygasł",
+    "certStatus_expiring_soon": "Wkrótce wygasa",
+    "certStatus_valid": "Ważny"
   },
   "documents": {
     "title": "Dokumenty",
@@ -336,7 +359,9 @@
     "category_photo": "Zdjęcie",
     "category_invoice_scan": "Skan faktury",
     "category_other": "Inne",
-    "category_insurance_certificate": "Certyfikat ubezpieczenia"
+    "category_insurance_certificate": "Certyfikat ubezpieczenia",
+    "category_gallery_before": "Galeria (przed)",
+    "category_gallery_after": "Galeria (po)"
   },
   "rateCatalog": {
     "title": "Cennik",
@@ -515,7 +540,8 @@
     "locationPlaceholder": "Pomieszczenie, obszar…",
     "descriptionPlaceholder": "Więcej szczegółów…",
     "submitClaim": "Zgłoś usterkę",
-    "claimSubmitted": "Zgłoszenie wysłane — skontaktujemy się."
+    "claimSubmitted": "Zgłoszenie wysłane — skontaktujemy się.",
+    "payNow": "Zapłać teraz"
   },
   "equipment": {
     "title": "Sprzęt",
@@ -663,7 +689,11 @@
   },
   "suppliers": {
     "title": "Dostawcy",
-    "newSupplier": "Nowy dostawca"
+    "newSupplier": "Nowy dostawca",
+    "totalOrders": "Zamówienia",
+    "onTimeRate": "Terminowość",
+    "averageDelay": "Śr. opóźnienie",
+    "totalSpend": "Suma wydatków"
   },
   "scheduling": {
     "board": "Tablica zadań",
@@ -1251,7 +1281,11 @@
     "description": "Łączy fakturę końcową, status gwarancji i dokumenty projektu w jeden plik ZIP do przekazania klientowi.",
     "download": "Pobierz pakiet zamknięcia",
     "preparing": "Przygotowywanie…",
-    "error": "Nie udało się wygenerować pakietu zamknięcia. Spróbuj ponownie."
+    "error": "Nie udało się wygenerować pakietu zamknięcia. Spróbuj ponownie.",
+    "reviewDescription": "Poproś klienta o opinię po zakończeniu projektu.",
+    "requestReview": "Poproś o opinię",
+    "reviewSent": "Wysłano prośbę o opinię",
+    "reviewError": "Nie udało się wysłać prośby o opinię"
   },
   "dataPrivacy": {
     "title": "Dane i prywatność",
@@ -1348,5 +1382,26 @@
     "unitPricePlaceholder": "Cena jednostkowa",
     "addQuote": "Dodaj ofertę",
     "closeRfq": "Zamknij zapytanie"
+  },
+  "gallery": {
+    "title": "Galeria przed / po",
+    "before": "Przed",
+    "after": "Po"
+  },
+  "timeOff": {
+    "title": "Urlopy",
+    "newRequest": "Nowy wniosek",
+    "selectWorker": "Wybierz pracownika",
+    "vacation": "Urlop",
+    "sick": "Zwolnienie chorobowe",
+    "unpaid": "Bezpłatny",
+    "reason": "Powód",
+    "type": "Rodzaj",
+    "dates": "Daty",
+    "approve": "Zatwierdź",
+    "deny": "Odrzuć",
+    "pending": "Oczekujący",
+    "approved": "Zatwierdzony",
+    "denied": "Odrzucony"
   }
 }

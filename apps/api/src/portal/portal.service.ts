@@ -6,6 +6,7 @@ import { EstimatesService } from "../estimates/estimates.service";
 import { ChangeOrdersService } from "../estimates/change-orders.service";
 import { InvoicesService } from "../finance/invoices.service";
 import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { BillingService } from "../billing/billing.service";
 import type { PortalClientContext } from "./portal-jwt.service";
 
 function warrantyExpiresAt(handoverDate: Date | null, warrantyMonths: number | null): Date | null {
@@ -23,6 +24,7 @@ export class PortalService {
     private readonly changeOrders: ChangeOrdersService,
     private readonly invoices: InvoicesService,
     private readonly webhooks: WebhooksService,
+    private readonly billing: BillingService,
   ) {}
 
   async me(client: PortalClientContext) {
@@ -172,6 +174,12 @@ export class PortalService {
   async getInvoicePdf(client: PortalClientContext, id: string): Promise<Buffer> {
     await this.getInvoice(client, id);
     return this.invoices.generatePdf(client.companyId, id);
+  }
+
+  async createPaymentCheckout(client: PortalClientContext, id: string): Promise<{ url: string }> {
+    await this.getInvoice(client, id);
+    const record = await this.prisma.client.findUniqueOrThrow({ where: { id: client.clientId }, select: { email: true } });
+    return this.billing.createInvoiceCheckoutSession(client.companyId, id, record.email ?? undefined);
   }
 
   async listProjects(client: PortalClientContext) {

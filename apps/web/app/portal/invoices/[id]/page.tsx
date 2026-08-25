@@ -40,6 +40,7 @@ export default function PortalInvoicePage({ params }: { params: Promise<{ id: st
 
   const [invoice, setInvoice] = useState<PortalInvoice | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [payBusy, setPayBusy] = useState(false);
 
   useEffect(() => {
     if (!getPortalToken()) {
@@ -55,6 +56,18 @@ export default function PortalInvoicePage({ params }: { params: Promise<{ id: st
   async function downloadPdf() {
     const blob = await portalApiFetch<Blob>(`/portal/invoices/${id}/pdf`);
     downloadBlob(blob, `${invoice?.number ?? "invoice"}.pdf`);
+  }
+
+  async function payNow() {
+    setPayBusy(true);
+    setError(null);
+    try {
+      const { url } = await portalApiFetch<{ url: string }>(`/portal/invoices/${id}/pay`, { method: "POST" });
+      window.location.href = url;
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t("verifyError"));
+      setPayBusy(false);
+    }
   }
 
   if (error) {
@@ -126,9 +139,16 @@ export default function PortalInvoicePage({ params }: { params: Promise<{ id: st
             </div>
           </dl>
 
-          <button onClick={downloadPdf} className="btn-secondary mt-6">
-            {ti("downloadPdf")}
-          </button>
+          <div className="mt-6 flex gap-2">
+            <button onClick={downloadPdf} className="btn-secondary">
+              {ti("downloadPdf")}
+            </button>
+            {invoice.status === "sent" && balanceDue > 0 && (
+              <button onClick={payNow} disabled={payBusy} className="btn-primary">
+                {t("payNow")}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </main>

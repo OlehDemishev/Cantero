@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import type { CreateProjectInput, ImportResult, UpdateProjectGeofenceInput, UpdateProjectWarrantyInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { WeatherService } from "../weather/weather.service";
 import { parseCsvRecords } from "../common/csv";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
+import { MailService } from "../common/mail/mail.service";
 
 @Injectable()
 export class ProjectsService {
@@ -11,6 +12,7 @@ export class ProjectsService {
     private readonly prisma: PrismaService,
     private readonly weather: WeatherService,
     private readonly audit: AuditService,
+    private readonly mail: MailService,
   ) {}
 
   list(companyId: string) {
@@ -130,5 +132,55 @@ export class ProjectsService {
     );
 
     return result;
+  }
+
+  /** Emails the client a link to leave a public review, once per project — the button that
+   * triggers this is meant to live in the closeout flow, but nothing here requires the project
+   * to actually be closed out; it just needs a client with an email on file. */
+  async requestReview(companyId: string, actor: AuditActor, id: string) {
+    const [project, company] = await Promise.all([
+      this.prisma.project.findFirst({ where: { id, companyId }, include: { client: true } }),
+      this.prisma.company.findUniqueOrThrow({ where: { id: companyId } }),
+    ]);
+    if (!project) throw new NotFoundException("Project not found");
+    if (!company.reviewRequestUrl) {
+      throw new BadRequestException("Set a review link in Settings before requesting reviews");
+    }
+    if (!project.client?.email) {
+      throw new BadRequestException("This project's client has no email on file");
+    }
+
+    await this.mail.send({
+      to: project.client.email,
+      subject: `How did we do on ${project.name}?`,
+      text: `Hi ${project.client.name},\n\nThank you for choosing ${company.name} for ${project.name}. If you have a moment, we'd really appreciate a review: ${company.reviewRequestUrl}\n\nThank you!`,
+      html: `<p>Hi ${project.client.name},</p><p>Thank you for choosing ${company.name} for <strong>${project.name}</strong>. If you have a moment, we'd really appreciate a review:</p><p><a href="${company.reviewRequestUrl}">${company.reviewRequestUrl}</a></p><p>Thank you!</p>`,
+    });
+
+    const updated = await this.prisma.project.update({
+      where: { id },
+      data: { reviewRequestedAt: new Date() },
+      include: { client: true },
+    });
+
+    this.audit.record(companyId, actor, "project.review_requested", "Project", id, `Requested a review for "${project.name}"`);
+    return updated;
+  }
+
+  /** Before/after documents for a project's marketing gallery — just the two categories, no
+   * pairing logic, since a company may not upload matched before/after pairs 1:1. */
+  async gallery(companyId: string, id: string) {
+    await this.get(companyId, id);
+    const [before, after] = await Promise.all([
+      this.prisma.document.findMany({
+        where: { companyId, projectId: id, category: "gallery_before" },
+        orderBy: { createdAt: "desc" },
+      }),
+      this.prisma.document.findMany({
+        where: { companyId, projectId: id, category: "gallery_after" },
+        orderBy: { createdAt: "desc" },
+      }),
+    ]);
+    return { before, after };
   }
 }

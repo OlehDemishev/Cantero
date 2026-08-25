@@ -21,6 +21,7 @@ import { SubcontractorCostsPanel } from "@/components/subcontractor-costs-panel"
 import { SubcontractorAssignmentsPanel } from "@/components/subcontractor-assignments-panel";
 import { BidRequestsPanel } from "@/components/bid-requests-panel";
 import { DocumentsPanel } from "@/components/documents-panel";
+import { GalleryPanel } from "@/components/gallery-panel";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
@@ -202,6 +203,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
       <SubcontractorCostsPanel projectId={projectId} />
       <BudgetPanel projectId={projectId} />
       <DocumentsPanel projectId={projectId} />
+      <GalleryPanel projectId={projectId} />
       <ProjectCloseoutPanel projectId={projectId} />
     </AuthenticatedShell>
   );

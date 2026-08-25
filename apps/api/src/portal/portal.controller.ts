@@ -110,6 +110,11 @@ export class PortalController {
     return new StreamableFile(buffer);
   }
 
+  @Post("invoices/:id/pay")
+  createPaymentCheckout(@CurrentPortalClient() client: PortalClientContext, @Param("id") id: string) {
+    return this.service.createPaymentCheckout(client, id);
+  }
+
   @Get("projects")
   listProjects(@CurrentPortalClient() client: PortalClientContext) {
     return this.service.listProjects(client);

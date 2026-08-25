@@ -67,4 +67,26 @@ describe("WorkersService certifications", () => {
       expect(prisma.workerCertification.delete).toHaveBeenCalledWith({ where: { id: "cert-1" } });
     });
   });
+
+  describe("certificationsDashboard()", () => {
+    it("buckets certifications into expired / expiring_soon / valid", async () => {
+      const now = new Date();
+      const expired = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const soon = new Date(now.getTime() + 10 * 24 * 60 * 60 * 1000);
+      const farOut = new Date(now.getTime() + 200 * 24 * 60 * 60 * 1000);
+
+      prisma.workerCertification.findMany.mockResolvedValue([
+        { id: "c1", name: "OSHA 10", expiresAt: expired, worker: { id: "w1", name: "Sam", role: "foreman" } },
+        { id: "c2", name: "First Aid", expiresAt: soon, worker: { id: "w2", name: "Alex", role: "worker" } },
+        { id: "c3", name: "Crane Op", expiresAt: farOut, worker: { id: "w3", name: "Lee", role: "worker" } },
+      ]);
+
+      const result = await service.certificationsDashboard(COMPANY_A);
+
+      expect(result.summary).toEqual({ expired: 1, expiringSoon: 1, valid: 1 });
+      expect(result.certifications.find((c) => c.id === "c1")?.status).toBe("expired");
+      expect(result.certifications.find((c) => c.id === "c2")?.status).toBe("expiring_soon");
+      expect(result.certifications.find((c) => c.id === "c3")?.status).toBe("valid");
+    });
+  });
 });

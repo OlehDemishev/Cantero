@@ -18,6 +18,11 @@ export class SuppliersController {
     return this.service.get(user.companyId, id);
   }
 
+  @Get(":id/scorecard")
+  scorecard(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.scorecard(user.companyId, id);
+  }
+
   @Post()
   create(
     @CurrentUser() user: AuthUser,

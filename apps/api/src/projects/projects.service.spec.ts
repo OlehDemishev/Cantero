@@ -3,6 +3,7 @@ import { ProjectsService } from "./projects.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { WeatherService } from "../weather/weather.service";
 import { AuditService } from "../common/audit/audit.service";
+import { MailService } from "../common/mail/mail.service";
 
 describe("ProjectsService.importCsv", () => {
   let service: ProjectsService;
@@ -25,6 +26,7 @@ describe("ProjectsService.importCsv", () => {
         { provide: PrismaService, useValue: prisma },
         { provide: WeatherService, useValue: {} },
         { provide: AuditService, useValue: audit },
+        { provide: MailService, useValue: { send: jest.fn() } },
       ],
     }).compile();
 
@@ -88,6 +90,115 @@ describe("ProjectsService.importCsv", () => {
       "Company",
       "company-a",
       expect.stringContaining("Imported 1 projects"),
+    );
+  });
+});
+
+describe("ProjectsService.requestReview", () => {
+  let service: ProjectsService;
+  let prisma: {
+    project: { findFirst: jest.Mock; update: jest.Mock };
+    company: { findUniqueOrThrow: jest.Mock };
+  };
+  let audit: { record: jest.Mock };
+  let mail: { send: jest.Mock };
+
+  const ACTOR = { userId: "user-1", name: "Jane" };
+
+  beforeEach(async () => {
+    prisma = {
+      project: { findFirst: jest.fn(), update: jest.fn() },
+      company: { findUniqueOrThrow: jest.fn() },
+    };
+    audit = { record: jest.fn() };
+    mail = { send: jest.fn() };
+
+    const module = await Test.createTestingModule({
+      providers: [
+        ProjectsService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: WeatherService, useValue: {} },
+        { provide: AuditService, useValue: audit },
+        { provide: MailService, useValue: mail },
+      ],
+    }).compile();
+
+    service = module.get(ProjectsService);
+  });
+
+  it("refuses when no review link is configured", async () => {
+    prisma.project.findFirst.mockResolvedValue({ id: "p1", name: "Riverside Reno", client: { email: "c@x.com", name: "Client" } });
+    prisma.company.findUniqueOrThrow.mockResolvedValue({ reviewRequestUrl: null, name: "Acme" });
+
+    await expect(service.requestReview("company-a", ACTOR, "p1")).rejects.toThrow("Set a review link");
+    expect(mail.send).not.toHaveBeenCalled();
+  });
+
+  it("refuses when the client has no email on file", async () => {
+    prisma.project.findFirst.mockResolvedValue({ id: "p1", name: "Riverside Reno", client: { email: null, name: "Client" } });
+    prisma.company.findUniqueOrThrow.mockResolvedValue({ reviewRequestUrl: "https://g.page/r/x", name: "Acme" });
+
+    await expect(service.requestReview("company-a", ACTOR, "p1")).rejects.toThrow("no email on file");
+  });
+
+  it("emails the client and stamps reviewRequestedAt when everything is configured", async () => {
+    prisma.project.findFirst.mockResolvedValue({
+      id: "p1",
+      name: "Riverside Reno",
+      client: { email: "c@x.com", name: "Client" },
+    });
+    prisma.company.findUniqueOrThrow.mockResolvedValue({ reviewRequestUrl: "https://g.page/r/x", name: "Acme" });
+    prisma.project.update.mockResolvedValue({ id: "p1", reviewRequestedAt: new Date() });
+
+    await service.requestReview("company-a", ACTOR, "p1");
+
+    expect(mail.send).toHaveBeenCalledWith(expect.objectContaining({ to: "c@x.com" }));
+    expect(prisma.project.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: "p1" }, data: { reviewRequestedAt: expect.any(Date) } }),
+    );
+    expect(audit.record).toHaveBeenCalled();
+  });
+});
+
+describe("ProjectsService.gallery", () => {
+  let service: ProjectsService;
+  let prisma: {
+    project: { findFirst: jest.Mock };
+    document: { findMany: jest.Mock };
+  };
+
+  beforeEach(async () => {
+    prisma = {
+      project: { findFirst: jest.fn().mockResolvedValue({ id: "p1" }) },
+      document: { findMany: jest.fn() },
+    };
+
+    const module = await Test.createTestingModule({
+      providers: [
+        ProjectsService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: WeatherService, useValue: {} },
+        { provide: AuditService, useValue: { record: jest.fn() } },
+        { provide: MailService, useValue: { send: jest.fn() } },
+      ],
+    }).compile();
+
+    service = module.get(ProjectsService);
+  });
+
+  it("splits documents into before/after by category", async () => {
+    prisma.document.findMany.mockResolvedValueOnce([{ id: "d1" }]).mockResolvedValueOnce([{ id: "d2" }]);
+
+    const result = await service.gallery("company-a", "p1");
+
+    expect(result).toEqual({ before: [{ id: "d1" }], after: [{ id: "d2" }] });
+    expect(prisma.document.findMany).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ where: expect.objectContaining({ category: "gallery_before" }) }),
+    );
+    expect(prisma.document.findMany).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ where: expect.objectContaining({ category: "gallery_after" }) }),
     );
   });
 });

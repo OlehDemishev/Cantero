@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { EstimatesModule } from "../estimates/estimates.module";
 import { FinanceModule } from "../finance/finance.module";
+import { BillingModule } from "../billing/billing.module";
 import { PortalAuthController } from "./portal-auth.controller";
 import { PortalAuthService } from "./portal-auth.service";
 import { PortalJwtService } from "./portal-jwt.service";
@@ -9,7 +10,7 @@ import { PortalController } from "./portal.controller";
 import { PortalService } from "./portal.service";
 
 @Module({
-  imports: [EstimatesModule, FinanceModule],
+  imports: [EstimatesModule, FinanceModule, BillingModule],
   controllers: [PortalAuthController, PortalController],
   providers: [PortalJwtService, PortalAuthGuard, PortalAuthService, PortalService],
 })

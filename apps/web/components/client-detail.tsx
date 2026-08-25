@@ -17,6 +17,11 @@ interface Worker {
   id: string;
   name: string;
 }
+interface ReferralClient {
+  id: string;
+  name: string;
+  stage: ClientStage;
+}
 interface Client {
   id: string;
   name: string;
@@ -27,6 +32,8 @@ interface Client {
   estimatedValue: number | null;
   owner: Worker | null;
   lostReason: string | null;
+  referredBy: { id: string; name: string } | null;
+  referrals: ReferralClient[];
 }
 interface Activity {
   id: string;
@@ -51,8 +58,9 @@ export function ClientDetail({ clientId }: { clientId: string }) {
   const [activities, setActivities] = useState<Activity[] | null>(null);
   const [reminders, setReminders] = useState<Reminder[] | null>(null);
   const [workers, setWorkers] = useState<Worker[]>([]);
+  const [allClients, setAllClients] = useState<ReferralClient[]>([]);
   const [notesInput, setNotesInput] = useState("");
-  const [dealForm, setDealForm] = useState({ estimatedValue: "", ownerWorkerId: "" });
+  const [dealForm, setDealForm] = useState({ estimatedValue: "", ownerWorkerId: "", referredByClientId: "" });
   const [dealSaved, setDealSaved] = useState(false);
   const [activityForm, setActivityForm] = useState({ type: "note" as ActivityType, content: "" });
   const [reminderForm, setReminderForm] = useState({ title: "", dueDate: "" });
@@ -67,7 +75,11 @@ export function ClientDetail({ clientId }: { clientId: string }) {
     apiFetch<Client>(`/clients/${clientId}`).then((c) => {
       setClient(c);
       setNotesInput(c.notes ?? "");
-      setDealForm({ estimatedValue: c.estimatedValue?.toString() ?? "", ownerWorkerId: c.owner?.id ?? "" });
+      setDealForm({
+        estimatedValue: c.estimatedValue?.toString() ?? "",
+        ownerWorkerId: c.owner?.id ?? "",
+        referredByClientId: c.referredBy?.id ?? "",
+      });
     });
     apiFetch<Activity[]>(`/clients/${clientId}/activities`).then(setActivities);
     apiFetch<Reminder[]>(`/clients/${clientId}/reminders`).then(setReminders);
@@ -76,6 +88,7 @@ export function ClientDetail({ clientId }: { clientId: string }) {
   useEffect(() => {
     load();
     apiFetch<Worker[]>("/workers").then(setWorkers);
+    apiFetch<ReferralClient[]>("/clients").then((cs) => setAllClients(cs.filter((c) => c.id !== clientId)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientId]);
 
@@ -145,6 +158,7 @@ export function ClientDetail({ clientId }: { clientId: string }) {
         body: JSON.stringify({
           estimatedValue: dealForm.estimatedValue ? Number(dealForm.estimatedValue) : null,
           ownerWorkerId: dealForm.ownerWorkerId || null,
+          referredByClientId: dealForm.referredByClientId || null,
         }),
       });
       setDealSaved(true);
@@ -290,6 +304,21 @@ export function ClientDetail({ clientId }: { clientId: string }) {
               </option>
             ))}
           </select>
+          <label className="text-xs text-gray-500">
+            {t("referredBy")}
+            <select
+              className="input mt-1"
+              value={dealForm.referredByClientId}
+              onChange={(e) => setDealForm((f) => ({ ...f, referredByClientId: e.target.value }))}
+            >
+              <option value="">{tc("none")}</option>
+              {allClients.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
           <div className="flex items-center gap-2">
             <button type="submit" disabled={busy} className="btn-secondary self-start">
               {tc("save")}
@@ -297,6 +326,20 @@ export function ClientDetail({ clientId }: { clientId: string }) {
             {dealSaved && <span className="text-xs text-success-700">{tc("saved")}</span>}
           </div>
         </form>
+        {client && client.referrals.length > 0 && (
+          <div className="mt-4 border-t border-gray-100 pt-3">
+            <h3 className="mb-1 text-xs font-semibold text-gray-500">{t("referrals")}</h3>
+            <ul className="flex flex-col gap-1">
+              {client.referrals.map((r) => (
+                <li key={r.id}>
+                  <a href={`/clients/${r.id}`} className="text-xs text-brand-700 hover:underline">
+                    {r.name}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
 
       <CustomFieldsValuesPanel entityType="client" entityId={clientId} />

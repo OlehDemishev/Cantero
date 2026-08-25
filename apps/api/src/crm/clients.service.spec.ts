@@ -48,6 +48,35 @@ describe("ClientsService", () => {
       await expect(service.create(COMPANY_A, { name: "Acme Co", ownerWorkerId: "worker-1" })).rejects.toThrow(BadRequestException);
       expect(prisma.client.create).not.toHaveBeenCalled();
     });
+
+    it("rejects a referredByClientId that does not belong to this company", async () => {
+      prisma.client.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.create(COMPANY_A, { name: "Acme Co", referredByClientId: "other-client" }),
+      ).rejects.toThrow(BadRequestException);
+      expect(prisma.client.create).not.toHaveBeenCalled();
+    });
+
+    it("creates with a valid referredByClientId", async () => {
+      prisma.client.findFirst.mockResolvedValue({ id: "referrer-1", companyId: COMPANY_A });
+      prisma.client.create.mockResolvedValue({ id: "c-2" });
+
+      await service.create(COMPANY_A, { name: "Acme Co", referredByClientId: "referrer-1" });
+
+      expect(prisma.client.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ referredByClientId: "referrer-1" }) }),
+      );
+    });
+  });
+
+  describe("update() — referrals", () => {
+    it("rejects a client referring itself", async () => {
+      prisma.client.findFirst.mockResolvedValue({ id: "c-1", companyId: COMPANY_A });
+
+      await expect(service.update(COMPANY_A, "c-1", { referredByClientId: "c-1" })).rejects.toThrow(BadRequestException);
+      expect(prisma.client.update).not.toHaveBeenCalled();
+    });
   });
 
   describe("moveStage()", () => {

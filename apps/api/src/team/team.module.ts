@@ -7,10 +7,12 @@ import { LaborCostController } from "./labor-cost.controller";
 import { LaborCostService } from "./labor-cost.service";
 import { ExpensesController } from "./expenses.controller";
 import { ExpensesService } from "./expenses.service";
+import { TimeOffController } from "./time-off.controller";
+import { TimeOffService } from "./time-off.service";
 
 @Module({
-  controllers: [WorkersController, TimeEntriesController, LaborCostController, ExpensesController],
-  providers: [WorkersService, TimeEntriesService, LaborCostService, ExpensesService],
+  controllers: [WorkersController, TimeEntriesController, LaborCostController, ExpensesController, TimeOffController],
+  providers: [WorkersService, TimeEntriesService, LaborCostService, ExpensesService, TimeOffService],
   exports: [WorkersService, TimeEntriesService],
 })
 export class TeamModule {}

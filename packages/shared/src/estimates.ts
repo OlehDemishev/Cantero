@@ -63,6 +63,7 @@ export const createClientSchema = z.object({
   phone: z.string().max(40).optional(),
   estimatedValue: z.number().nonnegative().max(100_000_000).optional(),
   ownerWorkerId: z.string().uuid().optional(),
+  referredByClientId: z.string().uuid().optional(),
 });
 export type CreateClientInput = z.infer<typeof createClientSchema>;
 

@@ -226,7 +226,19 @@
     "noCustomRoles": "No custom roles yet.",
     "assignedToCount": "· assigned to {count}",
     "newCustomRole": "New custom role",
-    "customRoleNamePlaceholder": "Role name (e.g. Site Lead)"
+    "customRoleNamePlaceholder": "Role name (e.g. Site Lead)",
+    "reviewRequestUrl": "Review link",
+    "reviewRequestUrlHint": "Shared with clients when you request a review after closeout.",
+    "manageBilling": "Manage billing",
+    "franchise": "Franchise",
+    "franchiseHint": "Link this company under a parent, or generate a code so another company can link under you.",
+    "branchRevenue": "Revenue",
+    "branchProjects": "Projects",
+    "branchMembers": "Members",
+    "total": "Total",
+    "generateLinkCode": "Generate link code",
+    "linkToParentCode": "Parent's link code",
+    "linkToParent": "Link to parent"
   },
   "projects": {
     "title": "Projects",
@@ -274,7 +286,9 @@
     "projectName": "Project name",
     "pipelineOverview": "Pipeline overview",
     "searchPlaceholder": "Search by name or email…",
-    "allOwners": "All owners"
+    "allOwners": "All owners",
+    "referredBy": "Referred by",
+    "referrals": "Referrals"
   },
   "team": {
     "title": "Team",
@@ -310,7 +324,16 @@
     "noCertifications": "No certifications on file.",
     "certificationNamePlaceholder": "Certification name (e.g. OSHA 30, Forklift operator)",
     "addCertification": "Add certification",
-    "outsideGeofence": "Outside geofence"
+    "outsideGeofence": "Outside geofence",
+    "certificationsDashboard": "Certifications overview",
+    "certExpired": "{count} expired",
+    "certExpiringSoon": "{count} expiring soon",
+    "certValid": "{count} valid",
+    "certification": "Certification",
+    "expires": "Expires",
+    "certStatus_expired": "Expired",
+    "certStatus_expiring_soon": "Expiring soon",
+    "certStatus_valid": "Valid"
   },
   "documents": {
     "title": "Documents",
@@ -336,7 +359,9 @@
     "category_photo": "Photo",
     "category_invoice_scan": "Invoice scan",
     "category_other": "Other",
-    "category_insurance_certificate": "Insurance certificate"
+    "category_insurance_certificate": "Insurance certificate",
+    "category_gallery_before": "Gallery (before)",
+    "category_gallery_after": "Gallery (after)"
   },
   "rateCatalog": {
     "title": "Rate catalog",
@@ -515,7 +540,8 @@
     "locationPlaceholder": "Room, area…",
     "descriptionPlaceholder": "More details…",
     "submitClaim": "Submit claim",
-    "claimSubmitted": "Claim submitted — we'll be in touch."
+    "claimSubmitted": "Claim submitted — we'll be in touch.",
+    "payNow": "Pay now"
   },
   "equipment": {
     "title": "Equipment",
@@ -663,7 +689,11 @@
   },
   "suppliers": {
     "title": "Suppliers",
-    "newSupplier": "New supplier"
+    "newSupplier": "New supplier",
+    "totalOrders": "Orders",
+    "onTimeRate": "On-time rate",
+    "averageDelay": "Avg. delay",
+    "totalSpend": "Total spend"
   },
   "scheduling": {
     "board": "Task board",
@@ -1251,7 +1281,11 @@
     "description": "Bundle the final invoice, warranty status, and project documents into one ZIP for client handoff.",
     "download": "Download closeout package",
     "preparing": "Preparing…",
-    "error": "Couldn't generate the closeout package. Try again."
+    "error": "Couldn't generate the closeout package. Try again.",
+    "reviewDescription": "Ask the client for a review, once the project is wrapped up.",
+    "requestReview": "Request a review",
+    "reviewSent": "Review requested",
+    "reviewError": "Couldn't send the review request"
   },
   "dataPrivacy": {
     "title": "Data & privacy",
@@ -1348,5 +1382,26 @@
     "unitPricePlaceholder": "Unit price",
     "addQuote": "Add quote",
     "closeRfq": "Close RFQ"
+  },
+  "gallery": {
+    "title": "Before / after gallery",
+    "before": "Before",
+    "after": "After"
+  },
+  "timeOff": {
+    "title": "Time off",
+    "newRequest": "New request",
+    "selectWorker": "Select a worker",
+    "vacation": "Vacation",
+    "sick": "Sick",
+    "unpaid": "Unpaid",
+    "reason": "Reason",
+    "type": "Type",
+    "dates": "Dates",
+    "approve": "Approve",
+    "deny": "Deny",
+    "pending": "Pending",
+    "approved": "Approved",
+    "denied": "Denied"
   }
 }

@@ -85,4 +85,14 @@ export class ProjectsController {
     const buffer = await this.closeout.buildPackage(user.companyId, id);
     return new StreamableFile(buffer);
   }
+
+  @Post(":id/request-review")
+  requestReview(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.requestReview(user.companyId, { userId: user.userId, name: user.name }, id);
+  }
+
+  @Get(":id/gallery")
+  gallery(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.gallery(user.companyId, id);
+  }
 }

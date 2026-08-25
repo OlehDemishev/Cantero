@@ -119,4 +119,34 @@ export class WorkersService {
     await this.prisma.workerCertification.delete({ where: { id: certificationId } });
     return { ok: true };
   }
+
+  /** Every active worker's certifications in one list, bucketed by expiry so a foreman can see
+   * at a glance who's expired, who's expiring inside 30 days, and who's clear — without opening
+   * each worker one at a time. */
+  async certificationsDashboard(companyId: string) {
+    const certs = await this.prisma.workerCertification.findMany({
+      where: { companyId, worker: { active: true } },
+      include: { worker: { select: { id: true, name: true, role: true } } },
+      orderBy: { expiresAt: "asc" },
+    });
+
+    const now = new Date();
+    const soonThreshold = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const bucketed = certs.map((c) => ({
+      id: c.id,
+      name: c.name,
+      expiresAt: c.expiresAt,
+      worker: c.worker,
+      status: c.expiresAt < now ? ("expired" as const) : c.expiresAt < soonThreshold ? ("expiring_soon" as const) : ("valid" as const),
+    }));
+
+    return {
+      certifications: bucketed,
+      summary: {
+        expired: bucketed.filter((c) => c.status === "expired").length,
+        expiringSoon: bucketed.filter((c) => c.status === "expiring_soon").length,
+        valid: bucketed.filter((c) => c.status === "valid").length,
+      },
+    };
+  }
 }

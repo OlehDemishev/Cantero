@@ -33,8 +33,14 @@ export const updateCompanySchema = z.object({
   rfiSlaDays: z.number().int().min(1).max(365).nullable().optional(),
   punchListSlaDays: z.number().int().min(1).max(365).nullable().optional(),
   invoiceRemindersEnabled: z.boolean().optional(),
+  reviewRequestUrl: z.string().url().nullable().optional(),
 });
 export type UpdateCompanyInput = z.infer<typeof updateCompanySchema>;
+
+export const linkToParentCompanySchema = z.object({
+  code: z.string().min(6).max(40),
+});
+export type LinkToParentCompanyInput = z.infer<typeof linkToParentCompanySchema>;
 
 export const MEMBERSHIP_ROLES_MANAGEABLE = ["admin", "estimator", "foreman", "accountant", "worker"] as const;
 

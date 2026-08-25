@@ -12,6 +12,13 @@ interface Supplier {
   email: string | null;
   phone: string | null;
 }
+interface Scorecard {
+  totalOrders: number;
+  receivedOrders: number;
+  totalSpend: number;
+  onTimeRate: number | null;
+  averageDelayDays: number | null;
+}
 
 export default function SuppliersPage() {
   const t = useTranslations("suppliers");
@@ -19,6 +26,19 @@ export default function SuppliersPage() {
   const [suppliers, setSuppliers] = useState<Supplier[] | null>(null);
   const [form, setForm] = useState({ name: "", email: "", phone: "" });
   const [submitting, setSubmitting] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [scorecards, setScorecards] = useState<Record<string, Scorecard>>({});
+
+  function toggleExpand(id: string) {
+    if (expandedId === id) {
+      setExpandedId(null);
+      return;
+    }
+    setExpandedId(id);
+    if (!scorecards[id]) {
+      apiFetch<Scorecard>(`/materials/suppliers/${id}/scorecard`).then((s) => setScorecards((prev) => ({ ...prev, [id]: s })));
+    }
+  }
 
   function load() {
     apiFetch<Supplier[]>("/materials/suppliers").then(setSuppliers);
@@ -84,12 +104,41 @@ export default function SuppliersPage() {
             <p className="text-gray-500">{tc("loading")}</p>
           ) : (
             <ul className="flex flex-col gap-2">
-              {suppliers.map((s) => (
-                <li key={s.id} className="card">
-                  <div className="font-medium">{s.name}</div>
-                  <div className="text-sm text-gray-500">{s.email ?? s.phone ?? "—"}</div>
-                </li>
-              ))}
+              {suppliers.map((s) => {
+                const card = scorecards[s.id];
+                return (
+                  <li key={s.id} className="card cursor-pointer" onClick={() => toggleExpand(s.id)}>
+                    <div className="font-medium">{s.name}</div>
+                    <div className="text-sm text-gray-500">{s.email ?? s.phone ?? "—"}</div>
+                    {expandedId === s.id && (
+                      <div className="mt-3 grid grid-cols-2 gap-3 border-t border-gray-100 pt-3 text-xs sm:grid-cols-4">
+                        {!card ? (
+                          <span className="text-gray-400">{tc("loading")}</span>
+                        ) : (
+                          <>
+                            <div>
+                              <div className="text-gray-400">{t("totalOrders")}</div>
+                              <div className="font-medium">{card.totalOrders}</div>
+                            </div>
+                            <div>
+                              <div className="text-gray-400">{t("onTimeRate")}</div>
+                              <div className="font-medium">{card.onTimeRate !== null ? `${Math.round(card.onTimeRate * 100)}%` : "—"}</div>
+                            </div>
+                            <div>
+                              <div className="text-gray-400">{t("averageDelay")}</div>
+                              <div className="font-medium">{card.averageDelayDays !== null ? `${card.averageDelayDays.toFixed(1)}d` : "—"}</div>
+                            </div>
+                            <div>
+                              <div className="text-gray-400">{t("totalSpend")}</div>
+                              <div className="font-medium">{card.totalSpend}</div>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>

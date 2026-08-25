@@ -35,7 +35,11 @@ export class ClientsService {
   async get(companyId: string, id: string) {
     const client = await this.prisma.client.findFirst({
       where: { id, companyId },
-      include: { owner: { select: { id: true, name: true } } },
+      include: {
+        owner: { select: { id: true, name: true } },
+        referredBy: { select: { id: true, name: true } },
+        referrals: { select: { id: true, name: true, stage: true } },
+      },
     });
     if (!client) throw new NotFoundException("Client not found");
     return client;
@@ -43,12 +47,17 @@ export class ClientsService {
 
   async create(companyId: string, input: CreateClientInput) {
     if (input.ownerWorkerId) await this.assertWorker(companyId, input.ownerWorkerId);
+    if (input.referredByClientId) await this.assertClient(companyId, input.referredByClientId);
     return this.prisma.client.create({ data: { ...input, companyId } });
   }
 
   async update(companyId: string, id: string, input: UpdateClientInput) {
     await this.get(companyId, id);
     if (input.ownerWorkerId) await this.assertWorker(companyId, input.ownerWorkerId);
+    if (input.referredByClientId) {
+      if (input.referredByClientId === id) throw new BadRequestException("A client can't refer itself");
+      await this.assertClient(companyId, input.referredByClientId);
+    }
     return this.prisma.client.update({ where: { id }, data: input });
   }
 
@@ -102,6 +111,12 @@ export class ClientsService {
     const worker = await this.prisma.worker.findFirst({ where: { id: workerId, companyId } });
     if (!worker) throw new BadRequestException("Owner does not belong to this company");
     return worker;
+  }
+
+  private async assertClient(companyId: string, clientId: string) {
+    const client = await this.prisma.client.findFirst({ where: { id: clientId, companyId } });
+    if (!client) throw new BadRequestException("Referring client does not belong to this company");
+    return client;
   }
 
   /** CSV columns: name (required), email, phone. */

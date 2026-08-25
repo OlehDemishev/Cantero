@@ -39,3 +39,20 @@ export const addWorkerCertificationSchema = z.object({
   expiresAt: z.string().datetime(),
 });
 export type AddWorkerCertificationInput = z.infer<typeof addWorkerCertificationSchema>;
+
+export const TIME_OFF_TYPES = ["vacation", "sick", "unpaid"] as const;
+export type TimeOffType = (typeof TIME_OFF_TYPES)[number];
+
+export const createTimeOffRequestSchema = z.object({
+  workerId: z.string().uuid(),
+  type: z.enum(TIME_OFF_TYPES),
+  startDate: z.string().datetime(),
+  endDate: z.string().datetime(),
+  reason: z.string().max(500).optional(),
+});
+export type CreateTimeOffRequestInput = z.infer<typeof createTimeOffRequestSchema>;
+
+export const decideTimeOffRequestSchema = z.object({
+  approve: z.boolean(),
+});
+export type DecideTimeOffRequestInput = z.infer<typeof decideTimeOffRequestSchema>;

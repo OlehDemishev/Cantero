@@ -226,7 +226,19 @@
     "noCustomRoles": "Noch keine benutzerdefinierten Rollen.",
     "assignedToCount": "· zugewiesen an {count}",
     "newCustomRole": "Neue benutzerdefinierte Rolle",
-    "customRoleNamePlaceholder": "Rollenname (z. B. Bauleiter)"
+    "customRoleNamePlaceholder": "Rollenname (z. B. Bauleiter)",
+    "reviewRequestUrl": "Bewertungslink",
+    "reviewRequestUrlHint": "Wird mit Kunden geteilt, wenn Sie nach dem Projektabschluss um eine Bewertung bitten.",
+    "manageBilling": "Abrechnung verwalten",
+    "franchise": "Franchise",
+    "franchiseHint": "Verknüpfen Sie dieses Unternehmen mit einer Muttergesellschaft oder erzeugen Sie einen Code, damit sich ein anderes Unternehmen mit Ihnen verknüpfen kann.",
+    "branchRevenue": "Umsatz",
+    "branchProjects": "Projekte",
+    "branchMembers": "Mitglieder",
+    "total": "Gesamt",
+    "generateLinkCode": "Verknüpfungscode erzeugen",
+    "linkToParentCode": "Code der Muttergesellschaft",
+    "linkToParent": "Mit Mutterunternehmen verknüpfen"
   },
   "projects": {
     "title": "Projekte",
@@ -274,7 +286,9 @@
     "projectName": "Projektname",
     "pipelineOverview": "Pipeline-Übersicht",
     "searchPlaceholder": "Suche nach Name oder E-Mail…",
-    "allOwners": "Alle Verantwortlichen"
+    "allOwners": "Alle Verantwortlichen",
+    "referredBy": "Empfohlen von",
+    "referrals": "Empfehlungen"
   },
   "team": {
     "title": "Team",
@@ -310,7 +324,16 @@
     "noCertifications": "Keine Zertifizierungen hinterlegt.",
     "certificationNamePlaceholder": "Name der Zertifizierung (z. B. OSHA 30, Staplerfahrer)",
     "addCertification": "Zertifizierung hinzufügen",
-    "outsideGeofence": "Außerhalb des Geofence"
+    "outsideGeofence": "Außerhalb des Geofence",
+    "certificationsDashboard": "Zertifikatsübersicht",
+    "certExpired": "{count} abgelaufen",
+    "certExpiringSoon": "{count} laufen bald ab",
+    "certValid": "{count} gültig",
+    "certification": "Zertifikat",
+    "expires": "Läuft ab",
+    "certStatus_expired": "Abgelaufen",
+    "certStatus_expiring_soon": "Läuft bald ab",
+    "certStatus_valid": "Gültig"
   },
   "documents": {
     "title": "Dokumente",
@@ -336,7 +359,9 @@
     "category_photo": "Foto",
     "category_invoice_scan": "Rechnungsscan",
     "category_other": "Sonstiges",
-    "category_insurance_certificate": "Versicherungsnachweis"
+    "category_insurance_certificate": "Versicherungsnachweis",
+    "category_gallery_before": "Galerie (vorher)",
+    "category_gallery_after": "Galerie (nachher)"
   },
   "rateCatalog": {
     "title": "Leistungskatalog",
@@ -515,7 +540,8 @@
     "locationPlaceholder": "Raum, Bereich…",
     "descriptionPlaceholder": "Weitere Details…",
     "submitClaim": "Fall melden",
-    "claimSubmitted": "Fall gemeldet — wir melden uns bei Ihnen."
+    "claimSubmitted": "Fall gemeldet — wir melden uns bei Ihnen.",
+    "payNow": "Jetzt bezahlen"
   },
   "equipment": {
     "title": "Ausrüstung",
@@ -663,7 +689,11 @@
   },
   "suppliers": {
     "title": "Lieferanten",
-    "newSupplier": "Neuer Lieferant"
+    "newSupplier": "Neuer Lieferant",
+    "totalOrders": "Bestellungen",
+    "onTimeRate": "Pünktlichkeitsrate",
+    "averageDelay": "Ø Verzögerung",
+    "totalSpend": "Gesamtausgaben"
   },
   "scheduling": {
     "board": "Aufgabenboard",
@@ -1251,7 +1281,11 @@
     "description": "Bündelt die Schlussrechnung, den Gewährleistungsstatus und die Projektdokumente in einer ZIP-Datei zur Übergabe an den Kunden.",
     "download": "Abschlusspaket herunterladen",
     "preparing": "Wird vorbereitet…",
-    "error": "Das Abschlusspaket konnte nicht erstellt werden. Bitte erneut versuchen."
+    "error": "Das Abschlusspaket konnte nicht erstellt werden. Bitte erneut versuchen.",
+    "reviewDescription": "Bitten Sie den Kunden nach Projektabschluss um eine Bewertung.",
+    "requestReview": "Bewertung anfordern",
+    "reviewSent": "Bewertung angefragt",
+    "reviewError": "Bewertungsanfrage konnte nicht gesendet werden"
   },
   "dataPrivacy": {
     "title": "Daten & Datenschutz",
@@ -1348,5 +1382,26 @@
     "unitPricePlaceholder": "Einzelpreis",
     "addQuote": "Angebot hinzufügen",
     "closeRfq": "Ausschreibung schließen"
+  },
+  "gallery": {
+    "title": "Vorher-/Nachher-Galerie",
+    "before": "Vorher",
+    "after": "Nachher"
+  },
+  "timeOff": {
+    "title": "Abwesenheit",
+    "newRequest": "Neuer Antrag",
+    "selectWorker": "Mitarbeiter auswählen",
+    "vacation": "Urlaub",
+    "sick": "Krankheit",
+    "unpaid": "Unbezahlt",
+    "reason": "Grund",
+    "type": "Art",
+    "dates": "Zeitraum",
+    "approve": "Genehmigen",
+    "deny": "Ablehnen",
+    "pending": "Ausstehend",
+    "approved": "Genehmigt",
+    "denied": "Abgelehnt"
   }
 }

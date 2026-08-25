@@ -46,6 +46,16 @@ export class PublicApiController {
     return this.respond(res, format, () => this.service.materials(companyId, this.parseFormat(format)));
   }
 
+  @Get("time-entries")
+  async timeEntries(@ApiKeyCompanyId() companyId: string, @Query("format") format: string, @Res({ passthrough: true }) res: Response) {
+    return this.respond(res, format, () => this.service.timeEntries(companyId, this.parseFormat(format)));
+  }
+
+  @Get("budget")
+  async budget(@ApiKeyCompanyId() companyId: string, @Query("format") format: string, @Res({ passthrough: true }) res: Response) {
+    return this.respond(res, format, () => this.service.budget(companyId, this.parseFormat(format)));
+  }
+
   private parseFormat(format: string | undefined): ExportFormat {
     return format === "csv" ? "csv" : "json";
   }

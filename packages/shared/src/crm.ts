@@ -10,6 +10,7 @@ export const updateClientSchema = z.object({
   notes: z.string().max(2000).optional(),
   estimatedValue: z.number().nonnegative().max(100_000_000).nullable().optional(),
   ownerWorkerId: z.string().uuid().nullable().optional(),
+  referredByClientId: z.string().uuid().nullable().optional(),
 });
 export type UpdateClientInput = z.infer<typeof updateClientSchema>;
 

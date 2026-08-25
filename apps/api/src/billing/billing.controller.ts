@@ -1,4 +1,5 @@
 import { BadRequestException, Body, Controller, Get, Headers, Post, RawBodyRequest, Req } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import type { Request } from "express";
 import { changePlanSchema, updateSeatsSchema, type AuthUser, type ChangePlanInput, type UpdateSeatsInput } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
@@ -10,7 +11,10 @@ import { BillingService } from "./billing.service";
 
 @Controller("billing")
 export class BillingController {
-  constructor(private readonly billingService: BillingService) {}
+  constructor(
+    private readonly billingService: BillingService,
+    private readonly config: ConfigService,
+  ) {}
 
   @SkipSubscriptionCheck()
   @Post("checkout-session")
@@ -40,6 +44,14 @@ export class BillingController {
   @Post("seats")
   updateSeats(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(updateSeatsSchema)) body: UpdateSeatsInput) {
     return this.billingService.updateSeats(user.companyId, body.seats);
+  }
+
+  @SkipSubscriptionCheck()
+  @Roles("owner", "admin")
+  @Post("portal-session")
+  createPortalSession(@CurrentUser() user: AuthUser) {
+    const webOrigin = this.config.get<string>("WEB_ORIGIN") ?? "http://localhost:3000";
+    return this.billingService.createPortalSession(user.companyId, `${webOrigin}/settings`);
   }
 
   @Public()

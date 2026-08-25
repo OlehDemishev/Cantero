@@ -1,5 +1,6 @@
+import { randomBytes } from "node:crypto";
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import type { UpdateCompanyInput } from "@cantero/shared";
+import type { LinkToParentCompanyInput, UpdateCompanyInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { StorageService } from "../common/storage/storage.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
@@ -79,5 +80,66 @@ export class CompanyService {
     });
     this.audit.record(companyId, actor, "company.deletion_request_cancelled", "Company", companyId, "Cancelled account deletion request");
     return updated;
+  }
+
+  /** Generates (or replaces) the one-time code a prospective branch redeems to link under this
+   * company. Regenerating invalidates any code shared previously. */
+  async generateFranchiseLinkCode(companyId: string, actor: AuditActor) {
+    const code = randomBytes(6).toString("hex");
+    const updated = await this.prisma.company.update({ where: { id: companyId }, data: { franchiseLinkCode: code } });
+    this.audit.record(companyId, actor, "company.franchise_link_code_generated", "Company", companyId, "Generated a franchise link code");
+    return { franchiseLinkCode: updated.franchiseLinkCode };
+  }
+
+  /** Links the caller's own company under a parent by redeeming its code — possession of the
+   * code is the authorization, same trust model as an invite token. */
+  async linkToParent(companyId: string, actor: AuditActor, input: LinkToParentCompanyInput) {
+    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    if (company.parentCompanyId) throw new BadRequestException("This company is already linked to a parent");
+
+    const childCount = await this.prisma.company.count({ where: { parentCompanyId: companyId } });
+    if (childCount > 0) throw new BadRequestException("A company with branches of its own can't also become a branch");
+
+    const parent = await this.prisma.company.findUnique({ where: { franchiseLinkCode: input.code } });
+    if (!parent) throw new BadRequestException("Invalid or expired link code");
+    if (parent.id === companyId) throw new BadRequestException("A company can't link to itself");
+
+    const updated = await this.prisma.company.update({ where: { id: companyId }, data: { parentCompanyId: parent.id } });
+    this.audit.record(companyId, actor, "company.linked_to_parent", "Company", companyId, `Linked to parent company "${parent.name}"`);
+    return updated;
+  }
+
+  /** Read-only rollup across every linked branch — revenue from paid invoices, open project
+   * count, and headcount — computed live per child rather than cached, since a franchise owner
+   * checking this dashboard wants current numbers, not yesterday's. */
+  async franchiseOverview(companyId: string) {
+    const children = await this.prisma.company.findMany({ where: { parentCompanyId: companyId }, orderBy: { name: "asc" } });
+    if (children.length === 0) return { branches: [] };
+
+    const branches = await Promise.all(
+      children.map(async (child) => {
+        const [revenue, projectCount, memberCount] = await Promise.all([
+          this.prisma.invoice.aggregate({ where: { companyId: child.id, status: "paid" }, _sum: { total: true } }),
+          this.prisma.project.count({ where: { companyId: child.id } }),
+          this.prisma.membership.count({ where: { companyId: child.id } }),
+        ]);
+        return {
+          companyId: child.id,
+          name: child.name,
+          revenue: Number(revenue._sum.total ?? 0),
+          projectCount,
+          memberCount,
+        };
+      }),
+    );
+
+    return {
+      branches,
+      totals: {
+        revenue: branches.reduce((sum, b) => sum + b.revenue, 0),
+        projectCount: branches.reduce((sum, b) => sum + b.projectCount, 0),
+        memberCount: branches.reduce((sum, b) => sum + b.memberCount, 0),
+      },
+    };
   }
 }

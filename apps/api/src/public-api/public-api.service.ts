@@ -6,6 +6,8 @@ import { InvoicesService } from "../finance/invoices.service";
 import { EstimatesService } from "../estimates/estimates.service";
 import { WorkersService } from "../team/workers.service";
 import { MaterialCatalogService } from "../materials/material-catalog.service";
+import { TimeEntriesService } from "../team/time-entries.service";
+import { BudgetService } from "../finance/budget.service";
 
 export type ExportFormat = "json" | "csv";
 
@@ -18,6 +20,8 @@ export class PublicApiService {
     private readonly estimatesService: EstimatesService,
     private readonly workersService: WorkersService,
     private readonly materialCatalogService: MaterialCatalogService,
+    private readonly timeEntriesService: TimeEntriesService,
+    private readonly budgetService: BudgetService,
   ) {}
 
   async projects(companyId: string, format: ExportFormat) {
@@ -67,6 +71,36 @@ export class PublicApiService {
     return toCsv(
       ["ID", "Code", "Name", "Unit", "Default unit price"],
       rows.map((m) => [m.id, m.code, m.name, m.unit, m.defaultUnitPrice.toString()]),
+    );
+  }
+
+  async timeEntries(companyId: string, format: ExportFormat) {
+    const rows = await this.timeEntriesService.list(companyId, {});
+    if (format === "json") return rows;
+    return toCsv(
+      ["ID", "Worker", "Project", "Date", "Hours"],
+      rows.map((t) => [t.id, t.worker.name, t.project.name, t.date.toISOString().slice(0, 10), t.hours.toString()]),
+    );
+  }
+
+  /** One row per project: budgeted vs. actual cost — the dataset a BI tool would pull to build
+   * a job-cost dashboard without re-deriving the math itself. */
+  async budget(companyId: string, format: ExportFormat) {
+    const projects = await this.projectsService.list(companyId);
+    const rows = await Promise.all(
+      projects.map(async (p) => ({ project: p, budget: await this.budgetService.getForProject(companyId, p.id) })),
+    );
+    if (format === "json") return rows;
+    return toCsv(
+      ["Project ID", "Project", "Budget total", "Materials actual", "Labor actual", "Invoiced total"],
+      rows.map((r) => [
+        r.project.id,
+        r.project.name,
+        r.budget.grandTotalBudget.toString(),
+        r.budget.materialsCostActual.toString(),
+        r.budget.laborCostActual.toString(),
+        r.budget.invoicedTotal.toString(),
+      ]),
     );
   }
 }

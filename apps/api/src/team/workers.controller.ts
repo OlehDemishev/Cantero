@@ -22,6 +22,12 @@ export class WorkersController {
     return this.service.list(user.companyId);
   }
 
+  // Declared before ":id" so "certifications/dashboard" isn't swallowed as a worker id.
+  @Get("certifications/dashboard")
+  certificationsDashboard(@CurrentUser() user: AuthUser) {
+    return this.service.certificationsDashboard(user.companyId);
+  }
+
   @Get(":id")
   get(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.get(user.companyId, id);

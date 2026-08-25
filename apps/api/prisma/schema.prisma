@@ -140,94 +140,107 @@ enum RfiPriority {
 // ---------- Tenancy & Identity ----------
 
 model Company {
-  id                    String     @id @default(uuid())
-  name                  String
-  unitSystem            UnitSystem @default(metric)
-  currency              Currency   @default(EUR)
-  locale                Locale     @default(en)
-  country               String // ISO 3166-1 alpha-2
-  createdAt             DateTime   @default(now())
-  onboardingCompletedAt DateTime?
+  id                        String     @id @default(uuid())
+  name                      String
+  unitSystem                UnitSystem @default(metric)
+  currency                  Currency   @default(EUR)
+  locale                    Locale     @default(en)
+  country                   String // ISO 3166-1 alpha-2
+  createdAt                 DateTime   @default(now())
+  onboardingCompletedAt     DateTime?
   /// Storage key for the uploaded logo image (PNG/JPEG — pdfkit can't rasterize SVG), read back via StorageService.
-  logoStorageKey        String?
-  logoMimeType          String?
+  logoStorageKey            String?
+  logoMimeType              String?
   /// Hex color (e.g. "#465fff") used as the accent on generated estimate/invoice PDFs.
-  brandColor            String?
+  brandColor                String?
   /// Estimates at or above this amount need `requiredApprovalCount` distinct internal
   /// approvals before they can be finalized — null disables the chain (single-click approve).
-  approvalThresholdAmount Decimal? @db.Decimal(14, 2)
-  requiredApprovalCount   Int      @default(1)
+  approvalThresholdAmount   Decimal?   @db.Decimal(14, 2)
+  requiredApprovalCount     Int        @default(1)
   /// Days after creation an open RFI/punch list item may stay unanswered/unresolved before
   /// it's auto-escalated (flagged + emailed to the company owner) — null disables escalation.
-  rfiSlaDays        Int?
-  punchListSlaDays  Int?
+  rfiSlaDays                Int?
+  punchListSlaDays          Int?
   /// When true, overdue invoices get automatic escalating reminder emails to the client (see
   /// InvoiceReminderService) — off by default since it sends unsolicited email on the company's behalf.
-  invoiceRemindersEnabled Boolean @default(false)
+  invoiceRemindersEnabled   Boolean    @default(false)
   /// Public, unauthenticated token embedded in the company's lead-capture form URL — null disables the form entirely.
-  publicLeadFormToken String? @unique
+  publicLeadFormToken       String?    @unique
   /// Enterprise SSO (SAML 2.0) — all four null means SSO is off for this company. When set,
   /// a user whose email matches ssoDomain is routed to the IdP at ssoEntryPoint instead of
   /// password login, and is just-in-time provisioned (as "worker") on first successful sign-in.
   /// ssoIssuer/ssoCert describe the IdP (its entity ID and signing certificate) — our own SP
   /// entity ID is derived per-company, not stored here.
-  ssoDomain     String? @unique
-  ssoEntryPoint String?
-  ssoIssuer     String?
-  ssoCert       String?
+  ssoDomain                 String?    @unique
+  ssoEntryPoint             String?
+  ssoIssuer                 String?
+  ssoCert                   String?
   /// GDPR Art. 17 account-deletion request — set when an owner/admin asks to close the
   /// account; null means no request is pending. Actual deletion is a manual support-team
   /// process (retention/legal review), not an automated hard delete from this flag alone.
   deletionRequestedAt       DateTime?
   deletionRequestedByUserId String?
+  /// Google/Yelp/etc. review link shared with clients after project closeout — null disables
+  /// the "request a review" action entirely (nothing to point the client at yet).
+  reviewRequestUrl          String?
+  /// Franchise/multi-branch rollup: a parent company can view read-only aggregate stats across
+  /// every company that has linked to it (see franchiseLinkCode). Null means this company is
+  /// either standalone or itself a parent — never both, enforced in CompanyService.
+  parentCompanyId           String?
+  /// One-time code the parent shares out-of-band; a prospective branch redeems it via
+  /// POST /company/link-to-parent to set its own parentCompanyId. Regenerating clears the old code.
+  franchiseLinkCode         String?    @unique
 
-  memberships  Membership[]
-  invites      Invite[]
-  subscription Subscription?
+  memberships    Membership[]
+  invites        Invite[]
+  subscription   Subscription?
+  parentCompany  Company?      @relation("CompanyFranchise", fields: [parentCompanyId], references: [id], onDelete: SetNull)
+  childCompanies Company[]     @relation("CompanyFranchise")
 
-  materialCatalogItems MaterialCatalogItem[]
-  rateCatalogItems     RateCatalogItem[]
-  projects             Project[]
-  clients              Client[]
-  estimates            Estimate[]
-  invoices             Invoice[]
-  warehouses           Warehouse[]
-  suppliers            Supplier[]
-  workers              Worker[]
-  documents            Document[]
-  subcontractors       Subcontractor[]
-  subcontractorCosts   SubcontractorCost[]
-  clientActivities     ClientActivity[]
-  clientReminders      ClientReminder[]
-  stockCounts          StockCount[]
-  apiKeys              ApiKey[]
-  auditLogs            AuditLog[]
-  changeOrders         ChangeOrder[]
-  webhookEndpoints     WebhookEndpoint[]
-  recurringInvoices    RecurringInvoice[]
-  equipment            Equipment[]
-  dailyLogs            DailyLog[]
-  punchListItems       PunchListItem[]
-  rfis                 Rfi[]
-  incidentReports      IncidentReport[]
-  safetyBriefings      SafetyBriefing[]
-  submittals           Submittal[]
-  warrantyClaims       WarrantyClaim[]
-  comments             Comment[]
-  resourceAssignments  ResourceAssignment[]
-  checklistTemplates   ChecklistTemplate[]
+  materialCatalogItems   MaterialCatalogItem[]
+  rateCatalogItems       RateCatalogItem[]
+  projects               Project[]
+  clients                Client[]
+  estimates              Estimate[]
+  invoices               Invoice[]
+  warehouses             Warehouse[]
+  suppliers              Supplier[]
+  workers                Worker[]
+  documents              Document[]
+  subcontractors         Subcontractor[]
+  subcontractorCosts     SubcontractorCost[]
+  clientActivities       ClientActivity[]
+  clientReminders        ClientReminder[]
+  stockCounts            StockCount[]
+  apiKeys                ApiKey[]
+  auditLogs              AuditLog[]
+  changeOrders           ChangeOrder[]
+  webhookEndpoints       WebhookEndpoint[]
+  recurringInvoices      RecurringInvoice[]
+  equipment              Equipment[]
+  dailyLogs              DailyLog[]
+  punchListItems         PunchListItem[]
+  rfis                   Rfi[]
+  incidentReports        IncidentReport[]
+  safetyBriefings        SafetyBriefing[]
+  submittals             Submittal[]
+  warrantyClaims         WarrantyClaim[]
+  comments               Comment[]
+  resourceAssignments    ResourceAssignment[]
+  checklistTemplates     ChecklistTemplate[]
   subcontractorDocuments SubcontractorDocument[]
-  workerCertifications WorkerCertification[]
-  scheduledReports     ScheduledReport[]
-  lienWaivers          LienWaiver[]
-  bidRequests          BidRequest[]
+  workerCertifications   WorkerCertification[]
+  scheduledReports       ScheduledReport[]
+  lienWaivers            LienWaiver[]
+  bidRequests            BidRequest[]
   customFieldDefinitions CustomFieldDefinition[]
   savedViews             SavedView[]
   customReports          CustomReport[]
   accountingConnection   AccountingConnection?
   expenses               Expense[]
-  materialRfqs            MaterialRfq[]
-  customRoles              CustomRole[]
+  materialRfqs           MaterialRfq[]
+  customRoles            CustomRole[]
+  timeOffRequests        TimeOffRequest[]
 
   @@map("companies")
 }
@@ -333,11 +346,11 @@ model User {
 }
 
 model Membership {
-  id                          String         @id @default(uuid())
+  id                          String               @id @default(uuid())
   userId                      String
   companyId                   String
-  role                        MembershipRole @default(owner)
-  createdAt                   DateTime       @default(now())
+  role                        MembershipRole       @default(owner)
+  createdAt                   DateTime             @default(now())
   /// When this member last opened the notification bell — drives the unread-count badge.
   notificationsLastViewedAt   DateTime?
   /// When this member was last sent a web push notification — drives which newly-derived
@@ -346,12 +359,12 @@ model Membership {
   /// Opt-in email summary of new notifications — "off" by default. emailDigestLastSentAt is a
   /// third independent cursor (own read/push cursors above), advanced once per due digest pass
   /// regardless of whether anything new was found, so the daily/weekly clock always resets cleanly.
-  emailDigestFrequency  EmailDigestFrequency @default(off)
-  emailDigestLastSentAt DateTime?
+  emailDigestFrequency        EmailDigestFrequency @default(off)
+  emailDigestLastSentAt       DateTime?
   /// Grants this member every permission tier listed in the custom role's basePermissions, on
   /// top of whatever `role` above already allows — never a reduction, always additive. Null
   /// means no custom role; `role` alone still governs, exactly as before this feature existed.
-  customRoleId String?
+  customRoleId                String?
 
   user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   company           Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -953,47 +966,50 @@ model PurchaseOrderLine {
 // ---------- Projects (thin in Phase 1; Scheduling schema-only until Phase 3) ----------
 
 model Project {
-  id        String   @id @default(uuid())
-  companyId String
-  name      String
-  address   String?
-  clientId  String?
-  createdAt DateTime @default(now())
+  id                   String    @id @default(uuid())
+  companyId            String
+  name                 String
+  address              String?
+  clientId             String?
+  createdAt            DateTime  @default(now())
   /// When the finished project was handed over to the client — the anchor date for the warranty window.
-  handoverDate   DateTime?
+  handoverDate         DateTime?
   /// Warranty length in months from handoverDate; null means no warranty is configured yet.
-  warrantyMonths Int?
+  warrantyMonths       Int?
+  /// Set when a review-request email has been sent to the client — null means never sent, and
+  /// the UI uses this to avoid nagging the client twice for the same project.
+  reviewRequestedAt    DateTime?
   /// Site geofence center + radius for field-app clock-in proximity checks — all three null
   /// disables the check entirely (TimeEntry.withinGeofence stays null for this project's entries).
   geofenceLat          Float?
   geofenceLng          Float?
   geofenceRadiusMeters Int?
 
-  company            Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  client             Client?             @relation(fields: [clientId], references: [id], onDelete: SetNull)
-  estimates          Estimate[]
-  invoices           Invoice[]
-  recurringInvoices  RecurringInvoice[]
-  tasks              Task[]
-  milestones         Milestone[]
-  stockMovements     StockMovement[]
-  timeEntries        TimeEntry[]
-  expenses           Expense[]
-  documents          Document[]
-  subcontractorCosts SubcontractorCost[]
-  equipmentAssignments EquipmentAssignment[]
+  company                  Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  client                   Client?                   @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  estimates                Estimate[]
+  invoices                 Invoice[]
+  recurringInvoices        RecurringInvoice[]
+  tasks                    Task[]
+  milestones               Milestone[]
+  stockMovements           StockMovement[]
+  timeEntries              TimeEntry[]
+  expenses                 Expense[]
+  documents                Document[]
+  subcontractorCosts       SubcontractorCost[]
+  equipmentAssignments     EquipmentAssignment[]
   subcontractorAssignments SubcontractorAssignment[]
-  dailyLogs          DailyLog[]
-  punchListItems     PunchListItem[]
-  rfis               Rfi[]
-  incidentReports    IncidentReport[]
-  safetyBriefings    SafetyBriefing[]
-  submittals         Submittal[]
-  warrantyClaims     WarrantyClaim[]
-  resourceAssignments ResourceAssignment[]
-  lienWaivers        LienWaiver[]
-  bidRequests        BidRequest[]
-  materialRfqs       MaterialRfq[]
+  dailyLogs                DailyLog[]
+  punchListItems           PunchListItem[]
+  rfis                     Rfi[]
+  incidentReports          IncidentReport[]
+  safetyBriefings          SafetyBriefing[]
+  submittals               Submittal[]
+  warrantyClaims           WarrantyClaim[]
+  resourceAssignments      ResourceAssignment[]
+  lienWaivers              LienWaiver[]
+  bidRequests              BidRequest[]
+  materialRfqs             MaterialRfq[]
 
   @@index([companyId])
   @@map("projects")
@@ -1012,9 +1028,9 @@ model Task {
   /// weather-risk notification can flag it when the forecast for its startDate turns bad.
   isOutdoorWork  Boolean    @default(false)
 
-  project      Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  estimateLine EstimateLine? @relation(fields: [estimateLineId], references: [id], onDelete: SetNull)
-  timeEntries  TimeEntry[]
+  project          Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  estimateLine     EstimateLine?    @relation(fields: [estimateLineId], references: [id], onDelete: SetNull)
+  timeEntries      TimeEntry[]
   /// Dependencies where this task is the successor (i.e. what this task waits on).
   predecessorLinks TaskDependency[] @relation("TaskSuccessor")
   /// Dependencies where this task is the predecessor (i.e. what waits on this task).
@@ -1080,9 +1096,9 @@ model DailyLog {
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  author  User?   @relation(fields: [authorUserId], references: [id], onDelete: SetNull)
+  company Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  author  User?      @relation(fields: [authorUserId], references: [id], onDelete: SetNull)
   photos  Document[]
 
   @@unique([projectId, date])
@@ -1091,15 +1107,15 @@ model DailyLog {
 }
 
 model PunchListItem {
-  id             String              @id @default(uuid())
-  companyId      String
-  projectId      String
-  title          String
-  description    String?
-  location       String?
-  status         PunchListItemStatus @default(open)
+  id               String              @id @default(uuid())
+  companyId        String
+  projectId        String
+  title            String
+  description      String?
+  location         String?
+  status           PunchListItemStatus @default(open)
   assigneeWorkerId String?
-  dueDate        DateTime?
+  dueDate          DateTime?
   createdByUserId  String?
   createdByName    String
   resolvedAt       DateTime?
@@ -1108,12 +1124,12 @@ model PunchListItem {
   verifiedAt       DateTime?
   verifiedByUserId String?
   verifiedByName   String?
-  createdAt      DateTime            @default(now())
+  createdAt        DateTime            @default(now())
   escalatedAt      DateTime?
 
-  company  Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  project  Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  assignee Worker? @relation(fields: [assigneeWorkerId], references: [id], onDelete: SetNull)
+  company  Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project  Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignee Worker?    @relation(fields: [assigneeWorkerId], references: [id], onDelete: SetNull)
   photos   Document[]
   comments Comment[]
 
@@ -1162,36 +1178,36 @@ model Rfi {
 // ---------- Finance (thin in Phase 1; Payments/budget-vs-actual in Phase 4) ----------
 
 model Invoice {
-  id                 String        @id @default(uuid())
-  companyId          String
-  projectId          String
-  clientId           String
-  estimateId         String?
+  id                         String        @id @default(uuid())
+  companyId                  String
+  projectId                  String
+  clientId                   String
+  estimateId                 String?
   /// Set when a RecurringInvoice's scheduled pass generated this invoice — null for everything else.
-  recurringInvoiceId String?
-  number             String
-  status             InvoiceStatus @default(draft)
-  subtotal           Decimal       @db.Decimal(14, 2)
-  taxAmount          Decimal       @default(0) @db.Decimal(14, 2)
-  total              Decimal       @db.Decimal(14, 2)
-  dueDate            DateTime?
-  createdAt          DateTime      @default(now())
+  recurringInvoiceId         String?
+  number                     String
+  status                     InvoiceStatus @default(draft)
+  subtotal                   Decimal       @db.Decimal(14, 2)
+  taxAmount                  Decimal       @default(0) @db.Decimal(14, 2)
+  total                      Decimal       @db.Decimal(14, 2)
+  dueDate                    DateTime?
+  createdAt                  DateTime      @default(now())
   /// Cumulative % of the linked estimate billed as of this draw — set only on progress-billing
   /// invoices (see InvoicesService.generateProgressInvoice), null for ordinary invoices.
-  percentComplete    Decimal?      @db.Decimal(5, 2)
-  retainagePercent   Decimal?      @db.Decimal(5, 2)
+  percentComplete            Decimal?      @db.Decimal(5, 2)
+  retainagePercent           Decimal?      @db.Decimal(5, 2)
   /// Amount withheld from this draw, held until releaseRetainage() generates a release invoice.
-  retainageAmount    Decimal       @default(0) @db.Decimal(14, 2)
+  retainageAmount            Decimal       @default(0) @db.Decimal(14, 2)
   /// True for the one-off invoice that pays out retainage withheld across prior progress draws.
-  isRetainageRelease Boolean       @default(false)
+  isRetainageRelease         Boolean       @default(false)
   /// Set once this invoice has been pushed to the connected accounting system (QuickBooks/Xero) —
   /// the external record's own ID, used to skip it on the next sync pass. Null means not yet synced.
   externalAccountingId       String?
   externalAccountingSyncedAt DateTime?
   /// Escalating overdue-reminder cadence (see InvoiceReminderService) — count of reminders sent
   /// so far (caps at the cadence's length) and when the last one went out.
-  reminderCount     Int       @default(0)
-  lastReminderSentAt DateTime?
+  reminderCount              Int           @default(0)
+  lastReminderSentAt         DateTime?
 
   company          Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
   project          Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -1243,7 +1259,7 @@ model RecurringInvoiceLine {
   id                 String  @id @default(uuid())
   recurringInvoiceId String
   description        String
-  quantity            Decimal @db.Decimal(12, 4)
+  quantity           Decimal @db.Decimal(12, 4)
   unitPrice          Decimal @db.Decimal(12, 4)
   sortOrder          Int     @default(0)
 
@@ -1308,14 +1324,14 @@ model Subcontractor {
   email     String?
   phone     String?
 
-  company     Company                    @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  costs       SubcontractorCost[]
-  assignments SubcontractorAssignment[]
+  company           Company                         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  costs             SubcontractorCost[]
+  assignments       SubcontractorAssignment[]
   portalLoginTokens SubcontractorPortalLoginToken[]
-  documents   SubcontractorDocument[]
-  lienWaivers LienWaiver[]
-  bidInvites  BidInvite[]
-  bids        Bid[]
+  documents         SubcontractorDocument[]
+  lienWaivers       LienWaiver[]
+  bidInvites        BidInvite[]
+  bids              Bid[]
 
   @@index([companyId])
   @@map("subcontractors")
@@ -1371,6 +1387,40 @@ model WorkerCertification {
   @@index([companyId])
   @@index([workerId])
   @@map("worker_certifications")
+}
+
+enum TimeOffType {
+  vacation
+  sick
+  unpaid
+}
+
+enum TimeOffStatus {
+  pending
+  approved
+  denied
+}
+
+model TimeOffRequest {
+  id              String        @id @default(uuid())
+  companyId       String
+  workerId        String
+  type            TimeOffType
+  startDate       DateTime
+  endDate         DateTime
+  reason          String?
+  status          TimeOffStatus @default(pending)
+  /// Who approved/denied it and when — null while status is still "pending".
+  decidedByUserId String?
+  decidedAt       DateTime?
+  createdAt       DateTime      @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  worker  Worker  @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([workerId])
+  @@map("time_off_requests")
 }
 
 enum ScheduledReportType {
@@ -1430,12 +1480,12 @@ model SubcontractorAssignment {
 /// ClientPortalLoginToken, kept as its own model since subcontractors and clients are
 /// distinct entities with no shared identity.
 model SubcontractorPortalLoginToken {
-  id        String    @id @default(uuid())
+  id              String    @id @default(uuid())
   subcontractorId String
-  token     String    @unique
-  expiresAt DateTime
-  usedAt    DateTime?
-  createdAt DateTime  @default(now())
+  token           String    @unique
+  expiresAt       DateTime
+  usedAt          DateTime?
+  createdAt       DateTime  @default(now())
 
   subcontractor Subcontractor @relation(fields: [subcontractorId], references: [id], onDelete: Cascade)
 
@@ -1569,23 +1619,28 @@ model Bid {
 // ---------- CRM (thin in Phase 1) ----------
 
 model Client {
-  id             String      @id @default(uuid())
-  companyId      String
-  name           String
-  email          String?
-  phone          String?
-  stage          ClientStage @default(lead)
-  notes          String?
-  createdAt      DateTime    @default(now())
+  id                 String      @id @default(uuid())
+  companyId          String
+  name               String
+  email              String?
+  phone              String?
+  stage              ClientStage @default(lead)
+  notes              String?
+  createdAt          DateTime    @default(now())
   /// Estimated deal value while the client is still in the pipeline (lead/contacted/qualified).
-  estimatedValue Decimal?    @db.Decimal(12, 2)
-  ownerWorkerId  String?
-  wonAt          DateTime?
-  lostAt         DateTime?
-  lostReason     String?
+  estimatedValue     Decimal?    @db.Decimal(12, 2)
+  ownerWorkerId      String?
+  wonAt              DateTime?
+  lostAt             DateTime?
+  lostReason         String?
+  /// The existing client who referred this one in — self-referential, so a company can trace
+  /// its referral chains through the CRM without a separate tracking system.
+  referredByClientId String?
 
-  company           Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  owner             Worker?                   @relation(fields: [ownerWorkerId], references: [id], onDelete: SetNull)
+  company           Company                  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  owner             Worker?                  @relation(fields: [ownerWorkerId], references: [id], onDelete: SetNull)
+  referredBy        Client?                  @relation("ClientReferrals", fields: [referredByClientId], references: [id], onDelete: SetNull)
+  referrals         Client[]                 @relation("ClientReferrals")
   projects          Project[]
   invoices          Invoice[]
   recurringInvoices RecurringInvoice[]
@@ -1596,6 +1651,7 @@ model Client {
 
   @@index([companyId])
   @@index([ownerWorkerId])
+  @@index([referredByClientId])
   @@map("clients")
 }
 
@@ -1670,39 +1726,40 @@ model Worker {
   hourlyCost Decimal? @db.Decimal(10, 2)
   active     Boolean  @default(true)
 
-  company             Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  user                User?                 @relation(fields: [userId], references: [id], onDelete: SetNull)
-  timeEntries         TimeEntry[]
-  expenses            Expense[]
-  equipmentAssignments EquipmentAssignment[]
-  punchListItems      PunchListItem[]
+  company                  Company                    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user                     User?                      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  timeEntries              TimeEntry[]
+  expenses                 Expense[]
+  equipmentAssignments     EquipmentAssignment[]
+  punchListItems           PunchListItem[]
   safetyBriefingAttendance SafetyBriefingAttendance[]
-  warrantyClaims      WarrantyClaim[]
-  ownedClients        Client[]
-  resourceAssignments ResourceAssignment[]
-  certifications      WorkerCertification[]
+  warrantyClaims           WarrantyClaim[]
+  ownedClients             Client[]
+  resourceAssignments      ResourceAssignment[]
+  certifications           WorkerCertification[]
+  timeOffRequests          TimeOffRequest[]
 
   @@index([companyId])
   @@map("workers")
 }
 
 model TimeEntry {
-  id                 String   @id @default(uuid())
-  companyId          String
-  workerId           String
-  projectId          String
-  taskId             String?
-  hours              Decimal  @db.Decimal(6, 2)
-  date               DateTime
-  createdAt          DateTime @default(now())
+  id                     String   @id @default(uuid())
+  companyId              String
+  workerId               String
+  projectId              String
+  taskId                 String?
+  hours                  Decimal  @db.Decimal(6, 2)
+  date                   DateTime
+  createdAt              DateTime @default(now())
   /// Worker.hourlyCost captured at creation time, so past labor-cost reports don't shift when a worker's rate later changes.
-  hourlyCostSnapshot Decimal? @db.Decimal(10, 2)
+  hourlyCostSnapshot     Decimal? @db.Decimal(10, 2)
   /// Captured from the field app's Geolocation API at submission time; null for entries logged from the office.
-  clockInLat              Float?
-  clockInLng              Float?
+  clockInLat             Float?
+  clockInLng             Float?
   /// Distance from the project's geofence center, and whether it's within radius — null for either field means no geofence was configured on the project at submission time (nothing to evaluate), not that the check failed.
-  distanceFromSiteMeters  Int?
-  withinGeofence          Boolean?
+  distanceFromSiteMeters Int?
+  withinGeofence         Boolean?
 
   worker  Worker  @relation(fields: [workerId], references: [id], onDelete: Cascade)
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -1733,15 +1790,15 @@ enum ExpenseStatus {
 /// StockMovement (materials from the company's own warehouse); this is cash a worker spent and
 /// needs reimbursed.
 model Expense {
-  id          String          @id @default(uuid())
-  companyId   String
-  projectId   String
-  workerId    String
-  category    ExpenseCategory @default(other)
-  amount      Decimal         @db.Decimal(12, 2)
-  description String?
-  incurredAt  DateTime
-  status      ExpenseStatus   @default(pending)
+  id                String          @id @default(uuid())
+  companyId         String
+  projectId         String
+  workerId          String
+  category          ExpenseCategory @default(other)
+  amount            Decimal         @db.Decimal(12, 2)
+  description       String?
+  incurredAt        DateTime
+  status            ExpenseStatus   @default(pending)
   /// Receipt photo/scan, stored directly here (like Company.logoStorageKey) rather than via the
   /// generic Document table — an expense has at most one receipt, not a variable attachment set.
   receiptStorageKey String?
@@ -1749,7 +1806,7 @@ model Expense {
   approvedByUserId  String?
   approvedAt        DateTime?
   rejectedReason    String?
-  createdAt         DateTime  @default(now())
+  createdAt         DateTime        @default(now())
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -1769,49 +1826,52 @@ enum DocumentCategory {
   photo
   invoice_scan
   insurance_certificate
+  /// Portfolio/marketing photos for a project's before/after gallery (see ProjectsController gallery endpoint).
+  gallery_before
+  gallery_after
   other
 }
 
 model Document {
-  id               String           @id @default(uuid())
-  companyId        String
-  projectId        String?
-  invoiceId        String?
+  id                      String           @id @default(uuid())
+  companyId               String
+  projectId               String?
+  invoiceId               String?
   /// The following five are alternative attachment points alongside project/invoice — a photo of
   /// a defect, a daily-log condition shot, incident evidence, a warranty claim photo, or a scanned
   /// insurance certificate. Exactly one of these (or project/invoice) is set per document in
   /// practice, though nothing enforces that at the schema level, same as project/invoice today.
-  punchListItemId  String?
-  dailyLogId       String?
-  incidentReportId String?
-  warrantyClaimId  String?
+  punchListItemId         String?
+  dailyLogId              String?
+  incidentReportId        String?
+  warrantyClaimId         String?
   subcontractorDocumentId String?
-  name             String
-  storageKey       String
-  mimeType         String
-  size             Int              @default(0)
-  category         DocumentCategory @default(other)
+  name                    String
+  storageKey              String
+  mimeType                String
+  size                    Int              @default(0)
+  category                DocumentCategory @default(other)
   /// 1 on the first upload of a file; each replace() call increments this within the same version chain.
-  version          Int              @default(1)
+  version                 Int              @default(1)
   /// Null on the first version of a chain (the root); every later version points back to the root's id,
   /// so "latest per chain" can be found by grouping on COALESCE(rootDocumentId, id) and taking max(version).
-  rootDocumentId   String?
-  uploadedByUserId String?
+  rootDocumentId          String?
+  uploadedByUserId        String?
   /// Soft delete — kept for the version chain's history rather than removed outright.
-  deletedAt        DateTime?
-  createdAt        DateTime         @default(now())
+  deletedAt               DateTime?
+  createdAt               DateTime         @default(now())
 
-  company        Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  project        Project?       @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  invoice        Invoice?       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  punchListItem  PunchListItem? @relation(fields: [punchListItemId], references: [id], onDelete: Cascade)
-  dailyLog       DailyLog?      @relation(fields: [dailyLogId], references: [id], onDelete: Cascade)
-  incidentReport IncidentReport? @relation(fields: [incidentReportId], references: [id], onDelete: Cascade)
-  warrantyClaim  WarrantyClaim? @relation(fields: [warrantyClaimId], references: [id], onDelete: Cascade)
+  company               Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project               Project?               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  invoice               Invoice?               @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  punchListItem         PunchListItem?         @relation(fields: [punchListItemId], references: [id], onDelete: Cascade)
+  dailyLog              DailyLog?              @relation(fields: [dailyLogId], references: [id], onDelete: Cascade)
+  incidentReport        IncidentReport?        @relation(fields: [incidentReportId], references: [id], onDelete: Cascade)
+  warrantyClaim         WarrantyClaim?         @relation(fields: [warrantyClaimId], references: [id], onDelete: Cascade)
   subcontractorDocument SubcontractorDocument? @relation(fields: [subcontractorDocumentId], references: [id], onDelete: Cascade)
-  uploadedBy     User?          @relation(fields: [uploadedByUserId], references: [id], onDelete: SetNull)
-  rootDocument   Document?      @relation("DocumentVersions", fields: [rootDocumentId], references: [id], onDelete: Cascade)
-  versions       Document[]     @relation("DocumentVersions")
+  uploadedBy            User?                  @relation(fields: [uploadedByUserId], references: [id], onDelete: SetNull)
+  rootDocument          Document?              @relation("DocumentVersions", fields: [rootDocumentId], references: [id], onDelete: Cascade)
+  versions              Document[]             @relation("DocumentVersions")
 
   @@index([companyId])
   @@index([rootDocumentId])
@@ -1833,21 +1893,21 @@ enum EquipmentStatus {
 }
 
 model Equipment {
-  id            String          @id @default(uuid())
-  companyId     String
-  name          String
-  category      String
-  serialNumber  String?
-  purchaseDate  DateTime?
-  purchaseCost  Decimal?        @db.Decimal(12, 2)
-  status        EquipmentStatus @default(available)
-  notes         String?
-  createdAt     DateTime        @default(now())
+  id                           String          @id @default(uuid())
+  companyId                    String
+  name                         String
+  category                     String
+  serialNumber                 String?
+  purchaseDate                 DateTime?
+  purchaseCost                 Decimal?        @db.Decimal(12, 2)
+  status                       EquipmentStatus @default(available)
+  notes                        String?
+  createdAt                    DateTime        @default(now())
   /// Recurring preventive-maintenance interval — null disables scheduling entirely for this
   /// piece of equipment. nextMaintenanceDueAt advances by this many days each time maintenance
   /// completes, mirroring RecurringInvoice.nextRunDate's advance-on-completion pattern.
-  maintenanceIntervalDays Int?
-  nextMaintenanceDueAt    DateTime?
+  maintenanceIntervalDays      Int?
+  nextMaintenanceDueAt         DateTime?
   /// Set once an overdue-while-in-use notification email has gone out, so the hourly pass
   /// doesn't re-send it every hour until the equipment is checked in and can actually be
   /// pulled into maintenance status. Cleared whenever maintenance completes.
@@ -1921,8 +1981,8 @@ model IncidentReport {
   reportedByName    String
   createdAt         DateTime         @default(now())
 
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  company Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
   photos  Document[]
 
   @@index([projectId])
@@ -1933,15 +1993,15 @@ model IncidentReport {
 /// Pre-work safety briefing ("toolbox talk") with per-worker attendance — the standard
 /// evidence a commercial GC keeps to show a crew was briefed on a hazard before starting work.
 model SafetyBriefing {
-  id               String   @id @default(uuid())
-  companyId        String
-  projectId        String
-  date             DateTime
-  topic            String
-  notes            String?
+  id                String   @id @default(uuid())
+  companyId         String
+  projectId         String
+  date              DateTime
+  topic             String
+  notes             String?
   conductedByUserId String?
-  conductedByName  String
-  createdAt        DateTime @default(now())
+  conductedByName   String
+  createdAt         DateTime @default(now())
 
   company   Company                    @relation(fields: [companyId], references: [id], onDelete: Cascade)
   project   Project                    @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -2025,13 +2085,13 @@ enum WarrantyClaimStatus {
 /// PunchListItem, which is pre-handover QA. Can be raised internally (a phone call logged by the
 /// office) or by the client themselves through the portal.
 model WarrantyClaim {
-  id                 String              @id @default(uuid())
-  companyId          String
-  projectId          String
-  title              String
-  description        String?
-  location           String?
-  status             WarrantyClaimStatus @default(open)
+  id                  String              @id @default(uuid())
+  companyId           String
+  projectId           String
+  title               String
+  description         String?
+  location            String?
+  status              WarrantyClaimStatus @default(open)
   submittedByClientId String?
   submittedByUserId   String?
   submittedByName     String
@@ -2046,11 +2106,11 @@ model WarrantyClaim {
   denialReason        String?
   createdAt           DateTime            @default(now())
 
-  company         Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  project         Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  submittedByClient Client?  @relation(fields: [submittedByClientId], references: [id], onDelete: SetNull)
-  assignee        Worker?    @relation(fields: [assigneeWorkerId], references: [id], onDelete: SetNull)
-  photos          Document[]
+  company           Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project           Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  submittedByClient Client?    @relation(fields: [submittedByClientId], references: [id], onDelete: SetNull)
+  assignee          Worker?    @relation(fields: [assigneeWorkerId], references: [id], onDelete: SetNull)
+  photos            Document[]
 
   @@index([projectId])
   @@index([companyId])
@@ -2142,15 +2202,15 @@ enum ChecklistTemplateType {
 /// safety_briefing templates are single-entry prefill text (defaultSubject/defaultBody) that the
 /// frontend copies into a new RFI/briefing form — there's nothing to "apply" server-side for those.
 model ChecklistTemplate {
-  id            String                @id @default(uuid())
-  companyId     String
-  type          ChecklistTemplateType
-  name          String
+  id             String                @id @default(uuid())
+  companyId      String
+  type           ChecklistTemplateType
+  name           String
   defaultSubject String?
   defaultBody    String?
-  createdAt     DateTime              @default(now())
+  createdAt      DateTime              @default(now())
 
-  company Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company Company                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
   items   ChecklistTemplateItem[]
 
   @@index([companyId])
@@ -2279,16 +2339,16 @@ enum AccountingProvider {
 /// One connected accounting system per company. Absence of a row means "not connected" — no
 /// nullable-flag-on-Company needed since the row itself carries the provider + tokens.
 model AccountingConnection {
-  id             String             @id @default(uuid())
-  companyId      String             @unique
-  provider       AccountingProvider
-  accessToken    String
-  refreshToken   String
-  tokenExpiresAt DateTime
+  id                String             @id @default(uuid())
+  companyId         String             @unique
+  provider          AccountingProvider
+  accessToken       String
+  refreshToken      String
+  tokenExpiresAt    DateTime
   /// QuickBooks: realm (company) ID, returned on the OAuth callback. Xero: tenant ID, fetched
   /// from GET /connections right after token exchange since Xero doesn't return it on the callback.
   externalAccountId String
-  connectedAt       DateTime @default(now())
+  connectedAt       DateTime           @default(now())
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 

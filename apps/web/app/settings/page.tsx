@@ -23,6 +23,7 @@ interface Company {
   punchListSlaDays: number | null;
   invoiceRemindersEnabled: boolean;
   publicLeadFormToken: string | null;
+  reviewRequestUrl: string | null;
 }
 interface Plan {
   id: string;
@@ -35,6 +36,17 @@ interface Subscription {
   seats: number;
   status: string;
   plan: Plan;
+}
+interface FranchiseBranch {
+  companyId: string;
+  name: string;
+  revenue: number;
+  projectCount: number;
+  memberCount: number;
+}
+interface FranchiseOverview {
+  branches: FranchiseBranch[];
+  totals?: { revenue: number; projectCount: number; memberCount: number };
 }
 interface CustomRole {
   id: string;
@@ -102,6 +114,7 @@ export default function SettingsPage() {
     rfiSlaDays: string;
     punchListSlaDays: string;
     invoiceRemindersEnabled: boolean;
+    reviewRequestUrl: string;
   }>({
     name: "",
     locale: "en",
@@ -111,6 +124,7 @@ export default function SettingsPage() {
     rfiSlaDays: "",
     punchListSlaDays: "",
     invoiceRemindersEnabled: false,
+    reviewRequestUrl: "",
   });
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [logoBusy, setLogoBusy] = useState(false);
@@ -144,6 +158,11 @@ export default function SettingsPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [leadFormToken, setLeadFormToken] = useState<string | null>(null);
+  const [franchiseLinkCode, setFranchiseLinkCode] = useState<string | null>(null);
+  const [linkCodeInput, setLinkCodeInput] = useState("");
+  const [franchiseOverview, setFranchiseOverview] = useState<FranchiseOverview | null>(null);
+  const [franchiseBusy, setFranchiseBusy] = useState(false);
+  const [franchiseError, setFranchiseError] = useState<string | null>(null);
 
   function loadLeadFormToken() {
     apiFetch<Company>("/company").then((c) => setLeadFormToken(c.publicLeadFormToken));
@@ -166,6 +185,7 @@ export default function SettingsPage() {
         rfiSlaDays: c.rfiSlaDays !== null ? String(c.rfiSlaDays) : "",
         punchListSlaDays: c.punchListSlaDays !== null ? String(c.punchListSlaDays) : "",
         invoiceRemindersEnabled: c.invoiceRemindersEnabled,
+        reviewRequestUrl: c.reviewRequestUrl ?? "",
       });
       setLeadFormToken(c.publicLeadFormToken);
     });
@@ -177,6 +197,7 @@ export default function SettingsPage() {
     apiFetch<Plan[]>("/billing/plans").then(setPlans);
     apiFetch<Member[]>("/company/members").then(setMembers);
     apiFetch<CustomRole[]>("/company/custom-roles").then(setCustomRoles);
+    apiFetch<FranchiseOverview>("/company/franchise-overview").then(setFranchiseOverview);
     if (isManager) {
       apiFetch<Invite[]>("/company/invites").then(setInvites);
       apiFetch<ApiKey[]>("/company/api-keys").then(setApiKeys);
@@ -252,6 +273,7 @@ export default function SettingsPage() {
           rfiSlaDays: companyForm.rfiSlaDays ? Number(companyForm.rfiSlaDays) : null,
           punchListSlaDays: companyForm.punchListSlaDays ? Number(companyForm.punchListSlaDays) : null,
           invoiceRemindersEnabled: companyForm.invoiceRemindersEnabled,
+          reviewRequestUrl: companyForm.reviewRequestUrl || null,
         }),
       });
       document.cookie = `NEXT_LOCALE=${companyForm.locale};path=/;max-age=31536000`;
@@ -287,6 +309,48 @@ export default function SettingsPage() {
       setError(err instanceof Error ? err.message : tc("error"));
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function openBillingPortal() {
+    setBusy(true);
+    setError(null);
+    try {
+      const { url } = await apiFetch<{ url: string }>("/billing/portal-session", { method: "POST" });
+      window.location.href = url;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : tc("error"));
+      setBusy(false);
+    }
+  }
+
+  async function generateFranchiseLinkCode() {
+    setFranchiseBusy(true);
+    setFranchiseError(null);
+    try {
+      const { franchiseLinkCode: code } = await apiFetch<{ franchiseLinkCode: string }>("/company/franchise-link-code", {
+        method: "POST",
+      });
+      setFranchiseLinkCode(code);
+    } catch (err) {
+      setFranchiseError(err instanceof Error ? err.message : tc("error"));
+    } finally {
+      setFranchiseBusy(false);
+    }
+  }
+
+  async function linkToParentCompany(e: React.FormEvent) {
+    e.preventDefault();
+    setFranchiseBusy(true);
+    setFranchiseError(null);
+    try {
+      await apiFetch("/company/link-to-parent", { method: "POST", body: JSON.stringify({ code: linkCodeInput }) });
+      setLinkCodeInput("");
+      window.location.reload();
+    } catch (err) {
+      setFranchiseError(err instanceof Error ? err.message : tc("error"));
+    } finally {
+      setFranchiseBusy(false);
     }
   }
 
@@ -611,6 +675,20 @@ export default function SettingsPage() {
                 </span>
               </label>
             </div>
+            <div className="border-t border-gray-100 pt-3">
+              <label className="flex flex-col gap-1 text-xs text-gray-700">
+                <span className="font-medium text-gray-700">{t("reviewRequestUrl")}</span>
+                <span className="text-gray-500">{t("reviewRequestUrlHint")}</span>
+                <input
+                  type="url"
+                  className="input mt-1"
+                  placeholder="https://g.page/r/your-business/review"
+                  value={companyForm.reviewRequestUrl}
+                  onChange={(e) => setCompanyForm((f) => ({ ...f, reviewRequestUrl: e.target.value }))}
+                  disabled={!isManager}
+                />
+              </label>
+            </div>
             {isManager && (
               <button type="submit" disabled={busy} className="btn-primary">
                 {t("save")}
@@ -712,7 +790,78 @@ export default function SettingsPage() {
               </button>
             </form>
           )}
+
+          {isManager && (
+            <button type="button" onClick={openBillingPortal} disabled={busy} className="btn-secondary mt-3">
+              {t("manageBilling")}
+            </button>
+          )}
         </section>
+
+        {isManager && (
+          <section className="card lg:col-span-2">
+            <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("franchise")}</h2>
+            <p className="mb-4 text-xs text-gray-500">{t("franchiseHint")}</p>
+
+            {franchiseError && <p className="mb-3 text-xs text-red-600">{franchiseError}</p>}
+
+            {franchiseOverview && franchiseOverview.branches.length > 0 ? (
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200 text-left text-gray-500">
+                    <th className="py-2">{tc("name")}</th>
+                    <th className="py-2">{t("branchRevenue")}</th>
+                    <th className="py-2">{t("branchProjects")}</th>
+                    <th className="py-2">{t("branchMembers")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {franchiseOverview.branches.map((b) => (
+                    <tr key={b.companyId} className="border-b border-gray-100">
+                      <td className="py-2">{b.name}</td>
+                      <td className="py-2">{b.revenue}</td>
+                      <td className="py-2">{b.projectCount}</td>
+                      <td className="py-2">{b.memberCount}</td>
+                    </tr>
+                  ))}
+                  {franchiseOverview.totals && (
+                    <tr className="font-medium text-gray-700">
+                      <td className="py-2">{t("total")}</td>
+                      <td className="py-2">{franchiseOverview.totals.revenue}</td>
+                      <td className="py-2">{franchiseOverview.totals.projectCount}</td>
+                      <td className="py-2">{franchiseOverview.totals.memberCount}</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            ) : (
+              <div className="flex flex-col gap-4">
+                <div>
+                  <button type="button" onClick={generateFranchiseLinkCode} disabled={franchiseBusy} className="btn-secondary">
+                    {t("generateLinkCode")}
+                  </button>
+                  {franchiseLinkCode && (
+                    <p className="mt-2 font-mono text-xs text-gray-700">{franchiseLinkCode}</p>
+                  )}
+                </div>
+                <form onSubmit={linkToParentCompany} className="flex items-end gap-2">
+                  <label className="text-xs text-gray-500">
+                    {t("linkToParentCode")}
+                    <input
+                      type="text"
+                      className="input mt-1"
+                      value={linkCodeInput}
+                      onChange={(e) => setLinkCodeInput(e.target.value)}
+                    />
+                  </label>
+                  <button type="submit" disabled={franchiseBusy || !linkCodeInput} className="btn-secondary">
+                    {t("linkToParent")}
+                  </button>
+                </form>
+              </div>
+            )}
+          </section>
+        )}
 
         <section className="card lg:col-span-2">
           <h2 className="mb-4 text-sm font-semibold text-gray-700">{t("members")}</h2>

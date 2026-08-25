@@ -12,7 +12,13 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { updateCompanySchema, type AuthUser, type UpdateCompanyInput } from "@cantero/shared";
+import {
+  linkToParentCompanySchema,
+  updateCompanySchema,
+  type AuthUser,
+  type LinkToParentCompanyInput,
+  type UpdateCompanyInput,
+} from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
@@ -63,5 +69,25 @@ export class CompanyController {
   @Delete("deletion-request")
   cancelDeletionRequest(@CurrentUser() user: AuthUser) {
     return this.service.cancelDeletionRequest(user.companyId, { userId: user.userId, name: user.name });
+  }
+
+  @Roles("owner")
+  @Post("franchise-link-code")
+  generateFranchiseLinkCode(@CurrentUser() user: AuthUser) {
+    return this.service.generateFranchiseLinkCode(user.companyId, { userId: user.userId, name: user.name });
+  }
+
+  @Roles("owner")
+  @Post("link-to-parent")
+  linkToParent(
+    @CurrentUser() user: AuthUser,
+    @Body(new ZodValidationPipe(linkToParentCompanySchema)) body: LinkToParentCompanyInput,
+  ) {
+    return this.service.linkToParent(user.companyId, { userId: user.userId, name: user.name }, body);
+  }
+
+  @Get("franchise-overview")
+  franchiseOverview(@CurrentUser() user: AuthUser) {
+    return this.service.franchiseOverview(user.companyId);
   }
 }

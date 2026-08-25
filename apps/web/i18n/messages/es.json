@@ -226,7 +226,19 @@
     "noCustomRoles": "Aún no hay roles personalizados.",
     "assignedToCount": "· asignado a {count}",
     "newCustomRole": "Nuevo rol personalizado",
-    "customRoleNamePlaceholder": "Nombre del rol (p. ej. Jefe de obra)"
+    "customRoleNamePlaceholder": "Nombre del rol (p. ej. Jefe de obra)",
+    "reviewRequestUrl": "Enlace de reseñas",
+    "reviewRequestUrlHint": "Se comparte con los clientes al solicitar una reseña tras el cierre del proyecto.",
+    "manageBilling": "Gestionar facturación",
+    "franchise": "Franquicia",
+    "franchiseHint": "Vincule esta empresa a una matriz, o genere un código para que otra empresa se vincule a la suya.",
+    "branchRevenue": "Ingresos",
+    "branchProjects": "Proyectos",
+    "branchMembers": "Miembros",
+    "total": "Total",
+    "generateLinkCode": "Generar código de vinculación",
+    "linkToParentCode": "Código de la matriz",
+    "linkToParent": "Vincular a la matriz"
   },
   "projects": {
     "title": "Proyectos",
@@ -274,7 +286,9 @@
     "projectName": "Nombre del proyecto",
     "pipelineOverview": "Resumen del pipeline",
     "searchPlaceholder": "Buscar por nombre o correo…",
-    "allOwners": "Todos los responsables"
+    "allOwners": "Todos los responsables",
+    "referredBy": "Referido por",
+    "referrals": "Referencias"
   },
   "team": {
     "title": "Equipo",
@@ -310,7 +324,16 @@
     "noCertifications": "No hay certificaciones registradas.",
     "certificationNamePlaceholder": "Nombre de la certificación (p. ej. OSHA 30, operador de montacargas)",
     "addCertification": "Agregar certificación",
-    "outsideGeofence": "Fuera de la geocerca"
+    "outsideGeofence": "Fuera de la geocerca",
+    "certificationsDashboard": "Resumen de certificaciones",
+    "certExpired": "{count} caducadas",
+    "certExpiringSoon": "{count} caducan pronto",
+    "certValid": "{count} vigentes",
+    "certification": "Certificación",
+    "expires": "Caduca",
+    "certStatus_expired": "Caducada",
+    "certStatus_expiring_soon": "Caduca pronto",
+    "certStatus_valid": "Vigente"
   },
   "documents": {
     "title": "Documentos",
@@ -336,7 +359,9 @@
     "category_photo": "Foto",
     "category_invoice_scan": "Escaneo de factura",
     "category_other": "Otro",
-    "category_insurance_certificate": "Certificado de seguro"
+    "category_insurance_certificate": "Certificado de seguro",
+    "category_gallery_before": "Galería (antes)",
+    "category_gallery_after": "Galería (después)"
   },
   "rateCatalog": {
     "title": "Catálogo de precios",
@@ -515,7 +540,8 @@
     "locationPlaceholder": "Habitación, zona…",
     "descriptionPlaceholder": "Más detalles…",
     "submitClaim": "Enviar reclamación",
-    "claimSubmitted": "Reclamación enviada — nos pondremos en contacto."
+    "claimSubmitted": "Reclamación enviada — nos pondremos en contacto.",
+    "payNow": "Pagar ahora"
   },
   "equipment": {
     "title": "Equipos",
@@ -663,7 +689,11 @@
   },
   "suppliers": {
     "title": "Proveedores",
-    "newSupplier": "Nuevo proveedor"
+    "newSupplier": "Nuevo proveedor",
+    "totalOrders": "Pedidos",
+    "onTimeRate": "Tasa de puntualidad",
+    "averageDelay": "Retraso medio",
+    "totalSpend": "Gasto total"
   },
   "scheduling": {
     "board": "Tablero de tareas",
@@ -1251,7 +1281,11 @@
     "description": "Agrupa la factura final, el estado de la garantía y los documentos del proyecto en un ZIP para la entrega al cliente.",
     "download": "Descargar paquete de cierre",
     "preparing": "Preparando…",
-    "error": "No se pudo generar el paquete de cierre. Inténtalo de nuevo."
+    "error": "No se pudo generar el paquete de cierre. Inténtalo de nuevo.",
+    "reviewDescription": "Pida al cliente una reseña una vez cerrado el proyecto.",
+    "requestReview": "Solicitar reseña",
+    "reviewSent": "Reseña solicitada",
+    "reviewError": "No se pudo enviar la solicitud de reseña"
   },
   "dataPrivacy": {
     "title": "Datos y privacidad",
@@ -1348,5 +1382,26 @@
     "unitPricePlaceholder": "Precio unitario",
     "addQuote": "Añadir cotización",
     "closeRfq": "Cerrar solicitud"
+  },
+  "gallery": {
+    "title": "Galería antes / después",
+    "before": "Antes",
+    "after": "Después"
+  },
+  "timeOff": {
+    "title": "Ausencias",
+    "newRequest": "Nueva solicitud",
+    "selectWorker": "Seleccionar trabajador",
+    "vacation": "Vacaciones",
+    "sick": "Enfermedad",
+    "unpaid": "Sin sueldo",
+    "reason": "Motivo",
+    "type": "Tipo",
+    "dates": "Fechas",
+    "approve": "Aprobar",
+    "deny": "Rechazar",
+    "pending": "Pendiente",
+    "approved": "Aprobada",
+    "denied": "Rechazada"
   }
 }

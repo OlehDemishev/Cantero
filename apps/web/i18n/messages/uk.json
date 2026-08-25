@@ -226,7 +226,19 @@
     "noCustomRoles": "Ще немає користувацьких ролей.",
     "assignedToCount": "· призначено {count}",
     "newCustomRole": "Нова користувацька роль",
-    "customRoleNamePlaceholder": "Назва ролі (напр. Керівник об'єкта)"
+    "customRoleNamePlaceholder": "Назва ролі (напр. Керівник об'єкта)",
+    "reviewRequestUrl": "Посилання на відгук",
+    "reviewRequestUrlHint": "Надсилається клієнтам при запиті відгуку після закриття проєкту.",
+    "manageBilling": "Керувати білінгом",
+    "franchise": "Франшиза",
+    "franchiseHint": "Прив'яжіть цю компанію до батьківської, або згенеруйте код, щоб інша компанія могла прив'язатися до вас.",
+    "branchRevenue": "Дохід",
+    "branchProjects": "Проєкти",
+    "branchMembers": "Учасники",
+    "total": "Разом",
+    "generateLinkCode": "Згенерувати код прив'язки",
+    "linkToParentCode": "Код батьківської компанії",
+    "linkToParent": "Прив'язати до батьківської"
   },
   "projects": {
     "title": "Проєкти",
@@ -274,7 +286,9 @@
     "projectName": "Назва проєкту",
     "pipelineOverview": "Огляд пайплайну",
     "searchPlaceholder": "Пошук за іменем чи email…",
-    "allOwners": "Усі відповідальні"
+    "allOwners": "Усі відповідальні",
+    "referredBy": "Рекомендований",
+    "referrals": "Рекомендації"
   },
   "team": {
     "title": "Команда",
@@ -310,7 +324,16 @@
     "noCertifications": "Немає сертифікатів у картотеці.",
     "certificationNamePlaceholder": "Назва сертифіката (напр. OSHA 30, оператор навантажувача)",
     "addCertification": "Додати сертифікат",
-    "outsideGeofence": "Поза геозоною"
+    "outsideGeofence": "Поза геозоною",
+    "certificationsDashboard": "Огляд сертифікацій",
+    "certExpired": "{count} прострочено",
+    "certExpiringSoon": "{count} скоро закінчується",
+    "certValid": "{count} чинних",
+    "certification": "Сертифікація",
+    "expires": "Закінчується",
+    "certStatus_expired": "Прострочено",
+    "certStatus_expiring_soon": "Скоро закінчується",
+    "certStatus_valid": "Чинна"
   },
   "documents": {
     "title": "Документи",
@@ -336,7 +359,9 @@
     "category_photo": "Фото",
     "category_invoice_scan": "Скан рахунку",
     "category_other": "Інше",
-    "category_insurance_certificate": "Страховий сертифікат"
+    "category_insurance_certificate": "Страховий сертифікат",
+    "category_gallery_before": "Галерея (до)",
+    "category_gallery_after": "Галерея (після)"
   },
   "rateCatalog": {
     "title": "Прайс-лист",
@@ -515,7 +540,8 @@
     "locationPlaceholder": "Приміщення, ділянка…",
     "descriptionPlaceholder": "Додаткові деталі…",
     "submitClaim": "Надіслати звернення",
-    "claimSubmitted": "Звернення надіслано — ми з вами зв'яжемося."
+    "claimSubmitted": "Звернення надіслано — ми з вами зв'яжемося.",
+    "payNow": "Оплатити зараз"
   },
   "equipment": {
     "title": "Техніка",
@@ -663,7 +689,11 @@
   },
   "suppliers": {
     "title": "Постачальники",
-    "newSupplier": "Новий постачальник"
+    "newSupplier": "Новий постачальник",
+    "totalOrders": "Замовлення",
+    "onTimeRate": "Своєчасність",
+    "averageDelay": "Серед. затримка",
+    "totalSpend": "Загальні витрати"
   },
   "scheduling": {
     "board": "Дошка завдань",
@@ -1251,7 +1281,11 @@
     "description": "Об'єднує фінальний рахунок, статус гарантії та документи проєкту в один ZIP-архів для передачі клієнту.",
     "download": "Завантажити пакет закриття",
     "preparing": "Підготовка…",
-    "error": "Не вдалося сформувати пакет закриття. Спробуйте ще раз."
+    "error": "Не вдалося сформувати пакет закриття. Спробуйте ще раз.",
+    "reviewDescription": "Попросіть клієнта залишити відгук після завершення проєкту.",
+    "requestReview": "Запросити відгук",
+    "reviewSent": "Запит на відгук надіслано",
+    "reviewError": "Не вдалося надіслати запит на відгук"
   },
   "dataPrivacy": {
     "title": "Дані та приватність",
@@ -1348,5 +1382,26 @@
     "unitPricePlaceholder": "Ціна за одиницю",
     "addQuote": "Додати пропозицію",
     "closeRfq": "Закрити запит"
+  },
+  "gallery": {
+    "title": "Галерея до / після",
+    "before": "До",
+    "after": "Після"
+  },
+  "timeOff": {
+    "title": "Відпустки",
+    "newRequest": "Нова заявка",
+    "selectWorker": "Оберіть працівника",
+    "vacation": "Відпустка",
+    "sick": "Лікарняний",
+    "unpaid": "Без збереження оплати",
+    "reason": "Причина",
+    "type": "Тип",
+    "dates": "Дати",
+    "approve": "Схвалити",
+    "deny": "Відхилити",
+    "pending": "Очікує",
+    "approved": "Схвалено",
+    "denied": "Відхилено"
   }
 }
