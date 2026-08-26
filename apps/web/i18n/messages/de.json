@@ -549,7 +549,8 @@
     "compare": "Vergleichen",
     "grandTotalDelta": "Änderung der Gesamtsumme",
     "noDifferences": "Keine Unterschiede zwischen diesen Revisionen",
-    "costCodeUnassigned": "Ohne Kostenart"
+    "costCodeUnassigned": "Ohne Kostenart",
+    "benchmarkHint": "Typischer Preis für diese Kostenart über {count} frühere Kalkulation(en): {median} {currency}/Einheit"
   },
   "invoices": {
     "title": "Rechnungen",
@@ -837,7 +838,14 @@
     "criticalPathLegend": "Kritischer Pfad — eine Verzögerung hier verschiebt den Endtermin",
     "comments": "Kommentare",
     "outdoorWork": "Arbeit im Freien",
-    "ganttDragHint": "Ziehen Sie einen Balken, um ihn zu verschieben, oder den rechten Rand, um ihn zu verlängern"
+    "ganttDragHint": "Ziehen Sie einen Balken, um ihn zu verschieben, oder den rechten Rand, um ihn zu verlängern",
+    "lookAhead": "3-Wochen-Vorschau",
+    "lookAheadHint": "Noch nicht abgeschlossene Aufgaben, die in den nächsten drei Wochen beginnen — eine Aufgabe ist erst \"bereit\", wenn alle Aufgaben, von denen sie zum Start abhängt, bereits erledigt sind.",
+    "lookAheadWeek": "Woche {week}",
+    "lookAheadNoTasks": "Nichts geplant.",
+    "lookAheadReady": "Bereit",
+    "lookAheadBlocked": "Blockiert",
+    "lookAheadBlockedBy": "Wartet auf: {names}"
   },
   "purchaseOrders": {
     "title": "Bestellungen",
@@ -983,7 +991,16 @@
     "revenueTrend": "Umsatzentwicklung",
     "downloadTaxSummary": "Steuerübersicht herunterladen",
     "downloadPayrollExport": "Lohnexport herunterladen",
-    "downloadSafetyExport": "Vorfallexport herunterladen"
+    "downloadSafetyExport": "Vorfallexport herunterladen",
+    "wipReport": "WIP-Leistungsstand (Work in Progress)",
+    "wipReportHint": "Umsatzrealisierung nach Fertigstellungsgrad (Cost-to-Cost-Methode) — der Über-/Unterfakturierungsbericht, den Banken oder Bürgschaftsgeber verlangen.",
+    "downloadWipPdf": "PDF herunterladen",
+    "contractValue": "Vertragswert",
+    "costsIncurredToDate": "Kosten bisher",
+    "earnedRevenue": "Realisierter Umsatz",
+    "billedToDate": "Fakturiert bisher",
+    "overUnderBilling": "Über-/(Unter-)Fakturierung",
+    "total": "Gesamt"
   },
   "notifications": {
     "title": "Benachrichtigungen",
@@ -1163,7 +1180,19 @@
     "notes": "Notizen",
     "attendees": "Teilnehmer",
     "noBriefings": "Noch keine Unterweisungen erfasst.",
-    "attendeeCount": "{count} teilgenommen"
+    "attendeeCount": "{count} teilgenommen",
+    "quickNearMiss": "+ Fast-Beinahe-Unfall",
+    "quickNearMissHint": "Ein schneller, unkomplizierter Weg, einen Beinaheunfall zu erfassen — nur was passiert ist und wo. Das Melden von Beinaheunfällen (auch ohne Verletzung) ist entscheidend für ein funktionierendes Sicherheitsprogramm.",
+    "oshaRecordable": "OSHA-meldepflichtig",
+    "oshaCaseType": "Falltyp",
+    "oshaCaseType_injury": "Verletzung",
+    "oshaCaseType_skin_disorder": "Hauterkrankung",
+    "oshaCaseType_respiratory_condition": "Atemwegserkrankung",
+    "oshaCaseType_poisoning": "Vergiftung",
+    "oshaCaseType_hearing_loss": "Hörverlust",
+    "oshaCaseType_all_other_illnesses": "Sonstige Erkrankungen",
+    "daysAwayFromWork": "Ausfalltage",
+    "daysJobTransferOrRestriction": "Tage mit Versetzung/Einschränkung"
   },
   "submittals": {
     "title": "Freigaben (Submittals)",
@@ -1782,5 +1811,13 @@
     "copyLink": "Link kopieren",
     "copied": "Kopiert",
     "referredCount": "{count} Unternehmen haben sich über Ihren Link angemeldet"
+  },
+  "estimateAccuracy": {
+    "title": "Kalkulationsgenauigkeit",
+    "hint": "Wie die geschätzten Arbeitsstunden und Materialmengen jeder Leistungsposition mit den tatsächlich erfassten Werten abgeschlossener Arbeiten übereinstimmen — berechnet aus Ihrer eigenen Projekthistorie, nicht aus einem generischen KI-Modell.",
+    "rateItem": "Leistungsposition",
+    "labor": "Arbeitsstunden",
+    "materials": "Materialkosten",
+    "sampleSize": "{count, plural, one {# Kalkulation} other {# Kalkulationen}}"
   }
 }

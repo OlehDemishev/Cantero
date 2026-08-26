@@ -3,6 +3,16 @@ import { z } from "zod";
 export const INCIDENT_SEVERITIES = ["near_miss", "first_aid", "medical_treatment", "lost_time_injury", "fatality"] as const;
 export type IncidentSeverity = (typeof INCIDENT_SEVERITIES)[number];
 
+export const OSHA_CASE_TYPES = [
+  "injury",
+  "skin_disorder",
+  "respiratory_condition",
+  "poisoning",
+  "hearing_loss",
+  "all_other_illnesses",
+] as const;
+export type OshaCaseType = (typeof OSHA_CASE_TYPES)[number];
+
 export const createIncidentReportSchema = z.object({
   projectId: z.string().uuid(),
   occurredAt: z.string().datetime(),
@@ -11,6 +21,10 @@ export const createIncidentReportSchema = z.object({
   location: z.string().max(160).optional(),
   involvedPersons: z.string().max(1000).optional(),
   correctiveActions: z.string().max(2000).optional(),
+  oshaRecordable: z.boolean().default(false),
+  oshaCaseType: z.enum(OSHA_CASE_TYPES).optional(),
+  daysAwayFromWork: z.number().int().min(0).optional(),
+  daysJobTransferOrRestriction: z.number().int().min(0).optional(),
 });
 export type CreateIncidentReportInput = z.infer<typeof createIncidentReportSchema>;
 

@@ -549,7 +549,8 @@
     "compare": "Comparar",
     "grandTotalDelta": "Cambio en el total general",
     "noDifferences": "No hay diferencias entre estas revisiones",
-    "costCodeUnassigned": "Sin código de costo"
+    "costCodeUnassigned": "Sin código de costo",
+    "benchmarkHint": "Precio habitual para este código de costo en {count} presupuesto(s) anteriores: {median} {currency}/unidad"
   },
   "invoices": {
     "title": "Facturas",
@@ -837,7 +838,14 @@
     "criticalPathLegend": "Ruta crítica — retrasar esto retrasa la finalización",
     "comments": "Comentarios",
     "outdoorWork": "Trabajo al aire libre",
-    "ganttDragHint": "Arrastre una barra para reprogramarla, o su borde derecho para cambiar su duración"
+    "ganttDragHint": "Arrastre una barra para reprogramarla, o su borde derecho para cambiar su duración",
+    "lookAhead": "Anticipo de 3 semanas",
+    "lookAheadHint": "Tareas aún no terminadas que comienzan en las próximas tres semanas — una tarea solo está \"lista\" cuando todas las tareas de las que depende para empezar ya están terminadas.",
+    "lookAheadWeek": "Semana {week}",
+    "lookAheadNoTasks": "Nada programado.",
+    "lookAheadReady": "Lista",
+    "lookAheadBlocked": "Bloqueada",
+    "lookAheadBlockedBy": "Esperando: {names}"
   },
   "purchaseOrders": {
     "title": "Pedidos de compra",
@@ -983,7 +991,16 @@
     "revenueTrend": "Tendencia de ingresos",
     "downloadTaxSummary": "Descargar resumen fiscal",
     "downloadPayrollExport": "Descargar exportación de nómina",
-    "downloadSafetyExport": "Descargar exportación de incidentes"
+    "downloadSafetyExport": "Descargar exportación de incidentes",
+    "wipReport": "Obra en curso (WIP)",
+    "wipReportHint": "Reconocimiento de ingresos por porcentaje de avance (método costo a costo) — el informe de facturación en exceso/defecto que piden bancos o afianzadoras.",
+    "downloadWipPdf": "Descargar PDF",
+    "contractValue": "Valor del contrato",
+    "costsIncurredToDate": "Costos a la fecha",
+    "earnedRevenue": "Ingresos devengados",
+    "billedToDate": "Facturado a la fecha",
+    "overUnderBilling": "Facturación en exceso/(defecto)",
+    "total": "Total"
   },
   "notifications": {
     "title": "Notificaciones",
@@ -1163,7 +1180,19 @@
     "notes": "Notas",
     "attendees": "Asistentes",
     "noBriefings": "Aún no hay charlas registradas.",
-    "attendeeCount": "{count} asistieron"
+    "attendeeCount": "{count} asistieron",
+    "quickNearMiss": "+ Cuasi accidente rápido",
+    "quickNearMissHint": "Una forma rápida y sencilla de registrar un cuasi accidente — solo qué pasó y dónde. Reportar cuasi accidentes (incluso sin lesión) es lo que hace que funcione un programa de seguridad.",
+    "oshaRecordable": "Registrable ante OSHA",
+    "oshaCaseType": "Tipo de caso",
+    "oshaCaseType_injury": "Lesión",
+    "oshaCaseType_skin_disorder": "Trastorno cutáneo",
+    "oshaCaseType_respiratory_condition": "Afección respiratoria",
+    "oshaCaseType_poisoning": "Intoxicación",
+    "oshaCaseType_hearing_loss": "Pérdida auditiva",
+    "oshaCaseType_all_other_illnesses": "Otras enfermedades",
+    "daysAwayFromWork": "Días de ausencia laboral",
+    "daysJobTransferOrRestriction": "Días de traslado/restricción laboral"
   },
   "submittals": {
     "title": "Solicitudes de aprobación",
@@ -1782,5 +1811,13 @@
     "copyLink": "Copiar enlace",
     "copied": "Copiado",
     "referredCount": "{count} empresas se han registrado mediante su enlace"
+  },
+  "estimateAccuracy": {
+    "title": "Precisión del presupuesto",
+    "hint": "Cómo se comparan las horas de mano de obra y las cantidades de material estimadas de cada partida con lo realmente registrado en trabajos terminados — calculado a partir del historial de sus propios proyectos, no de un modelo de IA genérico.",
+    "rateItem": "Partida",
+    "labor": "Horas de mano de obra",
+    "materials": "Costo de materiales",
+    "sampleSize": "{count, plural, one {# presupuesto} other {# presupuestos}}"
   }
 }

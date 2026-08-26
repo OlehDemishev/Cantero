@@ -4,6 +4,8 @@ import { computeCriticalPath, type DependencyForCpm, type TaskForCpm } from "../
 import { advanceDate, calculateRecurringInvoice } from "../finance/recurring-invoice-schedule";
 import { calculateEac } from "./estimate-at-completion";
 import { toCsv } from "../common/csv";
+import { PdfService } from "../common/pdf/pdf.service";
+import { StorageService } from "../common/storage/storage.service";
 
 const CASH_FLOW_WEEKS = 13;
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -11,7 +13,11 @@ const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 /** Company-wide overview spanning every module — the "everything in one place" story for the dashboard. */
 @Injectable()
 export class ReportsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly pdf: PdfService,
+    private readonly storage: StorageService,
+  ) {}
 
   async overview(companyId: string) {
     const [
@@ -200,6 +206,133 @@ export class ReportsService {
         percentComplete,
         ...eac,
       };
+    });
+  }
+
+  /**
+   * Standard construction WIP (work-in-progress) schedule — the percentage-of-completion revenue
+   * recognition report a bank or bonding company asks for. Percent complete uses the cost-to-cost
+   * method (costs incurred / total estimated cost) rather than the billing-based percentComplete
+   * used elsewhere in this file, since that's the GAAP-standard basis for this specific report;
+   * "total estimated cost" is the larger of the original budget and the EAC, so a project running
+   * over budget doesn't show over 100% complete. Only projects with an approved estimate (i.e. an
+   * actual contract value) are included — nothing to recognize revenue against otherwise.
+   */
+  async wipReport(companyId: string) {
+    const projects = await this.prisma.project.findMany({
+      where: { companyId, estimates: { some: { status: "approved" } } },
+      include: {
+        estimates: { where: { status: "approved" } },
+        invoices: true,
+        stockMovements: { where: { type: { in: ["issue", "write_off"] } }, include: { materialCatalogItem: true } },
+        timeEntries: { include: { worker: true } },
+        subcontractorCosts: true,
+      },
+      orderBy: { name: "asc" },
+    });
+
+    const rows = projects.map((project) => {
+      const contractValue = project.estimates.reduce((sum, e) => sum + Number(e.grandTotal), 0);
+      const originalBudgetedCost = project.estimates.reduce(
+        (sum, e) => sum + Number(e.materialsCostTotal) + Number(e.laborCostTotal),
+        0,
+      );
+
+      const materialsCostActual = project.stockMovements.reduce(
+        (sum, m) => sum + Number(m.quantity) * Number(m.materialCatalogItem.defaultUnitPrice),
+        0,
+      );
+      const laborCostActual = project.timeEntries.reduce((sum, entry) => {
+        const rate =
+          entry.hourlyCostSnapshot !== null
+            ? Number(entry.hourlyCostSnapshot)
+            : entry.worker.hourlyCost !== null
+              ? Number(entry.worker.hourlyCost)
+              : 0;
+        return sum + Number(entry.hours) * rate;
+      }, 0);
+      const subcontractorCostActual = project.subcontractorCosts.reduce((sum, c) => sum + Number(c.amount), 0);
+      const costsIncurredToDate = materialsCostActual + laborCostActual + subcontractorCostActual;
+
+      const billingPercentComplete = project.invoices.reduce(
+        (max, inv) => (inv.percentComplete !== null ? Math.max(max, Number(inv.percentComplete)) : max),
+        0,
+      );
+      const eac = calculateEac({
+        contractValue,
+        budgetedCost: originalBudgetedCost,
+        actualCost: costsIncurredToDate,
+        percentComplete: billingPercentComplete,
+      });
+      const totalEstimatedCost = Math.max(originalBudgetedCost, eac.estimateAtCompletion);
+
+      const percentComplete = totalEstimatedCost > 0 ? round2((costsIncurredToDate / totalEstimatedCost) * 100) : 0;
+      const earnedRevenue = round2(contractValue * (percentComplete / 100));
+      const billedToDate = round2(project.invoices.reduce((sum, i) => sum + Number(i.total), 0));
+      const overUnderBilling = round2(billedToDate - earnedRevenue);
+
+      return {
+        projectId: project.id,
+        projectName: project.name,
+        contractValue: round2(contractValue),
+        totalEstimatedCost: round2(totalEstimatedCost),
+        costsIncurredToDate: round2(costsIncurredToDate),
+        percentComplete,
+        earnedRevenue,
+        billedToDate,
+        overUnderBilling,
+        status: overUnderBilling > 0.01 ? ("overbilled" as const) : overUnderBilling < -0.01 ? ("underbilled" as const) : ("even" as const),
+      };
+    });
+
+    const totals = rows.reduce(
+      (sum, r) => ({
+        contractValue: sum.contractValue + r.contractValue,
+        costsIncurredToDate: sum.costsIncurredToDate + r.costsIncurredToDate,
+        earnedRevenue: sum.earnedRevenue + r.earnedRevenue,
+        billedToDate: sum.billedToDate + r.billedToDate,
+        overUnderBilling: sum.overUnderBilling + r.overUnderBilling,
+      }),
+      { contractValue: 0, costsIncurredToDate: 0, earnedRevenue: 0, billedToDate: 0, overUnderBilling: 0 },
+    );
+
+    return { rows, totals: { ...totals, contractValue: round2(totals.contractValue), costsIncurredToDate: round2(totals.costsIncurredToDate), earnedRevenue: round2(totals.earnedRevenue), billedToDate: round2(totals.billedToDate), overUnderBilling: round2(totals.overUnderBilling) } };
+  }
+
+  /** Same figures as wipReport(), laid out as the printable schedule a bank or bonding company asks for. */
+  async wipReportPdf(companyId: string): Promise<Buffer> {
+    const [company, { rows, totals }] = await Promise.all([
+      this.prisma.company.findUniqueOrThrow({ where: { id: companyId } }),
+      this.wipReport(companyId),
+    ]);
+    const logoBuffer = company.logoStorageKey ? await this.storage.read(company.logoStorageKey).catch(() => undefined) : undefined;
+    const currency = company.currency;
+
+    return this.pdf.render({
+      title: "Work-in-Progress Schedule",
+      subtitle: `${company.name} — as of ${new Date().toISOString().slice(0, 10)}`,
+      meta: [{ label: "Currency", value: currency }],
+      tableHeader: ["Project", "Contract", "Est. Cost", "Cost to Date", "% Complete", "Earned", "Billed", "Over/(Under)"],
+      tableRows: rows.map((r) => ({
+        cells: [
+          r.projectName,
+          r.contractValue.toFixed(2),
+          r.totalEstimatedCost.toFixed(2),
+          r.costsIncurredToDate.toFixed(2),
+          `${r.percentComplete.toFixed(1)}%`,
+          r.earnedRevenue.toFixed(2),
+          r.billedToDate.toFixed(2),
+          r.overUnderBilling.toFixed(2),
+        ],
+      })),
+      totals: [
+        { label: "Total contract value", value: totals.contractValue.toFixed(2) },
+        { label: "Total costs incurred to date", value: totals.costsIncurredToDate.toFixed(2) },
+        { label: "Total earned revenue", value: totals.earnedRevenue.toFixed(2) },
+        { label: "Total billed to date", value: totals.billedToDate.toFixed(2) },
+        { label: "Net over/(under) billing", value: totals.overUnderBilling.toFixed(2), emphasize: true },
+      ],
+      branding: { logoBuffer, accentColor: company.brandColor ?? undefined },
     });
   }
 

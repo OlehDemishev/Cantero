@@ -549,7 +549,8 @@
     "compare": "Porównaj",
     "grandTotalDelta": "Zmiana sumy całkowitej",
     "noDifferences": "Brak różnic między tymi wersjami",
-    "costCodeUnassigned": "Bez kodu kosztowego"
+    "costCodeUnassigned": "Bez kodu kosztowego",
+    "benchmarkHint": "Typowa cena dla tego kodu kosztowego w {count} poprzednich kosztorysach: {median} {currency}/jednostkę"
   },
   "invoices": {
     "title": "Faktury",
@@ -837,7 +838,14 @@
     "criticalPathLegend": "Ścieżka krytyczna — opóźnienie tutaj opóźnia zakończenie",
     "comments": "Komentarze",
     "outdoorWork": "Praca na zewnątrz",
-    "ganttDragHint": "Przeciągnij pasek, aby zmienić termin, lub jego prawą krawędź, aby zmienić czas trwania"
+    "ganttDragHint": "Przeciągnij pasek, aby zmienić termin, lub jego prawą krawędź, aby zmienić czas trwania",
+    "lookAhead": "Podgląd 3-tygodniowy",
+    "lookAheadHint": "Jeszcze niezakończone zadania rozpoczynające się w ciągu najbliższych trzech tygodni — zadanie jest \"gotowe\" dopiero, gdy wszystkie zadania, od których zależy jego rozpoczęcie, są już zakończone.",
+    "lookAheadWeek": "Tydzień {week}",
+    "lookAheadNoTasks": "Nic nie zaplanowano.",
+    "lookAheadReady": "Gotowe",
+    "lookAheadBlocked": "Zablokowane",
+    "lookAheadBlockedBy": "Oczekuje na: {names}"
   },
   "purchaseOrders": {
     "title": "Zamówienia zakupu",
@@ -983,7 +991,16 @@
     "revenueTrend": "Trend przychodów",
     "downloadTaxSummary": "Pobierz podsumowanie podatkowe",
     "downloadPayrollExport": "Pobierz eksport listy płac",
-    "downloadSafetyExport": "Pobierz eksport zdarzeń"
+    "downloadSafetyExport": "Pobierz eksport zdarzeń",
+    "wipReport": "Zaawansowanie robót (WIP)",
+    "wipReportHint": "Rozpoznawanie przychodu metodą procentu zaawansowania (koszt do kosztu) — raport nad-/niedofakturowania wymagany przez banki lub gwarantów.",
+    "downloadWipPdf": "Pobierz PDF",
+    "contractValue": "Wartość kontraktu",
+    "costsIncurredToDate": "Koszty dotychczasowe",
+    "earnedRevenue": "Przychód zarobiony",
+    "billedToDate": "Zafakturowano dotychczas",
+    "overUnderBilling": "Nad-/(niedo-)fakturowanie",
+    "total": "Razem"
   },
   "notifications": {
     "title": "Powiadomienia",
@@ -1163,7 +1180,19 @@
     "notes": "Notatki",
     "attendees": "Uczestnicy",
     "noBriefings": "Brak odbytych odpraw.",
-    "attendeeCount": "Uczestniczyło: {count}"
+    "attendeeCount": "Uczestniczyło: {count}",
+    "quickNearMiss": "+ Szybkie zdarzenie potencjalnie wypadkowe",
+    "quickNearMissHint": "Szybki, prosty sposób na zgłoszenie sytuacji niebezpiecznej — tylko co się stało i gdzie. Zgłaszanie sytuacji potencjalnie wypadkowych (nawet bez urazu) jest podstawą skutecznego programu bezpieczeństwa.",
+    "oshaRecordable": "Podlega rejestracji OSHA",
+    "oshaCaseType": "Typ przypadku",
+    "oshaCaseType_injury": "Uraz",
+    "oshaCaseType_skin_disorder": "Choroba skóry",
+    "oshaCaseType_respiratory_condition": "Choroba układu oddechowego",
+    "oshaCaseType_poisoning": "Zatrucie",
+    "oshaCaseType_hearing_loss": "Utrata słuchu",
+    "oshaCaseType_all_other_illnesses": "Inne choroby",
+    "daysAwayFromWork": "Dni nieobecności w pracy",
+    "daysJobTransferOrRestriction": "Dni przeniesienia/ograniczenia pracy"
   },
   "submittals": {
     "title": "Zatwierdzenia materiałowe",
@@ -1782,5 +1811,13 @@
     "copyLink": "Kopiuj link",
     "copied": "Skopiowano",
     "referredCount": "{count} firm zarejestrowało się przez Twój link"
+  },
+  "estimateAccuracy": {
+    "title": "Dokładność kosztorysu",
+    "hint": "Jak szacowane godziny pracy i ilości materiałów dla każdej pozycji katalogowej mają się do rzeczywiście zarejestrowanych danych z zakończonych prac — obliczane na podstawie historii własnych projektów, a nie ogólnego modelu AI.",
+    "rateItem": "Pozycja katalogowa",
+    "labor": "Godziny pracy",
+    "materials": "Koszt materiałów",
+    "sampleSize": "{count, plural, one {# kosztorys} few {# kosztorysy} many {# kosztorysów} other {# kosztorysu}}"
   }
 }

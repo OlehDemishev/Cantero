@@ -1,6 +1,13 @@
 import { Test } from "@nestjs/testing";
 import { ReportsService } from "./reports.service";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { PdfService } from "../common/pdf/pdf.service";
+import { StorageService } from "../common/storage/storage.service";
+
+const PDF_PROVIDERS = [
+  { provide: PdfService, useValue: { render: jest.fn() } },
+  { provide: StorageService, useValue: { read: jest.fn() } },
+];
 
 const COMPANY_A = "company-a";
 
@@ -30,7 +37,7 @@ describe("ReportsService.portfolio", () => {
     prisma = { project: { findMany: jest.fn() }, taskDependency: { findMany: jest.fn().mockResolvedValue([]) } };
 
     const module = await Test.createTestingModule({
-      providers: [ReportsService, { provide: PrismaService, useValue: prisma }],
+      providers: [ReportsService, { provide: PrismaService, useValue: prisma }, ...PDF_PROVIDERS],
     }).compile();
 
     service = module.get(ReportsService);
@@ -151,7 +158,7 @@ describe("ReportsService.cashFlowForecast", () => {
     };
 
     const module = await Test.createTestingModule({
-      providers: [ReportsService, { provide: PrismaService, useValue: prisma }],
+      providers: [ReportsService, { provide: PrismaService, useValue: prisma }, ...PDF_PROVIDERS],
     }).compile();
 
     service = module.get(ReportsService);
@@ -281,7 +288,7 @@ describe("ReportsService.revenueTrend", () => {
     prisma = { payment: { findMany: jest.fn().mockResolvedValue([]) } };
 
     const module = await Test.createTestingModule({
-      providers: [ReportsService, { provide: PrismaService, useValue: prisma }],
+      providers: [ReportsService, { provide: PrismaService, useValue: prisma }, ...PDF_PROVIDERS],
     }).compile();
 
     service = module.get(ReportsService);
@@ -326,7 +333,7 @@ describe("ReportsService.periodComparison", () => {
     prisma = { payment: { findMany: jest.fn().mockResolvedValue([]) } };
 
     const module = await Test.createTestingModule({
-      providers: [ReportsService, { provide: PrismaService, useValue: prisma }],
+      providers: [ReportsService, { provide: PrismaService, useValue: prisma }, ...PDF_PROVIDERS],
     }).compile();
 
     service = module.get(ReportsService);
@@ -357,5 +364,99 @@ describe("ReportsService.periodComparison", () => {
     const result = await service.periodComparison(COMPANY_A, 1);
 
     expect(result.changePercent).toBeNull();
+  });
+});
+
+describe("ReportsService.wipReport", () => {
+  let service: ReportsService;
+  let prisma: { project: { findMany: jest.Mock } };
+
+  beforeEach(async () => {
+    prisma = { project: { findMany: jest.fn() } };
+
+    const module = await Test.createTestingModule({
+      providers: [ReportsService, { provide: PrismaService, useValue: prisma }, ...PDF_PROVIDERS],
+    }).compile();
+
+    service = module.get(ReportsService);
+  });
+
+  it("flags a project as overbilled when billed-to-date exceeds earned revenue", async () => {
+    prisma.project.findMany.mockResolvedValue([
+      {
+        id: "p1",
+        name: "Overbilled Project",
+        estimates: [{ grandTotal: "10000", materialsCostTotal: "3000", laborCostTotal: "2000" }],
+        // 25% of the 5000 budgeted cost incurred so far → 25% complete → earned = 2500.
+        stockMovements: [{ quantity: "1", materialCatalogItem: { defaultUnitPrice: "1250" } }],
+        timeEntries: [],
+        subcontractorCosts: [],
+        // Billed 4000, well above the 2500 earned.
+        invoices: [{ total: "4000", percentComplete: null }],
+      },
+    ]);
+
+    const result = await service.wipReport(COMPANY_A);
+
+    expect(result.rows[0].status).toBe("overbilled");
+    expect(result.rows[0].billedToDate).toBe(4000);
+    expect(result.rows[0].overUnderBilling).toBeGreaterThan(0);
+  });
+
+  it("flags a project as underbilled when billed-to-date is behind earned revenue", async () => {
+    prisma.project.findMany.mockResolvedValue([
+      {
+        id: "p1",
+        name: "Underbilled Project",
+        estimates: [{ grandTotal: "10000", materialsCostTotal: "3000", laborCostTotal: "2000" }],
+        stockMovements: [{ quantity: "1", materialCatalogItem: { defaultUnitPrice: "2500" } }], // 50% of budget incurred
+        timeEntries: [],
+        subcontractorCosts: [],
+        invoices: [{ total: "1000", percentComplete: null }], // billed far less than earned
+      },
+    ]);
+
+    const result = await service.wipReport(COMPANY_A);
+
+    expect(result.rows[0].status).toBe("underbilled");
+    expect(result.rows[0].overUnderBilling).toBeLessThan(0);
+  });
+
+  it("sums per-project figures into company-wide totals", async () => {
+    prisma.project.findMany.mockResolvedValue([
+      {
+        id: "p1",
+        name: "Project One",
+        estimates: [{ grandTotal: "10000", materialsCostTotal: "5000", laborCostTotal: "0" }],
+        stockMovements: [],
+        timeEntries: [],
+        subcontractorCosts: [],
+        invoices: [{ total: "1000", percentComplete: null }],
+      },
+      {
+        id: "p2",
+        name: "Project Two",
+        estimates: [{ grandTotal: "20000", materialsCostTotal: "8000", laborCostTotal: "0" }],
+        stockMovements: [],
+        timeEntries: [],
+        subcontractorCosts: [],
+        invoices: [{ total: "2000", percentComplete: null }],
+      },
+    ]);
+
+    const result = await service.wipReport(COMPANY_A);
+
+    expect(result.totals.contractValue).toBe(30000);
+    expect(result.totals.billedToDate).toBe(3000);
+  });
+
+  it("only includes projects with at least one approved estimate", async () => {
+    prisma.project.findMany.mockResolvedValue([]);
+
+    await service.wipReport(COMPANY_A);
+
+    expect(prisma.project.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { companyId: COMPANY_A, estimates: { some: { status: "approved" } } } }),
+    );
   });
 });

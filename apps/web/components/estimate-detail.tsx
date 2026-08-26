@@ -26,6 +26,13 @@ interface EstimateLine {
   laborCost: string;
   lineTotal: string;
 }
+interface LineBenchmark {
+  estimateLineId: string;
+  benchmarkMedian: number;
+  benchmarkSampleSize: number;
+  deviationPercent: number;
+}
+const BENCHMARK_FLAG_THRESHOLD = 15;
 interface Requirement {
   id: string;
   quantity: string;
@@ -219,6 +226,8 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
   const [coverLetterDraft, setCoverLetterDraft] = useState("");
   const [savingCoverLetter, setSavingCoverLetter] = useState(false);
 
+  const [benchmarks, setBenchmarks] = useState<Record<string, LineBenchmark>>({});
+
   function load() {
     apiFetch<Estimate>(`/estimates/${estimateId}`).then((e) => {
       setEstimate(e);
@@ -268,11 +277,18 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
     downloadBlob(blob, `CO-${co.number}-${co.title}.pdf`);
   }
 
+  function loadBenchmarks() {
+    apiFetch<LineBenchmark[]>(`/estimate-accuracy/cost-benchmarks/${estimateId}`).then((list) =>
+      setBenchmarks(Object.fromEntries(list.map((b) => [b.estimateLineId, b]))),
+    );
+  }
+
   useEffect(() => {
     load();
     loadRevisions();
     loadVariants();
     loadChangeOrders();
+    loadBenchmarks();
     apiFetch<RateCatalogItem[]>("/estimates/rate-catalog").then((items) => {
       setRateItems(items);
       if (items[0]) setNewLine((l) => ({ ...l, rateCatalogItemId: items[0].id }));
@@ -301,6 +317,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
         }),
       });
       load();
+      loadBenchmarks();
     } finally {
       setBusy(false);
     }
@@ -592,7 +609,28 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
                     {line.laborCost} {currency}
                   </td>
                   <td className="font-medium">
-                    {line.lineTotal} {currency}
+                    <div className="flex items-center gap-2">
+                      <span>
+                        {line.lineTotal} {currency}
+                      </span>
+                      {benchmarks[line.id] && Math.abs(benchmarks[line.id].deviationPercent) >= BENCHMARK_FLAG_THRESHOLD && (
+                        <span
+                          title={t("benchmarkHint", {
+                            median: benchmarks[line.id].benchmarkMedian,
+                            currency,
+                            count: benchmarks[line.id].benchmarkSampleSize,
+                          })}
+                          className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+                            benchmarks[line.id].deviationPercent > 0
+                              ? "bg-warning-50 text-warning-700"
+                              : "bg-success-50 text-success-700"
+                          }`}
+                        >
+                          {benchmarks[line.id].deviationPercent > 0 ? "+" : ""}
+                          {benchmarks[line.id].deviationPercent}%
+                        </span>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

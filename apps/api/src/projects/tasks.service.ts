@@ -8,6 +8,13 @@ const INCLUDE_DEPENDENCIES = {
   predecessorLinks: { include: { predecessor: { select: { id: true, name: true } } } },
 } as const;
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+const LOOK_AHEAD_WEEKS = 3;
+
+const LOOK_AHEAD_INCLUDE = {
+  predecessorLinks: { include: { predecessor: { select: { id: true, name: true, status: true } } } },
+} as const;
+
 @Injectable()
 export class TasksService {
   constructor(private readonly prisma: PrismaService) {}
@@ -90,6 +97,47 @@ export class TasksService {
       lagDays: d.lagDays,
     }));
     return computeCriticalPath(forCpm, depsForCpm);
+  }
+
+  /**
+   * The weekly foreman/subcontractor coordination list — not-yet-done tasks starting within the
+   * next `weeks` weeks, grouped by week, each flagged "ready" only if every finish-to-start
+   * predecessor is already done. That readiness flag is the actual point of a look-ahead
+   * schedule over a plain date-filtered Gantt view: catching a task whose site constraints
+   * (a predecessor not finished) haven't cleared yet, before the crew shows up to find out.
+   * An overdue-but-not-done task collapses into week 0 ("due now") rather than being dropped,
+   * same convention as the cash-flow forecast's bucketing.
+   */
+  async getLookAhead(companyId: string, projectId: string, weeks = LOOK_AHEAD_WEEKS) {
+    await this.assertProject(companyId, projectId);
+    const now = new Date();
+    const windowStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const windowEnd = new Date(windowStart.getTime() + weeks * 7 * DAY_MS);
+
+    const tasks = await this.prisma.task.findMany({
+      where: { projectId, status: { not: "done" }, startDate: { not: null, lt: windowEnd } },
+      include: LOOK_AHEAD_INCLUDE,
+      orderBy: [{ startDate: "asc" }],
+    });
+
+    return tasks.map((task) => {
+      // Only finish_to_start blocks readiness — a start_to_start/finish_to_finish/start_to_finish
+      // predecessor constrains timing (already reflected in the Gantt/CPM view), not "can the crew
+      // start at all", which is what this flag is actually answering.
+      const blockedBy = task.predecessorLinks.filter((link) => link.type === "finish_to_start" && link.predecessor.status !== "done");
+      const weekIndex = Math.max(0, Math.min(weeks - 1, Math.floor((task.startDate!.getTime() - windowStart.getTime()) / (7 * DAY_MS))));
+      return {
+        id: task.id,
+        name: task.name,
+        status: task.status,
+        startDate: task.startDate,
+        dueDate: task.dueDate,
+        isOutdoorWork: task.isOutdoorWork,
+        weekIndex,
+        ready: blockedBy.length === 0,
+        blockedByTaskNames: blockedBy.map((link) => link.predecessor.name),
+      };
+    });
   }
 
   async addDependency(companyId: string, successorId: string, input: CreateTaskDependencyInput) {

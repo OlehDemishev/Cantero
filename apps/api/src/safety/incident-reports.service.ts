@@ -37,6 +37,10 @@ export class IncidentReportsService {
         location: input.location,
         involvedPersons: input.involvedPersons,
         correctiveActions: input.correctiveActions,
+        oshaRecordable: input.oshaRecordable,
+        oshaCaseType: input.oshaCaseType,
+        daysAwayFromWork: input.daysAwayFromWork,
+        daysJobTransferOrRestriction: input.daysJobTransferOrRestriction,
         reportedByUserId: actor.userId,
         reportedByName: actor.name,
       },
@@ -64,6 +68,10 @@ export class IncidentReportsService {
         location: input.location,
         involvedPersons: input.involvedPersons,
         correctiveActions: input.correctiveActions,
+        oshaRecordable: input.oshaRecordable,
+        oshaCaseType: input.oshaCaseType,
+        daysAwayFromWork: input.daysAwayFromWork,
+        daysJobTransferOrRestriction: input.daysJobTransferOrRestriction,
       },
     });
   }
@@ -79,7 +87,21 @@ export class IncidentReportsService {
     });
 
     return toCsv(
-      ["Case No.", "Date", "Project", "Location", "Classification", "Description", "Involved Persons", "Corrective Actions", "Reported By"],
+      [
+        "Case No.",
+        "Date",
+        "Project",
+        "Location",
+        "Classification",
+        "Description",
+        "Involved Persons",
+        "Corrective Actions",
+        "OSHA Recordable",
+        "OSHA Case Type",
+        "Days Away From Work",
+        "Days Job Transfer/Restriction",
+        "Reported By",
+      ],
       reports.map((r, i) => [
         String(i + 1),
         r.occurredAt.toISOString().slice(0, 10),
@@ -89,6 +111,10 @@ export class IncidentReportsService {
         r.description,
         r.involvedPersons ?? "",
         r.correctiveActions ?? "",
+        r.oshaRecordable ? "Yes" : "No",
+        r.oshaCaseType?.replace(/_/g, " ") ?? "",
+        r.daysAwayFromWork?.toString() ?? "",
+        r.daysJobTransferOrRestriction?.toString() ?? "",
         r.reportedByName,
       ]),
     );

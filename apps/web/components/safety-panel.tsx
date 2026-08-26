@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { INCIDENT_SEVERITIES, type IncidentSeverity } from "@cantero/shared";
+import { INCIDENT_SEVERITIES, OSHA_CASE_TYPES, type IncidentSeverity, type OshaCaseType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { PhotoAttachments } from "@/components/photo-attachments";
 import { TemplatePicker } from "@/components/template-picker";
@@ -19,6 +19,10 @@ interface IncidentReport {
   location: string | null;
   involvedPersons: string | null;
   correctiveActions: string | null;
+  oshaRecordable: boolean;
+  oshaCaseType: OshaCaseType | null;
+  daysAwayFromWork: number | null;
+  daysJobTransferOrRestriction: number | null;
   reportedByName: string;
 }
 interface SafetyBriefing {
@@ -45,6 +49,10 @@ const EMPTY_INCIDENT_FORM = {
   location: "",
   involvedPersons: "",
   correctiveActions: "",
+  oshaRecordable: false,
+  oshaCaseType: "injury" as OshaCaseType,
+  daysAwayFromWork: "",
+  daysJobTransferOrRestriction: "",
 };
 const EMPTY_BRIEFING_FORM = { date: new Date().toISOString().slice(0, 10), topic: "", notes: "", attendeeWorkerIds: [] as string[] };
 
@@ -56,6 +64,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
   const [briefings, setBriefings] = useState<SafetyBriefing[] | null>(null);
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [creatingIncident, setCreatingIncident] = useState(false);
+  const [quickNearMiss, setQuickNearMiss] = useState(false);
   const [creatingBriefing, setCreatingBriefing] = useState(false);
   const [incidentForm, setIncidentForm] = useState(EMPTY_INCIDENT_FORM);
   const [briefingForm, setBriefingForm] = useState(EMPTY_BRIEFING_FORM);
@@ -84,12 +93,23 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
           severity: incidentForm.severity,
           description: incidentForm.description,
           location: incidentForm.location || undefined,
-          involvedPersons: incidentForm.involvedPersons || undefined,
-          correctiveActions: incidentForm.correctiveActions || undefined,
+          involvedPersons: quickNearMiss ? undefined : incidentForm.involvedPersons || undefined,
+          correctiveActions: quickNearMiss ? undefined : incidentForm.correctiveActions || undefined,
+          oshaRecordable: quickNearMiss ? false : incidentForm.oshaRecordable,
+          oshaCaseType: !quickNearMiss && incidentForm.oshaRecordable ? incidentForm.oshaCaseType : undefined,
+          daysAwayFromWork:
+            !quickNearMiss && incidentForm.oshaRecordable && incidentForm.daysAwayFromWork
+              ? Number(incidentForm.daysAwayFromWork)
+              : undefined,
+          daysJobTransferOrRestriction:
+            !quickNearMiss && incidentForm.oshaRecordable && incidentForm.daysJobTransferOrRestriction
+              ? Number(incidentForm.daysJobTransferOrRestriction)
+              : undefined,
         }),
       });
       setIncidentForm(EMPTY_INCIDENT_FORM);
       setCreatingIncident(false);
+      setQuickNearMiss(false);
       load();
     } finally {
       setBusy(false);
@@ -134,14 +154,27 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
       <div className="mb-2 flex items-center justify-between">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">{t("incidents")}</h3>
         {!creatingIncident && (
-          <button onClick={() => setCreatingIncident(true)} className="btn-secondary px-3 py-1 text-xs">
-            {t("newIncident")}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                setIncidentForm((f) => ({ ...f, severity: "near_miss" }));
+                setQuickNearMiss(true);
+                setCreatingIncident(true);
+              }}
+              className="btn-secondary px-3 py-1 text-xs"
+            >
+              {t("quickNearMiss")}
+            </button>
+            <button onClick={() => setCreatingIncident(true)} className="btn-secondary px-3 py-1 text-xs">
+              {t("newIncident")}
+            </button>
+          </div>
         )}
       </div>
 
       {creatingIncident && (
         <form onSubmit={submitIncident} className="card mb-4 flex flex-col gap-3">
+          {quickNearMiss && <p className="text-xs text-gray-500">{t("quickNearMissHint")}</p>}
           <div className="flex flex-wrap gap-3">
             <label className="flex flex-col gap-1.5 text-sm">
               <span className="font-medium text-gray-700">{t("occurredAt")}</span>
@@ -153,20 +186,22 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
                 onChange={(e) => setIncidentForm((f) => ({ ...f, occurredAt: e.target.value }))}
               />
             </label>
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("severity")}</span>
-              <select
-                className="input"
-                value={incidentForm.severity}
-                onChange={(e) => setIncidentForm((f) => ({ ...f, severity: e.target.value as IncidentSeverity }))}
-              >
-                {INCIDENT_SEVERITIES.map((s) => (
-                  <option key={s} value={s}>
-                    {t(`severity_${s}`)}
-                  </option>
-                ))}
-              </select>
-            </label>
+            {!quickNearMiss && (
+              <label className="flex flex-col gap-1.5 text-sm">
+                <span className="font-medium text-gray-700">{t("severity")}</span>
+                <select
+                  className="input"
+                  value={incidentForm.severity}
+                  onChange={(e) => setIncidentForm((f) => ({ ...f, severity: e.target.value as IncidentSeverity }))}
+                >
+                  {INCIDENT_SEVERITIES.map((s) => (
+                    <option key={s} value={s}>
+                      {t(`severity_${s}`)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <label className="flex flex-col gap-1.5 text-sm">
               <span className="font-medium text-gray-700">{t("location")}</span>
               <input
@@ -186,29 +221,87 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
               onChange={(e) => setIncidentForm((f) => ({ ...f, description: e.target.value }))}
             />
           </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("involvedPersons")}</span>
-            <input
-              className="input"
-              placeholder={t("involvedPersonsPlaceholder")}
-              value={incidentForm.involvedPersons}
-              onChange={(e) => setIncidentForm((f) => ({ ...f, involvedPersons: e.target.value }))}
-            />
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("correctiveActions")}</span>
-            <textarea
-              rows={2}
-              className="input"
-              value={incidentForm.correctiveActions}
-              onChange={(e) => setIncidentForm((f) => ({ ...f, correctiveActions: e.target.value }))}
-            />
-          </label>
+          {!quickNearMiss && (
+            <>
+              <label className="flex flex-col gap-1.5 text-sm">
+                <span className="font-medium text-gray-700">{t("involvedPersons")}</span>
+                <input
+                  className="input"
+                  placeholder={t("involvedPersonsPlaceholder")}
+                  value={incidentForm.involvedPersons}
+                  onChange={(e) => setIncidentForm((f) => ({ ...f, involvedPersons: e.target.value }))}
+                />
+              </label>
+              <label className="flex flex-col gap-1.5 text-sm">
+                <span className="font-medium text-gray-700">{t("correctiveActions")}</span>
+                <textarea
+                  rows={2}
+                  className="input"
+                  value={incidentForm.correctiveActions}
+                  onChange={(e) => setIncidentForm((f) => ({ ...f, correctiveActions: e.target.value }))}
+                />
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={incidentForm.oshaRecordable}
+                  onChange={(e) => setIncidentForm((f) => ({ ...f, oshaRecordable: e.target.checked }))}
+                />
+                <span className="font-medium text-gray-700">{t("oshaRecordable")}</span>
+              </label>
+              {incidentForm.oshaRecordable && (
+                <div className="flex flex-wrap gap-3 rounded-lg border border-gray-100 p-3">
+                  <label className="flex flex-col gap-1.5 text-sm">
+                    <span className="font-medium text-gray-700">{t("oshaCaseType")}</span>
+                    <select
+                      className="input"
+                      value={incidentForm.oshaCaseType}
+                      onChange={(e) => setIncidentForm((f) => ({ ...f, oshaCaseType: e.target.value as OshaCaseType }))}
+                    >
+                      {OSHA_CASE_TYPES.map((c) => (
+                        <option key={c} value={c}>
+                          {t(`oshaCaseType_${c}`)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="flex flex-col gap-1.5 text-sm">
+                    <span className="font-medium text-gray-700">{t("daysAwayFromWork")}</span>
+                    <input
+                      type="number"
+                      min="0"
+                      className="input w-28"
+                      value={incidentForm.daysAwayFromWork}
+                      onChange={(e) => setIncidentForm((f) => ({ ...f, daysAwayFromWork: e.target.value }))}
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1.5 text-sm">
+                    <span className="font-medium text-gray-700">{t("daysJobTransferOrRestriction")}</span>
+                    <input
+                      type="number"
+                      min="0"
+                      className="input w-28"
+                      value={incidentForm.daysJobTransferOrRestriction}
+                      onChange={(e) => setIncidentForm((f) => ({ ...f, daysJobTransferOrRestriction: e.target.value }))}
+                    />
+                  </label>
+                </div>
+              )}
+            </>
+          )}
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className="btn-primary">
               {tc("save")}
             </button>
-            <button type="button" onClick={() => setCreatingIncident(false)} className="btn-secondary">
+            <button
+              type="button"
+              onClick={() => {
+                setCreatingIncident(false);
+                setQuickNearMiss(false);
+                setIncidentForm(EMPTY_INCIDENT_FORM);
+              }}
+              className="btn-secondary"
+            >
               {tc("cancel")}
             </button>
           </div>
@@ -229,8 +322,22 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
                 </span>
                 <span className="text-xs text-gray-500">{new Date(item.occurredAt).toLocaleDateString()}</span>
                 {item.location && <span className="text-xs text-gray-500">· {item.location}</span>}
+                {item.oshaRecordable && (
+                  <span className="rounded-full bg-error-50 px-2 py-0.5 text-xs font-medium text-error-700">
+                    {t("oshaRecordable")}
+                  </span>
+                )}
               </div>
               <p className="mt-1.5 text-sm text-gray-900">{item.description}</p>
+              {item.oshaRecordable && (item.oshaCaseType || item.daysAwayFromWork || item.daysJobTransferOrRestriction) && (
+                <p className="mt-1 text-xs text-gray-500">
+                  {item.oshaCaseType && t(`oshaCaseType_${item.oshaCaseType}`)}
+                  {item.daysAwayFromWork ? ` · ${t("daysAwayFromWork")}: ${item.daysAwayFromWork}` : ""}
+                  {item.daysJobTransferOrRestriction
+                    ? ` · ${t("daysJobTransferOrRestriction")}: ${item.daysJobTransferOrRestriction}`
+                    : ""}
+                </p>
+              )}
               {item.involvedPersons && (
                 <p className="mt-1 text-xs text-gray-500">
                   {t("involvedPersons")}: {item.involvedPersons}

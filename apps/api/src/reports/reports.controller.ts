@@ -1,4 +1,4 @@
-import { Controller, Get, Header, Query } from "@nestjs/common";
+import { Controller, Get, Header, Query, StreamableFile } from "@nestjs/common";
 import type { AuthUser } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ReportsService } from "./reports.service";
@@ -56,5 +56,17 @@ export class ReportsController {
   @Header("Content-Type", "text/csv")
   taxSummary(@CurrentUser() user: AuthUser) {
     return this.service.taxSummaryCsv(user.companyId);
+  }
+
+  @Get("wip-report")
+  wipReport(@CurrentUser() user: AuthUser) {
+    return this.service.wipReport(user.companyId);
+  }
+
+  @Get("wip-report/pdf")
+  @Header("Content-Type", "application/pdf")
+  async wipReportPdf(@CurrentUser() user: AuthUser) {
+    const buffer = await this.service.wipReportPdf(user.companyId);
+    return new StreamableFile(buffer, { disposition: `attachment; filename="wip-report.pdf"` });
   }
 }

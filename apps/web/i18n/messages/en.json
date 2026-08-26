@@ -549,7 +549,8 @@
     "compare": "Compare",
     "grandTotalDelta": "Grand total change",
     "noDifferences": "No differences between these revisions",
-    "costCodeUnassigned": "Unassigned cost code"
+    "costCodeUnassigned": "Unassigned cost code",
+    "benchmarkHint": "Typical price for this cost code across {count} past estimate(s): {median} {currency}/unit"
   },
   "invoices": {
     "title": "Invoices",
@@ -837,7 +838,14 @@
     "criticalPathLegend": "Critical path — delaying these delays the finish",
     "comments": "Comments",
     "outdoorWork": "Outdoor work",
-    "ganttDragHint": "Drag a bar to reschedule it, or its right edge to resize it"
+    "ganttDragHint": "Drag a bar to reschedule it, or its right edge to resize it",
+    "lookAhead": "3-week look-ahead",
+    "lookAheadHint": "Not-yet-done tasks starting in the next three weeks — a task is only \"ready\" once every task it depends on to start is already done.",
+    "lookAheadWeek": "Week {week}",
+    "lookAheadNoTasks": "Nothing scheduled.",
+    "lookAheadReady": "Ready",
+    "lookAheadBlocked": "Blocked",
+    "lookAheadBlockedBy": "Waiting on: {names}"
   },
   "purchaseOrders": {
     "title": "Purchase orders",
@@ -983,7 +991,16 @@
     "revenueTrend": "Revenue trend",
     "downloadTaxSummary": "Download tax summary",
     "downloadPayrollExport": "Download payroll export",
-    "downloadSafetyExport": "Download incident export"
+    "downloadSafetyExport": "Download incident export",
+    "wipReport": "Work-in-progress schedule",
+    "wipReportHint": "Percentage-of-completion revenue recognition (cost-to-cost method) — the over/under billing schedule a bank or bonding company asks for.",
+    "downloadWipPdf": "Download PDF",
+    "contractValue": "Contract value",
+    "costsIncurredToDate": "Costs to date",
+    "earnedRevenue": "Earned revenue",
+    "billedToDate": "Billed to date",
+    "overUnderBilling": "Over/(under) billing",
+    "total": "Total"
   },
   "notifications": {
     "title": "Notifications",
@@ -1163,7 +1180,19 @@
     "notes": "Notes",
     "attendees": "Attendees",
     "noBriefings": "No toolbox talks logged yet.",
-    "attendeeCount": "{count} attended"
+    "attendeeCount": "{count} attended",
+    "quickNearMiss": "+ Quick near-miss",
+    "quickNearMissHint": "A fast, low-friction way to log a close call — just what happened and where. Reporting near misses (even without injury) is what makes a safety program work.",
+    "oshaRecordable": "OSHA recordable",
+    "oshaCaseType": "Case type",
+    "oshaCaseType_injury": "Injury",
+    "oshaCaseType_skin_disorder": "Skin disorder",
+    "oshaCaseType_respiratory_condition": "Respiratory condition",
+    "oshaCaseType_poisoning": "Poisoning",
+    "oshaCaseType_hearing_loss": "Hearing loss",
+    "oshaCaseType_all_other_illnesses": "All other illnesses",
+    "daysAwayFromWork": "Days away from work",
+    "daysJobTransferOrRestriction": "Days of job transfer/restriction"
   },
   "submittals": {
     "title": "Submittals",
@@ -1782,5 +1811,13 @@
     "copyLink": "Copy link",
     "copied": "Copied",
     "referredCount": "{count} companies have signed up via your link"
+  },
+  "estimateAccuracy": {
+    "title": "Estimate accuracy",
+    "hint": "How each rate item's estimated labor hours and material quantities compare to what actually got logged on completed work — computed from your own project history, not a generic AI model.",
+    "rateItem": "Rate item",
+    "labor": "Labor hours",
+    "materials": "Materials cost",
+    "sampleSize": "{count, plural, one {# estimate} other {# estimates}}"
   }
 }

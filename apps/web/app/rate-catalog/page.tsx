@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { CsvImportButton } from "@/components/csv-import-button";
 import { AssembliesPanel } from "@/components/assemblies-panel";
+import { EstimateAccuracyPanel } from "@/components/estimate-accuracy-panel";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
@@ -205,6 +206,7 @@ export default function RateCatalogPage() {
       </div>
 
       <AssembliesPanel />
+      <EstimateAccuracyPanel />
     </AuthenticatedShell>
   );
 }

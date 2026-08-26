@@ -2391,6 +2391,18 @@ enum IncidentSeverity {
   fatality
 }
 
+/// OSHA Form 300 log columns M1–M6 — which category of illness this recordable case falls
+/// under. Left null for injuries, which OSHA 300 tracks as a plain "Injury" checkbox rather
+/// than one of these illness columns (see oshaRecordable + severity for the injury case).
+enum OshaCaseType {
+  injury
+  skin_disorder
+  respiratory_condition
+  poisoning
+  hearing_loss
+  all_other_illnesses
+}
+
 model IncidentReport {
   id                String           @id @default(uuid())
   companyId         String
@@ -2401,6 +2413,14 @@ model IncidentReport {
   location          String?
   involvedPersons   String?
   correctiveActions String?
+  /// Whether this case meets OSHA's recordability criteria — distinct from `severity`, which is
+  /// this company's own internal classification and doesn't map 1:1 onto OSHA's rules (e.g. a
+  /// medical-treatment case is always recordable, but so is any case with days away from work
+  /// regardless of severity label).
+  oshaRecordable                Boolean       @default(false)
+  oshaCaseType                  OshaCaseType?
+  daysAwayFromWork              Int?
+  daysJobTransferOrRestriction  Int?
   reportedByUserId  String?
   reportedByName    String
   createdAt         DateTime         @default(now())

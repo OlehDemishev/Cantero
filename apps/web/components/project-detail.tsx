@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { CommentsThread } from "@/components/comments-thread";
 import { SchedulingPanel } from "@/components/scheduling-panel";
+import { LookAheadPanel } from "@/components/look-ahead-panel";
 import { DailyLogsPanel } from "@/components/daily-logs-panel";
 import { WeatherForecastPanel } from "@/components/weather-forecast-panel";
 import { GeofencePanel } from "@/components/geofence-panel";
@@ -204,6 +205,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
       </div>
 
       <SchedulingPanel projectId={projectId} />
+      <LookAheadPanel projectId={projectId} />
       <ContractsPanel projectId={projectId} />
       <WeatherForecastPanel projectId={projectId} />
       <GeofencePanel projectId={projectId} />

@@ -102,3 +102,111 @@ describe("TasksService — dependencies", () => {
     });
   });
 });
+
+describe("TasksService.getLookAhead", () => {
+  let service: TasksService;
+  let prisma: {
+    project: { findFirst: jest.Mock };
+    task: { findMany: jest.Mock };
+  };
+
+  function daysFromNowUTC(days: number): Date {
+    const now = new Date();
+    const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    return new Date(start.getTime() + days * 24 * 60 * 60 * 1000);
+  }
+
+  beforeEach(async () => {
+    prisma = {
+      project: { findFirst: jest.fn().mockResolvedValue({ id: "project-1", companyId: COMPANY_A }) },
+      task: { findMany: jest.fn() },
+    };
+
+    const module = await Test.createTestingModule({
+      providers: [TasksService, { provide: PrismaService, useValue: prisma }],
+    }).compile();
+
+    service = module.get(TasksService);
+  });
+
+  it("marks a task ready when it has no finish_to_start predecessors", async () => {
+    prisma.task.findMany.mockResolvedValue([
+      { id: "task-1", name: "Framing", status: "planned", startDate: daysFromNowUTC(2), dueDate: daysFromNowUTC(5), isOutdoorWork: false, predecessorLinks: [] },
+    ]);
+
+    const result = await service.getLookAhead(COMPANY_A, "project-1");
+
+    expect(result[0].ready).toBe(true);
+    expect(result[0].blockedByTaskNames).toEqual([]);
+  });
+
+  it("marks a task not ready when a finish_to_start predecessor isn't done yet", async () => {
+    prisma.task.findMany.mockResolvedValue([
+      {
+        id: "task-2",
+        name: "Drywall",
+        status: "planned",
+        startDate: daysFromNowUTC(3),
+        dueDate: daysFromNowUTC(6),
+        isOutdoorWork: false,
+        predecessorLinks: [
+          { type: "finish_to_start", predecessor: { id: "task-1", name: "Framing", status: "in_progress" } },
+        ],
+      },
+    ]);
+
+    const result = await service.getLookAhead(COMPANY_A, "project-1");
+
+    expect(result[0].ready).toBe(false);
+    expect(result[0].blockedByTaskNames).toEqual(["Framing"]);
+  });
+
+  it("ignores a non-finish_to_start predecessor when computing readiness", async () => {
+    prisma.task.findMany.mockResolvedValue([
+      {
+        id: "task-2",
+        name: "Inspection",
+        status: "planned",
+        startDate: daysFromNowUTC(3),
+        dueDate: daysFromNowUTC(6),
+        isOutdoorWork: false,
+        predecessorLinks: [
+          { type: "start_to_start", predecessor: { id: "task-1", name: "Framing", status: "in_progress" } },
+        ],
+      },
+    ]);
+
+    const result = await service.getLookAhead(COMPANY_A, "project-1");
+
+    expect(result[0].ready).toBe(true);
+  });
+
+  it("collapses an overdue-but-not-done task into week 0 instead of a negative index", async () => {
+    prisma.task.findMany.mockResolvedValue([
+      { id: "task-1", name: "Overdue task", status: "planned", startDate: daysFromNowUTC(-10), dueDate: daysFromNowUTC(-5), isOutdoorWork: false, predecessorLinks: [] },
+    ]);
+
+    const result = await service.getLookAhead(COMPANY_A, "project-1");
+
+    expect(result[0].weekIndex).toBe(0);
+  });
+
+  it("buckets a task starting in week 2 correctly and clamps beyond the window", async () => {
+    prisma.task.findMany.mockResolvedValue([
+      { id: "task-1", name: "Week 2 task", status: "planned", startDate: daysFromNowUTC(15), dueDate: daysFromNowUTC(18), isOutdoorWork: false, predecessorLinks: [] },
+    ]);
+
+    const result = await service.getLookAhead(COMPANY_A, "project-1");
+
+    expect(result[0].weekIndex).toBe(2);
+  });
+
+  it("excludes an already-done task", async () => {
+    prisma.task.findMany.mockResolvedValue([]);
+
+    await service.getLookAhead(COMPANY_A, "project-1");
+
+    const call = prisma.task.findMany.mock.calls[0][0];
+    expect(call.where.status).toEqual({ not: "done" });
+  });
+});

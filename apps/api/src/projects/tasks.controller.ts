@@ -26,6 +26,11 @@ export class TasksController {
     return this.service.getCriticalPath(user.companyId, projectId);
   }
 
+  @Get("look-ahead")
+  lookAhead(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string, @Query("weeks") weeks?: string) {
+    return this.service.getLookAhead(user.companyId, projectId, weeks ? Number(weeks) : undefined);
+  }
+
   @Post()
   create(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(createTaskSchema)) body: CreateTaskInput) {
     return this.service.create(user.companyId, body);

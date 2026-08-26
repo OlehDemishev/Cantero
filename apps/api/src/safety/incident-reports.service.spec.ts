@@ -12,7 +12,7 @@ describe("IncidentReportsService", () => {
   let service: IncidentReportsService;
   let prisma: {
     project: { findFirst: jest.Mock };
-    incidentReport: { findFirst: jest.Mock; create: jest.Mock; update: jest.Mock };
+    incidentReport: { findFirst: jest.Mock; create: jest.Mock; update: jest.Mock; findMany: jest.Mock };
   };
   let audit: { record: jest.Mock };
   let webhooks: { trigger: jest.Mock };
@@ -20,7 +20,7 @@ describe("IncidentReportsService", () => {
   beforeEach(async () => {
     prisma = {
       project: { findFirst: jest.fn() },
-      incidentReport: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
+      incidentReport: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn(), findMany: jest.fn() },
     };
     audit = { record: jest.fn() };
     webhooks = { trigger: jest.fn() };
@@ -47,6 +47,7 @@ describe("IncidentReportsService", () => {
           occurredAt: "2026-08-20T00:00:00.000Z",
           severity: "near_miss",
           description: "Loose scaffold plank",
+          oshaRecordable: false,
         }),
       ).rejects.toThrow(NotFoundException);
       expect(prisma.incidentReport.create).not.toHaveBeenCalled();
@@ -61,11 +62,19 @@ describe("IncidentReportsService", () => {
         occurredAt: "2026-08-20T00:00:00.000Z",
         severity: "first_aid",
         description: "Minor cut from sheet metal",
+        oshaRecordable: true,
+        oshaCaseType: "injury",
       });
 
       expect(prisma.incidentReport.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ reportedByUserId: "user-1", reportedByName: "Foreman", severity: "first_aid" }),
+          data: expect.objectContaining({
+            reportedByUserId: "user-1",
+            reportedByName: "Foreman",
+            severity: "first_aid",
+            oshaRecordable: true,
+            oshaCaseType: "injury",
+          }),
         }),
       );
       expect(audit.record).toHaveBeenCalled();
@@ -83,6 +92,34 @@ describe("IncidentReportsService", () => {
 
       await expect(service.update(COMPANY_A, "incident-1", { correctiveActions: "Replaced plank" })).rejects.toThrow(NotFoundException);
       expect(prisma.incidentReport.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("exportCsv()", () => {
+    it("includes the OSHA recordability columns in the export", async () => {
+      prisma.incidentReport.findMany.mockResolvedValue([
+        {
+          occurredAt: new Date("2026-08-20T00:00:00.000Z"),
+          project: { name: "Site A" },
+          location: "3rd floor",
+          severity: "medical_treatment",
+          description: "Fall from ladder",
+          involvedPersons: "J. Doe",
+          correctiveActions: "Replaced ladder",
+          oshaRecordable: true,
+          oshaCaseType: "injury",
+          daysAwayFromWork: 3,
+          daysJobTransferOrRestriction: null,
+          reportedByName: "Foreman",
+        },
+      ]);
+
+      const csv = await service.exportCsv(COMPANY_A);
+
+      expect(csv).toContain("OSHA Recordable");
+      expect(csv).toContain("Yes");
+      expect(csv).toContain("injury");
+      expect(csv).toContain("3");
     });
   });
 });
