@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import type { ImportResult } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { MaterialRfqsPanel } from "@/components/material-rfqs-panel";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, apiUpload } from "@/lib/api-client";
 
 interface Supplier {
   id: string;
@@ -28,6 +29,8 @@ export default function SuppliersPage() {
   const [submitting, setSubmitting] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [scorecards, setScorecards] = useState<Record<string, Scorecard>>({});
+  const [syncBusy, setSyncBusy] = useState(false);
+  const [syncResult, setSyncResult] = useState<ImportResult | null>(null);
 
   function toggleExpand(id: string) {
     if (expandedId === id) {
@@ -45,6 +48,20 @@ export default function SuppliersPage() {
   }
 
   useEffect(load, []);
+
+  async function syncCatalog(e: React.ChangeEvent<HTMLInputElement>, supplierId: string) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSyncBusy(true);
+    setSyncResult(null);
+    try {
+      const result = await apiUpload<ImportResult>(`/materials/suppliers/${supplierId}/catalog-sync`, file);
+      setSyncResult(result);
+    } finally {
+      setSyncBusy(false);
+      e.target.value = "";
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -111,29 +128,45 @@ export default function SuppliersPage() {
                     <div className="font-medium">{s.name}</div>
                     <div className="text-sm text-gray-500">{s.email ?? s.phone ?? "—"}</div>
                     {expandedId === s.id && (
-                      <div className="mt-3 grid grid-cols-2 gap-3 border-t border-gray-100 pt-3 text-xs sm:grid-cols-4">
-                        {!card ? (
-                          <span className="text-gray-400">{tc("loading")}</span>
-                        ) : (
-                          <>
-                            <div>
-                              <div className="text-gray-400">{t("totalOrders")}</div>
-                              <div className="font-medium">{card.totalOrders}</div>
-                            </div>
-                            <div>
-                              <div className="text-gray-400">{t("onTimeRate")}</div>
-                              <div className="font-medium">{card.onTimeRate !== null ? `${Math.round(card.onTimeRate * 100)}%` : "—"}</div>
-                            </div>
-                            <div>
-                              <div className="text-gray-400">{t("averageDelay")}</div>
-                              <div className="font-medium">{card.averageDelayDays !== null ? `${card.averageDelayDays.toFixed(1)}d` : "—"}</div>
-                            </div>
-                            <div>
-                              <div className="text-gray-400">{t("totalSpend")}</div>
-                              <div className="font-medium">{card.totalSpend}</div>
-                            </div>
-                          </>
-                        )}
+                      <div className="mt-3 border-t border-gray-100 pt-3" onClick={(e) => e.stopPropagation()}>
+                        <div className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
+                          {!card ? (
+                            <span className="text-gray-400">{tc("loading")}</span>
+                          ) : (
+                            <>
+                              <div>
+                                <div className="text-gray-400">{t("totalOrders")}</div>
+                                <div className="font-medium">{card.totalOrders}</div>
+                              </div>
+                              <div>
+                                <div className="text-gray-400">{t("onTimeRate")}</div>
+                                <div className="font-medium">{card.onTimeRate !== null ? `${Math.round(card.onTimeRate * 100)}%` : "—"}</div>
+                              </div>
+                              <div>
+                                <div className="text-gray-400">{t("averageDelay")}</div>
+                                <div className="font-medium">{card.averageDelayDays !== null ? `${card.averageDelayDays.toFixed(1)}d` : "—"}</div>
+                              </div>
+                              <div>
+                                <div className="text-gray-400">{t("totalSpend")}</div>
+                                <div className="font-medium">{card.totalSpend}</div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+
+                        <div className="mt-3 border-t border-gray-100 pt-3">
+                          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("catalogSync")}</p>
+                          <p className="mb-2 text-xs text-gray-500">{t("catalogSyncHint")}</p>
+                          <label className="btn-secondary inline-block cursor-pointer px-2.5 py-1 text-xs">
+                            {syncBusy ? tc("loading") : t("uploadCatalogCsv")}
+                            <input type="file" accept=".csv" className="hidden" disabled={syncBusy} onChange={(e) => syncCatalog(e, s.id)} />
+                          </label>
+                          {syncResult && (
+                            <p className="mt-2 text-xs text-gray-600">
+                              {t("catalogSyncResult", { updated: syncResult.created, skipped: syncResult.skipped })}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     )}
                   </li>

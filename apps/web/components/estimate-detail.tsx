@@ -8,6 +8,7 @@ import { ProgressBillingPanel } from "@/components/progress-billing-panel";
 import { EstimateSuggestionsPanel } from "@/components/estimate-suggestions-panel";
 import { AssemblyQuickAddPanel } from "@/components/assembly-quick-add-panel";
 import { RevisionDiffPanel } from "@/components/revision-diff-panel";
+import type { CostCode } from "@/components/cost-codes-panel";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
@@ -93,12 +94,17 @@ interface ChangeOrderLine {
   lineTotal: string;
   rateCatalogItem: { name: string; unit: string };
 }
+interface ChangeOrderApproval {
+  userId: string;
+  actorName: string;
+  approvedAt: string;
+}
 interface ChangeOrder {
   id: string;
   number: number;
   title: string;
   description: string | null;
-  status: "draft" | "approved";
+  status: "draft" | "pending_approval" | "approved";
   clientDecision: ClientDecision;
   sentAt: string | null;
   clientAccessToken: string | null;
@@ -106,6 +112,7 @@ interface ChangeOrder {
   lines: ChangeOrderLine[];
   signerName: string | null;
   decisionAt: string | null;
+  approvals: ChangeOrderApproval[];
 }
 interface RevisionSummary {
   id: string;
@@ -183,7 +190,8 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
 
   const [estimate, setEstimate] = useState<Estimate | null>(null);
   const [rateItems, setRateItems] = useState<RateCatalogItem[]>([]);
-  const [newLine, setNewLine] = useState({ rateCatalogItemId: "", quantity: "1" });
+  const [newLine, setNewLine] = useState({ rateCatalogItemId: "", quantity: "1", costCodeId: "" });
+  const [costCodes, setCostCodes] = useState<CostCode[]>([]);
   const [busy, setBusy] = useState(false);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [issueWarehouseId, setIssueWarehouseId] = useState("");
@@ -273,6 +281,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
       setWarehouses(list);
       if (list[0]) setIssueWarehouseId(list[0].id);
     });
+    apiFetch<CostCode[]>("/cost-codes").then(setCostCodes);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [estimateId]);
 
@@ -285,7 +294,11 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
     try {
       await apiFetch(`/estimates/${estimateId}/lines`, {
         method: "POST",
-        body: JSON.stringify({ rateCatalogItemId: newLine.rateCatalogItemId, quantity: Number(newLine.quantity) }),
+        body: JSON.stringify({
+          rateCatalogItemId: newLine.rateCatalogItemId,
+          quantity: Number(newLine.quantity),
+          costCodeId: newLine.costCodeId || undefined,
+        }),
       });
       load();
     } finally {
@@ -606,6 +619,20 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
                 value={newLine.quantity}
                 onChange={(e) => setNewLine((l) => ({ ...l, quantity: e.target.value }))}
               />
+              {costCodes.length > 0 && (
+                <select
+                  className="input w-auto"
+                  value={newLine.costCodeId}
+                  onChange={(e) => setNewLine((l) => ({ ...l, costCodeId: e.target.value }))}
+                >
+                  <option value="">{t("costCodeUnassigned")}</option>
+                  {costCodes.map((cc) => (
+                    <option key={cc.id} value={cc.id}>
+                      {cc.code} {cc.name}
+                    </option>
+                  ))}
+                </select>
+              )}
               <button type="submit" disabled={busy} className="btn-secondary">
                 {t("addLine")}
               </button>
@@ -812,11 +839,20 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
                             CO-{co.number} — {co.title}
                           </span>
                           <span className="text-xs text-gray-500">
-                            {co.status === "approved" ? t("approved") : t("draft")}
+                            {co.status === "approved" ? t("approved") : co.status === "pending_approval" ? t("pendingApproval") : t("draft")}
                             {co.sentAt && ` · ${t(`clientDecision_${co.clientDecision}`)}`}
                           </span>
                         </div>
                         {co.description && <p className="mt-1 text-xs text-gray-500">{co.description}</p>}
+
+                        {co.status === "pending_approval" && me?.company.changeOrderRequiredApprovalCount && (
+                          <div className="mt-2 rounded-lg border border-warning-200 bg-warning-50 px-3 py-2">
+                            <p className="text-xs text-warning-700">
+                              {t("approvalProgress", { count: co.approvals.length, required: me.company.changeOrderRequiredApprovalCount })}
+                            </p>
+                            <p className="mt-0.5 text-xs text-warning-700">{co.approvals.map((a) => a.actorName).join(", ")}</p>
+                          </div>
+                        )}
 
                         {co.lines.length > 0 && (
                           <table className="mt-3 w-full border-collapse text-xs">
@@ -874,6 +910,19 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
                               onClick={() => approveChangeOrder(co.id)}
                               disabled={busy || co.lines.length === 0}
                               className="btn-primary shrink-0 px-3 py-1.5 text-xs"
+                            >
+                              {t("approve")}
+                            </button>
+                          </div>
+                        )}
+
+                        {co.status === "pending_approval" && (
+                          <div className="mt-3 border-t border-gray-100 pt-3">
+                            <button
+                              type="button"
+                              onClick={() => approveChangeOrder(co.id)}
+                              disabled={busy}
+                              className="btn-primary px-3 py-1.5 text-xs"
                             >
                               {t("approve")}
                             </button>

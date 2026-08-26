@@ -32,6 +32,29 @@ export class MeController {
     };
   }
 
+  /** Computed live from real company state each time — not a persisted per-step tracker, so a
+   * step that becomes true (or a record that gets deleted) is always reflected accurately. */
+  @SkipSubscriptionCheck()
+  @Get("onboarding-checklist")
+  async onboardingChecklist(@CurrentUser() user: AuthUser) {
+    const { companyId } = user;
+    const [projectCount, clientCount, rateCatalogItemCount, estimateCount, memberCount] = await Promise.all([
+      this.prisma.project.count({ where: { companyId } }),
+      this.prisma.client.count({ where: { companyId } }),
+      this.prisma.rateCatalogItem.count({ where: { companyId } }),
+      this.prisma.estimate.count({ where: { companyId, isTemplate: false } }),
+      this.prisma.membership.count({ where: { companyId } }),
+    ]);
+
+    return [
+      { key: "create_project", done: projectCount > 0, link: "/projects" },
+      { key: "add_client", done: clientCount > 0, link: "/clients" },
+      { key: "build_rate_catalog", done: rateCatalogItemCount > 0, link: "/rate-catalog" },
+      { key: "create_estimate", done: estimateCount > 0, link: "/projects" },
+      { key: "invite_team", done: memberCount > 1, link: "/settings" },
+    ];
+  }
+
   @SkipSubscriptionCheck()
   @Patch("notification-preferences")
   async updateNotificationPreferences(

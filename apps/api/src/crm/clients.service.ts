@@ -9,6 +9,7 @@ import {
   type ImportResult,
   type MoveClientStageInput,
   type UpdateClientInput,
+  type UpdateReferralRewardInput,
 } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { parseCsvRecords } from "../common/csv";
@@ -98,8 +99,35 @@ export class ClientsService {
       data: { companyId, clientId: client.id, fromStage: client.stage, toStage: input.stage },
     });
     this.audit.record(companyId, actor, "client.stage_changed", "Client", client.id, `Moved "${client.name}" to ${input.stage}`);
-    if (input.stage === "won") this.webhooks.trigger(companyId, "client.won", { clientId: client.id, name: client.name });
+    if (input.stage === "won") {
+      this.webhooks.trigger(companyId, "client.won", { clientId: client.id, name: client.name });
+      if (client.referredByClientId) await this.markReferralRewardPending(companyId, client.referredByClientId);
+    }
     if (input.stage === "lost") this.webhooks.trigger(companyId, "client.lost", { clientId: client.id, name: client.name });
+    return updated;
+  }
+
+  /** Flags the referring client's reward as owed once a client they referred reaches "won" —
+   * only if it's still "none", so an already-tracked/paid reward from an earlier referral isn't reset. */
+  private async markReferralRewardPending(companyId: string, referrerClientId: string) {
+    await this.prisma.client.updateMany({
+      where: { id: referrerClientId, companyId, referralRewardStatus: "none" },
+      data: { referralRewardStatus: "pending" },
+    });
+  }
+
+  /** Manual amount/status control over a referrer's reward — no payment-processor integration,
+   * so marking it "paid" is purely a record-keeping action here. */
+  async updateReferralReward(companyId: string, actor: AuditActor, id: string, input: UpdateReferralRewardInput) {
+    const client = await this.get(companyId, id);
+    const updated = await this.prisma.client.update({
+      where: { id: client.id },
+      data: {
+        ...(input.status !== undefined ? { referralRewardStatus: input.status } : {}),
+        ...(input.amount !== undefined ? { referralRewardAmount: input.amount } : {}),
+      },
+    });
+    this.audit.record(companyId, actor, "client.referral_reward_updated", "Client", client.id, `Updated referral reward for "${client.name}"`);
     return updated;
   }
 

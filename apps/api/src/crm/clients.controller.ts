@@ -7,6 +7,7 @@ import {
   createClientSchema,
   moveClientStageSchema,
   updateClientSchema,
+  updateReferralRewardSchema,
   type AddClientActivityInput,
   type AddClientReminderInput,
   type AuthUser,
@@ -14,6 +15,7 @@ import {
   type CreateClientInput,
   type MoveClientStageInput,
   type UpdateClientInput,
+  type UpdateReferralRewardInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
@@ -90,6 +92,15 @@ export class ClientsController {
     @Body(new ZodValidationPipe(moveClientStageSchema)) body: MoveClientStageInput,
   ) {
     return this.service.moveStage(user.companyId, { userId: user.userId, name: user.name }, id, body);
+  }
+
+  @Patch(":id/referral-reward")
+  updateReferralReward(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(updateReferralRewardSchema)) body: UpdateReferralRewardInput,
+  ) {
+    return this.service.updateReferralReward(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
   @Post(":id/convert-to-project")

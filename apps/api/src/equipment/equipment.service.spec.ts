@@ -13,6 +13,7 @@ describe("EquipmentService", () => {
     project: { findFirst: jest.Mock };
     worker: { findFirst: jest.Mock };
     equipmentAssignment: { findFirst: jest.Mock; create: jest.Mock; update: jest.Mock };
+    equipmentGpsPing: { create: jest.Mock; findMany: jest.Mock };
     $transaction: jest.Mock;
   };
 
@@ -22,6 +23,7 @@ describe("EquipmentService", () => {
       project: { findFirst: jest.fn() },
       worker: { findFirst: jest.fn() },
       equipmentAssignment: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
+      equipmentGpsPing: { create: jest.fn(), findMany: jest.fn() },
       $transaction: jest.fn((ops) => Promise.all(ops)),
     };
 
@@ -145,6 +147,36 @@ describe("EquipmentService", () => {
 
       await expect(service.retire(COMPANY_A, { name: "Owner" }, "eq-1")).rejects.toThrow(BadRequestException);
       expect(prisma.equipment.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("recordGpsPing()/listGpsPings()", () => {
+    it("rejects recording a ping for equipment that doesn't belong to this company", async () => {
+      prisma.equipment.findFirst.mockResolvedValue(null);
+
+      await expect(service.recordGpsPing(COMPANY_A, "eq-1", 52.5, 13.4)).rejects.toThrow(NotFoundException);
+      expect(prisma.equipmentGpsPing.create).not.toHaveBeenCalled();
+    });
+
+    it("records a ping scoped to the equipment", async () => {
+      prisma.equipment.findFirst.mockResolvedValue({ id: "eq-1", companyId: COMPANY_A, name: "Drill" });
+      prisma.equipmentGpsPing.create.mockResolvedValue({ id: "ping-1", equipmentId: "eq-1", lat: 52.5, lng: 13.4 });
+
+      await service.recordGpsPing(COMPANY_A, "eq-1", 52.5, 13.4);
+
+      expect(prisma.equipmentGpsPing.create).toHaveBeenCalledWith({ data: { equipmentId: "eq-1", lat: 52.5, lng: 13.4 } });
+    });
+
+    it("scopes listGpsPings to a single UTC day", async () => {
+      prisma.equipment.findFirst.mockResolvedValue({ id: "eq-1", companyId: COMPANY_A, name: "Drill" });
+      prisma.equipmentGpsPing.findMany.mockResolvedValue([]);
+
+      await service.listGpsPings(COMPANY_A, "eq-1", "2026-06-15");
+
+      const call = prisma.equipmentGpsPing.findMany.mock.calls[0][0];
+      expect(call.where.equipmentId).toBe("eq-1");
+      expect(call.where.recordedAt.gte.toISOString()).toBe("2026-06-15T00:00:00.000Z");
+      expect(call.where.recordedAt.lt.toISOString()).toBe("2026-06-16T00:00:00.000Z");
     });
   });
 });

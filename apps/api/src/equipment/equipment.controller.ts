@@ -1,14 +1,16 @@
-import { Body, Controller, Get, Param, Patch, Post } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common";
 import {
   addMaintenanceRecordSchema,
   checkOutEquipmentSchema,
   createEquipmentSchema,
+  recordEquipmentGpsPingSchema,
   updateEquipmentSchema,
   updateMaintenanceScheduleSchema,
   type AddMaintenanceRecordInput,
   type AuthUser,
   type CheckOutEquipmentInput,
   type CreateEquipmentInput,
+  type RecordEquipmentGpsPingInput,
   type UpdateEquipmentInput,
   type UpdateMaintenanceScheduleInput,
 } from "@cantero/shared";
@@ -99,5 +101,19 @@ export class EquipmentController {
   @Get(":id/assignments")
   listAssignments(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.listAssignments(user.companyId, id);
+  }
+
+  @Post(":id/gps-pings")
+  recordGpsPing(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(recordEquipmentGpsPingSchema)) body: RecordEquipmentGpsPingInput,
+  ) {
+    return this.service.recordGpsPing(user.companyId, id, body.lat, body.lng);
+  }
+
+  @Get(":id/gps-pings")
+  listGpsPings(@CurrentUser() user: AuthUser, @Param("id") id: string, @Query("date") date?: string) {
+    return this.service.listGpsPings(user.companyId, id, date);
   }
 }

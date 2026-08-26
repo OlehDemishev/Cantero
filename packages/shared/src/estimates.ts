@@ -47,6 +47,16 @@ export const updateProjectWarrantySchema = z.object({
 });
 export type UpdateProjectWarrantyInput = z.infer<typeof updateProjectWarrantySchema>;
 
+export const addProjectMemberSchema = z.object({
+  userId: z.string().uuid(),
+});
+export type AddProjectMemberInput = z.infer<typeof addProjectMemberSchema>;
+
+export const setProjectRestrictedSchema = z.object({
+  restrictedToMembers: z.boolean(),
+});
+export type SetProjectRestrictedInput = z.infer<typeof setProjectRestrictedSchema>;
+
 /// Sets/replaces the geofence wholesale — no partial updates. To disable it, call the dedicated
 /// DELETE endpoint instead of PATCHing a null body (Express's strict JSON parser rejects a bare
 /// `null` top-level body before it ever reaches validation).
@@ -73,6 +83,7 @@ export const createEstimateLineSchema = z.object({
   rateCatalogItemId: z.string().uuid(),
   quantity: z.number().positive(),
   sectionId: z.string().uuid().optional(),
+  costCodeId: z.string().uuid().optional(),
 });
 export type CreateEstimateLineInput = z.infer<typeof createEstimateLineSchema>;
 
@@ -164,5 +175,6 @@ export type CreateChangeOrderInput = z.infer<typeof createChangeOrderSchema>;
 export const addChangeOrderLineSchema = z.object({
   rateCatalogItemId: z.string().uuid(),
   quantity: z.number().positive(),
+  costCodeId: z.string().uuid().optional(),
 });
 export type AddChangeOrderLineInput = z.infer<typeof addChangeOrderLineSchema>;

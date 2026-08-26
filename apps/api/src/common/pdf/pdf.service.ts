@@ -32,6 +32,17 @@ export interface PdfDocumentSpec {
   signature?: PdfSignature;
 }
 
+export interface PdfTextDocumentSpec {
+  title: string;
+  subtitle?: string;
+  meta: { label: string; value: string }[];
+  /** Free-form prose — a contract body, not a priced line-item table. Rendered as flowing text
+   * with blank lines preserved as paragraph breaks. */
+  body: string;
+  branding?: PdfBranding;
+  signature?: PdfSignature;
+}
+
 const DEFAULT_DIVIDER_COLOR = "#ccc";
 const DEFAULT_TEXT_COLOR = "#000";
 const LOGO_MAX_WIDTH = 90;
@@ -134,6 +145,62 @@ export class PdfService {
         if (spec.signature.imageBuffer) {
           try {
             doc.image(spec.signature.imageBuffer, startX, y, { fit: [SIGNATURE_MAX_WIDTH, SIGNATURE_MAX_HEIGHT] });
+          } catch {
+            // A corrupt/unsupported signature image shouldn't block the rest of the document.
+          }
+        }
+        doc.fillColor(DEFAULT_TEXT_COLOR);
+      }
+
+      doc.end();
+    });
+  }
+
+  /** Same header/branding/signature treatment as render(), but for a free-form prose document
+   * (a contract) instead of a priced line-item table. */
+  renderTextDocument(spec: PdfTextDocumentSpec): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({ margin: 50, size: "A4" });
+      const chunks: Buffer[] = [];
+      doc.on("data", (chunk) => chunks.push(chunk));
+      doc.on("end", () => resolve(Buffer.concat(chunks)));
+      doc.on("error", reject);
+
+      const accentColor = spec.branding?.accentColor ?? DEFAULT_TEXT_COLOR;
+
+      if (spec.branding?.logoBuffer) {
+        try {
+          doc.image(spec.branding.logoBuffer, doc.page.width - 50 - LOGO_MAX_WIDTH, 50, {
+            fit: [LOGO_MAX_WIDTH, LOGO_MAX_HEIGHT],
+          });
+        } catch {
+          // A corrupt/unsupported image shouldn't block the rest of the document from rendering.
+        }
+      }
+
+      doc.fillColor(accentColor).fontSize(20).text(spec.title, { align: "left" });
+      doc.fillColor(DEFAULT_TEXT_COLOR);
+      if (spec.subtitle) {
+        doc.moveDown(0.2).fontSize(11).fillColor("#555").text(spec.subtitle);
+        doc.fillColor(DEFAULT_TEXT_COLOR);
+      }
+      doc.moveDown(1);
+
+      for (const item of spec.meta) {
+        doc.fontSize(10).text(`${item.label}: ${item.value}`);
+      }
+      doc.moveDown(1);
+
+      doc.fontSize(11).text(spec.body, { width: doc.page.width - 100, align: "left" });
+
+      if (spec.signature) {
+        doc.moveDown(2);
+        doc.fontSize(9).fillColor("#555");
+        doc.text(`Signed by ${spec.signature.signerName} on ${spec.signature.signedAt.toISOString().slice(0, 10)}`);
+        doc.moveDown(0.5);
+        if (spec.signature.imageBuffer) {
+          try {
+            doc.image(spec.signature.imageBuffer, doc.x, doc.y, { fit: [SIGNATURE_MAX_WIDTH, SIGNATURE_MAX_HEIGHT] });
           } catch {
             // A corrupt/unsupported signature image shouldn't block the rest of the document.
           }

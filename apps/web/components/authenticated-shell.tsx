@@ -10,11 +10,14 @@ import { useSidebar } from "@/context/SidebarContext";
 import { useTheme } from "@/context/ThemeContext";
 import { NotificationBell } from "@/components/notification-bell";
 import { GlobalSearch } from "@/components/global-search";
+import { CommandPalette } from "@/components/command-palette";
+import { KeyboardShortcutsHelp } from "@/components/keyboard-shortcuts-help";
 import {
   BankReconciliationIcon,
   ChevronDownIcon,
   ClientsIcon,
   CloseIcon,
+  ContractsIcon,
   DashboardIcon,
   DocumentsIcon,
   EquipmentIcon,
@@ -56,6 +59,7 @@ const NAV_ITEMS = [
   { href: "/expenses", key: "expenses", icon: ExpensesIcon },
   { href: "/bank-reconciliation", key: "bankReconciliation", icon: BankReconciliationIcon },
   { href: "/service-contracts", key: "serviceContracts", icon: ServiceContractsIcon },
+  { href: "/contracts", key: "contracts", icon: ContractsIcon },
   { href: "/team", key: "team", icon: TeamIcon },
   { href: "/documents", key: "documents", icon: DocumentsIcon },
   { href: "/templates", key: "templates", icon: TemplatesIcon },
@@ -91,6 +95,8 @@ export function AuthenticatedShell({ children }: { children: React.ReactNode }) 
         <AppHeader me={data} />
         <div className="mx-auto max-w-(--breakpoint-2xl) p-4 md:p-6">{children}</div>
       </div>
+      <CommandPalette navItems={NAV_ITEMS} />
+      <KeyboardShortcutsHelp />
     </div>
   );
 }

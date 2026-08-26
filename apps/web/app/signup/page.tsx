@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { PLAN_IDS, SUPPORTED_CURRENCIES, SUPPORTED_LOCALES, UNIT_SYSTEMS } from "@cantero/shared";
 import { apiFetch, ApiError, setToken } from "@/lib/api-client";
@@ -8,6 +9,8 @@ import { apiFetch, ApiError, setToken } from "@/lib/api-client";
 export default function SignupPage() {
   const t = useTranslations("auth");
   const tc = useTranslations("common");
+  const searchParams = useSearchParams();
+  const referralCode = searchParams.get("ref") ?? undefined;
 
   const [form, setForm] = useState({
     companyName: "",
@@ -34,7 +37,7 @@ export default function SignupPage() {
     try {
       const res = await apiFetch<{ accessToken: string }>("/auth/signup", {
         method: "POST",
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, referralCode }),
       });
       setToken(res.accessToken);
       document.cookie = `NEXT_LOCALE=${form.locale};path=/;max-age=31536000`;

@@ -289,3 +289,34 @@ export function BankReconciliationIcon(props: SVGProps<SVGSVGElement>) {
     </Icon>
   );
 }
+
+export function MicIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <rect x="7.5" y="2.5" width="5" height="9" rx="2.5" />
+      <path d="M5 9.5a5 5 0 0 0 10 0" />
+      <path d="M10 14.5v3M7 17.5h6" />
+    </Icon>
+  );
+}
+
+export function ContractsIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M5 2.5h7l3 3v12h-10z" />
+      <path d="M12 2.5v3h3" />
+      <path d="M7 10.5h6M7 13h6M7 8h3" />
+    </Icon>
+  );
+}
+
+export function HelpCircleIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <circle cx="10" cy="10" r="7.5" />
+      <path d="M7.8 7.8a2.2 2.2 0 1 1 3.2 2c-.7.5-1 .9-1 1.8" />
+      <circle cx="10" cy="14" r="0.15" fill="currentColor" stroke="currentColor" strokeWidth="1.2" />
+    </Icon>
+  );
+}
+

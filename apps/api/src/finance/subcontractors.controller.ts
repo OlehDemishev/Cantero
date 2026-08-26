@@ -1,12 +1,16 @@
-import { Body, Controller, Delete, Get, Param, Post } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post } from "@nestjs/common";
 import {
   addSubcontractorDocumentSchema,
   assignSubcontractorSchema,
   createSubcontractorSchema,
+  setSubcontractorPublicListedSchema,
+  updateSubcontractorProfileSchema,
   type AddSubcontractorDocumentInput,
   type AssignSubcontractorInput,
   type AuthUser,
   type CreateSubcontractorInput,
+  type SetSubcontractorPublicListedInput,
+  type UpdateSubcontractorProfileInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
@@ -70,5 +74,23 @@ export class SubcontractorsController {
   @Get(":id/compliance")
   complianceStatus(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.complianceStatus(user.companyId, id);
+  }
+
+  @Patch(":id/profile")
+  updateProfile(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(updateSubcontractorProfileSchema)) body: UpdateSubcontractorProfileInput,
+  ) {
+    return this.service.updateProfile(user.companyId, id, body);
+  }
+
+  @Patch(":id/public-listed")
+  setPublicListed(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(setSubcontractorPublicListedSchema)) body: SetSubcontractorPublicListedInput,
+  ) {
+    return this.service.setPublicListed(user.companyId, id, body.publicListed);
   }
 }

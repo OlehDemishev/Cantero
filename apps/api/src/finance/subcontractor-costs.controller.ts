@@ -29,7 +29,7 @@ export class SubcontractorCostsController {
 
   @Post(":id/mark-paid")
   markPaid(@CurrentUser() user: AuthUser, @Param("id") id: string) {
-    return this.service.markPaid(user.companyId, id);
+    return this.service.markPaid(user.companyId, { userId: user.userId, name: user.name }, id);
   }
 
   @Get(":id/lien-waiver")

@@ -5,6 +5,7 @@ import * as bcrypt from "bcryptjs";
 import type { ForgotPasswordInput, ResetPasswordInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { MailService } from "../common/mail/mail.service";
+import { assertPasswordPolicy } from "../common/password-policy";
 
 const TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 const BCRYPT_ROUNDS = 12;
@@ -52,6 +53,21 @@ export class PasswordResetService {
     if (!record || record.usedAt || record.expiresAt < new Date()) {
       throw new BadRequestException("This reset link is invalid or has expired");
     }
+
+    // A user can belong to more than one company — apply the strictest policy among them so no
+    // company's rule is silently bypassed.
+    const memberships = await this.prisma.membership.findMany({
+      where: { userId: record.userId },
+      select: { company: { select: { passwordMinLength: true, passwordRequireSymbol: true } } },
+    });
+    const strictestPolicy = memberships.reduce(
+      (strictest, m) => ({
+        passwordMinLength: Math.max(strictest.passwordMinLength, m.company.passwordMinLength),
+        passwordRequireSymbol: strictest.passwordRequireSymbol || m.company.passwordRequireSymbol,
+      }),
+      { passwordMinLength: 8, passwordRequireSymbol: false },
+    );
+    assertPasswordPolicy(input.password, strictestPolicy);
 
     const passwordHash = await bcrypt.hash(input.password, BCRYPT_ROUNDS);
     await this.prisma.$transaction([

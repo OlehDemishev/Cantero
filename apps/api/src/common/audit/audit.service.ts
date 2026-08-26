@@ -1,9 +1,18 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { toCsv } from "../csv";
 
 export interface AuditActor {
   userId?: string;
   name: string;
+}
+
+export interface AuditLogFilter {
+  dateFrom?: Date;
+  dateTo?: Date;
+  entityType?: string;
+  action?: string;
+  actorUserId?: string;
 }
 
 /**
@@ -40,12 +49,37 @@ export class AuditService {
       .catch(() => {});
   }
 
-  list(companyId: string, take: number, cursor?: string) {
+  list(companyId: string, take: number, cursor?: string, filter?: AuditLogFilter) {
     return this.prisma.auditLog.findMany({
-      where: { companyId },
+      where: this.whereFor(companyId, filter),
       orderBy: { createdAt: "desc" },
       take,
       ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
     });
+  }
+
+  /** Same filters as list(), unpaginated — a compliance/audit export is expected to be read
+   * outside the app (spreadsheet, records request), not paged through here. */
+  async exportCsv(companyId: string, filter?: AuditLogFilter): Promise<string> {
+    const rows = await this.prisma.auditLog.findMany({
+      where: this.whereFor(companyId, filter),
+      orderBy: { createdAt: "desc" },
+    });
+    return toCsv(
+      ["Date", "Actor", "Action", "Entity type", "Entity ID", "Summary"],
+      rows.map((r) => [r.createdAt.toISOString(), r.actorName, r.action, r.entityType, r.entityId, r.summary]),
+    );
+  }
+
+  private whereFor(companyId: string, filter?: AuditLogFilter) {
+    return {
+      companyId,
+      ...(filter?.dateFrom || filter?.dateTo
+        ? { createdAt: { ...(filter.dateFrom ? { gte: filter.dateFrom } : {}), ...(filter.dateTo ? { lte: filter.dateTo } : {}) } }
+        : {}),
+      ...(filter?.entityType ? { entityType: filter.entityType } : {}),
+      ...(filter?.action ? { action: filter.action } : {}),
+      ...(filter?.actorUserId ? { actorUserId: filter.actorUserId } : {}),
+    };
   }
 }

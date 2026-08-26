@@ -15,4 +15,12 @@ export class DataExportController {
     const buffer = await this.service.buildExport(user.companyId);
     return new StreamableFile(buffer);
   }
+
+  @Roles("owner", "admin")
+  @Get("operational-export")
+  @Header("Content-Type", "application/zip")
+  async operationalExport(@CurrentUser() user: AuthUser) {
+    const buffer = await this.service.buildOperationalExport(user.companyId);
+    return new StreamableFile(buffer);
+  }
 }

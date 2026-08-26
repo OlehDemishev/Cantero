@@ -15,6 +15,8 @@ export interface MeResponse {
     onboardingCompletedAt: string | null;
     approvalThresholdAmount: string | null;
     requiredApprovalCount: number;
+    changeOrderApprovalThresholdAmount: string | null;
+    changeOrderRequiredApprovalCount: number;
   };
   subscriptionStatus: "incomplete" | "active" | "past_due" | "canceled";
   emailDigestFrequency: "off" | "daily" | "weekly";

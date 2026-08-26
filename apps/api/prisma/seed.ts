@@ -13,6 +13,27 @@ const prisma = new PrismaClient();
 
 const DEMO_PASSWORD = "cantero-demo-2026";
 
+/** A trimmed CSI MasterFormat starter set — enough divisions to classify a typical
+ * renovation/commercial job without overwhelming a first-time user. */
+const STARTER_COST_CODES = [
+  { code: "01 00 00", name: "General Requirements" },
+  { code: "02 00 00", name: "Existing Conditions" },
+  { code: "03 00 00", name: "Concrete" },
+  { code: "04 00 00", name: "Masonry" },
+  { code: "05 00 00", name: "Metals" },
+  { code: "06 00 00", name: "Wood, Plastics, and Composites" },
+  { code: "07 00 00", name: "Thermal and Moisture Protection" },
+  { code: "08 00 00", name: "Openings" },
+  { code: "09 00 00", name: "Finishes" },
+  { code: "10 00 00", name: "Specialties" },
+  { code: "21 00 00", name: "Fire Suppression" },
+  { code: "22 00 00", name: "Plumbing" },
+  { code: "23 00 00", name: "HVAC" },
+  { code: "26 00 00", name: "Electrical" },
+  { code: "31 00 00", name: "Earthwork" },
+  { code: "32 00 00", name: "Exterior Improvements" },
+];
+
 async function main() {
   const plans = await Promise.all(
     [
@@ -160,6 +181,10 @@ async function seedCompany(args: {
       },
     });
   }
+
+  await prisma.costCode.createMany({
+    data: STARTER_COST_CODES.map((c) => ({ companyId: company.id, code: c.code, name: c.name })),
+  });
 
   const client = await prisma.client.create({
     data: { companyId: company.id, name: "Nordwind Bau AG", email: "contact@example.com" },

@@ -9,6 +9,7 @@ import { useMe } from "@/lib/use-me";
 import { submitOrQueue, submitOrQueueUpload, useOfflineQueue } from "@/lib/offline-queue";
 import { fetchCached, updateCache } from "@/lib/offline-cache";
 import { DashboardIcon, LogoutIcon } from "@/components/nav-icons";
+import { OfflineConflictsBanner } from "@/components/offline-conflicts-banner";
 
 /** Best-effort current position — resolves null (never rejects) on denial, timeout, or an unsupported browser, so logging time never blocks on location. */
 function getCurrentPositionSafe(): Promise<{ lat: number; lng: number } | null> {
@@ -60,7 +61,7 @@ export default function FieldPage() {
   const tc = useTranslations("common");
   const router = useRouter();
   const { data: me, loading: meLoading } = useMe();
-  const { pendingCount } = useOfflineQueue();
+  const { pendingCount, failedItems, refresh: refreshQueue } = useOfflineQueue();
   const [online, setOnline] = useState(true);
 
   const [projects, setProjects] = useState<Project[] | null>(null);
@@ -144,6 +145,8 @@ export default function FieldPage() {
           <div className="bg-warning-50 px-4 py-1.5 text-center text-xs font-medium text-warning-700">{t("offline")}</div>
         )}
       </header>
+
+      <OfflineConflictsBanner items={failedItems} onChange={refreshQueue} />
 
       <div className="mx-auto max-w-lg px-4 py-4">
         {projectsError ? (

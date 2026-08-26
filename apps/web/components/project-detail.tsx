@@ -9,6 +9,8 @@ import { SchedulingPanel } from "@/components/scheduling-panel";
 import { DailyLogsPanel } from "@/components/daily-logs-panel";
 import { WeatherForecastPanel } from "@/components/weather-forecast-panel";
 import { GeofencePanel } from "@/components/geofence-panel";
+import { ProjectMembersPanel } from "@/components/project-members-panel";
+import { ContractsPanel } from "@/components/contracts-panel";
 import { CustomFieldsValuesPanel } from "@/components/custom-fields-values-panel";
 import { PunchListPanel } from "@/components/punch-list-panel";
 import { RfiPanel } from "@/components/rfi-panel";
@@ -18,6 +20,7 @@ import { SubmittalsPanel } from "@/components/submittals-panel";
 import { WarrantyPanel } from "@/components/warranty-panel";
 import { ProjectCloseoutPanel } from "@/components/project-closeout-panel";
 import { BudgetPanel } from "@/components/budget-panel";
+import { JobCostingPanel } from "@/components/job-costing-panel";
 import { TimeTrackingPanel } from "@/components/time-tracking-panel";
 import { SubcontractorCostsPanel } from "@/components/subcontractor-costs-panel";
 import { SubcontractorAssignmentsPanel } from "@/components/subcontractor-assignments-panel";
@@ -201,8 +204,10 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
       </div>
 
       <SchedulingPanel projectId={projectId} />
+      <ContractsPanel projectId={projectId} />
       <WeatherForecastPanel projectId={projectId} />
       <GeofencePanel projectId={projectId} />
+      <ProjectMembersPanel projectId={projectId} />
       <CustomFieldsValuesPanel entityType="project" entityId={projectId} />
       <DailyLogsPanel projectId={projectId} />
       <PunchListPanel projectId={projectId} />
@@ -216,6 +221,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
       <SubcontractorAssignmentsPanel projectId={projectId} />
       <SubcontractorCostsPanel projectId={projectId} />
       <BudgetPanel projectId={projectId} />
+      <JobCostingPanel projectId={projectId} />
       <DocumentsPanel projectId={projectId} />
       <GalleryPanel projectId={projectId} />
       <ProjectCloseoutPanel projectId={projectId} />

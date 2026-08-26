@@ -216,6 +216,27 @@ export class EquipmentService {
     });
   }
 
+  /** Recorded by whichever device is tracking this equipment — no telematics hardware or
+   * external provider involved, so there's no verification the ping is genuine; it's a
+   * self-reported location, same trust level as a check-in note. */
+  async recordGpsPing(companyId: string, id: string, lat: number, lng: number) {
+    await this.findOrThrow(companyId, id);
+    return this.prisma.equipmentGpsPing.create({ data: { equipmentId: id, lat, lng } });
+  }
+
+  /** One day's route, oldest first — the field UI plots these as a simple polyline. Defaults to
+   * today (UTC) when no explicit date is given. */
+  async listGpsPings(companyId: string, id: string, date?: string) {
+    await this.findOrThrow(companyId, id);
+    const day = date ? new Date(date) : new Date();
+    const from = new Date(Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate()));
+    const to = new Date(from.getTime() + 24 * 60 * 60 * 1000);
+    return this.prisma.equipmentGpsPing.findMany({
+      where: { equipmentId: id, recordedAt: { gte: from, lt: to } },
+      orderBy: { recordedAt: "asc" },
+    });
+  }
+
   private async findOrThrow(companyId: string, id: string) {
     const equipment = await this.prisma.equipment.findFirst({
       where: { id, companyId },

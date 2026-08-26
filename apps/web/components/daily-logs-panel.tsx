@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { WEATHER_CONDITIONS, type WeatherCondition } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { PhotoAttachments } from "@/components/photo-attachments";
+import { VoiceInputButton } from "@/components/voice-input-button";
 
 interface DailyLog {
   id: string;
@@ -184,7 +185,12 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
             </label>
           </div>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("workPerformed")}</span>
+            <span className="flex items-center gap-2 font-medium text-gray-700">
+              {t("workPerformed")}
+              <VoiceInputButton
+                onTranscript={(text) => setForm((f) => ({ ...f, workPerformed: f.workPerformed ? `${f.workPerformed} ${text}` : text }))}
+              />
+            </span>
             <textarea
               required
               rows={3}

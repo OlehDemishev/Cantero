@@ -155,70 +155,95 @@ enum RfiPriority {
 // ---------- Tenancy & Identity ----------
 
 model Company {
-  id                        String     @id @default(uuid())
-  name                      String
-  unitSystem                UnitSystem @default(metric)
-  currency                  Currency   @default(EUR)
-  locale                    Locale     @default(en)
-  country                   String // ISO 3166-1 alpha-2
-  createdAt                 DateTime   @default(now())
-  onboardingCompletedAt     DateTime?
+  id                                 String     @id @default(uuid())
+  name                               String
+  unitSystem                         UnitSystem @default(metric)
+  currency                           Currency   @default(EUR)
+  locale                             Locale     @default(en)
+  country                            String // ISO 3166-1 alpha-2
+  createdAt                          DateTime   @default(now())
+  onboardingCompletedAt              DateTime?
   /// Storage key for the uploaded logo image (PNG/JPEG — pdfkit can't rasterize SVG), read back via StorageService.
-  logoStorageKey            String?
-  logoMimeType              String?
+  logoStorageKey                     String?
+  logoMimeType                       String?
   /// Hex color (e.g. "#465fff") used as the accent on generated estimate/invoice PDFs.
-  brandColor                String?
+  brandColor                         String?
   /// Estimates at or above this amount need `requiredApprovalCount` distinct internal
   /// approvals before they can be finalized — null disables the chain (single-click approve).
-  approvalThresholdAmount   Decimal?   @db.Decimal(14, 2)
-  requiredApprovalCount     Int        @default(1)
+  approvalThresholdAmount            Decimal?   @db.Decimal(14, 2)
+  requiredApprovalCount              Int        @default(1)
+  /// Same threshold-gated multi-approver chain, applied to change orders instead of estimates.
+  changeOrderApprovalThresholdAmount Decimal?   @db.Decimal(14, 2)
+  changeOrderRequiredApprovalCount   Int        @default(1)
+  /// When true, a Client sitting in stage=lead with no stage change gets automated day-1/3/7
+  /// follow-up emails — off by default, same "unsolicited email" reasoning as invoiceRemindersEnabled.
+  leadFollowUpEnabled                Boolean    @default(false)
+  /// When true, an Estimate sent to the client and still clientDecision=pending gets the same
+  /// escalating-reminder treatment invoices already get.
+  estimateRemindersEnabled           Boolean    @default(false)
   /// Days after creation an open RFI/punch list item may stay unanswered/unresolved before
   /// it's auto-escalated (flagged + emailed to the company owner) — null disables escalation.
-  rfiSlaDays                Int?
-  punchListSlaDays          Int?
+  rfiSlaDays                         Int?
+  punchListSlaDays                   Int?
   /// When true, overdue invoices get automatic escalating reminder emails to the client (see
   /// InvoiceReminderService) — off by default since it sends unsolicited email on the company's behalf.
-  invoiceRemindersEnabled   Boolean    @default(false)
+  invoiceRemindersEnabled            Boolean    @default(false)
   /// Public, unauthenticated token embedded in the company's lead-capture form URL — null disables the form entirely.
-  publicLeadFormToken       String?    @unique
+  publicLeadFormToken                String?    @unique
   /// Enterprise SSO (SAML 2.0) — all four null means SSO is off for this company. When set,
   /// a user whose email matches ssoDomain is routed to the IdP at ssoEntryPoint instead of
   /// password login, and is just-in-time provisioned (as "worker") on first successful sign-in.
   /// ssoIssuer/ssoCert describe the IdP (its entity ID and signing certificate) — our own SP
   /// entity ID is derived per-company, not stored here.
-  ssoDomain                 String?    @unique
-  ssoEntryPoint             String?
-  ssoIssuer                 String?
-  ssoCert                   String?
+  ssoDomain                          String?    @unique
+  ssoEntryPoint                      String?
+  ssoIssuer                          String?
+  ssoCert                            String?
   /// GDPR Art. 17 account-deletion request — set when an owner/admin asks to close the
   /// account; null means no request is pending. Actual deletion is a manual support-team
   /// process (retention/legal review), not an automated hard delete from this flag alone.
-  deletionRequestedAt       DateTime?
-  deletionRequestedByUserId String?
+  deletionRequestedAt                DateTime?
+  deletionRequestedByUserId          String?
   /// Google/Yelp/etc. review link shared with clients after project closeout — null disables
   /// the "request a review" action entirely (nothing to point the client at yet).
-  reviewRequestUrl          String?
+  reviewRequestUrl                   String?
   /// Franchise/multi-branch rollup: a parent company can view read-only aggregate stats across
   /// every company that has linked to it (see franchiseLinkCode). Null means this company is
   /// either standalone or itself a parent — never both, enforced in CompanyService.
-  parentCompanyId           String?
+  parentCompanyId                    String?
   /// One-time code the parent shares out-of-band; a prospective branch redeems it via
   /// POST /company/link-to-parent to set its own parentCompanyId. Regenerating clears the old code.
-  franchiseLinkCode         String?    @unique
+  franchiseLinkCode                  String?    @unique
   /// Exact IPs or CIDR blocks (e.g. "203.0.113.4" or "203.0.113.0/24") allowed to sign in —
   /// empty means unrestricted. Checked in IpAllowlistGuard, after authentication succeeds.
-  ipAllowlist               String[]   @default([])
+  ipAllowlist                        String[]   @default([])
+  /// Auto-signs out a session after this many minutes of inactivity — null disables the policy
+  /// (the JWT's own expiry is still the outer bound). Enforced in JwtAuthGuard via SessionsService.
+  sessionTimeoutMinutes               Int?
+  /// Password policy applied wherever a password is set (signup, invite accept, change/reset) —
+  /// see assertPasswordPolicy() in AuthService.
+  passwordMinLength                   Int        @default(8)
+  passwordRequireSymbol                Boolean    @default(false)
+  /// Roles that see quantities/scope on estimates but not internal cost/markup figures
+  /// (materialsCost, laborCost, markupAmount, markupPercent, laborRatePerHour) — enforced in
+  /// EstimatesService. Empty means everyone with estimate access sees the full breakdown.
+  hideCostDataFromRoles                MembershipRole[] @default([])
+  /// This company's own shareable code for Cantero's platform referral program — generated once
+  /// at signup, never changes. Distinct from the CRM's client-to-client referral tracking.
+  referralCode                        String?    @unique
+  /// Set at signup if the new company used another company's referralCode.
+  referredByCompanyId                 String?
   /// Incoming webhook URLs for chat notifications on key events — null disables that channel.
-  slackWebhookUrl           String?
-  teamsWebhookUrl           String?
+  slackWebhookUrl                    String?
+  teamsWebhookUrl                    String?
   /// Token embedded in the company's public ICS calendar-subscription URL — null disables the feed.
-  calendarFeedToken         String?    @unique
+  calendarFeedToken                  String?    @unique
   /// Monthly PTO accrual shown to admins as a reference figure when adjusting a worker's balance —
   /// null means the company doesn't run a formal accrual policy (balances are still adjustable).
-  ptoAccrualHoursPerMonth   Decimal?   @db.Decimal(6, 2)
+  ptoAccrualHoursPerMonth            Decimal?   @db.Decimal(6, 2)
   /// Currency franchise rollups convert branch figures into — null means "use this company's own
   /// currency", only meaningful for a parent company with linked branches.
-  reportingCurrency         Currency?
+  reportingCurrency                  Currency?
 
   memberships    Membership[]
   invites        Invite[]
@@ -282,6 +307,12 @@ model Company {
   deficiencies            Deficiency[]
   notificationReads       NotificationRead[]
   dashboardWidgets        DashboardWidget[]
+  contractTemplates       ContractTemplate[]
+  contracts               Contract[]
+  projectMembers          ProjectMember[]
+  costCodes               CostCode[]
+  referredByCompany       Company?   @relation("CompanyReferrals", fields: [referredByCompanyId], references: [id], onDelete: SetNull)
+  referrals               Company[]  @relation("CompanyReferrals")
 
   @@map("companies")
 }
@@ -395,6 +426,7 @@ model User {
   passwordResetTokens PasswordResetToken[]
   notificationReads   NotificationRead[]
   dashboardWidgets    DashboardWidget[]
+  projectMemberships  ProjectMember[]
 
   @@map("users")
 }
@@ -695,6 +727,11 @@ model Estimate {
   /// generated PDF — null skips the cover page entirely, same PDF as before this field existed.
   coverLetter String?
 
+  /// Escalating day-N follow-up emails while sent and still awaiting a client decision — see
+  /// EstimateRemindersService, same reminderCount/lastReminderSentAt shape as Invoice's reminders.
+  reminderCount      Int       @default(0)
+  lastReminderSentAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -766,14 +803,31 @@ model ChangeOrder {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  company  Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  estimate Estimate          @relation(fields: [estimateId], references: [id], onDelete: Cascade)
-  lines    ChangeOrderLine[]
+  company   Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  estimate  Estimate              @relation(fields: [estimateId], references: [id], onDelete: Cascade)
+  lines     ChangeOrderLine[]
+  approvals ChangeOrderApproval[]
 
   @@unique([estimateId, number])
   @@index([companyId])
   @@index([estimateId])
   @@map("change_orders")
+}
+
+/// Same multi-approver-chain shape as EstimateApproval, gated by
+/// Company.changeOrderApprovalThresholdAmount instead of the estimate one.
+model ChangeOrderApproval {
+  id            String   @id @default(uuid())
+  changeOrderId String
+  userId        String
+  actorName     String
+  approvedAt    DateTime @default(now())
+
+  changeOrder ChangeOrder @relation(fields: [changeOrderId], references: [id], onDelete: Cascade)
+
+  @@unique([changeOrderId, userId])
+  @@index([changeOrderId])
+  @@map("change_order_approvals")
 }
 
 model ChangeOrderLine {
@@ -785,11 +839,15 @@ model ChangeOrderLine {
   laborCost         Decimal @default(0) @db.Decimal(14, 2)
   lineTotal         Decimal @default(0) @db.Decimal(14, 2)
   sortOrder         Int     @default(0)
+  /// Optional CSI cost code, for job-costing/schedule-of-values roll-ups — see JobCostingService.
+  costCodeId        String?
 
   changeOrder     ChangeOrder     @relation(fields: [changeOrderId], references: [id], onDelete: Cascade)
   rateCatalogItem RateCatalogItem @relation(fields: [rateCatalogItemId], references: [id])
+  costCode        CostCode?       @relation(fields: [costCodeId], references: [id], onDelete: SetNull)
 
   @@index([changeOrderId])
+  @@index([costCodeId])
   @@map("change_order_lines")
 }
 
@@ -847,14 +905,18 @@ model EstimateLine {
   laborCost         Decimal @default(0) @db.Decimal(14, 2)
   lineTotal         Decimal @default(0) @db.Decimal(14, 2)
   sortOrder         Int     @default(0)
+  /// Optional CSI cost code, for job-costing/schedule-of-values roll-ups — see JobCostingService.
+  costCodeId        String?
 
   estimate        Estimate         @relation(fields: [estimateId], references: [id], onDelete: Cascade)
   section         EstimateSection? @relation(fields: [sectionId], references: [id], onDelete: SetNull)
   rateCatalogItem RateCatalogItem  @relation(fields: [rateCatalogItemId], references: [id], onDelete: Restrict)
+  costCode        CostCode?        @relation(fields: [costCodeId], references: [id], onDelete: SetNull)
   tasks           Task[]
   stockMovements  StockMovement[]
 
   @@index([estimateId])
+  @@index([costCodeId])
   @@map("estimate_lines")
 }
 
@@ -1107,6 +1169,10 @@ model Project {
   geofenceLat          Float?
   geofenceLng          Float?
   geofenceRadiusMeters Int?
+  /// When true, only members listed in ProjectMember (plus owner/admin, who always see
+  /// everything) can see this project — false (the default) means visible to the whole company,
+  /// same as before this field existed.
+  restrictedToMembers  Boolean   @default(false)
 
   company                  Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   client                   Client?                   @relation(fields: [clientId], references: [id], onDelete: SetNull)
@@ -1137,9 +1203,29 @@ model Project {
   inspectionChecklists     InspectionChecklist[]
   deficiencies             Deficiency[]
   comments                 Comment[]
+  members                  ProjectMember[]
+  contracts                Contract[]
 
   @@index([companyId])
   @@map("projects")
+}
+
+/// Opt-in per-project access list — only consulted when Project.restrictedToMembers is true.
+model ProjectMember {
+  id        String   @id @default(uuid())
+  companyId String
+  projectId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@index([companyId])
+  @@index([projectId])
+  @@map("project_members")
 }
 
 model Task {
@@ -1474,6 +1560,13 @@ model Subcontractor {
   name      String
   email     String?
   phone     String?
+  /// Self-described trade/specialty (e.g. "Electrical", "Framing") shown on the public profile.
+  specialization String?
+  /// Short self-described blurb for the public profile — not moderated, this company's own words about a sub it trusts.
+  bio            String?
+  /// Set when publicListed is turned on; the public profile lives at /subcontractor-profile/:publicToken.
+  publicToken    String?  @unique
+  publicListed   Boolean  @default(false)
 
   company           Company                         @relation(fields: [companyId], references: [id], onDelete: Cascade)
   costs             SubcontractorCost[]
@@ -1483,6 +1576,7 @@ model Subcontractor {
   lienWaivers       LienWaiver[]
   bidInvites        BidInvite[]
   bids              Bid[]
+  contracts         Contract[]
 
   @@index([companyId])
   @@map("subcontractors")
@@ -1691,16 +1785,39 @@ model SubcontractorCost {
   incurredDate    DateTime  @default(now())
   dueDate         DateTime?
   paid            Boolean   @default(false)
+  /// Optional CSI cost code, for job-costing roll-ups — see JobCostingService.
+  costCodeId      String?
 
   company       Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
   subcontractor Subcontractor @relation(fields: [subcontractorId], references: [id], onDelete: Restrict)
   project       Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  costCode      CostCode?     @relation(fields: [costCodeId], references: [id], onDelete: SetNull)
   lienWaiver    LienWaiver?
 
   @@index([companyId])
   @@index([projectId])
   @@index([subcontractorId])
+  @@index([costCodeId])
   @@map("subcontractor_costs")
+}
+
+/// CSI MasterFormat-style division, used to classify estimate/change-order/subcontractor-cost
+/// lines for job-costing roll-ups and schedule-of-values billing — see JobCostingService and
+/// AiaBillingService. Company-scoped so each company can trim/extend the list to what it uses.
+model CostCode {
+  id        String @id @default(uuid())
+  companyId String
+  code      String
+  name      String
+
+  company            Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  estimateLines      EstimateLine[]
+  changeOrderLines   ChangeOrderLine[]
+  subcontractorCosts SubcontractorCost[]
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@map("cost_codes")
 }
 
 enum LienWaiverType {
@@ -1736,6 +1853,59 @@ model LienWaiver {
   @@index([companyId])
   @@index([subcontractorId])
   @@map("lien_waivers")
+}
+
+/// A reusable free-text contract body — cloned into a fresh Contract's body at creation time,
+/// same clone-on-use convention as InspectionTemplate/OnboardingTemplateItem.
+model ContractTemplate {
+  id        String   @id @default(uuid())
+  companyId String
+  name      String
+  body      String
+  createdAt DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@map("contract_templates")
+}
+
+enum ContractStatus {
+  draft
+  sent
+  signed
+  void
+}
+
+/// A free-form legal document (prime contract or subcontractor agreement) — distinct from
+/// Estimate/ChangeOrder, which are structured pricing documents this codebase already renders
+/// from line items. Reuses the same signerName/signatureImageKey/signedIp/clientAccessToken
+/// trio those two already use for e-signature, rather than inventing a new mechanism.
+model Contract {
+  id                String         @id @default(uuid())
+  companyId         String
+  projectId         String
+  clientId          String?
+  subcontractorId   String?
+  title             String
+  body              String
+  status            ContractStatus @default(draft)
+  clientAccessToken String?        @unique
+  sentAt            DateTime?
+  signerName        String?
+  signatureImageKey String?
+  signedIp          String?
+  signedAt          DateTime?
+  createdAt         DateTime       @default(now())
+
+  company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project       Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  client        Client?        @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  subcontractor Subcontractor? @relation(fields: [subcontractorId], references: [id], onDelete: SetNull)
+
+  @@index([companyId])
+  @@index([projectId])
+  @@map("contracts")
 }
 
 enum BidRequestStatus {
@@ -1803,27 +1973,35 @@ model Bid {
 // ---------- CRM (thin in Phase 1) ----------
 
 model Client {
-  id                 String      @id @default(uuid())
-  companyId          String
-  name               String
-  email              String?
-  phone              String?
-  stage              ClientStage @default(lead)
-  notes              String?
-  createdAt          DateTime    @default(now())
+  id                     String               @id @default(uuid())
+  companyId              String
+  name                   String
+  email                  String?
+  phone                  String?
+  stage                  ClientStage          @default(lead)
+  notes                  String?
+  createdAt              DateTime             @default(now())
   /// Estimated deal value while the client is still in the pipeline (lead/contacted/qualified).
-  estimatedValue     Decimal?    @db.Decimal(12, 2)
-  ownerWorkerId      String?
-  wonAt              DateTime?
-  lostAt             DateTime?
-  lostReason         String?
+  estimatedValue         Decimal?             @db.Decimal(12, 2)
+  ownerWorkerId          String?
+  wonAt                  DateTime?
+  lostAt                 DateTime?
+  lostReason             String?
   /// The existing client who referred this one in — self-referential, so a company can trace
   /// its referral chains through the CRM without a separate tracking system.
-  referredByClientId String?
+  referredByClientId     String?
   /// Manually-set win likelihood (0-100) for pipeline forecasting. When unset, the forecast
   /// falls back to a per-stage default so every open deal still contributes a weighted value.
-  probability        Int?
-  expectedCloseDate  DateTime?
+  probability            Int?
+  expectedCloseDate      DateTime?
+  /// Automated day-1/3/7 follow-up emails while still in stage=lead — see LeadFollowUpService.
+  leadFollowUpCount      Int                  @default(0)
+  lastLeadFollowUpSentAt DateTime?
+  /// Referral reward tracking for the client who *made* the referral (not the referred-in one) —
+  /// set to "pending" once a client they referred reaches "won"; marked "paid" manually, since
+  /// there's no payment-processor integration to automate the actual payout.
+  referralRewardStatus   ReferralRewardStatus @default(none)
+  referralRewardAmount   Decimal?             @db.Decimal(12, 2)
 
   company           Company                  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   owner             Worker?                  @relation(fields: [ownerWorkerId], references: [id], onDelete: SetNull)
@@ -1838,11 +2016,18 @@ model Client {
   warrantyClaims    WarrantyClaim[]
   serviceContracts  ServiceContract[]
   stageHistory      ClientStageHistory[]
+  contracts         Contract[]
 
   @@index([companyId])
   @@index([ownerWorkerId])
   @@index([referredByClientId])
   @@map("clients")
+}
+
+enum ReferralRewardStatus {
+  none
+  pending
+  paid
 }
 
 /// One row per stage transition — lets pipeline reporting compute win rate and average
@@ -2139,9 +2324,26 @@ model Equipment {
   assignments         EquipmentAssignment[]
   maintenanceRecords  EquipmentMaintenanceRecord[]
   resourceAssignments ResourceAssignment[]
+  gpsPings            EquipmentGpsPing[]
 
   @@index([companyId])
   @@map("equipment")
+}
+
+/// One GPS fix from a field device tracking this piece of equipment — the browser/device sends
+/// these itself while an operator has tracking turned on, there's no external telematics hardware
+/// or provider integration behind it. Used only to draw a route for the day, not stored forever.
+model EquipmentGpsPing {
+  id          String   @id @default(uuid())
+  equipmentId String
+  lat         Float
+  lng         Float
+  recordedAt  DateTime @default(now())
+
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+
+  @@index([equipmentId, recordedAt])
+  @@map("equipment_gps_pings")
 }
 
 /// One row per check-out; checkedInAt stays null while the item is still out. Exactly one

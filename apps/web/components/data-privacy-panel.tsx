@@ -13,6 +13,7 @@ export function DataPrivacyPanel({ canManage }: { canManage: boolean }) {
 
   const [company, setCompany] = useState<Company | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [exportingOperational, setExportingOperational] = useState(false);
   const [busy, setBusy] = useState(false);
 
   function load() {
@@ -28,6 +29,16 @@ export function DataPrivacyPanel({ canManage }: { canManage: boolean }) {
       downloadBlob(blob, "cantero-data-export.zip");
     } finally {
       setExporting(false);
+    }
+  }
+
+  async function exportOperationalData() {
+    setExportingOperational(true);
+    try {
+      const blob = await apiFetch<Blob>("/company/operational-export");
+      downloadBlob(blob, "cantero-operational-export.zip");
+    } finally {
+      setExportingOperational(false);
     }
   }
 
@@ -65,6 +76,14 @@ export function DataPrivacyPanel({ canManage }: { canManage: boolean }) {
           <p className="mb-2 text-sm text-gray-600">{t("exportHint")}</p>
           <button onClick={exportData} disabled={exporting} className="btn-secondary px-3 py-1 text-xs">
             {exporting ? t("exporting") : t("exportButton")}
+          </button>
+        </div>
+
+        <div className="border-t border-gray-100 pt-4">
+          <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("operationalExportTitle")}</h3>
+          <p className="mb-2 text-sm text-gray-600">{t("operationalExportHint")}</p>
+          <button onClick={exportOperationalData} disabled={exportingOperational} className="btn-secondary px-3 py-1 text-xs">
+            {exportingOperational ? t("exporting") : t("operationalExportButton")}
           </button>
         </div>
 

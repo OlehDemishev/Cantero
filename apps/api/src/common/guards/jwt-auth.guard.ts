@@ -36,7 +36,7 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException("Invalid or expired token");
     }
 
-    if (payload.sid && (await this.sessions.isRevoked(payload.sid))) {
+    if (payload.sid && (await this.sessions.isRevokedOrTimedOut(payload.sid, payload.companyId))) {
       throw new UnauthorizedException("Session has been signed out");
     }
     if (payload.sid) this.sessions.touch(payload.sid);

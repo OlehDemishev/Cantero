@@ -1,5 +1,6 @@
+import { randomBytes } from "node:crypto";
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import type { AddSubcontractorDocumentInput, CreateSubcontractorInput, SubcontractorDocumentType } from "@cantero/shared";
+import type { AddSubcontractorDocumentInput, CreateSubcontractorInput, SubcontractorDocumentType, UpdateSubcontractorProfileInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 
@@ -110,6 +111,55 @@ export class SubcontractorsService {
     });
 
     return { compliant: requirements.every((r) => r.status === "valid"), requirements };
+  }
+
+  async updateProfile(companyId: string, id: string, input: UpdateSubcontractorProfileInput) {
+    await this.assertOwned(companyId, id);
+    return this.prisma.subcontractor.update({ where: { id }, data: input });
+  }
+
+  /** A shareable reference/portfolio page a GC can hand to a trusted sub to help them win work
+   * elsewhere — not a cross-company search directory (a Subcontractor row is still owned by one
+   * company), just a public link showing what this company can vouch for. */
+  async setPublicListed(companyId: string, id: string, publicListed: boolean) {
+    const subcontractor = await this.assertOwned(companyId, id);
+    return this.prisma.subcontractor.update({
+      where: { id },
+      data: {
+        publicListed,
+        publicToken: publicListed ? (subcontractor.publicToken ?? randomBytes(16).toString("hex")) : subcontractor.publicToken,
+      },
+    });
+  }
+
+  /** Public, unauthenticated — track record is this company's own history with the sub
+   * (projects worked, amount paid out), not a cross-company rating; there's no rating data. */
+  async getPublicProfile(token: string) {
+    const subcontractor = await this.prisma.subcontractor.findFirst({
+      where: { publicToken: token, publicListed: true },
+      include: { company: { select: { name: true } } },
+    });
+    if (!subcontractor) throw new NotFoundException("Profile not found");
+
+    const [projectsWorked, paidTotal] = await Promise.all([
+      this.prisma.subcontractorAssignment.count({ where: { subcontractorId: subcontractor.id } }),
+      this.prisma.subcontractorCost.aggregate({ where: { subcontractorId: subcontractor.id, paid: true }, _sum: { amount: true } }),
+    ]);
+
+    return {
+      name: subcontractor.name,
+      specialization: subcontractor.specialization,
+      bio: subcontractor.bio,
+      referencedBy: subcontractor.company.name,
+      projectsWorked,
+      totalPaidOut: Number(paidTotal._sum.amount ?? 0),
+    };
+  }
+
+  private async assertOwned(companyId: string, id: string) {
+    const subcontractor = await this.prisma.subcontractor.findFirst({ where: { id, companyId } });
+    if (!subcontractor) throw new NotFoundException("Subcontractor not found");
+    return subcontractor;
   }
 
   private async assertCompliant(companyId: string, subcontractorId: string, subcontractorName: string) {

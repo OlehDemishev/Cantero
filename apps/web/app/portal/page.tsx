@@ -36,11 +36,18 @@ interface InvoiceSummary {
   dueDate: string | null;
   project: { name: string };
 }
+interface ProjectProgress {
+  tasksTotal: number;
+  tasksDone: number;
+  taskPercent: number | null;
+  budgetPercent: number | null;
+}
 interface PortalProject {
   id: string;
   name: string;
   warrantyExpiresAt: string | null;
   isUnderWarranty: boolean;
+  progress: ProjectProgress;
 }
 type WarrantyClaimStatus = "open" | "in_progress" | "resolved" | "denied";
 interface WarrantyClaimSummary {
@@ -144,6 +151,48 @@ export default function PortalDashboardPage() {
             {t("logout")}
           </button>
         </div>
+
+        {projects && projects.some((p) => p.progress.taskPercent !== null || p.progress.budgetPercent !== null) && (
+          <section className="card mb-6">
+            <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("projectProgress")}</h2>
+            <ul className="flex flex-col gap-4">
+              {projects
+                .filter((p) => p.progress.taskPercent !== null || p.progress.budgetPercent !== null)
+                .map((p) => (
+                  <li key={p.id}>
+                    <p className="mb-2 text-sm font-medium text-gray-800">{p.name}</p>
+                    {p.progress.taskPercent !== null && (
+                      <div className="mb-2">
+                        <div className="mb-1 flex justify-between text-xs text-gray-500">
+                          <span>{t("tasksComplete")}</span>
+                          <span>
+                            {p.progress.tasksDone}/{p.progress.tasksTotal} · {p.progress.taskPercent}%
+                          </span>
+                        </div>
+                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+                          <div className="h-full rounded-full bg-brand-500" style={{ width: `${p.progress.taskPercent}%` }} />
+                        </div>
+                      </div>
+                    )}
+                    {p.progress.budgetPercent !== null && (
+                      <div>
+                        <div className="mb-1 flex justify-between text-xs text-gray-500">
+                          <span>{t("budgetPaid")}</span>
+                          <span>{p.progress.budgetPercent}%</span>
+                        </div>
+                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+                          <div
+                            className="h-full rounded-full bg-success-500"
+                            style={{ width: `${Math.min(p.progress.budgetPercent, 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </li>
+                ))}
+            </ul>
+          </section>
+        )}
 
         <section className="card">
           <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("estimates")}</h2>

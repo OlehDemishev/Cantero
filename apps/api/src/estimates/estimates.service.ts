@@ -48,8 +48,10 @@ export class EstimatesService {
     private readonly webhooks: WebhooksService,
   ) {}
 
-  list(companyId: string) {
-    return this.prisma.estimate.findMany({ where: { companyId, isTemplate: false }, include: { project: true } });
+  async list(companyId: string, role?: string) {
+    const estimates = await this.prisma.estimate.findMany({ where: { companyId, isTemplate: false }, include: { project: true } });
+    if (!(await this.shouldHideCostData(companyId, role))) return estimates;
+    return estimates.map((e) => this.redactCostData(e));
   }
 
   listTemplates(companyId: string) {
@@ -57,10 +59,12 @@ export class EstimatesService {
   }
 
   /** Recomputes the estimate live (without persisting) and flags it if that differs from the stored totals — a catalog price moved since it was last saved. */
-  async get(companyId: string, id: string) {
+  async get(companyId: string, id: string, role?: string) {
     const estimate = await this.findOrThrow(companyId, id);
+    const hideCostData = await this.shouldHideCostData(companyId, role);
     if (estimate.isTemplate || estimate.lines.length === 0) {
-      return { ...estimate, isStale: false };
+      const result = { ...estimate, isStale: false };
+      return hideCostData ? this.redactCostData(result) : result;
     }
     const result = await this.computeForLines(
       companyId,
@@ -71,7 +75,29 @@ export class EstimatesService {
         taxPercent: Number(estimate.taxPercent),
       },
     );
-    return { ...estimate, isStale: result.grandTotal !== Number(estimate.grandTotal) };
+    const withStaleFlag = { ...estimate, isStale: result.grandTotal !== Number(estimate.grandTotal) };
+    return hideCostData ? this.redactCostData(withStaleFlag) : withStaleFlag;
+  }
+
+  /** Company.hideCostDataFromRoles — owner/admin (or an internal caller with no role) always see
+   * everything; role is undefined for internal/service-to-service callers. */
+  private async shouldHideCostData(companyId: string, role?: string): Promise<boolean> {
+    if (!role || role === "owner" || role === "admin") return false;
+    const company = await this.prisma.company.findUnique({ where: { id: companyId }, select: { hideCostDataFromRoles: true } });
+    return (company?.hideCostDataFromRoles as string[] | undefined)?.includes(role) ?? false;
+  }
+
+  /** Strips cost/markup figures a hidden-cost-data role shouldn't see — quantities and scope stay visible. */
+  private redactCostData<T extends Record<string, unknown>>(estimate: T): T {
+    const REDACTED_KEYS = ["materialsCostTotal", "laborCostTotal", "markupAmount", "markupPercent", "laborRatePerHour"];
+    const redacted: Record<string, unknown> = { ...estimate };
+    for (const key of REDACTED_KEYS) {
+      if (key in redacted) redacted[key] = null;
+    }
+    if (Array.isArray(redacted.lines)) {
+      redacted.lines = redacted.lines.map((l: Record<string, unknown>) => ({ ...l, materialsCost: null, laborCost: null }));
+    }
+    return redacted as T;
   }
 
   async create(companyId: string, input: CreateEstimateInput) {
@@ -90,6 +116,7 @@ export class EstimatesService {
       where: { id: input.rateCatalogItemId, companyId },
     });
     if (!rateItem) throw new NotFoundException("Rate catalog item not found");
+    if (input.costCodeId) await this.assertCostCode(companyId, input.costCodeId);
 
     await this.prisma.estimateLine.create({
       data: {
@@ -97,9 +124,15 @@ export class EstimatesService {
         rateCatalogItemId: input.rateCatalogItemId,
         quantity: input.quantity,
         sectionId: input.sectionId,
+        costCodeId: input.costCodeId,
       },
     });
     return this.recalculate(companyId, estimateId);
+  }
+
+  private async assertCostCode(companyId: string, costCodeId: string) {
+    const costCode = await this.prisma.costCode.findFirst({ where: { id: costCodeId, companyId } });
+    if (!costCode) throw new NotFoundException("Cost code not found");
   }
 
   /** Expands an Assembly into ordinary EstimateLines — one per AssemblyItem, quantity scaled by

@@ -21,7 +21,8 @@
     "emailedTo": "Per E-Mail gesendet an {email}.",
     "noClientEmail": "Für diesen Kunden ist keine E-Mail-Adresse hinterlegt — teilen Sie den Link manuell.",
     "none": "Keine",
-    "close": "Schließen"
+    "close": "Schließen",
+    "add": "Hinzufügen"
   },
   "nav": {
     "menu": "Menü",
@@ -46,7 +47,8 @@
     "subcontractors": "Subunternehmer",
     "expenses": "Spesen",
     "serviceContracts": "Serviceverträge",
-    "bankReconciliation": "Kontoabgleich"
+    "bankReconciliation": "Kontoabgleich",
+    "contracts": "Verträge"
   },
   "auth": {
     "signupTitle": "Cantero-Konto erstellen",
@@ -280,7 +282,20 @@
     "apiKeyExpires": "Läuft ab",
     "apiKeyScopes": "Berechtigungen",
     "apiKeyScopesHint": "Berechtigungen (keine ausgewählt = uneingeschränkt):",
-    "apiKeyUnrestricted": "Uneingeschränkt"
+    "apiKeyUnrestricted": "Uneingeschränkt",
+    "approvalChainsTooltip": "Gilt nur für Kostenvoranschläge. Nachträge haben unten einen eigenen Schwellenwert.",
+    "changeOrderApprovalChains": "Freigabeketten für Nachträge",
+    "changeOrderApprovalChainsHint": "Nachträge ab diesem Betrag benötigen so viele interne Freigaben, bevor sie an den Kunden gesendet werden können. Leer lassen zum Deaktivieren.",
+    "estimateReminders": "Automatische Erinnerungen zu Kostenvoranschlägen",
+    "estimateRemindersHint": "Sendet eskalierende Erinnerungs-E-Mails an den Kunden 3, 7 und 14 Tage nach Versand eines Kostenvoranschlags, solange dieser noch auf eine Entscheidung wartet.",
+    "leadFollowUp": "Automatische Nachfass-E-Mails für Leads",
+    "leadFollowUpHint": "Sendet eine Nachfass-Sequenz an Tag 1/3/7 an Leads, die noch in der Lead-Phase sind.",
+    "exportCsv": "CSV exportieren",
+    "auditFilterDateFrom": "Von",
+    "auditFilterDateTo": "Bis",
+    "auditFilterEntityType": "Objekttyp",
+    "auditFilterAction": "Aktion",
+    "auditFilterApply": "Filtern"
   },
   "projects": {
     "title": "Projekte",
@@ -347,7 +362,11 @@
     "avgDays": "Ø {days}T",
     "ownerLeaderboard": "Vertriebsrangliste",
     "wonSummary": "Gewonnen: {count} · {value} {currency}",
-    "openSummary": "Offen: {count} · {value} {currency}"
+    "openSummary": "Offen: {count} · {value} {currency}",
+    "referralReward": "Empfehlungsprämie",
+    "referralReward_pending": "Prämie offen",
+    "referralReward_paid": "Prämie ausgezahlt",
+    "markRewardPaid": "Als ausgezahlt markieren"
   },
   "team": {
     "title": "Team",
@@ -529,7 +548,8 @@
     "to": "Bis",
     "compare": "Vergleichen",
     "grandTotalDelta": "Änderung der Gesamtsumme",
-    "noDifferences": "Keine Unterschiede zwischen diesen Revisionen"
+    "noDifferences": "Keine Unterschiede zwischen diesen Revisionen",
+    "costCodeUnassigned": "Ohne Kostenart"
   },
   "invoices": {
     "title": "Rechnungen",
@@ -589,7 +609,8 @@
     "resume": "Fortsetzen",
     "cashFlowForecastLink": "13-Wochen-Cashflow-Prognose in den Berichten ansehen",
     "exportQuickBooks": "Nach QuickBooks exportieren",
-    "exportXero": "Nach Xero exportieren"
+    "exportXero": "Nach Xero exportieren",
+    "downloadScheduleOfValues": "Leistungsverzeichnis herunterladen"
   },
   "portal": {
     "signInTitle": "Kundenportal",
@@ -624,7 +645,10 @@
     "descriptionPlaceholder": "Weitere Details…",
     "submitClaim": "Fall melden",
     "claimSubmitted": "Fall gemeldet — wir melden uns bei Ihnen.",
-    "payNow": "Jetzt bezahlen"
+    "payNow": "Jetzt bezahlen",
+    "projectProgress": "Projektfortschritt",
+    "tasksComplete": "Aufgaben abgeschlossen",
+    "budgetPaid": "Budget bezahlt"
   },
   "equipment": {
     "title": "Ausrüstung",
@@ -664,7 +688,14 @@
     "nextDue": "Nächste Fälligkeit: {date}",
     "intervalDays": "Alle (Tage)",
     "intervalDaysPlaceholder": "z. B. 90",
-    "disableSchedule": "Zeitplan deaktivieren"
+    "disableSchedule": "Zeitplan deaktivieren",
+    "gpsTracking": "Standortverfolgung",
+    "gpsTrackingHint": "Selbst gemeldet von diesem Gerät, solange die Verfolgung aktiv ist — nur die heutige Route, keine externe Telematik.",
+    "gpsStart": "Verfolgung starten",
+    "gpsStop": "Verfolgung stoppen",
+    "gpsDenied": "Der Standortzugriff wurde verweigert.",
+    "gpsUnsupported": "Dieser Browser unterstützt keine Standortverfolgung.",
+    "gpsNoRoute": "Heute wurde keine Route aufgezeichnet."
   },
   "subcontractorPortal": {
     "signInTitle": "Subunternehmer-Portal",
@@ -776,7 +807,11 @@
     "totalOrders": "Bestellungen",
     "onTimeRate": "Pünktlichkeitsrate",
     "averageDelay": "Ø Verzögerung",
-    "totalSpend": "Gesamtausgaben"
+    "totalSpend": "Gesamtausgaben",
+    "catalogSync": "Katalog-Preisabgleich",
+    "catalogSyncHint": "Laden Sie die Preisliste dieses Lieferanten hoch (CSV: code, unitPrice), um die Preise für Materialien, bei denen dieser Lieferant bevorzugt wird, in großen Mengen zu aktualisieren.",
+    "uploadCatalogCsv": "CSV hochladen",
+    "catalogSyncResult": "{updated} Preis(e) aktualisiert, {skipped} übersprungen"
   },
   "scheduling": {
     "board": "Aufgabenboard",
@@ -843,7 +878,12 @@
     "loggedOutsideGeofence": "Gespeichert — jedoch außerhalb des Geofence des Projekts erfasst",
     "expenses": "Spesen",
     "queuedOfflineNoReceipt": "Offline gespeichert — das Belegfoto muss hinzugefügt werden, sobald Sie wieder online sind",
-    "receiptQueuedOffline": "Gespeichert — Belegfoto wird hochgeladen, sobald Sie wieder online sind"
+    "receiptQueuedOffline": "Gespeichert — Belegfoto wird hochgeladen, sobald Sie wieder online sind",
+    "syncConflicts": "{count} Eintrag/Einträge konnten nicht synchronisiert werden — etwas hat sich zwischenzeitlich geändert",
+    "retrySync": "Erneut versuchen",
+    "discardSync": "Verwerfen",
+    "voiceInputStart": "Spracheingabe starten",
+    "voiceInputStop": "Spracheingabe stoppen"
   },
   "subcontractors": {
     "title": "Nachunternehmerkosten",
@@ -863,7 +903,8 @@
     "requestWaiver": "Verzichtserklärung anfordern",
     "finalWaiver": "Endgültig",
     "downloadWaiver": "Verzichtserklärung herunterladen",
-    "waiverAwaitingSignature": "Unterschrift ausstehend"
+    "waiverAwaitingSignature": "Unterschrift ausstehend",
+    "costCodeUnassigned": "Ohne Kostenart"
   },
   "reports": {
     "title": "Berichte",
@@ -1289,7 +1330,17 @@
     "other": "Sonstiges",
     "viewCertificate": "Zertifikat ansehen",
     "uploadCertificate": "Zertifikat hochladen",
-    "uploading": "Wird hochgeladen…"
+    "uploading": "Wird hochgeladen…",
+    "publicProfile": "Öffentliches Profil",
+    "publicProfileHint": "Ein teilbarer Link mit der Spezialisierung und Erfolgsbilanz dieses Subunternehmers bei Ihrem Unternehmen — praktisch als Referenz für Aufträge anderswo.",
+    "specializationPlaceholder": "Spezialisierung, z. B. Elektrik",
+    "bioPlaceholder": "Eine kurze Notiz zu diesem Subunternehmer...",
+    "makePublic": "Profil veröffentlichen",
+    "copyPublicLink": "Öffentlichen Link kopieren",
+    "profileNotFound": "Dieser Profillink ist ungültig oder nicht mehr öffentlich.",
+    "projectsWorked": "Bearbeitete Projekte",
+    "totalPaidOut": "Insgesamt ausgezahlt",
+    "referencedBy": "Referenziert von {name}"
   },
   "weather": {
     "title": "Wettervorhersage",
@@ -1414,7 +1465,10 @@
     "requestDeletion": "Kontolöschung beantragen",
     "confirmRequest": "Löschung dieses Unternehmenskontos beantragen? Der Support meldet sich, bevor etwas gelöscht wird.",
     "deletionPending": "Löschung beantragt am {date} — unser Support-Team meldet sich.",
-    "cancelRequest": "Löschantrag zurückziehen"
+    "cancelRequest": "Löschantrag zurückziehen",
+    "operationalExportTitle": "Betrieblicher Datenexport",
+    "operationalExportHint": "Leistungs-/Materialkataloge, Nachträge, Subunternehmer samt Kosten, Verträge und Bestellungen — die geschäftskritischen Einrichtungsdaten, die der obige Export auslässt.",
+    "operationalExportButton": "Betrieblichen Export herunterladen"
   },
   "customReports": {
     "title": "Benutzerdefinierte Berichte",
@@ -1636,5 +1690,97 @@
     "checklistItems": "Checklistenpunkte",
     "checklistItemPlaceholder": "Beschreibung des Punkts",
     "addChecklistItem": "Punkt hinzufügen"
+  },
+  "commandPalette": {
+    "placeholder": "Suchen oder wechseln zu...",
+    "noResults": "Keine Treffer",
+    "shortcutsTitle": "Tastenkombinationen",
+    "shortcutCommandPalette": "Befehlspalette öffnen",
+    "shortcutHelp": "Diese Hilfe anzeigen",
+    "shortcutClose": "Dialoge schließen"
+  },
+  "onboardingChecklist": {
+    "title": "Erste Schritte mit Cantero",
+    "subtitle": "{done} von {total} Schritten erledigt",
+    "dismiss": "Ausblenden",
+    "create_project": "Erstellen Sie Ihr erstes Projekt",
+    "add_client": "Kunden hinzufügen",
+    "build_rate_catalog": "Leistungskatalog aufbauen",
+    "create_estimate": "Kostenvoranschlag erstellen",
+    "invite_team": "Teammitglied einladen"
+  },
+  "projectMembers": {
+    "title": "Projektzugriff",
+    "tooltip": "Beschränken Sie, wer aus Ihrem Team dieses Projekt sehen kann — nützlich für sensible oder sicherheitskritische Baustellen.",
+    "restrictToggle": "Auf bestimmte Teammitglieder beschränken",
+    "restrictToggleHint": "Inhaber und Admins haben immer Zugriff. Standardmäßig deaktiviert — jedes Projekt ist für das gesamte Team sichtbar.",
+    "noMembers": "Noch niemandem wurde Zugriff gewährt.",
+    "selectMember": "Teammitglied auswählen"
+  },
+  "contracts": {
+    "title": "Verträge",
+    "subtitle": "Verträge entwerfen, versenden und elektronisch unterschreiben lassen.",
+    "allContracts": "Alle Verträge",
+    "noContracts": "Noch keine Verträge.",
+    "templates": "Vorlagen",
+    "noTemplates": "Noch keine Vorlagen.",
+    "templateNamePlaceholder": "Vorlagenname",
+    "templateBodyPlaceholder": "Vertragstext...",
+    "titlePlaceholder": "Vertragstitel",
+    "customBody": "Eigener Text...",
+    "bodyPlaceholder": "Vertragstext...",
+    "draft": "Entwurf",
+    "sent": "Gesendet",
+    "signed": "Unterschrieben",
+    "void": "Ungültig",
+    "send": "Zur Unterschrift senden",
+    "voidContract": "Vertrag für ungültig erklären",
+    "downloadPdf": "PDF herunterladen",
+    "signedBy": "Unterschrieben von",
+    "signHere": "Hier unterschreiben",
+    "signerNameLabel": "Ihr vollständiger Name",
+    "signerNamePlaceholder": "Max Mustermann",
+    "clearSignature": "Löschen",
+    "clientSign": "Vertrag unterschreiben",
+    "signatureRequired": "Für die Unterschrift sind ein eingegebener Name und eine gezeichnete Unterschrift erforderlich.",
+    "signedThanks": "Vielen Dank — dieser Vertrag wurde unterschrieben.",
+    "notAwaitingSignature": "Dieser Vertrag wartet nicht auf eine Unterschrift.",
+    "linkNotFound": "Dieser Link ist ungültig oder abgelaufen."
+  },
+  "costCodes": {
+    "title": "Kostenarten",
+    "hint": "CSI-artige Kostenarten zur Klassifizierung von Kostenvoranschlags-, Nachtrags- und Nachunternehmerkosten-Positionen — genutzt von Job-Costing- und Leistungsverzeichnis-Berichten.",
+    "noCostCodes": "Noch keine Kostenarten.",
+    "codePlaceholder": "Code, z. B. 03 00 00",
+    "namePlaceholder": "Name, z. B. Beton"
+  },
+  "jobCosting": {
+    "title": "Job-Costing",
+    "hint": "Geschätzter Vertragswert im Vergleich zu gebundenen und tatsächlichen Nachunternehmerkosten, nach Kostenart.",
+    "costCode": "Kostenart",
+    "estimated": "Geschätzt",
+    "committed": "Gebunden",
+    "actual": "Tatsächlich",
+    "variance": "Abweichung",
+    "total": "Gesamt"
+  },
+  "security": {
+    "title": "Sicherheit",
+    "hint": "Sitzungs-, Passwort- und Kostensichtbarkeitsrichtlinien für dieses Unternehmen.",
+    "sessionTimeout": "Sitzungs-Timeout (Minuten)",
+    "sessionTimeoutTooltip": "Meldet eine Sitzung nach dieser Anzahl inaktiver Minuten automatisch ab. Leer lassen zum Deaktivieren.",
+    "sessionTimeoutPlaceholder": "Kein Limit",
+    "passwordPolicy": "Passwortrichtlinie",
+    "passwordMinLength": "Mindestlänge",
+    "passwordRequireSymbol": "Symbol erforderlich",
+    "hideCostData": "Kostendaten vor diesen Rollen verbergen",
+    "hideCostDataTooltip": "Diese Rollen sehen Mengen und Umfang des Kostenvoranschlags, aber keine internen Material-/Arbeitskosten oder Aufschlagswerte. Inhaber und Admins sehen immer alles."
+  },
+  "referrals": {
+    "title": "Empfehlungsprogramm",
+    "hint": "Teilen Sie Ihren Link mit anderen Bauunternehmen — wenn diese sich bei Cantero anmelden, werden sie unten gezählt.",
+    "copyLink": "Link kopieren",
+    "copied": "Kopiert",
+    "referredCount": "{count} Unternehmen haben sich über Ihren Link angemeldet"
   }
 }

@@ -28,6 +28,22 @@ export class SessionsService {
     return !session || session.revokedAt !== null;
   }
 
+  /** Same as isRevoked(), plus an inactivity check against Company.sessionTimeoutMinutes — a
+   * company-wide policy, opt-in (null disables it), enforced here rather than by shortening the
+   * JWT's own expiry so it can be changed without forcing every existing session to re-login. */
+  async isRevokedOrTimedOut(sessionId: string, companyId: string): Promise<boolean> {
+    const session = await this.prisma.userSession.findUnique({
+      where: { id: sessionId },
+      select: { revokedAt: true, lastSeenAt: true },
+    });
+    if (!session || session.revokedAt !== null) return true;
+
+    const company = await this.prisma.company.findUnique({ where: { id: companyId }, select: { sessionTimeoutMinutes: true } });
+    if (!company?.sessionTimeoutMinutes) return false;
+    const timeoutMs = company.sessionTimeoutMinutes * 60 * 1000;
+    return Date.now() - session.lastSeenAt.getTime() > timeoutMs;
+  }
+
   /** Best-effort — never awaited by the caller, so a slow write never adds latency to a request. */
   touch(sessionId: string): void {
     this.prisma.userSession.update({ where: { id: sessionId }, data: { lastSeenAt: new Date() } }).catch(() => {});

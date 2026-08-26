@@ -19,6 +19,100 @@ const OTHER_COMPANY_ESTIMATE = {
   project: null,
 };
 
+describe("EstimatesService — hideCostDataFromRoles", () => {
+  let service: EstimatesService;
+  let prisma: {
+    estimate: { findFirst: jest.Mock; findMany: jest.Mock };
+    company: { findUnique: jest.Mock };
+  };
+
+  const LINE_ESTIMATE = {
+    id: "estimate-1",
+    companyId: COMPANY_A,
+    isTemplate: false,
+    materialsCostTotal: "500.00",
+    laborCostTotal: "300.00",
+    markupAmount: "100.00",
+    markupPercent: "15",
+    laborRatePerHour: "40",
+    grandTotal: "900.00",
+    lines: [],
+    sections: [],
+    requirements: [],
+    project: null,
+    approvals: [],
+  };
+
+  beforeEach(async () => {
+    prisma = {
+      estimate: { findFirst: jest.fn(), findMany: jest.fn() },
+      company: { findUnique: jest.fn() },
+    };
+
+    const module = await Test.createTestingModule({
+      providers: [
+        EstimatesService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: PdfService, useValue: { render: jest.fn() } },
+        { provide: StorageService, useValue: { save: jest.fn(), read: jest.fn() } },
+        { provide: AuditService, useValue: { record: jest.fn(), list: jest.fn() } },
+        { provide: ConfigService, useValue: { get: jest.fn(), getOrThrow: jest.fn() } },
+        { provide: MailService, useValue: { send: jest.fn() } },
+        { provide: WebhooksService, useValue: { trigger: jest.fn() } },
+      ],
+    }).compile();
+
+    service = module.get(EstimatesService);
+  });
+
+  it("list() leaves cost data intact for owner/admin", async () => {
+    prisma.estimate.findMany.mockResolvedValue([LINE_ESTIMATE]);
+
+    const result = await service.list(COMPANY_A, "owner");
+
+    expect(result[0].materialsCostTotal).toBe("500.00");
+    expect(prisma.company.findUnique).not.toHaveBeenCalled();
+  });
+
+  it("list() leaves cost data intact when the role isn't in hideCostDataFromRoles", async () => {
+    prisma.estimate.findMany.mockResolvedValue([LINE_ESTIMATE]);
+    prisma.company.findUnique.mockResolvedValue({ hideCostDataFromRoles: ["worker"] });
+
+    const result = await service.list(COMPANY_A, "estimator");
+
+    expect(result[0].materialsCostTotal).toBe("500.00");
+  });
+
+  it("list() redacts cost/markup fields for a role in hideCostDataFromRoles", async () => {
+    prisma.estimate.findMany.mockResolvedValue([LINE_ESTIMATE]);
+    prisma.company.findUnique.mockResolvedValue({ hideCostDataFromRoles: ["worker"] });
+
+    const result = await service.list(COMPANY_A, "worker");
+
+    expect(result[0]).toMatchObject({
+      materialsCostTotal: null,
+      laborCostTotal: null,
+      markupAmount: null,
+      markupPercent: null,
+      laborRatePerHour: null,
+    });
+    expect(result[0].grandTotal).toBe("900.00"); // the bottom-line total isn't a cost/markup breakdown — stays visible
+  });
+
+  it("get() redacts per-line materialsCost/laborCost too", async () => {
+    prisma.estimate.findFirst.mockResolvedValue({
+      ...LINE_ESTIMATE,
+      isTemplate: true, // isTemplate short-circuits before computeForLines, keeping the mock simple
+      lines: [{ id: "line-1", materialsCost: "50.00", laborCost: "20.00", lineTotal: "70.00" }],
+    });
+    prisma.company.findUnique.mockResolvedValue({ hideCostDataFromRoles: ["worker"] });
+
+    const result = await service.get(COMPANY_A, "estimate-1", "worker");
+
+    expect(result.lines[0]).toMatchObject({ materialsCost: null, laborCost: null, lineTotal: "70.00" });
+  });
+});
+
 describe("EstimatesService — cross-tenant isolation", () => {
   let service: EstimatesService;
   let prisma: {

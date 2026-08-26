@@ -21,8 +21,20 @@ export class CompanyService {
     private readonly exchangeRates: ExchangeRateService,
   ) {}
 
-  get(companyId: string) {
-    return this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+  async get(companyId: string) {
+    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    // Backfill for a company that existed before the referral program (or was seeded directly,
+    // bypassing AuthService.signup()) rather than requiring a one-off migration script.
+    if (!company.referralCode) {
+      return this.prisma.company.update({ where: { id: companyId }, data: { referralCode: randomBytes(4).toString("hex") } });
+    }
+    return company;
+  }
+
+  /** How many companies signed up using this one's referral link. */
+  async referralStats(companyId: string) {
+    const referredCount = await this.prisma.company.count({ where: { referredByCompanyId: companyId } });
+    return { referredCount };
   }
 
   async update(companyId: string, actor: AuditActor, input: UpdateCompanyInput) {

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { TriagePanel } from "@/components/triage-panel";
 import { DashboardWidgetsPanel } from "@/components/dashboard-widgets-panel";
+import { OnboardingChecklist } from "@/components/onboarding-checklist";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
@@ -67,6 +68,7 @@ export default function DashboardPage() {
         <SummaryCard href="/field" label={t("fieldMode")} />
       </div>
 
+      <OnboardingChecklist />
       <TriagePanel />
       <DashboardWidgetsPanel />
     </AuthenticatedShell>

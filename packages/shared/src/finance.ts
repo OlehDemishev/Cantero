@@ -35,6 +35,17 @@ export const createSubcontractorSchema = z.object({
 });
 export type CreateSubcontractorInput = z.infer<typeof createSubcontractorSchema>;
 
+export const updateSubcontractorProfileSchema = z.object({
+  specialization: z.string().max(120).nullable().optional(),
+  bio: z.string().max(1000).nullable().optional(),
+});
+export type UpdateSubcontractorProfileInput = z.infer<typeof updateSubcontractorProfileSchema>;
+
+export const setSubcontractorPublicListedSchema = z.object({
+  publicListed: z.boolean(),
+});
+export type SetSubcontractorPublicListedInput = z.infer<typeof setSubcontractorPublicListedSchema>;
+
 export const assignSubcontractorSchema = z.object({
   projectId: z.string().uuid(),
 });
@@ -57,6 +68,7 @@ export const createSubcontractorCostSchema = z.object({
   amount: z.number().positive(),
   incurredDate: z.string().datetime().optional(),
   dueDate: z.string().datetime().optional(),
+  costCodeId: z.string().uuid().optional(),
 });
 export type CreateSubcontractorCostInput = z.infer<typeof createSubcontractorCostSchema>;
 

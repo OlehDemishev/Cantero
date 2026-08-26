@@ -20,6 +20,8 @@ export type CompanySettings = z.infer<typeof companySettingsSchema>;
 export const PLAN_IDS = ["starter", "growth", "pro"] as const;
 export type PlanId = (typeof PLAN_IDS)[number];
 
+export const MEMBERSHIP_ROLES_MANAGEABLE = ["admin", "estimator", "foreman", "accountant", "worker"] as const;
+
 export const updateCompanySchema = z.object({
   name: z.string().min(2).max(120).optional(),
   locale: z.enum(SUPPORTED_LOCALES).optional(),
@@ -33,8 +35,16 @@ export const updateCompanySchema = z.object({
   rfiSlaDays: z.number().int().min(1).max(365).nullable().optional(),
   punchListSlaDays: z.number().int().min(1).max(365).nullable().optional(),
   invoiceRemindersEnabled: z.boolean().optional(),
+  changeOrderApprovalThresholdAmount: z.number().nonnegative().nullable().optional(),
+  changeOrderRequiredApprovalCount: z.number().int().min(1).max(10).optional(),
+  leadFollowUpEnabled: z.boolean().optional(),
+  estimateRemindersEnabled: z.boolean().optional(),
   reviewRequestUrl: z.string().url().nullable().optional(),
   ipAllowlist: z.array(z.string().min(1).max(64)).max(50).optional(),
+  sessionTimeoutMinutes: z.number().int().min(5).max(43_200).nullable().optional(),
+  passwordMinLength: z.number().int().min(8).max(64).optional(),
+  passwordRequireSymbol: z.boolean().optional(),
+  hideCostDataFromRoles: z.array(z.enum(MEMBERSHIP_ROLES_MANAGEABLE)).optional(),
   slackWebhookUrl: z.string().url().nullable().optional(),
   teamsWebhookUrl: z.string().url().nullable().optional(),
   ptoAccrualHoursPerMonth: z.number().nonnegative().nullable().optional(),
@@ -46,8 +56,6 @@ export const linkToParentCompanySchema = z.object({
   code: z.string().min(6).max(40),
 });
 export type LinkToParentCompanyInput = z.infer<typeof linkToParentCompanySchema>;
-
-export const MEMBERSHIP_ROLES_MANAGEABLE = ["admin", "estimator", "foreman", "accountant", "worker"] as const;
 
 export const updateMemberRoleSchema = z.object({
   role: z.enum(MEMBERSHIP_ROLES_MANAGEABLE),

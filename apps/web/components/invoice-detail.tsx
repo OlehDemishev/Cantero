@@ -36,6 +36,7 @@ interface Invoice {
   taxAmount: string;
   total: string;
   dueDate: string | null;
+  percentComplete: string | null;
   lines: InvoiceLine[];
   payments: Payment[];
   installments: Installment[];
@@ -66,6 +67,11 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   async function downloadPdf() {
     const blob = await apiFetch<Blob>(`/invoices/${invoiceId}/pdf`);
     downloadBlob(blob, `${invoice?.number ?? "invoice"}.pdf`);
+  }
+
+  async function downloadScheduleOfValues() {
+    const blob = await apiFetch<Blob>(`/invoices/${invoiceId}/schedule-of-values-pdf`);
+    downloadBlob(blob, `${invoice?.number ?? "invoice"}-schedule-of-values.pdf`);
   }
 
   async function send() {
@@ -331,6 +337,11 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
             <button onClick={downloadPdf} className="btn-secondary">
               {t("downloadPdf")}
             </button>
+            {invoice.percentComplete != null && (
+              <button onClick={downloadScheduleOfValues} className="btn-secondary">
+                {t("downloadScheduleOfValues")}
+              </button>
+            )}
             {emailSentTo !== undefined && (
               <p className="text-xs text-gray-500">
                 {emailSentTo ? tc("emailedTo", { email: emailSentTo }) : tc("noClientEmail")}

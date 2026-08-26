@@ -14,6 +14,10 @@ interface Subcontractor {
   name: string;
   email: string | null;
   phone: string | null;
+  specialization: string | null;
+  bio: string | null;
+  publicListed: boolean;
+  publicToken: string | null;
 }
 interface SubcontractorDocument {
   id: string;
@@ -41,6 +45,8 @@ export default function SubcontractorsPage() {
   const [compliance, setCompliance] = useState<Compliance | null>(null);
   const [newForm, setNewForm] = useState({ name: "", email: "", phone: "" });
   const [docForm, setDocForm] = useState({ type: "general_liability_insurance" as SubcontractorDocumentType, name: "", expiresAt: "" });
+  const [profileForm, setProfileForm] = useState({ specialization: "", bio: "" });
+  const [linkCopiedId, setLinkCopiedId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   function load() {
@@ -64,7 +70,43 @@ export default function SubcontractorsPage() {
     setExpandedId(id);
     setDocuments(null);
     setCompliance(null);
+    const sub = subcontractors?.find((s) => s.id === id);
+    setProfileForm({ specialization: sub?.specialization ?? "", bio: sub?.bio ?? "" });
     loadDetail(id);
+  }
+
+  async function saveProfile(e: React.FormEvent, id: string) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      await apiFetch(`/finance/subcontractors/${id}/profile`, {
+        method: "PATCH",
+        body: JSON.stringify({ specialization: profileForm.specialization || null, bio: profileForm.bio || null }),
+      });
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function togglePublic(id: string, publicListed: boolean) {
+    setBusy(true);
+    try {
+      await apiFetch(`/finance/subcontractors/${id}/public-listed`, {
+        method: "PATCH",
+        body: JSON.stringify({ publicListed }),
+      });
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function copyLink(token: string, id: string) {
+    const url = `${window.location.origin}/subcontractor-profile/${token}`;
+    navigator.clipboard.writeText(url);
+    setLinkCopiedId(id);
+    setTimeout(() => setLinkCopiedId(null), 2000);
   }
 
   async function createSubcontractor(e: React.FormEvent) {
@@ -236,6 +278,45 @@ export default function SubcontractorsPage() {
                           {t("addDocument")}
                         </button>
                       </form>
+
+                      <div className="border-t border-gray-100 pt-3">
+                        <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("publicProfile")}</h3>
+                        <p className="mb-2 text-xs text-gray-500">{t("publicProfileHint")}</p>
+                        <form onSubmit={(e) => saveProfile(e, s.id)} className="flex flex-col gap-2">
+                          <input
+                            placeholder={t("specializationPlaceholder")}
+                            className="input"
+                            value={profileForm.specialization}
+                            onChange={(e) => setProfileForm((f) => ({ ...f, specialization: e.target.value }))}
+                          />
+                          <textarea
+                            rows={2}
+                            placeholder={t("bioPlaceholder")}
+                            className="input"
+                            value={profileForm.bio}
+                            onChange={(e) => setProfileForm((f) => ({ ...f, bio: e.target.value }))}
+                          />
+                          <button type="submit" disabled={busy} className="btn-secondary self-start px-2.5 py-1 text-xs">
+                            {tc("save")}
+                          </button>
+                        </form>
+                        <div className="mt-2 flex items-center gap-2">
+                          <label className="flex items-center gap-1.5 text-xs text-gray-700">
+                            <input
+                              type="checkbox"
+                              checked={s.publicListed}
+                              onChange={(e) => togglePublic(s.id, e.target.checked)}
+                              disabled={busy}
+                            />
+                            {t("makePublic")}
+                          </label>
+                          {s.publicListed && s.publicToken && (
+                            <button onClick={() => copyLink(s.publicToken!, s.id)} className="btn-secondary px-2 py-0.5 text-xs">
+                              {linkCopiedId === s.id ? tc("saved") : t("copyPublicLink")}
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   )}
                 </li>

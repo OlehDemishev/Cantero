@@ -26,7 +26,7 @@ export class EstimatesController {
 
   @Get()
   list(@CurrentUser() user: AuthUser) {
-    return this.service.list(user.companyId);
+    return this.service.list(user.companyId, user.role);
   }
 
   // Declared before ":id" so "templates" isn't swallowed as an estimate id.
@@ -46,7 +46,7 @@ export class EstimatesController {
 
   @Get(":id")
   get(@CurrentUser() user: AuthUser, @Param("id") id: string) {
-    return this.service.get(user.companyId, id);
+    return this.service.get(user.companyId, id, user.role);
   }
 
   @Get(":id/suggested-lines")

@@ -10,12 +10,15 @@ import { SubcontractorCostsService } from "./subcontractor-costs.service";
 import { RecurringInvoicesController } from "./recurring-invoices.controller";
 import { RecurringInvoicesService } from "./recurring-invoices.service";
 import { RecurringInvoicesProcessor } from "./recurring-invoices.processor";
+import { AiaBillingService } from "./aia-billing.service";
+import { PublicSubcontractorsController } from "./public-subcontractors.controller";
 
 @Module({
   controllers: [
     InvoicesController,
     BudgetController,
     SubcontractorsController,
+    PublicSubcontractorsController,
     SubcontractorCostsController,
     RecurringInvoicesController,
   ],
@@ -26,6 +29,7 @@ import { RecurringInvoicesProcessor } from "./recurring-invoices.processor";
     SubcontractorCostsService,
     RecurringInvoicesService,
     RecurringInvoicesProcessor,
+    AiaBillingService,
   ],
   exports: [InvoicesService, SubcontractorsService, BudgetService],
 })

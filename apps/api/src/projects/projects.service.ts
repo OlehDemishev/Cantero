@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import type { CreateProjectInput, ImportResult, UpdateProjectGeofenceInput, UpdateProjectWarrantyInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { WeatherService } from "../weather/weather.service";
@@ -15,21 +15,90 @@ export class ProjectsService {
     private readonly mail: MailService,
   ) {}
 
-  list(companyId: string) {
-    return this.prisma.project.findMany({
+  /** Owner/admin always see every project. Everyone else sees a restricted project only if
+   * they're on its ProjectMember list — restrictedToMembers defaults to false, so this is a
+   * pure opt-in narrowing, not a change in behavior for projects nobody has restricted. */
+  async list(companyId: string, userId?: string, role?: string) {
+    const projects = await this.prisma.project.findMany({
       where: { companyId },
       include: { client: true },
       orderBy: { createdAt: "desc" },
     });
+    // No userId/role means an internal/service-to-service caller (e.g. the public API, which is
+    // already all-or-nothing per company) rather than a user-driven request — skip the narrowing.
+    if (!userId || !role || role === "owner" || role === "admin") return projects;
+
+    const restrictedIds = projects.filter((p) => p.restrictedToMembers).map((p) => p.id);
+    if (restrictedIds.length === 0) return projects;
+
+    const memberships = await this.prisma.projectMember.findMany({
+      where: { userId, projectId: { in: restrictedIds } },
+      select: { projectId: true },
+    });
+    const memberProjectIds = new Set(memberships.map((m) => m.projectId));
+    return projects.filter((p) => !p.restrictedToMembers || memberProjectIds.has(p.id));
   }
 
-  async get(companyId: string, id: string) {
+  async get(companyId: string, id: string, userId?: string, role?: string) {
     const project = await this.prisma.project.findFirst({
       where: { id, companyId },
       include: { client: true },
     });
     if (!project) throw new NotFoundException("Project not found");
+    if (project.restrictedToMembers && userId && role && role !== "owner" && role !== "admin") {
+      const membership = await this.prisma.projectMember.findUnique({
+        where: { projectId_userId: { projectId: id, userId } },
+      });
+      if (!membership) throw new ForbiddenException("You don't have access to this project");
+    }
     return project;
+  }
+
+  listMembers(companyId: string, projectId: string) {
+    return this.prisma.projectMember.findMany({
+      where: { companyId, projectId },
+      include: { user: { select: { id: true, name: true, email: true } } },
+      orderBy: { createdAt: "asc" },
+    });
+  }
+
+  async addMember(companyId: string, actor: AuditActor, projectId: string, userId: string) {
+    const project = await this.prisma.project.findFirst({ where: { id: projectId, companyId } });
+    if (!project) throw new NotFoundException("Project not found");
+    const membership = await this.prisma.membership.findFirst({ where: { companyId, userId } });
+    if (!membership) throw new BadRequestException("User is not a member of this company");
+
+    const member = await this.prisma.projectMember.upsert({
+      where: { projectId_userId: { projectId, userId } },
+      create: { companyId, projectId, userId },
+      update: {},
+      include: { user: { select: { id: true, name: true, email: true } } },
+    });
+    this.audit.record(companyId, actor, "project.member_added", "Project", projectId, `Gave ${member.user.name} access to "${project.name}"`);
+    return member;
+  }
+
+  async removeMember(companyId: string, actor: AuditActor, projectId: string, userId: string) {
+    const project = await this.prisma.project.findFirst({ where: { id: projectId, companyId } });
+    if (!project) throw new NotFoundException("Project not found");
+    await this.prisma.projectMember.deleteMany({ where: { companyId, projectId, userId } });
+    this.audit.record(companyId, actor, "project.member_removed", "Project", projectId, `Removed a member's access to "${project.name}"`);
+    return { ok: true };
+  }
+
+  async setRestricted(companyId: string, actor: AuditActor, projectId: string, restrictedToMembers: boolean) {
+    const project = await this.prisma.project.findFirst({ where: { id: projectId, companyId } });
+    if (!project) throw new NotFoundException("Project not found");
+    const updated = await this.prisma.project.update({ where: { id: projectId }, data: { restrictedToMembers } });
+    this.audit.record(
+      companyId,
+      actor,
+      "project.restriction_changed",
+      "Project",
+      projectId,
+      `${restrictedToMembers ? "Restricted" : "Opened"} access to "${project.name}"`,
+    );
+    return updated;
   }
 
   /** Best-effort 5-day-ahead forecast for the project's site, geocoded from its free-text address. `available: false` means no address is set or the location couldn't be resolved — not an error, just nothing to show. */

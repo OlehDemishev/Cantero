@@ -12,6 +12,7 @@ describe("PasswordResetService", () => {
     user: { findUnique: jest.Mock; update: jest.Mock };
     passwordResetToken: { create: jest.Mock; findUnique: jest.Mock; update: jest.Mock };
     userSession: { updateMany: jest.Mock };
+    membership: { findMany: jest.Mock };
     $transaction: jest.Mock;
   };
   let mail: { send: jest.Mock };
@@ -21,6 +22,7 @@ describe("PasswordResetService", () => {
       user: { findUnique: jest.fn(), update: jest.fn() },
       passwordResetToken: { create: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
       userSession: { updateMany: jest.fn() },
+      membership: { findMany: jest.fn().mockResolvedValue([]) },
       $transaction: jest.fn((ops) => Promise.all(ops)),
     };
     mail = { send: jest.fn() };
@@ -102,6 +104,24 @@ describe("PasswordResetService", () => {
       await service.resetPassword({ token: raw, password: "newpassword123" });
 
       expect(prisma.$transaction).toHaveBeenCalled();
+    });
+
+    it("applies the strictest policy across every company the user belongs to", async () => {
+      const raw = "valid-raw-token";
+      prisma.passwordResetToken.findUnique.mockResolvedValue({
+        id: "reset-1",
+        userId: "user-1",
+        tokenHash: createHash("sha256").update(raw).digest("hex"),
+        usedAt: null,
+        expiresAt: new Date(Date.now() + 60_000),
+      });
+      prisma.membership.findMany.mockResolvedValue([
+        { company: { passwordMinLength: 8, passwordRequireSymbol: false } },
+        { company: { passwordMinLength: 12, passwordRequireSymbol: true } },
+      ]);
+
+      await expect(service.resetPassword({ token: raw, password: "longenough1" })).rejects.toThrow(BadRequestException);
+      await expect(service.resetPassword({ token: raw, password: "longenough1!" })).resolves.toEqual({ ok: true });
     });
   });
 });

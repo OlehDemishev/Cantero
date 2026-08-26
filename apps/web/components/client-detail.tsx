@@ -36,6 +36,8 @@ interface Client {
   lostReason: string | null;
   referredBy: { id: string; name: string } | null;
   referrals: ReferralClient[];
+  referralRewardStatus: "none" | "pending" | "paid";
+  referralRewardAmount: number | null;
 }
 interface Activity {
   id: string;
@@ -55,6 +57,7 @@ export function ClientDetail({ clientId }: { clientId: string }) {
   const tc = useTranslations("common");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
+  const isManager = me?.user.role === "owner" || me?.user.role === "admin";
 
   const [client, setClient] = useState<Client | null>(null);
   const [activities, setActivities] = useState<Activity[] | null>(null);
@@ -210,6 +213,16 @@ export function ClientDetail({ clientId }: { clientId: string }) {
   async function completeReminder(reminderId: string) {
     await apiFetch(`/clients/${clientId}/reminders/${reminderId}/complete`, { method: "POST" });
     load();
+  }
+
+  async function markReferralRewardPaid() {
+    setBusy(true);
+    try {
+      await apiFetch(`/clients/${clientId}/referral-reward`, { method: "PATCH", body: JSON.stringify({ status: "paid" }) });
+      load();
+    } finally {
+      setBusy(false);
+    }
   }
 
   if (!client) {
@@ -371,6 +384,26 @@ export function ClientDetail({ clientId }: { clientId: string }) {
                 </li>
               ))}
             </ul>
+          </div>
+        )}
+        {client.referralRewardStatus !== "none" && (
+          <div className="mt-4 border-t border-gray-100 pt-3">
+            <h3 className="mb-1 text-xs font-semibold text-gray-500">{t("referralReward")}</h3>
+            <div className="flex items-center justify-between">
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                  client.referralRewardStatus === "paid" ? "bg-success-50 text-success-700" : "bg-amber-100 text-amber-800"
+                }`}
+              >
+                {t(`referralReward_${client.referralRewardStatus}`)}
+                {client.referralRewardAmount != null && ` · ${client.referralRewardAmount} ${currency}`}
+              </span>
+              {isManager && client.referralRewardStatus === "pending" && (
+                <button onClick={markReferralRewardPaid} disabled={busy} className="btn-secondary px-2 py-1 text-xs">
+                  {t("markRewardPaid")}
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>

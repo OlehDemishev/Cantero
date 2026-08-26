@@ -7,6 +7,7 @@ import type { AcceptInviteInput, AuthUser, CreateInviteInput } from "@cantero/sh
 import { PrismaService } from "../common/prisma/prisma.service";
 import { MailService } from "../common/mail/mail.service";
 import { SessionsService, type SessionMeta } from "../common/sessions/sessions.service";
+import { assertPasswordPolicy } from "../common/password-policy";
 
 const INVITE_TTL_DAYS = 14;
 const BCRYPT_ROUNDS = 12;
@@ -91,6 +92,13 @@ export class InvitesService {
       if (existingMembership) throw new ConflictException("This person is already a member");
     }
 
+    if (!existingUser) {
+      const company = await this.prisma.company.findUniqueOrThrow({
+        where: { id: invite.companyId },
+        select: { passwordMinLength: true, passwordRequireSymbol: true },
+      });
+      assertPasswordPolicy(input.password, company);
+    }
     const passwordHash = await bcrypt.hash(input.password, BCRYPT_ROUNDS);
 
     const { user, membership } = await this.prisma.$transaction(async (tx) => {

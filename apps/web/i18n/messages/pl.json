@@ -21,7 +21,8 @@
     "emailedTo": "Wysłano e-mailem do {email}.",
     "noClientEmail": "Brak adresu e-mail tego klienta — udostępnij link ręcznie.",
     "none": "Brak",
-    "close": "Zamknij"
+    "close": "Zamknij",
+    "add": "Dodaj"
   },
   "nav": {
     "menu": "Menu",
@@ -46,7 +47,8 @@
     "subcontractors": "Podwykonawcy",
     "expenses": "Wydatki",
     "serviceContracts": "Umowy serwisowe",
-    "bankReconciliation": "Uzgodnienie bankowe"
+    "bankReconciliation": "Uzgodnienie bankowe",
+    "contracts": "Umowy"
   },
   "auth": {
     "signupTitle": "Utwórz konto Cantero",
@@ -280,7 +282,20 @@
     "apiKeyExpires": "Wygasa",
     "apiKeyScopes": "Zakresy",
     "apiKeyScopesHint": "Zakresy (brak zaznaczenia = bez ograniczeń):",
-    "apiKeyUnrestricted": "Bez ograniczeń"
+    "apiKeyUnrestricted": "Bez ograniczeń",
+    "approvalChainsTooltip": "Dotyczy tylko kosztorysów. Zlecenia zmian mają osobny próg poniżej.",
+    "changeOrderApprovalChains": "Łańcuchy zatwierdzania zleceń zmian",
+    "changeOrderApprovalChainsHint": "Zlecenia zmian na tę kwotę lub wyższą wymagają tylu odrębnych wewnętrznych zatwierdzeń, zanim będzie można je wysłać do klienta. Pozostaw puste, aby wyłączyć.",
+    "estimateReminders": "Automatyczne przypomnienia o kosztorysach",
+    "estimateRemindersHint": "Wysyła eskalujące e-maile z przypomnieniem do klienta po 3, 7 i 14 dniach od wysłania kosztorysu, dopóki oczekuje on na decyzję.",
+    "leadFollowUp": "Automatyczne e-maile uzupełniające do leadów",
+    "leadFollowUpHint": "Wysyła sekwencję przypomnień w dniach 1/3/7 do leadów, które nadal są na etapie leada.",
+    "exportCsv": "Eksportuj CSV",
+    "auditFilterDateFrom": "Od",
+    "auditFilterDateTo": "Do",
+    "auditFilterEntityType": "Typ obiektu",
+    "auditFilterAction": "Akcja",
+    "auditFilterApply": "Filtruj"
   },
   "projects": {
     "title": "Projekty",
@@ -347,7 +362,11 @@
     "avgDays": "śr. {days}d",
     "ownerLeaderboard": "Ranking opiekunów",
     "wonSummary": "Wygrane: {count} · {value} {currency}",
-    "openSummary": "Otwarte: {count} · {value} {currency}"
+    "openSummary": "Otwarte: {count} · {value} {currency}",
+    "referralReward": "Nagroda za polecenie",
+    "referralReward_pending": "Nagroda do wypłaty",
+    "referralReward_paid": "Nagroda wypłacona",
+    "markRewardPaid": "Oznacz jako wypłaconą"
   },
   "team": {
     "title": "Zespół",
@@ -529,7 +548,8 @@
     "to": "Do",
     "compare": "Porównaj",
     "grandTotalDelta": "Zmiana sumy całkowitej",
-    "noDifferences": "Brak różnic między tymi wersjami"
+    "noDifferences": "Brak różnic między tymi wersjami",
+    "costCodeUnassigned": "Bez kodu kosztowego"
   },
   "invoices": {
     "title": "Faktury",
@@ -589,7 +609,8 @@
     "resume": "Wznów",
     "cashFlowForecastLink": "Zobacz 13-tygodniową prognozę przepływów pieniężnych w Raportach",
     "exportQuickBooks": "Eksportuj do QuickBooks",
-    "exportXero": "Eksportuj do Xero"
+    "exportXero": "Eksportuj do Xero",
+    "downloadScheduleOfValues": "Pobierz zestawienie wartości"
   },
   "portal": {
     "signInTitle": "Portal klienta",
@@ -624,7 +645,10 @@
     "descriptionPlaceholder": "Więcej szczegółów…",
     "submitClaim": "Zgłoś usterkę",
     "claimSubmitted": "Zgłoszenie wysłane — skontaktujemy się.",
-    "payNow": "Zapłać teraz"
+    "payNow": "Zapłać teraz",
+    "projectProgress": "Postęp projektu",
+    "tasksComplete": "Ukończone zadania",
+    "budgetPaid": "Opłacony budżet"
   },
   "equipment": {
     "title": "Sprzęt",
@@ -664,7 +688,14 @@
     "nextDue": "Następny termin: {date}",
     "intervalDays": "Co (dni)",
     "intervalDaysPlaceholder": "np. 90",
-    "disableSchedule": "Wyłącz harmonogram"
+    "disableSchedule": "Wyłącz harmonogram",
+    "gpsTracking": "Śledzenie lokalizacji",
+    "gpsTrackingHint": "Zgłaszane samodzielnie przez to urządzenie, gdy śledzenie jest włączone — tylko dzisiejsza trasa, bez zewnętrznej telematyki.",
+    "gpsStart": "Rozpocznij śledzenie",
+    "gpsStop": "Zatrzymaj śledzenie",
+    "gpsDenied": "Odmówiono dostępu do lokalizacji.",
+    "gpsUnsupported": "Ta przeglądarka nie obsługuje śledzenia lokalizacji.",
+    "gpsNoRoute": "Dzisiaj nie zarejestrowano żadnej trasy."
   },
   "subcontractorPortal": {
     "signInTitle": "Portal podwykonawcy",
@@ -776,7 +807,11 @@
     "totalOrders": "Zamówienia",
     "onTimeRate": "Terminowość",
     "averageDelay": "Śr. opóźnienie",
-    "totalSpend": "Suma wydatków"
+    "totalSpend": "Suma wydatków",
+    "catalogSync": "Synchronizacja cen katalogu",
+    "catalogSyncHint": "Prześlij cennik tego dostawcy (CSV: code, unitPrice), aby zbiorczo zaktualizować ceny materiałów, dla których ten dostawca jest preferowany.",
+    "uploadCatalogCsv": "Prześlij CSV",
+    "catalogSyncResult": "Zaktualizowano {updated} cen(y), pominięto {skipped}"
   },
   "scheduling": {
     "board": "Tablica zadań",
@@ -843,7 +878,12 @@
     "loggedOutsideGeofence": "Zapisano — ale zarejestrowano poza geofencingiem projektu",
     "expenses": "Wydatki",
     "queuedOfflineNoReceipt": "Zapisano offline — zdjęcie paragonu trzeba będzie dodać po powrocie do sieci",
-    "receiptQueuedOffline": "Zapisano — zdjęcie paragonu zostanie przesłane po powrocie do sieci"
+    "receiptQueuedOffline": "Zapisano — zdjęcie paragonu zostanie przesłane po powrocie do sieci",
+    "syncConflicts": "{count} element(ów) nie udało się zsynchronizować — coś zmieniło się w międzyczasie",
+    "retrySync": "Ponów",
+    "discardSync": "Odrzuć",
+    "voiceInputStart": "Rozpocznij wprowadzanie głosowe",
+    "voiceInputStop": "Zatrzymaj wprowadzanie głosowe"
   },
   "subcontractors": {
     "title": "Koszty podwykonawców",
@@ -863,7 +903,8 @@
     "requestWaiver": "Poproś o zrzeczenie się zastawu",
     "finalWaiver": "Końcowe",
     "downloadWaiver": "Pobierz zrzeczenie",
-    "waiverAwaitingSignature": "Oczekuje na podpis"
+    "waiverAwaitingSignature": "Oczekuje na podpis",
+    "costCodeUnassigned": "Bez kodu kosztowego"
   },
   "reports": {
     "title": "Raporty",
@@ -1289,7 +1330,17 @@
     "other": "Inne",
     "viewCertificate": "Zobacz certyfikat",
     "uploadCertificate": "Prześlij certyfikat",
-    "uploading": "Przesyłanie…"
+    "uploading": "Przesyłanie…",
+    "publicProfile": "Profil publiczny",
+    "publicProfileHint": "Link do udostępnienia pokazujący specjalizację i historię współpracy tego podwykonawcy z Twoją firmą — przydatny jako referencja przy zdobywaniu zleceń gdzie indziej.",
+    "specializationPlaceholder": "Specjalizacja, np. Elektryka",
+    "bioPlaceholder": "Krótka notatka o tym podwykonawcy...",
+    "makePublic": "Upublicznij profil",
+    "copyPublicLink": "Kopiuj link publiczny",
+    "profileNotFound": "Ten link do profilu jest nieprawidłowy lub nie jest już publiczny.",
+    "projectsWorked": "Zrealizowane projekty",
+    "totalPaidOut": "Łącznie wypłacono",
+    "referencedBy": "Polecane przez {name}"
   },
   "weather": {
     "title": "Prognoza pogody",
@@ -1414,7 +1465,10 @@
     "requestDeletion": "Złóż wniosek o usunięcie konta",
     "confirmRequest": "Złożyć wniosek o usunięcie tego konta firmy? Wsparcie skontaktuje się, zanim cokolwiek zostanie usunięte.",
     "deletionPending": "Usunięcie zgłoszono {date} — nasz zespół wsparcia skontaktuje się.",
-    "cancelRequest": "Anuluj wniosek o usunięcie"
+    "cancelRequest": "Anuluj wniosek o usunięcie",
+    "operationalExportTitle": "Eksport danych operacyjnych",
+    "operationalExportHint": "Katalogi cennika/materiałów, zlecenia zmian, podwykonawcy i ich koszty, umowy oraz zamówienia zakupu — krytyczne dla działalności dane konfiguracyjne pominięte w powyższym eksporcie.",
+    "operationalExportButton": "Pobierz eksport operacyjny"
   },
   "customReports": {
     "title": "Raporty niestandardowe",
@@ -1636,5 +1690,97 @@
     "checklistItems": "Pozycje listy kontrolnej",
     "checklistItemPlaceholder": "Opis pozycji",
     "addChecklistItem": "Dodaj pozycję"
+  },
+  "commandPalette": {
+    "placeholder": "Szukaj lub przejdź do...",
+    "noResults": "Brak wyników",
+    "shortcutsTitle": "Skróty klawiszowe",
+    "shortcutCommandPalette": "Otwórz paletę poleceń",
+    "shortcutHelp": "Pokaż tę pomoc",
+    "shortcutClose": "Zamknij okna dialogowe"
+  },
+  "onboardingChecklist": {
+    "title": "Rozpocznij pracę z Cantero",
+    "subtitle": "Ukończono {done} z {total} kroków",
+    "dismiss": "Odrzuć",
+    "create_project": "Utwórz swój pierwszy projekt",
+    "add_client": "Dodaj klienta",
+    "build_rate_catalog": "Zbuduj katalog cennika",
+    "create_estimate": "Utwórz kosztorys",
+    "invite_team": "Zaproś członka zespołu"
+  },
+  "projectMembers": {
+    "title": "Dostęp do projektu",
+    "tooltip": "Ogranicz, kto w Twoim zespole może zobaczyć ten projekt — przydatne w przypadku wrażliwych lub szczególnie chronionych budów.",
+    "restrictToggle": "Ogranicz do wybranych członków zespołu",
+    "restrictToggleHint": "Właściciele i administratorzy zawsze mają dostęp. Domyślnie wyłączone — każdy projekt jest widoczny dla całego zespołu.",
+    "noMembers": "Nikomu jeszcze nie nadano dostępu.",
+    "selectMember": "Wybierz członka zespołu"
+  },
+  "contracts": {
+    "title": "Umowy",
+    "subtitle": "Twórz, wysyłaj i zbieraj podpisy elektroniczne na umowach.",
+    "allContracts": "Wszystkie umowy",
+    "noContracts": "Brak umów.",
+    "templates": "Szablony",
+    "noTemplates": "Brak szablonów.",
+    "templateNamePlaceholder": "Nazwa szablonu",
+    "templateBodyPlaceholder": "Treść umowy...",
+    "titlePlaceholder": "Tytuł umowy",
+    "customBody": "Własna treść...",
+    "bodyPlaceholder": "Treść umowy...",
+    "draft": "Wersja robocza",
+    "sent": "Wysłano",
+    "signed": "Podpisano",
+    "void": "Unieważniona",
+    "send": "Wyślij do podpisu",
+    "voidContract": "Unieważnij umowę",
+    "downloadPdf": "Pobierz PDF",
+    "signedBy": "Podpisano przez",
+    "signHere": "Podpisz tutaj",
+    "signerNameLabel": "Twoje imię i nazwisko",
+    "signerNamePlaceholder": "Jan Kowalski",
+    "clearSignature": "Wyczyść",
+    "clientSign": "Podpisz umowę",
+    "signatureRequired": "Do podpisania wymagane jest wpisane imię i nazwisko oraz odręczny podpis.",
+    "signedThanks": "Dziękujemy — ta umowa została podpisana.",
+    "notAwaitingSignature": "Ta umowa nie oczekuje na podpis.",
+    "linkNotFound": "Ten link jest nieprawidłowy lub wygasł."
+  },
+  "costCodes": {
+    "title": "Kody kosztowe",
+    "hint": "Kody kosztowe w stylu CSI do klasyfikowania pozycji kosztorysu, zleceń zmian i kosztów podwykonawców — używane w raportach kosztorysowania robót i zestawienia wartości.",
+    "noCostCodes": "Brak kodów kosztowych.",
+    "codePlaceholder": "Kod, np. 03 00 00",
+    "namePlaceholder": "Nazwa, np. Beton"
+  },
+  "jobCosting": {
+    "title": "Kosztorysowanie robót",
+    "hint": "Szacowana wartość kontraktu w porównaniu z zaangażowanymi i rzeczywistymi kosztami podwykonawców, według kodu kosztowego.",
+    "costCode": "Kod kosztowy",
+    "estimated": "Szacowane",
+    "committed": "Zaangażowane",
+    "actual": "Rzeczywiste",
+    "variance": "Odchylenie",
+    "total": "Razem"
+  },
+  "security": {
+    "title": "Bezpieczeństwo",
+    "hint": "Zasady dotyczące sesji, haseł i widoczności kosztów dla tej firmy.",
+    "sessionTimeout": "Limit czasu sesji (minuty)",
+    "sessionTimeoutTooltip": "Automatycznie wylogowuje sesję po tylu minutach bezczynności. Pozostaw puste, aby wyłączyć.",
+    "sessionTimeoutPlaceholder": "Bez limitu",
+    "passwordPolicy": "Zasady haseł",
+    "passwordMinLength": "Minimalna długość",
+    "passwordRequireSymbol": "Wymagaj symbolu",
+    "hideCostData": "Ukryj dane kosztowe przed tymi rolami",
+    "hideCostDataTooltip": "Te role widzą ilości i zakres kosztorysu, ale nie wewnętrzne koszty materiałów/robocizny ani marżę. Właściciele i administratorzy zawsze widzą wszystko."
+  },
+  "referrals": {
+    "title": "Program poleceń",
+    "hint": "Udostępnij swój link innym firmom budowlanym — gdy zarejestrują się w Cantero, zobaczysz je policzone poniżej.",
+    "copyLink": "Kopiuj link",
+    "copied": "Skopiowano",
+    "referredCount": "{count} firm zarejestrowało się przez Twój link"
   }
 }

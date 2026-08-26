@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Post } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Get, Param, Post, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
 import { createSupplierSchema, type AuthUser, type CreateSupplierInput } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
@@ -29,5 +30,12 @@ export class SuppliersController {
     @Body(new ZodValidationPipe(createSupplierSchema)) body: CreateSupplierInput,
   ) {
     return this.service.create(user.companyId, body);
+  }
+
+  @Post(":id/catalog-sync")
+  @UseInterceptors(FileInterceptor("file"))
+  syncCatalog(@CurrentUser() user: AuthUser, @Param("id") id: string, @UploadedFile() file: Express.Multer.File) {
+    if (!file) throw new BadRequestException("No file provided");
+    return this.service.syncCatalog(user.companyId, id, file.buffer.toString("utf-8"));
   }
 }

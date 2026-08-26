@@ -57,3 +57,14 @@ export const addClientReminderSchema = z.object({
   dueDate: z.string().datetime(),
 });
 export type AddClientReminderInput = z.infer<typeof addClientReminderSchema>;
+
+export const REFERRAL_REWARD_STATUSES = ["none", "pending", "paid"] as const;
+export type ReferralRewardStatus = (typeof REFERRAL_REWARD_STATUSES)[number];
+
+/** Manual control over a referrer's reward — set an amount and/or mark it paid, since there's
+ * no payment-processor integration to automate the actual payout. */
+export const updateReferralRewardSchema = z.object({
+  status: z.enum(REFERRAL_REWARD_STATUSES).optional(),
+  amount: z.number().nonnegative().max(1_000_000).nullable().optional(),
+});
+export type UpdateReferralRewardInput = z.infer<typeof updateReferralRewardSchema>;

@@ -33,7 +33,7 @@ export class ChangeOrdersService {
   list(companyId: string, estimateId: string) {
     return this.prisma.changeOrder.findMany({
       where: { companyId, estimateId },
-      include: { lines: { include: { rateCatalogItem: true } } },
+      include: { lines: { include: { rateCatalogItem: true } }, approvals: true },
       orderBy: { number: "asc" },
     });
   }
@@ -41,7 +41,7 @@ export class ChangeOrdersService {
   async get(companyId: string, id: string) {
     const changeOrder = await this.prisma.changeOrder.findFirst({
       where: { id, companyId },
-      include: { lines: { include: { rateCatalogItem: true } } },
+      include: { lines: { include: { rateCatalogItem: true } }, approvals: true },
     });
     if (!changeOrder) throw new NotFoundException("Change order not found");
     return changeOrder;
@@ -85,9 +85,13 @@ export class ChangeOrdersService {
       where: { id: input.rateCatalogItemId, companyId },
     });
     if (!rateItem) throw new NotFoundException("Rate catalog item not found");
+    if (input.costCodeId) {
+      const costCode = await this.prisma.costCode.findFirst({ where: { id: input.costCodeId, companyId } });
+      if (!costCode) throw new NotFoundException("Cost code not found");
+    }
 
     await this.prisma.changeOrderLine.create({
-      data: { changeOrderId, rateCatalogItemId: input.rateCatalogItemId, quantity: input.quantity },
+      data: { changeOrderId, rateCatalogItemId: input.rateCatalogItemId, quantity: input.quantity, costCodeId: input.costCodeId },
     });
     return this.recompute(companyId, changeOrderId);
   }
@@ -100,22 +104,77 @@ export class ChangeOrdersService {
     return this.recompute(companyId, changeOrderId);
   }
 
-  /** Locks in the change order once it has at least one line — internal sign-off before it's sent to the client. */
+  /** Locks in the change order once it has at least one line — internal sign-off before it's sent
+   * to the client. Above Company.changeOrderApprovalThresholdAmount, this needs
+   * changeOrderRequiredApprovalCount distinct internal approvals first, same threshold-gated
+   * multi-approver chain as EstimatesService.approve(). */
   async approve(companyId: string, actor: AuditActor, changeOrderId: string) {
     const changeOrder = await this.findOrThrow(companyId, changeOrderId);
-    if (changeOrder.status !== "draft") throw new BadRequestException("Only a draft change order can be approved");
+    if (changeOrder.status !== "draft" && changeOrder.status !== "pending_approval") {
+      throw new BadRequestException("Only a draft change order can be approved");
+    }
     if (changeOrder.lines.length === 0) throw new BadRequestException("Add at least one line before approving");
 
-    await this.prisma.changeOrder.update({ where: { id: changeOrderId }, data: { status: "approved" } });
+    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    const threshold = company.changeOrderApprovalThresholdAmount;
+    if (threshold != null && Number(changeOrder.grandTotal) >= Number(threshold)) {
+      return this.recordApprovalStep(companyId, actor, changeOrder, company.changeOrderRequiredApprovalCount);
+    }
+
+    return this.finalizeApproval(companyId, actor, changeOrder);
+  }
+
+  private async recordApprovalStep(
+    companyId: string,
+    actor: AuditActor,
+    changeOrder: Awaited<ReturnType<typeof this.findOrThrow>>,
+    requiredCount: number,
+  ) {
+    if (!actor.userId) throw new BadRequestException("Only a signed-in user can approve");
+
+    const existing = await this.prisma.changeOrderApproval.findUnique({
+      where: { changeOrderId_userId: { changeOrderId: changeOrder.id, userId: actor.userId } },
+    });
+    if (existing) throw new BadRequestException("You have already approved this change order");
+
+    await this.prisma.$transaction([
+      this.prisma.changeOrderApproval.create({
+        data: { changeOrderId: changeOrder.id, userId: actor.userId, actorName: actor.name },
+      }),
+      this.prisma.changeOrder.update({ where: { id: changeOrder.id }, data: { status: "pending_approval" } }),
+    ]);
+
+    const approvalCount = await this.prisma.changeOrderApproval.count({ where: { changeOrderId: changeOrder.id } });
+    this.audit.record(
+      companyId,
+      actor,
+      "change_order.approval_step",
+      "ChangeOrder",
+      changeOrder.id,
+      `Approved step ${approvalCount}/${requiredCount} for CO-${changeOrder.number} "${changeOrder.title}"`,
+    );
+
+    if (approvalCount >= requiredCount) {
+      return this.finalizeApproval(companyId, actor, changeOrder);
+    }
+    return this.findOrThrow(companyId, changeOrder.id);
+  }
+
+  private async finalizeApproval(
+    companyId: string,
+    actor: AuditActor,
+    changeOrder: Awaited<ReturnType<typeof this.findOrThrow>>,
+  ) {
+    await this.prisma.changeOrder.update({ where: { id: changeOrder.id }, data: { status: "approved" } });
     this.audit.record(
       companyId,
       actor,
       "change_order.approved",
       "ChangeOrder",
-      changeOrderId,
+      changeOrder.id,
       `Approved change order CO-${changeOrder.number} "${changeOrder.title}"`,
     );
-    return this.findOrThrow(companyId, changeOrderId);
+    return this.findOrThrow(companyId, changeOrder.id);
   }
 
   /** Generates the public review link, emails it to the client if one is on file, and resets any prior client decision. */
@@ -390,7 +449,7 @@ export class ChangeOrdersService {
   private async findOrThrow(companyId: string, id: string) {
     const changeOrder = await this.prisma.changeOrder.findFirst({
       where: { id, companyId },
-      include: { lines: { include: { rateCatalogItem: true }, orderBy: { sortOrder: "asc" } } },
+      include: { lines: { include: { rateCatalogItem: true }, orderBy: { sortOrder: "asc" } }, approvals: true },
     });
     if (!changeOrder) throw new NotFoundException("Change order not found");
     return changeOrder;

@@ -33,6 +33,11 @@ export class CompanyController {
     return this.service.get(user.companyId);
   }
 
+  @Get("referral")
+  referralStats(@CurrentUser() user: AuthUser) {
+    return this.service.referralStats(user.companyId);
+  }
+
   @Roles("owner", "admin")
   @Patch()
   update(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(updateCompanySchema)) body: UpdateCompanyInput) {

@@ -12,7 +12,7 @@ import {
   type ApiKeyScope,
 } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
-import { apiFetch, apiUpload } from "@/lib/api-client";
+import { apiFetch, apiUpload, downloadBlob } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { isPushSupported, getExistingSubscription, enablePush, disablePush } from "@/lib/push";
 import { CustomFieldsSettingsPanel } from "@/components/custom-fields-settings-panel";
@@ -25,6 +25,10 @@ import { SessionsPanel } from "@/components/sessions-panel";
 import { IntegrationsPanel } from "@/components/integrations-panel";
 import { OnboardingTemplatePanel } from "@/components/onboarding-template-panel";
 import { InspectionTemplatesPanel } from "@/components/inspection-templates-panel";
+import { CostCodesPanel } from "@/components/cost-codes-panel";
+import { SecuritySettingsPanel } from "@/components/security-settings-panel";
+import { ReferralProgramPanel } from "@/components/referral-program-panel";
+import { HelpTooltip } from "@/components/help-tooltip";
 
 interface Company {
   name: string;
@@ -32,9 +36,13 @@ interface Company {
   brandColor: string | null;
   approvalThresholdAmount: string | null;
   requiredApprovalCount: number;
+  changeOrderApprovalThresholdAmount: string | null;
+  changeOrderRequiredApprovalCount: number;
   rfiSlaDays: number | null;
   punchListSlaDays: number | null;
   invoiceRemindersEnabled: boolean;
+  leadFollowUpEnabled: boolean;
+  estimateRemindersEnabled: boolean;
   publicLeadFormToken: string | null;
   reviewRequestUrl: string | null;
   reportingCurrency: string | null;
@@ -130,9 +138,13 @@ export default function SettingsPage() {
     brandColor: string | null;
     approvalThresholdAmount: string;
     requiredApprovalCount: string;
+    changeOrderApprovalThresholdAmount: string;
+    changeOrderRequiredApprovalCount: string;
     rfiSlaDays: string;
     punchListSlaDays: string;
     invoiceRemindersEnabled: boolean;
+    leadFollowUpEnabled: boolean;
+    estimateRemindersEnabled: boolean;
     reviewRequestUrl: string;
     reportingCurrency: string;
   }>({
@@ -141,9 +153,13 @@ export default function SettingsPage() {
     brandColor: null,
     approvalThresholdAmount: "",
     requiredApprovalCount: "1",
+    changeOrderApprovalThresholdAmount: "",
+    changeOrderRequiredApprovalCount: "1",
     rfiSlaDays: "",
     punchListSlaDays: "",
     invoiceRemindersEnabled: false,
+    leadFollowUpEnabled: false,
+    estimateRemindersEnabled: false,
     reviewRequestUrl: "",
     reportingCurrency: "",
   });
@@ -166,6 +182,8 @@ export default function SettingsPage() {
   const [createdKey, setCreatedKey] = useState<string | null>(null);
   const [keyCopied, setKeyCopied] = useState(false);
   const [auditLog, setAuditLog] = useState<AuditLogEntry[] | null>(null);
+  const [auditFilter, setAuditFilter] = useState({ dateFrom: "", dateTo: "", entityType: "", action: "" });
+  const [auditExportBusy, setAuditExportBusy] = useState(false);
   const [webhooks, setWebhooks] = useState<WebhookEndpoint[] | null>(null);
   const [webhookForm, setWebhookForm] = useState<{ url: string; events: WebhookEvent[] }>({ url: "", events: [] });
   const [createdWebhookSecret, setCreatedWebhookSecret] = useState<string | null>(null);
@@ -205,9 +223,13 @@ export default function SettingsPage() {
         brandColor: c.brandColor,
         approvalThresholdAmount: c.approvalThresholdAmount ?? "",
         requiredApprovalCount: String(c.requiredApprovalCount),
+        changeOrderApprovalThresholdAmount: c.changeOrderApprovalThresholdAmount ?? "",
+        changeOrderRequiredApprovalCount: String(c.changeOrderRequiredApprovalCount),
         rfiSlaDays: c.rfiSlaDays !== null ? String(c.rfiSlaDays) : "",
         punchListSlaDays: c.punchListSlaDays !== null ? String(c.punchListSlaDays) : "",
         invoiceRemindersEnabled: c.invoiceRemindersEnabled,
+        leadFollowUpEnabled: c.leadFollowUpEnabled,
+        estimateRemindersEnabled: c.estimateRemindersEnabled,
         reviewRequestUrl: c.reviewRequestUrl ?? "",
         reportingCurrency: c.reportingCurrency ?? "",
       });
@@ -225,8 +247,32 @@ export default function SettingsPage() {
     if (isManager) {
       apiFetch<Invite[]>("/company/invites").then(setInvites);
       apiFetch<ApiKey[]>("/company/api-keys").then(setApiKeys);
-      apiFetch<AuditLogEntry[]>("/company/audit-log").then(setAuditLog);
+      loadAuditLog();
       apiFetch<WebhookEndpoint[]>("/company/webhooks").then(setWebhooks);
+    }
+  }
+
+  function auditQueryString(filter: typeof auditFilter): string {
+    const params = new URLSearchParams();
+    if (filter.dateFrom) params.set("dateFrom", new Date(filter.dateFrom).toISOString());
+    if (filter.dateTo) params.set("dateTo", new Date(filter.dateTo).toISOString());
+    if (filter.entityType) params.set("entityType", filter.entityType);
+    if (filter.action) params.set("action", filter.action);
+    const qs = params.toString();
+    return qs ? `?${qs}` : "";
+  }
+
+  function loadAuditLog(filter: typeof auditFilter = auditFilter) {
+    apiFetch<AuditLogEntry[]>(`/company/audit-log${auditQueryString(filter)}`).then(setAuditLog);
+  }
+
+  async function exportAuditLog() {
+    setAuditExportBusy(true);
+    try {
+      const blob = await apiFetch<Blob>(`/company/audit-log/export${auditQueryString(auditFilter)}`);
+      downloadBlob(blob, "audit-log.csv");
+    } finally {
+      setAuditExportBusy(false);
     }
   }
 
@@ -294,9 +340,15 @@ export default function SettingsPage() {
           brandColor: companyForm.brandColor,
           approvalThresholdAmount: companyForm.approvalThresholdAmount ? Number(companyForm.approvalThresholdAmount) : null,
           requiredApprovalCount: Number(companyForm.requiredApprovalCount) || 1,
+          changeOrderApprovalThresholdAmount: companyForm.changeOrderApprovalThresholdAmount
+            ? Number(companyForm.changeOrderApprovalThresholdAmount)
+            : null,
+          changeOrderRequiredApprovalCount: Number(companyForm.changeOrderRequiredApprovalCount) || 1,
           rfiSlaDays: companyForm.rfiSlaDays ? Number(companyForm.rfiSlaDays) : null,
           punchListSlaDays: companyForm.punchListSlaDays ? Number(companyForm.punchListSlaDays) : null,
           invoiceRemindersEnabled: companyForm.invoiceRemindersEnabled,
+          leadFollowUpEnabled: companyForm.leadFollowUpEnabled,
+          estimateRemindersEnabled: companyForm.estimateRemindersEnabled,
           reviewRequestUrl: companyForm.reviewRequestUrl || null,
           reportingCurrency: companyForm.reportingCurrency || null,
         }),
@@ -629,7 +681,10 @@ export default function SettingsPage() {
               </select>
             </label>
             <div className="border-t border-gray-100 pt-3">
-              <p className="mb-2 text-xs font-medium text-gray-700">{t("approvalChains")}</p>
+              <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-gray-700">
+                {t("approvalChains")}
+                <HelpTooltip text={t("approvalChainsTooltip")} />
+              </p>
               <p className="mb-2 text-xs text-gray-500">{t("approvalChainsHint")}</p>
               <div className="flex gap-2">
                 <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500">
@@ -655,6 +710,37 @@ export default function SettingsPage() {
                     value={companyForm.requiredApprovalCount}
                     onChange={(e) => setCompanyForm((f) => ({ ...f, requiredApprovalCount: e.target.value }))}
                     disabled={!isManager || !companyForm.approvalThresholdAmount}
+                  />
+                </label>
+              </div>
+            </div>
+            <div className="border-t border-gray-100 pt-3">
+              <p className="mb-2 text-xs font-medium text-gray-700">{t("changeOrderApprovalChains")}</p>
+              <p className="mb-2 text-xs text-gray-500">{t("changeOrderApprovalChainsHint")}</p>
+              <div className="flex gap-2">
+                <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500">
+                  {t("approvalThreshold")}
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder={t("approvalThresholdPlaceholder")}
+                    className="input"
+                    value={companyForm.changeOrderApprovalThresholdAmount}
+                    onChange={(e) => setCompanyForm((f) => ({ ...f, changeOrderApprovalThresholdAmount: e.target.value }))}
+                    disabled={!isManager}
+                  />
+                </label>
+                <label className="flex w-28 flex-col gap-1 text-xs text-gray-500">
+                  {t("requiredApprovals")}
+                  <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    className="input"
+                    value={companyForm.changeOrderRequiredApprovalCount}
+                    onChange={(e) => setCompanyForm((f) => ({ ...f, changeOrderRequiredApprovalCount: e.target.value }))}
+                    disabled={!isManager || !companyForm.changeOrderApprovalThresholdAmount}
                   />
                 </label>
               </div>
@@ -703,6 +789,36 @@ export default function SettingsPage() {
                 <span>
                   <span className="font-medium text-gray-700">{t("invoiceReminders")}</span>
                   <span className="mt-0.5 block text-gray-500">{t("invoiceRemindersHint")}</span>
+                </span>
+              </label>
+            </div>
+            <div className="border-t border-gray-100 pt-3">
+              <label className="flex items-start gap-2 text-xs text-gray-700">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={companyForm.estimateRemindersEnabled}
+                  onChange={(e) => setCompanyForm((f) => ({ ...f, estimateRemindersEnabled: e.target.checked }))}
+                  disabled={!isManager}
+                />
+                <span>
+                  <span className="font-medium text-gray-700">{t("estimateReminders")}</span>
+                  <span className="mt-0.5 block text-gray-500">{t("estimateRemindersHint")}</span>
+                </span>
+              </label>
+            </div>
+            <div className="border-t border-gray-100 pt-3">
+              <label className="flex items-start gap-2 text-xs text-gray-700">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={companyForm.leadFollowUpEnabled}
+                  onChange={(e) => setCompanyForm((f) => ({ ...f, leadFollowUpEnabled: e.target.checked }))}
+                  disabled={!isManager}
+                />
+                <span>
+                  <span className="font-medium text-gray-700">{t("leadFollowUp")}</span>
+                  <span className="mt-0.5 block text-gray-500">{t("leadFollowUpHint")}</span>
                 </span>
               </label>
             </div>
@@ -1349,14 +1465,65 @@ export default function SettingsPage() {
 
         <SessionsPanel />
 
+        <SecuritySettingsPanel canManage={isManager} />
+
         <IntegrationsPanel canManage={isManager} />
 
         <DataPrivacyPanel canManage={isManager} />
 
+        <ReferralProgramPanel />
+
         {isManager && (
           <section className="card lg:col-span-2">
-            <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("auditLog")}</h2>
+            <div className="mb-1 flex items-center justify-between gap-3">
+              <h2 className="text-sm font-semibold text-gray-700">{t("auditLog")}</h2>
+              <button onClick={exportAuditLog} disabled={auditExportBusy} className="btn-secondary px-2.5 py-1 text-xs">
+                {t("exportCsv")}
+              </button>
+            </div>
             <p className="mb-4 text-xs text-gray-500">{t("auditLogHint")}</p>
+
+            <div className="mb-4 flex flex-wrap items-end gap-2">
+              <label className="flex flex-col gap-1 text-xs text-gray-500">
+                {t("auditFilterDateFrom")}
+                <input
+                  type="date"
+                  className="input"
+                  value={auditFilter.dateFrom}
+                  onChange={(e) => setAuditFilter((f) => ({ ...f, dateFrom: e.target.value }))}
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-xs text-gray-500">
+                {t("auditFilterDateTo")}
+                <input
+                  type="date"
+                  className="input"
+                  value={auditFilter.dateTo}
+                  onChange={(e) => setAuditFilter((f) => ({ ...f, dateTo: e.target.value }))}
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-xs text-gray-500">
+                {t("auditFilterEntityType")}
+                <input
+                  className="input"
+                  placeholder="Project"
+                  value={auditFilter.entityType}
+                  onChange={(e) => setAuditFilter((f) => ({ ...f, entityType: e.target.value }))}
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-xs text-gray-500">
+                {t("auditFilterAction")}
+                <input
+                  className="input"
+                  placeholder="project.created"
+                  value={auditFilter.action}
+                  onChange={(e) => setAuditFilter((f) => ({ ...f, action: e.target.value }))}
+                />
+              </label>
+              <button onClick={() => loadAuditLog()} className="btn-secondary px-2.5 py-1.5 text-xs">
+                {t("auditFilterApply")}
+              </button>
+            </div>
 
             {!auditLog ? (
               <p className="text-gray-500">{tc("loading")}</p>
@@ -1382,6 +1549,7 @@ export default function SettingsPage() {
 
         {isManager && <OnboardingTemplatePanel />}
         {isManager && <InspectionTemplatesPanel />}
+        {isManager && <CostCodesPanel />}
       </div>
     </AuthenticatedShell>
   );

@@ -11,6 +11,9 @@ export const signupSchema = z.object({
   currency: z.enum(SUPPORTED_CURRENCIES),
   locale: z.enum(SUPPORTED_LOCALES),
   planCode: z.enum(PLAN_IDS),
+  /// Another company's referralCode, if this signup came from a shared referral link — see the
+  /// platform referral program in CompanyController/AuthService.
+  referralCode: z.string().max(40).optional(),
 });
 export type SignupInput = z.infer<typeof signupSchema>;
 

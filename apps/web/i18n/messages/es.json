@@ -21,7 +21,8 @@
     "emailedTo": "Enviado por correo a {email}.",
     "noClientEmail": "No hay correo registrado para este cliente — comparta el enlace manualmente.",
     "none": "Ninguno",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "add": "Añadir"
   },
   "nav": {
     "menu": "Menú",
@@ -46,7 +47,8 @@
     "subcontractors": "Subcontratistas",
     "expenses": "Gastos",
     "serviceContracts": "Contratos de servicio",
-    "bankReconciliation": "Conciliación bancaria"
+    "bankReconciliation": "Conciliación bancaria",
+    "contracts": "Contratos"
   },
   "auth": {
     "signupTitle": "Crea tu cuenta de Cantero",
@@ -280,7 +282,20 @@
     "apiKeyExpires": "Caduca",
     "apiKeyScopes": "Alcances",
     "apiKeyScopesHint": "Alcances (ninguno seleccionado = sin restricción):",
-    "apiKeyUnrestricted": "Sin restricción"
+    "apiKeyUnrestricted": "Sin restricción",
+    "approvalChainsTooltip": "Se aplica solo a presupuestos. Las órdenes de cambio tienen un umbral independiente más abajo.",
+    "changeOrderApprovalChains": "Cadenas de aprobación de órdenes de cambio",
+    "changeOrderApprovalChainsHint": "Las órdenes de cambio iguales o superiores a este importe necesitan este número de aprobaciones internas distintas antes de poder enviarse al cliente. Déjelo en blanco para desactivarlo.",
+    "estimateReminders": "Recordatorios automáticos de seguimiento de presupuestos",
+    "estimateRemindersHint": "Envía correos de recordatorio escalonados al cliente a los 3, 7 y 14 días de enviar un presupuesto, mientras siga pendiente de decisión.",
+    "leadFollowUp": "Correos automáticos de seguimiento de clientes potenciales",
+    "leadFollowUpHint": "Envía una secuencia de seguimiento en los días 1, 3 y 7 a los clientes potenciales que sigan en la etapa de lead.",
+    "exportCsv": "Exportar CSV",
+    "auditFilterDateFrom": "Desde",
+    "auditFilterDateTo": "Hasta",
+    "auditFilterEntityType": "Tipo de entidad",
+    "auditFilterAction": "Acción",
+    "auditFilterApply": "Filtrar"
   },
   "projects": {
     "title": "Proyectos",
@@ -347,7 +362,11 @@
     "avgDays": "media {days}d",
     "ownerLeaderboard": "Clasificación por comercial",
     "wonSummary": "Ganados: {count} · {value} {currency}",
-    "openSummary": "Abiertos: {count} · {value} {currency}"
+    "openSummary": "Abiertos: {count} · {value} {currency}",
+    "referralReward": "Recompensa por referido",
+    "referralReward_pending": "Recompensa pendiente",
+    "referralReward_paid": "Recompensa pagada",
+    "markRewardPaid": "Marcar como pagada"
   },
   "team": {
     "title": "Equipo",
@@ -529,7 +548,8 @@
     "to": "Hasta",
     "compare": "Comparar",
     "grandTotalDelta": "Cambio en el total general",
-    "noDifferences": "No hay diferencias entre estas revisiones"
+    "noDifferences": "No hay diferencias entre estas revisiones",
+    "costCodeUnassigned": "Sin código de costo"
   },
   "invoices": {
     "title": "Facturas",
@@ -589,7 +609,8 @@
     "resume": "Reanudar",
     "cashFlowForecastLink": "Ver la previsión de flujo de caja a 13 semanas en Informes",
     "exportQuickBooks": "Exportar a QuickBooks",
-    "exportXero": "Exportar a Xero"
+    "exportXero": "Exportar a Xero",
+    "downloadScheduleOfValues": "Descargar cuadro de valores"
   },
   "portal": {
     "signInTitle": "Portal del cliente",
@@ -624,7 +645,10 @@
     "descriptionPlaceholder": "Más detalles…",
     "submitClaim": "Enviar reclamación",
     "claimSubmitted": "Reclamación enviada — nos pondremos en contacto.",
-    "payNow": "Pagar ahora"
+    "payNow": "Pagar ahora",
+    "projectProgress": "Progreso del proyecto",
+    "tasksComplete": "Tareas completadas",
+    "budgetPaid": "Presupuesto pagado"
   },
   "equipment": {
     "title": "Equipos",
@@ -664,7 +688,14 @@
     "nextDue": "Próximo vencimiento: {date}",
     "intervalDays": "Cada (días)",
     "intervalDaysPlaceholder": "p. ej. 90",
-    "disableSchedule": "Desactivar programación"
+    "disableSchedule": "Desactivar programación",
+    "gpsTracking": "Seguimiento de ubicación",
+    "gpsTrackingHint": "Informado por este dispositivo mientras el seguimiento está activo — solo la ruta de hoy, sin telemática externa.",
+    "gpsStart": "Iniciar seguimiento",
+    "gpsStop": "Detener seguimiento",
+    "gpsDenied": "Se denegó el acceso a la ubicación.",
+    "gpsUnsupported": "Este navegador no admite el seguimiento de ubicación.",
+    "gpsNoRoute": "No se registró ninguna ruta hoy."
   },
   "subcontractorPortal": {
     "signInTitle": "Portal de subcontratistas",
@@ -776,7 +807,11 @@
     "totalOrders": "Pedidos",
     "onTimeRate": "Tasa de puntualidad",
     "averageDelay": "Retraso medio",
-    "totalSpend": "Gasto total"
+    "totalSpend": "Gasto total",
+    "catalogSync": "Sincronización de precios del catálogo",
+    "catalogSyncHint": "Suba la lista de precios de este proveedor (CSV: code, unitPrice) para actualizar en masa los precios de los materiales donde este proveedor es el preferido.",
+    "uploadCatalogCsv": "Subir CSV",
+    "catalogSyncResult": "{updated} precio(s) actualizado(s), {skipped} omitido(s)"
   },
   "scheduling": {
     "board": "Tablero de tareas",
@@ -843,7 +878,12 @@
     "loggedOutsideGeofence": "Guardado — pero registrado fuera de la geocerca del proyecto",
     "expenses": "Gastos",
     "queuedOfflineNoReceipt": "Guardado sin conexión — la foto del recibo deberá añadirse cuando vuelva a estar en línea",
-    "receiptQueuedOffline": "Guardado — la foto del recibo se subirá cuando vuelva a estar en línea"
+    "receiptQueuedOffline": "Guardado — la foto del recibo se subirá cuando vuelva a estar en línea",
+    "syncConflicts": "{count} elemento(s) no se pudieron sincronizar — algo cambió mientras tanto",
+    "retrySync": "Reintentar",
+    "discardSync": "Descartar",
+    "voiceInputStart": "Iniciar entrada de voz",
+    "voiceInputStop": "Detener entrada de voz"
   },
   "subcontractors": {
     "title": "Costos de subcontratistas",
@@ -863,7 +903,8 @@
     "requestWaiver": "Solicitar renuncia de gravamen",
     "finalWaiver": "Final",
     "downloadWaiver": "Descargar renuncia",
-    "waiverAwaitingSignature": "Pendiente de firma"
+    "waiverAwaitingSignature": "Pendiente de firma",
+    "costCodeUnassigned": "Sin código de costo"
   },
   "reports": {
     "title": "Informes",
@@ -1289,7 +1330,17 @@
     "other": "Otro",
     "viewCertificate": "Ver certificado",
     "uploadCertificate": "Subir certificado",
-    "uploading": "Subiendo…"
+    "uploading": "Subiendo…",
+    "publicProfile": "Perfil público",
+    "publicProfileHint": "Un enlace compartible que muestra la especialidad y el historial de este subcontratista con su empresa — útil como referencia para conseguir trabajo en otro lugar.",
+    "specializationPlaceholder": "Especialización, p. ej. Electricidad",
+    "bioPlaceholder": "Una breve nota sobre este subcontratista...",
+    "makePublic": "Hacer público el perfil",
+    "copyPublicLink": "Copiar enlace público",
+    "profileNotFound": "Este enlace de perfil no es válido o ya no es público.",
+    "projectsWorked": "Proyectos realizados",
+    "totalPaidOut": "Total pagado",
+    "referencedBy": "Referenciado por {name}"
   },
   "weather": {
     "title": "Pronóstico del tiempo",
@@ -1414,7 +1465,10 @@
     "requestDeletion": "Solicitar eliminación de cuenta",
     "confirmRequest": "¿Solicitar la eliminación de esta cuenta de empresa? Soporte se pondrá en contacto antes de eliminar nada.",
     "deletionPending": "Eliminación solicitada el {date} — nuestro equipo de soporte se pondrá en contacto.",
-    "cancelRequest": "Cancelar solicitud de eliminación"
+    "cancelRequest": "Cancelar solicitud de eliminación",
+    "operationalExportTitle": "Exportación de datos operativos",
+    "operationalExportHint": "Catálogos de precios/materiales, órdenes de cambio, subcontratistas y sus costos, contratos y órdenes de compra — los datos operativos críticos que la exportación anterior no incluye.",
+    "operationalExportButton": "Descargar exportación operativa"
   },
   "customReports": {
     "title": "Informes personalizados",
@@ -1636,5 +1690,97 @@
     "checklistItems": "Puntos de la lista",
     "checklistItemPlaceholder": "Descripción del punto",
     "addChecklistItem": "Añadir punto"
+  },
+  "commandPalette": {
+    "placeholder": "Buscar o ir a...",
+    "noResults": "Sin resultados",
+    "shortcutsTitle": "Atajos de teclado",
+    "shortcutCommandPalette": "Abrir paleta de comandos",
+    "shortcutHelp": "Mostrar esta ayuda",
+    "shortcutClose": "Cerrar diálogos"
+  },
+  "onboardingChecklist": {
+    "title": "Primeros pasos con Cantero",
+    "subtitle": "{done} de {total} pasos completados",
+    "dismiss": "Descartar",
+    "create_project": "Crea tu primer proyecto",
+    "add_client": "Añade un cliente",
+    "build_rate_catalog": "Crea tu catálogo de precios",
+    "create_estimate": "Crea un presupuesto",
+    "invite_team": "Invita a un compañero de equipo"
+  },
+  "projectMembers": {
+    "title": "Acceso al proyecto",
+    "tooltip": "Restrinja quién de su equipo puede ver este proyecto — útil para obras sensibles o de alta seguridad.",
+    "restrictToggle": "Restringir a miembros específicos del equipo",
+    "restrictToggleHint": "Los propietarios y administradores siempre tienen acceso. Desactivado por defecto — cada proyecto es visible para todo el equipo.",
+    "noMembers": "Aún no se ha dado acceso a nadie.",
+    "selectMember": "Seleccionar un miembro del equipo"
+  },
+  "contracts": {
+    "title": "Contratos",
+    "subtitle": "Redacte, envíe y recoja firmas electrónicas en contratos.",
+    "allContracts": "Todos los contratos",
+    "noContracts": "Aún no hay contratos.",
+    "templates": "Plantillas",
+    "noTemplates": "Aún no hay plantillas.",
+    "templateNamePlaceholder": "Nombre de la plantilla",
+    "templateBodyPlaceholder": "Texto del contrato...",
+    "titlePlaceholder": "Título del contrato",
+    "customBody": "Texto personalizado...",
+    "bodyPlaceholder": "Texto del contrato...",
+    "draft": "Borrador",
+    "sent": "Enviado",
+    "signed": "Firmado",
+    "void": "Anulado",
+    "send": "Enviar para firmar",
+    "voidContract": "Anular contrato",
+    "downloadPdf": "Descargar PDF",
+    "signedBy": "Firmado por",
+    "signHere": "Firme aquí",
+    "signerNameLabel": "Su nombre completo",
+    "signerNamePlaceholder": "Juan Pérez",
+    "clearSignature": "Borrar",
+    "clientSign": "Firmar contrato",
+    "signatureRequired": "Se requiere un nombre escrito y una firma dibujada para firmar.",
+    "signedThanks": "Gracias — este contrato ha sido firmado.",
+    "notAwaitingSignature": "Este contrato no está a la espera de firma.",
+    "linkNotFound": "Este enlace no es válido o ha caducado."
+  },
+  "costCodes": {
+    "title": "Códigos de costo",
+    "hint": "Códigos de costo estilo CSI para clasificar líneas de presupuesto, órdenes de cambio y costos de subcontratistas — usados por los informes de costeo de obra y cuadro de valores.",
+    "noCostCodes": "Aún no hay códigos de costo.",
+    "codePlaceholder": "Código, p. ej. 03 00 00",
+    "namePlaceholder": "Nombre, p. ej. Hormigón"
+  },
+  "jobCosting": {
+    "title": "Costeo de obra",
+    "hint": "Valor de contrato estimado frente a costos comprometidos y reales de subcontratistas, por código de costo.",
+    "costCode": "Código de costo",
+    "estimated": "Estimado",
+    "committed": "Comprometido",
+    "actual": "Real",
+    "variance": "Variación",
+    "total": "Total"
+  },
+  "security": {
+    "title": "Seguridad",
+    "hint": "Políticas de sesión, contraseña y visibilidad de costos para esta empresa.",
+    "sessionTimeout": "Tiempo de espera de sesión (minutos)",
+    "sessionTimeoutTooltip": "Cierra una sesión automáticamente tras estos minutos de inactividad. Déjelo en blanco para desactivarlo.",
+    "sessionTimeoutPlaceholder": "Sin límite",
+    "passwordPolicy": "Política de contraseñas",
+    "passwordMinLength": "Longitud mínima",
+    "passwordRequireSymbol": "Requerir un símbolo",
+    "hideCostData": "Ocultar datos de costos a estos roles",
+    "hideCostDataTooltip": "Estos roles ven las cantidades y el alcance del presupuesto, pero no las cifras internas de costo de material/mano de obra ni el margen. Los propietarios y administradores siempre ven todo."
+  },
+  "referrals": {
+    "title": "Programa de referidos",
+    "hint": "Comparta su enlace con otras empresas constructoras — cuando se registren en Cantero, los verá contabilizados abajo.",
+    "copyLink": "Copiar enlace",
+    "copied": "Copiado",
+    "referredCount": "{count} empresas se han registrado mediante su enlace"
   }
 }

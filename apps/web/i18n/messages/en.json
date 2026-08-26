@@ -21,7 +21,8 @@
     "emailedTo": "Emailed to {email}.",
     "noClientEmail": "No email on file for this client — share the link manually.",
     "none": "None",
-    "close": "Close"
+    "close": "Close",
+    "add": "Add"
   },
   "nav": {
     "menu": "Menu",
@@ -46,7 +47,8 @@
     "subcontractors": "Subcontractors",
     "expenses": "Expenses",
     "serviceContracts": "Service Contracts",
-    "bankReconciliation": "Bank reconciliation"
+    "bankReconciliation": "Bank reconciliation",
+    "contracts": "Contracts"
   },
   "auth": {
     "signupTitle": "Create your Cantero account",
@@ -280,7 +282,20 @@
     "apiKeyExpires": "Expires",
     "apiKeyScopes": "Scopes",
     "apiKeyScopesHint": "Scopes (none selected = unrestricted):",
-    "apiKeyUnrestricted": "Unrestricted"
+    "apiKeyUnrestricted": "Unrestricted",
+    "approvalChainsTooltip": "Applies to estimates only. Change orders have a separate threshold below.",
+    "changeOrderApprovalChains": "Change order approval chains",
+    "changeOrderApprovalChainsHint": "Change orders at or above this amount need this many distinct internal approvals before they can be sent to the client. Leave blank to disable.",
+    "estimateReminders": "Automatic estimate follow-up reminders",
+    "estimateRemindersHint": "Sends escalating reminder emails to the client at 3, 7, and 14 days after an estimate is sent, while it's still awaiting a decision.",
+    "leadFollowUp": "Automatic lead follow-up emails",
+    "leadFollowUpHint": "Sends a day 1/3/7 follow-up sequence to leads that haven't moved past the lead stage.",
+    "exportCsv": "Export CSV",
+    "auditFilterDateFrom": "From",
+    "auditFilterDateTo": "To",
+    "auditFilterEntityType": "Entity type",
+    "auditFilterAction": "Action",
+    "auditFilterApply": "Filter"
   },
   "projects": {
     "title": "Projects",
@@ -347,7 +362,11 @@
     "avgDays": "avg {days}d",
     "ownerLeaderboard": "Owner leaderboard",
     "wonSummary": "Won: {count} · {value} {currency}",
-    "openSummary": "Open: {count} · {value} {currency}"
+    "openSummary": "Open: {count} · {value} {currency}",
+    "referralReward": "Referral reward",
+    "referralReward_pending": "Reward owed",
+    "referralReward_paid": "Reward paid",
+    "markRewardPaid": "Mark as paid"
   },
   "team": {
     "title": "Team",
@@ -529,7 +548,8 @@
     "to": "To",
     "compare": "Compare",
     "grandTotalDelta": "Grand total change",
-    "noDifferences": "No differences between these revisions"
+    "noDifferences": "No differences between these revisions",
+    "costCodeUnassigned": "Unassigned cost code"
   },
   "invoices": {
     "title": "Invoices",
@@ -589,7 +609,8 @@
     "resume": "Resume",
     "cashFlowForecastLink": "See the 13-week cash flow forecast in Reports",
     "exportQuickBooks": "Export to QuickBooks",
-    "exportXero": "Export to Xero"
+    "exportXero": "Export to Xero",
+    "downloadScheduleOfValues": "Download schedule of values"
   },
   "portal": {
     "signInTitle": "Client portal",
@@ -624,7 +645,10 @@
     "descriptionPlaceholder": "More details…",
     "submitClaim": "Submit claim",
     "claimSubmitted": "Claim submitted — we'll be in touch.",
-    "payNow": "Pay now"
+    "payNow": "Pay now",
+    "projectProgress": "Project progress",
+    "tasksComplete": "Tasks complete",
+    "budgetPaid": "Budget paid"
   },
   "equipment": {
     "title": "Equipment",
@@ -664,7 +688,14 @@
     "nextDue": "Next due: {date}",
     "intervalDays": "Every (days)",
     "intervalDaysPlaceholder": "e.g. 90",
-    "disableSchedule": "Disable schedule"
+    "disableSchedule": "Disable schedule",
+    "gpsTracking": "Location tracking",
+    "gpsTrackingHint": "Self-reported from this device while tracking is on — today's route only, no external telematics.",
+    "gpsStart": "Start tracking",
+    "gpsStop": "Stop tracking",
+    "gpsDenied": "Location access was denied.",
+    "gpsUnsupported": "This browser doesn't support location tracking.",
+    "gpsNoRoute": "No route recorded today."
   },
   "subcontractorPortal": {
     "signInTitle": "Subcontractor portal",
@@ -776,7 +807,11 @@
     "totalOrders": "Orders",
     "onTimeRate": "On-time rate",
     "averageDelay": "Avg. delay",
-    "totalSpend": "Total spend"
+    "totalSpend": "Total spend",
+    "catalogSync": "Catalog price sync",
+    "catalogSyncHint": "Upload this supplier's price list (CSV: code, unitPrice) to bulk-update prices for materials where this supplier is preferred.",
+    "uploadCatalogCsv": "Upload CSV",
+    "catalogSyncResult": "{updated} price(s) updated, {skipped} skipped"
   },
   "scheduling": {
     "board": "Task board",
@@ -843,7 +878,12 @@
     "loggedOutsideGeofence": "Saved — but logged outside the project's geofence",
     "expenses": "Expenses",
     "queuedOfflineNoReceipt": "Saved offline — the receipt photo will need to be added once you're back online",
-    "receiptQueuedOffline": "Saved — receipt photo will upload once you're back online"
+    "receiptQueuedOffline": "Saved — receipt photo will upload once you're back online",
+    "syncConflicts": "{count} item(s) couldn't sync — something changed elsewhere",
+    "retrySync": "Retry",
+    "discardSync": "Discard",
+    "voiceInputStart": "Start voice input",
+    "voiceInputStop": "Stop voice input"
   },
   "subcontractors": {
     "title": "Subcontractor costs",
@@ -863,7 +903,8 @@
     "requestWaiver": "Request lien waiver",
     "finalWaiver": "Final",
     "downloadWaiver": "Download waiver",
-    "waiverAwaitingSignature": "Awaiting signature"
+    "waiverAwaitingSignature": "Awaiting signature",
+    "costCodeUnassigned": "Unassigned cost code"
   },
   "reports": {
     "title": "Reports",
@@ -1289,7 +1330,17 @@
     "other": "Other",
     "viewCertificate": "View certificate",
     "uploadCertificate": "Upload certificate",
-    "uploading": "Uploading…"
+    "uploading": "Uploading…",
+    "publicProfile": "Public profile",
+    "publicProfileHint": "A shareable link showing this sub's specialty and track record with your company — handy to give them as a reference for winning work elsewhere.",
+    "specializationPlaceholder": "Specialization, e.g. Electrical",
+    "bioPlaceholder": "A short note about this subcontractor...",
+    "makePublic": "Make profile public",
+    "copyPublicLink": "Copy public link",
+    "profileNotFound": "This profile link is invalid or no longer public.",
+    "projectsWorked": "Projects worked",
+    "totalPaidOut": "Total paid out",
+    "referencedBy": "Referenced by {name}"
   },
   "weather": {
     "title": "Weather forecast",
@@ -1414,7 +1465,10 @@
     "requestDeletion": "Request account deletion",
     "confirmRequest": "Request deletion of this company account? Support will follow up before anything is deleted.",
     "deletionPending": "Deletion requested on {date} — our support team will follow up.",
-    "cancelRequest": "Cancel deletion request"
+    "cancelRequest": "Cancel deletion request",
+    "operationalExportTitle": "Operational data export",
+    "operationalExportHint": "Rate/material catalogs, change orders, subcontractors and their costs, contracts, and purchase orders — the business-critical setup data the export above leaves out.",
+    "operationalExportButton": "Download operational export"
   },
   "customReports": {
     "title": "Custom reports",
@@ -1636,5 +1690,97 @@
     "checklistItems": "Checklist items",
     "checklistItemPlaceholder": "Item description",
     "addChecklistItem": "Add item"
+  },
+  "commandPalette": {
+    "placeholder": "Search or jump to...",
+    "noResults": "No matches",
+    "shortcutsTitle": "Keyboard shortcuts",
+    "shortcutCommandPalette": "Open command palette",
+    "shortcutHelp": "Show this help",
+    "shortcutClose": "Close dialogs"
+  },
+  "onboardingChecklist": {
+    "title": "Get started with Cantero",
+    "subtitle": "{done} of {total} steps done",
+    "dismiss": "Dismiss",
+    "create_project": "Create your first project",
+    "add_client": "Add a client",
+    "build_rate_catalog": "Build your rate catalog",
+    "create_estimate": "Create an estimate",
+    "invite_team": "Invite a teammate"
+  },
+  "projectMembers": {
+    "title": "Project access",
+    "tooltip": "Restrict who on your team can see this project — useful for sensitive or high-security sites.",
+    "restrictToggle": "Restrict to specific team members",
+    "restrictToggleHint": "Owners and admins always have access. Off by default — every project is visible to the whole team.",
+    "noMembers": "No one has been given access yet.",
+    "selectMember": "Select a team member"
+  },
+  "contracts": {
+    "title": "Contracts",
+    "subtitle": "Draft, send, and collect e-signatures on contracts.",
+    "allContracts": "All contracts",
+    "noContracts": "No contracts yet.",
+    "templates": "Templates",
+    "noTemplates": "No templates yet.",
+    "templateNamePlaceholder": "Template name",
+    "templateBodyPlaceholder": "Contract text...",
+    "titlePlaceholder": "Contract title",
+    "customBody": "Custom body...",
+    "bodyPlaceholder": "Contract text...",
+    "draft": "Draft",
+    "sent": "Sent",
+    "signed": "Signed",
+    "void": "Void",
+    "send": "Send for signature",
+    "voidContract": "Void contract",
+    "downloadPdf": "Download PDF",
+    "signedBy": "Signed by",
+    "signHere": "Sign here",
+    "signerNameLabel": "Your full name",
+    "signerNamePlaceholder": "Jane Smith",
+    "clearSignature": "Clear",
+    "clientSign": "Sign contract",
+    "signatureRequired": "A typed name and drawn signature are required to sign.",
+    "signedThanks": "Thank you — this contract has been signed.",
+    "notAwaitingSignature": "This contract is not awaiting a signature.",
+    "linkNotFound": "This link is invalid or has expired."
+  },
+  "costCodes": {
+    "title": "Cost codes",
+    "hint": "CSI-style cost codes for classifying estimate, change order, and subcontractor cost lines — used by job costing and schedule-of-values reports.",
+    "noCostCodes": "No cost codes yet.",
+    "codePlaceholder": "Code, e.g. 03 00 00",
+    "namePlaceholder": "Name, e.g. Concrete"
+  },
+  "jobCosting": {
+    "title": "Job costing",
+    "hint": "Estimated contract value vs. committed and actual subcontractor costs, by cost code.",
+    "costCode": "Cost code",
+    "estimated": "Estimated",
+    "committed": "Committed",
+    "actual": "Actual",
+    "variance": "Variance",
+    "total": "Total"
+  },
+  "security": {
+    "title": "Security",
+    "hint": "Session, password, and cost-visibility policies for this company.",
+    "sessionTimeout": "Session timeout (minutes)",
+    "sessionTimeoutTooltip": "Signs a session out automatically after this many minutes of inactivity. Leave blank to disable.",
+    "sessionTimeoutPlaceholder": "No limit",
+    "passwordPolicy": "Password policy",
+    "passwordMinLength": "Minimum length",
+    "passwordRequireSymbol": "Require a symbol",
+    "hideCostData": "Hide cost data from these roles",
+    "hideCostDataTooltip": "These roles see estimate quantities and scope, but not internal material/labor cost or markup figures. Owners and admins always see everything."
+  },
+  "referrals": {
+    "title": "Referral program",
+    "hint": "Share your link with other construction companies — when they sign up for Cantero, you'll see them counted below.",
+    "copyLink": "Copy link",
+    "copied": "Copied",
+    "referredCount": "{count} companies have signed up via your link"
   }
 }

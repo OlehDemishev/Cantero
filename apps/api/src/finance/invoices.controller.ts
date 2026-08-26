@@ -16,6 +16,7 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { InvoicesService } from "./invoices.service";
+import { AiaBillingService } from "./aia-billing.service";
 
 class GenerateFromEstimateDto {
   @IsUUID()
@@ -24,7 +25,10 @@ class GenerateFromEstimateDto {
 
 @Controller("invoices")
 export class InvoicesController {
-  constructor(private readonly service: InvoicesService) {}
+  constructor(
+    private readonly service: InvoicesService,
+    private readonly aiaBilling: AiaBillingService,
+  ) {}
 
   @Get()
   list(@CurrentUser() user: AuthUser) {
@@ -121,5 +125,12 @@ export class InvoicesController {
   async pdf(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     const buffer = await this.service.generatePdf(user.companyId, id);
     return new StreamableFile(buffer);
+  }
+
+  @Get(":id/schedule-of-values-pdf")
+  @Header("Content-Type", "application/pdf")
+  async scheduleOfValuesPdf(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    const buffer = await this.aiaBilling.generatePdf(user.companyId, id);
+    return new StreamableFile(buffer, { disposition: `attachment; filename="schedule-of-values.pdf"` });
   }
 }

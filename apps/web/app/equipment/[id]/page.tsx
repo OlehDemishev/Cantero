@@ -4,6 +4,7 @@ import { use, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { EquipmentStatus } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
+import { EquipmentGpsPanel } from "@/components/equipment-gps-panel";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
@@ -342,6 +343,8 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
             </div>
           </form>
         </section>
+
+        <EquipmentGpsPanel equipmentId={id} />
 
         <section className="card lg:col-span-2">
           <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("assignmentHistory")}</h2>

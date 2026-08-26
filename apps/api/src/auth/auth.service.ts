@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { ConflictException, Injectable, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcryptjs";
@@ -24,6 +25,12 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(input.password, BCRYPT_ROUNDS);
 
+    // Silently ignored if the code doesn't match anything — a typo'd/expired referral link
+    // shouldn't block someone from signing up.
+    const referredBy = input.referralCode
+      ? await this.prisma.company.findUnique({ where: { referralCode: input.referralCode }, select: { id: true } })
+      : null;
+
     const { user, company, membership } = await this.prisma.$transaction(async (tx) => {
       const company = await tx.company.create({
         data: {
@@ -32,6 +39,8 @@ export class AuthService {
           unitSystem: input.unitSystem,
           currency: input.currency,
           locale: input.locale,
+          referralCode: randomBytes(4).toString("hex"),
+          referredByCompanyId: referredBy?.id,
         },
       });
       const user = await tx.user.create({

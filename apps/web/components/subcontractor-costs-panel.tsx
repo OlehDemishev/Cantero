@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import type { CostCode } from "@/components/cost-codes-panel";
 
 const NEW_SUBCONTRACTOR = "__new__";
 
@@ -40,9 +41,11 @@ export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
     description: "",
     amount: "",
     dueDate: "",
+    costCodeId: "",
   });
   const [busy, setBusy] = useState(false);
   const [finalFlags, setFinalFlags] = useState<Record<string, boolean>>({});
+  const [costCodes, setCostCodes] = useState<CostCode[]>([]);
 
   function load() {
     apiFetch<SubcontractorCost[]>(`/finance/subcontractor-costs?projectId=${projectId}`).then(setCosts);
@@ -58,6 +61,7 @@ export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
   useEffect(() => {
     load();
     loadSubcontractors();
+    apiFetch<CostCode[]>("/cost-codes").then(setCostCodes);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
@@ -81,9 +85,10 @@ export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
           description: form.description,
           amount: Number(form.amount),
           dueDate: form.dueDate ? new Date(form.dueDate).toISOString() : undefined,
+          costCodeId: form.costCodeId || undefined,
         }),
       });
-      setForm((f) => ({ ...f, newSubcontractorName: "", description: "", amount: "", dueDate: "" }));
+      setForm((f) => ({ ...f, newSubcontractorName: "", description: "", amount: "", dueDate: "", costCodeId: "" }));
       load();
       loadSubcontractors();
     } finally {
@@ -218,6 +223,20 @@ export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
           value={form.dueDate}
           onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
         />
+        {costCodes.length > 0 && (
+          <select
+            className="input w-auto"
+            value={form.costCodeId}
+            onChange={(e) => setForm((f) => ({ ...f, costCodeId: e.target.value }))}
+          >
+            <option value="">{t("costCodeUnassigned")}</option>
+            {costCodes.map((cc) => (
+              <option key={cc.id} value={cc.id}>
+                {cc.code} {cc.name}
+              </option>
+            ))}
+          </select>
+        )}
         <button type="submit" disabled={busy} className="btn-secondary">
           {t("addCost")}
         </button>

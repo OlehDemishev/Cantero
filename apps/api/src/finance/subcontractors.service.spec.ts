@@ -14,19 +14,21 @@ function daysFromNow(days: number): Date {
 describe("SubcontractorsService", () => {
   let service: SubcontractorsService;
   let prisma: {
-    subcontractor: { findFirst: jest.Mock };
+    subcontractor: { findFirst: jest.Mock; update: jest.Mock };
     project: { findFirst: jest.Mock };
-    subcontractorAssignment: { upsert: jest.Mock; findFirst: jest.Mock; delete: jest.Mock };
+    subcontractorAssignment: { upsert: jest.Mock; findFirst: jest.Mock; delete: jest.Mock; count: jest.Mock };
     subcontractorDocument: { findFirst: jest.Mock; findMany: jest.Mock; create: jest.Mock; delete: jest.Mock };
+    subcontractorCost: { aggregate: jest.Mock };
   };
   let audit: { record: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
-      subcontractor: { findFirst: jest.fn() },
+      subcontractor: { findFirst: jest.fn(), update: jest.fn() },
       project: { findFirst: jest.fn() },
-      subcontractorAssignment: { upsert: jest.fn(), findFirst: jest.fn(), delete: jest.fn() },
+      subcontractorAssignment: { upsert: jest.fn(), findFirst: jest.fn(), delete: jest.fn(), count: jest.fn() },
       subcontractorDocument: { findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), delete: jest.fn() },
+      subcontractorCost: { aggregate: jest.fn() },
     };
     audit = { record: jest.fn() };
 
@@ -158,6 +160,70 @@ describe("SubcontractorsService", () => {
 
       await expect(service.deleteDocument(COMPANY_A, "sub-1", "doc-1")).rejects.toThrow(NotFoundException);
       expect(prisma.subcontractorDocument.delete).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("setPublicListed()", () => {
+    it("rejects a subcontractor that doesn't belong to this company", async () => {
+      prisma.subcontractor.findFirst.mockResolvedValue(null);
+
+      await expect(service.setPublicListed(COMPANY_A, "sub-1", true)).rejects.toThrow(NotFoundException);
+      expect(prisma.subcontractor.update).not.toHaveBeenCalled();
+    });
+
+    it("generates a token the first time a subcontractor is made public", async () => {
+      prisma.subcontractor.findFirst.mockResolvedValue({ id: "sub-1", companyId: COMPANY_A, publicToken: null });
+      prisma.subcontractor.update.mockResolvedValue({ id: "sub-1", publicListed: true, publicToken: "generated" });
+
+      await service.setPublicListed(COMPANY_A, "sub-1", true);
+
+      const call = prisma.subcontractor.update.mock.calls[0][0];
+      expect(call.data.publicListed).toBe(true);
+      expect(typeof call.data.publicToken).toBe("string");
+      expect(call.data.publicToken.length).toBeGreaterThan(0);
+    });
+
+    it("keeps the existing token when re-enabling after it was already generated once", async () => {
+      prisma.subcontractor.findFirst.mockResolvedValue({ id: "sub-1", companyId: COMPANY_A, publicToken: "existing-token" });
+      prisma.subcontractor.update.mockResolvedValue({});
+
+      await service.setPublicListed(COMPANY_A, "sub-1", true);
+
+      expect(prisma.subcontractor.update).toHaveBeenCalledWith({
+        where: { id: "sub-1" },
+        data: { publicListed: true, publicToken: "existing-token" },
+      });
+    });
+  });
+
+  describe("getPublicProfile()", () => {
+    it("rejects an unknown or unlisted token", async () => {
+      prisma.subcontractor.findFirst.mockResolvedValue(null);
+
+      await expect(service.getPublicProfile("bad-token")).rejects.toThrow(NotFoundException);
+    });
+
+    it("returns the sub's track record with this company, not a cross-company rating", async () => {
+      prisma.subcontractor.findFirst.mockResolvedValue({
+        id: "sub-1",
+        name: "Acme Electric",
+        specialization: "Electrical",
+        bio: "Reliable and fast.",
+        company: { name: "Riverside Builders" },
+      });
+      prisma.subcontractorAssignment.count.mockResolvedValue(4);
+      prisma.subcontractorCost.aggregate.mockResolvedValue({ _sum: { amount: "15000.00" } });
+
+      const result = await service.getPublicProfile("good-token");
+
+      expect(result).toEqual({
+        name: "Acme Electric",
+        specialization: "Electrical",
+        bio: "Reliable and fast.",
+        referencedBy: "Riverside Builders",
+        projectsWorked: 4,
+        totalPaidOut: 15000,
+      });
     });
   });
 });

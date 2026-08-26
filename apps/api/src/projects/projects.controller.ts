@@ -1,11 +1,15 @@
 import { BadRequestException, Body, Controller, Delete, Get, Header, Param, Patch, Post, StreamableFile, UploadedFile, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import {
+  addProjectMemberSchema,
   createProjectSchema,
+  setProjectRestrictedSchema,
   updateProjectGeofenceSchema,
   updateProjectWarrantySchema,
+  type AddProjectMemberInput,
   type AuthUser,
   type CreateProjectInput,
+  type SetProjectRestrictedInput,
   type UpdateProjectGeofenceInput,
   type UpdateProjectWarrantyInput,
 } from "@cantero/shared";
@@ -23,12 +27,40 @@ export class ProjectsController {
 
   @Get()
   list(@CurrentUser() user: AuthUser) {
-    return this.service.list(user.companyId);
+    return this.service.list(user.companyId, user.userId, user.role);
   }
 
   @Get(":id")
   get(@CurrentUser() user: AuthUser, @Param("id") id: string) {
-    return this.service.get(user.companyId, id);
+    return this.service.get(user.companyId, id, user.userId, user.role);
+  }
+
+  @Get(":id/members")
+  listMembers(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.listMembers(user.companyId, id);
+  }
+
+  @Post(":id/members")
+  addMember(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(addProjectMemberSchema)) body: AddProjectMemberInput,
+  ) {
+    return this.service.addMember(user.companyId, { userId: user.userId, name: user.name }, id, body.userId);
+  }
+
+  @Delete(":id/members/:userId")
+  removeMember(@CurrentUser() user: AuthUser, @Param("id") id: string, @Param("userId") memberUserId: string) {
+    return this.service.removeMember(user.companyId, { userId: user.userId, name: user.name }, id, memberUserId);
+  }
+
+  @Patch(":id/restricted")
+  setRestricted(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(setProjectRestrictedSchema)) body: SetProjectRestrictedInput,
+  ) {
+    return this.service.setRestricted(user.companyId, { userId: user.userId, name: user.name }, id, body.restrictedToMembers);
   }
 
   @Get(":id/weather-forecast")

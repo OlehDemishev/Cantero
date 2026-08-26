@@ -36,6 +36,10 @@ export class SubcontractorCostsService {
     if (!subcontractor) throw new NotFoundException("Subcontractor not found");
     const project = await this.prisma.project.findFirst({ where: { id: input.projectId, companyId } });
     if (!project) throw new NotFoundException("Project not found");
+    if (input.costCodeId) {
+      const costCode = await this.prisma.costCode.findFirst({ where: { id: input.costCodeId, companyId } });
+      if (!costCode) throw new NotFoundException("Cost code not found");
+    }
 
     return this.prisma.subcontractorCost.create({
       data: {
@@ -46,19 +50,31 @@ export class SubcontractorCostsService {
         amount: input.amount,
         incurredDate: input.incurredDate ? new Date(input.incurredDate) : undefined,
         dueDate: input.dueDate ? new Date(input.dueDate) : undefined,
+        costCodeId: input.costCodeId,
       },
       include: { subcontractor: true },
     });
   }
 
-  async markPaid(companyId: string, id: string) {
+  /** Marking a cost paid also auto-requests an unconditional progress lien waiver, if one isn't
+   * already on file — the whole point of collecting waivers is to have one for every payment, so
+   * this saves the office a manual follow-up step for the common case. A final waiver still
+   * needs the explicit isFinal request, since that's a judgment call this shouldn't make silently. */
+  async markPaid(companyId: string, actor: AuditActor, id: string) {
     const cost = await this.prisma.subcontractorCost.findFirst({ where: { id, companyId } });
     if (!cost) throw new NotFoundException("Subcontractor cost not found");
-    return this.prisma.subcontractorCost.update({
+    const updated = await this.prisma.subcontractorCost.update({
       where: { id },
       data: { paid: true },
       include: { subcontractor: true },
     });
+
+    const existingWaiver = await this.prisma.lienWaiver.findUnique({ where: { subcontractorCostId: id } });
+    if (!existingWaiver) {
+      await this.requestLienWaiver(companyId, actor, id, { isFinal: false });
+    }
+
+    return updated;
   }
 
   /** Requests a lien waiver for this cost's payment — type (conditional/unconditional) is snapshotted from the cost's paid status right now, not re-derived later. */

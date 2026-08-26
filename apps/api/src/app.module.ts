@@ -51,6 +51,12 @@ import { ServiceModule } from "./service/service.module";
 import { BankReconciliationModule } from "./bank-reconciliation/bank-reconciliation.module";
 import { QualityModule } from "./quality/quality.module";
 import { DashboardModule } from "./dashboard/dashboard.module";
+import { ContractsModule } from "./contracts/contracts.module";
+import { LeadFollowUpModule } from "./lead-follow-up/lead-follow-up.module";
+import { EstimateRemindersModule } from "./estimate-reminders/estimate-reminders.module";
+import { CostCodesModule } from "./cost-codes/cost-codes.module";
+import { JobCostingModule } from "./job-costing/job-costing.module";
+import { ScimModule } from "./scim/scim.module";
 
 @Module({
   imports: [
@@ -101,6 +107,12 @@ import { DashboardModule } from "./dashboard/dashboard.module";
     BankReconciliationModule,
     QualityModule,
     DashboardModule,
+    ContractsModule,
+    LeadFollowUpModule,
+    EstimateRemindersModule,
+    CostCodesModule,
+    JobCostingModule,
+    ScimModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

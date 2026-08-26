@@ -34,6 +34,12 @@ export const checkOutEquipmentSchema = z
   });
 export type CheckOutEquipmentInput = z.infer<typeof checkOutEquipmentSchema>;
 
+export const recordEquipmentGpsPingSchema = z.object({
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180),
+});
+export type RecordEquipmentGpsPingInput = z.infer<typeof recordEquipmentGpsPingSchema>;
+
 export const addMaintenanceRecordSchema = z.object({
   description: z.string().min(1).max(500),
   cost: z.number().nonnegative().optional(),

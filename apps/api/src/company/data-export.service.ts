@@ -95,4 +95,50 @@ export class DataExportService {
     archive.finalize();
     return done;
   }
+
+  /**
+   * A second, differently-scoped export: the business-critical operational data GDPR portability
+   * deliberately leaves out (rate/material catalogs, change orders, subcontractors and their costs,
+   * contracts, purchase orders). Not a claim of covering every table in the schema — deep
+   * historical/audit tables (audit log, notifications, stock movements, etc.) are still out of
+   * scope — but enough to actually reconstruct a company's core estimating/procurement setup
+   * elsewhere, which is what "back up my data" usually means in practice.
+   */
+  async buildOperationalExport(companyId: string): Promise<Buffer> {
+    const [rateCatalogItems, materialCatalogItems, changeOrders, subcontractors, subcontractorCosts, contracts, purchaseOrders] =
+      await Promise.all([
+        this.prisma.rateCatalogItem.findMany({ where: { companyId }, include: { materials: true } }),
+        this.prisma.materialCatalogItem.findMany({ where: { companyId } }),
+        this.prisma.changeOrder.findMany({ where: { companyId }, include: { lines: true } }),
+        this.prisma.subcontractor.findMany({ where: { companyId } }),
+        this.prisma.subcontractorCost.findMany({ where: { companyId } }),
+        this.prisma.contract.findMany({ where: { companyId } }),
+        this.prisma.purchaseOrder.findMany({ where: { companyId }, include: { lines: true } }),
+      ]);
+
+    const files: Record<string, unknown> = {
+      "rate-catalog.json": rateCatalogItems,
+      "material-catalog.json": materialCatalogItems,
+      "change-orders.json": changeOrders,
+      "subcontractors.json": subcontractors,
+      "subcontractor-costs.json": subcontractorCosts,
+      "contracts.json": contracts,
+      "purchase-orders.json": purchaseOrders,
+    };
+
+    const archive = archiver("zip", { zlib: { level: 9 } });
+    const chunks: Buffer[] = [];
+    archive.on("data", (chunk) => chunks.push(chunk));
+    const done = new Promise<Buffer>((resolve, reject) => {
+      archive.on("end", () => resolve(Buffer.concat(chunks)));
+      archive.on("error", reject);
+    });
+
+    for (const [name, data] of Object.entries(files)) {
+      archive.append(JSON.stringify(data, null, 2), { name });
+    }
+
+    archive.finalize();
+    return done;
+  }
 }

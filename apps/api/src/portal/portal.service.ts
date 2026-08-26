@@ -189,10 +189,48 @@ export class PortalService {
       orderBy: { name: "asc" },
     });
     const now = new Date();
-    return projects.map((p) => {
-      const expiresAt = warrantyExpiresAt(p.handoverDate, p.warrantyMonths);
-      return { ...p, warrantyExpiresAt: expiresAt, isUnderWarranty: expiresAt !== null && expiresAt > now };
-    });
+    return Promise.all(
+      projects.map(async (p) => {
+        const expiresAt = warrantyExpiresAt(p.handoverDate, p.warrantyMonths);
+        return {
+          ...p,
+          warrantyExpiresAt: expiresAt,
+          isUnderWarranty: expiresAt !== null && expiresAt > now,
+          progress: await this.projectProgress(client.companyId, p.id),
+        };
+      }),
+    );
+  }
+
+  /** Two simple, honest progress signals computed from data the client already sees elsewhere in
+   * the portal — task completion from the team's own task board, and budget draw-down from paid
+   * invoices against the approved estimate's contract sum. Either half is null when there's
+   * nothing yet to compute it from (no tasks, or no approved estimate). */
+  private async projectProgress(companyId: string, projectId: string) {
+    const [taskCounts, contractSum, paidTotal] = await Promise.all([
+      this.prisma.task.groupBy({ by: ["status"], where: { projectId }, _count: true }),
+      this.prisma.estimate.aggregate({
+        where: { companyId, projectId, isTemplate: false, status: "approved" },
+        _sum: { grandTotal: true },
+      }),
+      this.prisma.invoice.aggregate({
+        where: { companyId, projectId, status: "paid" },
+        _sum: { total: true },
+      }),
+    ]);
+
+    const totalTasks = taskCounts.reduce((sum, c) => sum + c._count, 0);
+    const doneTasks = taskCounts.find((c) => c.status === "done")?._count ?? 0;
+
+    const contractSumValue = Number(contractSum._sum.grandTotal ?? 0);
+    const paidValue = Number(paidTotal._sum.total ?? 0);
+
+    return {
+      tasksTotal: totalTasks,
+      tasksDone: doneTasks,
+      taskPercent: totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : null,
+      budgetPercent: contractSumValue > 0 ? Math.round((paidValue / contractSumValue) * 100) : null,
+    };
   }
 
   listWarrantyClaims(client: PortalClientContext) {

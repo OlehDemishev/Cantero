@@ -15,17 +15,23 @@ describe("ChangeOrdersService", () => {
   let service: ChangeOrdersService;
   let prisma: {
     estimate: { findFirst: jest.Mock; findUniqueOrThrow: jest.Mock };
-    changeOrder: { count: jest.Mock; create: jest.Mock; findFirst: jest.Mock; update: jest.Mock };
+    changeOrder: { count: jest.Mock; create: jest.Mock; findFirst: jest.Mock; findMany: jest.Mock; update: jest.Mock };
     changeOrderLine: { create: jest.Mock };
+    changeOrderApproval: { findUnique: jest.Mock; create: jest.Mock; count: jest.Mock };
     rateCatalogItem: { findFirst: jest.Mock };
+    company: { findUniqueOrThrow: jest.Mock };
+    $transaction: jest.Mock;
   };
 
   beforeEach(async () => {
     prisma = {
       estimate: { findFirst: jest.fn(), findUniqueOrThrow: jest.fn() },
-      changeOrder: { count: jest.fn(), create: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
+      changeOrder: { count: jest.fn(), create: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), update: jest.fn() },
       changeOrderLine: { create: jest.fn() },
+      changeOrderApproval: { findUnique: jest.fn(), create: jest.fn(), count: jest.fn() },
       rateCatalogItem: { findFirst: jest.fn() },
+      company: { findUniqueOrThrow: jest.fn() },
+      $transaction: jest.fn((ops) => Promise.all(ops)),
     };
 
     const module = await Test.createTestingModule({
@@ -129,6 +135,105 @@ describe("ChangeOrdersService", () => {
       await expect(service.approve(COMPANY_A, { name: "Owner" }, "co-1")).rejects.toThrow(BadRequestException);
       expect(prisma.changeOrder.update).not.toHaveBeenCalled();
     });
+
+    it("finalizes immediately when the company has no approval threshold set", async () => {
+      prisma.changeOrder.findFirst.mockResolvedValue({
+        id: "co-1",
+        companyId: COMPANY_A,
+        status: "draft",
+        number: 1,
+        title: "Extra work",
+        grandTotal: 5000,
+        lines: [{ id: "line-1" }],
+        approvals: [],
+      });
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ changeOrderApprovalThresholdAmount: null, changeOrderRequiredApprovalCount: 1 });
+
+      await service.approve(COMPANY_A, { userId: "u1", name: "Owner" }, "co-1");
+
+      expect(prisma.changeOrder.update).toHaveBeenCalledWith({ where: { id: "co-1" }, data: { status: "approved" } });
+      expect(prisma.changeOrderApproval.create).not.toHaveBeenCalled();
+    });
+
+    it("finalizes immediately when the total is under threshold", async () => {
+      prisma.changeOrder.findFirst.mockResolvedValue({
+        id: "co-1",
+        companyId: COMPANY_A,
+        status: "draft",
+        number: 1,
+        title: "Extra work",
+        grandTotal: 500,
+        lines: [{ id: "line-1" }],
+        approvals: [],
+      });
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ changeOrderApprovalThresholdAmount: 1000, changeOrderRequiredApprovalCount: 2 });
+
+      await service.approve(COMPANY_A, { userId: "u1", name: "Owner" }, "co-1");
+
+      expect(prisma.changeOrder.update).toHaveBeenCalledWith({ where: { id: "co-1" }, data: { status: "approved" } });
+    });
+
+    it("records an approval step without finalizing when the required count isn't yet met", async () => {
+      prisma.changeOrder.findFirst.mockResolvedValue({
+        id: "co-1",
+        companyId: COMPANY_A,
+        status: "draft",
+        number: 1,
+        title: "Extra work",
+        grandTotal: 5000,
+        lines: [{ id: "line-1" }],
+        approvals: [],
+      });
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ changeOrderApprovalThresholdAmount: 1000, changeOrderRequiredApprovalCount: 2 });
+      prisma.changeOrderApproval.findUnique.mockResolvedValue(null);
+      prisma.changeOrderApproval.count.mockResolvedValue(1);
+
+      await service.approve(COMPANY_A, { userId: "u1", name: "Approver One" }, "co-1");
+
+      expect(prisma.changeOrderApproval.create).toHaveBeenCalledWith({
+        data: { changeOrderId: "co-1", userId: "u1", actorName: "Approver One" },
+      });
+      expect(prisma.changeOrder.update).toHaveBeenCalledWith({ where: { id: "co-1" }, data: { status: "pending_approval" } });
+    });
+
+    it("finalizes once the second approver's step reaches the required count", async () => {
+      prisma.changeOrder.findFirst.mockResolvedValue({
+        id: "co-1",
+        companyId: COMPANY_A,
+        status: "pending_approval",
+        number: 1,
+        title: "Extra work",
+        grandTotal: 5000,
+        lines: [{ id: "line-1" }],
+        approvals: [{ userId: "u1" }],
+      });
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ changeOrderApprovalThresholdAmount: 1000, changeOrderRequiredApprovalCount: 2 });
+      prisma.changeOrderApproval.findUnique.mockResolvedValue(null);
+      prisma.changeOrderApproval.count.mockResolvedValue(2);
+
+      await service.approve(COMPANY_A, { userId: "u2", name: "Approver Two" }, "co-1");
+
+      expect(prisma.changeOrder.update).toHaveBeenCalledWith({ where: { id: "co-1" }, data: { status: "pending_approval" } });
+      expect(prisma.changeOrder.update).toHaveBeenCalledWith({ where: { id: "co-1" }, data: { status: "approved" } });
+    });
+
+    it("rejects a second approval attempt from the same user", async () => {
+      prisma.changeOrder.findFirst.mockResolvedValue({
+        id: "co-1",
+        companyId: COMPANY_A,
+        status: "pending_approval",
+        number: 1,
+        title: "Extra work",
+        grandTotal: 5000,
+        lines: [{ id: "line-1" }],
+        approvals: [{ userId: "u1" }],
+      });
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ changeOrderApprovalThresholdAmount: 1000, changeOrderRequiredApprovalCount: 2 });
+      prisma.changeOrderApproval.findUnique.mockResolvedValue({ changeOrderId: "co-1", userId: "u1" });
+
+      await expect(service.approve(COMPANY_A, { userId: "u1", name: "Approver One" }, "co-1")).rejects.toThrow(BadRequestException);
+      expect(prisma.changeOrderApproval.create).not.toHaveBeenCalled();
+    });
   });
 
   describe("send()", () => {
@@ -208,6 +313,31 @@ describe("ChangeOrdersService", () => {
         where: { id: "co-1", companyId: COMPANY_A, sentAt: { not: null }, estimate: { project: { clientId: "client-1" } } },
       });
       expect(prisma.changeOrder.update).not.toHaveBeenCalled();
+    });
+  });
+
+  // Regression: the frontend's approval-chain progress display reads co.approvals.length
+  // unconditionally (estimate-detail.tsx), so both read paths must always include it —
+  // list() previously omitted it and crashed the estimate detail page with a pending change order.
+  describe("list() and get() include approvals", () => {
+    it("list() requests approvals alongside lines", async () => {
+      prisma.changeOrder.findMany.mockResolvedValue([]);
+
+      await service.list(COMPANY_A, "estimate-1");
+
+      expect(prisma.changeOrder.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ include: expect.objectContaining({ approvals: true }) }),
+      );
+    });
+
+    it("get() requests approvals alongside lines", async () => {
+      prisma.changeOrder.findFirst.mockResolvedValue({ id: "co-1", companyId: COMPANY_A });
+
+      await service.get(COMPANY_A, "co-1");
+
+      expect(prisma.changeOrder.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({ include: expect.objectContaining({ approvals: true }) }),
+      );
     });
   });
 });
