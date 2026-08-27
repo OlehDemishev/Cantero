@@ -461,7 +461,17 @@
     "code": "Código",
     "unit": "Unidad",
     "laborHours": "Horas/unidad",
-    "materials": "Materiales"
+    "materials": "Materiales",
+    "allCatalogs": "Todos los catálogos",
+    "uncategorized": "Sin categoría",
+    "newCatalogName": "Nombre del nuevo catálogo",
+    "catalog": "Catálogo",
+    "formula": "Fórmula (opcional)",
+    "formulaPlaceholder": "p. ej. largo * alto",
+    "formulaParams": "Parámetros",
+    "formulaParamsPlaceholder": "length, height",
+    "history": "Historial",
+    "noHistory": "Sin ediciones todavía."
   },
   "estimates": {
     "title": "Presupuestos",
@@ -550,7 +560,9 @@
     "grandTotalDelta": "Cambio en el total general",
     "noDifferences": "No hay diferencias entre estas revisiones",
     "costCodeUnassigned": "Sin código de costo",
-    "benchmarkHint": "Precio habitual para este código de costo en {count} presupuesto(s) anteriores: {median} {currency}/unidad"
+    "benchmarkHint": "Precio habitual para este código de costo en {count} presupuesto(s) anteriores: {median} {currency}/unidad",
+    "computeFormula": "Calcular",
+    "computedQuantity": "= {value} {unit}"
   },
   "invoices": {
     "title": "Facturas",
@@ -696,7 +708,8 @@
     "gpsStop": "Detener seguimiento",
     "gpsDenied": "Se denegó el acceso a la ubicación.",
     "gpsUnsupported": "Este navegador no admite el seguimiento de ubicación.",
-    "gpsNoRoute": "No se registró ninguna ruta hoy."
+    "gpsNoRoute": "No se registró ninguna ruta hoy.",
+    "offSite": "Fuera del sitio"
   },
   "subcontractorPortal": {
     "signInTitle": "Portal de subcontratistas",
@@ -891,7 +904,8 @@
     "retrySync": "Reintentar",
     "discardSync": "Descartar",
     "voiceInputStart": "Iniciar entrada de voz",
-    "voiceInputStop": "Detener entrada de voz"
+    "voiceInputStop": "Detener entrada de voz",
+    "rfi": "RFIs"
   },
   "subcontractors": {
     "title": "Costos de subcontratistas",
@@ -1241,7 +1255,13 @@
     "critical": "Tareas críticas",
     "status": "Estado",
     "atRisk": "En riesgo",
-    "onTrack": "En curso"
+    "onTrack": "En curso",
+    "billedToDateTotal": "Facturado a la fecha",
+    "fundedToDateTotal": "Financiado a la fecha",
+    "openDrawTotal": "Desembolsos abiertos",
+    "billedToDate": "Facturado",
+    "fundedToDate": "Financiado",
+    "openDraws": "Desembolsos"
   },
   "warranty": {
     "title": "Garantía",
@@ -1819,5 +1839,86 @@
     "labor": "Horas de mano de obra",
     "materials": "Costo de materiales",
     "sampleSize": "{count, plural, one {# presupuesto} other {# presupuestos}}"
+  },
+  "drawRequests": {
+    "title": "Solicitudes de desembolso",
+    "hint": "Envuelve una factura de facturación por avance en una solicitud de desembolso orientada al banco — el cuadro de valores, las renuncias de gravamen y los documentos de respaldo se agrupan en un solo paquete para el prestamista.",
+    "newDraw": "+ Nuevo desembolso",
+    "invoice": "Factura de avance",
+    "periodStart": "Inicio del período",
+    "periodEnd": "Fin del período",
+    "lenderName": "Prestamista",
+    "lenderContactEmail": "Correo de contacto del prestamista",
+    "notes": "Notas",
+    "noDraws": "Aún no hay solicitudes de desembolso.",
+    "drawNumber": "Desembolso n.º {number}",
+    "downloadPackage": "Descargar paquete",
+    "status_draft": "Borrador",
+    "status_submitted": "Enviado",
+    "status_under_review": "En revisión",
+    "status_approved": "Aprobado",
+    "status_funded": "Financiado"
+  },
+  "takeoff": {
+    "title": "Medición digital",
+    "hint": "Suba un plano o foto, calíbrelo con una longitud real conocida y luego trace longitudes y áreas para obtener cantidades directamente del dibujo.",
+    "newTakeoffName": "Nombre de la medición",
+    "upload": "Subir",
+    "calibrateHint": "Haga clic en dos puntos de una referencia de longitud conocida (p. ej. el ancho de una puerta) para calibrar la escala.",
+    "realLength": "Longitud real",
+    "unit": "Unidad",
+    "setScale": "Establecer escala",
+    "drawLength": "Trazar longitud",
+    "drawArea": "Trazar área",
+    "recalibrate": "Recalibrar",
+    "lengthHint": "Haga clic a lo largo del recorrido y luego finalice.",
+    "areaHint": "Haga clic en cada esquina del área y luego finalice.",
+    "label": "Etiqueta",
+    "linkedRateItem": "Partida",
+    "finishMeasurement": "Finalizar",
+    "addToEstimate": "Añadir al presupuesto"
+  },
+  "sustainability": {
+    "materialSettings": "Sostenibilidad",
+    "materialSettingsHint": "Huella de carbono y certificación verde por material — alimenta el informe de carbono de cada proyecto y el resumen de toda la empresa a continuación.",
+    "carbonFootprint": "kg CO2e / unidad",
+    "greenCertified": "Certificado verde",
+    "greenCertificationBody": "Entidad certificadora",
+    "greenCertificationBodyPlaceholder": "p. ej. FSC, Cradle to Cradle, EPD",
+    "certifications": "Certificaciones de construcción verde",
+    "newCertification": "+ Nueva certificación",
+    "noCertifications": "Aún no hay certificaciones verdes registradas para este proyecto.",
+    "certificationType": "Certificación",
+    "issuedAt": "Emitida",
+    "expiresAt": "Vence",
+    "expires": "Vence el {date}",
+    "certType_leed_certified": "LEED Certified",
+    "certType_leed_silver": "LEED Silver",
+    "certType_leed_gold": "LEED Gold",
+    "certType_leed_platinum": "LEED Platinum",
+    "certType_breeam": "BREEAM",
+    "certType_well": "WELL",
+    "certType_energy_star": "Energy Star",
+    "certType_other": "Otra",
+    "carbonReport": "Carbono incorporado",
+    "carbonReportHint": "Calculado a partir de los materiales entregados a este proyecto, usando la huella de carbono por unidad registrada de cada material.",
+    "totalCarbon": "Carbono incorporado total",
+    "greenCertifiedPercent": "Materiales certificados verdes (por costo)",
+    "untrackedMaterials": "Materiales sin huella registrada",
+    "material": "Material",
+    "quantityUsed": "Cantidad utilizada",
+    "noFootprintData": "Sin datos",
+    "carbonSummary": "Huella de carbono de toda la empresa",
+    "carbonSummaryHint": "El mismo cálculo que el informe de carbono por proyecto, agregado en todos los proyectos.",
+    "safetyScorecard": "Panel de seguridad",
+    "safetyScorecardHint": "TRIR (Tasa Total de Casos Registrables) — casos registrables × 200,000 ÷ horas trabajadas, la normalización estándar de OSHA para unos 100 trabajadores de tiempo completo al año.",
+    "downloadOsha300a": "Descargar PDF OSHA 300A",
+    "companyTrir": "TRIR de la empresa",
+    "totalIncidents": "Incidentes totales",
+    "recordableCases": "Casos registrables",
+    "totalHoursWorked": "Horas trabajadas",
+    "project": "Proyecto",
+    "hoursWorked": "Horas",
+    "trir": "TRIR"
   }
 }

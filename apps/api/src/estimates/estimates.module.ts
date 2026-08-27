@@ -9,6 +9,10 @@ import { PublicChangeOrdersController } from "./public-change-orders.controller"
 import { ChangeOrdersService } from "./change-orders.service";
 import { AssembliesController } from "./assemblies.controller";
 import { AssembliesService } from "./assemblies.service";
+import { CatalogsController } from "./catalogs.controller";
+import { CatalogsService } from "./catalogs.service";
+import { TakeoffsController } from "./takeoffs.controller";
+import { TakeoffsService } from "./takeoffs.service";
 
 @Module({
   controllers: [
@@ -18,8 +22,10 @@ import { AssembliesService } from "./assemblies.service";
     ChangeOrdersController,
     PublicChangeOrdersController,
     AssembliesController,
+    CatalogsController,
+    TakeoffsController,
   ],
-  providers: [RateCatalogService, EstimatesService, ChangeOrdersService, AssembliesService],
+  providers: [RateCatalogService, EstimatesService, ChangeOrdersService, AssembliesService, CatalogsService, TakeoffsService],
   exports: [EstimatesService, ChangeOrdersService],
 })
 export class EstimatesModule {}

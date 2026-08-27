@@ -33,8 +33,8 @@ export class ReportsController {
   }
 
   @Get("cash-flow-forecast")
-  cashFlowForecast(@CurrentUser() user: AuthUser) {
-    return this.service.cashFlowForecast(user.companyId);
+  cashFlowForecast(@CurrentUser() user: AuthUser, @Query("projectId") projectId?: string) {
+    return this.service.cashFlowForecast(user.companyId, projectId);
   }
 
   @Get("estimate-at-completion")

@@ -3,13 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { EXPENSE_CATEGORIES, WEATHER_CONDITIONS, type ExpenseCategory, type WeatherCondition } from "@cantero/shared";
+import { EXPENSE_CATEGORIES, RFI_PRIORITIES, WEATHER_CONDITIONS, type ExpenseCategory, type RfiPriority, type WeatherCondition } from "@cantero/shared";
 import { clearToken, getToken } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { submitOrQueue, submitOrQueueUpload, useOfflineQueue } from "@/lib/offline-queue";
 import { fetchCached, updateCache } from "@/lib/offline-cache";
 import { DashboardIcon, LogoutIcon } from "@/components/nav-icons";
 import { OfflineConflictsBanner } from "@/components/offline-conflicts-banner";
+import { VoiceInputButton } from "@/components/voice-input-button";
 
 /** Best-effort current position — resolves null (never rejects) on denial, timeout, or an unsupported browser, so logging time never blocks on location. */
 function getCurrentPositionSafe(): Promise<{ lat: number; lng: number } | null> {
@@ -67,7 +68,7 @@ export default function FieldPage() {
   const [projects, setProjects] = useState<Project[] | null>(null);
   const [projectsError, setProjectsError] = useState(false);
   const [projectId, setProjectId] = useState("");
-  const [tab, setTab] = useState<"tasks" | "time" | "stock" | "logs" | "punch" | "expenses">("tasks");
+  const [tab, setTab] = useState<"tasks" | "time" | "stock" | "logs" | "punch" | "rfi" | "expenses">("tasks");
 
   useEffect(() => {
     if (!getToken()) router.replace("/login");
@@ -166,8 +167,8 @@ export default function FieldPage() {
               </select>
             </label>
 
-            <div className="mt-4 grid grid-cols-6 gap-1 rounded-lg bg-gray-100 p-1">
-              {(["tasks", "time", "stock", "logs", "punch", "expenses"] as const).map((key) => (
+            <div className="mt-4 grid grid-cols-4 gap-1 rounded-lg bg-gray-100 p-1">
+              {(["tasks", "time", "stock", "logs", "punch", "rfi", "expenses"] as const).map((key) => (
                 <button
                   key={key}
                   onClick={() => setTab(key)}
@@ -186,6 +187,7 @@ export default function FieldPage() {
               {tab === "stock" && <StockTab projectId={projectId} />}
               {tab === "logs" && <LogsTab projectId={projectId} />}
               {tab === "punch" && <PunchTab projectId={projectId} />}
+              {tab === "rfi" && <RfiTab projectId={projectId} />}
               {tab === "expenses" && <ExpensesTab projectId={projectId} meUserId={me.user.id} />}
             </div>
           </>
@@ -731,7 +733,12 @@ function LogsTab({ projectId }: { projectId: string }) {
         />
       </label>
       <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-gray-700">{td("workPerformed")}</span>
+        <span className="flex items-center gap-2 font-medium text-gray-700">
+          {td("workPerformed")}
+          <VoiceInputButton
+            onTranscript={(text) => setForm((f) => ({ ...f, workPerformed: f.workPerformed ? `${f.workPerformed} ${text}` : text }))}
+          />
+        </span>
         <textarea
           required
           rows={3}
@@ -873,6 +880,120 @@ function PunchTab({ projectId }: { projectId: string }) {
                   {tp("resolved")}
                 </span>
               )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+interface FieldRfi {
+  id: string;
+  number: string;
+  subject: string;
+  status: "open" | "answered" | "closed";
+  priority: RfiPriority;
+}
+
+const RFI_STATUS_STYLES: Record<FieldRfi["status"], string> = {
+  open: "bg-warning-50 text-warning-700",
+  answered: "bg-brand-50 text-brand-700",
+  closed: "bg-success-50 text-success-700",
+};
+
+function RfiTab({ projectId }: { projectId: string }) {
+  const t = useTranslations("field");
+  const tr = useTranslations("rfi");
+  const tc = useTranslations("common");
+  const [items, setItems] = useState<FieldRfi[] | null>(null);
+  const [form, setForm] = useState({ subject: "", question: "", priority: "medium" as RfiPriority });
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [cachedAt, setCachedAt] = useState<number | null>(null);
+  const cacheKey = `field:rfis:${projectId}`;
+
+  function load() {
+    fetchCached<FieldRfi[]>(cacheKey, `/rfis?projectId=${projectId}`)
+      .then(({ data, stale, cachedAt: at }) => {
+        setItems(data);
+        setCachedAt(stale ? at : null);
+      })
+      .catch(() => setItems(null));
+  }
+
+  useEffect(load, [projectId]);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!form.subject || !form.question) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      const { queued } = await submitOrQueue("rfi", "/rfis", "POST", {
+        projectId,
+        subject: form.subject,
+        question: form.question,
+        priority: form.priority,
+      });
+      setMessage(queued ? t("queuedOffline") : tc("saved"));
+      if (queued) {
+        const optimistic: FieldRfi = { id: `queued-${Date.now()}`, number: "—", subject: form.subject, status: "open", priority: form.priority };
+        const updated = [...(items ?? []), optimistic];
+        setItems(updated);
+        updateCache(cacheKey, updated).catch(() => {});
+      }
+      setForm({ subject: "", question: "", priority: "medium" });
+      if (!queued) load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <CachedNote cachedAt={cachedAt} />
+      <form onSubmit={submit} className="card flex flex-col gap-3">
+        <label className="flex flex-col gap-1.5 text-sm">
+          <span className="font-medium text-gray-700">{tr("subject")}</span>
+          <input required className="input" value={form.subject} onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value }))} />
+        </label>
+        <label className="flex flex-col gap-1.5 text-sm">
+          <span className="flex items-center gap-2 font-medium text-gray-700">
+            {tr("question")}
+            <VoiceInputButton onTranscript={(text) => setForm((f) => ({ ...f, question: f.question ? `${f.question} ${text}` : text }))} />
+          </span>
+          <textarea required rows={3} className="input" value={form.question} onChange={(e) => setForm((f) => ({ ...f, question: e.target.value }))} />
+        </label>
+        <label className="flex flex-col gap-1.5 text-sm">
+          <span className="font-medium text-gray-700">{tr("priority")}</span>
+          <select className="input" value={form.priority} onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value as RfiPriority }))}>
+            {RFI_PRIORITIES.map((p) => (
+              <option key={p} value={p}>
+                {tr(p)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button type="submit" disabled={busy} className="btn-primary">
+          {tr("newRfi")}
+        </button>
+        {message && <p className="text-xs text-success-700">{message}</p>}
+      </form>
+
+      {items === null ? (
+        <p className="text-sm text-gray-400">{tc("loading")}</p>
+      ) : items.length === 0 ? (
+        <p className="text-sm text-gray-400">{tr("noItems")}</p>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {items.map((item) => (
+            <li key={item.id} className="card flex items-center justify-between">
+              <div>
+                <div className="text-xs font-mono text-gray-400">{item.number}</div>
+                <div className="text-sm font-medium text-gray-900">{item.subject}</div>
+              </div>
+              <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${RFI_STATUS_STYLES[item.status]}`}>{tr(item.status)}</span>
             </li>
           ))}
         </ul>

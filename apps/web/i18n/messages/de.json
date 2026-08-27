@@ -461,7 +461,17 @@
     "code": "Code",
     "unit": "Einheit",
     "laborHours": "Std./Einheit",
-    "materials": "Material"
+    "materials": "Material",
+    "allCatalogs": "Alle Kataloge",
+    "uncategorized": "Nicht zugeordnet",
+    "newCatalogName": "Name des neuen Katalogs",
+    "catalog": "Katalog",
+    "formula": "Formel (optional)",
+    "formulaPlaceholder": "z. B. Länge * Höhe",
+    "formulaParams": "Parameter",
+    "formulaParamsPlaceholder": "length, height",
+    "history": "Verlauf",
+    "noHistory": "Noch keine Änderungen."
   },
   "estimates": {
     "title": "Kostenvoranschläge",
@@ -550,7 +560,9 @@
     "grandTotalDelta": "Änderung der Gesamtsumme",
     "noDifferences": "Keine Unterschiede zwischen diesen Revisionen",
     "costCodeUnassigned": "Ohne Kostenart",
-    "benchmarkHint": "Typischer Preis für diese Kostenart über {count} frühere Kalkulation(en): {median} {currency}/Einheit"
+    "benchmarkHint": "Typischer Preis für diese Kostenart über {count} frühere Kalkulation(en): {median} {currency}/Einheit",
+    "computeFormula": "Berechnen",
+    "computedQuantity": "= {value} {unit}"
   },
   "invoices": {
     "title": "Rechnungen",
@@ -696,7 +708,8 @@
     "gpsStop": "Verfolgung stoppen",
     "gpsDenied": "Der Standortzugriff wurde verweigert.",
     "gpsUnsupported": "Dieser Browser unterstützt keine Standortverfolgung.",
-    "gpsNoRoute": "Heute wurde keine Route aufgezeichnet."
+    "gpsNoRoute": "Heute wurde keine Route aufgezeichnet.",
+    "offSite": "Außerhalb"
   },
   "subcontractorPortal": {
     "signInTitle": "Subunternehmer-Portal",
@@ -891,7 +904,8 @@
     "retrySync": "Erneut versuchen",
     "discardSync": "Verwerfen",
     "voiceInputStart": "Spracheingabe starten",
-    "voiceInputStop": "Spracheingabe stoppen"
+    "voiceInputStop": "Spracheingabe stoppen",
+    "rfi": "Anfragen"
   },
   "subcontractors": {
     "title": "Nachunternehmerkosten",
@@ -1241,7 +1255,13 @@
     "critical": "Kritische Aufgaben",
     "status": "Status",
     "atRisk": "Risiko",
-    "onTrack": "Im Plan"
+    "onTrack": "Im Plan",
+    "billedToDateTotal": "Bisher abgerechnet",
+    "fundedToDateTotal": "Bisher finanziert",
+    "openDrawTotal": "Offene Auszahlungen",
+    "billedToDate": "Abgerechnet",
+    "fundedToDate": "Finanziert",
+    "openDraws": "Auszahlungen"
   },
   "warranty": {
     "title": "Gewährleistung",
@@ -1819,5 +1839,86 @@
     "labor": "Arbeitsstunden",
     "materials": "Materialkosten",
     "sampleSize": "{count, plural, one {# Kalkulation} other {# Kalkulationen}}"
+  },
+  "drawRequests": {
+    "title": "Auszahlungsanträge",
+    "hint": "Verpackt eine Abschlagsrechnung in einen bankgerechten Auszahlungsantrag — Leistungsverzeichnis, Verzichtserklärungen und Belege werden zu einem Paket für den Kreditgeber gebündelt.",
+    "newDraw": "+ Neue Auszahlung",
+    "invoice": "Abschlagsrechnung",
+    "periodStart": "Zeitraum von",
+    "periodEnd": "Zeitraum bis",
+    "lenderName": "Kreditgeber",
+    "lenderContactEmail": "Kontakt-E-Mail des Kreditgebers",
+    "notes": "Notizen",
+    "noDraws": "Noch keine Auszahlungsanträge.",
+    "drawNumber": "Auszahlung Nr. {number}",
+    "downloadPackage": "Paket herunterladen",
+    "status_draft": "Entwurf",
+    "status_submitted": "Eingereicht",
+    "status_under_review": "In Prüfung",
+    "status_approved": "Genehmigt",
+    "status_funded": "Finanziert"
+  },
+  "takeoff": {
+    "title": "Digitaler Aufmaß",
+    "hint": "Laden Sie einen Plan oder ein Foto hoch, kalibrieren Sie ihn anhand einer bekannten realen Länge und zeichnen Sie dann Längen und Flächen nach, um Mengen direkt aus der Zeichnung abzuleiten.",
+    "newTakeoffName": "Name des Aufmaßes",
+    "upload": "Hochladen",
+    "calibrateHint": "Klicken Sie auf zwei Punkte einer Referenz bekannter Länge (z. B. eine Türbreite), um den Maßstab zu kalibrieren.",
+    "realLength": "Reale Länge",
+    "unit": "Einheit",
+    "setScale": "Maßstab festlegen",
+    "drawLength": "Länge zeichnen",
+    "drawArea": "Fläche zeichnen",
+    "recalibrate": "Neu kalibrieren",
+    "lengthHint": "Klicken Sie entlang des Verlaufs und schließen Sie dann ab.",
+    "areaHint": "Klicken Sie auf jede Ecke der Fläche und schließen Sie dann ab.",
+    "label": "Bezeichnung",
+    "linkedRateItem": "Leistungsposition",
+    "finishMeasurement": "Fertig",
+    "addToEstimate": "Zum Kostenvoranschlag hinzufügen"
+  },
+  "sustainability": {
+    "materialSettings": "Nachhaltigkeit",
+    "materialSettingsHint": "CO2-Fußabdruck und Grünzertifizierung je Material — fließt in den CO2-Bericht jedes Projekts und die unternehmensweite Übersicht unten ein.",
+    "carbonFootprint": "kg CO2e / Einheit",
+    "greenCertified": "Grün zertifiziert",
+    "greenCertificationBody": "Zertifizierungsstelle",
+    "greenCertificationBodyPlaceholder": "z. B. FSC, Cradle to Cradle, EPD",
+    "certifications": "Grüne Gebäudezertifizierungen",
+    "newCertification": "+ Neue Zertifizierung",
+    "noCertifications": "Für dieses Projekt sind noch keine grünen Zertifizierungen erfasst.",
+    "certificationType": "Zertifizierung",
+    "issuedAt": "Ausgestellt",
+    "expiresAt": "Läuft ab",
+    "expires": "Läuft ab am {date}",
+    "certType_leed_certified": "LEED Certified",
+    "certType_leed_silver": "LEED Silver",
+    "certType_leed_gold": "LEED Gold",
+    "certType_leed_platinum": "LEED Platinum",
+    "certType_breeam": "BREEAM",
+    "certType_well": "WELL",
+    "certType_energy_star": "Energy Star",
+    "certType_other": "Sonstige",
+    "carbonReport": "Grauer CO2-Fußabdruck",
+    "carbonReportHint": "Berechnet aus den diesem Projekt zugewiesenen Materialien anhand des erfassten CO2-Fußabdrucks je Einheit.",
+    "totalCarbon": "Gesamter CO2-Fußabdruck",
+    "greenCertifiedPercent": "Grün zertifizierte Materialien (nach Kosten)",
+    "untrackedMaterials": "Materialien ohne erfassten Fußabdruck",
+    "material": "Material",
+    "quantityUsed": "Verbrauchte Menge",
+    "noFootprintData": "Keine Daten",
+    "carbonSummary": "Unternehmensweiter CO2-Fußabdruck",
+    "carbonSummaryHint": "Gleiche Berechnung wie der projektbezogene CO2-Bericht, über alle Projekte zusammengefasst.",
+    "safetyScorecard": "Sicherheits-Scorecard",
+    "safetyScorecardHint": "TRIR (Gesamtquote meldepflichtiger Vorfälle) — meldepflichtige Fälle × 200.000 ÷ geleistete Stunden, die übliche OSHA-Normierung auf ca. 100 Vollzeitkräfte pro Jahr.",
+    "downloadOsha300a": "OSHA-300A-PDF herunterladen",
+    "companyTrir": "Unternehmens-TRIR",
+    "totalIncidents": "Vorfälle gesamt",
+    "recordableCases": "Meldepflichtige Fälle",
+    "totalHoursWorked": "Geleistete Stunden",
+    "project": "Projekt",
+    "hoursWorked": "Stunden",
+    "trir": "TRIR"
   }
 }

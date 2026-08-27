@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import type {
   AddMaintenanceRecordInput,
+  CheckInEquipmentInput,
   CheckOutEquipmentInput,
   CreateEquipmentInput,
   UpdateEquipmentInput,
@@ -8,6 +9,7 @@ import type {
 } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
+import { checkGeofence } from "../team/geofence";
 
 @Injectable()
 export class EquipmentService {
@@ -71,8 +73,9 @@ export class EquipmentService {
       throw new BadRequestException(`Equipment is ${equipment.status.replace("_", " ")}, not available to check out`);
     }
 
+    let project: { geofenceLat: number | null; geofenceLng: number | null; geofenceRadiusMeters: number | null } | null = null;
     if (input.projectId) {
-      const project = await this.prisma.project.findFirst({ where: { id: input.projectId, companyId } });
+      project = await this.prisma.project.findFirst({ where: { id: input.projectId, companyId } });
       if (!project) throw new NotFoundException("Project not found");
     }
     if (input.workerId) {
@@ -80,9 +83,23 @@ export class EquipmentService {
       if (!worker) throw new NotFoundException("Worker not found");
     }
 
+    const geofence =
+      input.lat !== undefined && input.lng !== undefined && project?.geofenceLat != null && project.geofenceLng != null && project.geofenceRadiusMeters != null
+        ? checkGeofence(input.lat, input.lng, project.geofenceLat, project.geofenceLng, project.geofenceRadiusMeters)
+        : null;
+
     await this.prisma.$transaction([
       this.prisma.equipmentAssignment.create({
-        data: { equipmentId: id, projectId: input.projectId, workerId: input.workerId, notes: input.notes },
+        data: {
+          equipmentId: id,
+          projectId: input.projectId,
+          workerId: input.workerId,
+          notes: input.notes,
+          checkOutLat: input.lat,
+          checkOutLng: input.lng,
+          checkOutDistanceFromSiteM: geofence?.distanceMeters,
+          checkOutWithinGeofence: geofence?.withinGeofence,
+        },
       }),
       this.prisma.equipment.update({ where: { id }, data: { status: "in_use" } }),
     ]);
@@ -94,7 +111,7 @@ export class EquipmentService {
     return this.findOrThrow(companyId, id);
   }
 
-  async checkIn(companyId: string, actor: AuditActor, id: string) {
+  async checkIn(companyId: string, actor: AuditActor, id: string, input: CheckInEquipmentInput) {
     const equipment = await this.findOrThrow(companyId, id);
     if (equipment.status !== "in_use") {
       throw new BadRequestException("Equipment is not currently checked out");
@@ -103,11 +120,27 @@ export class EquipmentService {
     const openAssignment = await this.prisma.equipmentAssignment.findFirst({
       where: { equipmentId: id, checkedInAt: null },
       orderBy: { checkedOutAt: "desc" },
+      include: { project: { select: { geofenceLat: true, geofenceLng: true, geofenceRadiusMeters: true } } },
     });
     if (!openAssignment) throw new BadRequestException("No open assignment found for this equipment");
 
+    const project = openAssignment.project;
+    const geofence =
+      input.lat !== undefined && input.lng !== undefined && project?.geofenceLat != null && project.geofenceLng != null && project.geofenceRadiusMeters != null
+        ? checkGeofence(input.lat, input.lng, project.geofenceLat, project.geofenceLng, project.geofenceRadiusMeters)
+        : null;
+
     await this.prisma.$transaction([
-      this.prisma.equipmentAssignment.update({ where: { id: openAssignment.id }, data: { checkedInAt: new Date() } }),
+      this.prisma.equipmentAssignment.update({
+        where: { id: openAssignment.id },
+        data: {
+          checkedInAt: new Date(),
+          checkInLat: input.lat,
+          checkInLng: input.lng,
+          checkInDistanceFromSiteM: geofence?.distanceMeters,
+          checkInWithinGeofence: geofence?.withinGeofence,
+        },
+      }),
       this.prisma.equipment.update({ where: { id }, data: { status: "available" } }),
     ]);
 

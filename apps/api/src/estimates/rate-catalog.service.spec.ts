@@ -1,4 +1,4 @@
-import { BadRequestException } from "@nestjs/common";
+import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { RateCatalogService } from "./rate-catalog.service";
 import { PrismaService } from "../common/prisma/prisma.service";
@@ -40,6 +40,7 @@ describe("RateCatalogService — cross-tenant isolation", () => {
         name: "Lay tile",
         unit: "m2",
         laborHoursPerUnit: 1,
+        formulaParams: [],
         materials: [
           { materialCatalogItemId: "own-material", quantityPerUnit: 1, wasteFactorPercent: 0 },
           { materialCatalogItemId: "foreign-material", quantityPerUnit: 1, wasteFactorPercent: 0 },
@@ -62,9 +63,125 @@ describe("RateCatalogService — cross-tenant isolation", () => {
       name: "Lay tile",
       unit: "m2",
       laborHoursPerUnit: 1,
+      formulaParams: [],
       materials: [{ materialCatalogItemId: "own-material", quantityPerUnit: 1, wasteFactorPercent: 0 }],
     });
 
     expect(prisma.rateCatalogItem.create).toHaveBeenCalled();
+  });
+});
+
+const ACTOR = { userId: "user-1", name: "Estimator" };
+
+describe("RateCatalogService.update", () => {
+  let service: RateCatalogService;
+  let prisma: {
+    rateCatalogItem: { findFirst: jest.Mock; update: jest.Mock };
+    rateCatalogItemRevision: { create: jest.Mock };
+    catalog: { findFirst: jest.Mock };
+  };
+
+  beforeEach(async () => {
+    prisma = {
+      rateCatalogItem: { findFirst: jest.fn(), update: jest.fn() },
+      rateCatalogItemRevision: { create: jest.fn() },
+      catalog: { findFirst: jest.fn() },
+    };
+    const module = await Test.createTestingModule({
+      providers: [RateCatalogService, { provide: PrismaService, useValue: prisma }, { provide: AuditService, useValue: { record: jest.fn() } }],
+    }).compile();
+    service = module.get(RateCatalogService);
+  });
+
+  it("snapshots the prior state into a revision before applying the update", async () => {
+    prisma.rateCatalogItem.findFirst.mockResolvedValue({
+      id: "item-1",
+      code: "TILE-01",
+      name: "Lay tile",
+      unit: "m2",
+      laborHoursPerUnit: 1,
+      formula: null,
+      formulaParams: [],
+    });
+    prisma.rateCatalogItem.update.mockResolvedValue({ id: "item-1", name: "Lay ceramic tile" });
+
+    await service.update(COMPANY_A, ACTOR, "item-1", { name: "Lay ceramic tile" });
+
+    expect(prisma.rateCatalogItemRevision.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ rateCatalogItemId: "item-1", name: "Lay tile", changedByName: "Estimator" }) }),
+    );
+    expect(prisma.rateCatalogItem.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ name: "Lay ceramic tile" }) }),
+    );
+  });
+
+  it("rejects an update whose formula fails to evaluate against its declared params", async () => {
+    prisma.rateCatalogItem.findFirst.mockResolvedValue({
+      id: "item-1",
+      code: "WALL-01",
+      name: "Frame wall",
+      unit: "m2",
+      laborHoursPerUnit: 1,
+      formula: null,
+      formulaParams: [],
+    });
+
+    await expect(
+      service.update(COMPANY_A, ACTOR, "item-1", { formula: "length *", formulaParams: ["length"] }),
+    ).rejects.toThrow(BadRequestException);
+    expect(prisma.rateCatalogItem.update).not.toHaveBeenCalled();
+  });
+
+  it("rejects assigning a catalog that does not belong to this company", async () => {
+    prisma.rateCatalogItem.findFirst.mockResolvedValue({
+      id: "item-1",
+      code: "WALL-01",
+      name: "Frame wall",
+      unit: "m2",
+      laborHoursPerUnit: 1,
+      formula: null,
+      formulaParams: [],
+    });
+    prisma.catalog.findFirst.mockResolvedValue(null);
+
+    await expect(service.update(COMPANY_A, ACTOR, "item-1", { catalogId: "foreign-catalog" })).rejects.toThrow(NotFoundException);
+    expect(prisma.rateCatalogItem.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("RateCatalogService.evaluateFormula", () => {
+  let service: RateCatalogService;
+  let prisma: { rateCatalogItem: { findFirst: jest.Mock } };
+
+  beforeEach(async () => {
+    prisma = { rateCatalogItem: { findFirst: jest.fn() } };
+    const module = await Test.createTestingModule({
+      providers: [RateCatalogService, { provide: PrismaService, useValue: prisma }, { provide: AuditService, useValue: { record: jest.fn() } }],
+    }).compile();
+    service = module.get(RateCatalogService);
+  });
+
+  it("computes a quantity from the item's formula and supplied variables", async () => {
+    prisma.rateCatalogItem.findFirst.mockResolvedValue({
+      id: "item-1",
+      formula: "length * height",
+      formulaParams: ["length", "height"],
+    });
+
+    const result = await service.evaluateFormula(COMPANY_A, "item-1", { variables: { length: 3, height: 2 } });
+
+    expect(result).toEqual({ value: 6 });
+  });
+
+  it("rejects when a required parameter is missing", async () => {
+    prisma.rateCatalogItem.findFirst.mockResolvedValue({ id: "item-1", formula: "length * height", formulaParams: ["length", "height"] });
+
+    await expect(service.evaluateFormula(COMPANY_A, "item-1", { variables: { length: 3 } })).rejects.toThrow(BadRequestException);
+  });
+
+  it("rejects when the item has no formula at all", async () => {
+    prisma.rateCatalogItem.findFirst.mockResolvedValue({ id: "item-1", formula: null, formulaParams: [] });
+
+    await expect(service.evaluateFormula(COMPANY_A, "item-1", { variables: {} })).rejects.toThrow(BadRequestException);
   });
 });

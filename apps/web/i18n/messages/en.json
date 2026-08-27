@@ -461,7 +461,17 @@
     "code": "Code",
     "unit": "Unit",
     "laborHours": "Labor hrs/unit",
-    "materials": "Materials"
+    "materials": "Materials",
+    "allCatalogs": "All catalogs",
+    "uncategorized": "Uncategorized",
+    "newCatalogName": "New catalog name",
+    "catalog": "Catalog",
+    "formula": "Formula (optional)",
+    "formulaPlaceholder": "e.g. length * height",
+    "formulaParams": "Parameters",
+    "formulaParamsPlaceholder": "length, height",
+    "history": "History",
+    "noHistory": "No edits yet."
   },
   "estimates": {
     "title": "Estimates",
@@ -550,7 +560,9 @@
     "grandTotalDelta": "Grand total change",
     "noDifferences": "No differences between these revisions",
     "costCodeUnassigned": "Unassigned cost code",
-    "benchmarkHint": "Typical price for this cost code across {count} past estimate(s): {median} {currency}/unit"
+    "benchmarkHint": "Typical price for this cost code across {count} past estimate(s): {median} {currency}/unit",
+    "computeFormula": "Calculate",
+    "computedQuantity": "= {value} {unit}"
   },
   "invoices": {
     "title": "Invoices",
@@ -696,7 +708,8 @@
     "gpsStop": "Stop tracking",
     "gpsDenied": "Location access was denied.",
     "gpsUnsupported": "This browser doesn't support location tracking.",
-    "gpsNoRoute": "No route recorded today."
+    "gpsNoRoute": "No route recorded today.",
+    "offSite": "Off-site"
   },
   "subcontractorPortal": {
     "signInTitle": "Subcontractor portal",
@@ -891,7 +904,8 @@
     "retrySync": "Retry",
     "discardSync": "Discard",
     "voiceInputStart": "Start voice input",
-    "voiceInputStop": "Stop voice input"
+    "voiceInputStop": "Stop voice input",
+    "rfi": "RFIs"
   },
   "subcontractors": {
     "title": "Subcontractor costs",
@@ -1241,7 +1255,13 @@
     "critical": "Critical tasks",
     "status": "Status",
     "atRisk": "At risk",
-    "onTrack": "On track"
+    "onTrack": "On track",
+    "billedToDateTotal": "Billed to date",
+    "fundedToDateTotal": "Funded to date",
+    "openDrawTotal": "Open draws",
+    "billedToDate": "Billed",
+    "fundedToDate": "Funded",
+    "openDraws": "Draws"
   },
   "warranty": {
     "title": "Warranty",
@@ -1819,5 +1839,86 @@
     "labor": "Labor hours",
     "materials": "Materials cost",
     "sampleSize": "{count, plural, one {# estimate} other {# estimates}}"
+  },
+  "drawRequests": {
+    "title": "Draw requests",
+    "hint": "Wraps a progress-billing invoice into a bank-facing draw — schedule of values, lien waivers, and supporting documents bundle into one package for the lender.",
+    "newDraw": "+ New draw",
+    "invoice": "Progress invoice",
+    "periodStart": "Period start",
+    "periodEnd": "Period end",
+    "lenderName": "Lender",
+    "lenderContactEmail": "Lender contact email",
+    "notes": "Notes",
+    "noDraws": "No draw requests yet.",
+    "drawNumber": "Draw #{number}",
+    "downloadPackage": "Download package",
+    "status_draft": "Draft",
+    "status_submitted": "Submitted",
+    "status_under_review": "Under review",
+    "status_approved": "Approved",
+    "status_funded": "Funded"
+  },
+  "takeoff": {
+    "title": "Digital takeoff",
+    "hint": "Upload a plan or photo, calibrate it against a known real-world length, then trace lengths and areas to derive estimate quantities straight from the drawing.",
+    "newTakeoffName": "Takeoff name",
+    "upload": "Upload",
+    "calibrateHint": "Click two points on a reference of known length (e.g. a door width) to calibrate the scale.",
+    "realLength": "Real length",
+    "unit": "Unit",
+    "setScale": "Set scale",
+    "drawLength": "Draw length",
+    "drawArea": "Draw area",
+    "recalibrate": "Recalibrate",
+    "lengthHint": "Click along the run, then finish.",
+    "areaHint": "Click each corner of the area, then finish.",
+    "label": "Label",
+    "linkedRateItem": "Rate item",
+    "finishMeasurement": "Finish",
+    "addToEstimate": "Add to estimate"
+  },
+  "sustainability": {
+    "materialSettings": "Sustainability",
+    "materialSettingsHint": "Carbon footprint and green-certification data per material — feeds the carbon report on each project and the company-wide summary below.",
+    "carbonFootprint": "kg CO2e / unit",
+    "greenCertified": "Green certified",
+    "greenCertificationBody": "Certifying body",
+    "greenCertificationBodyPlaceholder": "e.g. FSC, Cradle to Cradle, EPD",
+    "certifications": "Green building certifications",
+    "newCertification": "+ New certification",
+    "noCertifications": "No green certifications logged for this project yet.",
+    "certificationType": "Certification",
+    "issuedAt": "Issued",
+    "expiresAt": "Expires",
+    "expires": "Expires {date}",
+    "certType_leed_certified": "LEED Certified",
+    "certType_leed_silver": "LEED Silver",
+    "certType_leed_gold": "LEED Gold",
+    "certType_leed_platinum": "LEED Platinum",
+    "certType_breeam": "BREEAM",
+    "certType_well": "WELL",
+    "certType_energy_star": "Energy Star",
+    "certType_other": "Other",
+    "carbonReport": "Embodied carbon",
+    "carbonReportHint": "Computed from materials issued to this project, using each material's recorded carbon footprint per unit.",
+    "totalCarbon": "Total embodied carbon",
+    "greenCertifiedPercent": "Green-certified materials (by cost)",
+    "untrackedMaterials": "Materials with no footprint on file",
+    "material": "Material",
+    "quantityUsed": "Quantity used",
+    "noFootprintData": "No data",
+    "carbonSummary": "Company-wide carbon footprint",
+    "carbonSummaryHint": "Same computation as the per-project carbon report, aggregated across every project.",
+    "safetyScorecard": "Safety scorecard",
+    "safetyScorecardHint": "TRIR (Total Recordable Incident Rate) — recordable cases × 200,000 ÷ hours worked, the standard OSHA normalization to roughly 100 full-time workers a year.",
+    "downloadOsha300a": "Download OSHA 300A PDF",
+    "companyTrir": "Company TRIR",
+    "totalIncidents": "Total incidents",
+    "recordableCases": "Recordable cases",
+    "totalHoursWorked": "Hours worked",
+    "project": "Project",
+    "hoursWorked": "Hours",
+    "trir": "TRIR"
   }
 }

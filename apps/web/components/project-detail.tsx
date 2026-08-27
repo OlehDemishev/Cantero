@@ -12,6 +12,11 @@ import { WeatherForecastPanel } from "@/components/weather-forecast-panel";
 import { GeofencePanel } from "@/components/geofence-panel";
 import { ProjectMembersPanel } from "@/components/project-members-panel";
 import { ContractsPanel } from "@/components/contracts-panel";
+import { DrawRequestsPanel } from "@/components/draw-requests-panel";
+import { TakeoffPanel } from "@/components/takeoff-panel";
+import { GreenCertificationsPanel } from "@/components/green-certifications-panel";
+import { CarbonReportPanel } from "@/components/carbon-report-panel";
+import { ProjectCashFlowPanel } from "@/components/project-cash-flow-panel";
 import { CustomFieldsValuesPanel } from "@/components/custom-fields-values-panel";
 import { PunchListPanel } from "@/components/punch-list-panel";
 import { RfiPanel } from "@/components/rfi-panel";
@@ -204,6 +209,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
         </div>
       </div>
 
+      <TakeoffPanel projectId={projectId} />
       <SchedulingPanel projectId={projectId} />
       <LookAheadPanel projectId={projectId} />
       <ContractsPanel projectId={projectId} />
@@ -224,6 +230,10 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
       <SubcontractorCostsPanel projectId={projectId} />
       <BudgetPanel projectId={projectId} />
       <JobCostingPanel projectId={projectId} />
+      <DrawRequestsPanel projectId={projectId} />
+      <ProjectCashFlowPanel projectId={projectId} />
+      <GreenCertificationsPanel projectId={projectId} />
+      <CarbonReportPanel projectId={projectId} />
       <DocumentsPanel projectId={projectId} />
       <GalleryPanel projectId={projectId} />
       <ProjectCloseoutPanel projectId={projectId} />

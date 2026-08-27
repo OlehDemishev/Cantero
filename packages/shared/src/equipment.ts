@@ -27,12 +27,20 @@ export const checkOutEquipmentSchema = z
     projectId: z.string().uuid().optional(),
     workerId: z.string().uuid().optional(),
     notes: z.string().max(500).optional(),
+    lat: z.number().min(-90).max(90).optional(),
+    lng: z.number().min(-180).max(180).optional(),
   })
   .refine((data) => !!data.projectId || !!data.workerId, {
     message: "Assign to a project, a worker, or both",
     path: ["projectId"],
   });
 export type CheckOutEquipmentInput = z.infer<typeof checkOutEquipmentSchema>;
+
+export const checkInEquipmentSchema = z.object({
+  lat: z.number().min(-90).max(90).optional(),
+  lng: z.number().min(-180).max(180).optional(),
+});
+export type CheckInEquipmentInput = z.infer<typeof checkInEquipmentSchema>;
 
 export const recordEquipmentGpsPingSchema = z.object({
   lat: z.number().min(-90).max(90),

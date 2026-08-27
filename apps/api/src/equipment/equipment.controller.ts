@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common";
 import {
   addMaintenanceRecordSchema,
+  checkInEquipmentSchema,
   checkOutEquipmentSchema,
   createEquipmentSchema,
   recordEquipmentGpsPingSchema,
@@ -8,6 +9,7 @@ import {
   updateMaintenanceScheduleSchema,
   type AddMaintenanceRecordInput,
   type AuthUser,
+  type CheckInEquipmentInput,
   type CheckOutEquipmentInput,
   type CreateEquipmentInput,
   type RecordEquipmentGpsPingInput,
@@ -56,8 +58,12 @@ export class EquipmentController {
   }
 
   @Post(":id/check-in")
-  checkIn(@CurrentUser() user: AuthUser, @Param("id") id: string) {
-    return this.service.checkIn(user.companyId, { userId: user.userId, name: user.name }, id);
+  checkIn(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(checkInEquipmentSchema)) body: CheckInEquipmentInput,
+  ) {
+    return this.service.checkIn(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
   @Post(":id/maintenance/start")

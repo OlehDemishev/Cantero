@@ -57,14 +57,58 @@ describe("EquipmentService", () => {
       ).rejects.toThrow(NotFoundException);
       expect(prisma.equipmentAssignment.create).not.toHaveBeenCalled();
     });
+
+    it("records the geofence check against the project's site when both a location and a geofenced project are given", async () => {
+      prisma.equipment.findFirst.mockResolvedValue({ id: "eq-1", companyId: COMPANY_A, name: "Drill", status: "available" });
+      prisma.project.findFirst.mockResolvedValue({ id: "project-1", geofenceLat: 50, geofenceLng: 8, geofenceRadiusMeters: 100 });
+      prisma.equipmentAssignment.create.mockResolvedValue({ id: "assignment-1" });
+
+      await service.checkOut(COMPANY_A, { name: "Owner" }, "eq-1", { projectId: "project-1", lat: 50, lng: 8 });
+
+      expect(prisma.equipmentAssignment.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ checkOutLat: 50, checkOutLng: 8, checkOutWithinGeofence: true, checkOutDistanceFromSiteM: 0 }),
+        }),
+      );
+    });
+
+    it("leaves the geofence fields null when the project has no geofence configured", async () => {
+      prisma.equipment.findFirst.mockResolvedValue({ id: "eq-1", companyId: COMPANY_A, name: "Drill", status: "available" });
+      prisma.project.findFirst.mockResolvedValue({ id: "project-1", geofenceLat: null, geofenceLng: null, geofenceRadiusMeters: null });
+      prisma.equipmentAssignment.create.mockResolvedValue({ id: "assignment-1" });
+
+      await service.checkOut(COMPANY_A, { name: "Owner" }, "eq-1", { projectId: "project-1", lat: 50, lng: 8 });
+
+      expect(prisma.equipmentAssignment.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ checkOutWithinGeofence: undefined, checkOutDistanceFromSiteM: undefined }),
+        }),
+      );
+    });
   });
 
   describe("checkIn()", () => {
     it("rejects checking in equipment that isn't checked out", async () => {
       prisma.equipment.findFirst.mockResolvedValue({ id: "eq-1", companyId: COMPANY_A, name: "Drill", status: "available" });
 
-      await expect(service.checkIn(COMPANY_A, { name: "Owner" }, "eq-1")).rejects.toThrow(BadRequestException);
+      await expect(service.checkIn(COMPANY_A, { name: "Owner" }, "eq-1", {})).rejects.toThrow(BadRequestException);
       expect(prisma.equipmentAssignment.update).not.toHaveBeenCalled();
+    });
+
+    it("flags check-in as outside the geofence when far from the project's site", async () => {
+      prisma.equipment.findFirst.mockResolvedValue({ id: "eq-1", companyId: COMPANY_A, name: "Drill", status: "in_use" });
+      prisma.equipmentAssignment.findFirst.mockResolvedValue({
+        id: "assignment-1",
+        project: { geofenceLat: 50, geofenceLng: 8, geofenceRadiusMeters: 100 },
+      });
+      prisma.equipmentAssignment.update.mockResolvedValue({ id: "assignment-1" });
+
+      // ~11km away from the geofence center — well outside a 100m radius.
+      await service.checkIn(COMPANY_A, { name: "Owner" }, "eq-1", { lat: 50.1, lng: 8 });
+
+      expect(prisma.equipmentAssignment.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ checkInWithinGeofence: false }) }),
+      );
     });
   });
 

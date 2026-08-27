@@ -17,6 +17,8 @@ interface RateCatalogItem {
   code: string;
   name: string;
   unit: string;
+  formula: string | null;
+  formulaParams: string[];
 }
 interface EstimateLine {
   id: string;
@@ -198,6 +200,8 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
   const [estimate, setEstimate] = useState<Estimate | null>(null);
   const [rateItems, setRateItems] = useState<RateCatalogItem[]>([]);
   const [newLine, setNewLine] = useState({ rateCatalogItemId: "", quantity: "1", costCodeId: "" });
+  const [formulaValues, setFormulaValues] = useState<Record<string, string>>({});
+  const [formulaResult, setFormulaResult] = useState<{ value: number | null; error: string | null }>({ value: null, error: null });
   const [costCodes, setCostCodes] = useState<CostCode[]>([]);
   const [busy, setBusy] = useState(false);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
@@ -304,18 +308,39 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
   const rateItemsById = Object.fromEntries(rateItems.map((r) => [r.id, r]));
   const currency = me?.company.currency ?? "";
 
+  const selectedRateItem = rateItemsById[newLine.rateCatalogItemId];
+
+  async function computeFormula() {
+    if (!selectedRateItem?.formula) return;
+    setFormulaResult({ value: null, error: null });
+    try {
+      const variables = Object.fromEntries(selectedRateItem.formulaParams.map((p) => [p, Number(formulaValues[p] ?? 0)]));
+      const result = await apiFetch<{ value: number }>(`/estimates/rate-catalog/${selectedRateItem.id}/evaluate-formula`, {
+        method: "POST",
+        body: JSON.stringify({ variables }),
+      });
+      setFormulaResult({ value: result.value, error: null });
+    } catch (err) {
+      setFormulaResult({ value: null, error: err instanceof Error ? err.message : String(err) });
+    }
+  }
+
   async function addLine(e: React.FormEvent) {
     e.preventDefault();
+    const quantity = selectedRateItem?.formula ? formulaResult.value : Number(newLine.quantity);
+    if (quantity === null || quantity === undefined || Number.isNaN(quantity)) return;
     setBusy(true);
     try {
       await apiFetch(`/estimates/${estimateId}/lines`, {
         method: "POST",
         body: JSON.stringify({
           rateCatalogItemId: newLine.rateCatalogItemId,
-          quantity: Number(newLine.quantity),
+          quantity,
           costCodeId: newLine.costCodeId || undefined,
         }),
       });
+      setFormulaValues({});
+      setFormulaResult({ value: null, error: null });
       load();
       loadBenchmarks();
     } finally {
@@ -638,42 +663,78 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
           </table>
 
           {estimate.status === "draft" && (
-            <form onSubmit={addLine} className="mt-4 flex items-end gap-2">
-              <select
-                className="input"
-                value={newLine.rateCatalogItemId}
-                onChange={(e) => setNewLine((l) => ({ ...l, rateCatalogItemId: e.target.value }))}
-              >
-                {rateItems.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name} ({r.unit})
-                  </option>
-                ))}
-              </select>
-              <input
-                type="number"
-                step="0.01"
-                className="input w-28"
-                value={newLine.quantity}
-                onChange={(e) => setNewLine((l) => ({ ...l, quantity: e.target.value }))}
-              />
-              {costCodes.length > 0 && (
+            <form onSubmit={addLine} className="mt-4 flex flex-col gap-2">
+              <div className="flex flex-wrap items-end gap-2">
                 <select
-                  className="input w-auto"
-                  value={newLine.costCodeId}
-                  onChange={(e) => setNewLine((l) => ({ ...l, costCodeId: e.target.value }))}
+                  className="input"
+                  value={newLine.rateCatalogItemId}
+                  onChange={(e) => {
+                    setNewLine((l) => ({ ...l, rateCatalogItemId: e.target.value }));
+                    setFormulaValues({});
+                    setFormulaResult({ value: null, error: null });
+                  }}
                 >
-                  <option value="">{t("costCodeUnassigned")}</option>
-                  {costCodes.map((cc) => (
-                    <option key={cc.id} value={cc.id}>
-                      {cc.code} {cc.name}
+                  {rateItems.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.name} ({r.unit})
+                      {r.formula ? " ƒ" : ""}
                     </option>
                   ))}
                 </select>
+                {!selectedRateItem?.formula && (
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="input w-28"
+                    value={newLine.quantity}
+                    onChange={(e) => setNewLine((l) => ({ ...l, quantity: e.target.value }))}
+                  />
+                )}
+                {costCodes.length > 0 && (
+                  <select
+                    className="input w-auto"
+                    value={newLine.costCodeId}
+                    onChange={(e) => setNewLine((l) => ({ ...l, costCodeId: e.target.value }))}
+                  >
+                    <option value="">{t("costCodeUnassigned")}</option>
+                    {costCodes.map((cc) => (
+                      <option key={cc.id} value={cc.id}>
+                        {cc.code} {cc.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <button type="submit" disabled={busy || (!!selectedRateItem?.formula && formulaResult.value === null)} className="btn-secondary">
+                  {t("addLine")}
+                </button>
+              </div>
+
+              {selectedRateItem?.formula && (
+                <div className="flex flex-wrap items-end gap-2 rounded-lg border border-gray-100 p-3">
+                  <span className="font-mono text-xs text-gray-400">{selectedRateItem.formula}</span>
+                  {selectedRateItem.formulaParams.map((param) => (
+                    <label key={param} className="flex flex-col gap-1 text-xs text-gray-500">
+                      {param}
+                      <input
+                        type="number"
+                        step="any"
+                        className="input w-24"
+                        value={formulaValues[param] ?? ""}
+                        onChange={(e) => setFormulaValues((v) => ({ ...v, [param]: e.target.value }))}
+                      />
+                    </label>
+                  ))}
+                  <button type="button" onClick={computeFormula} className="btn-secondary px-3 py-1 text-xs">
+                    {t("computeFormula")}
+                  </button>
+                  {formulaResult.value !== null && (
+                    <span className="text-xs font-medium text-success-700">
+                      {t("computedQuantity", { value: formulaResult.value, unit: selectedRateItem.unit })}
+                    </span>
+                  )}
+                  {formulaResult.error && <span className="text-xs text-error-600">{formulaResult.error}</span>}
+                </div>
               )}
-              <button type="submit" disabled={busy} className="btn-secondary">
-                {t("addLine")}
-              </button>
             </form>
           )}
 

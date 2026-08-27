@@ -461,7 +461,17 @@
     "code": "Kod",
     "unit": "Jednostka",
     "laborHours": "Godz. pracy/jedn.",
-    "materials": "Materiały"
+    "materials": "Materiały",
+    "allCatalogs": "Wszystkie katalogi",
+    "uncategorized": "Bez kategorii",
+    "newCatalogName": "Nazwa nowego katalogu",
+    "catalog": "Katalog",
+    "formula": "Formuła (opcjonalnie)",
+    "formulaPlaceholder": "np. długość * wysokość",
+    "formulaParams": "Parametry",
+    "formulaParamsPlaceholder": "length, height",
+    "history": "Historia",
+    "noHistory": "Brak edycji."
   },
   "estimates": {
     "title": "Kosztorysy",
@@ -550,7 +560,9 @@
     "grandTotalDelta": "Zmiana sumy całkowitej",
     "noDifferences": "Brak różnic między tymi wersjami",
     "costCodeUnassigned": "Bez kodu kosztowego",
-    "benchmarkHint": "Typowa cena dla tego kodu kosztowego w {count} poprzednich kosztorysach: {median} {currency}/jednostkę"
+    "benchmarkHint": "Typowa cena dla tego kodu kosztowego w {count} poprzednich kosztorysach: {median} {currency}/jednostkę",
+    "computeFormula": "Oblicz",
+    "computedQuantity": "= {value} {unit}"
   },
   "invoices": {
     "title": "Faktury",
@@ -696,7 +708,8 @@
     "gpsStop": "Zatrzymaj śledzenie",
     "gpsDenied": "Odmówiono dostępu do lokalizacji.",
     "gpsUnsupported": "Ta przeglądarka nie obsługuje śledzenia lokalizacji.",
-    "gpsNoRoute": "Dzisiaj nie zarejestrowano żadnej trasy."
+    "gpsNoRoute": "Dzisiaj nie zarejestrowano żadnej trasy.",
+    "offSite": "Poza terenem"
   },
   "subcontractorPortal": {
     "signInTitle": "Portal podwykonawcy",
@@ -891,7 +904,8 @@
     "retrySync": "Ponów",
     "discardSync": "Odrzuć",
     "voiceInputStart": "Rozpocznij wprowadzanie głosowe",
-    "voiceInputStop": "Zatrzymaj wprowadzanie głosowe"
+    "voiceInputStop": "Zatrzymaj wprowadzanie głosowe",
+    "rfi": "Zapytania"
   },
   "subcontractors": {
     "title": "Koszty podwykonawców",
@@ -1241,7 +1255,13 @@
     "critical": "Zadania krytyczne",
     "status": "Status",
     "atRisk": "Zagrożony",
-    "onTrack": "Zgodnie z planem"
+    "onTrack": "Zgodnie z planem",
+    "billedToDateTotal": "Zafakturowano dotychczas",
+    "fundedToDateTotal": "Sfinansowano dotychczas",
+    "openDrawTotal": "Otwarte transze",
+    "billedToDate": "Zafakturowano",
+    "fundedToDate": "Sfinansowano",
+    "openDraws": "Transze"
   },
   "warranty": {
     "title": "Gwarancja",
@@ -1819,5 +1839,86 @@
     "labor": "Godziny pracy",
     "materials": "Koszt materiałów",
     "sampleSize": "{count, plural, one {# kosztorys} few {# kosztorysy} many {# kosztorysów} other {# kosztorysu}}"
+  },
+  "drawRequests": {
+    "title": "Wnioski o transzę",
+    "hint": "Opakowuje fakturę rozliczenia postępu w wniosek o transzę dla banku — zestawienie wartości, zrzeczenia się zastawu i dokumenty potwierdzające łączą się w jeden pakiet dla kredytodawcy.",
+    "newDraw": "+ Nowa transza",
+    "invoice": "Faktura postępu",
+    "periodStart": "Początek okresu",
+    "periodEnd": "Koniec okresu",
+    "lenderName": "Kredytodawca",
+    "lenderContactEmail": "E-mail kontaktowy kredytodawcy",
+    "notes": "Uwagi",
+    "noDraws": "Brak jeszcze wniosków o transzę.",
+    "drawNumber": "Transza nr {number}",
+    "downloadPackage": "Pobierz pakiet",
+    "status_draft": "Szkic",
+    "status_submitted": "Złożony",
+    "status_under_review": "W trakcie przeglądu",
+    "status_approved": "Zatwierdzony",
+    "status_funded": "Sfinansowany"
+  },
+  "takeoff": {
+    "title": "Cyfrowy obmiar",
+    "hint": "Prześlij plan lub zdjęcie, skalibruj go względem znanej rzeczywistej długości, a następnie zaznacz długości i powierzchnie, aby uzyskać ilości bezpośrednio z rysunku.",
+    "newTakeoffName": "Nazwa obmiaru",
+    "upload": "Prześlij",
+    "calibrateHint": "Kliknij dwa punkty na odniesieniu o znanej długości (np. szerokość drzwi), aby skalibrować skalę.",
+    "realLength": "Rzeczywista długość",
+    "unit": "Jednostka",
+    "setScale": "Ustaw skalę",
+    "drawLength": "Zaznacz długość",
+    "drawArea": "Zaznacz powierzchnię",
+    "recalibrate": "Rekalibruj",
+    "lengthHint": "Kliknij wzdłuż przebiegu, a następnie zakończ.",
+    "areaHint": "Kliknij każdy róg powierzchni, a następnie zakończ.",
+    "label": "Etykieta",
+    "linkedRateItem": "Pozycja katalogowa",
+    "finishMeasurement": "Zakończ",
+    "addToEstimate": "Dodaj do kosztorysu"
+  },
+  "sustainability": {
+    "materialSettings": "Zrównoważony rozwój",
+    "materialSettingsHint": "Ślad węglowy i certyfikacja ekologiczna dla każdego materiału — zasila raport węglowy każdego projektu oraz podsumowanie dla całej firmy poniżej.",
+    "carbonFootprint": "kg CO2e / jednostkę",
+    "greenCertified": "Certyfikat ekologiczny",
+    "greenCertificationBody": "Jednostka certyfikująca",
+    "greenCertificationBodyPlaceholder": "np. FSC, Cradle to Cradle, EPD",
+    "certifications": "Certyfikaty zielonego budownictwa",
+    "newCertification": "+ Nowy certyfikat",
+    "noCertifications": "Dla tego projektu nie zarejestrowano jeszcze żadnych certyfikatów ekologicznych.",
+    "certificationType": "Certyfikat",
+    "issuedAt": "Wydano",
+    "expiresAt": "Wygasa",
+    "expires": "Wygasa {date}",
+    "certType_leed_certified": "LEED Certified",
+    "certType_leed_silver": "LEED Silver",
+    "certType_leed_gold": "LEED Gold",
+    "certType_leed_platinum": "LEED Platinum",
+    "certType_breeam": "BREEAM",
+    "certType_well": "WELL",
+    "certType_energy_star": "Energy Star",
+    "certType_other": "Inne",
+    "carbonReport": "Ślad węglowy wbudowany",
+    "carbonReportHint": "Obliczony na podstawie materiałów wydanych dla tego projektu, przy użyciu zarejestrowanego śladu węglowego na jednostkę każdego materiału.",
+    "totalCarbon": "Całkowity ślad węglowy",
+    "greenCertifiedPercent": "Materiały z certyfikatem ekologicznym (wg kosztu)",
+    "untrackedMaterials": "Materiały bez zarejestrowanego śladu",
+    "material": "Materiał",
+    "quantityUsed": "Zużyta ilość",
+    "noFootprintData": "Brak danych",
+    "carbonSummary": "Ślad węglowy całej firmy",
+    "carbonSummaryHint": "Te same obliczenia co raport węglowy projektu, zagregowane dla wszystkich projektów.",
+    "safetyScorecard": "Karta wyników BHP",
+    "safetyScorecardHint": "TRIR (wskaźnik wypadków podlegających rejestracji) — przypadki podlegające rejestracji × 200 000 ÷ przepracowane godziny, standardowa normalizacja OSHA do ok. 100 pracowników pełnoetatowych rocznie.",
+    "downloadOsha300a": "Pobierz PDF OSHA 300A",
+    "companyTrir": "TRIR firmy",
+    "totalIncidents": "Łączna liczba zdarzeń",
+    "recordableCases": "Przypadki podlegające rejestracji",
+    "totalHoursWorked": "Przepracowane godziny",
+    "project": "Projekt",
+    "hoursWorked": "Godziny",
+    "trir": "TRIR"
   }
 }

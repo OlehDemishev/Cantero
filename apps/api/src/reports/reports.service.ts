@@ -460,6 +460,8 @@ export class ReportsService {
         punchListItems: true,
         submittals: true,
         incidentReports: true,
+        invoices: { where: { status: { not: "void" } } },
+        drawRequests: true,
       },
       orderBy: { name: "asc" },
     });
@@ -523,6 +525,11 @@ export class ReportsService {
       const openPunchListCount = project.punchListItems.filter((p) => p.status !== "verified").length;
       const incidentCount = project.incidentReports.length;
 
+      const billedToDate = project.invoices.reduce((sum, i) => sum + Number(i.total), 0);
+      const fundedDrawIds = new Set(project.drawRequests.filter((d) => d.status === "funded").map((d) => d.invoiceId));
+      const fundedToDate = project.invoices.filter((i) => fundedDrawIds.has(i.id)).reduce((sum, i) => sum + Number(i.total), 0);
+      const openDrawCount = project.drawRequests.filter((d) => d.status !== "funded").length;
+
       return {
         id: project.id,
         name: project.name,
@@ -538,6 +545,9 @@ export class ReportsService {
         criticalTaskCount: criticalIds.size,
         overdueCriticalTaskCount,
         atRisk: overdueCriticalTaskCount > 0,
+        billedToDate: round2(billedToDate),
+        fundedToDate: round2(fundedToDate),
+        openDrawCount,
       };
     });
 
@@ -553,6 +563,9 @@ export class ReportsService {
         pendingSubmittalTotal: acc.pendingSubmittalTotal + r.pendingSubmittalCount,
         incidentTotal: acc.incidentTotal + r.incidentCount,
         overdueTaskTotal: acc.overdueTaskTotal + r.overdueTaskCount,
+        billedToDateTotal: round2(acc.billedToDateTotal + r.billedToDate),
+        fundedToDateTotal: round2(acc.fundedToDateTotal + r.fundedToDate),
+        openDrawTotal: acc.openDrawTotal + r.openDrawCount,
       }),
       {
         projectsTotal: 0,
@@ -565,6 +578,9 @@ export class ReportsService {
         pendingSubmittalTotal: 0,
         incidentTotal: 0,
         overdueTaskTotal: 0,
+        billedToDateTotal: 0,
+        fundedToDateTotal: 0,
+        openDrawTotal: 0,
       },
     );
 
@@ -579,17 +595,23 @@ export class ReportsService {
    * no clean data source for future labor cost the way there is a dueDate/expectedDate for money.
    * There's no tracked bank balance in this system, so this reports flow, not an absolute balance:
    * cumulativeNet assumes a starting position of 0 today.
+   *
+   * With a `projectId`, scopes to that project instead of the whole company — purchase orders are
+   * excluded entirely in that case, since PurchaseOrder restocks a warehouse rather than billing
+   * against a specific job (same scope limit JobCostingService documents for material costs).
    */
-  async cashFlowForecast(companyId: string) {
+  async cashFlowForecast(companyId: string, projectId?: string) {
     const now = new Date();
     const windowStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
     const windowEnd = new Date(windowStart.getTime() + CASH_FLOW_WEEKS * WEEK_MS);
 
     const [invoices, recurringInvoices, subcontractorCosts, purchaseOrders] = await Promise.all([
-      this.prisma.invoice.findMany({ where: { companyId, status: "sent" }, include: { payments: true } }),
-      this.prisma.recurringInvoice.findMany({ where: { companyId, active: true }, include: { lines: true } }),
-      this.prisma.subcontractorCost.findMany({ where: { companyId, paid: false } }),
-      this.prisma.purchaseOrder.findMany({ where: { companyId, status: { in: ["draft", "ordered"] } }, include: { lines: true } }),
+      this.prisma.invoice.findMany({ where: { companyId, status: "sent", ...(projectId ? { projectId } : {}) }, include: { payments: true } }),
+      this.prisma.recurringInvoice.findMany({ where: { companyId, active: true, ...(projectId ? { projectId } : {}) }, include: { lines: true } }),
+      this.prisma.subcontractorCost.findMany({ where: { companyId, paid: false, ...(projectId ? { projectId } : {}) } }),
+      projectId
+        ? Promise.resolve([])
+        : this.prisma.purchaseOrder.findMany({ where: { companyId, status: { in: ["draft", "ordered"] } }, include: { lines: true } }),
     ]);
 
     const buckets = Array.from({ length: CASH_FLOW_WEEKS }, (_, i) => {

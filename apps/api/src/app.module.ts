@@ -58,6 +58,7 @@ import { CostCodesModule } from "./cost-codes/cost-codes.module";
 import { JobCostingModule } from "./job-costing/job-costing.module";
 import { ScimModule } from "./scim/scim.module";
 import { EstimateAccuracyModule } from "./estimate-accuracy/estimate-accuracy.module";
+import { SustainabilityModule } from "./sustainability/sustainability.module";
 
 @Module({
   imports: [
@@ -115,6 +116,7 @@ import { EstimateAccuracyModule } from "./estimate-accuracy/estimate-accuracy.mo
     JobCostingModule,
     ScimModule,
     EstimateAccuracyModule,
+    SustainabilityModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

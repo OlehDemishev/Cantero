@@ -9,6 +9,18 @@ import { PUSH_CHECK_QUEUE } from "../common/queue/queue.module";
 import { NotificationsService } from "./notifications.service";
 
 const PUSH_CHECK_INTERVAL_MS = 5 * 60 * 1000;
+/** Above this many fresh items in one tick, sending one push per item would be noisy — fall back
+ * to a single summary push instead (same behavior as before this batch). */
+const MAX_INDIVIDUAL_PUSHES = 5;
+
+interface PushPayload {
+  title: string;
+  body: string;
+  url: string;
+  tag?: string;
+  type?: string;
+  severity?: string;
+}
 
 @Injectable()
 export class PushService implements OnModuleInit {
@@ -68,19 +80,28 @@ export class PushService implements OnModuleInit {
       const fresh = notifications.filter((n) => n.occurredAt.getTime() > cursor);
       if (fresh.length === 0) continue;
 
-      const payload =
-        fresh.length === 1
-          ? { title: fresh[0].title, body: fresh[0].body, url: fresh[0].link }
-          : {
-              title: `Cantero: ${fresh.length} new alerts`,
-              body: fresh
-                .slice(0, 3)
-                .map((n) => n.title)
-                .join(" · "),
-              url: "/dashboard",
-            };
+      // Below the cap, each item gets its own notification — tagged by its stable `key` so a
+      // later re-check that finds the same item still fresh (e.g. its dueDate is still overdue)
+      // replaces the existing notification on screen rather than stacking a duplicate — carrying
+      // over its type/severity so the client can style/route it instead of a generic alert.
+      const payloads: PushPayload[] =
+        fresh.length <= MAX_INDIVIDUAL_PUSHES
+          ? fresh.map((n) => ({ title: n.title, body: n.body, url: n.link, tag: n.key, type: n.type, severity: n.severity }))
+          : [
+              {
+                title: `Cantero: ${fresh.length} new alerts`,
+                body: fresh
+                  .slice(0, 3)
+                  .map((n) => n.title)
+                  .join(" · "),
+                url: "/dashboard",
+                tag: "summary",
+              },
+            ];
 
-      await this.sendToMembership(membership.id, payload);
+      for (const payload of payloads) {
+        await this.sendToMembership(membership.id, payload);
+      }
       await this.prisma.membership.update({
         where: { id: membership.id },
         data: { pushNotificationsLastSentAt: new Date() },
@@ -88,14 +109,14 @@ export class PushService implements OnModuleInit {
     }
   }
 
-  private async sendToMembership(membershipId: string, payload: { title: string; body: string; url: string }) {
+  private async sendToMembership(membershipId: string, payload: PushPayload) {
     const subs = await this.prisma.pushSubscription.findMany({ where: { membershipId } });
     await Promise.all(subs.map((sub) => this.sendToSubscription(sub, payload)));
   }
 
   private async sendToSubscription(
     sub: { id: string; endpoint: string; p256dh: string; auth: string },
-    payload: { title: string; body: string; url: string },
+    payload: PushPayload,
   ) {
     try {
       await webpush.sendNotification(

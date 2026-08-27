@@ -3,9 +3,11 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import {
   createMaterialCatalogItemSchema,
   updateMaterialReorderSchema,
+  updateMaterialSustainabilitySchema,
   type AuthUser,
   type CreateMaterialCatalogItemInput,
   type UpdateMaterialReorderInput,
+  type UpdateMaterialSustainabilityInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
@@ -57,5 +59,14 @@ export class MaterialCatalogController {
     @Body(new ZodValidationPipe(updateMaterialReorderSchema)) body: UpdateMaterialReorderInput,
   ) {
     return this.service.updateReorderSettings(user.companyId, id, body);
+  }
+
+  @Patch(":id/sustainability")
+  updateSustainability(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(updateMaterialSustainabilitySchema)) body: UpdateMaterialSustainabilityInput,
+  ) {
+    return this.service.updateSustainability(user.companyId, id, body);
   }
 }

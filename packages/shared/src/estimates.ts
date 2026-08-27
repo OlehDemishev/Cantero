@@ -6,6 +6,9 @@ export const createMaterialCatalogItemSchema = z.object({
   unit: z.string().min(1).max(20),
   defaultUnitPrice: z.number().nonnegative(),
   reorderThreshold: z.number().nonnegative().optional(),
+  carbonFootprintKgCo2e: z.number().nonnegative().optional(),
+  greenCertified: z.boolean().default(false),
+  greenCertificationBody: z.string().max(120).optional(),
 });
 export type CreateMaterialCatalogItemInput = z.infer<typeof createMaterialCatalogItemSchema>;
 
@@ -17,6 +20,35 @@ export const updateMaterialReorderSchema = z.object({
   preferredSupplierId: z.string().uuid().nullable().optional(),
 });
 export type UpdateMaterialReorderInput = z.infer<typeof updateMaterialReorderSchema>;
+
+export const updateMaterialSustainabilitySchema = z.object({
+  carbonFootprintKgCo2e: z.number().nonnegative().nullable().optional(),
+  greenCertified: z.boolean().optional(),
+  greenCertificationBody: z.string().max(120).nullable().optional(),
+});
+export type UpdateMaterialSustainabilityInput = z.infer<typeof updateMaterialSustainabilitySchema>;
+
+export const GREEN_CERTIFICATION_TYPES = [
+  "leed_certified",
+  "leed_silver",
+  "leed_gold",
+  "leed_platinum",
+  "breeam",
+  "well",
+  "energy_star",
+  "other",
+] as const;
+export type GreenCertificationType = (typeof GREEN_CERTIFICATION_TYPES)[number];
+
+export const createGreenCertificationSchema = z.object({
+  projectId: z.string().uuid(),
+  type: z.enum(GREEN_CERTIFICATION_TYPES),
+  name: z.string().min(1).max(160),
+  issuedAt: z.string().datetime().optional(),
+  expiresAt: z.string().datetime().optional(),
+  notes: z.string().max(1000).optional(),
+});
+export type CreateGreenCertificationInput = z.infer<typeof createGreenCertificationSchema>;
 
 export const rateCatalogItemMaterialSchema = z.object({
   materialCatalogItemId: z.string().uuid(),
@@ -31,8 +63,57 @@ export const createRateCatalogItemSchema = z.object({
   unit: z.string().min(1).max(20),
   laborHoursPerUnit: z.number().nonnegative(),
   materials: z.array(rateCatalogItemMaterialSchema).default([]),
+  catalogId: z.string().uuid().optional(),
+  formula: z.string().min(1).max(500).optional(),
+  formulaParams: z.array(z.string().min(1).max(40)).default([]),
 });
 export type CreateRateCatalogItemInput = z.infer<typeof createRateCatalogItemSchema>;
+
+export const updateRateCatalogItemSchema = z.object({
+  name: z.string().min(1).max(160).optional(),
+  unit: z.string().min(1).max(20).optional(),
+  laborHoursPerUnit: z.number().nonnegative().optional(),
+  catalogId: z.string().uuid().nullable().optional(),
+  formula: z.string().min(1).max(500).nullable().optional(),
+  formulaParams: z.array(z.string().min(1).max(40)).optional(),
+});
+export type UpdateRateCatalogItemInput = z.infer<typeof updateRateCatalogItemSchema>;
+
+export const evaluateFormulaSchema = z.object({
+  variables: z.record(z.string(), z.number()),
+});
+export type EvaluateFormulaInput = z.infer<typeof evaluateFormulaSchema>;
+
+export const createCatalogSchema = z.object({
+  name: z.string().min(1).max(120),
+});
+export type CreateCatalogInput = z.infer<typeof createCatalogSchema>;
+
+export const createTakeoffSchema = z.object({
+  projectId: z.string().uuid(),
+  name: z.string().min(1).max(160),
+});
+export type CreateTakeoffInput = z.infer<typeof createTakeoffSchema>;
+
+export const calibrateTakeoffSchema = z.object({
+  scalePixelLength: z.number().positive(),
+  scaleRealLength: z.number().positive(),
+  scaleUnit: z.string().min(1).max(20),
+});
+export type CalibrateTakeoffInput = z.infer<typeof calibrateTakeoffSchema>;
+
+export const TAKEOFF_MEASUREMENT_TYPES = ["length", "area"] as const;
+export type TakeoffMeasurementType = (typeof TAKEOFF_MEASUREMENT_TYPES)[number];
+
+export const takeoffPointSchema = z.object({ x: z.number(), y: z.number() });
+
+export const createTakeoffMeasurementSchema = z.object({
+  type: z.enum(TAKEOFF_MEASUREMENT_TYPES),
+  label: z.string().min(1).max(160),
+  points: z.array(takeoffPointSchema).min(2),
+  rateCatalogItemId: z.string().uuid().optional(),
+});
+export type CreateTakeoffMeasurementInput = z.infer<typeof createTakeoffMeasurementSchema>;
 
 export const createProjectSchema = z.object({
   name: z.string().min(1).max(160),

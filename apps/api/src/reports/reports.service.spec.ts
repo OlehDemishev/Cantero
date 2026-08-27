@@ -25,6 +25,8 @@ function baseProject(overrides: Partial<Record<string, unknown>> = {}) {
     punchListItems: [],
     submittals: [],
     incidentReports: [],
+    invoices: [],
+    drawRequests: [],
     ...overrides,
   };
 }
@@ -131,6 +133,28 @@ describe("ReportsService.portfolio", () => {
     const result = await service.portfolio(COMPANY_A);
 
     expect(result.summary.openRfiTotal).toBe(2);
+  });
+
+  it("only counts a draw's invoice toward fundedToDate once its draw request is marked funded", async () => {
+    prisma.project.findMany.mockResolvedValue([
+      baseProject({
+        invoices: [
+          { id: "inv-1", total: 1000, status: "sent" },
+          { id: "inv-2", total: 500, status: "sent" },
+        ],
+        drawRequests: [
+          { invoiceId: "inv-1", status: "funded" },
+          { invoiceId: "inv-2", status: "submitted" },
+        ],
+      }),
+    ]);
+
+    const result = await service.portfolio(COMPANY_A);
+
+    expect(result.projects[0].billedToDate).toBe(1500);
+    expect(result.projects[0].fundedToDate).toBe(1000);
+    expect(result.projects[0].openDrawCount).toBe(1);
+    expect(result.summary.fundedToDateTotal).toBe(1000);
   });
 });
 
@@ -277,6 +301,18 @@ describe("ReportsService.cashFlowForecast", () => {
     expect(result.weeks[0].net).toBe(700);
     expect(result.weeks[0].cumulativeNet).toBe(700);
     expect(result.weeks[1].cumulativeNet).toBe(700);
+  });
+
+  it("scopes invoices/subcontractor costs to one project and skips purchase orders entirely when a projectId is given", async () => {
+    await service.cashFlowForecast(COMPANY_A, "project-1");
+
+    expect(prisma.invoice.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ projectId: "project-1" }) }),
+    );
+    expect(prisma.subcontractorCost.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ projectId: "project-1" }) }),
+    );
+    expect(prisma.purchaseOrder.findMany).not.toHaveBeenCalled();
   });
 });
 

@@ -461,7 +461,17 @@
     "code": "Код",
     "unit": "Одиниця",
     "laborHours": "Год. праці/од.",
-    "materials": "Матеріали"
+    "materials": "Матеріали",
+    "allCatalogs": "Усі каталоги",
+    "uncategorized": "Без категорії",
+    "newCatalogName": "Назва нового каталогу",
+    "catalog": "Каталог",
+    "formula": "Формула (необов'язково)",
+    "formulaPlaceholder": "напр. довжина * висота",
+    "formulaParams": "Параметри",
+    "formulaParamsPlaceholder": "length, height",
+    "history": "Історія",
+    "noHistory": "Ще немає змін."
   },
   "estimates": {
     "title": "Кошториси",
@@ -550,7 +560,9 @@
     "grandTotalDelta": "Зміна загальної суми",
     "noDifferences": "Немає відмінностей між цими версіями",
     "costCodeUnassigned": "Без коду витрат",
-    "benchmarkHint": "Типова ціна для цього коду витрат за {count} попередніми кошторисами: {median} {currency}/од."
+    "benchmarkHint": "Типова ціна для цього коду витрат за {count} попередніми кошторисами: {median} {currency}/од.",
+    "computeFormula": "Обчислити",
+    "computedQuantity": "= {value} {unit}"
   },
   "invoices": {
     "title": "Рахунки",
@@ -696,7 +708,8 @@
     "gpsStop": "Зупинити відстеження",
     "gpsDenied": "У доступі до місцезнаходження відмовлено.",
     "gpsUnsupported": "Цей браузер не підтримує відстеження місцезнаходження.",
-    "gpsNoRoute": "Сьогодні маршрут не зафіксовано."
+    "gpsNoRoute": "Сьогодні маршрут не зафіксовано.",
+    "offSite": "Поза майданчиком"
   },
   "subcontractorPortal": {
     "signInTitle": "Кабінет субпідрядника",
@@ -891,7 +904,8 @@
     "retrySync": "Повторити",
     "discardSync": "Відхилити",
     "voiceInputStart": "Почати голосове введення",
-    "voiceInputStop": "Зупинити голосове введення"
+    "voiceInputStop": "Зупинити голосове введення",
+    "rfi": "Запити"
   },
   "subcontractors": {
     "title": "Витрати на субпідрядників",
@@ -1241,7 +1255,13 @@
     "critical": "Критичні задачі",
     "status": "Статус",
     "atRisk": "Ризик",
-    "onTrack": "За планом"
+    "onTrack": "За планом",
+    "billedToDateTotal": "Виставлено рахунків дотепер",
+    "fundedToDateTotal": "Профінансовано дотепер",
+    "openDrawTotal": "Відкриті транші",
+    "billedToDate": "Виставлено",
+    "fundedToDate": "Профінансовано",
+    "openDraws": "Транші"
   },
   "warranty": {
     "title": "Гарантія",
@@ -1819,5 +1839,86 @@
     "labor": "Години праці",
     "materials": "Вартість матеріалів",
     "sampleSize": "{count, plural, one {# кошторис} few {# кошториси} many {# кошторисів} other {# кошторису}}"
+  },
+  "drawRequests": {
+    "title": "Заявки на транш",
+    "hint": "Обгортає рахунок поетапного білінгу в заявку на транш для банку — кошторис, відмови від застави та супровідні документи об'єднуються в один пакет для кредитора.",
+    "newDraw": "+ Новий транш",
+    "invoice": "Рахунок поетапного білінгу",
+    "periodStart": "Початок періоду",
+    "periodEnd": "Кінець періоду",
+    "lenderName": "Кредитор",
+    "lenderContactEmail": "Контактна пошта кредитора",
+    "notes": "Примітки",
+    "noDraws": "Заявок на транш ще немає.",
+    "drawNumber": "Транш №{number}",
+    "downloadPackage": "Завантажити пакет",
+    "status_draft": "Чернетка",
+    "status_submitted": "Подано",
+    "status_under_review": "На розгляді",
+    "status_approved": "Затверджено",
+    "status_funded": "Профінансовано"
+  },
+  "takeoff": {
+    "title": "Цифровий обмір",
+    "hint": "Завантажте план або фото, відкалібруйте його за відомою реальною довжиною, а потім позначайте довжини та площі, щоб отримати кількості прямо з креслення.",
+    "newTakeoffName": "Назва обміру",
+    "upload": "Завантажити",
+    "calibrateHint": "Клацніть дві точки на еталоні відомої довжини (напр. ширина дверей), щоб відкалібрувати масштаб.",
+    "realLength": "Реальна довжина",
+    "unit": "Одиниця",
+    "setScale": "Встановити масштаб",
+    "drawLength": "Позначити довжину",
+    "drawArea": "Позначити площу",
+    "recalibrate": "Перекалібрувати",
+    "lengthHint": "Клацайте вздовж траси, потім завершіть.",
+    "areaHint": "Клацніть кожен кут площі, потім завершіть.",
+    "label": "Мітка",
+    "linkedRateItem": "Позиція каталогу",
+    "finishMeasurement": "Завершити",
+    "addToEstimate": "Додати до кошторису"
+  },
+  "sustainability": {
+    "materialSettings": "Сталий розвиток",
+    "materialSettingsHint": "Вуглецевий слід і зелена сертифікація для кожного матеріалу — використовується у вуглецевому звіті кожного проєкту та загальнокорпоративному підсумку нижче.",
+    "carbonFootprint": "кг CO2e / од.",
+    "greenCertified": "Зелений сертифікат",
+    "greenCertificationBody": "Орган сертифікації",
+    "greenCertificationBodyPlaceholder": "напр. FSC, Cradle to Cradle, EPD",
+    "certifications": "Сертифікати зеленого будівництва",
+    "newCertification": "+ Новий сертифікат",
+    "noCertifications": "Для цього проєкту ще не зареєстровано жодних зелених сертифікатів.",
+    "certificationType": "Сертифікат",
+    "issuedAt": "Видано",
+    "expiresAt": "Діє до",
+    "expires": "Діє до {date}",
+    "certType_leed_certified": "LEED Certified",
+    "certType_leed_silver": "LEED Silver",
+    "certType_leed_gold": "LEED Gold",
+    "certType_leed_platinum": "LEED Platinum",
+    "certType_breeam": "BREEAM",
+    "certType_well": "WELL",
+    "certType_energy_star": "Energy Star",
+    "certType_other": "Інше",
+    "carbonReport": "Втілений вуглецевий слід",
+    "carbonReportHint": "Розраховано на основі матеріалів, виданих для цього проєкту, з використанням зареєстрованого вуглецевого сліду на одиницю кожного матеріалу.",
+    "totalCarbon": "Загальний вуглецевий слід",
+    "greenCertifiedPercent": "Матеріали із зеленим сертифікатом (за вартістю)",
+    "untrackedMaterials": "Матеріали без зареєстрованого сліду",
+    "material": "Матеріал",
+    "quantityUsed": "Використана кількість",
+    "noFootprintData": "Немає даних",
+    "carbonSummary": "Вуглецевий слід усієї компанії",
+    "carbonSummaryHint": "Той самий розрахунок, що й вуглецевий звіт проєкту, агрегований по всіх проєктах.",
+    "safetyScorecard": "Картка безпеки",
+    "safetyScorecardHint": "TRIR (загальний коефіцієнт реєстрованих випадків) — реєстровані випадки × 200 000 ÷ відпрацьовані години, стандартна нормалізація OSHA приблизно на 100 працівників повного дня на рік.",
+    "downloadOsha300a": "Завантажити PDF OSHA 300A",
+    "companyTrir": "TRIR компанії",
+    "totalIncidents": "Усього подій",
+    "recordableCases": "Реєстровані випадки",
+    "totalHoursWorked": "Відпрацьовані години",
+    "project": "Проєкт",
+    "hoursWorked": "Години",
+    "trir": "TRIR"
   }
 }

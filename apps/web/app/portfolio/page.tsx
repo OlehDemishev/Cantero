@@ -21,6 +21,9 @@ interface PortfolioProject {
   criticalTaskCount: number;
   overdueCriticalTaskCount: number;
   atRisk: boolean;
+  billedToDate: number;
+  fundedToDate: number;
+  openDrawCount: number;
 }
 interface PortfolioSummary {
   projectsTotal: number;
@@ -33,6 +36,9 @@ interface PortfolioSummary {
   pendingSubmittalTotal: number;
   incidentTotal: number;
   overdueTaskTotal: number;
+  billedToDateTotal: number;
+  fundedToDateTotal: number;
+  openDrawTotal: number;
 }
 interface Portfolio {
   projects: PortfolioProject[];
@@ -87,11 +93,14 @@ export default function PortfolioPage() {
             <SummaryCard label={t("pendingSubmittalTotal")} value={data.summary.pendingSubmittalTotal} />
             <SummaryCard label={t("incidentTotal")} value={data.summary.incidentTotal} />
             <SummaryCard label={t("overdueTaskTotal")} value={data.summary.overdueTaskTotal} />
+            <SummaryCard label={t("billedToDateTotal")} value={`${data.summary.billedToDateTotal} ${currency}`} />
+            <SummaryCard label={t("fundedToDateTotal")} value={`${data.summary.fundedToDateTotal} ${currency}`} />
+            <SummaryCard label={t("openDrawTotal")} value={data.summary.openDrawTotal} />
           </div>
 
           <h2 className="mb-3 mt-10 text-sm font-semibold text-gray-700">{t("projects")}</h2>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px] border-collapse text-sm">
+            <table className="w-full min-w-[1150px] border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-200 text-left text-gray-500">
                   <th className="py-2">{t("project")}</th>
@@ -99,6 +108,9 @@ export default function PortfolioPage() {
                   <th className="text-right">{t("budget")}</th>
                   <th className="text-right">{t("actual")}</th>
                   <th className="text-right">{t("variance")}</th>
+                  <th className="text-right">{t("billedToDate")}</th>
+                  <th className="text-right">{t("fundedToDate")}</th>
+                  <th className="text-right">{t("openDraws")}</th>
                   <th className="text-right">{t("openRfis")}</th>
                   <th className="text-right">{t("openPunchList")}</th>
                   <th className="text-right">{t("pendingSubmittals")}</th>
@@ -126,6 +138,13 @@ export default function PortfolioPage() {
                     <td className={`text-right ${p.variance < 0 ? "text-error-700" : "text-success-700"}`}>
                       {p.variance} {currency}
                     </td>
+                    <td className="text-right">
+                      {p.billedToDate} {currency}
+                    </td>
+                    <td className="text-right">
+                      {p.fundedToDate} {currency}
+                    </td>
+                    <td className="text-right">{p.openDrawCount || "—"}</td>
                     <td className="text-right">{p.openRfiCount || "—"}</td>
                     <td className="text-right">{p.openPunchListCount || "—"}</td>
                     <td className="text-right">{p.pendingSubmittalCount || "—"}</td>

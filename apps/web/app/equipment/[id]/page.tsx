@@ -8,6 +8,20 @@ import { EquipmentGpsPanel } from "@/components/equipment-gps-panel";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
+function getCurrentPositionSafe(): Promise<{ lat: number; lng: number } | null> {
+  return new Promise((resolve) => {
+    if (!("geolocation" in navigator)) {
+      resolve(null);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => resolve(null),
+      { timeout: 8000, maximumAge: 60_000 },
+    );
+  });
+}
+
 interface Project {
   id: string;
   name: string;
@@ -40,6 +54,8 @@ interface Assignment {
   notes: string | null;
   project: { name: string } | null;
   worker: { name: string } | null;
+  checkOutWithinGeofence: boolean | null;
+  checkInWithinGeofence: boolean | null;
 }
 interface MaintenanceRecord {
   id: string;
@@ -94,11 +110,14 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
     setBusy(true);
     setError(null);
     try {
+      const position = await getCurrentPositionSafe();
       await apiFetch(`/equipment/${id}/check-out`, {
         method: "POST",
         body: JSON.stringify({
           projectId: checkOutForm.projectId || undefined,
           workerId: checkOutForm.workerId || undefined,
+          lat: position?.lat,
+          lng: position?.lng,
         }),
       });
       setCheckOutForm({ projectId: "", workerId: "" });
@@ -111,7 +130,11 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
   }
 
   async function checkIn() {
-    await apiFetch(`/equipment/${id}/check-in`, { method: "POST" });
+    const position = await getCurrentPositionSafe();
+    await apiFetch(`/equipment/${id}/check-in`, {
+      method: "POST",
+      body: JSON.stringify({ lat: position?.lat, lng: position?.lng }),
+    });
     load();
   }
 
@@ -363,8 +386,22 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
                 {assignments.map((a) => (
                   <tr key={a.id} className="border-b border-gray-100">
                     <td className="py-2">{a.worker?.name ?? a.project?.name ?? "—"}</td>
-                    <td>{new Date(a.checkedOutAt).toLocaleString()}</td>
-                    <td>{a.checkedInAt ? new Date(a.checkedInAt).toLocaleString() : t("stillOut")}</td>
+                    <td>
+                      {new Date(a.checkedOutAt).toLocaleString()}
+                      {a.checkOutWithinGeofence === false && (
+                        <span className="ml-1 rounded-full bg-warning-50 px-1.5 py-0.5 text-[10px] font-medium text-warning-700">
+                          {t("offSite")}
+                        </span>
+                      )}
+                    </td>
+                    <td>
+                      {a.checkedInAt ? new Date(a.checkedInAt).toLocaleString() : t("stillOut")}
+                      {a.checkInWithinGeofence === false && (
+                        <span className="ml-1 rounded-full bg-warning-50 px-1.5 py-0.5 text-[10px] font-medium text-warning-700">
+                          {t("offSite")}
+                        </span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

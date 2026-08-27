@@ -10,6 +10,8 @@ import {
 } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { CustomReportsPanel } from "@/components/custom-reports-panel";
+import { SafetyScorecardPanel } from "@/components/safety-scorecard-panel";
+import { CarbonSummaryPanel } from "@/components/carbon-summary-panel";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
@@ -841,6 +843,8 @@ export default function ReportsPage() {
         </ul>
       )}
 
+      <SafetyScorecardPanel />
+      <CarbonSummaryPanel />
       <CustomReportsPanel />
     </AuthenticatedShell>
   );

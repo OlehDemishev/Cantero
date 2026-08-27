@@ -1,9 +1,10 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import type { CreateRateCatalogItemInput, ImportResult } from "@cantero/shared";
+import type { CreateRateCatalogItemInput, EvaluateFormulaInput, ImportResult, UpdateRateCatalogItemInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { parseCsvRecords } from "../common/csv";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { metricMaterials, metricRateItems, imperialMaterials, imperialRateItems } from "./starter-catalog-data";
+import { FormulaError, assertValidParamName, evaluateFormula } from "./formula";
 
 @Injectable()
 export class RateCatalogService {
@@ -12,9 +13,9 @@ export class RateCatalogService {
     private readonly audit: AuditService,
   ) {}
 
-  list(companyId: string) {
+  list(companyId: string, catalogId?: string) {
     return this.prisma.rateCatalogItem.findMany({
-      where: { companyId },
+      where: { companyId, ...(catalogId ? { catalogId } : {}) },
       include: { materials: { include: { materialCatalogItem: true } } },
       orderBy: { code: "asc" },
     });
@@ -35,13 +36,19 @@ export class RateCatalogService {
       const owned = await this.prisma.materialCatalogItem.count({ where: { id: { in: materialIds }, companyId } });
       if (owned !== materialIds.length) throw new BadRequestException("One or more materials do not belong to this company");
     }
+    if (input.catalogId) await this.assertCatalogOwned(companyId, input.catalogId);
+    if (input.formula) this.validateFormula(input.formula, input.formulaParams);
+
     return this.prisma.rateCatalogItem.create({
       data: {
         companyId,
+        catalogId: input.catalogId,
         code: input.code,
         name: input.name,
         unit: input.unit,
         laborHoursPerUnit: input.laborHoursPerUnit,
+        formula: input.formula,
+        formulaParams: input.formulaParams,
         materials: {
           create: input.materials.map((m) => ({
             materialCatalogItemId: m.materialCatalogItemId,
@@ -52,6 +59,81 @@ export class RateCatalogService {
       },
       include: { materials: true },
     });
+  }
+
+  /** Every edit snapshots the item's prior state into RateCatalogItemRevision first — there was
+   * no update() at all before this phase (items could only be created), so this both adds the
+   * missing edit capability and makes every edit auditable via history(). */
+  async update(companyId: string, actor: AuditActor, id: string, input: UpdateRateCatalogItemInput) {
+    const item = await this.get(companyId, id);
+    if (input.catalogId) await this.assertCatalogOwned(companyId, input.catalogId);
+    const formula = input.formula === undefined ? item.formula : input.formula;
+    const formulaParams = input.formulaParams ?? item.formulaParams;
+    if (formula) this.validateFormula(formula, formulaParams);
+
+    await this.prisma.rateCatalogItemRevision.create({
+      data: {
+        rateCatalogItemId: item.id,
+        code: item.code,
+        name: item.name,
+        unit: item.unit,
+        laborHoursPerUnit: item.laborHoursPerUnit,
+        changedByUserId: actor.userId,
+        changedByName: actor.name,
+      },
+    });
+
+    return this.prisma.rateCatalogItem.update({
+      where: { id: item.id },
+      data: {
+        name: input.name,
+        unit: input.unit,
+        laborHoursPerUnit: input.laborHoursPerUnit,
+        catalogId: input.catalogId,
+        formula: input.formula,
+        formulaParams: input.formulaParams,
+      },
+      include: { materials: { include: { materialCatalogItem: true } } },
+    });
+  }
+
+  history(companyId: string, id: string) {
+    return this.prisma.rateCatalogItemRevision.findMany({
+      where: { rateCatalogItem: { id, companyId } },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  /** Evaluates a rate item's formula against caller-supplied parameter values — used to derive
+   * an estimate line's quantity before it's submitted through the ordinary add-line endpoint. */
+  evaluateFormula(companyId: string, id: string, input: EvaluateFormulaInput) {
+    return this.get(companyId, id).then((item) => {
+      if (!item.formula) throw new BadRequestException("This rate item has no formula");
+      const missing = item.formulaParams.filter((p) => !(p in input.variables));
+      if (missing.length > 0) throw new BadRequestException(`Missing values for: ${missing.join(", ")}`);
+      try {
+        return { value: evaluateFormula(item.formula, input.variables) };
+      } catch (err) {
+        if (err instanceof FormulaError) throw new BadRequestException(err.message);
+        throw err;
+      }
+    });
+  }
+
+  private validateFormula(formula: string, formulaParams: string[]): void {
+    formulaParams.forEach(assertValidParamName);
+    try {
+      const dummyVars = Object.fromEntries(formulaParams.map((p) => [p, 1]));
+      evaluateFormula(formula, dummyVars);
+    } catch (err) {
+      if (err instanceof FormulaError) throw new BadRequestException(`Invalid formula: ${err.message}`);
+      throw err;
+    }
+  }
+
+  private async assertCatalogOwned(companyId: string, catalogId: string): Promise<void> {
+    const catalog = await this.prisma.catalog.findFirst({ where: { id: catalogId, companyId } });
+    if (!catalog) throw new NotFoundException("Catalog not found");
   }
 
   /** Loads the built-in starter catalog (metric or imperial, matching the company's unit system). No-op if the company already has any rate catalog items. */

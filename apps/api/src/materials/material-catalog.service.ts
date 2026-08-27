@@ -1,5 +1,10 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import type { CreateMaterialCatalogItemInput, ImportResult, UpdateMaterialReorderInput } from "@cantero/shared";
+import type {
+  CreateMaterialCatalogItemInput,
+  ImportResult,
+  UpdateMaterialReorderInput,
+  UpdateMaterialSustainabilityInput,
+} from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { parseCsvRecords } from "../common/csv";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
@@ -89,6 +94,15 @@ export class MaterialCatalogService {
       const supplier = await this.prisma.supplier.findFirst({ where: { id: input.preferredSupplierId, companyId } });
       if (!supplier) throw new NotFoundException("Supplier not found");
     }
+    return this.prisma.materialCatalogItem.update({
+      where: { id },
+      data: input,
+      include: { preferredSupplier: true },
+    });
+  }
+
+  async updateSustainability(companyId: string, id: string, input: UpdateMaterialSustainabilityInput) {
+    await this.get(companyId, id);
     return this.prisma.materialCatalogItem.update({
       where: { id },
       data: input,

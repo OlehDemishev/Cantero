@@ -90,6 +90,25 @@ export const signLienWaiverSchema = z.object({
 });
 export type SignLienWaiverInput = z.infer<typeof signLienWaiverSchema>;
 
+export const DRAW_REQUEST_STATUSES = ["draft", "submitted", "under_review", "approved", "funded"] as const;
+export type DrawRequestStatus = (typeof DRAW_REQUEST_STATUSES)[number];
+
+export const createDrawRequestSchema = z.object({
+  projectId: z.string().uuid(),
+  invoiceId: z.string().uuid(),
+  periodStart: z.string().datetime(),
+  periodEnd: z.string().datetime(),
+  lenderName: z.string().max(160).optional(),
+  lenderContactEmail: z.string().email().optional(),
+  notes: z.string().max(2000).optional(),
+});
+export type CreateDrawRequestInput = z.infer<typeof createDrawRequestSchema>;
+
+export const updateDrawRequestStatusSchema = z.object({
+  status: z.enum(DRAW_REQUEST_STATUSES),
+});
+export type UpdateDrawRequestStatusInput = z.infer<typeof updateDrawRequestStatusSchema>;
+
 export const createBidRequestSchema = z.object({
   projectId: z.string().uuid(),
   title: z.string().min(1).max(160),

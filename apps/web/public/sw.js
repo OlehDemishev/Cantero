@@ -109,7 +109,13 @@ self.addEventListener("push", (event) => {
     self.registration.showNotification(payload.title, {
       body: payload.body,
       icon: "/icon.svg",
-      data: { url: payload.url },
+      // tag dedupes/replaces a still-open notification for the same underlying item instead of
+      // stacking a fresh one; renotify makes that replacement still alert the user. Critical items
+      // stay on screen (requireInteraction) instead of auto-dismissing like a routine update.
+      tag: payload.tag,
+      renotify: !!payload.tag,
+      requireInteraction: payload.severity === "critical",
+      data: { url: payload.url, type: payload.type, severity: payload.severity },
     }),
   );
 });
