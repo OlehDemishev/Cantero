@@ -48,6 +48,23 @@ export const createSupplierSchema = z.object({
 });
 export type CreateSupplierInput = z.infer<typeof createSupplierSchema>;
 
+export const SUPPLIER_DOCUMENT_TYPES = ["general_liability_insurance", "workers_comp_insurance", "other"] as const;
+export type SupplierDocumentType = (typeof SUPPLIER_DOCUMENT_TYPES)[number];
+
+export const addSupplierDocumentSchema = z.object({
+  type: z.enum(SUPPLIER_DOCUMENT_TYPES),
+  name: z.string().min(1).max(160),
+  expiresAt: z.string().datetime(),
+});
+export type AddSupplierDocumentInput = z.infer<typeof addSupplierDocumentSchema>;
+
+export const createSupplierReviewSchema = z.object({
+  rating: z.number().int().min(1).max(5),
+  wouldReorder: z.boolean().optional(),
+  comments: z.string().max(2000).optional(),
+});
+export type CreateSupplierReviewInput = z.infer<typeof createSupplierReviewSchema>;
+
 export const purchaseOrderLineSchema = z.object({
   materialCatalogItemId: z.string().uuid(),
   quantity: z.number().positive(),

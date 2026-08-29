@@ -1,11 +1,15 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import type { CreateSupplierInput, ImportResult } from "@cantero/shared";
+import type { AddSupplierDocumentInput, CreateSupplierInput, CreateSupplierReviewInput, ImportResult } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { parseCsvRecords } from "../common/csv";
 
 @Injectable()
 export class SuppliersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   list(companyId: string) {
     return this.prisma.supplier.findMany({ where: { companyId }, orderBy: { name: "asc" } });
@@ -21,16 +25,19 @@ export class SuppliersService {
     return this.prisma.supplier.create({ data: { ...input, companyId } });
   }
 
-  /** On-time rate and spend, computed from every received purchase order — "on time" means
+  /** On-time rate and spend are computed from every received purchase order — "on time" means
    * received at or before the promised expectedDate. Orders with no expectedDate or not yet
-   * received are excluded from the on-time rate but still counted in totalOrders/totalSpend. */
+   * received are excluded from the on-time rate but still counted in totalOrders/totalSpend.
+   * averageRating/wouldReorderPercent are the one dimension PO data can't answer (a subjective
+   * "would we order from them again"), rolled up at read time from SupplierReview — same
+   * reasoning as SubcontractorsService.performanceScorecard(): no cached/denormalized score. */
   async scorecard(companyId: string, id: string) {
     await this.get(companyId, id);
 
-    const orders = await this.prisma.purchaseOrder.findMany({
-      where: { companyId, supplierId: id },
-      include: { lines: true },
-    });
+    const [orders, reviews] = await Promise.all([
+      this.prisma.purchaseOrder.findMany({ where: { companyId, supplierId: id }, include: { lines: true } }),
+      this.prisma.supplierReview.findMany({ where: { companyId, supplierId: id } }),
+    ]);
 
     const received = orders.filter((o) => o.receivedAt);
     const withPromise = received.filter((o) => o.expectedDate);
@@ -42,13 +49,68 @@ export class SuppliersService {
       0,
     );
 
+    const round1 = (n: number) => Math.round(n * 10) / 10;
+    const reorderAnswered = reviews.filter((r) => r.wouldReorder !== null);
+
     return {
       totalOrders: orders.length,
       receivedOrders: received.length,
       totalSpend,
       onTimeRate: withPromise.length > 0 ? onTime.length / withPromise.length : null,
       averageDelayDays: delaysDays.length > 0 ? delaysDays.reduce((a, b) => a + b, 0) / delaysDays.length : null,
+      reviewCount: reviews.length,
+      averageRating: reviews.length > 0 ? round1(reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length) : null,
+      wouldReorderPercent:
+        reorderAnswered.length > 0 ? round1((reorderAnswered.filter((r) => r.wouldReorder).length / reorderAnswered.length) * 100) : null,
     };
+  }
+
+  listDocuments(companyId: string, supplierId: string) {
+    return this.prisma.supplierDocument.findMany({ where: { companyId, supplierId }, orderBy: { expiresAt: "asc" } });
+  }
+
+  async addDocument(companyId: string, actor: AuditActor, supplierId: string, input: AddSupplierDocumentInput) {
+    const supplier = await this.get(companyId, supplierId);
+    const doc = await this.prisma.supplierDocument.create({
+      data: { companyId, supplierId, type: input.type, name: input.name, expiresAt: new Date(input.expiresAt) },
+    });
+    this.audit.record(
+      companyId,
+      actor,
+      "supplier_document.added",
+      "SupplierDocument",
+      doc.id,
+      `Added ${input.type.replace(/_/g, " ")} for "${supplier.name}", expires ${doc.expiresAt.toLocaleDateString()}`,
+    );
+    return doc;
+  }
+
+  async deleteDocument(companyId: string, supplierId: string, documentId: string) {
+    const doc = await this.prisma.supplierDocument.findFirst({ where: { id: documentId, supplierId, companyId } });
+    if (!doc) throw new NotFoundException("Document not found");
+    await this.prisma.supplierDocument.delete({ where: { id: documentId } });
+    return { ok: true };
+  }
+
+  listReviews(companyId: string, supplierId: string) {
+    return this.prisma.supplierReview.findMany({ where: { companyId, supplierId }, orderBy: { createdAt: "desc" } });
+  }
+
+  async addReview(companyId: string, actor: AuditActor, supplierId: string, input: CreateSupplierReviewInput) {
+    const supplier = await this.get(companyId, supplierId);
+    const review = await this.prisma.supplierReview.create({
+      data: {
+        companyId,
+        supplierId,
+        reviewedByUserId: actor.userId,
+        reviewedByName: actor.name,
+        rating: input.rating,
+        wouldReorder: input.wouldReorder,
+        comments: input.comments,
+      },
+    });
+    this.audit.record(companyId, actor, "supplier.reviewed", "Supplier", supplierId, `Rated "${supplier.name}" ${input.rating}/5`);
+    return review;
   }
 
   /** Bulk price update from a supplier's own price list — CSV columns: code, unitPrice. Only

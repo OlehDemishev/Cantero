@@ -13,3 +13,8 @@ export const createCommentSchema = z
     message: "Exactly one of taskId, rfiId, punchListItemId, projectId is required",
   });
 export type CreateCommentInput = z.infer<typeof createCommentSchema>;
+
+export const createPortalMessageSchema = z.object({
+  content: z.string().min(1).max(2000),
+});
+export type CreatePortalMessageInput = z.infer<typeof createPortalMessageSchema>;

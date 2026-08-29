@@ -18,7 +18,10 @@ export interface NotificationItem {
     | "warranty_claim_open"
     | "mention"
     | "subcontractor_document_expiring"
+    | "supplier_document_expiring"
     | "worker_certification_expiring"
+    | "permit_expiring"
+    | "company_document_expiring"
     | "weather_risk"
     | "budget_overrun";
   severity: Severity;
@@ -62,7 +65,10 @@ export class NotificationsService {
       openWarrantyClaims,
       mentions,
       expiringSubcontractorDocuments,
+      expiringSupplierDocuments,
       expiringWorkerCertifications,
+      expiringPermits,
+      expiringCompanyDocuments,
       weatherRisks,
       budgetOverruns,
       membership,
@@ -77,7 +83,10 @@ export class NotificationsService {
       this.openWarrantyClaims(companyId),
       this.mentions(companyId, userId),
       this.expiringSubcontractorDocuments(companyId),
+      this.expiringSupplierDocuments(companyId),
       this.expiringWorkerCertifications(companyId),
+      this.expiringPermits(companyId),
+      this.expiringCompanyDocuments(companyId),
       this.weatherRiskTasks(companyId),
       this.budgetOverruns(companyId),
       this.prisma.membership.findFirst({ where: { companyId, userId } }),
@@ -94,7 +103,10 @@ export class NotificationsService {
       ...openWarrantyClaims,
       ...mentions,
       ...expiringSubcontractorDocuments,
+      ...expiringSupplierDocuments,
       ...expiringWorkerCertifications,
+      ...expiringPermits,
+      ...expiringCompanyDocuments,
       ...weatherRisks,
       ...budgetOverruns,
     ].sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
@@ -367,6 +379,63 @@ export class NotificationsService {
           ? `Expired ${doc.expiresAt.toLocaleDateString()}`
           : `Expires ${doc.expiresAt.toLocaleDateString()}`,
       link: "/subcontractors",
+      occurredAt: doc.expiresAt,
+    }));
+  }
+
+  private async expiringSupplierDocuments(companyId: string): Promise<NotificationItem[]> {
+    const cutoff = new Date(Date.now() + DOCUMENT_EXPIRY_LOOKAHEAD_DAYS * 24 * 60 * 60 * 1000);
+    const docs = await this.prisma.supplierDocument.findMany({
+      where: { companyId, expiresAt: { lte: cutoff } },
+      include: { supplier: { select: { name: true } } },
+    });
+
+    const now = new Date();
+    return docs.map((doc) => ({
+      key: `supplier_document:${doc.id}`,
+      type: "supplier_document_expiring" as const,
+      severity: (doc.expiresAt < now ? "critical" : "warning") as Severity,
+      title: `${doc.name} — ${doc.supplier.name}`,
+      body:
+        doc.expiresAt < now
+          ? `Expired ${doc.expiresAt.toLocaleDateString()}`
+          : `Expires ${doc.expiresAt.toLocaleDateString()}`,
+      link: "/suppliers",
+      occurredAt: doc.expiresAt,
+    }));
+  }
+
+  private async expiringPermits(companyId: string): Promise<NotificationItem[]> {
+    const cutoff = new Date(Date.now() + DOCUMENT_EXPIRY_LOOKAHEAD_DAYS * 24 * 60 * 60 * 1000);
+    const permits = await this.prisma.permit.findMany({
+      where: { companyId, expiresAt: { not: null, lte: cutoff } },
+      include: { project: { select: { id: true, name: true } } },
+    });
+
+    const now = new Date();
+    return permits.map((permit) => ({
+      key: `permit:${permit.id}`,
+      type: "permit_expiring" as const,
+      severity: (permit.expiresAt! < now ? "critical" : "warning") as Severity,
+      title: `${permit.permitType} — ${permit.project.name}`,
+      body: permit.expiresAt! < now ? `Expired ${permit.expiresAt!.toLocaleDateString()}` : `Expires ${permit.expiresAt!.toLocaleDateString()}`,
+      link: `/projects/${permit.project.id}`,
+      occurredAt: permit.expiresAt!,
+    }));
+  }
+
+  private async expiringCompanyDocuments(companyId: string): Promise<NotificationItem[]> {
+    const cutoff = new Date(Date.now() + DOCUMENT_EXPIRY_LOOKAHEAD_DAYS * 24 * 60 * 60 * 1000);
+    const docs = await this.prisma.companyDocument.findMany({ where: { companyId, expiresAt: { lte: cutoff } } });
+
+    const now = new Date();
+    return docs.map((doc) => ({
+      key: `company_document:${doc.id}`,
+      type: "company_document_expiring" as const,
+      severity: (doc.expiresAt < now ? "critical" : "warning") as Severity,
+      title: doc.name,
+      body: doc.expiresAt < now ? `Expired ${doc.expiresAt.toLocaleDateString()}` : `Expires ${doc.expiresAt.toLocaleDateString()}`,
+      link: "/settings",
       occurredAt: doc.expiresAt,
     }));
   }

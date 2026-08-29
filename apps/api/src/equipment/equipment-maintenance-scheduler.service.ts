@@ -6,6 +6,7 @@ import { PrismaService } from "../common/prisma/prisma.service";
 import { MailService } from "../common/mail/mail.service";
 import { AuditService } from "../common/audit/audit.service";
 import { EQUIPMENT_MAINTENANCE_QUEUE } from "../common/queue/queue.module";
+import type { EquipmentStatus } from "@cantero/shared";
 
 const CHECK_INTERVAL_MS = 60 * 60 * 1000;
 
@@ -36,13 +37,33 @@ export class EquipmentMaintenanceSchedulerService implements OnModuleInit {
   }
 
   async runDuePass(): Promise<{ flagged: number }> {
-    const overdue = await this.prisma.equipment.findMany({
-      where: { nextMaintenanceDueAt: { lte: new Date() }, status: { in: ["available", "in_use"] } },
-      include: { company: { select: { name: true } } },
-    });
+    const statusFilter: EquipmentStatus[] = ["available", "in_use"];
+    const includeCompany = { include: { company: { select: { name: true } } } } as const;
+    const [dateOverdue, hourTracked] = await Promise.all([
+      this.prisma.equipment.findMany({
+        where: { nextMaintenanceDueAt: { lte: new Date() }, status: { in: statusFilter } },
+        ...includeCompany,
+      }),
+      this.prisma.equipment.findMany({
+        where: { nextMaintenanceDueHours: { not: null }, currentMeterHours: { not: null }, status: { in: statusFilter } },
+        ...includeCompany,
+      }),
+    ]);
+    // Prisma can't compare two columns in a where clause, so the ">= " check for the hour-based
+    // schedule happens here rather than in the query above.
+    const hoursOverdue = hourTracked.filter((e) => Number(e.currentMeterHours) >= Number(e.nextMaintenanceDueHours));
+
+    type OverdueEquipment = (typeof dateOverdue)[number] | (typeof hourTracked)[number];
+    const combined = new Map<string, { equipment: OverdueEquipment; byDate: boolean; byHours: boolean }>();
+    for (const e of dateOverdue) combined.set(e.id, { equipment: e, byDate: true, byHours: false });
+    for (const e of hoursOverdue) {
+      const entry = combined.get(e.id);
+      if (entry) entry.byHours = true;
+      else combined.set(e.id, { equipment: e, byDate: false, byHours: true });
+    }
 
     let flagged = 0;
-    for (const equipment of overdue) {
+    for (const { equipment, byDate, byHours } of combined.values()) {
       if (equipment.status === "available") {
         await this.prisma.equipment.update({ where: { id: equipment.id }, data: { status: "maintenance" } });
         this.audit.record(
@@ -55,9 +76,21 @@ export class EquipmentMaintenanceSchedulerService implements OnModuleInit {
         );
         await this.notifyOwners(equipment.companyId, equipment.company.name, equipment.id, equipment.name, false);
         flagged++;
-      } else if (!equipment.maintenanceOverdueNotifiedAt) {
-        // in_use and not yet flagged — notify once, then stay quiet until it's checked in and completed.
-        await this.prisma.equipment.update({ where: { id: equipment.id }, data: { maintenanceOverdueNotifiedAt: new Date() } });
+        continue;
+      }
+
+      // in_use — leave the status alone, but notify once per reason so a date-only notification
+      // doesn't suppress a later, independent hours-overdue notification (or vice versa).
+      const needsDateNotify = byDate && !equipment.maintenanceOverdueNotifiedAt;
+      const needsHoursNotify = byHours && !equipment.maintenanceOverdueHoursNotifiedAt;
+      if (needsDateNotify || needsHoursNotify) {
+        await this.prisma.equipment.update({
+          where: { id: equipment.id },
+          data: {
+            maintenanceOverdueNotifiedAt: needsDateNotify ? new Date() : undefined,
+            maintenanceOverdueHoursNotifiedAt: needsHoursNotify ? new Date() : undefined,
+          },
+        });
         await this.notifyOwners(equipment.companyId, equipment.company.name, equipment.id, equipment.name, true);
         flagged++;
       }

@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import type { AnswerRfiInput, BulkActionResult, CreateRfiInput, UpdateRfiInput } from "@cantero/shared";
+import type { AnswerRfiInput, BulkActionResult, CreateRfiInput, SetDrawingPinInput, UpdateRfiInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { WebhooksService } from "../common/webhooks/webhooks.service";
@@ -60,6 +60,18 @@ export class RfiService {
         costImpact: input.costImpact,
         scheduleImpactDays: input.scheduleImpactDays,
       },
+    });
+  }
+
+  async setPin(companyId: string, id: string, input: SetDrawingPinInput) {
+    const rfi = await this.get(companyId, id);
+    if (input.drawingSheetId) {
+      const sheet = await this.prisma.drawingSheet.findFirst({ where: { id: input.drawingSheetId, companyId } });
+      if (!sheet) throw new NotFoundException("Drawing sheet not found");
+    }
+    return this.prisma.rfi.update({
+      where: { id: rfi.id },
+      data: { drawingSheetId: input.drawingSheetId, pinX: input.pinX, pinY: input.pinY },
     });
   }
 

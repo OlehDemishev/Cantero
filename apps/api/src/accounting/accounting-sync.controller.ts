@@ -45,6 +45,18 @@ export class AccountingSyncController {
     return this.service.syncInvoices(user.companyId);
   }
 
+  @Roles("owner", "admin", "accountant")
+  @Get("company/accounting/sync-history")
+  syncHistory(@CurrentUser() user: AuthUser) {
+    return this.service.syncHistory(user.companyId);
+  }
+
+  @Roles("owner", "admin", "accountant")
+  @Get("company/accounting/integrity-check")
+  integrityCheck(@CurrentUser() user: AuthUser) {
+    return this.service.integrityCheck(user.companyId);
+  }
+
   /** The provider redirects the browser here directly (a top-level navigation, not an XHR) — success/failure is communicated by redirecting on to the frontend rather than returning JSON. */
   @Public()
   @Get("auth/accounting/callback/:provider")

@@ -16,7 +16,10 @@ type NotificationType =
   | "warranty_claim_open"
   | "mention"
   | "subcontractor_document_expiring"
+  | "supplier_document_expiring"
   | "worker_certification_expiring"
+  | "permit_expiring"
+  | "company_document_expiring"
   | "weather_risk"
   | "budget_overrun";
 type Severity = "warning" | "critical";

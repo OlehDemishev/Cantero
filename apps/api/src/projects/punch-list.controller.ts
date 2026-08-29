@@ -2,10 +2,12 @@ import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common
 import {
   bulkActionIdsSchema,
   createPunchListItemSchema,
+  setDrawingPinSchema,
   updatePunchListItemSchema,
   type AuthUser,
   type BulkActionIdsInput,
   type CreatePunchListItemInput,
+  type SetDrawingPinInput,
   type UpdatePunchListItemInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
@@ -38,6 +40,11 @@ export class PunchListController {
     @Body(new ZodValidationPipe(updatePunchListItemSchema)) body: UpdatePunchListItemInput,
   ) {
     return this.service.update(user.companyId, { userId: user.userId, name: user.name }, id, body);
+  }
+
+  @Patch(":id/pin")
+  setPin(@CurrentUser() user: AuthUser, @Param("id") id: string, @Body(new ZodValidationPipe(setDrawingPinSchema)) body: SetDrawingPinInput) {
+    return this.service.setPin(user.companyId, id, body);
   }
 
   // Registered ahead of ":id/resolve" and ":id/verify" — those are structurally the same

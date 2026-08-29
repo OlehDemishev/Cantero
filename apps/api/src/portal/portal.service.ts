@@ -176,10 +176,10 @@ export class PortalService {
     return this.invoices.generatePdf(client.companyId, id);
   }
 
-  async createPaymentCheckout(client: PortalClientContext, id: string): Promise<{ url: string }> {
+  async createPaymentCheckout(client: PortalClientContext, id: string, amount?: number): Promise<{ url: string }> {
     await this.getInvoice(client, id);
     const record = await this.prisma.client.findUniqueOrThrow({ where: { id: client.clientId }, select: { email: true } });
-    return this.billing.createInvoiceCheckoutSession(client.companyId, id, record.email ?? undefined);
+    return this.billing.createInvoiceCheckoutSession(client.companyId, id, record.email ?? undefined, amount);
   }
 
   async listProjects(client: PortalClientContext) {

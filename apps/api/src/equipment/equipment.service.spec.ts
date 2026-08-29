@@ -14,6 +14,8 @@ describe("EquipmentService", () => {
     worker: { findFirst: jest.Mock };
     equipmentAssignment: { findFirst: jest.Mock; create: jest.Mock; update: jest.Mock };
     equipmentGpsPing: { create: jest.Mock; findMany: jest.Mock };
+    equipmentMaintenanceRecord: { create: jest.Mock; findMany: jest.Mock };
+    equipmentFuelLog: { create: jest.Mock; findMany: jest.Mock };
     $transaction: jest.Mock;
   };
 
@@ -24,6 +26,8 @@ describe("EquipmentService", () => {
       worker: { findFirst: jest.fn() },
       equipmentAssignment: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
       equipmentGpsPing: { create: jest.fn(), findMany: jest.fn() },
+      equipmentMaintenanceRecord: { create: jest.fn(), findMany: jest.fn() },
+      equipmentFuelLog: { create: jest.fn(), findMany: jest.fn() },
       $transaction: jest.fn((ops) => Promise.all(ops)),
     };
 
@@ -160,6 +164,23 @@ describe("EquipmentService", () => {
       const updateArg = prisma.equipment.update.mock.calls[0][0];
       expect(updateArg.data.nextMaintenanceDueAt).toBeUndefined();
     });
+
+    it("advances nextMaintenanceDueHours from the current meter reading and clears the hours-notified flag", async () => {
+      prisma.equipment.findFirst.mockResolvedValue({
+        id: "eq-1",
+        companyId: COMPANY_A,
+        name: "Compressor",
+        status: "maintenance",
+        maintenanceIntervalHours: 250,
+        currentMeterHours: 370,
+      });
+
+      await service.completeMaintenance(COMPANY_A, { name: "Owner" }, "eq-1");
+
+      expect(prisma.equipment.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ nextMaintenanceDueHours: 620, maintenanceOverdueHoursNotifiedAt: null }) }),
+      );
+    });
   });
 
   describe("updateMaintenanceSchedule()", () => {
@@ -182,6 +203,135 @@ describe("EquipmentService", () => {
       expect(prisma.equipment.update).toHaveBeenCalledWith(
         expect.objectContaining({ data: { maintenanceIntervalDays: null, nextMaintenanceDueAt: null } }),
       );
+    });
+
+    it("sets an hour-based interval relative to the current meter reading", async () => {
+      prisma.equipment.findFirst.mockResolvedValue({ id: "eq-1", companyId: COMPANY_A, name: "Compressor", status: "available", currentMeterHours: 120 });
+
+      await service.updateMaintenanceSchedule(COMPANY_A, { name: "Owner" }, "eq-1", { intervalHours: 250 });
+
+      expect(prisma.equipment.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { maintenanceIntervalHours: 250, nextMaintenanceDueHours: 370 } }),
+      );
+    });
+
+    it("leaves the day-based schedule untouched when only intervalHours is passed", async () => {
+      prisma.equipment.findFirst.mockResolvedValue({ id: "eq-1", companyId: COMPANY_A, name: "Compressor", status: "available", currentMeterHours: 0 });
+
+      await service.updateMaintenanceSchedule(COMPANY_A, { name: "Owner" }, "eq-1", { intervalHours: 250 });
+
+      const updateArg = prisma.equipment.update.mock.calls[0][0];
+      expect(updateArg.data.maintenanceIntervalDays).toBeUndefined();
+      expect(updateArg.data.nextMaintenanceDueAt).toBeUndefined();
+    });
+  });
+
+  describe("updateMeterReading()", () => {
+    it("rejects a reading lower than the current one", async () => {
+      prisma.equipment.findFirst.mockResolvedValue({ id: "eq-1", companyId: COMPANY_A, name: "Compressor", currentMeterHours: 500 });
+
+      await expect(service.updateMeterReading(COMPANY_A, { name: "Owner" }, "eq-1", { currentMeterHours: 400 })).rejects.toThrow(BadRequestException);
+      expect(prisma.equipment.update).not.toHaveBeenCalled();
+    });
+
+    it("accepts a higher reading", async () => {
+      prisma.equipment.findFirst.mockResolvedValue({ id: "eq-1", companyId: COMPANY_A, name: "Compressor", currentMeterHours: 500 });
+
+      await service.updateMeterReading(COMPANY_A, { name: "Owner" }, "eq-1", { currentMeterHours: 550 });
+
+      expect(prisma.equipment.update).toHaveBeenCalledWith({ where: { id: "eq-1" }, data: { currentMeterHours: 550 } });
+    });
+
+    it("accepts the first reading when none is set yet", async () => {
+      prisma.equipment.findFirst.mockResolvedValue({ id: "eq-1", companyId: COMPANY_A, name: "Compressor", currentMeterHours: null });
+
+      await service.updateMeterReading(COMPANY_A, { name: "Owner" }, "eq-1", { currentMeterHours: 10 });
+
+      expect(prisma.equipment.update).toHaveBeenCalledWith({ where: { id: "eq-1" }, data: { currentMeterHours: 10 } });
+    });
+  });
+
+  describe("addMaintenanceRecord()", () => {
+    it("persists the supplier and meter reading alongside the record", async () => {
+      prisma.equipment.findFirst.mockResolvedValue({ id: "eq-1", companyId: COMPANY_A, name: "Compressor" });
+      prisma.equipmentMaintenanceRecord.create.mockResolvedValue({ id: "rec-1" });
+
+      await service.addMaintenanceRecord(COMPANY_A, { name: "Owner" }, "eq-1", {
+        description: "Oil change",
+        supplierId: "supplier-1",
+        meterHours: 370,
+      });
+
+      expect(prisma.equipmentMaintenanceRecord.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ supplierId: "supplier-1", meterHours: 370 }) }),
+      );
+    });
+  });
+
+  describe("addFuelLog()", () => {
+    it("advances currentMeterHours when the logged reading is higher than the current one", async () => {
+      prisma.equipment.findFirst.mockResolvedValue({ id: "eq-1", companyId: COMPANY_A, name: "Loader", currentMeterHours: 300 });
+      prisma.equipmentFuelLog.create.mockResolvedValue({ id: "fuel-1" });
+
+      await service.addFuelLog(COMPANY_A, { name: "Owner" }, "eq-1", { quantity: 20, meterHours: 350 });
+
+      expect(prisma.equipment.update).toHaveBeenCalledWith({ where: { id: "eq-1" }, data: { currentMeterHours: 350 } });
+    });
+
+    it("does not advance currentMeterHours when the logged reading is lower (a backfilled entry), but still saves the log", async () => {
+      prisma.equipment.findFirst.mockResolvedValue({ id: "eq-1", companyId: COMPANY_A, name: "Loader", currentMeterHours: 300 });
+      prisma.equipmentFuelLog.create.mockResolvedValue({ id: "fuel-1" });
+
+      await service.addFuelLog(COMPANY_A, { name: "Owner" }, "eq-1", { quantity: 20, meterHours: 250 });
+
+      expect(prisma.equipment.update).not.toHaveBeenCalled();
+      expect(prisma.equipmentFuelLog.create).toHaveBeenCalled();
+    });
+
+    it("sets currentMeterHours on first reading when none was set yet", async () => {
+      prisma.equipment.findFirst.mockResolvedValue({ id: "eq-1", companyId: COMPANY_A, name: "Loader", currentMeterHours: null });
+      prisma.equipmentFuelLog.create.mockResolvedValue({ id: "fuel-1" });
+
+      await service.addFuelLog(COMPANY_A, { name: "Owner" }, "eq-1", { quantity: 20, meterHours: 50 });
+
+      expect(prisma.equipment.update).toHaveBeenCalledWith({ where: { id: "eq-1" }, data: { currentMeterHours: 50 } });
+    });
+
+    it("leaves currentMeterHours untouched when no meter reading is given", async () => {
+      prisma.equipment.findFirst.mockResolvedValue({ id: "eq-1", companyId: COMPANY_A, name: "Loader", currentMeterHours: 300 });
+      prisma.equipmentFuelLog.create.mockResolvedValue({ id: "fuel-1" });
+
+      await service.addFuelLog(COMPANY_A, { name: "Owner" }, "eq-1", { quantity: 20 });
+
+      expect(prisma.equipment.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("costPerHour()", () => {
+    it("computes cost-per-hour from fuel + maintenance cost against the span of logged meter readings", async () => {
+      prisma.equipment.findFirst.mockResolvedValue({ id: "eq-1", companyId: COMPANY_A, name: "Loader" });
+      prisma.equipmentFuelLog.findMany.mockResolvedValue([
+        { cost: "100.00", meterHours: "100.0" },
+        { cost: "150.00", meterHours: "200.0" },
+      ]);
+      prisma.equipmentMaintenanceRecord.findMany.mockResolvedValue([{ cost: "50.00", meterHours: "150.0" }]);
+
+      const result = await service.costPerHour(COMPANY_A, "eq-1");
+
+      // total cost = 100+150+50 = 300; hours elapsed = max(100,200,150) - min(...) = 100
+      expect(result.totalCost).toBe(300);
+      expect(result.costPerHour).toBe(3);
+    });
+
+    it("returns a null cost-per-hour when fewer than two meter readings exist", async () => {
+      prisma.equipment.findFirst.mockResolvedValue({ id: "eq-1", companyId: COMPANY_A, name: "Loader" });
+      prisma.equipmentFuelLog.findMany.mockResolvedValue([{ cost: "100.00", meterHours: null }]);
+      prisma.equipmentMaintenanceRecord.findMany.mockResolvedValue([]);
+
+      const result = await service.costPerHour(COMPANY_A, "eq-1");
+
+      expect(result.costPerHour).toBeNull();
+      expect(result.totalCost).toBe(100);
     });
   });
 

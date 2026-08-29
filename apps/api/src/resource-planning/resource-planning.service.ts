@@ -1,7 +1,9 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
-import type { CreateResourceAssignmentInput } from "@cantero/shared";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import type { AssignCrewInput, CreateCrewInput, CreateResourceAssignmentInput, Locale, UpdateCrewMembersInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
+import { SmsService } from "../common/sms/sms.service";
+import { smsTemplates } from "../common/sms/sms-templates";
 
 type ResourceType = "worker" | "equipment";
 
@@ -25,6 +27,7 @@ export class ResourcePlanningService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly sms: SmsService,
   ) {}
 
   /** Every active worker and non-retired equipment item with its planned assignments, plus every
@@ -117,19 +120,27 @@ export class ResourcePlanningService {
   }
 
   async create(companyId: string, actor: AuditActor, input: CreateResourceAssignmentInput) {
-    const project = await this.prisma.project.findFirst({ where: { id: input.projectId, companyId } });
+    const project = await this.prisma.project.findFirst({
+      where: { id: input.projectId, companyId },
+      include: { company: { select: { workerSmsNotificationsEnabled: true, locale: true } } },
+    });
     if (!project) throw new NotFoundException("Project not found");
 
+    let worker: { id: string; phone: string | null; preferredLocale: Locale | null } | null = null;
     if (input.workerId) {
-      const worker = await this.prisma.worker.findFirst({ where: { id: input.workerId, companyId } });
+      worker = await this.prisma.worker.findFirst({
+        where: { id: input.workerId, companyId },
+        select: { id: true, phone: true, preferredLocale: true },
+      });
       if (!worker) throw new NotFoundException("Worker not found");
     }
     if (input.equipmentId) {
       const equipment = await this.prisma.equipment.findFirst({ where: { id: input.equipmentId, companyId } });
       if (!equipment) throw new NotFoundException("Equipment not found");
     }
+    let task: { id: string; name: string } | null = null;
     if (input.taskId) {
-      const task = await this.prisma.task.findFirst({ where: { id: input.taskId, projectId: input.projectId } });
+      task = await this.prisma.task.findFirst({ where: { id: input.taskId, projectId: input.projectId }, select: { id: true, name: true } });
       if (!task) throw new NotFoundException("Task not found on this project");
     }
 
@@ -155,6 +166,13 @@ export class ResourcePlanningService {
       assignment.id,
       `Assigned ${input.workerId ? "a worker" : "equipment"} to "${project.name}"`,
     );
+
+    // Only fires for a task-linked assignment to a worker with a phone on file — pure equipment
+    // assignments and project-only (no taskId) assignments have nothing worth texting about.
+    if (task && worker?.phone && project.company.workerSmsNotificationsEnabled) {
+      const locale: Locale = worker.preferredLocale ?? project.company.locale;
+      await this.sms.send({ to: worker.phone, body: smsTemplates.taskAssigned(locale, task.name, project.name) });
+    }
 
     const conflicts = await this.findConflictsFor(companyId, assignment);
 
@@ -209,6 +227,96 @@ export class ResourcePlanningService {
     if (!assignment) throw new NotFoundException("Assignment not found");
     await this.prisma.resourceAssignment.delete({ where: { id } });
     return { ok: true };
+  }
+
+  listCrews(companyId: string) {
+    return this.prisma.crew.findMany({
+      where: { companyId },
+      include: { members: { include: { worker: { select: { id: true, name: true } } } } },
+      orderBy: { name: "asc" },
+    });
+  }
+
+  private async assertWorkersOwned(companyId: string, workerIds: string[]) {
+    if (workerIds.length === 0) return;
+    const count = await this.prisma.worker.count({ where: { id: { in: workerIds }, companyId } });
+    if (count !== workerIds.length) throw new BadRequestException("One or more workers do not belong to this company");
+  }
+
+  async createCrew(companyId: string, actor: AuditActor, input: CreateCrewInput) {
+    await this.assertWorkersOwned(companyId, input.workerIds);
+    const crew = await this.prisma.crew.create({
+      data: { companyId, name: input.name, members: { create: input.workerIds.map((workerId) => ({ workerId })) } },
+      include: { members: { include: { worker: { select: { id: true, name: true } } } } },
+    });
+    this.audit.record(companyId, actor, "crew.created", "Crew", crew.id, `Created crew "${input.name}"`);
+    return crew;
+  }
+
+  async updateCrewMembers(companyId: string, id: string, input: UpdateCrewMembersInput) {
+    const crew = await this.prisma.crew.findFirst({ where: { id, companyId } });
+    if (!crew) throw new NotFoundException("Crew not found");
+    await this.assertWorkersOwned(companyId, input.workerIds);
+
+    await this.prisma.$transaction([
+      this.prisma.crewMember.deleteMany({ where: { crewId: id } }),
+      this.prisma.crewMember.createMany({ data: input.workerIds.map((workerId) => ({ crewId: id, workerId })) }),
+    ]);
+    return this.prisma.crew.findFirstOrThrow({
+      where: { id },
+      include: { members: { include: { worker: { select: { id: true, name: true } } } } },
+    });
+  }
+
+  async deleteCrew(companyId: string, id: string) {
+    const crew = await this.prisma.crew.findFirst({ where: { id, companyId } });
+    if (!crew) throw new NotFoundException("Crew not found");
+    await this.prisma.crew.delete({ where: { id } });
+    return { ok: true };
+  }
+
+  /** Bulk-assigns every crew member as its own ResourceAssignment (tagged with crewId), so
+   * per-worker conflict detection keeps working unchanged for each individual — a "crew" is a
+   * shortcut for creating N assignments at once, not a new schedulable unit of its own. */
+  async assignCrew(companyId: string, actor: AuditActor, input: AssignCrewInput) {
+    const crew = await this.prisma.crew.findFirst({ where: { id: input.crewId, companyId }, include: { members: true } });
+    if (!crew) throw new NotFoundException("Crew not found");
+    if (crew.members.length === 0) throw new BadRequestException("This crew has no members to assign");
+    const project = await this.prisma.project.findFirst({ where: { id: input.projectId, companyId } });
+    if (!project) throw new NotFoundException("Project not found");
+    if (input.taskId) {
+      const task = await this.prisma.task.findFirst({ where: { id: input.taskId, projectId: input.projectId } });
+      if (!task) throw new NotFoundException("Task not found on this project");
+    }
+
+    const created = await this.prisma.$transaction(
+      crew.members.map((m) =>
+        this.prisma.resourceAssignment.create({
+          data: {
+            companyId,
+            projectId: input.projectId,
+            taskId: input.taskId,
+            workerId: m.workerId,
+            crewId: crew.id,
+            startDate: new Date(input.startDate),
+            endDate: new Date(input.endDate),
+            note: input.note,
+          },
+        }),
+      ),
+    );
+
+    this.audit.record(
+      companyId,
+      actor,
+      "crew.assigned",
+      "Crew",
+      crew.id,
+      `Assigned crew "${crew.name}" (${created.length} workers) to "${project.name}"`,
+    );
+
+    const conflicts = (await Promise.all(created.map((a) => this.findConflictsFor(companyId, a)))).flat();
+    return { assignments: created.map((a) => ({ id: a.id })), conflicts };
   }
 
   /** Overlap check scoped to just the one resource this assignment belongs to — used to give

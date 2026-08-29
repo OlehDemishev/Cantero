@@ -63,6 +63,16 @@ export class ReportsController {
     return this.service.wipReport(user.companyId);
   }
 
+  @Get("backlog")
+  backlog(@CurrentUser() user: AuthUser) {
+    return this.service.backlog(user.companyId);
+  }
+
+  @Get("compliance-calendar")
+  complianceCalendar(@CurrentUser() user: AuthUser, @Query("lookaheadDays") lookaheadDays?: string) {
+    return this.service.complianceCalendar(user.companyId, lookaheadDays ? Number(lookaheadDays) : undefined);
+  }
+
   @Get("wip-report/pdf")
   @Header("Content-Type", "application/pdf")
   async wipReportPdf(@CurrentUser() user: AuthUser) {

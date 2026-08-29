@@ -13,6 +13,7 @@ describe("SubcontractorCostsService.markPaid", () => {
   let prisma: {
     subcontractorCost: { findFirst: jest.Mock; update: jest.Mock };
     lienWaiver: { findUnique: jest.Mock; create: jest.Mock };
+    subcontractorPayment: { create: jest.Mock };
   };
   let audit: { record: jest.Mock };
 
@@ -20,6 +21,7 @@ describe("SubcontractorCostsService.markPaid", () => {
     prisma = {
       subcontractorCost: { findFirst: jest.fn(), update: jest.fn() },
       lienWaiver: { findUnique: jest.fn(), create: jest.fn() },
+      subcontractorPayment: { create: jest.fn() },
     };
     audit = { record: jest.fn() };
 
@@ -38,7 +40,7 @@ describe("SubcontractorCostsService.markPaid", () => {
 
   it("auto-requests a conditional-progress lien waiver when none exists yet", async () => {
     prisma.subcontractorCost.findFirst
-      .mockResolvedValueOnce({ id: "cost-1", companyId: COMPANY_A, paid: false })
+      .mockResolvedValueOnce({ id: "cost-1", companyId: COMPANY_A, subcontractorId: "sub-1", amount: 1000, paid: false })
       .mockResolvedValueOnce({
         id: "cost-1",
         companyId: COMPANY_A,
@@ -59,8 +61,26 @@ describe("SubcontractorCostsService.markPaid", () => {
     );
   });
 
+  it("records a SubcontractorPayment tied to this cost, so 1099 totals aren't computed from the undated `paid` flag alone", async () => {
+    prisma.subcontractorCost.findFirst.mockResolvedValueOnce({
+      id: "cost-1",
+      companyId: COMPANY_A,
+      subcontractorId: "sub-1",
+      amount: 1000,
+      paid: false,
+    });
+    prisma.subcontractorCost.update.mockResolvedValue({ id: "cost-1", paid: true, subcontractor: { name: "Acme Sub" } });
+    prisma.lienWaiver.findUnique.mockResolvedValue({ id: "existing-waiver" });
+
+    await service.markPaid(COMPANY_A, ACTOR, "cost-1");
+
+    expect(prisma.subcontractorPayment.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ companyId: COMPANY_A, subcontractorId: "sub-1", subcontractorCostId: "cost-1", amount: 1000 }),
+    });
+  });
+
   it("does not request a second lien waiver when one already exists", async () => {
-    prisma.subcontractorCost.findFirst.mockResolvedValueOnce({ id: "cost-1", companyId: COMPANY_A, paid: false });
+    prisma.subcontractorCost.findFirst.mockResolvedValueOnce({ id: "cost-1", companyId: COMPANY_A, subcontractorId: "sub-1", amount: 1000, paid: false });
     prisma.subcontractorCost.update.mockResolvedValue({ id: "cost-1", paid: true, subcontractor: { name: "Acme Sub" } });
     prisma.lienWaiver.findUnique.mockResolvedValue({ id: "existing-waiver" });
 

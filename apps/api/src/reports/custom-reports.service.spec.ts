@@ -2,6 +2,8 @@ import { Test } from "@nestjs/testing";
 import { NotFoundException } from "@nestjs/common";
 import { CustomReportsService } from "./custom-reports.service";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { ReportsService } from "./reports.service";
+import { LaborCostService } from "../team/labor-cost.service";
 
 const COMPANY_A = "company-a";
 
@@ -11,6 +13,8 @@ describe("CustomReportsService", () => {
     project: { findMany: jest.Mock };
     invoice: { findMany: jest.Mock };
     customReport: { findMany: jest.Mock; findFirst: jest.Mock; create: jest.Mock; delete: jest.Mock };
+    customFieldDefinition: { findMany: jest.Mock };
+    customFieldValue: { findMany: jest.Mock };
   };
 
   beforeEach(async () => {
@@ -18,10 +22,17 @@ describe("CustomReportsService", () => {
       project: { findMany: jest.fn().mockResolvedValue([]) },
       invoice: { findMany: jest.fn().mockResolvedValue([]) },
       customReport: { findMany: jest.fn(), findFirst: jest.fn(), create: jest.fn(), delete: jest.fn() },
+      customFieldDefinition: { findMany: jest.fn().mockResolvedValue([]) },
+      customFieldValue: { findMany: jest.fn().mockResolvedValue([]) },
     };
 
     const module = await Test.createTestingModule({
-      providers: [CustomReportsService, { provide: PrismaService, useValue: prisma }],
+      providers: [
+        CustomReportsService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: ReportsService, useValue: {} },
+        { provide: LaborCostService, useValue: {} },
+      ],
     }).compile();
 
     service = module.get(CustomReportsService);

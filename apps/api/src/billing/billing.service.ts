@@ -35,10 +35,16 @@ export class BillingService {
 
   /** A one-off Stripe Checkout session (mode "payment", not "subscription") that lets a client
    * pay a single invoice online by card. Recorded as a Payment once the webhook confirms it. */
+  /**
+   * `requestedAmount`, when given (e.g. paying one InvoiceInstallment instead of the full
+   * balance), is capped at the remaining balance so a stale/tampered amount can never charge more
+   * than what's actually owed — it can only ever reduce the checkout below the full balance.
+   */
   async createInvoiceCheckoutSession(
     companyId: string,
     invoiceId: string,
     clientEmail: string | undefined,
+    requestedAmount?: number,
   ): Promise<{ url: string }> {
     const invoice = await this.prisma.invoice.findFirstOrThrow({ where: { id: invoiceId, companyId } });
     if (invoice.status !== "sent") {
@@ -50,6 +56,7 @@ export class BillingService {
     if (balance <= 0) {
       throw new BadRequestException("This invoice is already paid in full");
     }
+    const amountToCharge = requestedAmount !== undefined ? Math.min(Math.max(requestedAmount, 0.01), balance) : balance;
 
     const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
     const webOrigin = this.config.get<string>("PORTAL_ORIGIN") ?? this.config.get<string>("WEB_ORIGIN") ?? "http://localhost:3000";
@@ -60,7 +67,7 @@ export class BillingService {
         {
           price_data: {
             currency: company.currency.toLowerCase(),
-            unit_amount: Math.round(balance * 100),
+            unit_amount: Math.round(amountToCharge * 100),
             product_data: { name: `Invoice ${invoice.number}` },
           },
           quantity: 1,

@@ -22,6 +22,8 @@ import {
   DocumentsIcon,
   EquipmentIcon,
   ExpensesIcon,
+  HelpIcon,
+  IntegrationsIcon,
   InvoicesIcon,
   LogoutIcon,
   MenuIcon,
@@ -32,6 +34,7 @@ import {
   RateCatalogIcon,
   ReportsIcon,
   ResourcePlanningIcon,
+  ScheduleIcon,
   ServiceContractsIcon,
   SettingsIcon,
   SubcontractorsIcon,
@@ -52,6 +55,7 @@ const NAV_ITEMS = [
   { href: "/warehouses", key: "warehouses", icon: WarehousesIcon },
   { href: "/equipment", key: "equipment", icon: EquipmentIcon },
   { href: "/resource-planning", key: "resourcePlanning", icon: ResourcePlanningIcon },
+  { href: "/schedule", key: "schedule", icon: ScheduleIcon },
   { href: "/suppliers", key: "suppliers", icon: SuppliersIcon },
   { href: "/subcontractors", key: "subcontractors", icon: SubcontractorsIcon },
   { href: "/purchase-orders", key: "purchaseOrders", icon: PurchaseOrdersIcon },
@@ -64,6 +68,7 @@ const NAV_ITEMS = [
   { href: "/documents", key: "documents", icon: DocumentsIcon },
   { href: "/templates", key: "templates", icon: TemplatesIcon },
   { href: "/reports", key: "reports", icon: ReportsIcon },
+  { href: "/integrations", key: "integrations", icon: IntegrationsIcon },
   { href: "/settings", key: "settings", icon: SettingsIcon },
 ] as const;
 
@@ -248,6 +253,14 @@ function AppHeader({ me }: { me: NonNullable<ReturnType<typeof useMe>["data"]> }
               >
                 <UserCircleIcon className="text-gray-500 dark:text-gray-400" />
                 {tn("settings")}
+              </Link>
+              <Link
+                href="/help"
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5"
+              >
+                <HelpIcon className="text-gray-500 dark:text-gray-400" />
+                {tn("help")}
               </Link>
               <button
                 onClick={signOut}

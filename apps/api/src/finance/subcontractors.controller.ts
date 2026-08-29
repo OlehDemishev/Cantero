@@ -1,16 +1,24 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from "@nestjs/common";
 import {
   addSubcontractorDocumentSchema,
+  addSubcontractorPaymentSchema,
   assignSubcontractorSchema,
+  createPerformanceReviewSchema,
   createSubcontractorSchema,
+  setAssignmentActualEndDateSchema,
   setSubcontractorPublicListedSchema,
   updateSubcontractorProfileSchema,
+  updateSubcontractorTaxProfileSchema,
   type AddSubcontractorDocumentInput,
+  type AddSubcontractorPaymentInput,
   type AssignSubcontractorInput,
   type AuthUser,
+  type CreatePerformanceReviewInput,
   type CreateSubcontractorInput,
+  type SetAssignmentActualEndDateInput,
   type SetSubcontractorPublicListedInput,
   type UpdateSubcontractorProfileInput,
+  type UpdateSubcontractorTaxProfileInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
@@ -23,6 +31,11 @@ export class SubcontractorsController {
   @Get()
   list(@CurrentUser() user: AuthUser) {
     return this.service.list(user.companyId);
+  }
+
+  @Get("tax-summary")
+  taxSummary(@CurrentUser() user: AuthUser, @Query("year") year: string) {
+    return this.service.taxSummary(user.companyId, Number(year));
   }
 
   @Post()
@@ -44,7 +57,7 @@ export class SubcontractorsController {
     @Param("id") id: string,
     @Body(new ZodValidationPipe(assignSubcontractorSchema)) body: AssignSubcontractorInput,
   ) {
-    return this.service.assign(user.companyId, id, body.projectId);
+    return this.service.assign(user.companyId, id, body.projectId, body.startDate, body.endDate);
   }
 
   @Delete(":id/assignments/:assignmentId")
@@ -76,6 +89,35 @@ export class SubcontractorsController {
     return this.service.complianceStatus(user.companyId, id);
   }
 
+  @Patch(":id/assignments/:assignmentId/actual-end-date")
+  setActualEndDate(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Param("assignmentId") assignmentId: string,
+    @Body(new ZodValidationPipe(setAssignmentActualEndDateSchema)) body: SetAssignmentActualEndDateInput,
+  ) {
+    return this.service.setActualEndDate(user.companyId, id, assignmentId, body.actualEndDate);
+  }
+
+  @Get(":id/performance-reviews")
+  listPerformanceReviews(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.listPerformanceReviews(user.companyId, id);
+  }
+
+  @Post(":id/performance-reviews")
+  addPerformanceReview(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(createPerformanceReviewSchema)) body: CreatePerformanceReviewInput,
+  ) {
+    return this.service.addPerformanceReview(user.companyId, { userId: user.userId, name: user.name }, id, body);
+  }
+
+  @Get(":id/scorecard")
+  performanceScorecard(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.performanceScorecard(user.companyId, id);
+  }
+
   @Patch(":id/profile")
   updateProfile(
     @CurrentUser() user: AuthUser,
@@ -83,6 +125,34 @@ export class SubcontractorsController {
     @Body(new ZodValidationPipe(updateSubcontractorProfileSchema)) body: UpdateSubcontractorProfileInput,
   ) {
     return this.service.updateProfile(user.companyId, id, body);
+  }
+
+  @Get(":id/tax-profile")
+  getTaxProfile(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.getTaxProfile(user.companyId, id);
+  }
+
+  @Patch(":id/tax-profile")
+  updateTaxProfile(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(updateSubcontractorTaxProfileSchema)) body: UpdateSubcontractorTaxProfileInput,
+  ) {
+    return this.service.updateTaxProfile(user.companyId, id, body);
+  }
+
+  @Get(":id/payments")
+  listPayments(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.listPayments(user.companyId, id);
+  }
+
+  @Post(":id/payments")
+  addPayment(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(addSubcontractorPaymentSchema)) body: AddSubcontractorPaymentInput,
+  ) {
+    return this.service.addPayment(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
   @Patch(":id/public-listed")

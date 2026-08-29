@@ -129,28 +129,30 @@ export default function PortalEstimatePage({ params }: { params: Promise<{ id: s
           </h1>
           {estimate.projectName && <p className="mt-1 text-sm text-gray-500">{estimate.projectName}</p>}
 
-          <table className="mt-6 w-full border-collapse text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 text-left text-gray-500">
-                <th className="py-2">{te("rateItem")}</th>
-                <th>{te("quantity")}</th>
-                <th className="text-right">{te("lineTotal")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {estimate.lines.map((l) => (
-                <tr key={l.id} className="border-b border-gray-100">
-                  <td className="py-2">{l.description}</td>
-                  <td>
-                    {l.quantity} {l.unit}
-                  </td>
-                  <td className="text-right">
-                    {l.lineTotal} {estimate.currency}
-                  </td>
+          <div className="mt-6 overflow-x-auto">
+            <table className="w-full min-w-[420px] border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 text-left text-gray-500">
+                  <th className="py-2">{te("rateItem")}</th>
+                  <th>{te("quantity")}</th>
+                  <th className="text-right">{te("lineTotal")}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {estimate.lines.map((l) => (
+                  <tr key={l.id} className="border-b border-gray-100">
+                    <td className="py-2">{l.description}</td>
+                    <td>
+                      {l.quantity} {l.unit}
+                    </td>
+                    <td className="text-right">
+                      {l.lineTotal} {estimate.currency}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
           <dl className="mt-4 flex flex-col gap-1.5 text-sm">
             <div className="flex justify-between">

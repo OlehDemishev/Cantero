@@ -35,6 +35,8 @@ export class ApiKeyGuard implements CanActivate {
 
     this.prisma.apiKey.update({ where: { id: apiKey.id }, data: { lastUsedAt: new Date() } }).catch(() => {});
     request.companyId = apiKey.companyId;
+    request.apiKeyScopes = apiKey.scopes;
+    request.apiKeyName = apiKey.name;
     return true;
   }
 }

@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common";
 import {
+  addFuelLogSchema,
   addMaintenanceRecordSchema,
   checkInEquipmentSchema,
   checkOutEquipmentSchema,
@@ -7,6 +8,8 @@ import {
   recordEquipmentGpsPingSchema,
   updateEquipmentSchema,
   updateMaintenanceScheduleSchema,
+  updateMeterReadingSchema,
+  type AddFuelLogInput,
   type AddMaintenanceRecordInput,
   type AuthUser,
   type CheckInEquipmentInput,
@@ -15,6 +18,7 @@ import {
   type RecordEquipmentGpsPingInput,
   type UpdateEquipmentInput,
   type UpdateMaintenanceScheduleInput,
+  type UpdateMeterReadingInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
@@ -85,6 +89,15 @@ export class EquipmentController {
     return this.service.updateMaintenanceSchedule(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
+  @Patch(":id/meter-reading")
+  updateMeterReading(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(updateMeterReadingSchema)) body: UpdateMeterReadingInput,
+  ) {
+    return this.service.updateMeterReading(user.companyId, { userId: user.userId, name: user.name }, id, body);
+  }
+
   @Post(":id/retire")
   retire(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.retire(user.companyId, { userId: user.userId, name: user.name }, id);
@@ -102,6 +115,25 @@ export class EquipmentController {
     @Body(new ZodValidationPipe(addMaintenanceRecordSchema)) body: AddMaintenanceRecordInput,
   ) {
     return this.service.addMaintenanceRecord(user.companyId, { userId: user.userId, name: user.name }, id, body);
+  }
+
+  @Get(":id/fuel-logs")
+  listFuelLogs(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.listFuelLogs(user.companyId, id);
+  }
+
+  @Post(":id/fuel-logs")
+  addFuelLog(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(addFuelLogSchema)) body: AddFuelLogInput,
+  ) {
+    return this.service.addFuelLog(user.companyId, { userId: user.userId, name: user.name }, id, body);
+  }
+
+  @Get(":id/cost-per-hour")
+  costPerHour(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.costPerHour(user.companyId, id);
   }
 
   @Get(":id/assignments")

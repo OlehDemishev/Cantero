@@ -105,6 +105,30 @@ describe("BillingService", () => {
       expect(call.line_items[0].price_data.unit_amount).toBe(6000); // (100 - 40) * 100
       expect(call.metadata).toEqual({ companyId: COMPANY_A, invoiceId: "inv-1", kind: "invoice_payment" });
     });
+
+    it("charges a requested installment amount instead of the full balance when it's smaller", async () => {
+      prisma.invoice.findFirstOrThrow.mockResolvedValue({ id: "inv-1", status: "sent", total: "100", number: "INV-1" });
+      prisma.payment.aggregate.mockResolvedValue({ _sum: { amount: "0" } });
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ currency: "EUR" });
+      stripe.checkout.sessions.create.mockResolvedValue({ url: "https://checkout.stripe.com/x" });
+
+      await service.createInvoiceCheckoutSession(COMPANY_A, "inv-1", "c@x.com", 30);
+
+      const call = stripe.checkout.sessions.create.mock.calls[0][0];
+      expect(call.line_items[0].price_data.unit_amount).toBe(3000);
+    });
+
+    it("caps a requested amount at the remaining balance rather than trusting it outright", async () => {
+      prisma.invoice.findFirstOrThrow.mockResolvedValue({ id: "inv-1", status: "sent", total: "100", number: "INV-1" });
+      prisma.payment.aggregate.mockResolvedValue({ _sum: { amount: "40" } });
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ currency: "EUR" });
+      stripe.checkout.sessions.create.mockResolvedValue({ url: "https://checkout.stripe.com/x" });
+
+      await service.createInvoiceCheckoutSession(COMPANY_A, "inv-1", "c@x.com", 9999);
+
+      const call = stripe.checkout.sessions.create.mock.calls[0][0];
+      expect(call.line_items[0].price_data.unit_amount).toBe(6000); // capped at the (100-40) balance
+    });
   });
 
   describe("handleWebhookEvent — invoice payments", () => {

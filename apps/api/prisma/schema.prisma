@@ -188,6 +188,11 @@ model Company {
   /// When true, overdue invoices get automatic escalating reminder emails to the client (see
   /// InvoiceReminderService) — off by default since it sends unsolicited email on the company's behalf.
   invoiceRemindersEnabled            Boolean          @default(false)
+  /// SMS to a worker's phone (in their preferredLocale) when assigned to a task, or when a
+  /// safety briefing they're listed on is created — off by default, same "unsolicited message"
+  /// reasoning as invoiceRemindersEnabled. SmsService itself no-ops (logs only) when Twilio
+  /// isn't configured, same graceful-degrade as MailService without SMTP_HOST.
+  workerSmsNotificationsEnabled      Boolean          @default(false)
   /// Public, unauthenticated token embedded in the company's lead-capture form URL — null disables the form entirely.
   publicLeadFormToken                String?          @unique
   /// Enterprise SSO (SAML 2.0) — all four null means SSO is off for this company. When set,
@@ -244,6 +249,14 @@ model Company {
   /// Currency franchise rollups convert branch figures into — null means "use this company's own
   /// currency", only meaningful for a parent company with linked branches.
   reportingCurrency                  Currency?
+  /// Contractor's mailing address, printed in the header of certified payroll reports (WH-347).
+  /// Null just means it hasn't been filled in yet — unrelated to any other feature.
+  address                            String?
+  /// Set when coiPubliclyShared is turned on; the public COI page lives at /company-coi/:coiPublicToken.
+  /// Same shareable-link pattern as Subcontractor.publicToken/publicListed — lets a client or lender
+  /// view/download this company's current insurance certificates without an account.
+  coiPublicToken                     String?          @unique
+  coiPubliclyShared                  Boolean          @default(false)
 
   memberships    Membership[]
   invites        Invite[]
@@ -251,72 +264,87 @@ model Company {
   parentCompany  Company?      @relation("CompanyFranchise", fields: [parentCompanyId], references: [id], onDelete: SetNull)
   childCompanies Company[]     @relation("CompanyFranchise")
 
-  materialCatalogItems    MaterialCatalogItem[]
-  rateCatalogItems        RateCatalogItem[]
-  assemblies              Assembly[]
-  projects                Project[]
-  clients                 Client[]
-  estimates               Estimate[]
-  invoices                Invoice[]
-  warehouses              Warehouse[]
-  suppliers               Supplier[]
-  workers                 Worker[]
-  documents               Document[]
-  subcontractors          Subcontractor[]
-  subcontractorCosts      SubcontractorCost[]
-  clientActivities        ClientActivity[]
-  clientReminders         ClientReminder[]
-  stockCounts             StockCount[]
-  apiKeys                 ApiKey[]
-  auditLogs               AuditLog[]
-  changeOrders            ChangeOrder[]
-  webhookEndpoints        WebhookEndpoint[]
-  recurringInvoices       RecurringInvoice[]
-  equipment               Equipment[]
-  dailyLogs               DailyLog[]
-  punchListItems          PunchListItem[]
-  rfis                    Rfi[]
-  incidentReports         IncidentReport[]
-  safetyBriefings         SafetyBriefing[]
-  submittals              Submittal[]
-  warrantyClaims          WarrantyClaim[]
-  comments                Comment[]
-  resourceAssignments     ResourceAssignment[]
-  checklistTemplates      ChecklistTemplate[]
-  subcontractorDocuments  SubcontractorDocument[]
-  workerCertifications    WorkerCertification[]
-  scheduledReports        ScheduledReport[]
-  lienWaivers             LienWaiver[]
-  drawRequests            DrawRequest[]
-  catalogs                Catalog[]
-  takeoffs                Takeoff[]
-  greenCertifications     ProjectGreenCertification[]
-  bidRequests             BidRequest[]
-  customFieldDefinitions  CustomFieldDefinition[]
-  savedViews              SavedView[]
-  customReports           CustomReport[]
-  accountingConnection    AccountingConnection?
-  expenses                Expense[]
-  materialRfqs            MaterialRfq[]
-  customRoles             CustomRole[]
-  timeOffRequests         TimeOffRequest[]
-  serviceContracts        ServiceContract[]
-  serviceVisits           ServiceVisit[]
-  onboardingTemplateItems OnboardingTemplateItem[]
-  workerOnboardingTasks   WorkerOnboardingTask[]
-  bankTransactions        BankTransaction[]
-  clientStageHistory      ClientStageHistory[]
-  inspectionTemplates     InspectionTemplate[]
-  inspectionChecklists    InspectionChecklist[]
-  deficiencies            Deficiency[]
-  notificationReads       NotificationRead[]
-  dashboardWidgets        DashboardWidget[]
-  contractTemplates       ContractTemplate[]
-  contracts               Contract[]
-  projectMembers          ProjectMember[]
-  costCodes               CostCode[]
-  referredByCompany       Company?                    @relation("CompanyReferrals", fields: [referredByCompanyId], references: [id], onDelete: SetNull)
-  referrals               Company[]                   @relation("CompanyReferrals")
+  materialCatalogItems            MaterialCatalogItem[]
+  rateCatalogItems                RateCatalogItem[]
+  assemblies                      Assembly[]
+  projects                        Project[]
+  clients                         Client[]
+  estimates                       Estimate[]
+  invoices                        Invoice[]
+  warehouses                      Warehouse[]
+  suppliers                       Supplier[]
+  workers                         Worker[]
+  documents                       Document[]
+  subcontractors                  Subcontractor[]
+  subcontractorCosts              SubcontractorCost[]
+  subcontractorPerformanceReviews SubcontractorPerformanceReview[]
+  subcontractorPayments           SubcontractorPayment[]
+  permits                         Permit[]
+  inspections                     Inspection[]
+  supplierDocuments               SupplierDocument[]
+  supplierReviews                 SupplierReview[]
+  jobHazardAnalyses               JobHazardAnalysis[]
+  coiDocuments                    CompanyDocument[]
+  clientActivities                ClientActivity[]
+  clientReminders                 ClientReminder[]
+  stockCounts                     StockCount[]
+  apiKeys                         ApiKey[]
+  auditLogs                       AuditLog[]
+  changeOrders                    ChangeOrder[]
+  webhookEndpoints                WebhookEndpoint[]
+  recurringInvoices               RecurringInvoice[]
+  equipment                       Equipment[]
+  dailyLogs                       DailyLog[]
+  punchListItems                  PunchListItem[]
+  rfis                            Rfi[]
+  incidentReports                 IncidentReport[]
+  safetyBriefings                 SafetyBriefing[]
+  submittals                      Submittal[]
+  warrantyClaims                  WarrantyClaim[]
+  comments                        Comment[]
+  resourceAssignments             ResourceAssignment[]
+  checklistTemplates              ChecklistTemplate[]
+  subcontractorDocuments          SubcontractorDocument[]
+  workerCertifications            WorkerCertification[]
+  scheduledReports                ScheduledReport[]
+  lienWaivers                     LienWaiver[]
+  drawRequests                    DrawRequest[]
+  catalogs                        Catalog[]
+  takeoffs                        Takeoff[]
+  greenCertifications             ProjectGreenCertification[]
+  accountingSyncLogs              AccountingSyncLog[]
+  crews                           Crew[]
+  portalMessages                  PortalMessage[]
+  bidRequests                     BidRequest[]
+  customFieldDefinitions          CustomFieldDefinition[]
+  savedViews                      SavedView[]
+  customReports                   CustomReport[]
+  accountingConnection            AccountingConnection?
+  expenses                        Expense[]
+  materialRfqs                    MaterialRfq[]
+  customRoles                     CustomRole[]
+  timeOffRequests                 TimeOffRequest[]
+  serviceContracts                ServiceContract[]
+  serviceVisits                   ServiceVisit[]
+  onboardingTemplateItems         OnboardingTemplateItem[]
+  workerOnboardingTasks           WorkerOnboardingTask[]
+  bankTransactions                BankTransaction[]
+  clientStageHistory              ClientStageHistory[]
+  inspectionTemplates             InspectionTemplate[]
+  inspectionChecklists            InspectionChecklist[]
+  deficiencies                    Deficiency[]
+  notificationReads               NotificationRead[]
+  dashboardWidgets                DashboardWidget[]
+  contractTemplates               ContractTemplate[]
+  contracts                       Contract[]
+  projectMembers                  ProjectMember[]
+  costCodes                       CostCode[]
+  wageClassifications             WageClassification[]
+  certifiedPayrollReports         CertifiedPayrollReport[]
+  drawingSheets                   DrawingSheet[]
+  annotations                     Annotation[]
+  referredByCompany               Company?                         @relation("CompanyReferrals", fields: [referredByCompanyId], references: [id], onDelete: SetNull)
+  referrals                       Company[]                        @relation("CompanyReferrals")
 
   @@map("companies")
 }
@@ -423,6 +451,7 @@ model User {
   documents           Document[]
   dailyLogs           DailyLog[]
   comments            Comment[]
+  portalMessages      PortalMessage[]
   commentMentions     CommentMention[]
   savedViews          SavedView[]
   customReports       CustomReport[]
@@ -1154,13 +1183,97 @@ model Supplier {
   email     String?
   phone     String?
 
-  company           Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  purchaseOrders    PurchaseOrder[]
-  preferredForItems MaterialCatalogItem[]
-  rfqQuotes         MaterialRfqQuote[]
+  company                     Company                      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  purchaseOrders              PurchaseOrder[]
+  preferredForItems           MaterialCatalogItem[]
+  rfqQuotes                   MaterialRfqQuote[]
+  equipmentMaintenanceRecords EquipmentMaintenanceRecord[]
+  equipmentFuelLogs           EquipmentFuelLog[]
+  documents                   SupplierDocument[]
+  reviews                     SupplierReview[]
 
   @@index([companyId])
   @@map("suppliers")
+}
+
+enum SupplierDocumentType {
+  general_liability_insurance
+  workers_comp_insurance
+  other
+}
+
+/// An insurance certificate on file for a material supplier — same shape and expiry-tracking
+/// purpose as SubcontractorDocument, but deliberately not a hard gate on anything (unlike
+/// SubcontractorsService.assertCompliant()): a supplier just ships materials, it doesn't put
+/// workers on this company's job sites, so there's no analogous site-safety reason to block on it.
+model SupplierDocument {
+  id         String               @id @default(uuid())
+  companyId  String
+  supplierId String
+  type       SupplierDocumentType
+  name       String
+  expiresAt  DateTime
+  createdAt  DateTime             @default(now())
+
+  company     Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  supplier    Supplier   @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  attachments Document[]
+
+  @@index([companyId])
+  @@index([supplierId])
+  @@map("supplier_documents")
+}
+
+enum CompanyDocumentType {
+  general_liability_insurance
+  workers_comp_insurance
+  umbrella_insurance
+  builders_risk_insurance
+  other
+}
+
+/// The GC's own insurance certificates (as opposed to SubcontractorDocument/SupplierDocument,
+/// which track other parties' coverage) — same type/name/expiresAt shape, tracked so a client or
+/// lender can be handed a current certificate on demand via the public COI link
+/// (Company.coiPublicToken/coiPubliclyShared) rather than someone digging up a PDF by email.
+model CompanyDocument {
+  id        String              @id @default(uuid())
+  companyId String
+  type      CompanyDocumentType
+  name      String
+  expiresAt DateTime
+  createdAt DateTime            @default(now())
+
+  company     Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  attachments Document[]
+
+  @@index([companyId])
+  @@map("company_documents")
+}
+
+/// A manual, qualitative rating for a supplier — complements SuppliersService.scorecard(), which
+/// is entirely derived from PurchaseOrder timing/spend data and has no room for "would we order
+/// from them again" or a subjective 1-5. Same rating/comments shape as
+/// SubcontractorPerformanceReview, minus the fields that only make sense for a sub with a crew on
+/// site (safetyIncidents, reworkCount).
+model SupplierReview {
+  id               String   @id @default(uuid())
+  companyId        String
+  supplierId       String
+  reviewedByUserId String?
+  reviewedByName   String
+  /// Overall 1-5 rating.
+  rating           Int
+  wouldReorder     Boolean?
+  comments         String?
+  createdAt        DateTime @default(now())
+
+  company  Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([supplierId])
+  @@map("supplier_reviews")
 }
 
 enum MaterialRfqStatus {
@@ -1283,6 +1396,12 @@ model Project {
   /// everything) can see this project — false (the default) means visible to the whole company,
   /// same as before this field existed.
   restrictedToMembers  Boolean   @default(false)
+  /// Marks a government-funded contract subject to prevailing-wage rules — surfaces the
+  /// Certified Payroll panel on the project and is printed on the WH-347-style report header.
+  isPublicWork         Boolean   @default(false)
+  /// Awarding-body contract number, printed on certified payroll reports. Free text since the
+  /// format varies by agency.
+  contractNumber       String?
 
   company                  Company                     @relation(fields: [companyId], references: [id], onDelete: Cascade)
   client                   Client?                     @relation(fields: [clientId], references: [id], onDelete: SetNull)
@@ -1303,6 +1422,7 @@ model Project {
   rfis                     Rfi[]
   incidentReports          IncidentReport[]
   safetyBriefings          SafetyBriefing[]
+  jobHazardAnalyses        JobHazardAnalysis[]
   submittals               Submittal[]
   warrantyClaims           WarrantyClaim[]
   resourceAssignments      ResourceAssignment[]
@@ -1310,6 +1430,7 @@ model Project {
   drawRequests             DrawRequest[]
   takeoffs                 Takeoff[]
   greenCertifications      ProjectGreenCertification[]
+  portalMessages           PortalMessage[]
   bidRequests              BidRequest[]
   materialRfqs             MaterialRfq[]
   serviceContracts         ServiceContract[]
@@ -1318,6 +1439,9 @@ model Project {
   comments                 Comment[]
   members                  ProjectMember[]
   contracts                Contract[]
+  certifiedPayrollReports  CertifiedPayrollReport[]
+  drawingSheets            DrawingSheet[]
+  permits                  Permit[]
 
   @@index([companyId])
   @@map("projects")
@@ -1363,6 +1487,7 @@ model Task {
   successorLinks      TaskDependency[]     @relation("TaskPredecessor")
   comments            Comment[]
   resourceAssignments ResourceAssignment[]
+  jobHazardAnalyses   JobHazardAnalysis[]
 
   @@index([projectId])
   @@map("tasks")
@@ -1453,12 +1578,19 @@ model PunchListItem {
   verifiedByName   String?
   createdAt        DateTime            @default(now())
   escalatedAt      DateTime?
+  /// Optional pin location on a plan-room sheet — drawingSheetId set with pinX/pinY null (or vice
+  /// versa) shouldn't happen but isn't enforced at the schema level, same as Document's attachment
+  /// points above.
+  drawingSheetId   String?
+  pinX             Float?
+  pinY             Float?
 
-  company  Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  project  Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  assignee Worker?    @relation(fields: [assigneeWorkerId], references: [id], onDelete: SetNull)
-  photos   Document[]
-  comments Comment[]
+  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project      Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignee     Worker?       @relation(fields: [assigneeWorkerId], references: [id], onDelete: SetNull)
+  drawingSheet DrawingSheet? @relation(fields: [drawingSheetId], references: [id], onDelete: SetNull)
+  photos       Document[]
+  comments     Comment[]
 
   @@index([projectId])
   @@index([companyId])
@@ -1492,10 +1624,15 @@ model Rfi {
   closedByName       String?
   createdAt          DateTime    @default(now())
   escalatedAt        DateTime?
+  /// Optional pin location on a plan-room sheet — see PunchListItem's identical fields.
+  drawingSheetId     String?
+  pinX               Float?
+  pinY               Float?
 
-  company  Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  project  Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  comments Comment[]
+  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project      Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  drawingSheet DrawingSheet? @relation(fields: [drawingSheetId], references: [id], onDelete: SetNull)
+  comments     Comment[]
 
   @@unique([projectId, number])
   @@index([companyId])
@@ -1669,28 +1806,44 @@ model BankTransaction {
 /// (internal staff whose hours are tracked via TimeEntry) and from Supplier
 /// (sells materials, paid via PurchaseOrder).
 model Subcontractor {
-  id             String  @id @default(uuid())
-  companyId      String
-  name           String
-  email          String?
-  phone          String?
+  id                   String   @id @default(uuid())
+  companyId            String
+  name                 String
+  email                String?
+  phone                String?
   /// Self-described trade/specialty (e.g. "Electrical", "Framing") shown on the public profile.
-  specialization String?
+  specialization       String?
   /// Short self-described blurb for the public profile — not moderated, this company's own words about a sub it trusts.
-  bio            String?
+  bio                  String?
   /// Set when publicListed is turned on; the public profile lives at /subcontractor-profile/:publicToken.
-  publicToken    String? @unique
-  publicListed   Boolean @default(false)
+  publicToken          String?  @unique
+  publicListed         Boolean  @default(false)
+  /// Prequalification fields, self-reported by the GC (or, later, the sub through their portal) —
+  /// none of these gate anything today the way insurance documents do in assertCompliant(); they're
+  /// informational context shown alongside the compliance/performance data.
+  licenseNumber        String?
+  bondingCapacity      Decimal? @db.Decimal(14, 2)
+  safetyProgramSummary String?
+  /// US 1099-NEC fields, self-reported by the GC — only meaningful for a US company
+  /// (Company.country === "US"); nothing today gates on their presence the way insurance
+  /// documents gate assign(). taxId is plaintext (no field-level encryption infra exists yet in
+  /// this codebase) so SubcontractorsService masks it to last-4 in list/summary responses and
+  /// only returns it in full from the dedicated tax-profile endpoint.
+  taxId                String?
+  legalBusinessName    String?
+  mailingAddress       String?
 
-  company           Company                         @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  costs             SubcontractorCost[]
-  assignments       SubcontractorAssignment[]
-  portalLoginTokens SubcontractorPortalLoginToken[]
-  documents         SubcontractorDocument[]
-  lienWaivers       LienWaiver[]
-  bidInvites        BidInvite[]
-  bids              Bid[]
-  contracts         Contract[]
+  company            Company                          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  costs              SubcontractorCost[]
+  payments           SubcontractorPayment[]
+  assignments        SubcontractorAssignment[]
+  portalLoginTokens  SubcontractorPortalLoginToken[]
+  documents          SubcontractorDocument[]
+  lienWaivers        LienWaiver[]
+  bidInvites         BidInvite[]
+  bids               Bid[]
+  contracts          Contract[]
+  performanceReviews SubcontractorPerformanceReview[]
 
   @@index([companyId])
   @@map("subcontractors")
@@ -1700,6 +1853,7 @@ enum SubcontractorDocumentType {
   general_liability_insurance
   workers_comp_insurance
   license
+  bonding
   other
 }
 
@@ -1854,18 +2008,57 @@ model ScheduledReport {
 /// Which projects a subcontractor may see/log costs against from their portal — office staff
 /// grants this explicitly; a subcontractor otherwise has no visibility into any project.
 model SubcontractorAssignment {
-  id              String   @id @default(uuid())
+  id              String    @id @default(uuid())
   subcontractorId String
   projectId       String
-  createdAt       DateTime @default(now())
+  /// Both nullable — an assignment with no dates means "on this project, timing TBD," matching
+  /// the pre-existing behavior before this batch added scheduling. Set together or not at all;
+  /// the service doesn't enforce startDate <= endDate at the DB level, only in application code.
+  startDate       DateTime?
+  endDate         DateTime?
+  /// When the sub actually finished, set manually — compared against `endDate` (the planned date)
+  /// to derive on-time performance. Null while still in progress or if never recorded.
+  actualEndDate   DateTime?
+  createdAt       DateTime  @default(now())
 
-  subcontractor Subcontractor @relation(fields: [subcontractorId], references: [id], onDelete: Cascade)
-  project       Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  subcontractor      Subcontractor                    @relation(fields: [subcontractorId], references: [id], onDelete: Cascade)
+  project            Project                          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  performanceReviews SubcontractorPerformanceReview[]
 
   @@unique([subcontractorId, projectId])
   @@index([subcontractorId])
   @@index([projectId])
   @@map("subcontractor_assignments")
+}
+
+/// A post-job performance rating the GC records for a subcontractor — builds up into a per-sub
+/// scorecard (computed at read time, not cached/denormalized, same reasoning as
+/// SubcontractorsService.complianceStatus()). onTime/safetyIncidents/reworkCount are the GC's own
+/// account since nothing elsewhere in the schema derives them automatically (SubcontractorCost
+/// isn't linked to a budget/estimate, and IncidentReport isn't linked to a subcontractor).
+model SubcontractorPerformanceReview {
+  id               String   @id @default(uuid())
+  companyId        String
+  subcontractorId  String
+  assignmentId     String?
+  reviewedByUserId String?
+  reviewedByName   String
+  /// Overall 1-5 rating.
+  rating           Int
+  onTime           Boolean?
+  safetyIncidents  Int      @default(0)
+  reworkCount      Int      @default(0)
+  wouldHireAgain   Boolean?
+  comments         String?
+  createdAt        DateTime @default(now())
+
+  company       Company                  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  subcontractor Subcontractor            @relation(fields: [subcontractorId], references: [id], onDelete: Cascade)
+  assignment    SubcontractorAssignment? @relation(fields: [assignmentId], references: [id], onDelete: SetNull)
+
+  @@index([companyId])
+  @@index([subcontractorId])
+  @@map("subcontractor_performance_reviews")
 }
 
 /// Single-use magic-link token for the subcontractor portal — same shape and lifecycle as
@@ -1902,17 +2095,46 @@ model SubcontractorCost {
   /// Optional CSI cost code, for job-costing roll-ups — see JobCostingService.
   costCodeId      String?
 
-  company       Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  subcontractor Subcontractor @relation(fields: [subcontractorId], references: [id], onDelete: Restrict)
-  project       Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  costCode      CostCode?     @relation(fields: [costCodeId], references: [id], onDelete: SetNull)
+  company       Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  subcontractor Subcontractor          @relation(fields: [subcontractorId], references: [id], onDelete: Restrict)
+  project       Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  costCode      CostCode?              @relation(fields: [costCodeId], references: [id], onDelete: SetNull)
   lienWaiver    LienWaiver?
+  payments      SubcontractorPayment[]
 
   @@index([companyId])
   @@index([projectId])
   @@index([subcontractorId])
   @@index([costCodeId])
   @@map("subcontractor_costs")
+}
+
+/// The actual cash-payment ledger for a subcontractor — distinct from SubcontractorCost.paid
+/// (a boolean flip with no date, kept for cash-flow-forecast dueDate filtering, not
+/// payment-date tracking; see the comment on SubcontractorCost). One row per payment, so a cost
+/// paid in installments produces multiple rows against the same subcontractorCostId, and a
+/// standalone/lump-sum payment not tied to any single cost line (e.g. a retainage release) can
+/// have subcontractorCostId null. This is what 1099 calendar-year totals are computed from —
+/// SubcontractorCost.incurredDate can't answer "how much did we pay this sub in 2026" on its own.
+model SubcontractorPayment {
+  id                  String   @id @default(uuid())
+  companyId           String
+  subcontractorId     String
+  subcontractorCostId String?
+  amount              Decimal  @db.Decimal(14, 2)
+  paidAt              DateTime @default(now())
+  note                String?
+  createdAt           DateTime @default(now())
+
+  company           Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  subcontractor     Subcontractor      @relation(fields: [subcontractorId], references: [id], onDelete: Cascade)
+  subcontractorCost SubcontractorCost? @relation(fields: [subcontractorCostId], references: [id], onDelete: SetNull)
+
+  @@index([companyId])
+  @@index([subcontractorId])
+  @@index([subcontractorCostId])
+  @@index([paidAt])
+  @@map("subcontractor_payments")
 }
 
 /// CSI MasterFormat-style division, used to classify estimate/change-order/subcontractor-cost
@@ -1932,6 +2154,56 @@ model CostCode {
   @@unique([companyId, code])
   @@index([companyId])
   @@map("cost_codes")
+}
+
+/// A company-maintained trade + prevailing-wage rate pair, e.g. "Electrician — $42.50/hr + $9.20
+/// fringe". Rates are entered manually from the applicable wage determination (there's no live
+/// government feed integration) and are looked up per Worker for certified payroll compliance.
+model WageClassification {
+  id         String   @id @default(uuid())
+  companyId  String
+  trade      String
+  hourlyRate Decimal  @db.Decimal(10, 2)
+  /// Fringe benefit rate per hour — paid in addition to the base wage, cash or bona-fide plan.
+  fringeRate Decimal  @default(0) @db.Decimal(10, 2)
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  company Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  workers Worker[]
+
+  @@index([companyId])
+  @@map("wage_classifications")
+}
+
+/// One filed weekly certified payroll record for a public-work project (federal WH-347 shape:
+/// per-worker hours/rate/gross for the week, plus a signed statement of compliance). lineItems is
+/// a snapshot taken at generation time — deliberately not live-computed from TimeEntry on every
+/// read, so a later rate change or edited time entry can't retroactively alter an already-filed
+/// report, mirroring TimeEntry.hourlyCostSnapshot's reasoning.
+model CertifiedPayrollReport {
+  id                  String    @id @default(uuid())
+  companyId           String
+  projectId           String
+  weekEndingDate      DateTime
+  /// Sequential per project (1, 2, 3, ...), assigned at generation time.
+  payrollNumber       Int
+  noWorkPerformed     Boolean   @default(false)
+  lineItems           Json?
+  totalGrossPay       Decimal?  @db.Decimal(12, 2)
+  statementSignerName String?
+  statementSignedAt   DateTime?
+  pdfStorageKey       String?
+  createdAt           DateTime  @default(now())
+  createdByUserId     String?
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, weekEndingDate])
+  @@index([companyId])
+  @@index([projectId])
+  @@map("certified_payroll_reports")
 }
 
 enum LienWaiverType {
@@ -2172,6 +2444,7 @@ model Client {
   serviceContracts  ServiceContract[]
   stageHistory      ClientStageHistory[]
   contracts         Contract[]
+  portalMessages    PortalMessage[]
 
   @@index([companyId])
   @@index([ownerWorkerId])
@@ -2265,20 +2538,32 @@ model ClientReminder {
 // ---------- Team/HR (schema-only until Phase 5) ----------
 
 model Worker {
-  id              String   @id @default(uuid())
-  companyId       String
-  userId          String?
-  name            String
-  role            String?
+  id                   String   @id @default(uuid())
+  companyId            String
+  userId               String?
+  name                 String
+  role                 String?
   /// Cost rate used to value TimeEntry hours into actual labor cost (Finance budget-vs-actual).
-  hourlyCost      Decimal? @db.Decimal(10, 2)
-  active          Boolean  @default(true)
+  hourlyCost           Decimal? @db.Decimal(10, 2)
+  active               Boolean  @default(true)
   /// Running PTO balance in hours — can go negative (unpaid/advance time off). Adjusted manually
   /// by an admin and auto-deducted when a vacation-type TimeOffRequest is approved.
-  ptoBalanceHours Decimal  @default(0) @db.Decimal(8, 2)
+  ptoBalanceHours      Decimal  @default(0) @db.Decimal(8, 2)
+  /// Trade classification for prevailing-wage compliance (certified payroll) — null means this
+  /// worker hasn't been tagged yet and is excluded from wage-floor checks, not that they're exempt.
+  wageClassificationId String?
+  /// For SMS notifications — a Worker with userId: null has no other contact channel in the app
+  /// at all (push/email/in-app all require a User+Membership), so this is genuinely the first
+  /// way to reach a field worker with no account.
+  phone                String?
+  /// Which of the 5 launch locales to send SMS text in — null falls back to the company's own
+  /// locale. Independent of Company.locale/the NEXT_LOCALE cookie, which only cover logged-in
+  /// User accounts viewing the web app.
+  preferredLocale      Locale?
 
   company                  Company                    @relation(fields: [companyId], references: [id], onDelete: Cascade)
   user                     User?                      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  wageClassification       WageClassification?        @relation(fields: [wageClassificationId], references: [id], onDelete: SetNull)
   timeEntries              TimeEntry[]
   expenses                 Expense[]
   equipmentAssignments     EquipmentAssignment[]
@@ -2287,12 +2572,14 @@ model Worker {
   warrantyClaims           WarrantyClaim[]
   ownedClients             Client[]
   resourceAssignments      ResourceAssignment[]
+  crewMemberships          CrewMember[]
   certifications           WorkerCertification[]
   onboardingTasks          WorkerOnboardingTask[]
   timeOffRequests          TimeOffRequest[]
   serviceVisits            ServiceVisit[]
   inspectionsPerformed     InspectionChecklist[]
   assignedDeficiencies     Deficiency[]
+  jhaAcknowledgments       JhaAcknowledgment[]
 
   @@index([companyId])
   @@map("workers")
@@ -2403,11 +2690,19 @@ model Document {
   warrantyClaimId         String?
   subcontractorDocumentId String?
   deficiencyId            String?
+  permitId                String?
+  safetyBriefingId        String?
+  supplierDocumentId      String?
+  companyDocumentId       String?
   name                    String
   storageKey              String
   mimeType                String
   size                    Int              @default(0)
   category                DocumentCategory @default(other)
+  /// Which language this file's content is written in — only meaningful for documents that come
+  /// in parallel-language variants (currently just safety-briefing materials); null for
+  /// everything else, not "unknown".
+  locale                  Locale?
   /// Free-form cross-cutting labels alongside the single required category — e.g. a "permit"
   /// category document can also be tagged ["electrical", "phase-2"].
   tags                    String[]         @default([])
@@ -2430,6 +2725,10 @@ model Document {
   warrantyClaim         WarrantyClaim?         @relation(fields: [warrantyClaimId], references: [id], onDelete: Cascade)
   subcontractorDocument SubcontractorDocument? @relation(fields: [subcontractorDocumentId], references: [id], onDelete: Cascade)
   deficiency            Deficiency?            @relation(fields: [deficiencyId], references: [id], onDelete: Cascade)
+  permit                Permit?                @relation(fields: [permitId], references: [id], onDelete: Cascade)
+  safetyBriefing        SafetyBriefing?        @relation(fields: [safetyBriefingId], references: [id], onDelete: Cascade)
+  supplierDocument      SupplierDocument?      @relation(fields: [supplierDocumentId], references: [id], onDelete: Cascade)
+  companyDocument       CompanyDocument?       @relation(fields: [companyDocumentId], references: [id], onDelete: Cascade)
   uploadedBy            User?                  @relation(fields: [uploadedByUserId], references: [id], onDelete: SetNull)
   rootDocument          Document?              @relation("DocumentVersions", fields: [rootDocumentId], references: [id], onDelete: Cascade)
   versions              Document[]             @relation("DocumentVersions")
@@ -2442,7 +2741,144 @@ model Document {
   @@index([warrantyClaimId])
   @@index([subcontractorDocumentId])
   @@index([deficiencyId])
+  @@index([permitId])
+  @@index([safetyBriefingId])
+  @@index([supplierDocumentId])
+  @@index([companyDocumentId])
   @@map("documents")
+}
+
+// ---------- Permits & municipal inspections ----------
+
+enum PermitStatus {
+  draft
+  submitted
+  approved
+  rejected
+  expired
+}
+
+/// A building-permit application tracked per project — separate from InspectionChecklist (which
+/// is an internal QC checklist run by our own workers, not tied to any external authority).
+/// nextInspectionNotifiedAt-style dedupe isn't needed here; PermitExpiringRemindersService uses
+/// its own guard field below.
+model Permit {
+  id                 String       @id @default(uuid())
+  companyId          String
+  projectId          String
+  permitType         String
+  permitNumber       String?
+  authorityName      String?
+  status             PermitStatus @default(draft)
+  submittedAt        DateTime?
+  approvedAt         DateTime?
+  expiresAt          DateTime?
+  /// Set once an expiring-soon reminder has gone out, so the daily pass doesn't re-send it —
+  /// same pattern as Equipment.maintenanceOverdueNotifiedAt.
+  expiringNotifiedAt DateTime?
+  notes              String?
+  createdAt          DateTime     @default(now())
+
+  company     Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  inspections Inspection[]
+  documents   Document[]
+
+  @@index([companyId])
+  @@index([projectId])
+  @@map("permits")
+}
+
+enum InspectionResult {
+  pending
+  passed
+  failed
+  cancelled
+}
+
+/// One scheduled municipal inspection tied to a permit. inspectorName/inspectorContact are free
+/// text (not a Worker FK) since the inspector is an external party the company doesn't control —
+/// unlike InspectionChecklist.inspectorWorkerId, which is always an internal employee.
+model Inspection {
+  id               String           @id @default(uuid())
+  companyId        String
+  permitId         String
+  inspectionType   String
+  scheduledDate    DateTime?
+  inspectorName    String?
+  inspectorContact String?
+  result           InspectionResult @default(pending)
+  completedAt      DateTime?
+  notes            String?
+  createdAt        DateTime         @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  permit  Permit  @relation(fields: [permitId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([permitId])
+  @@map("permit_inspections")
+}
+
+// ---------- Plan room: drawing sheets & markup ----------
+
+/// One uploaded drawing sheet (a single-page PDF or image) — sheet metadata (number/discipline/
+/// revision) lives here rather than on the generic Document model since none of it fits Document's
+/// shape well. Revisions are separate rows (not a version chain like Document) so an older
+/// revision's markup history stays intact after a newer one is uploaded.
+model DrawingSheet {
+  id               String    @id @default(uuid())
+  companyId        String
+  projectId        String
+  sheetNumber      String
+  discipline       String?
+  title            String?
+  revision         String?
+  revisionDate     DateTime?
+  storageKey       String
+  mimeType         String
+  uploadedByUserId String?
+  createdAt        DateTime  @default(now())
+
+  company        Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  annotations    Annotation[]
+  rfis           Rfi[]
+  punchListItems PunchListItem[]
+
+  @@index([companyId])
+  @@index([projectId])
+  @@map("drawing_sheets")
+}
+
+enum AnnotationType {
+  freehand
+  rectangle
+  cloud
+  arrow
+  text
+}
+
+/// A markup shape pinned to a DrawingSheet. points are normalized to [0,1] of the sheet's
+/// rendered page — same reasoning as TakeoffMeasurement.points — so markup stays aligned
+/// regardless of what size the viewer renders the page at.
+model Annotation {
+  id             String         @id @default(uuid())
+  companyId      String
+  drawingSheetId String
+  authorUserId   String?
+  authorName     String
+  type           AnnotationType
+  points         Json
+  color          String         @default("#e11d48")
+  text           String?
+  createdAt      DateTime       @default(now())
+
+  company Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  sheet   DrawingSheet @relation(fields: [drawingSheetId], references: [id], onDelete: Cascade)
+
+  @@index([drawingSheetId])
+  @@map("annotations")
 }
 
 // ---------- Equipment / asset tracking ----------
@@ -2455,34 +2891,71 @@ enum EquipmentStatus {
 }
 
 model Equipment {
-  id                           String          @id @default(uuid())
-  companyId                    String
-  name                         String
-  category                     String
-  serialNumber                 String?
-  purchaseDate                 DateTime?
-  purchaseCost                 Decimal?        @db.Decimal(12, 2)
-  status                       EquipmentStatus @default(available)
-  notes                        String?
-  createdAt                    DateTime        @default(now())
+  id                                String          @id @default(uuid())
+  companyId                         String
+  name                              String
+  category                          String
+  serialNumber                      String?
+  purchaseDate                      DateTime?
+  purchaseCost                      Decimal?        @db.Decimal(12, 2)
+  status                            EquipmentStatus @default(available)
+  notes                             String?
+  createdAt                         DateTime        @default(now())
   /// Recurring preventive-maintenance interval — null disables scheduling entirely for this
   /// piece of equipment. nextMaintenanceDueAt advances by this many days each time maintenance
   /// completes, mirroring RecurringInvoice.nextRunDate's advance-on-completion pattern.
-  maintenanceIntervalDays      Int?
-  nextMaintenanceDueAt         DateTime?
+  maintenanceIntervalDays           Int?
+  nextMaintenanceDueAt              DateTime?
   /// Set once an overdue-while-in-use notification email has gone out, so the hourly pass
   /// doesn't re-send it every hour until the equipment is checked in and can actually be
   /// pulled into maintenance status. Cleared whenever maintenance completes.
-  maintenanceOverdueNotifiedAt DateTime?
+  maintenanceOverdueNotifiedAt      DateTime?
+  /// Running meter/engine-hours reading, updated manually (no telematics integration) — null
+  /// means this equipment isn't hour-tracked. Mirrors the day-interval fields above but keyed
+  /// off usage instead of the calendar; the two schedules are independent and either or both
+  /// can be active at once.
+  currentMeterHours                 Decimal?        @db.Decimal(10, 1)
+  maintenanceIntervalHours          Decimal?        @db.Decimal(10, 1)
+  nextMaintenanceDueHours           Decimal?        @db.Decimal(10, 1)
+  /// Separate dedupe flag from maintenanceOverdueNotifiedAt so an hours-overdue notification and
+  /// a date-overdue notification don't suppress each other.
+  maintenanceOverdueHoursNotifiedAt DateTime?
 
   company             Company                      @relation(fields: [companyId], references: [id], onDelete: Cascade)
   assignments         EquipmentAssignment[]
   maintenanceRecords  EquipmentMaintenanceRecord[]
   resourceAssignments ResourceAssignment[]
   gpsPings            EquipmentGpsPing[]
+  fuelLogs            EquipmentFuelLog[]
 
   @@index([companyId])
   @@map("equipment")
+}
+
+/// A self-reported fuel purchase — same "no telematics hardware or provider integration" framing
+/// as EquipmentGpsPing below; someone keys this in by hand (or a fuel-card CSV import later), it
+/// isn't pulled from a fleet-card or telematics API. quantity is liters or gallons per
+/// Company.unitSystem, labeled by the frontend at the point of display (no unit column stored,
+/// same as the rest of the equipment module keeps currentMeterHours unit-agnostic).
+model EquipmentFuelLog {
+  id          String   @id @default(uuid())
+  equipmentId String
+  filledAt    DateTime @default(now())
+  quantity    Decimal  @db.Decimal(10, 2)
+  cost        Decimal? @db.Decimal(12, 2)
+  /// Meter reading at fill-up, if logged — feeds Equipment.currentMeterHours forward the same way
+  /// EquipmentService.updateMeterReading() does, but only advances it (never overwrites with an
+  /// older/lower backfilled reading).
+  meterHours  Decimal? @db.Decimal(10, 1)
+  supplierId  String?
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  supplier  Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+
+  @@index([equipmentId])
+  @@map("equipment_fuel_logs")
 }
 
 /// One GPS fix from a field device tracking this piece of equipment — the browser/device sends
@@ -2542,8 +3015,13 @@ model EquipmentMaintenanceRecord {
   cost        Decimal? @db.Decimal(12, 2)
   performedAt DateTime @default(now())
   createdAt   DateTime @default(now())
+  supplierId  String?
+  /// Meter reading at the time this service was performed — null if this equipment isn't
+  /// hour-tracked or the reading wasn't logged for this particular record.
+  meterHours  Decimal? @db.Decimal(10, 1)
 
   equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  supplier  Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
 
   @@index([equipmentId])
   @@map("equipment_maintenance_records")
@@ -2654,6 +3132,10 @@ model SafetyBriefing {
   company   Company                    @relation(fields: [companyId], references: [id], onDelete: Cascade)
   project   Project                    @relation(fields: [projectId], references: [id], onDelete: Cascade)
   attendees SafetyBriefingAttendance[]
+  /// Alternate-language material for this briefing — one Document per language variant
+  /// (discriminated by Document.locale), not a version chain (those are revisions of the same
+  /// file, not parallel translations of it).
+  documents Document[]
 
   @@index([projectId])
   @@index([companyId])
@@ -2670,6 +3152,53 @@ model SafetyBriefingAttendance {
 
   @@unique([briefingId, workerId])
   @@map("safety_briefing_attendance")
+}
+
+/// A proactive pre-task hazard/control/PPE checklist for a specific piece of hazardous work —
+/// distinct from SafetyBriefing (a reactive toolbox-talk log with no hazard/control structure)
+/// and from IncidentReport (after the fact). Scoped to Project like every other safety record,
+/// with an optional taskId since hazard analysis is often specific to one task type (excavation
+/// vs. roofing) without needing Task to become the primary safety anchor.
+model JobHazardAnalysis {
+  id                String   @id @default(uuid())
+  companyId         String
+  projectId         String
+  taskId            String?
+  date              DateTime
+  taskDescription   String
+  hazards           String
+  controlMeasures   String
+  requiredPpe       String?
+  conductedByUserId String?
+  conductedByName   String
+  createdAt         DateTime @default(now())
+
+  company         Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project         Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  task            Task?               @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  acknowledgments JhaAcknowledgment[]
+
+  @@index([companyId])
+  @@index([projectId])
+  @@index([taskId])
+  @@map("job_hazard_analyses")
+}
+
+/// One row per crew member who acknowledged a JHA — signedAt (not just presence, unlike
+/// SafetyBriefingAttendance) is the whole point: it's what makes this a sign-off record rather
+/// than an attendance list. Recorded by whoever runs the briefing at the moment of acknowledgment,
+/// same as SafetyBriefingAttendance — there's no separate self-service worker-signing flow.
+model JhaAcknowledgment {
+  id       String   @id @default(uuid())
+  jhaId    String
+  workerId String
+  signedAt DateTime @default(now())
+
+  jha    JobHazardAnalysis @relation(fields: [jhaId], references: [id], onDelete: Cascade)
+  worker Worker            @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  @@unique([jhaId, workerId])
+  @@map("jha_acknowledgments")
 }
 
 // ---------- Submittals ----------
@@ -2848,6 +3377,30 @@ model Comment {
   @@map("comments")
 }
 
+/// A client-visible message thread on one project, separate from the internal Comment/RFI/punch-
+/// list threads on purpose — those can carry internal-only discussion, and reusing that model for
+/// client-facing chat would risk leaking it across the portal boundary. Exactly one of
+/// authorUserId (staff) / authorClientId (client, via the portal) is set per message.
+model PortalMessage {
+  id             String   @id @default(uuid())
+  companyId      String
+  projectId      String
+  authorUserId   String?
+  authorClientId String?
+  authorName     String
+  content        String
+  createdAt      DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  author  User?   @relation(fields: [authorUserId], references: [id], onDelete: SetNull)
+  client  Client? @relation(fields: [authorClientId], references: [id], onDelete: SetNull)
+
+  @@index([companyId])
+  @@index([projectId])
+  @@map("portal_messages")
+}
+
 /// Marks one derived notification item (identified by its stable NotificationItem.key) as read
 /// by a user. The notification feed itself is computed on the fly (see NotificationsService) —
 /// this is the only persisted state, so "unread" is just "no row here yet".
@@ -2875,6 +3428,8 @@ enum DashboardWidgetType {
   warehouse_turnover
   labor_cost
   custom_report
+  backlog
+  compliance_calendar
 }
 
 /// One tile on a user's own configurable dashboard. Every widget renders from an *existing*
@@ -2919,6 +3474,38 @@ model CommentMention {
 /// with no planned end date). Powers the cross-project resource-planning calendar; double-booking
 /// is detected by the service from overlapping date ranges on the same resource, not prevented at
 /// the schema level — a real scheduling conflict needs to be seen and resolved, not silently blocked.
+/// A named, reusable group of workers (e.g. "Framing Crew A") — lets a foreman bulk-assign the
+/// whole group to a project in one action instead of one ResourceAssignment at a time. Crews
+/// themselves don't carry a schedule; each member still gets its own ResourceAssignment row
+/// (tagged with crewId) so per-worker conflict detection keeps working unchanged.
+model Crew {
+  id        String   @id @default(uuid())
+  companyId String
+  name      String
+  createdAt DateTime @default(now())
+
+  company             Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  members             CrewMember[]
+  resourceAssignments ResourceAssignment[]
+
+  @@index([companyId])
+  @@map("crews")
+}
+
+model CrewMember {
+  id       String @id @default(uuid())
+  crewId   String
+  workerId String
+
+  crew   Crew   @relation(fields: [crewId], references: [id], onDelete: Cascade)
+  worker Worker @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  @@unique([crewId, workerId])
+  @@index([crewId])
+  @@index([workerId])
+  @@map("crew_members")
+}
+
 model ResourceAssignment {
   id          String   @id @default(uuid())
   companyId   String
@@ -2928,6 +3515,9 @@ model ResourceAssignment {
   taskId      String?
   workerId    String?
   equipmentId String?
+  /// Set when this assignment was created as part of a bulk crew-assign — groups rows in the
+  /// timeline/heatmap by crew without changing how individual-worker conflict detection works.
+  crewId      String?
   startDate   DateTime
   endDate     DateTime
   note        String?
@@ -2938,12 +3528,14 @@ model ResourceAssignment {
   task      Task?      @relation(fields: [taskId], references: [id], onDelete: SetNull)
   worker    Worker?    @relation(fields: [workerId], references: [id], onDelete: Cascade)
   equipment Equipment? @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  crew      Crew?      @relation(fields: [crewId], references: [id], onDelete: SetNull)
 
   @@index([companyId])
   @@index([projectId])
   @@index([taskId])
   @@index([workerId])
   @@index([equipmentId])
+  @@index([crewId])
   @@map("resource_assignments")
 }
 
@@ -3187,6 +3779,9 @@ enum ReportDataset {
   time_entries
   punch_list
   rfis
+  revenue_by_month
+  project_margins
+  labor_utilization
 }
 
 /// A saved custom-report definition: pick a dataset, pick columns from that dataset's fixed
@@ -3234,4 +3829,29 @@ model AccountingConnection {
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@map("accounting_connections")
+}
+
+enum AccountingSyncStatus {
+  success
+  failed
+}
+
+/// One row per invoice sync attempt (success or failure) — the persistent trail that
+/// AccountingSyncService.syncInvoices()'s previously-transient SyncSummary lacked, so a failure
+/// is still visible after the page that showed the toast is long gone.
+model AccountingSyncLog {
+  id            String               @id @default(uuid())
+  companyId     String
+  provider      AccountingProvider
+  invoiceId     String
+  invoiceNumber String
+  status        AccountingSyncStatus
+  errorMessage  String?
+  attemptedAt   DateTime             @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([companyId, status])
+  @@map("accounting_sync_logs")
 }

@@ -3,6 +3,7 @@ import { Test } from "@nestjs/testing";
 import { SafetyBriefingsService } from "./safety-briefings.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService } from "../common/audit/audit.service";
+import { SmsService } from "../common/sms/sms.service";
 
 const COMPANY_A = "company-a";
 const ACTOR = { userId: "user-1", name: "Foreman" };
@@ -11,24 +12,27 @@ describe("SafetyBriefingsService", () => {
   let service: SafetyBriefingsService;
   let prisma: {
     project: { findFirst: jest.Mock };
-    worker: { count: jest.Mock };
+    worker: { count: jest.Mock; findMany: jest.Mock };
     safetyBriefing: { findFirst: jest.Mock; create: jest.Mock; update: jest.Mock };
   };
   let audit: { record: jest.Mock };
+  let sms: { send: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
       project: { findFirst: jest.fn() },
-      worker: { count: jest.fn() },
+      worker: { count: jest.fn(), findMany: jest.fn().mockResolvedValue([]) },
       safetyBriefing: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
     };
     audit = { record: jest.fn() };
+    sms = { send: jest.fn() };
 
     const module = await Test.createTestingModule({
       providers: [
         SafetyBriefingsService,
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: audit },
+        { provide: SmsService, useValue: sms },
       ],
     }).compile();
 
@@ -46,7 +50,12 @@ describe("SafetyBriefingsService", () => {
     });
 
     it("rejects when an attendee does not belong to this company", async () => {
-      prisma.project.findFirst.mockResolvedValue({ id: "project-1", companyId: COMPANY_A, name: "Site A" });
+      prisma.project.findFirst.mockResolvedValue({
+        id: "project-1",
+        companyId: COMPANY_A,
+        name: "Site A",
+        company: { workerSmsNotificationsEnabled: false, locale: "en" },
+      });
       prisma.worker.count.mockResolvedValue(1);
 
       await expect(
@@ -61,7 +70,12 @@ describe("SafetyBriefingsService", () => {
     });
 
     it("creates attendance rows for every attendee", async () => {
-      prisma.project.findFirst.mockResolvedValue({ id: "project-1", companyId: COMPANY_A, name: "Site A" });
+      prisma.project.findFirst.mockResolvedValue({
+        id: "project-1",
+        companyId: COMPANY_A,
+        name: "Site A",
+        company: { workerSmsNotificationsEnabled: false, locale: "en" },
+      });
       prisma.worker.count.mockResolvedValue(2);
       prisma.safetyBriefing.create.mockResolvedValue({ id: "briefing-1" });
 
@@ -80,6 +94,53 @@ describe("SafetyBriefingsService", () => {
         }),
       );
       expect(audit.record).toHaveBeenCalled();
+    });
+
+    it("texts attendees with a phone on file when the company has SMS notifications enabled", async () => {
+      prisma.project.findFirst.mockResolvedValue({
+        id: "project-1",
+        companyId: COMPANY_A,
+        name: "Site A",
+        company: { workerSmsNotificationsEnabled: true, locale: "en" },
+      });
+      prisma.worker.count.mockResolvedValue(2);
+      prisma.safetyBriefing.create.mockResolvedValue({ id: "briefing-1", date: new Date("2026-08-20T00:00:00.000Z") });
+      prisma.worker.findMany.mockResolvedValue([
+        { phone: "+15551234567", preferredLocale: "de" },
+        { phone: "+15557654321", preferredLocale: null },
+      ]);
+
+      await service.create(COMPANY_A, ACTOR, {
+        projectId: "project-1",
+        date: "2026-08-20T00:00:00.000Z",
+        topic: "Ladder safety",
+        attendeeWorkerIds: ["worker-1", "worker-2"],
+      });
+
+      expect(sms.send).toHaveBeenCalledTimes(2);
+      expect(sms.send).toHaveBeenCalledWith(expect.objectContaining({ to: "+15551234567" }));
+      expect(sms.send).toHaveBeenCalledWith(expect.objectContaining({ to: "+15557654321" }));
+    });
+
+    it("does not text anyone when the company has SMS notifications disabled", async () => {
+      prisma.project.findFirst.mockResolvedValue({
+        id: "project-1",
+        companyId: COMPANY_A,
+        name: "Site A",
+        company: { workerSmsNotificationsEnabled: false, locale: "en" },
+      });
+      prisma.worker.count.mockResolvedValue(1);
+      prisma.safetyBriefing.create.mockResolvedValue({ id: "briefing-1", date: new Date("2026-08-20T00:00:00.000Z") });
+
+      await service.create(COMPANY_A, ACTOR, {
+        projectId: "project-1",
+        date: "2026-08-20T00:00:00.000Z",
+        topic: "Ladder safety",
+        attendeeWorkerIds: ["worker-1"],
+      });
+
+      expect(sms.send).not.toHaveBeenCalled();
+      expect(prisma.worker.findMany).not.toHaveBeenCalled();
     });
   });
 

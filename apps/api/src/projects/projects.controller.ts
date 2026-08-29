@@ -5,12 +5,14 @@ import {
   createProjectSchema,
   setProjectRestrictedSchema,
   updateProjectGeofenceSchema,
+  updateProjectPublicWorkSchema,
   updateProjectWarrantySchema,
   type AddProjectMemberInput,
   type AuthUser,
   type CreateProjectInput,
   type SetProjectRestrictedInput,
   type UpdateProjectGeofenceInput,
+  type UpdateProjectPublicWorkInput,
   type UpdateProjectWarrantyInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
@@ -109,6 +111,15 @@ export class ProjectsController {
   @Delete(":id/geofence")
   clearGeofence(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.clearGeofence(user.companyId, id);
+  }
+
+  @Patch(":id/public-work")
+  updatePublicWork(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(updateProjectPublicWorkSchema)) body: UpdateProjectPublicWorkInput,
+  ) {
+    return this.service.updatePublicWork(user.companyId, id, body);
   }
 
   @Get(":id/closeout-package")

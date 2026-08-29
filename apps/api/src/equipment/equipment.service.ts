@@ -1,15 +1,18 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import type {
+  AddFuelLogInput,
   AddMaintenanceRecordInput,
   CheckInEquipmentInput,
   CheckOutEquipmentInput,
   CreateEquipmentInput,
   UpdateEquipmentInput,
   UpdateMaintenanceScheduleInput,
+  UpdateMeterReadingInput,
 } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { checkGeofence } from "../team/geofence";
+import { calculateCostPerHour } from "./equipment-cost";
 
 @Injectable()
 export class EquipmentService {
@@ -174,33 +177,64 @@ export class EquipmentService {
           ? new Date(Date.now() + equipment.maintenanceIntervalDays * 24 * 60 * 60 * 1000)
           : undefined,
         maintenanceOverdueNotifiedAt: null,
+        // Same idea, keyed off the current meter reading instead of the calendar.
+        nextMaintenanceDueHours: equipment.maintenanceIntervalHours
+          ? Number(equipment.currentMeterHours ?? 0) + Number(equipment.maintenanceIntervalHours)
+          : undefined,
+        maintenanceOverdueHoursNotifiedAt: null,
       },
     });
     this.audit.record(companyId, actor, "equipment.maintenance_completed", "Equipment", id, `Completed maintenance on "${equipment.name}"`);
     return this.findOrThrow(companyId, id);
   }
 
-  /** null intervalDays disables scheduling entirely; setting an interval (re)starts the countdown from now. */
+  /** null clears that half of the schedule; undefined leaves it untouched. Setting an interval
+   * (re)starts that countdown from now (days) or from the current meter reading (hours) —
+   * the two halves are independent and either, both, or neither can be active. */
   async updateMaintenanceSchedule(companyId: string, actor: AuditActor, id: string, input: UpdateMaintenanceScheduleInput) {
     const equipment = await this.findOrThrow(companyId, id);
-    await this.prisma.equipment.update({
-      where: { id },
-      data: {
-        maintenanceIntervalDays: input.intervalDays,
-        nextMaintenanceDueAt: input.intervalDays
-          ? new Date(Date.now() + input.intervalDays * 24 * 60 * 60 * 1000)
-          : null,
-      },
-    });
+    const data: Record<string, unknown> = {};
+    if (input.intervalDays !== undefined) {
+      data.maintenanceIntervalDays = input.intervalDays;
+      data.nextMaintenanceDueAt = input.intervalDays ? new Date(Date.now() + input.intervalDays * 24 * 60 * 60 * 1000) : null;
+    }
+    if (input.intervalHours !== undefined) {
+      data.maintenanceIntervalHours = input.intervalHours;
+      data.nextMaintenanceDueHours = input.intervalHours ? Number(equipment.currentMeterHours ?? 0) + input.intervalHours : null;
+    }
+    await this.prisma.equipment.update({ where: { id }, data });
+
+    const parts: string[] = [];
+    if (input.intervalDays !== undefined) {
+      parts.push(input.intervalDays ? `every ${input.intervalDays} day(s)` : "calendar schedule disabled");
+    }
+    if (input.intervalHours !== undefined) {
+      parts.push(input.intervalHours ? `every ${input.intervalHours} meter-hour(s)` : "meter-hour schedule disabled");
+    }
     this.audit.record(
       companyId,
       actor,
       "equipment.maintenance_schedule_updated",
       "Equipment",
       id,
-      input.intervalDays
-        ? `Scheduled preventive maintenance for "${equipment.name}" every ${input.intervalDays} day(s)`
-        : `Disabled preventive maintenance scheduling for "${equipment.name}"`,
+      `Updated preventive maintenance schedule for "${equipment.name}": ${parts.join(", ")}`,
+    );
+    return this.findOrThrow(companyId, id);
+  }
+
+  async updateMeterReading(companyId: string, actor: AuditActor, id: string, input: UpdateMeterReadingInput) {
+    const equipment = await this.findOrThrow(companyId, id);
+    if (equipment.currentMeterHours !== null && input.currentMeterHours < Number(equipment.currentMeterHours)) {
+      throw new BadRequestException("New meter reading can't be lower than the current one");
+    }
+    await this.prisma.equipment.update({ where: { id }, data: { currentMeterHours: input.currentMeterHours } });
+    this.audit.record(
+      companyId,
+      actor,
+      "equipment.meter_reading_updated",
+      "Equipment",
+      id,
+      `Logged meter reading for "${equipment.name}": ${input.currentMeterHours}h`,
     );
     return this.findOrThrow(companyId, id);
   }
@@ -223,6 +257,8 @@ export class EquipmentService {
         description: input.description,
         cost: input.cost,
         performedAt: input.performedAt ? new Date(input.performedAt) : undefined,
+        supplierId: input.supplierId,
+        meterHours: input.meterHours,
       },
     });
     this.audit.record(
@@ -237,8 +273,67 @@ export class EquipmentService {
   }
 
   listMaintenanceRecords(companyId: string, id: string) {
-    return this.prisma.equipmentMaintenanceRecord
-      .findMany({ where: { equipmentId: id, equipment: { companyId } }, orderBy: { performedAt: "desc" } });
+    return this.prisma.equipmentMaintenanceRecord.findMany({
+      where: { equipmentId: id, equipment: { companyId } },
+      include: { supplier: { select: { id: true, name: true } } },
+      orderBy: { performedAt: "desc" },
+    });
+  }
+
+  /** Self-reported fuel purchase — see EquipmentFuelLog's schema comment. If a meter reading is
+   * given and it's higher than the current one (or none is set yet), it also advances
+   * Equipment.currentMeterHours — same one-way-forward rule as updateMeterReading(), but a lower
+   * or missing reading here is just a log entry, not an error (unlike updateMeterReading, which
+   * rejects it outright — a fuel log is routine enough that backfilling an out-of-order entry
+   * shouldn't block the whole save). */
+  async addFuelLog(companyId: string, actor: AuditActor, id: string, input: AddFuelLogInput) {
+    const equipment = await this.findOrThrow(companyId, id);
+    const log = await this.prisma.equipmentFuelLog.create({
+      data: {
+        equipmentId: id,
+        quantity: input.quantity,
+        cost: input.cost,
+        filledAt: input.filledAt ? new Date(input.filledAt) : undefined,
+        meterHours: input.meterHours,
+        supplierId: input.supplierId,
+        notes: input.notes,
+      },
+    });
+    if (input.meterHours !== undefined && (equipment.currentMeterHours === null || input.meterHours > Number(equipment.currentMeterHours))) {
+      await this.prisma.equipment.update({ where: { id }, data: { currentMeterHours: input.meterHours } });
+    }
+    this.audit.record(companyId, actor, "equipment.fuel_logged", "Equipment", id, `Logged fuel for "${equipment.name}": ${input.quantity}`);
+    return log;
+  }
+
+  listFuelLogs(companyId: string, id: string) {
+    return this.prisma.equipmentFuelLog.findMany({
+      where: { equipmentId: id, equipment: { companyId } },
+      include: { supplier: { select: { id: true, name: true } } },
+      orderBy: { filledAt: "desc" },
+    });
+  }
+
+  /** Cost-per-hour rolled up from fuel + maintenance cost against the span between the earliest
+   * and latest logged meter reading across both — computed at read time, not stored. */
+  async costPerHour(companyId: string, id: string) {
+    await this.findOrThrow(companyId, id);
+    const [fuelLogs, maintenanceRecords] = await Promise.all([
+      this.prisma.equipmentFuelLog.findMany({ where: { equipmentId: id }, select: { cost: true, meterHours: true } }),
+      this.prisma.equipmentMaintenanceRecord.findMany({ where: { equipmentId: id }, select: { cost: true, meterHours: true } }),
+    ]);
+
+    const readings = [...fuelLogs, ...maintenanceRecords]
+      .map((r) => r.meterHours)
+      .filter((h): h is NonNullable<typeof h> => h !== null)
+      .map(Number);
+    const hoursElapsed = readings.length >= 2 ? Math.max(...readings) - Math.min(...readings) : 0;
+
+    return calculateCostPerHour({
+      totalFuelCost: fuelLogs.reduce((sum, l) => sum + Number(l.cost ?? 0), 0),
+      totalMaintenanceCost: maintenanceRecords.reduce((sum, r) => sum + Number(r.cost ?? 0), 0),
+      hoursElapsed,
+    });
   }
 
   listAssignments(companyId: string, id: string) {

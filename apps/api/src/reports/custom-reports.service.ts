@@ -1,8 +1,10 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import type { CreateCustomReportInput, ReportDefinitionInput } from "@cantero/shared";
+import type { CreateCustomReportInput, ReportDataset, ReportDefinitionInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { toCsv } from "../common/csv";
-import { DATASET_FIELDS, fetchDatasetRows, type ReportField } from "./report-datasets";
+import { LaborCostService } from "../team/labor-cost.service";
+import { fetchDatasetRows, fieldsFor, type ReportField } from "./report-datasets";
+import { ReportsService } from "./reports.service";
 
 export interface ReportRunResult {
   columns: ReportField[];
@@ -11,7 +13,15 @@ export interface ReportRunResult {
 
 @Injectable()
 export class CustomReportsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly reports: ReportsService,
+    private readonly laborCost: LaborCostService,
+  ) {}
+
+  fieldsFor(companyId: string, dataset: ReportDataset) {
+    return fieldsFor(this.prisma, companyId, dataset);
+  }
 
   list(companyId: string) {
     return this.prisma.customReport.findMany({
@@ -69,14 +79,19 @@ export class CustomReportsService {
   }
 
   private async execute(companyId: string, definition: ReportDefinitionInput): Promise<ReportRunResult> {
-    const allFields = DATASET_FIELDS[definition.dataset];
+    const allFields = await fieldsFor(this.prisma, companyId, definition.dataset);
     const columns = allFields.filter((f) => definition.columns.includes(f.key));
 
-    const allRows = await fetchDatasetRows(this.prisma, companyId, definition.dataset, {
-      dateFrom: definition.dateFrom ? new Date(definition.dateFrom) : undefined,
-      dateTo: definition.dateTo ? new Date(definition.dateTo) : undefined,
-      statusEquals: definition.statusEquals,
-    });
+    const allRows = await fetchDatasetRows(
+      { prisma: this.prisma, reports: this.reports, laborCost: this.laborCost },
+      companyId,
+      definition.dataset,
+      {
+        dateFrom: definition.dateFrom ? new Date(definition.dateFrom) : undefined,
+        dateTo: definition.dateTo ? new Date(definition.dateTo) : undefined,
+        statusEquals: definition.statusEquals,
+      },
+    );
 
     const rows = allRows.map((row) => {
       const picked: Record<string, unknown> = {};

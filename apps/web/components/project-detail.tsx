@@ -10,11 +10,15 @@ import { LookAheadPanel } from "@/components/look-ahead-panel";
 import { DailyLogsPanel } from "@/components/daily-logs-panel";
 import { WeatherForecastPanel } from "@/components/weather-forecast-panel";
 import { GeofencePanel } from "@/components/geofence-panel";
+import { CertifiedPayrollPanel } from "@/components/certified-payroll-panel";
+import { PermitsPanel } from "@/components/permits-panel";
 import { ProjectMembersPanel } from "@/components/project-members-panel";
 import { ContractsPanel } from "@/components/contracts-panel";
 import { DrawRequestsPanel } from "@/components/draw-requests-panel";
 import { TakeoffPanel } from "@/components/takeoff-panel";
+import { DrawingSheetsPanel } from "@/components/drawing-sheets-panel";
 import { GreenCertificationsPanel } from "@/components/green-certifications-panel";
+import { PortalMessagesPanel } from "@/components/portal-messages-panel";
 import { CarbonReportPanel } from "@/components/carbon-report-panel";
 import { ProjectCashFlowPanel } from "@/components/project-cash-flow-panel";
 import { CustomFieldsValuesPanel } from "@/components/custom-fields-values-panel";
@@ -119,6 +123,8 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
         </div>
       </div>
 
+      <PortalMessagesPanel projectId={projectId} />
+
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="card lg:col-span-1">
           <h2 className="mb-4 text-sm font-semibold text-gray-700">{t("newEstimate")}</h2>
@@ -210,11 +216,14 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
       </div>
 
       <TakeoffPanel projectId={projectId} />
+      <DrawingSheetsPanel projectId={projectId} />
       <SchedulingPanel projectId={projectId} />
       <LookAheadPanel projectId={projectId} />
       <ContractsPanel projectId={projectId} />
       <WeatherForecastPanel projectId={projectId} />
       <GeofencePanel projectId={projectId} />
+      <CertifiedPayrollPanel projectId={projectId} />
+      <PermitsPanel projectId={projectId} />
       <ProjectMembersPanel projectId={projectId} />
       <CustomFieldsValuesPanel entityType="project" entityId={projectId} />
       <DailyLogsPanel projectId={projectId} />

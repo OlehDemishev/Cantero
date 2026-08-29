@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import type { ImportResult } from "@cantero/shared";
+import { SUPPLIER_DOCUMENT_TYPES, type ImportResult, type SupplierDocumentType } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
+import { CertificateAttachment } from "@/components/certificate-attachment";
 import { MaterialRfqsPanel } from "@/components/material-rfqs-panel";
 import { apiFetch, apiUpload } from "@/lib/api-client";
 
@@ -19,6 +20,23 @@ interface Scorecard {
   totalSpend: number;
   onTimeRate: number | null;
   averageDelayDays: number | null;
+  reviewCount: number;
+  averageRating: number | null;
+  wouldReorderPercent: number | null;
+}
+interface SupplierDocument {
+  id: string;
+  type: SupplierDocumentType;
+  name: string;
+  expiresAt: string;
+}
+interface SupplierReview {
+  id: string;
+  reviewedByName: string;
+  rating: number;
+  wouldReorder: boolean | null;
+  comments: string | null;
+  createdAt: string;
 }
 
 export default function SuppliersPage() {
@@ -31,15 +49,76 @@ export default function SuppliersPage() {
   const [scorecards, setScorecards] = useState<Record<string, Scorecard>>({});
   const [syncBusy, setSyncBusy] = useState(false);
   const [syncResult, setSyncResult] = useState<ImportResult | null>(null);
+  const [documents, setDocuments] = useState<SupplierDocument[] | null>(null);
+  const [reviews, setReviews] = useState<SupplierReview[] | null>(null);
+  const [docForm, setDocForm] = useState({ type: "general_liability_insurance" as SupplierDocumentType, name: "", expiresAt: "" });
+  const [reviewForm, setReviewForm] = useState({ rating: "5", wouldReorder: "", comments: "" });
+  const [detailBusy, setDetailBusy] = useState(false);
+
+  function loadDetail(id: string) {
+    apiFetch<SupplierDocument[]>(`/materials/suppliers/${id}/documents`).then(setDocuments);
+    apiFetch<SupplierReview[]>(`/materials/suppliers/${id}/reviews`).then(setReviews);
+  }
 
   function toggleExpand(id: string) {
     if (expandedId === id) {
       setExpandedId(null);
+      setDocuments(null);
+      setReviews(null);
       return;
     }
     setExpandedId(id);
+    setDocuments(null);
+    setReviews(null);
     if (!scorecards[id]) {
       apiFetch<Scorecard>(`/materials/suppliers/${id}/scorecard`).then((s) => setScorecards((prev) => ({ ...prev, [id]: s })));
+    }
+    loadDetail(id);
+  }
+
+  async function addDocument(e: React.FormEvent, supplierId: string) {
+    e.preventDefault();
+    if (!docForm.name || !docForm.expiresAt) return;
+    setDetailBusy(true);
+    try {
+      await apiFetch(`/materials/suppliers/${supplierId}/documents`, {
+        method: "POST",
+        body: JSON.stringify({ type: docForm.type, name: docForm.name, expiresAt: new Date(docForm.expiresAt).toISOString() }),
+      });
+      setDocForm({ type: "general_liability_insurance", name: "", expiresAt: "" });
+      loadDetail(supplierId);
+    } finally {
+      setDetailBusy(false);
+    }
+  }
+
+  async function removeDocument(supplierId: string, documentId: string) {
+    await apiFetch(`/materials/suppliers/${supplierId}/documents/${documentId}`, { method: "DELETE" });
+    loadDetail(supplierId);
+  }
+
+  async function addReview(e: React.FormEvent, supplierId: string) {
+    e.preventDefault();
+    setDetailBusy(true);
+    try {
+      await apiFetch(`/materials/suppliers/${supplierId}/reviews`, {
+        method: "POST",
+        body: JSON.stringify({
+          rating: Number(reviewForm.rating),
+          wouldReorder: reviewForm.wouldReorder ? reviewForm.wouldReorder === "yes" : undefined,
+          comments: reviewForm.comments || undefined,
+        }),
+      });
+      setReviewForm({ rating: "5", wouldReorder: "", comments: "" });
+      loadDetail(supplierId);
+      setScorecards((prev) => {
+        const next = { ...prev };
+        delete next[supplierId];
+        return next;
+      });
+      apiFetch<Scorecard>(`/materials/suppliers/${supplierId}/scorecard`).then((s) => setScorecards((prev) => ({ ...prev, [supplierId]: s })));
+    } finally {
+      setDetailBusy(false);
     }
   }
 
@@ -150,8 +229,130 @@ export default function SuppliersPage() {
                                 <div className="text-gray-400">{t("totalSpend")}</div>
                                 <div className="font-medium">{card.totalSpend}</div>
                               </div>
+                              <div>
+                                <div className="text-gray-400">{t("averageRating")}</div>
+                                <div className="font-medium">{card.averageRating ?? "—"}</div>
+                              </div>
+                              <div>
+                                <div className="text-gray-400">{t("wouldReorderPercent")}</div>
+                                <div className="font-medium">{card.wouldReorderPercent !== null ? `${card.wouldReorderPercent}%` : "—"}</div>
+                              </div>
                             </>
                           )}
+                        </div>
+
+                        <div className="mt-3 border-t border-gray-100 pt-3">
+                          <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("coiDocuments")}</h3>
+                          {documents === null ? (
+                            <p className="text-xs text-gray-400">{tc("loading")}</p>
+                          ) : documents.length === 0 ? (
+                            <p className="text-xs text-gray-400">{t("noCoiDocuments")}</p>
+                          ) : (
+                            <ul className="mb-2 flex flex-col gap-1.5">
+                              {documents.map((doc) => {
+                                const expired = new Date(doc.expiresAt) < new Date();
+                                return (
+                                  <li key={doc.id} className="flex items-center justify-between text-xs">
+                                    <span>
+                                      <span className="text-gray-500">{t(doc.type)}</span> — {doc.name}
+                                      {" · "}
+                                      <span className={expired ? "text-error-700" : "text-gray-500"}>
+                                        {new Date(doc.expiresAt).toLocaleDateString()}
+                                      </span>
+                                    </span>
+                                    <span className="flex items-center gap-2">
+                                      <CertificateAttachment param="supplierDocumentId" entityId={doc.id} />
+                                      <button onClick={() => removeDocument(s.id, doc.id)} className="text-gray-400 hover:text-error-600">
+                                        ×
+                                      </button>
+                                    </span>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          )}
+                          <form onSubmit={(e) => addDocument(e, s.id)} className="flex flex-wrap items-end gap-2">
+                            <select
+                              className="input w-auto"
+                              value={docForm.type}
+                              onChange={(e) => setDocForm((f) => ({ ...f, type: e.target.value as SupplierDocumentType }))}
+                            >
+                              {SUPPLIER_DOCUMENT_TYPES.map((ty) => (
+                                <option key={ty} value={ty}>
+                                  {t(ty)}
+                                </option>
+                              ))}
+                            </select>
+                            <input
+                              required
+                              placeholder={t("documentNamePlaceholder")}
+                              className="input w-auto"
+                              value={docForm.name}
+                              onChange={(e) => setDocForm((f) => ({ ...f, name: e.target.value }))}
+                            />
+                            <input
+                              required
+                              type="date"
+                              className="input w-auto"
+                              value={docForm.expiresAt}
+                              onChange={(e) => setDocForm((f) => ({ ...f, expiresAt: e.target.value }))}
+                            />
+                            <button type="submit" disabled={detailBusy} className="btn-secondary px-2.5 py-1 text-xs">
+                              {t("addDocument")}
+                            </button>
+                          </form>
+                        </div>
+
+                        <div className="mt-3 border-t border-gray-100 pt-3">
+                          <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("reviews")}</h3>
+                          {reviews && reviews.length > 0 && (
+                            <ul className="mb-2 flex flex-col gap-1.5">
+                              {reviews.map((r) => (
+                                <li key={r.id} className="text-xs text-gray-600">
+                                  <span className="font-medium">{"★".repeat(r.rating)}</span> — {r.reviewedByName},{" "}
+                                  {new Date(r.createdAt).toLocaleDateString()}
+                                  {r.comments && <span className="text-gray-500"> · {r.comments}</span>}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                          <form onSubmit={(e) => addReview(e, s.id)} className="flex flex-wrap items-end gap-2">
+                            <label className="flex flex-col gap-1 text-xs text-gray-500">
+                              {t("rating")}
+                              <select
+                                className="input w-auto"
+                                value={reviewForm.rating}
+                                onChange={(e) => setReviewForm((f) => ({ ...f, rating: e.target.value }))}
+                              >
+                                {[5, 4, 3, 2, 1].map((n) => (
+                                  <option key={n} value={n}>
+                                    {n}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                            <label className="flex flex-col gap-1 text-xs text-gray-500">
+                              {t("wouldReorder")}
+                              <select
+                                className="input w-auto"
+                                value={reviewForm.wouldReorder}
+                                onChange={(e) => setReviewForm((f) => ({ ...f, wouldReorder: e.target.value }))}
+                              >
+                                <option value="">—</option>
+                                <option value="yes">{tc("yes")}</option>
+                                <option value="no">{tc("no")}</option>
+                              </select>
+                            </label>
+                            <input
+                              placeholder={t("reviewCommentsPlaceholder")}
+                              className="input"
+                              value={reviewForm.comments}
+                              onChange={(e) => setReviewForm((f) => ({ ...f, comments: e.target.value }))}
+                            />
+                            <button type="submit" disabled={detailBusy} className="btn-secondary px-2.5 py-1 text-xs">
+                              {t("addReview")}
+                            </button>
+                          </form>
                         </div>
 
                         <div className="mt-3 border-t border-gray-100 pt-3">

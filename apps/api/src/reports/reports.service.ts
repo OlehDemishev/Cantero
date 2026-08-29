@@ -300,6 +300,86 @@ export class ReportsService {
   }
 
   /** Same figures as wipReport(), laid out as the printable schedule a bank or bonding company asks for. */
+  /** Approved contract value not yet billed, company-wide — the standard "backlog" KPI. Reuses
+   * wipReport's per-project contract/billed totals rather than re-querying. */
+  async backlog(companyId: string) {
+    const { totals } = await this.wipReport(companyId);
+    return { backlog: round2(totals.contractValue - totals.billedToDate), contractValue: totals.contractValue, billedToDate: totals.billedToDate };
+  }
+
+  /** Every expiring-document source in the app, in one sorted list — SubcontractorDocument,
+   * SupplierDocument, WorkerCertification, Permit, and CompanyDocument each track expiry
+   * independently (see their own model comments) and already feed NotificationsService one at a
+   * time; this rolls all five into a single calendar view instead of five separate places to
+   * check. Already-expired items sort first (their expiresAt is in the past), so the most urgent
+   * items are always at the top regardless of lookaheadDays. */
+  async complianceCalendar(companyId: string, lookaheadDays = 90) {
+    const now = new Date();
+    const cutoff = new Date(now.getTime() + lookaheadDays * 24 * 60 * 60 * 1000);
+    const within = { lte: cutoff };
+
+    const [subDocs, supplierDocs, certs, permits, companyDocs] = await Promise.all([
+      this.prisma.subcontractorDocument.findMany({
+        where: { companyId, expiresAt: within },
+        include: { subcontractor: { select: { name: true } } },
+      }),
+      this.prisma.supplierDocument.findMany({
+        where: { companyId, expiresAt: within },
+        include: { supplier: { select: { name: true } } },
+      }),
+      this.prisma.workerCertification.findMany({
+        where: { companyId, expiresAt: within },
+        include: { worker: { select: { name: true } } },
+      }),
+      this.prisma.permit.findMany({
+        where: { companyId, expiresAt: within },
+        include: { project: { select: { name: true } } },
+      }),
+      this.prisma.companyDocument.findMany({ where: { companyId, expiresAt: within } }),
+    ]);
+
+    const items = [
+      ...subDocs.map((d) => ({
+        type: "subcontractor_document" as const,
+        label: `${d.type.replace(/_/g, " ")} — ${d.name}`,
+        holderName: d.subcontractor.name,
+        expiresAt: d.expiresAt,
+      })),
+      ...supplierDocs.map((d) => ({
+        type: "supplier_document" as const,
+        label: `${d.type.replace(/_/g, " ")} — ${d.name}`,
+        holderName: d.supplier.name,
+        expiresAt: d.expiresAt,
+      })),
+      ...certs.map((c) => ({
+        type: "worker_certification" as const,
+        label: c.name,
+        holderName: c.worker.name,
+        expiresAt: c.expiresAt,
+      })),
+      ...permits.filter((p) => p.expiresAt).map((p) => ({
+        type: "permit" as const,
+        label: p.permitType,
+        holderName: p.project.name,
+        expiresAt: p.expiresAt!,
+      })),
+      ...companyDocs.map((d) => ({
+        type: "company_document" as const,
+        label: `${d.type.replace(/_/g, " ")} — ${d.name}`,
+        holderName: null,
+        expiresAt: d.expiresAt,
+      })),
+    ]
+      .map((item) => ({ ...item, status: (item.expiresAt < now ? "expired" : "expiring") as "expired" | "expiring" }))
+      .sort((a, b) => a.expiresAt.getTime() - b.expiresAt.getTime());
+
+    return {
+      items,
+      expiredCount: items.filter((i) => i.status === "expired").length,
+      expiringCount: items.filter((i) => i.status === "expiring").length,
+    };
+  }
+
   async wipReportPdf(companyId: string): Promise<Buffer> {
     const [company, { rows, totals }] = await Promise.all([
       this.prisma.company.findUniqueOrThrow({ where: { id: companyId } }),

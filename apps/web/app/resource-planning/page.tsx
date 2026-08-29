@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
+import { CrewsPanel } from "@/components/crews-panel";
 import { apiFetch } from "@/lib/api-client";
 
 type ResourceType = "worker" | "equipment";
@@ -330,6 +331,8 @@ export default function ResourcePlanningPage() {
           )}
         </>
       )}
+
+      <CrewsPanel workers={workers} projects={projects} />
     </AuthenticatedShell>
   );
 }

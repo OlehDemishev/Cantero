@@ -152,6 +152,22 @@ export default function PortalDashboardPage() {
           </button>
         </div>
 
+        {projects && projects.length > 0 && (
+          <section className="card mb-6">
+            <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("projects")}</h2>
+            <ul className="flex flex-col gap-2">
+              {projects.map((p) => (
+                <li key={p.id} className="flex items-center justify-between">
+                  <span className="text-sm text-gray-800">{p.name}</span>
+                  <a href={`/portal/projects/${p.id}/messages`} className="text-xs text-brand-700 hover:underline">
+                    {t("messages")}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         {projects && projects.some((p) => p.progress.taskPercent !== null || p.progress.budgetPercent !== null) && (
           <section className="card mb-6">
             <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("projectProgress")}</h2>

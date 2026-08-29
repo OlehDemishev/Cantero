@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { REPORT_DATASETS, type ReportDataset } from "@cantero/shared";
+import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { AGGREGATE_REPORT_DATASETS, REPORT_DATASETS, type ReportDataset } from "@cantero/shared";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 
 interface ReportField {
@@ -10,59 +11,15 @@ interface ReportField {
   label: string;
 }
 
-/** Mirrors apps/api/src/reports/report-datasets.ts — static metadata, kept in sync by hand since it never changes at runtime. */
-const DATASET_FIELDS: Record<ReportDataset, ReportField[]> = {
-  projects: [
-    { key: "name", label: "Name" },
-    { key: "address", label: "Address" },
-    { key: "client", label: "Client" },
-    { key: "handoverDate", label: "Handover date" },
-    { key: "warrantyMonths", label: "Warranty (months)" },
-    { key: "createdAt", label: "Created" },
-  ],
-  invoices: [
-    { key: "number", label: "Number" },
-    { key: "status", label: "Status" },
-    { key: "client", label: "Client" },
-    { key: "project", label: "Project" },
-    { key: "subtotal", label: "Subtotal" },
-    { key: "taxAmount", label: "Tax" },
-    { key: "total", label: "Total" },
-    { key: "dueDate", label: "Due date" },
-    { key: "createdAt", label: "Created" },
-  ],
-  estimates: [
-    { key: "name", label: "Name" },
-    { key: "status", label: "Status" },
-    { key: "project", label: "Project" },
-    { key: "grandTotal", label: "Grand total" },
-    { key: "createdAt", label: "Created" },
-  ],
-  time_entries: [
-    { key: "worker", label: "Worker" },
-    { key: "project", label: "Project" },
-    { key: "task", label: "Task" },
-    { key: "hours", label: "Hours" },
-    { key: "date", label: "Date" },
-  ],
-  punch_list: [
-    { key: "title", label: "Title" },
-    { key: "status", label: "Status" },
-    { key: "project", label: "Project" },
-    { key: "dueDate", label: "Due date" },
-    { key: "createdAt", label: "Created" },
-  ],
-  rfis: [
-    { key: "number", label: "Number" },
-    { key: "subject", label: "Subject" },
-    { key: "status", label: "Status" },
-    { key: "project", label: "Project" },
-    { key: "dueDate", label: "Due date" },
-    { key: "createdAt", label: "Created" },
-  ],
-};
-
 const NO_STATUS_DATASETS = new Set<ReportDataset>(["projects", "time_entries"]);
+const AGGREGATE_DATASETS = new Set<ReportDataset>(AGGREGATE_REPORT_DATASETS);
+/** Aggregate datasets get a chart alongside the table — this maps each to its category/value
+ * columns so the chart doesn't need to guess which numeric column to plot. */
+const CHART_CONFIG: Partial<Record<ReportDataset, { type: "bar" | "line"; category: string; value: string }>> = {
+  revenue_by_month: { type: "line", category: "month", value: "revenue" },
+  project_margins: { type: "bar", category: "projectName", value: "margin" },
+  labor_utilization: { type: "bar", category: "workerName", value: "cost" },
+};
 
 interface RunResult {
   columns: ReportField[];
@@ -90,7 +47,8 @@ export function CustomReportsPanel() {
 
   const [saved, setSaved] = useState<SavedReport[] | null>(null);
   const [dataset, setDataset] = useState<ReportDataset>("projects");
-  const [columns, setColumns] = useState<string[]>(DATASET_FIELDS.projects.map((f) => f.key));
+  const [fields, setFields] = useState<ReportField[]>([]);
+  const [columns, setColumns] = useState<string[]>([]);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [statusEquals, setStatusEquals] = useState("");
@@ -105,12 +63,14 @@ export function CustomReportsPanel() {
 
   useEffect(load, []);
 
-  function changeDataset(next: ReportDataset) {
-    setDataset(next);
-    setColumns(DATASET_FIELDS[next].map((f) => f.key));
+  useEffect(() => {
+    apiFetch<ReportField[]>(`/custom-reports/fields?dataset=${dataset}`).then((f) => {
+      setFields(f);
+      setColumns(f.map((field) => field.key));
+    });
     setStatusEquals("");
     setResult(null);
-  }
+  }, [dataset]);
 
   function toggleColumn(key: string) {
     setColumns((cols) => (cols.includes(key) ? cols.filter((c) => c !== key) : [...cols, key]));
@@ -175,6 +135,8 @@ export function CustomReportsPanel() {
     load();
   }
 
+  const isAggregate = AGGREGATE_DATASETS.has(dataset);
+
   return (
     <div className="mt-10">
       <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("title")}</h2>
@@ -184,7 +146,7 @@ export function CustomReportsPanel() {
         <div className="flex flex-wrap gap-3">
           <label className="flex flex-col gap-1.5 text-sm">
             <span className="font-medium text-gray-700">{t("dataset")}</span>
-            <select className="input" value={dataset} onChange={(e) => changeDataset(e.target.value as ReportDataset)}>
+            <select className="input" value={dataset} onChange={(e) => setDataset(e.target.value as ReportDataset)}>
               {REPORT_DATASETS.map((d) => (
                 <option key={d} value={d}>
                   {t(`dataset_${d}`)}
@@ -192,31 +154,35 @@ export function CustomReportsPanel() {
               ))}
             </select>
           </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("dateFrom")}</span>
-            <input type="date" className="input" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("dateTo")}</span>
-            <input type="date" className="input" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
-          </label>
-          {!NO_STATUS_DATASETS.has(dataset) && (
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("statusEquals")}</span>
-              <input
-                className="input"
-                placeholder={t("statusPlaceholder")}
-                value={statusEquals}
-                onChange={(e) => setStatusEquals(e.target.value)}
-              />
-            </label>
+          {!isAggregate && (
+            <>
+              <label className="flex flex-col gap-1.5 text-sm">
+                <span className="font-medium text-gray-700">{t("dateFrom")}</span>
+                <input type="date" className="input" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+              </label>
+              <label className="flex flex-col gap-1.5 text-sm">
+                <span className="font-medium text-gray-700">{t("dateTo")}</span>
+                <input type="date" className="input" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+              </label>
+              {!NO_STATUS_DATASETS.has(dataset) && (
+                <label className="flex flex-col gap-1.5 text-sm">
+                  <span className="font-medium text-gray-700">{t("statusEquals")}</span>
+                  <input
+                    className="input"
+                    placeholder={t("statusPlaceholder")}
+                    value={statusEquals}
+                    onChange={(e) => setStatusEquals(e.target.value)}
+                  />
+                </label>
+              )}
+            </>
           )}
         </div>
 
         <div>
           <span className="mb-1.5 block text-sm font-medium text-gray-700">{t("columns")}</span>
           <div className="flex flex-wrap gap-3">
-            {DATASET_FIELDS[dataset].map((f) => (
+            {fields.map((f) => (
               <label key={f.key} className="flex items-center gap-1.5 text-xs text-gray-600">
                 <input type="checkbox" checked={columns.includes(f.key)} onChange={() => toggleColumn(f.key)} />
                 {f.label}
@@ -240,7 +206,12 @@ export function CustomReportsPanel() {
           </button>
         </div>
 
-        {result && <ReportTable result={result} emptyLabel={t("noRows")} />}
+        {result && (
+          <>
+            <ReportChart dataset={dataset} rows={result.rows} />
+            <ReportTable result={result} emptyLabel={t("noRows")} />
+          </>
+        )}
       </div>
 
       <h3 className="mb-2 mt-6 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("savedReports")}</h3>
@@ -273,6 +244,7 @@ export function CustomReportsPanel() {
               </div>
               {savedResult?.id === r.id && (
                 <div className="mt-3 border-t border-gray-100 pt-3">
+                  <ReportChart dataset={r.dataset} rows={savedResult.result.rows} />
                   <ReportTable result={savedResult.result} emptyLabel={t("noRows")} />
                 </div>
               )}
@@ -280,6 +252,39 @@ export function CustomReportsPanel() {
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+function ReportChart({ dataset, rows }: { dataset: ReportDataset; rows: Record<string, unknown>[] }) {
+  const config = CHART_CONFIG[dataset];
+  if (!config || rows.length === 0) return null;
+  // Only chart if both configured columns actually came back (the user may have unchecked one).
+  if (!(config.category in rows[0]) || !(config.value in rows[0])) return null;
+
+  const data = rows.map((r) => ({ ...r, [config.value]: Number(r[config.value] ?? 0) }));
+
+  return (
+    <div className="h-64 w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        {config.type === "line" ? (
+          <LineChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-gray-200, #e5e7eb)" />
+            <XAxis dataKey={config.category} tick={{ fontSize: 11 }} />
+            <YAxis tick={{ fontSize: 11 }} />
+            <Tooltip />
+            <Line type="monotone" dataKey={config.value} stroke="#465fff" strokeWidth={2} dot={false} />
+          </LineChart>
+        ) : (
+          <BarChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-gray-200, #e5e7eb)" />
+            <XAxis dataKey={config.category} tick={{ fontSize: 11 }} />
+            <YAxis tick={{ fontSize: 11 }} />
+            <Tooltip />
+            <Bar dataKey={config.value} fill="#465fff" radius={[4, 4, 0, 0]} />
+          </BarChart>
+        )}
+      </ResponsiveContainer>
     </div>
   );
 }

@@ -496,3 +496,127 @@ describe("ReportsService.wipReport", () => {
     );
   });
 });
+
+describe("ReportsService.backlog", () => {
+  let service: ReportsService;
+  let prisma: { project: { findMany: jest.Mock } };
+
+  beforeEach(async () => {
+    prisma = { project: { findMany: jest.fn() } };
+
+    const module = await Test.createTestingModule({
+      providers: [ReportsService, { provide: PrismaService, useValue: prisma }, ...PDF_PROVIDERS],
+    }).compile();
+
+    service = module.get(ReportsService);
+  });
+
+  it("is approved contract value minus what's already been billed", async () => {
+    prisma.project.findMany.mockResolvedValue([
+      {
+        id: "p1",
+        name: "Backlog Project",
+        estimates: [{ grandTotal: "30000", materialsCostTotal: "10000", laborCostTotal: "5000" }],
+        stockMovements: [],
+        timeEntries: [],
+        subcontractorCosts: [],
+        invoices: [{ total: "12000", percentComplete: null }],
+      },
+    ]);
+
+    const result = await service.backlog(COMPANY_A);
+
+    expect(result.contractValue).toBe(30000);
+    expect(result.billedToDate).toBe(12000);
+    expect(result.backlog).toBe(18000);
+  });
+});
+
+describe("ReportsService.complianceCalendar", () => {
+  let service: ReportsService;
+  let prisma: {
+    subcontractorDocument: { findMany: jest.Mock };
+    supplierDocument: { findMany: jest.Mock };
+    workerCertification: { findMany: jest.Mock };
+    permit: { findMany: jest.Mock };
+    companyDocument: { findMany: jest.Mock };
+  };
+
+  beforeEach(async () => {
+    prisma = {
+      subcontractorDocument: { findMany: jest.fn().mockResolvedValue([]) },
+      supplierDocument: { findMany: jest.fn().mockResolvedValue([]) },
+      workerCertification: { findMany: jest.fn().mockResolvedValue([]) },
+      permit: { findMany: jest.fn().mockResolvedValue([]) },
+      companyDocument: { findMany: jest.fn().mockResolvedValue([]) },
+    };
+
+    const module = await Test.createTestingModule({
+      providers: [ReportsService, { provide: PrismaService, useValue: prisma }, ...PDF_PROVIDERS],
+    }).compile();
+
+    service = module.get(ReportsService);
+  });
+
+  it("merges all five expiry sources into one list sorted soonest-first", async () => {
+    prisma.subcontractorDocument.findMany.mockResolvedValue([
+      { id: "d1", type: "general_liability_insurance", name: "GL", expiresAt: daysFromNowUTC(20), subcontractor: { name: "Acme Sub" } },
+    ]);
+    prisma.supplierDocument.findMany.mockResolvedValue([
+      { id: "d2", type: "general_liability_insurance", name: "GL", expiresAt: daysFromNowUTC(5), supplier: { name: "Acme Supply" } },
+    ]);
+    prisma.workerCertification.findMany.mockResolvedValue([
+      { id: "d3", name: "OSHA 30", expiresAt: daysFromNowUTC(10), worker: { name: "Marcus Bell" } },
+    ]);
+    prisma.permit.findMany.mockResolvedValue([
+      { id: "d4", permitType: "Building permit", expiresAt: daysFromNowUTC(15), project: { name: "Site A" } },
+    ]);
+    prisma.companyDocument.findMany.mockResolvedValue([
+      { id: "d5", type: "workers_comp_insurance", name: "WC Policy", expiresAt: daysFromNowUTC(1) },
+    ]);
+
+    const result = await service.complianceCalendar(COMPANY_A);
+
+    expect(result.items).toHaveLength(5);
+    expect(result.items.map((i) => i.type)).toEqual([
+      "company_document",
+      "supplier_document",
+      "worker_certification",
+      "permit",
+      "subcontractor_document",
+    ]);
+  });
+
+  it("splits items into expired vs. expiring-soon counts", async () => {
+    prisma.subcontractorDocument.findMany.mockResolvedValue([
+      { id: "d1", type: "general_liability_insurance", name: "GL", expiresAt: daysFromNowUTC(-5), subcontractor: { name: "Acme Sub" } },
+      { id: "d2", type: "workers_comp_insurance", name: "WC", expiresAt: daysFromNowUTC(5), subcontractor: { name: "Acme Sub" } },
+    ]);
+
+    const result = await service.complianceCalendar(COMPANY_A);
+
+    expect(result.expiredCount).toBe(1);
+    expect(result.expiringCount).toBe(1);
+    expect(result.items[0].status).toBe("expired");
+    expect(result.items[1].status).toBe("expiring");
+  });
+
+  it("excludes a permit with no expiresAt set", async () => {
+    prisma.permit.findMany.mockResolvedValue([
+      { id: "d1", permitType: "Building permit", expiresAt: null, project: { name: "Site A" } },
+    ]);
+
+    const result = await service.complianceCalendar(COMPANY_A);
+
+    expect(result.items).toHaveLength(0);
+  });
+
+  it("respects a custom lookahead window", async () => {
+    await service.complianceCalendar(COMPANY_A, 30);
+
+    const call = prisma.subcontractorDocument.findMany.mock.calls[0][0];
+    const cutoff = call.where.expiresAt.lte as Date;
+    const expectedCutoff = Date.now() + 30 * 24 * 60 * 60 * 1000;
+    expect(Math.abs(cutoff.getTime() - expectedCutoff)).toBeLessThan(5000);
+  });
+});

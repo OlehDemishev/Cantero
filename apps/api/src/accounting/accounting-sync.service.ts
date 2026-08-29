@@ -160,12 +160,53 @@ export class AccountingSyncService {
           data: { externalAccountingId: externalInvoiceId, externalAccountingSyncedAt: new Date() },
         });
         summary.synced++;
+        await this.logAttempt(companyId, connection.provider, invoice, "success");
       } catch (err) {
+        const message = (err as Error).message ?? "sync failed";
         summary.failed++;
-        summary.errors.push(`${invoice.number}: ${(err as Error).message ?? "sync failed"}`);
+        summary.errors.push(`${invoice.number}: ${message}`);
+        await this.logAttempt(companyId, connection.provider, invoice, "failed", message);
       }
     }
     return summary;
+  }
+
+  private logAttempt(
+    companyId: string,
+    provider: AccountingProviderEnum,
+    invoice: { id: string; number: string },
+    status: "success" | "failed",
+    errorMessage?: string,
+  ) {
+    return this.prisma.accountingSyncLog.create({
+      data: { companyId, provider, invoiceId: invoice.id, invoiceNumber: invoice.number, status, errorMessage },
+    });
+  }
+
+  /** Recent sync attempts (success and failure), newest first — the persistent trail the
+   * transient SyncSummary toast can't provide once the page reloads. */
+  syncHistory(companyId: string, limit = 50) {
+    return this.prisma.accountingSyncLog.findMany({ where: { companyId }, orderBy: { attemptedAt: "desc" }, take: limit });
+  }
+
+  /** Invoices that should be synced but aren't (not-draft, no externalAccountingId yet) plus the
+   * most recent sync failures — surfaces drift between this app and the connected provider
+   * without requiring the user to comb through every invoice by hand. */
+  async integrityCheck(companyId: string) {
+    const connection = await this.prisma.accountingConnection.findUnique({ where: { companyId } });
+    const [unsyncedInvoices, recentFailures] = await Promise.all([
+      this.prisma.invoice.findMany({
+        where: { companyId, externalAccountingId: null, status: { not: "draft" } },
+        select: { id: true, number: true, total: true, createdAt: true },
+        orderBy: { createdAt: "desc" },
+      }),
+      this.prisma.accountingSyncLog.findMany({
+        where: { companyId, status: "failed" },
+        orderBy: { attemptedAt: "desc" },
+        take: 20,
+      }),
+    ]);
+    return { connected: !!connection, provider: connection?.provider ?? null, unsyncedInvoices, recentFailures };
   }
 
   private async getConnectionOrThrow(companyId: string) {

@@ -7,6 +7,7 @@ import { QueueModule } from "./common/queue/queue.module";
 import { StorageModule } from "./common/storage/storage.module";
 import { AuditModule } from "./common/audit/audit.module";
 import { MailModule } from "./common/mail/mail.module";
+import { SmsModule } from "./common/sms/sms.module";
 import { WebhooksModule } from "./common/webhooks/webhooks.module";
 import { SessionsModule } from "./common/sessions/sessions.module";
 import { ExchangeRateModule } from "./common/exchange-rate/exchange-rate.module";
@@ -57,6 +58,9 @@ import { EstimateRemindersModule } from "./estimate-reminders/estimate-reminders
 import { CostCodesModule } from "./cost-codes/cost-codes.module";
 import { JobCostingModule } from "./job-costing/job-costing.module";
 import { ScimModule } from "./scim/scim.module";
+import { CertifiedPayrollModule } from "./certified-payroll/certified-payroll.module";
+import { DrawingsModule } from "./drawings/drawings.module";
+import { PermitsModule } from "./permits/permits.module";
 import { EstimateAccuracyModule } from "./estimate-accuracy/estimate-accuracy.module";
 import { SustainabilityModule } from "./sustainability/sustainability.module";
 
@@ -69,6 +73,7 @@ import { SustainabilityModule } from "./sustainability/sustainability.module";
     StorageModule,
     AuditModule,
     MailModule,
+    SmsModule,
     WebhooksModule,
     SessionsModule,
     ExchangeRateModule,
@@ -115,6 +120,9 @@ import { SustainabilityModule } from "./sustainability/sustainability.module";
     CostCodesModule,
     JobCostingModule,
     ScimModule,
+    CertifiedPayrollModule,
+    DrawingsModule,
+    PermitsModule,
     EstimateAccuracyModule,
     SustainabilityModule,
   ],

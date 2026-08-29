@@ -20,7 +20,7 @@ describe("EquipmentMaintenanceSchedulerService", () => {
 
   beforeEach(async () => {
     prisma = {
-      equipment: { findMany: jest.fn(), update: jest.fn() },
+      equipment: { findMany: jest.fn().mockResolvedValue([]), update: jest.fn() },
       membership: { findMany: jest.fn().mockResolvedValue([{ user: { email: "owner@example.com" } }]) },
     };
     mail = { send: jest.fn() };
@@ -86,6 +86,86 @@ describe("EquipmentMaintenanceSchedulerService", () => {
       expect(result.flagged).toBe(0);
       expect(mail.send).not.toHaveBeenCalled();
       expect(prisma.equipment.update).not.toHaveBeenCalled();
+    });
+
+    it("auto-transitions available equipment whose meter reading has reached its hour-based threshold", async () => {
+      prisma.equipment.findMany
+        .mockResolvedValueOnce([]) // date-overdue query
+        .mockResolvedValueOnce([
+          {
+            id: "eq-1",
+            companyId: COMPANY_A,
+            name: "Compressor",
+            status: "available",
+            currentMeterHours: 500,
+            nextMaintenanceDueHours: 500,
+            maintenanceOverdueHoursNotifiedAt: null,
+            company: { name: "Acme" },
+          },
+        ]);
+
+      const result = await service.runDuePass();
+
+      expect(result.flagged).toBe(1);
+      expect(prisma.equipment.update).toHaveBeenCalledWith({ where: { id: "eq-1" }, data: { status: "maintenance" } });
+      expect(mail.send).toHaveBeenCalledTimes(1);
+    });
+
+    it("leaves equipment below its hour-based threshold alone", async () => {
+      prisma.equipment.findMany.mockResolvedValueOnce([]).mockResolvedValueOnce([
+        {
+          id: "eq-1",
+          companyId: COMPANY_A,
+          name: "Compressor",
+          status: "available",
+          currentMeterHours: 250,
+          nextMaintenanceDueHours: 500,
+          maintenanceOverdueHoursNotifiedAt: null,
+          company: { name: "Acme" },
+        },
+      ]);
+
+      const result = await service.runDuePass();
+
+      expect(result.flagged).toBe(0);
+      expect(prisma.equipment.update).not.toHaveBeenCalled();
+    });
+
+    it("notifies independently for date and hours overdue on the same in-use equipment", async () => {
+      prisma.equipment.findMany
+        .mockResolvedValueOnce([
+          {
+            id: "eq-1",
+            companyId: COMPANY_A,
+            name: "Crane",
+            status: "in_use",
+            maintenanceOverdueNotifiedAt: new Date(), // already notified for the date reason
+            maintenanceOverdueHoursNotifiedAt: null,
+            company: { name: "Acme" },
+          },
+        ])
+        .mockResolvedValueOnce([
+          {
+            id: "eq-1",
+            companyId: COMPANY_A,
+            name: "Crane",
+            status: "in_use",
+            currentMeterHours: 800,
+            nextMaintenanceDueHours: 800,
+            maintenanceOverdueNotifiedAt: new Date(),
+            maintenanceOverdueHoursNotifiedAt: null, // not yet notified for the hours reason
+            company: { name: "Acme" },
+          },
+        ]);
+
+      const result = await service.runDuePass();
+
+      // Still notifies once (for the not-yet-flagged hours reason), even though the date reason was already flagged.
+      expect(result.flagged).toBe(1);
+      expect(prisma.equipment.update).toHaveBeenCalledWith({
+        where: { id: "eq-1" },
+        data: { maintenanceOverdueNotifiedAt: undefined, maintenanceOverdueHoursNotifiedAt: expect.any(Date) },
+      });
     });
   });
 });

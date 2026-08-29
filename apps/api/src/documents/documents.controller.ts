@@ -14,7 +14,7 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { updateDocumentTagsSchema, type AuthUser, type UpdateDocumentTagsInput } from "@cantero/shared";
+import { updateDocumentTagsSchema, type AuthUser, type Locale, type UpdateDocumentTagsInput } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
@@ -35,6 +35,10 @@ export class DocumentsController {
     @Query("warrantyClaimId") warrantyClaimId?: string,
     @Query("subcontractorDocumentId") subcontractorDocumentId?: string,
     @Query("deficiencyId") deficiencyId?: string,
+    @Query("permitId") permitId?: string,
+    @Query("safetyBriefingId") safetyBriefingId?: string,
+    @Query("supplierDocumentId") supplierDocumentId?: string,
+    @Query("companyDocumentId") companyDocumentId?: string,
     @Query("category") category?: string,
     @Query("search") search?: string,
     @Query("tag") tag?: string,
@@ -48,6 +52,10 @@ export class DocumentsController {
       warrantyClaimId,
       subcontractorDocumentId,
       deficiencyId,
+      permitId,
+      safetyBriefingId,
+      supplierDocumentId,
+      companyDocumentId,
       category,
       search,
       tag,
@@ -67,6 +75,11 @@ export class DocumentsController {
     @Query("warrantyClaimId") warrantyClaimId?: string,
     @Query("subcontractorDocumentId") subcontractorDocumentId?: string,
     @Query("deficiencyId") deficiencyId?: string,
+    @Query("permitId") permitId?: string,
+    @Query("safetyBriefingId") safetyBriefingId?: string,
+    @Query("supplierDocumentId") supplierDocumentId?: string,
+    @Query("companyDocumentId") companyDocumentId?: string,
+    @Query("locale") locale?: Locale,
     @Query("category") category?: string,
     @Query("tags") tags?: string,
   ) {
@@ -80,6 +93,11 @@ export class DocumentsController {
       warrantyClaimId,
       subcontractorDocumentId,
       deficiencyId,
+      permitId,
+      safetyBriefingId,
+      supplierDocumentId,
+      companyDocumentId,
+      locale,
       category,
       tags: tags ? tags.split(",").map((t) => t.trim()).filter(Boolean) : undefined,
     });

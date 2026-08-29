@@ -3,11 +3,13 @@ import {
   answerRfiSchema,
   bulkActionIdsSchema,
   createRfiSchema,
+  setDrawingPinSchema,
   updateRfiSchema,
   type AnswerRfiInput,
   type AuthUser,
   type BulkActionIdsInput,
   type CreateRfiInput,
+  type SetDrawingPinInput,
   type UpdateRfiInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
@@ -36,6 +38,11 @@ export class RfiController {
   @Patch(":id")
   update(@CurrentUser() user: AuthUser, @Param("id") id: string, @Body(new ZodValidationPipe(updateRfiSchema)) body: UpdateRfiInput) {
     return this.service.update(user.companyId, id, body);
+  }
+
+  @Patch(":id/pin")
+  setPin(@CurrentUser() user: AuthUser, @Param("id") id: string, @Body(new ZodValidationPipe(setDrawingPinSchema)) body: SetDrawingPinInput) {
+    return this.service.setPin(user.companyId, id, body);
   }
 
   @Post("bulk/close")

@@ -8,10 +8,12 @@ import { PortalJwtService } from "./portal-jwt.service";
 import { PortalAuthGuard } from "./portal-auth.guard";
 import { PortalController } from "./portal.controller";
 import { PortalService } from "./portal.service";
+import { PortalMessagesController } from "./portal-messages.controller";
+import { PortalMessagesService } from "./portal-messages.service";
 
 @Module({
   imports: [EstimatesModule, FinanceModule, BillingModule],
-  controllers: [PortalAuthController, PortalController],
-  providers: [PortalJwtService, PortalAuthGuard, PortalAuthService, PortalService],
+  controllers: [PortalAuthController, PortalController, PortalMessagesController],
+  providers: [PortalJwtService, PortalAuthGuard, PortalAuthService, PortalService, PortalMessagesService],
 })
 export class PortalModule {}

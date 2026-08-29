@@ -4,25 +4,27 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, apiUpload, downloadBlob } from "@/lib/api-client";
 
+type CertificateAttachmentParam = "subcontractorDocumentId" | "supplierDocumentId" | "companyDocumentId";
+
 interface DocumentSummary {
   id: string;
   name: string;
 }
 
-/** A single optional file (PDF or scanned image) attached to one SubcontractorDocument record — the proof behind the tracked type/name/expiry. */
-export function CertificateAttachment({ subcontractorDocumentId }: { subcontractorDocumentId: string }) {
-  const t = useTranslations("subcontractorCompliance");
+/** A single optional file (PDF or scanned image) attached to one insurance-document record —
+ * the proof behind the tracked type/name/expiry, shared across subcontractor, supplier, and
+ * company COI records via whichever Document attachment param applies. */
+export function CertificateAttachment({ param, entityId }: { param: CertificateAttachmentParam; entityId: string }) {
+  const t = useTranslations("common");
   const inputRef = useRef<HTMLInputElement>(null);
   const [doc, setDoc] = useState<DocumentSummary | null | undefined>(undefined);
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<DocumentSummary[]>(`/documents?subcontractorDocumentId=${subcontractorDocumentId}`).then((docs) =>
-      setDoc(docs[0] ?? null),
-    );
+    apiFetch<DocumentSummary[]>(`/documents?${param}=${entityId}`).then((docs) => setDoc(docs[0] ?? null));
   }
 
-  useEffect(load, [subcontractorDocumentId]);
+  useEffect(load, [param, entityId]);
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -30,7 +32,7 @@ export function CertificateAttachment({ subcontractorDocumentId }: { subcontract
     if (!file) return;
     setBusy(true);
     try {
-      await apiUpload(`/documents?subcontractorDocumentId=${subcontractorDocumentId}&category=insurance_certificate`, file);
+      await apiUpload(`/documents?${param}=${entityId}&category=insurance_certificate`, file);
       load();
     } finally {
       setBusy(false);

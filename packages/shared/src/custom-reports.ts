@@ -1,7 +1,21 @@
 import { z } from "zod";
 
-export const REPORT_DATASETS = ["projects", "invoices", "estimates", "time_entries", "punch_list", "rfis"] as const;
+export const REPORT_DATASETS = [
+  "projects",
+  "invoices",
+  "estimates",
+  "time_entries",
+  "punch_list",
+  "rfis",
+  "revenue_by_month",
+  "project_margins",
+  "labor_utilization",
+] as const;
 export type ReportDataset = (typeof REPORT_DATASETS)[number];
+
+/** Datasets that are pre-aggregated (grouped/summed server-side) rather than one row per record —
+ * the builder's date-range and status filters don't apply to these. */
+export const AGGREGATE_REPORT_DATASETS: ReportDataset[] = ["revenue_by_month", "project_margins", "labor_utilization"];
 
 export const reportDefinitionSchema = z.object({
   dataset: z.enum(REPORT_DATASETS),

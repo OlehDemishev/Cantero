@@ -10,17 +10,17 @@ const ACTOR = { userId: "user-1", name: "Accountant" };
 describe("BankReconciliationService", () => {
   let service: BankReconciliationService;
   let prisma: {
-    bankTransaction: { findFirst: jest.Mock; update: jest.Mock; createMany: jest.Mock };
-    invoice: { findFirst: jest.Mock };
-    expense: { findFirst: jest.Mock };
+    bankTransaction: { findFirst: jest.Mock; findMany: jest.Mock; update: jest.Mock; createMany: jest.Mock };
+    invoice: { findFirst: jest.Mock; findMany: jest.Mock };
+    expense: { findFirst: jest.Mock; findMany: jest.Mock };
   };
   let audit: { record: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
-      bankTransaction: { findFirst: jest.fn(), update: jest.fn(), createMany: jest.fn() },
-      invoice: { findFirst: jest.fn() },
-      expense: { findFirst: jest.fn() },
+      bankTransaction: { findFirst: jest.fn(), findMany: jest.fn(), update: jest.fn(), createMany: jest.fn() },
+      invoice: { findFirst: jest.fn(), findMany: jest.fn() },
+      expense: { findFirst: jest.fn(), findMany: jest.fn() },
     };
     audit = { record: jest.fn() };
 
@@ -62,6 +62,68 @@ describe("BankReconciliationService", () => {
           expect.objectContaining({ companyId: COMPANY_A, description: "—", amount: -25.5 }),
         ],
       });
+    });
+  });
+
+  describe("suggestMatches", () => {
+    it("suggests an invoice for a positive (money-in) transaction with a matching amount", async () => {
+      prisma.bankTransaction.findMany
+        .mockResolvedValueOnce([{ id: "tx-1", date: new Date("2026-06-05"), description: "Deposit", amount: 500 }])
+        .mockResolvedValueOnce([]); // already-reconciled transactions
+      prisma.invoice.findMany.mockResolvedValue([
+        { id: "inv-1", number: "INV-001", total: 500, dueDate: new Date("2026-06-03"), createdAt: new Date("2026-05-20") },
+      ]);
+      prisma.expense.findMany.mockResolvedValue([]);
+
+      const result = await service.suggestMatches(COMPANY_A);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].candidates).toHaveLength(1);
+      expect(result[0].candidates[0]).toMatchObject({ type: "invoice", id: "inv-1", exact: true, daysApart: 2 });
+    });
+
+    it("suggests an expense for a negative (money-out) transaction, never an invoice", async () => {
+      prisma.bankTransaction.findMany
+        .mockResolvedValueOnce([{ id: "tx-1", date: new Date("2026-06-05"), description: "Supplier payment", amount: -120 }])
+        .mockResolvedValueOnce([]);
+      prisma.invoice.findMany.mockResolvedValue([
+        { id: "inv-1", number: "INV-001", total: 120, dueDate: new Date("2026-06-05"), createdAt: new Date("2026-05-20") },
+      ]);
+      prisma.expense.findMany.mockResolvedValue([{ id: "exp-1", description: "Lumber", amount: 120, incurredAt: new Date("2026-06-04") }]);
+
+      const result = await service.suggestMatches(COMPANY_A);
+
+      expect(result[0].candidates).toHaveLength(1);
+      expect(result[0].candidates[0]).toMatchObject({ type: "expense", id: "exp-1" });
+    });
+
+    it("excludes an invoice already matched by another reconciled transaction", async () => {
+      prisma.bankTransaction.findMany
+        .mockResolvedValueOnce([{ id: "tx-1", date: new Date("2026-06-05"), description: "Deposit", amount: 500 }])
+        .mockResolvedValueOnce([{ matchedInvoiceId: "inv-1", matchedExpenseId: null }]);
+      prisma.invoice.findMany.mockResolvedValue([
+        { id: "inv-1", number: "INV-001", total: 500, dueDate: new Date("2026-06-05"), createdAt: new Date("2026-05-20") },
+      ]);
+      prisma.expense.findMany.mockResolvedValue([]);
+
+      const result = await service.suggestMatches(COMPANY_A);
+
+      expect(result[0].candidates).toEqual([]);
+    });
+
+    it("excludes a candidate whose amount or date is too far off", async () => {
+      prisma.bankTransaction.findMany
+        .mockResolvedValueOnce([{ id: "tx-1", date: new Date("2026-06-05"), description: "Deposit", amount: 500 }])
+        .mockResolvedValueOnce([]);
+      prisma.invoice.findMany.mockResolvedValue([
+        { id: "inv-1", number: "INV-001", total: 900, dueDate: new Date("2026-06-05"), createdAt: new Date("2026-05-20") },
+        { id: "inv-2", number: "INV-002", total: 500, dueDate: new Date("2026-01-01"), createdAt: new Date("2025-12-01") },
+      ]);
+      prisma.expense.findMany.mockResolvedValue([]);
+
+      const result = await service.suggestMatches(COMPANY_A);
+
+      expect(result[0].candidates).toEqual([]);
     });
   });
 

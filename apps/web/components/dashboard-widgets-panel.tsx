@@ -226,6 +226,59 @@ function WidgetBody({
     );
   }
 
+  if (type === "backlog" && typeof data === "object") {
+    const d = data as { backlog: number; contractValue: number; billedToDate: number };
+    return (
+      <div className="text-center">
+        <div className="text-2xl font-semibold text-gray-900">
+          {d.backlog} {currency}
+        </div>
+        <div className="mt-1 text-xs text-gray-500">
+          {t("widgetBacklogDetail", { contractValue: d.contractValue, billedToDate: d.billedToDate, currency })}
+        </div>
+      </div>
+    );
+  }
+
+  if (type === "compliance_calendar" && typeof data === "object") {
+    const d = data as {
+      items: { type: string; label: string; holderName: string | null; expiresAt: string; status: "expired" | "expiring" }[];
+      expiredCount: number;
+      expiringCount: number;
+    };
+    return (
+      <div>
+        <div className="mb-3 grid grid-cols-2 gap-2 text-center text-sm">
+          <div>
+            <div className="text-xs text-gray-500">{t("widgetExpired")}</div>
+            <div className={`font-semibold ${d.expiredCount > 0 ? "text-error-700" : "text-gray-900"}`}>{d.expiredCount}</div>
+          </div>
+          <div>
+            <div className="text-xs text-gray-500">{t("widgetExpiringSoon")}</div>
+            <div className="font-semibold text-warning-700">{d.expiringCount}</div>
+          </div>
+        </div>
+        {d.items.length === 0 ? (
+          <p className="text-sm text-gray-400">{emptyLabel}</p>
+        ) : (
+          <ul className="flex flex-col gap-1">
+            {d.items.slice(0, 6).map((item, i) => (
+              <li key={i} className="flex items-center justify-between text-xs">
+                <span className="truncate text-gray-700">
+                  {item.label}
+                  {item.holderName && <span className="text-gray-400"> — {item.holderName}</span>}
+                </span>
+                <span className={item.status === "expired" ? "text-error-700" : "text-gray-500"}>
+                  {new Date(item.expiresAt).toLocaleDateString()}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    );
+  }
+
   if (type === "custom_report" && typeof data === "object") {
     const d = data as { columns: { key: string; label: string }[]; rows: Record<string, unknown>[] };
     if (d.rows.length === 0) return <p className="text-sm text-gray-400">{emptyLabel}</p>;

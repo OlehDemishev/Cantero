@@ -46,6 +46,25 @@ interface Equipment {
   assignments: AssignmentSummary[];
   maintenanceIntervalDays: number | null;
   nextMaintenanceDueAt: string | null;
+  currentMeterHours: string | null;
+  maintenanceIntervalHours: string | null;
+  nextMaintenanceDueHours: string | null;
+}
+interface Supplier {
+  id: string;
+  name: string;
+}
+interface FuelLog {
+  id: string;
+  filledAt: string;
+  quantity: string;
+  cost: string | null;
+  meterHours: string | null;
+  supplier: { id: string; name: string } | null;
+}
+interface CostPerHour {
+  totalCost: number;
+  costPerHour: number | null;
 }
 interface Assignment {
   id: string;
@@ -62,6 +81,8 @@ interface MaintenanceRecord {
   description: string;
   cost: string | null;
   performedAt: string;
+  meterHours: string | null;
+  supplier: { id: string; name: string } | null;
 }
 
 const STATUS_STYLES: Record<EquipmentStatus, string> = {
@@ -81,11 +102,17 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
   const [equipment, setEquipment] = useState<Equipment | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [workers, setWorkers] = useState<Worker[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [assignments, setAssignments] = useState<Assignment[] | null>(null);
   const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[] | null>(null);
+  const [fuelLogs, setFuelLogs] = useState<FuelLog[] | null>(null);
+  const [costPerHour, setCostPerHour] = useState<CostPerHour | null>(null);
   const [checkOutForm, setCheckOutForm] = useState({ projectId: "", workerId: "" });
-  const [maintenanceForm, setMaintenanceForm] = useState({ description: "", cost: "" });
+  const [maintenanceForm, setMaintenanceForm] = useState({ description: "", cost: "", supplierId: "", meterHours: "" });
+  const [fuelForm, setFuelForm] = useState({ quantity: "", cost: "", supplierId: "", meterHours: "" });
   const [scheduleIntervalDays, setScheduleIntervalDays] = useState("");
+  const [scheduleIntervalHours, setScheduleIntervalHours] = useState("");
+  const [meterReading, setMeterReading] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -93,15 +120,20 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
     apiFetch<Equipment>(`/equipment/${id}`).then((e) => {
       setEquipment(e);
       setScheduleIntervalDays(e.maintenanceIntervalDays !== null ? String(e.maintenanceIntervalDays) : "");
+      setScheduleIntervalHours(e.maintenanceIntervalHours !== null ? e.maintenanceIntervalHours : "");
+      setMeterReading(e.currentMeterHours !== null ? e.currentMeterHours : "");
     });
     apiFetch<Assignment[]>(`/equipment/${id}/assignments`).then(setAssignments);
     apiFetch<MaintenanceRecord[]>(`/equipment/${id}/maintenance-records`).then(setMaintenanceRecords);
+    apiFetch<FuelLog[]>(`/equipment/${id}/fuel-logs`).then(setFuelLogs);
+    apiFetch<CostPerHour>(`/equipment/${id}/cost-per-hour`).then(setCostPerHour);
   }
 
   useEffect(() => {
     load();
     apiFetch<Project[]>("/projects").then(setProjects);
     apiFetch<Worker[]>("/workers").then(setWorkers);
+    apiFetch<Supplier[]>("/materials/suppliers").then(setSuppliers);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -178,6 +210,49 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
     }
   }
 
+  async function saveHoursSchedule(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      await apiFetch(`/equipment/${id}/maintenance-schedule`, {
+        method: "PATCH",
+        body: JSON.stringify({ intervalHours: scheduleIntervalHours ? Number(scheduleIntervalHours) : null }),
+      });
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function clearHoursSchedule() {
+    setBusy(true);
+    try {
+      await apiFetch(`/equipment/${id}/maintenance-schedule`, { method: "PATCH", body: JSON.stringify({ intervalHours: null }) });
+      setScheduleIntervalHours("");
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveMeterReading(e: React.FormEvent) {
+    e.preventDefault();
+    if (!meterReading) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await apiFetch(`/equipment/${id}/meter-reading`, {
+        method: "PATCH",
+        body: JSON.stringify({ currentMeterHours: Number(meterReading) }),
+      });
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : tc("error"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function addMaintenanceRecord(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -187,9 +262,32 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
         body: JSON.stringify({
           description: maintenanceForm.description,
           cost: maintenanceForm.cost ? Number(maintenanceForm.cost) : undefined,
+          supplierId: maintenanceForm.supplierId || undefined,
+          meterHours: maintenanceForm.meterHours ? Number(maintenanceForm.meterHours) : undefined,
         }),
       });
-      setMaintenanceForm({ description: "", cost: "" });
+      setMaintenanceForm({ description: "", cost: "", supplierId: "", meterHours: "" });
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function addFuelLog(e: React.FormEvent) {
+    e.preventDefault();
+    if (!fuelForm.quantity) return;
+    setBusy(true);
+    try {
+      await apiFetch(`/equipment/${id}/fuel-logs`, {
+        method: "POST",
+        body: JSON.stringify({
+          quantity: Number(fuelForm.quantity),
+          cost: fuelForm.cost ? Number(fuelForm.cost) : undefined,
+          supplierId: fuelForm.supplierId || undefined,
+          meterHours: fuelForm.meterHours ? Number(fuelForm.meterHours) : undefined,
+        }),
+      });
+      setFuelForm({ quantity: "", cost: "", supplierId: "", meterHours: "" });
       load();
     } finally {
       setBusy(false);
@@ -320,6 +418,61 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
               </button>
             )}
           </form>
+
+          <div className="mt-4 border-t border-gray-100 pt-4 dark:border-gray-800">
+            <p className="mb-2 text-sm text-gray-700 dark:text-gray-300">
+              {t("currentMeterHours")}: {equipment.currentMeterHours ?? "—"}
+              {equipment.nextMaintenanceDueHours !== null && (
+                <span
+                  className={
+                    Number(equipment.currentMeterHours ?? 0) >= Number(equipment.nextMaintenanceDueHours)
+                      ? "ml-2 font-medium text-error-600"
+                      : "ml-2 text-gray-500"
+                  }
+                >
+                  {t("nextDueHours", { hours: equipment.nextMaintenanceDueHours })}
+                </span>
+              )}
+            </p>
+            <form onSubmit={saveMeterReading} className="mb-3 flex flex-wrap items-end gap-2">
+              <label className="flex flex-col gap-1 text-xs text-gray-500">
+                {t("updateMeterReading")}
+                <input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  className="input w-32"
+                  value={meterReading}
+                  onChange={(e) => setMeterReading(e.target.value)}
+                />
+              </label>
+              <button type="submit" disabled={busy} className="btn-secondary">
+                {tc("save")}
+              </button>
+            </form>
+            <form onSubmit={saveHoursSchedule} className="flex flex-wrap items-end gap-2">
+              <label className="flex flex-col gap-1 text-xs text-gray-500">
+                {t("intervalHours")}
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  placeholder={t("intervalHoursPlaceholder")}
+                  className="input w-32"
+                  value={scheduleIntervalHours}
+                  onChange={(e) => setScheduleIntervalHours(e.target.value)}
+                />
+              </label>
+              <button type="submit" disabled={busy} className="btn-secondary">
+                {tc("save")}
+              </button>
+              {equipment.maintenanceIntervalHours !== null && (
+                <button type="button" onClick={clearHoursSchedule} disabled={busy} className="btn-secondary">
+                  {t("disableSchedule")}
+                </button>
+              )}
+            </form>
+          </div>
         </section>
 
         <section className="card">
@@ -338,7 +491,11 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
                       </span>
                     )}
                   </div>
-                  <span className="text-xs text-gray-400">{new Date(r.performedAt).toLocaleDateString()}</span>
+                  <span className="text-xs text-gray-400">
+                    {new Date(r.performedAt).toLocaleDateString()}
+                    {r.supplier && ` · ${r.supplier.name}`}
+                    {r.meterHours && ` · ${r.meterHours}${t("hoursAbbr")}`}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -351,7 +508,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
               value={maintenanceForm.description}
               onChange={(e) => setMaintenanceForm((f) => ({ ...f, description: e.target.value }))}
             />
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <input
                 type="number"
                 step="0.01"
@@ -360,10 +517,104 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
                 value={maintenanceForm.cost}
                 onChange={(e) => setMaintenanceForm((f) => ({ ...f, cost: e.target.value }))}
               />
+              <input
+                type="number"
+                step="0.1"
+                placeholder={t("meterHoursPlaceholder")}
+                className="input w-32"
+                value={maintenanceForm.meterHours}
+                onChange={(e) => setMaintenanceForm((f) => ({ ...f, meterHours: e.target.value }))}
+              />
+              <select
+                className="input"
+                value={maintenanceForm.supplierId}
+                onChange={(e) => setMaintenanceForm((f) => ({ ...f, supplierId: e.target.value }))}
+              >
+                <option value="">{t("noSupplier")}</option>
+                {suppliers.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
               <button type="submit" disabled={busy} className="btn-secondary shrink-0 px-3 py-1.5 text-xs">
                 {t("addMaintenanceRecord")}
               </button>
             </div>
+          </form>
+        </section>
+
+        <section className="card">
+          <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("fuelLogs")}</h2>
+          <p className="mb-3 text-xs text-gray-500">{t("fuelLogsHint")}</p>
+          {costPerHour && (
+            <p className="mb-3 text-sm text-gray-700 dark:text-gray-300">
+              {t("costPerHour")}: {costPerHour.costPerHour !== null ? `${costPerHour.costPerHour} ${currency}/${t("hoursAbbr")}` : "—"}
+              <span className="ml-2 text-xs text-gray-400">
+                ({t("totalCost")}: {costPerHour.totalCost} {currency})
+              </span>
+            </p>
+          )}
+          {!fuelLogs || fuelLogs.length === 0 ? (
+            <p className="mb-3 text-sm text-gray-400">{t("noFuelLogs")}</p>
+          ) : (
+            <ul className="mb-3 flex flex-col gap-2">
+              {fuelLogs.map((f) => (
+                <li key={f.id} className="border-b border-gray-100 pb-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>{f.quantity}</span>
+                    {f.cost && (
+                      <span className="text-gray-500">
+                        {f.cost} {currency}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-xs text-gray-400">
+                    {new Date(f.filledAt).toLocaleDateString()}
+                    {f.supplier && ` · ${f.supplier.name}`}
+                    {f.meterHours && ` · ${f.meterHours}${t("hoursAbbr")}`}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <form onSubmit={addFuelLog} className="flex flex-wrap gap-2">
+            <input
+              required
+              type="number"
+              step="0.01"
+              placeholder={t("quantityPlaceholder")}
+              className="input w-32"
+              value={fuelForm.quantity}
+              onChange={(e) => setFuelForm((f) => ({ ...f, quantity: e.target.value }))}
+            />
+            <input
+              type="number"
+              step="0.01"
+              placeholder={t("cost")}
+              className="input"
+              value={fuelForm.cost}
+              onChange={(e) => setFuelForm((f) => ({ ...f, cost: e.target.value }))}
+            />
+            <input
+              type="number"
+              step="0.1"
+              placeholder={t("meterHoursPlaceholder")}
+              className="input w-32"
+              value={fuelForm.meterHours}
+              onChange={(e) => setFuelForm((f) => ({ ...f, meterHours: e.target.value }))}
+            />
+            <select className="input" value={fuelForm.supplierId} onChange={(e) => setFuelForm((f) => ({ ...f, supplierId: e.target.value }))}>
+              <option value="">{t("noSupplier")}</option>
+              {suppliers.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+            <button type="submit" disabled={busy} className="btn-secondary shrink-0 px-3 py-1.5 text-xs">
+              {t("addFuelLog")}
+            </button>
           </form>
         </section>
 

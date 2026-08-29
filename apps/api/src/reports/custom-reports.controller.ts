@@ -1,10 +1,12 @@
-import { Body, Controller, Delete, Get, Header, Param, Post, Res } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, Header, Param, Post, Query, Res } from "@nestjs/common";
 import type { Response } from "express";
 import {
   createCustomReportSchema,
   reportDefinitionSchema,
+  REPORT_DATASETS,
   type AuthUser,
   type CreateCustomReportInput,
+  type ReportDataset,
   type ReportDefinitionInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
@@ -18,6 +20,12 @@ export class CustomReportsController {
   @Get()
   list(@CurrentUser() user: AuthUser) {
     return this.service.list(user.companyId);
+  }
+
+  @Get("fields")
+  fields(@CurrentUser() user: AuthUser, @Query("dataset") dataset: string) {
+    if (!REPORT_DATASETS.includes(dataset as ReportDataset)) throw new BadRequestException("Unknown dataset");
+    return this.service.fieldsFor(user.companyId, dataset as ReportDataset);
   }
 
   @Post()

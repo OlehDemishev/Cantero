@@ -7,6 +7,7 @@ import {
   SUPPORTED_CURRENCIES,
   MEMBERSHIP_ROLES_MANAGEABLE,
   WEBHOOK_EVENTS,
+  WEBHOOK_TEMPLATES,
   API_KEY_SCOPES,
   type WebhookEvent,
   type ApiKeyScope,
@@ -26,8 +27,10 @@ import { IntegrationsPanel } from "@/components/integrations-panel";
 import { OnboardingTemplatePanel } from "@/components/onboarding-template-panel";
 import { InspectionTemplatesPanel } from "@/components/inspection-templates-panel";
 import { CostCodesPanel } from "@/components/cost-codes-panel";
+import { WageClassificationsPanel } from "@/components/wage-classifications-panel";
 import { SecuritySettingsPanel } from "@/components/security-settings-panel";
 import { ReferralProgramPanel } from "@/components/referral-program-panel";
+import { CompanyCoiPanel } from "@/components/company-coi-panel";
 import { HelpTooltip } from "@/components/help-tooltip";
 
 interface Company {
@@ -43,6 +46,7 @@ interface Company {
   invoiceRemindersEnabled: boolean;
   leadFollowUpEnabled: boolean;
   estimateRemindersEnabled: boolean;
+  workerSmsNotificationsEnabled: boolean;
   publicLeadFormToken: string | null;
   reviewRequestUrl: string | null;
   reportingCurrency: string | null;
@@ -145,6 +149,7 @@ export default function SettingsPage() {
     invoiceRemindersEnabled: boolean;
     leadFollowUpEnabled: boolean;
     estimateRemindersEnabled: boolean;
+    workerSmsNotificationsEnabled: boolean;
     reviewRequestUrl: string;
     reportingCurrency: string;
   }>({
@@ -160,6 +165,7 @@ export default function SettingsPage() {
     invoiceRemindersEnabled: false,
     leadFollowUpEnabled: false,
     estimateRemindersEnabled: false,
+    workerSmsNotificationsEnabled: false,
     reviewRequestUrl: "",
     reportingCurrency: "",
   });
@@ -230,6 +236,7 @@ export default function SettingsPage() {
         invoiceRemindersEnabled: c.invoiceRemindersEnabled,
         leadFollowUpEnabled: c.leadFollowUpEnabled,
         estimateRemindersEnabled: c.estimateRemindersEnabled,
+        workerSmsNotificationsEnabled: c.workerSmsNotificationsEnabled,
         reviewRequestUrl: c.reviewRequestUrl ?? "",
         reportingCurrency: c.reportingCurrency ?? "",
       });
@@ -349,6 +356,7 @@ export default function SettingsPage() {
           invoiceRemindersEnabled: companyForm.invoiceRemindersEnabled,
           leadFollowUpEnabled: companyForm.leadFollowUpEnabled,
           estimateRemindersEnabled: companyForm.estimateRemindersEnabled,
+          workerSmsNotificationsEnabled: companyForm.workerSmsNotificationsEnabled,
           reviewRequestUrl: companyForm.reviewRequestUrl || null,
           reportingCurrency: companyForm.reportingCurrency || null,
         }),
@@ -812,6 +820,21 @@ export default function SettingsPage() {
                 <input
                   type="checkbox"
                   className="mt-0.5"
+                  checked={companyForm.workerSmsNotificationsEnabled}
+                  onChange={(e) => setCompanyForm((f) => ({ ...f, workerSmsNotificationsEnabled: e.target.checked }))}
+                  disabled={!isManager}
+                />
+                <span>
+                  <span className="font-medium text-gray-700">{t("workerSmsNotifications")}</span>
+                  <span className="mt-0.5 block text-gray-500">{t("workerSmsNotificationsHint")}</span>
+                </span>
+              </label>
+            </div>
+            <div className="border-t border-gray-100 pt-3">
+              <label className="flex items-start gap-2 text-xs text-gray-700">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
                   checked={companyForm.leadFollowUpEnabled}
                   onChange={(e) => setCompanyForm((f) => ({ ...f, leadFollowUpEnabled: e.target.checked }))}
                   disabled={!isManager}
@@ -905,7 +928,7 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        <section className="card">
+        <section id="billing" className="card">
           <h2 className="mb-4 text-sm font-semibold text-gray-700">{t("plan")}</h2>
           <div className="flex flex-col gap-2">
             {plans.map((plan) => {
@@ -1231,7 +1254,7 @@ export default function SettingsPage() {
         )}
 
         {isManager && (
-          <section className="card lg:col-span-2">
+          <section id="api-keys" className="card lg:col-span-2">
             <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("apiKeys")}</h2>
             <p className="mb-4 text-xs text-gray-500">{t("apiKeysHint")}</p>
 
@@ -1336,7 +1359,7 @@ export default function SettingsPage() {
         )}
 
         {isManager && (
-          <section className="card lg:col-span-2">
+          <section id="webhooks" className="card lg:col-span-2">
             <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("webhooks")}</h2>
             <p className="mb-4 text-xs text-gray-500">{t("webhooksHint")}</p>
 
@@ -1434,6 +1457,24 @@ export default function SettingsPage() {
                 value={webhookForm.url}
                 onChange={(e) => setWebhookForm((f) => ({ ...f, url: e.target.value }))}
               />
+              <label className="flex flex-col gap-1 text-xs text-gray-500">
+                {t("webhookTemplate")}
+                <select
+                  className="input w-auto"
+                  value=""
+                  onChange={(e) => {
+                    const template = WEBHOOK_TEMPLATES.find((tpl) => tpl.id === e.target.value);
+                    if (template) setWebhookForm((f) => ({ ...f, events: [...template.events] }));
+                  }}
+                >
+                  <option value="">{t("webhookTemplatePickPlaceholder")}</option>
+                  {WEBHOOK_TEMPLATES.map((tpl) => (
+                    <option key={tpl.id} value={tpl.id} title={tpl.description}>
+                      {tpl.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <div className="flex flex-wrap gap-2">
                 {WEBHOOK_EVENTS.map((ev) => (
                   <label key={ev} className="flex items-center gap-1.5 text-xs text-gray-600">
@@ -1472,6 +1513,8 @@ export default function SettingsPage() {
         <DataPrivacyPanel canManage={isManager} />
 
         <ReferralProgramPanel />
+
+        <CompanyCoiPanel canManage={isManager} />
 
         {isManager && (
           <section className="card lg:col-span-2">
@@ -1550,6 +1593,7 @@ export default function SettingsPage() {
         {isManager && <OnboardingTemplatePanel />}
         {isManager && <InspectionTemplatesPanel />}
         {isManager && <CostCodesPanel />}
+        {isManager && <WageClassificationsPanel />}
       </div>
     </AuthenticatedShell>
   );

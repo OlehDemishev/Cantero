@@ -17,10 +17,22 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { ExpensesService } from "./expenses.service";
+import { ReceiptOcrService } from "./receipt-ocr.service";
 
 @Controller("expenses")
 export class ExpensesController {
-  constructor(private readonly service: ExpensesService) {}
+  constructor(
+    private readonly service: ExpensesService,
+    private readonly ocr: ReceiptOcrService,
+  ) {}
+
+  // Declared before ":id/..." routes so this literal segment isn't swallowed as an expense id.
+  @Post("scan-receipt")
+  @UseInterceptors(FileInterceptor("file"))
+  scanReceipt(@UploadedFile() file: Express.Multer.File) {
+    if (!file) throw new BadRequestException("No file provided");
+    return this.ocr.extract(file.buffer);
+  }
 
   @Get()
   list(

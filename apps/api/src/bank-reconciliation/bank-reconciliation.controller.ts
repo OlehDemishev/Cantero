@@ -17,6 +17,12 @@ export class BankReconciliationController {
     return this.service.list(user.companyId, reconciledOnly);
   }
 
+  // Declared before "import" so this literal segment isn't ambiguous with future :id routes.
+  @Get("suggested-matches")
+  suggestMatches(@CurrentUser() user: AuthUser) {
+    return this.service.suggestMatches(user.companyId);
+  }
+
   @Post("import")
   @UseInterceptors(FileInterceptor("file"))
   importCsv(@CurrentUser() user: AuthUser, @UploadedFile() file: Express.Multer.File) {

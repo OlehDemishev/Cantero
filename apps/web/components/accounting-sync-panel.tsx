@@ -16,6 +16,18 @@ interface SyncSummary {
   failed: number;
   errors: string[];
 }
+interface SyncLogEntry {
+  id: string;
+  invoiceNumber: string;
+  status: "success" | "failed";
+  errorMessage: string | null;
+  attemptedAt: string;
+}
+interface IntegrityCheck {
+  connected: boolean;
+  unsyncedInvoices: { id: string; number: string; total: string }[];
+  recentFailures: SyncLogEntry[];
+}
 
 const PROVIDER_LABELS: Record<AccountingProviderType, string> = {
   quickbooks: "QuickBooks",
@@ -29,9 +41,24 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [syncResult, setSyncResult] = useState<SyncSummary | null>(null);
+  const [integrity, setIntegrity] = useState<IntegrityCheck | null>(null);
+  const [history, setHistory] = useState<SyncLogEntry[] | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
 
   function load() {
-    apiFetch<Status>("/company/accounting/status").then(setStatus);
+    apiFetch<Status>("/company/accounting/status").then((s) => {
+      setStatus(s);
+      if (s.connected) apiFetch<IntegrityCheck>("/company/accounting/integrity-check").then(setIntegrity);
+    });
+  }
+
+  function toggleHistory() {
+    if (showHistory) {
+      setShowHistory(false);
+      return;
+    }
+    setShowHistory(true);
+    apiFetch<SyncLogEntry[]>("/company/accounting/sync-history").then(setHistory);
   }
 
   useEffect(() => {
@@ -72,6 +99,8 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
     try {
       const result = await apiFetch<SyncSummary>("/company/accounting/sync", { method: "POST" });
       setSyncResult(result);
+      apiFetch<IntegrityCheck>("/company/accounting/integrity-check").then(setIntegrity);
+      if (showHistory) apiFetch<SyncLogEntry[]>("/company/accounting/sync-history").then(setHistory);
     } finally {
       setBusy(false);
     }
@@ -80,7 +109,7 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
   if (!status) return null;
 
   return (
-    <section className="card lg:col-span-2">
+    <section id="accounting-sync" className="card lg:col-span-2">
       <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("title")}</h2>
       <p className="mb-4 text-xs text-gray-500">{t("hint")}</p>
 
@@ -111,6 +140,42 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
                 <span className="mt-1 block text-error-600">{syncResult.errors.slice(0, 3).join("; ")}</span>
               )}
             </p>
+          )}
+
+          {integrity && (
+            <div className="rounded-lg border border-gray-100 p-3 text-xs">
+              <p className="font-medium text-gray-700">
+                {t("integrityCheck", { count: integrity.unsyncedInvoices.length })}
+              </p>
+              {integrity.recentFailures.length > 0 && (
+                <ul className="mt-2 flex flex-col gap-1">
+                  {integrity.recentFailures.slice(0, 5).map((f) => (
+                    <li key={f.id} className="text-error-600">
+                      {f.invoiceNumber} — {f.errorMessage} ({new Date(f.attemptedAt).toLocaleDateString()})
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <button onClick={toggleHistory} className="mt-2 text-brand-700 hover:underline">
+                {showHistory ? t("hideHistory") : t("showHistory")}
+              </button>
+              {showHistory && (
+                <ul className="mt-2 flex flex-col gap-1">
+                  {!history ? (
+                    <li className="text-gray-400">…</li>
+                  ) : history.length === 0 ? (
+                    <li className="text-gray-400">{t("noHistory")}</li>
+                  ) : (
+                    history.map((h) => (
+                      <li key={h.id} className={h.status === "failed" ? "text-error-600" : "text-success-700"}>
+                        {new Date(h.attemptedAt).toLocaleString()} — {h.invoiceNumber} — {h.status}
+                        {h.errorMessage ? `: ${h.errorMessage}` : ""}
+                      </li>
+                    ))
+                  )}
+                </ul>
+              )}
+            </div>
           )}
         </div>
       ) : (

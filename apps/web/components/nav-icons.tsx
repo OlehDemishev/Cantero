@@ -223,6 +223,16 @@ export function UserCircleIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function HelpIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <circle cx="10" cy="10" r="7.5" />
+      <path d="M7.6 7.75a2.4 2.4 0 1 1 3.4 2.18c-.65.3-1 .8-1 1.32v.5" />
+      <circle cx="10" cy="14" r="0.15" fill="currentColor" stroke="currentColor" />
+    </Icon>
+  );
+}
+
 export function EquipmentIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <Icon {...props}>
@@ -237,6 +247,27 @@ export function ResourcePlanningIcon(props: SVGProps<SVGSVGElement>) {
       <rect x="2.5" y="4" width="15" height="13.5" rx="1.5" />
       <path d="M2.5 8h15M6.5 2.5v3M13.5 2.5v3" />
       <path d="M6 11.5l1.5 1.5 3-3M11.5 12.5h3" />
+    </Icon>
+  );
+}
+
+export function ScheduleIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <rect x="2.5" y="4" width="15" height="13.5" rx="1.5" />
+      <path d="M2.5 8h15M6.5 2.5v3M13.5 2.5v3" />
+      <path d="M5.5 11h3M5.5 14h6M11 11h3.5" />
+    </Icon>
+  );
+}
+
+export function IntegrationsIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <rect x="3" y="3" width="6" height="6" rx="1" />
+      <rect x="11" y="3" width="6" height="6" rx="1" />
+      <rect x="3" y="11" width="6" height="6" rx="1" />
+      <path d="M11 14a3 3 0 1 0 6 0 3 3 0 0 0-6 0z" />
     </Icon>
   );
 }

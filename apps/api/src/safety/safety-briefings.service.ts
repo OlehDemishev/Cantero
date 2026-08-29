@@ -1,7 +1,9 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import type { CreateSafetyBriefingInput, UpdateSafetyBriefingInput } from "@cantero/shared";
+import type { CreateSafetyBriefingInput, Locale, UpdateSafetyBriefingInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
+import { SmsService } from "../common/sms/sms.service";
+import { smsTemplates } from "../common/sms/sms-templates";
 
 const INCLUDE_ATTENDEES = { attendees: { include: { worker: { select: { id: true, name: true } } } } } as const;
 
@@ -10,6 +12,7 @@ export class SafetyBriefingsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly sms: SmsService,
   ) {}
 
   async listForProject(companyId: string, projectId: string) {
@@ -48,6 +51,22 @@ export class SafetyBriefingsService {
       briefing.id,
       `Logged toolbox talk "${input.topic}" on "${project.name}" (${input.attendeeWorkerIds.length} attended)`,
     );
+
+    if (project.company.workerSmsNotificationsEnabled) {
+      const attendeesWithPhones = await this.prisma.worker.findMany({
+        where: { id: { in: input.attendeeWorkerIds }, phone: { not: null } },
+        select: { phone: true, preferredLocale: true },
+      });
+      const dateLabel = briefing.date.toISOString().slice(0, 10);
+      for (const attendee of attendeesWithPhones) {
+        const locale: Locale = attendee.preferredLocale ?? project.company.locale;
+        await this.sms.send({
+          to: attendee.phone!,
+          body: smsTemplates.safetyBriefingScheduled(locale, input.topic, project.name, dateLabel),
+        });
+      }
+    }
+
     return briefing;
   }
 
@@ -69,7 +88,10 @@ export class SafetyBriefingsService {
   }
 
   private async assertProject(companyId: string, projectId: string) {
-    const project = await this.prisma.project.findFirst({ where: { id: projectId, companyId } });
+    const project = await this.prisma.project.findFirst({
+      where: { id: projectId, companyId },
+      include: { company: { select: { workerSmsNotificationsEnabled: true, locale: true } } },
+    });
     if (!project) throw new NotFoundException("Project not found");
     return project;
   }

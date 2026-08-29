@@ -33,6 +33,16 @@ interface SafetyBriefing {
   conductedByName: string;
   attendees: { worker: Worker }[];
 }
+interface Jha {
+  id: string;
+  date: string;
+  taskDescription: string;
+  hazards: string;
+  controlMeasures: string;
+  requiredPpe: string | null;
+  conductedByName: string;
+  acknowledgments: { worker: Worker }[];
+}
 
 const SEVERITY_STYLES: Record<IncidentSeverity, string> = {
   near_miss: "bg-gray-100 text-gray-600",
@@ -55,6 +65,14 @@ const EMPTY_INCIDENT_FORM = {
   daysJobTransferOrRestriction: "",
 };
 const EMPTY_BRIEFING_FORM = { date: new Date().toISOString().slice(0, 10), topic: "", notes: "", attendeeWorkerIds: [] as string[] };
+const EMPTY_JHA_FORM = {
+  date: new Date().toISOString().slice(0, 10),
+  taskDescription: "",
+  hazards: "",
+  controlMeasures: "",
+  requiredPpe: "",
+  acknowledgedWorkerIds: [] as string[],
+};
 
 export function SafetyPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("safety");
@@ -62,17 +80,21 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
 
   const [incidents, setIncidents] = useState<IncidentReport[] | null>(null);
   const [briefings, setBriefings] = useState<SafetyBriefing[] | null>(null);
+  const [jhas, setJhas] = useState<Jha[] | null>(null);
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [creatingIncident, setCreatingIncident] = useState(false);
   const [quickNearMiss, setQuickNearMiss] = useState(false);
   const [creatingBriefing, setCreatingBriefing] = useState(false);
+  const [creatingJha, setCreatingJha] = useState(false);
   const [incidentForm, setIncidentForm] = useState(EMPTY_INCIDENT_FORM);
   const [briefingForm, setBriefingForm] = useState(EMPTY_BRIEFING_FORM);
+  const [jhaForm, setJhaForm] = useState(EMPTY_JHA_FORM);
   const [busy, setBusy] = useState(false);
 
   function load() {
     apiFetch<IncidentReport[]>(`/safety/incidents?projectId=${projectId}`).then(setIncidents);
     apiFetch<SafetyBriefing[]>(`/safety/briefings?projectId=${projectId}`).then(setBriefings);
+    apiFetch<Jha[]>(`/safety/jha?projectId=${projectId}`).then(setJhas);
   }
 
   useEffect(() => {
@@ -145,6 +167,44 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
         ? f.attendeeWorkerIds.filter((id) => id !== workerId)
         : [...f.attendeeWorkerIds, workerId],
     }));
+  }
+
+  async function submitJha(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      await apiFetch("/safety/jha", {
+        method: "POST",
+        body: JSON.stringify({
+          projectId,
+          date: new Date(jhaForm.date).toISOString(),
+          taskDescription: jhaForm.taskDescription,
+          hazards: jhaForm.hazards,
+          controlMeasures: jhaForm.controlMeasures,
+          requiredPpe: jhaForm.requiredPpe || undefined,
+          acknowledgedWorkerIds: jhaForm.acknowledgedWorkerIds,
+        }),
+      });
+      setJhaForm(EMPTY_JHA_FORM);
+      setCreatingJha(false);
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function toggleJhaAcknowledger(workerId: string) {
+    setJhaForm((f) => ({
+      ...f,
+      acknowledgedWorkerIds: f.acknowledgedWorkerIds.includes(workerId)
+        ? f.acknowledgedWorkerIds.filter((id) => id !== workerId)
+        : [...f.acknowledgedWorkerIds, workerId],
+    }));
+  }
+
+  async function acknowledgeJha(jhaId: string, workerId: string) {
+    await apiFetch(`/safety/jha/${jhaId}/acknowledge`, { method: "POST", body: JSON.stringify({ workerIds: [workerId] }) });
+    load();
   }
 
   return (
@@ -452,6 +512,154 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
               <p className="mt-1 text-xs text-gray-400">{item.conductedByName}</p>
             </li>
           ))}
+        </ul>
+      )}
+
+      <div className="mb-2 mt-6 flex items-center justify-between">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">{t("jhaTitle")}</h3>
+        {!creatingJha && (
+          <button onClick={() => setCreatingJha(true)} className="btn-secondary px-3 py-1 text-xs">
+            {t("newJha")}
+          </button>
+        )}
+      </div>
+
+      {creatingJha && (
+        <form onSubmit={submitJha} className="card mb-4 flex flex-col gap-3">
+          <div className="flex gap-3">
+            <label className="flex flex-1 flex-col gap-1.5 text-sm">
+              <span className="font-medium text-gray-700">{t("taskDescription")}</span>
+              <input
+                required
+                className="input"
+                placeholder={t("taskDescriptionPlaceholder")}
+                value={jhaForm.taskDescription}
+                onChange={(e) => setJhaForm((f) => ({ ...f, taskDescription: e.target.value }))}
+              />
+            </label>
+            <label className="flex w-40 flex-col gap-1.5 text-sm">
+              <span className="font-medium text-gray-700">{t("date")}</span>
+              <input
+                type="date"
+                required
+                className="input"
+                value={jhaForm.date}
+                onChange={(e) => setJhaForm((f) => ({ ...f, date: e.target.value }))}
+              />
+            </label>
+          </div>
+          <label className="flex flex-col gap-1.5 text-sm">
+            <span className="font-medium text-gray-700">{t("hazards")}</span>
+            <textarea
+              required
+              rows={2}
+              className="input"
+              placeholder={t("hazardsPlaceholder")}
+              value={jhaForm.hazards}
+              onChange={(e) => setJhaForm((f) => ({ ...f, hazards: e.target.value }))}
+            />
+          </label>
+          <label className="flex flex-col gap-1.5 text-sm">
+            <span className="font-medium text-gray-700">{t("controlMeasures")}</span>
+            <textarea
+              required
+              rows={2}
+              className="input"
+              placeholder={t("controlMeasuresPlaceholder")}
+              value={jhaForm.controlMeasures}
+              onChange={(e) => setJhaForm((f) => ({ ...f, controlMeasures: e.target.value }))}
+            />
+          </label>
+          <label className="flex flex-col gap-1.5 text-sm">
+            <span className="font-medium text-gray-700">{t("requiredPpe")}</span>
+            <input
+              className="input"
+              placeholder={t("requiredPpePlaceholder")}
+              value={jhaForm.requiredPpe}
+              onChange={(e) => setJhaForm((f) => ({ ...f, requiredPpe: e.target.value }))}
+            />
+          </label>
+          <div className="flex flex-col gap-1.5 text-sm">
+            <span className="font-medium text-gray-700">{t("acknowledgedBy")}</span>
+            <div className="flex flex-wrap gap-2">
+              {workers.map((w) => (
+                <label
+                  key={w.id}
+                  className={`cursor-pointer rounded-full border px-3 py-1 text-xs ${
+                    jhaForm.acknowledgedWorkerIds.includes(w.id)
+                      ? "border-brand-500 bg-brand-50 text-brand-700"
+                      : "border-gray-200 text-gray-600"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    className="hidden"
+                    checked={jhaForm.acknowledgedWorkerIds.includes(w.id)}
+                    onChange={() => toggleJhaAcknowledger(w.id)}
+                  />
+                  {w.name}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button type="submit" disabled={busy} className="btn-primary">
+              {tc("save")}
+            </button>
+            <button type="button" onClick={() => setCreatingJha(false)} className="btn-secondary">
+              {tc("cancel")}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {jhas === null ? (
+        <p className="text-sm text-gray-400">{tc("loading")}</p>
+      ) : jhas.length === 0 ? (
+        <p className="text-sm text-gray-400">{t("noJhas")}</p>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {jhas.map((item) => {
+            const acknowledgedIds = new Set(item.acknowledgments.map((a) => a.worker.id));
+            const unacknowledged = workers.filter((w) => !acknowledgedIds.has(w.id));
+            return (
+              <li key={item.id} className="card">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-900">{item.taskDescription}</span>
+                  <span className="text-xs text-gray-500">{new Date(item.date).toLocaleDateString()}</span>
+                </div>
+                <p className="mt-1.5 text-xs text-gray-500">
+                  <span className="font-medium text-gray-700">{t("hazards")}:</span> {item.hazards}
+                </p>
+                <p className="mt-1 text-xs text-gray-500">
+                  <span className="font-medium text-gray-700">{t("controlMeasures")}:</span> {item.controlMeasures}
+                </p>
+                {item.requiredPpe && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    <span className="font-medium text-gray-700">{t("requiredPpe")}:</span> {item.requiredPpe}
+                  </p>
+                )}
+                <p className="mt-1.5 text-xs text-gray-500">
+                  {t("acknowledgedCount", { count: item.acknowledgments.length })}
+                  {item.acknowledgments.length > 0 && ": " + item.acknowledgments.map((a) => a.worker.name).join(", ")}
+                </p>
+                {unacknowledged.length > 0 && (
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {unacknowledged.map((w) => (
+                      <button
+                        key={w.id}
+                        onClick={() => acknowledgeJha(item.id, w.id)}
+                        className="btn-secondary px-2 py-0.5 text-xs"
+                      >
+                        {t("acknowledgeFor", { name: w.name })}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <p className="mt-1 text-xs text-gray-400">{item.conductedByName}</p>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

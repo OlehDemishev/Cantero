@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import type { DocumentCategory } from "@cantero/shared";
+import type { DocumentCategory, Locale } from "@cantero/shared";
 import { documentCategorySchema } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { StorageService } from "../common/storage/storage.service";
@@ -30,6 +30,10 @@ export interface DocumentListFilter {
   warrantyClaimId?: string;
   subcontractorDocumentId?: string;
   deficiencyId?: string;
+  permitId?: string;
+  safetyBriefingId?: string;
+  supplierDocumentId?: string;
+  companyDocumentId?: string;
   category?: string;
   search?: string;
   tag?: string;
@@ -44,6 +48,12 @@ export interface DocumentAttachmentMeta {
   warrantyClaimId?: string;
   subcontractorDocumentId?: string;
   deficiencyId?: string;
+  permitId?: string;
+  safetyBriefingId?: string;
+  supplierDocumentId?: string;
+  companyDocumentId?: string;
+  /** Only meaningful alongside safetyBriefingId today — which language this file's content is in. */
+  locale?: Locale;
   category?: string;
   tags?: string[];
 }
@@ -72,6 +82,10 @@ export class DocumentsService {
         ...(filter.warrantyClaimId ? { warrantyClaimId: filter.warrantyClaimId } : {}),
         ...(filter.subcontractorDocumentId ? { subcontractorDocumentId: filter.subcontractorDocumentId } : {}),
         ...(filter.deficiencyId ? { deficiencyId: filter.deficiencyId } : {}),
+        ...(filter.permitId ? { permitId: filter.permitId } : {}),
+        ...(filter.safetyBriefingId ? { safetyBriefingId: filter.safetyBriefingId } : {}),
+        ...(filter.supplierDocumentId ? { supplierDocumentId: filter.supplierDocumentId } : {}),
+        ...(filter.companyDocumentId ? { companyDocumentId: filter.companyDocumentId } : {}),
         ...(category ? { category } : {}),
         ...(filter.tag ? { tags: { has: filter.tag } } : {}),
         ...(filter.search ? { name: { contains: filter.search, mode: "insensitive" as const } } : {}),
@@ -129,6 +143,22 @@ export class DocumentsService {
       const deficiency = await this.prisma.deficiency.findFirst({ where: { id: meta.deficiencyId, companyId } });
       if (!deficiency) throw new NotFoundException("Deficiency not found");
     }
+    if (meta.permitId) {
+      const permit = await this.prisma.permit.findFirst({ where: { id: meta.permitId, companyId } });
+      if (!permit) throw new NotFoundException("Permit not found");
+    }
+    if (meta.safetyBriefingId) {
+      const briefing = await this.prisma.safetyBriefing.findFirst({ where: { id: meta.safetyBriefingId, companyId } });
+      if (!briefing) throw new NotFoundException("Safety briefing not found");
+    }
+    if (meta.supplierDocumentId) {
+      const doc = await this.prisma.supplierDocument.findFirst({ where: { id: meta.supplierDocumentId, companyId } });
+      if (!doc) throw new NotFoundException("Supplier document not found");
+    }
+    if (meta.companyDocumentId) {
+      const doc = await this.prisma.companyDocument.findFirst({ where: { id: meta.companyDocumentId, companyId } });
+      if (!doc) throw new NotFoundException("Company document not found");
+    }
     const category: DocumentCategory = meta.category ? documentCategorySchema.parse(meta.category) : "other";
 
     const stored = await this.storage.save(companyId, file.originalname, file.buffer);
@@ -144,6 +174,11 @@ export class DocumentsService {
         warrantyClaimId: meta.warrantyClaimId,
         subcontractorDocumentId: meta.subcontractorDocumentId,
         deficiencyId: meta.deficiencyId,
+        permitId: meta.permitId,
+        safetyBriefingId: meta.safetyBriefingId,
+        supplierDocumentId: meta.supplierDocumentId,
+        companyDocumentId: meta.companyDocumentId,
+        locale: meta.locale,
         name: file.originalname,
         storageKey: stored.storageKey,
         mimeType: file.mimetype,
@@ -189,6 +224,11 @@ export class DocumentsService {
         warrantyClaimId: current.warrantyClaimId,
         subcontractorDocumentId: current.subcontractorDocumentId,
         deficiencyId: current.deficiencyId,
+        permitId: current.permitId,
+        safetyBriefingId: current.safetyBriefingId,
+        supplierDocumentId: current.supplierDocumentId,
+        companyDocumentId: current.companyDocumentId,
+        locale: current.locale,
         name: file.originalname,
         storageKey: stored.storageKey,
         mimeType: file.mimetype,

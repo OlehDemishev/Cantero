@@ -1,9 +1,13 @@
 import { z } from "zod";
+import { SUPPORTED_LOCALES } from "./company";
 
 export const createWorkerSchema = z.object({
   name: z.string().min(1).max(160),
   role: z.string().max(80).optional(),
   hourlyCost: z.number().nonnegative().optional(),
+  wageClassificationId: z.string().uuid().optional(),
+  phone: z.string().max(40).optional(),
+  preferredLocale: z.enum(SUPPORTED_LOCALES).optional(),
 });
 export type CreateWorkerInput = z.infer<typeof createWorkerSchema>;
 
@@ -12,6 +16,9 @@ export const updateWorkerSchema = z.object({
   role: z.string().max(80).nullable().optional(),
   hourlyCost: z.number().nonnegative().nullable().optional(),
   active: z.boolean().optional(),
+  wageClassificationId: z.string().uuid().nullable().optional(),
+  phone: z.string().max(40).nullable().optional(),
+  preferredLocale: z.enum(SUPPORTED_LOCALES).nullable().optional(),
 });
 export type UpdateWorkerInput = z.infer<typeof updateWorkerSchema>;
 

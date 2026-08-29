@@ -68,7 +68,7 @@ export function IntegrationsPanel({ canManage }: { canManage: boolean }) {
   const feedUrl = calendarFeedToken ? `${API_URL}/public/calendar/${calendarFeedToken}.ics` : null;
 
   return (
-    <section className="card lg:col-span-2">
+    <section id="integrations" className="card lg:col-span-2">
       <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("title")}</h2>
       <p className="mb-4 text-xs text-gray-500">{t("hint")}</p>
 

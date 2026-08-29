@@ -62,6 +62,69 @@ export class BankReconciliationService {
     return result;
   }
 
+  /**
+   * Candidate invoice/expense matches for every unreconciled transaction, ranked by amount and
+   * date closeness — a suggestion, never an auto-commit. The human still clicks match(); this
+   * only saves them from scanning every open invoice/expense by hand. Money-in transactions
+   * (positive amount) only ever suggest invoices; money-out (negative) only ever suggest
+   * expenses — a bank statement doesn't mix the two directions on one row.
+   */
+  async suggestMatches(companyId: string) {
+    const [unreconciled, matchedTransactions, invoices, expenses] = await Promise.all([
+      this.prisma.bankTransaction.findMany({ where: { companyId, reconciled: false }, orderBy: { date: "desc" } }),
+      this.prisma.bankTransaction.findMany({
+        where: { companyId, reconciled: true },
+        select: { matchedInvoiceId: true, matchedExpenseId: true },
+      }),
+      this.prisma.invoice.findMany({
+        where: { companyId, status: { in: ["sent", "paid"] } },
+        select: { id: true, number: true, total: true, dueDate: true, createdAt: true },
+      }),
+      this.prisma.expense.findMany({
+        where: { companyId },
+        select: { id: true, description: true, amount: true, incurredAt: true },
+      }),
+    ]);
+
+    const matchedInvoiceIds = new Set(matchedTransactions.map((t) => t.matchedInvoiceId).filter((v): v is string => !!v));
+    const matchedExpenseIds = new Set(matchedTransactions.map((t) => t.matchedExpenseId).filter((v): v is string => !!v));
+    const availableInvoices = invoices.filter((i) => !matchedInvoiceIds.has(i.id));
+    const availableExpenses = expenses.filter((e) => !matchedExpenseIds.has(e.id));
+
+    return unreconciled.map((tx) => {
+      const txAmount = Number(tx.amount);
+      const pool =
+        txAmount >= 0
+          ? availableInvoices.map((i) => ({
+              type: "invoice" as const,
+              id: i.id,
+              label: i.number,
+              amount: Number(i.total),
+              date: i.dueDate ?? i.createdAt,
+            }))
+          : availableExpenses.map((e) => ({
+              type: "expense" as const,
+              id: e.id,
+              label: e.description ?? "—",
+              amount: Number(e.amount),
+              date: e.incurredAt,
+            }));
+
+      const candidates = pool
+        .map((c) => {
+          const amountDiff = Math.abs(Math.abs(txAmount) - c.amount);
+          const daysApart = Math.round(Math.abs(tx.date.getTime() - c.date.getTime()) / 86_400_000);
+          return { ...c, amountDiff, daysApart, exact: amountDiff < 0.01 };
+        })
+        .filter((c) => c.daysApart <= 30 && c.amountDiff <= Math.max(1, c.amount * 0.02))
+        .sort((a, b) => (a.exact === b.exact ? a.daysApart - b.daysApart : a.exact ? -1 : 1))
+        .slice(0, 3)
+        .map(({ amountDiff: _amountDiff, ...c }) => c);
+
+      return { transactionId: tx.id, date: tx.date, description: tx.description, amount: txAmount, candidates };
+    });
+  }
+
   async match(companyId: string, actor: AuditActor, id: string, input: MatchBankTransactionInput) {
     const transaction = await this.prisma.bankTransaction.findFirst({ where: { id, companyId } });
     if (!transaction) throw new NotFoundException("Bank transaction not found");

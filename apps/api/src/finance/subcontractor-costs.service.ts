@@ -59,7 +59,12 @@ export class SubcontractorCostsService {
   /** Marking a cost paid also auto-requests an unconditional progress lien waiver, if one isn't
    * already on file — the whole point of collecting waivers is to have one for every payment, so
    * this saves the office a manual follow-up step for the common case. A final waiver still
-   * needs the explicit isFinal request, since that's a judgment call this shouldn't make silently. */
+   * needs the explicit isFinal request, since that's a judgment call this shouldn't make silently.
+   * It also records a SubcontractorPayment — `paid` itself has no date and can't answer "which
+   * calendar year did we pay this in" (see the model comment), which is what the payment ledger
+   * is for (1099 totals, etc.). A cost marked paid twice would violate the implicit
+   * one-payment-per-cost assumption here, but nothing currently allows re-marking an already-paid
+   * cost, so that's not reachable. */
   async markPaid(companyId: string, actor: AuditActor, id: string) {
     const cost = await this.prisma.subcontractorCost.findFirst({ where: { id, companyId } });
     if (!cost) throw new NotFoundException("Subcontractor cost not found");
@@ -67,6 +72,15 @@ export class SubcontractorCostsService {
       where: { id },
       data: { paid: true },
       include: { subcontractor: true },
+    });
+
+    await this.prisma.subcontractorPayment.create({
+      data: {
+        companyId,
+        subcontractorId: cost.subcontractorId,
+        subcontractorCostId: cost.id,
+        amount: cost.amount,
+      },
     });
 
     const existingWaiver = await this.prisma.lienWaiver.findUnique({ where: { subcontractorCostId: id } });

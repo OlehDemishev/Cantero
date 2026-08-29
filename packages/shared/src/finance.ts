@@ -28,6 +28,14 @@ export const addInstallmentSchema = z.object({
 });
 export type AddInstallmentInput = z.infer<typeof addInstallmentSchema>;
 
+/** amount is optional — omitted means "pay the full remaining balance," same as before this
+ * field existed. When given (paying a single installment) the server still caps it at the
+ * actual remaining balance, so this is a convenience default, not a trust boundary. */
+export const payInvoiceSchema = z.object({
+  amount: z.number().positive().optional(),
+});
+export type PayInvoiceInput = z.infer<typeof payInvoiceSchema>;
+
 export const createSubcontractorSchema = z.object({
   name: z.string().min(1).max(160),
   email: z.string().email().optional(),
@@ -38,6 +46,9 @@ export type CreateSubcontractorInput = z.infer<typeof createSubcontractorSchema>
 export const updateSubcontractorProfileSchema = z.object({
   specialization: z.string().max(120).nullable().optional(),
   bio: z.string().max(1000).nullable().optional(),
+  licenseNumber: z.string().max(80).nullable().optional(),
+  bondingCapacity: z.number().nonnegative().nullable().optional(),
+  safetyProgramSummary: z.string().max(2000).nullable().optional(),
 });
 export type UpdateSubcontractorProfileInput = z.infer<typeof updateSubcontractorProfileSchema>;
 
@@ -48,10 +59,28 @@ export type SetSubcontractorPublicListedInput = z.infer<typeof setSubcontractorP
 
 export const assignSubcontractorSchema = z.object({
   projectId: z.string().uuid(),
+  startDate: z.string().datetime().optional(),
+  endDate: z.string().datetime().optional(),
 });
 export type AssignSubcontractorInput = z.infer<typeof assignSubcontractorSchema>;
 
-export const SUBCONTRACTOR_DOCUMENT_TYPES = ["general_liability_insurance", "workers_comp_insurance", "license", "other"] as const;
+export const setAssignmentActualEndDateSchema = z.object({
+  actualEndDate: z.string().datetime().nullable(),
+});
+export type SetAssignmentActualEndDateInput = z.infer<typeof setAssignmentActualEndDateSchema>;
+
+export const createPerformanceReviewSchema = z.object({
+  assignmentId: z.string().uuid().optional(),
+  rating: z.number().int().min(1).max(5),
+  onTime: z.boolean().optional(),
+  safetyIncidents: z.number().int().min(0).default(0),
+  reworkCount: z.number().int().min(0).default(0),
+  wouldHireAgain: z.boolean().optional(),
+  comments: z.string().max(2000).optional(),
+});
+export type CreatePerformanceReviewInput = z.infer<typeof createPerformanceReviewSchema>;
+
+export const SUBCONTRACTOR_DOCUMENT_TYPES = ["general_liability_insurance", "workers_comp_insurance", "license", "bonding", "other"] as const;
 export type SubcontractorDocumentType = (typeof SUBCONTRACTOR_DOCUMENT_TYPES)[number];
 
 export const addSubcontractorDocumentSchema = z.object({
@@ -60,6 +89,21 @@ export const addSubcontractorDocumentSchema = z.object({
   expiresAt: z.string().datetime(),
 });
 export type AddSubcontractorDocumentInput = z.infer<typeof addSubcontractorDocumentSchema>;
+
+export const updateSubcontractorTaxProfileSchema = z.object({
+  taxId: z.string().max(40).nullable().optional(),
+  legalBusinessName: z.string().max(200).nullable().optional(),
+  mailingAddress: z.string().max(400).nullable().optional(),
+});
+export type UpdateSubcontractorTaxProfileInput = z.infer<typeof updateSubcontractorTaxProfileSchema>;
+
+export const addSubcontractorPaymentSchema = z.object({
+  subcontractorCostId: z.string().uuid().optional(),
+  amount: z.number().positive(),
+  paidAt: z.string().datetime().optional(),
+  note: z.string().max(300).optional(),
+});
+export type AddSubcontractorPaymentInput = z.infer<typeof addSubcontractorPaymentSchema>;
 
 export const createSubcontractorCostSchema = z.object({
   subcontractorId: z.string().uuid(),

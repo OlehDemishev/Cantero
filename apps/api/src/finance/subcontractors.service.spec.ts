@@ -14,21 +14,25 @@ function daysFromNow(days: number): Date {
 describe("SubcontractorsService", () => {
   let service: SubcontractorsService;
   let prisma: {
-    subcontractor: { findFirst: jest.Mock; update: jest.Mock };
+    subcontractor: { findFirst: jest.Mock; findMany: jest.Mock; update: jest.Mock };
     project: { findFirst: jest.Mock };
-    subcontractorAssignment: { upsert: jest.Mock; findFirst: jest.Mock; delete: jest.Mock; count: jest.Mock };
+    subcontractorAssignment: { upsert: jest.Mock; findFirst: jest.Mock; delete: jest.Mock; count: jest.Mock; update: jest.Mock };
     subcontractorDocument: { findFirst: jest.Mock; findMany: jest.Mock; create: jest.Mock; delete: jest.Mock };
-    subcontractorCost: { aggregate: jest.Mock };
+    subcontractorCost: { aggregate: jest.Mock; findFirst: jest.Mock };
+    subcontractorPerformanceReview: { create: jest.Mock; findMany: jest.Mock };
+    subcontractorPayment: { create: jest.Mock; findMany: jest.Mock; groupBy: jest.Mock };
   };
   let audit: { record: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
-      subcontractor: { findFirst: jest.fn(), update: jest.fn() },
+      subcontractor: { findFirst: jest.fn(), findMany: jest.fn(), update: jest.fn() },
       project: { findFirst: jest.fn() },
-      subcontractorAssignment: { upsert: jest.fn(), findFirst: jest.fn(), delete: jest.fn(), count: jest.fn() },
+      subcontractorAssignment: { upsert: jest.fn(), findFirst: jest.fn(), delete: jest.fn(), count: jest.fn(), update: jest.fn() },
       subcontractorDocument: { findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), delete: jest.fn() },
-      subcontractorCost: { aggregate: jest.fn() },
+      subcontractorCost: { aggregate: jest.fn(), findFirst: jest.fn() },
+      subcontractorPerformanceReview: { create: jest.fn(), findMany: jest.fn() },
+      subcontractorPayment: { create: jest.fn(), findMany: jest.fn(), groupBy: jest.fn() },
     };
     audit = { record: jest.fn() };
 
@@ -86,6 +90,25 @@ describe("SubcontractorsService", () => {
       await service.assign(COMPANY_A, "sub-1", "project-1");
 
       expect(prisma.subcontractorAssignment.upsert).toHaveBeenCalled();
+    });
+
+    it("persists an optional schedule date range on the assignment", async () => {
+      prisma.subcontractor.findFirst.mockResolvedValue({ id: "sub-1", companyId: COMPANY_A, name: "Acme Electric" });
+      prisma.project.findFirst.mockResolvedValue({ id: "project-1", companyId: COMPANY_A });
+      prisma.subcontractorDocument.findMany.mockResolvedValue([
+        { id: "doc-1", type: "general_liability_insurance", expiresAt: daysFromNow(60) },
+        { id: "doc-2", type: "workers_comp_insurance", expiresAt: daysFromNow(90) },
+      ]);
+      prisma.subcontractorAssignment.upsert.mockResolvedValue({ id: "assign-1" });
+
+      await service.assign(COMPANY_A, "sub-1", "project-1", "2026-09-01T00:00:00.000Z", "2026-09-15T00:00:00.000Z");
+
+      expect(prisma.subcontractorAssignment.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          create: expect.objectContaining({ startDate: new Date("2026-09-01T00:00:00.000Z"), endDate: new Date("2026-09-15T00:00:00.000Z") }),
+          update: { startDate: new Date("2026-09-01T00:00:00.000Z"), endDate: new Date("2026-09-15T00:00:00.000Z") },
+        }),
+      );
     });
   });
 
@@ -224,6 +247,210 @@ describe("SubcontractorsService", () => {
         projectsWorked: 4,
         totalPaidOut: 15000,
       });
+    });
+  });
+
+  describe("addPerformanceReview() / performanceScorecard()", () => {
+    it("throws when the subcontractor doesn't belong to this company", async () => {
+      prisma.subcontractor.findFirst.mockResolvedValue(null);
+
+      await expect(service.addPerformanceReview(COMPANY_A, ACTOR, "sub-1", { rating: 5, safetyIncidents: 0, reworkCount: 0 })).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it("throws when the referenced assignment doesn't belong to this subcontractor/company", async () => {
+      prisma.subcontractor.findFirst.mockResolvedValue({ id: "sub-1", name: "Acme Electric" });
+      prisma.subcontractorAssignment.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.addPerformanceReview(COMPANY_A, ACTOR, "sub-1", { assignmentId: "assign-1", rating: 4, safetyIncidents: 0, reworkCount: 0 }),
+      ).rejects.toThrow(NotFoundException);
+      expect(prisma.subcontractorPerformanceReview.create).not.toHaveBeenCalled();
+    });
+
+    it("records a review with the reviewer's identity", async () => {
+      prisma.subcontractor.findFirst.mockResolvedValue({ id: "sub-1", name: "Acme Electric" });
+      prisma.subcontractorPerformanceReview.create.mockResolvedValue({ id: "review-1" });
+
+      await service.addPerformanceReview(COMPANY_A, ACTOR, "sub-1", {
+        rating: 4,
+        onTime: true,
+        safetyIncidents: 0,
+        reworkCount: 1,
+        wouldHireAgain: true,
+        comments: "Solid work, one punch item.",
+      });
+
+      expect(prisma.subcontractorPerformanceReview.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          companyId: COMPANY_A,
+          subcontractorId: "sub-1",
+          reviewedByUserId: ACTOR.userId,
+          reviewedByName: ACTOR.name,
+          rating: 4,
+          onTime: true,
+          reworkCount: 1,
+          wouldHireAgain: true,
+        }),
+      });
+    });
+
+    it("returns nulls (not zeros or NaN) when no reviews exist yet", async () => {
+      prisma.subcontractor.findFirst.mockResolvedValue({ id: "sub-1" });
+      prisma.subcontractorPerformanceReview.findMany.mockResolvedValue([]);
+
+      const result = await service.performanceScorecard(COMPANY_A, "sub-1");
+
+      expect(result).toEqual({
+        reviewCount: 0,
+        averageRating: null,
+        onTimePercent: null,
+        wouldHireAgainPercent: null,
+        totalSafetyIncidents: 0,
+        totalReworkCount: 0,
+      });
+    });
+
+    it("aggregates rating/on-time%/would-hire-again% across multiple reviews", async () => {
+      prisma.subcontractor.findFirst.mockResolvedValue({ id: "sub-1" });
+      prisma.subcontractorPerformanceReview.findMany.mockResolvedValue([
+        { rating: 5, onTime: true, wouldHireAgain: true, safetyIncidents: 0, reworkCount: 0 },
+        { rating: 3, onTime: false, wouldHireAgain: true, safetyIncidents: 1, reworkCount: 2 },
+        { rating: 4, onTime: true, wouldHireAgain: null, safetyIncidents: 0, reworkCount: 0 },
+      ]);
+
+      const result = await service.performanceScorecard(COMPANY_A, "sub-1");
+
+      expect(result.reviewCount).toBe(3);
+      expect(result.averageRating).toBeCloseTo(4, 1);
+      // 2 of 3 on-time answered "true" -> 66.7%
+      expect(result.onTimePercent).toBeCloseTo(66.7, 1);
+      // Of the 2 reviews that answered wouldHireAgain, both were true -> 100%
+      expect(result.wouldHireAgainPercent).toBe(100);
+      expect(result.totalSafetyIncidents).toBe(1);
+      expect(result.totalReworkCount).toBe(2);
+    });
+  });
+
+  describe("setActualEndDate()", () => {
+    it("throws when the assignment doesn't belong to this subcontractor/company", async () => {
+      prisma.subcontractorAssignment.findFirst.mockResolvedValue(null);
+
+      await expect(service.setActualEndDate(COMPANY_A, "sub-1", "assign-1", "2026-09-01T00:00:00.000Z")).rejects.toThrow(NotFoundException);
+    });
+
+    it("clears the date when passed null", async () => {
+      prisma.subcontractorAssignment.findFirst.mockResolvedValue({ id: "assign-1" });
+
+      await service.setActualEndDate(COMPANY_A, "sub-1", "assign-1", null);
+
+      expect(prisma.subcontractorAssignment.update).toHaveBeenCalledWith({ where: { id: "assign-1" }, data: { actualEndDate: null } });
+    });
+  });
+
+  describe("list()", () => {
+    it("never selects taxId", async () => {
+      prisma.subcontractor.findMany.mockResolvedValue([]);
+
+      await service.list(COMPANY_A);
+
+      const call = prisma.subcontractor.findMany.mock.calls[0][0];
+      expect(call.select.taxId).toBeUndefined();
+      expect(call.select.name).toBe(true);
+    });
+  });
+
+  describe("getTaxProfile() / updateTaxProfile()", () => {
+    it("throws when the subcontractor doesn't belong to this company", async () => {
+      prisma.subcontractor.findFirst.mockResolvedValue(null);
+
+      await expect(service.getTaxProfile(COMPANY_A, "sub-1")).rejects.toThrow(NotFoundException);
+    });
+
+    it("returns the raw (unmasked) taxId — this is the one place it's allowed to leave the server unmasked", async () => {
+      prisma.subcontractor.findFirst.mockResolvedValue({ taxId: "12-3456789", legalBusinessName: "Acme Electric LLC", mailingAddress: "1 Main St" });
+
+      const result = await service.getTaxProfile(COMPANY_A, "sub-1");
+
+      expect(result.taxId).toBe("12-3456789");
+    });
+
+    it("updateTaxProfile() rejects a subcontractor from another company", async () => {
+      prisma.subcontractor.findFirst.mockResolvedValue(null);
+
+      await expect(service.updateTaxProfile(COMPANY_A, "sub-1", { taxId: "12-3456789" })).rejects.toThrow(NotFoundException);
+      expect(prisma.subcontractor.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("addPayment()", () => {
+    it("rejects when the subcontractor doesn't belong to this company", async () => {
+      prisma.subcontractor.findFirst.mockResolvedValue(null);
+
+      await expect(service.addPayment(COMPANY_A, ACTOR, "sub-1", { amount: 500 })).rejects.toThrow(NotFoundException);
+      expect(prisma.subcontractorPayment.create).not.toHaveBeenCalled();
+    });
+
+    it("rejects a subcontractorCostId that doesn't belong to this subcontractor/company", async () => {
+      prisma.subcontractor.findFirst.mockResolvedValue({ id: "sub-1", name: "Acme Electric" });
+      prisma.subcontractorCost.findFirst.mockResolvedValue(null);
+
+      await expect(service.addPayment(COMPANY_A, ACTOR, "sub-1", { amount: 500, subcontractorCostId: "cost-1" })).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(prisma.subcontractorPayment.create).not.toHaveBeenCalled();
+    });
+
+    it("records a standalone payment with no subcontractorCostId", async () => {
+      prisma.subcontractor.findFirst.mockResolvedValue({ id: "sub-1", name: "Acme Electric" });
+      prisma.subcontractorPayment.create.mockResolvedValue({ id: "payment-1" });
+
+      await service.addPayment(COMPANY_A, ACTOR, "sub-1", { amount: 1200, note: "Retainage release" });
+
+      expect(prisma.subcontractorPayment.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ companyId: COMPANY_A, subcontractorId: "sub-1", amount: 1200, note: "Retainage release" }),
+      });
+      expect(audit.record).toHaveBeenCalled();
+    });
+  });
+
+  describe("taxSummary()", () => {
+    it("returns an empty list when no payments fall in the year", async () => {
+      prisma.subcontractorPayment.groupBy.mockResolvedValue([]);
+
+      const result = await service.taxSummary(COMPANY_A, 2026);
+
+      expect(result).toEqual([]);
+      expect(prisma.subcontractor.findMany).not.toHaveBeenCalled();
+    });
+
+    it("masks taxId to last-4 and flags the $600 reportable threshold", async () => {
+      prisma.subcontractorPayment.groupBy.mockResolvedValue([
+        { subcontractorId: "sub-1", _sum: { amount: "1500.00" } },
+        { subcontractorId: "sub-2", _sum: { amount: "200.00" } },
+      ]);
+      prisma.subcontractor.findMany.mockResolvedValue([
+        { id: "sub-1", name: "Acme Electric", taxId: "12-3456789", legalBusinessName: "Acme Electric LLC", mailingAddress: "1 Main St" },
+        { id: "sub-2", name: "Bolt Plumbing", taxId: null, legalBusinessName: null, mailingAddress: null },
+      ]);
+
+      const result = await service.taxSummary(COMPANY_A, 2026);
+
+      expect(result).toEqual([
+        expect.objectContaining({ subcontractorId: "sub-1", totalPaid: 1500, reportable: true, taxIdMasked: "***-**-6789" }),
+        expect.objectContaining({ subcontractorId: "sub-2", totalPaid: 200, reportable: false, taxIdMasked: null }),
+      ]);
+    });
+
+    it("scopes payments to the given calendar year", async () => {
+      prisma.subcontractorPayment.groupBy.mockResolvedValue([]);
+
+      await service.taxSummary(COMPANY_A, 2026);
+
+      const call = prisma.subcontractorPayment.groupBy.mock.calls[0][0];
+      expect(call.where.paidAt.gte).toEqual(new Date(Date.UTC(2026, 0, 1)));
+      expect(call.where.paidAt.lt).toEqual(new Date(Date.UTC(2027, 0, 1)));
     });
   });
 });

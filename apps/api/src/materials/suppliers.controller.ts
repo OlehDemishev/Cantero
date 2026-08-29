@@ -1,6 +1,14 @@
-import { BadRequestException, Body, Controller, Get, Param, Post, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, Param, Post, UploadedFile, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { createSupplierSchema, type AuthUser, type CreateSupplierInput } from "@cantero/shared";
+import {
+  addSupplierDocumentSchema,
+  createSupplierReviewSchema,
+  createSupplierSchema,
+  type AddSupplierDocumentInput,
+  type AuthUser,
+  type CreateSupplierInput,
+  type CreateSupplierReviewInput,
+} from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { SuppliersService } from "./suppliers.service";
@@ -22,6 +30,39 @@ export class SuppliersController {
   @Get(":id/scorecard")
   scorecard(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.scorecard(user.companyId, id);
+  }
+
+  @Get(":id/documents")
+  listDocuments(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.listDocuments(user.companyId, id);
+  }
+
+  @Post(":id/documents")
+  addDocument(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(addSupplierDocumentSchema)) body: AddSupplierDocumentInput,
+  ) {
+    return this.service.addDocument(user.companyId, { userId: user.userId, name: user.name }, id, body);
+  }
+
+  @Delete(":id/documents/:documentId")
+  deleteDocument(@CurrentUser() user: AuthUser, @Param("id") id: string, @Param("documentId") documentId: string) {
+    return this.service.deleteDocument(user.companyId, id, documentId);
+  }
+
+  @Get(":id/reviews")
+  listReviews(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.listReviews(user.companyId, id);
+  }
+
+  @Post(":id/reviews")
+  addReview(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(createSupplierReviewSchema)) body: CreateSupplierReviewInput,
+  ) {
+    return this.service.addReview(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
   @Post()

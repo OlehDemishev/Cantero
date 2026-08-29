@@ -11,6 +11,7 @@ describe("AccountingSyncService", () => {
   let prisma: {
     accountingConnection: { findUnique: jest.Mock; upsert: jest.Mock; update: jest.Mock; deleteMany: jest.Mock };
     invoice: { findMany: jest.Mock; update: jest.Mock };
+    accountingSyncLog: { create: jest.Mock; findMany: jest.Mock };
   };
   let config: { get: jest.Mock; getOrThrow: jest.Mock };
   let jwt: JwtService;
@@ -28,6 +29,7 @@ describe("AccountingSyncService", () => {
     prisma = {
       accountingConnection: { findUnique: jest.fn(), upsert: jest.fn(), update: jest.fn(), deleteMany: jest.fn() },
       invoice: { findMany: jest.fn().mockResolvedValue([]), update: jest.fn() },
+      accountingSyncLog: { create: jest.fn(), findMany: jest.fn() },
     };
     config = {
       get: jest.fn((key: string) => CONFIG_VALUES[key]),
@@ -234,6 +236,67 @@ describe("AccountingSyncService", () => {
       expect(result.failed).toBe(1);
       expect(result.errors[0]).toContain("INV-0001");
       expect(prisma.invoice.update).toHaveBeenCalledTimes(1);
+    });
+
+    it("logs a sync attempt for every invoice, success and failure alike", async () => {
+      prisma.accountingConnection.findUnique.mockResolvedValue(activeConnection);
+      prisma.invoice.findMany.mockResolvedValue([
+        { id: "inv-1", number: "INV-0001", total: "100", dueDate: null, client: { name: "Broken Co", email: null } },
+        { id: "inv-2", number: "INV-0002", total: "200", dueDate: null, client: { name: "Acme Corp", email: null } },
+      ]);
+      fetchMock
+        .mockResolvedValueOnce(jsonResponse({}, false, 500))
+        .mockResolvedValueOnce(jsonResponse({ QueryResponse: { Customer: [{ Id: "cust-2" }] } }))
+        .mockResolvedValueOnce(jsonResponse({ Invoice: { Id: "qb-inv-2" } }));
+
+      await service.syncInvoices("company-a");
+
+      expect(prisma.accountingSyncLog.create).toHaveBeenCalledTimes(2);
+      expect(prisma.accountingSyncLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ invoiceNumber: "INV-0001", status: "failed" }) }),
+      );
+      expect(prisma.accountingSyncLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ invoiceNumber: "INV-0002", status: "success" }) }),
+      );
+    });
+  });
+
+  describe("syncHistory", () => {
+    it("returns recent log entries newest-first", async () => {
+      prisma.accountingSyncLog.findMany.mockResolvedValue([{ id: "log-1" }]);
+
+      const result = await service.syncHistory("company-a");
+
+      expect(prisma.accountingSyncLog.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { companyId: "company-a" }, orderBy: { attemptedAt: "desc" } }),
+      );
+      expect(result).toEqual([{ id: "log-1" }]);
+    });
+  });
+
+  describe("integrityCheck", () => {
+    it("reports not-connected with empty lists when no accounting connection exists", async () => {
+      prisma.accountingConnection.findUnique.mockResolvedValue(null);
+      prisma.invoice.findMany.mockResolvedValue([]);
+      prisma.accountingSyncLog.findMany.mockResolvedValue([]);
+
+      const result = await service.integrityCheck("company-a");
+
+      expect(result.connected).toBe(false);
+      expect(result.provider).toBeNull();
+    });
+
+    it("lists unsynced invoices and recent failures when connected", async () => {
+      prisma.accountingConnection.findUnique.mockResolvedValue({ provider: "quickbooks" });
+      prisma.invoice.findMany.mockResolvedValue([{ id: "inv-1", number: "INV-0001", total: "500", createdAt: new Date() }]);
+      prisma.accountingSyncLog.findMany.mockResolvedValue([{ id: "log-1", status: "failed", invoiceNumber: "INV-0002" }]);
+
+      const result = await service.integrityCheck("company-a");
+
+      expect(result.connected).toBe(true);
+      expect(result.provider).toBe("quickbooks");
+      expect(result.unsyncedInvoices).toHaveLength(1);
+      expect(result.recentFailures).toHaveLength(1);
     });
   });
 });

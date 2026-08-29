@@ -100,6 +100,58 @@ export class TasksService {
   }
 
   /**
+   * A read-only, per-project critical-path pass across several projects at once, for a portfolio
+   * schedule view. Each project's tasks/dependencies are fed through the CPM calculator
+   * separately — "critical path" is inherently a per-project concept, so this is a loop of
+   * independent single-project computations, not a merged cross-project graph. Silently skips
+   * any id in `projectIds` that isn't a real project of this company, same as findMany would.
+   */
+  async portfolioSchedule(companyId: string, projectIds: string[]) {
+    const projects = await this.prisma.project.findMany({
+      where: { id: { in: projectIds }, companyId },
+      select: { id: true, name: true },
+    });
+
+    return Promise.all(
+      projects.map(async (project) => {
+        const [tasks, milestones] = await Promise.all([
+          this.prisma.task.findMany({ where: { projectId: project.id }, orderBy: [{ sortOrder: "asc" }, { startDate: "asc" }] }),
+          this.prisma.milestone.findMany({ where: { projectId: project.id } }),
+        ]);
+
+        const scheduled = tasks.filter((t) => t.startDate && t.dueDate);
+        const scheduledIds = scheduled.map((t) => t.id);
+        const dependencies =
+          scheduledIds.length > 0
+            ? await this.prisma.taskDependency.findMany({
+                where: { predecessorId: { in: scheduledIds }, successorId: { in: scheduledIds } },
+              })
+            : [];
+
+        const cpm = computeCriticalPath(
+          scheduled.map((t) => ({ id: t.id, startDate: t.startDate!, dueDate: t.dueDate! })),
+          dependencies.map((d) => ({ predecessorId: d.predecessorId, successorId: d.successorId, type: d.type, lagDays: d.lagDays })),
+        );
+        const criticalIds = new Set(cpm.filter((c) => c.critical).map((c) => c.id));
+
+        return {
+          projectId: project.id,
+          projectName: project.name,
+          tasks: tasks.map((t) => ({
+            id: t.id,
+            name: t.name,
+            status: t.status,
+            startDate: t.startDate,
+            dueDate: t.dueDate,
+            isCritical: criticalIds.has(t.id),
+          })),
+          milestones: milestones.map((m) => ({ id: m.id, name: m.name, dueDate: m.dueDate })),
+        };
+      }),
+    );
+  }
+
+  /**
    * The weekly foreman/subcontractor coordination list — not-yet-done tasks starting within the
    * next `weeks` weeks, grouped by week, each flagged "ready" only if every finish-to-start
    * predecessor is already done. That readiness flag is the actual point of a look-ahead

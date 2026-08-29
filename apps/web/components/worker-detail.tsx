@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { SUPPORTED_LOCALES } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
@@ -13,6 +14,13 @@ interface Worker {
   hourlyCost: string | null;
   active: boolean;
   ptoBalanceHours: string;
+  wageClassificationId: string | null;
+  phone: string | null;
+  preferredLocale: string | null;
+}
+interface WageClassification {
+  id: string;
+  trade: string;
 }
 interface OnboardingTask {
   id: string;
@@ -45,7 +53,8 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [certifications, setCertifications] = useState<Certification[] | null>(null);
   const [certForm, setCertForm] = useState({ name: "", expiresAt: "" });
-  const [form, setForm] = useState({ name: "", role: "", hourlyCost: "" });
+  const [form, setForm] = useState({ name: "", role: "", hourlyCost: "", wageClassificationId: "", phone: "", preferredLocale: "" });
+  const [wageClassifications, setWageClassifications] = useState<WageClassification[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -56,10 +65,18 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
   function load() {
     apiFetch<Summary>(`/workers/${workerId}/summary`).then((s) => {
       setSummary(s);
-      setForm({ name: s.worker.name, role: s.worker.role ?? "", hourlyCost: s.worker.hourlyCost ?? "" });
+      setForm({
+        name: s.worker.name,
+        role: s.worker.role ?? "",
+        hourlyCost: s.worker.hourlyCost ?? "",
+        wageClassificationId: s.worker.wageClassificationId ?? "",
+        phone: s.worker.phone ?? "",
+        preferredLocale: s.worker.preferredLocale ?? "",
+      });
     });
     apiFetch<Certification[]>(`/workers/${workerId}/certifications`).then(setCertifications);
     apiFetch<OnboardingTask[]>(`/workers/${workerId}/onboarding-tasks`).then(setOnboardingTasks);
+    apiFetch<WageClassification[]>("/wage-classifications").then(setWageClassifications);
   }
 
   useEffect(load, [workerId]);
@@ -118,6 +135,9 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
           name: form.name,
           role: form.role || null,
           hourlyCost: form.hourlyCost ? Number(form.hourlyCost) : null,
+          wageClassificationId: form.wageClassificationId || null,
+          phone: form.phone || null,
+          preferredLocale: form.preferredLocale || null,
         }),
       });
       setSaved(true);
@@ -211,6 +231,46 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
                 value={form.hourlyCost}
                 onChange={(e) => setForm((f) => ({ ...f, hourlyCost: e.target.value }))}
               />
+            </label>
+            <label className="text-xs text-gray-500">
+              {t("wageClassification")}
+              <select
+                className="input mt-1"
+                value={form.wageClassificationId}
+                onChange={(e) => setForm((f) => ({ ...f, wageClassificationId: e.target.value }))}
+              >
+                <option value="">{t("unclassified")}</option>
+                {wageClassifications?.map((wc) => (
+                  <option key={wc.id} value={wc.id}>
+                    {wc.trade}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-xs text-gray-500">
+              {t("phone")}
+              <input
+                type="tel"
+                placeholder={t("phonePlaceholder")}
+                className="input mt-1"
+                value={form.phone}
+                onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+              />
+            </label>
+            <label className="text-xs text-gray-500">
+              {t("preferredLocale")}
+              <select
+                className="input mt-1"
+                value={form.preferredLocale}
+                onChange={(e) => setForm((f) => ({ ...f, preferredLocale: e.target.value }))}
+              >
+                <option value="">{t("preferredLocaleDefault")}</option>
+                {SUPPORTED_LOCALES.map((l) => (
+                  <option key={l} value={l}>
+                    {l.toUpperCase()}
+                  </option>
+                ))}
+              </select>
             </label>
             <div className="flex items-center gap-2">
               <button type="submit" disabled={busy} className="btn-primary">

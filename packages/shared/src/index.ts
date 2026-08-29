@@ -42,3 +42,6 @@ export * from "./dashboard";
 export * from "./contracts";
 export * from "./cost-codes";
 export * from "./scim";
+export * from "./certified-payroll";
+export * from "./drawings";
+export * from "./permits";

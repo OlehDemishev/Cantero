@@ -52,10 +52,29 @@ export const addMaintenanceRecordSchema = z.object({
   description: z.string().min(1).max(500),
   cost: z.number().nonnegative().optional(),
   performedAt: z.string().datetime().optional(),
+  supplierId: z.string().uuid().optional(),
+  meterHours: z.number().nonnegative().optional(),
 });
 export type AddMaintenanceRecordInput = z.infer<typeof addMaintenanceRecordSchema>;
 
 export const updateMaintenanceScheduleSchema = z.object({
-  intervalDays: z.number().int().min(1).max(3650).nullable(),
+  intervalDays: z.number().int().min(1).max(3650).nullable().optional(),
+  intervalHours: z.number().positive().max(100_000).nullable().optional(),
 });
 export type UpdateMaintenanceScheduleInput = z.infer<typeof updateMaintenanceScheduleSchema>;
+
+export const updateMeterReadingSchema = z.object({
+  currentMeterHours: z.number().nonnegative().max(1_000_000),
+});
+export type UpdateMeterReadingInput = z.infer<typeof updateMeterReadingSchema>;
+
+/** Self-reported — see EquipmentFuelLog's schema comment. No telematics/fuel-card integration. */
+export const addFuelLogSchema = z.object({
+  quantity: z.number().positive(),
+  cost: z.number().nonnegative().optional(),
+  filledAt: z.string().datetime().optional(),
+  meterHours: z.number().nonnegative().optional(),
+  supplierId: z.string().uuid().optional(),
+  notes: z.string().max(500).optional(),
+});
+export type AddFuelLogInput = z.infer<typeof addFuelLogSchema>;

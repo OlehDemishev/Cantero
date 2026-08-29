@@ -1,24 +1,29 @@
+import { NotFoundException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { SuppliersService } from "./suppliers.service";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { AuditService } from "../common/audit/audit.service";
 
 const COMPANY_A = "company-a";
+const ACTOR = { userId: "user-1", name: "PM" };
 
 describe("SuppliersService.scorecard", () => {
   let service: SuppliersService;
   let prisma: {
     supplier: { findFirst: jest.Mock };
     purchaseOrder: { findMany: jest.Mock };
+    supplierReview: { findMany: jest.Mock };
   };
 
   beforeEach(async () => {
     prisma = {
       supplier: { findFirst: jest.fn().mockResolvedValue({ id: "sup-1", name: "Acme Supply" }) },
       purchaseOrder: { findMany: jest.fn() },
+      supplierReview: { findMany: jest.fn().mockResolvedValue([]) },
     };
 
     const module = await Test.createTestingModule({
-      providers: [SuppliersService, { provide: PrismaService, useValue: prisma }],
+      providers: [SuppliersService, { provide: PrismaService, useValue: prisma }, { provide: AuditService, useValue: { record: jest.fn() } }],
     }).compile();
 
     service = module.get(SuppliersService);
@@ -60,6 +65,119 @@ describe("SuppliersService.scorecard", () => {
     expect(result.averageDelayDays).toBeCloseTo(2.5, 5); // (0 + 5) / 2
     expect(result.totalSpend).toBe(250);
   });
+
+  it("returns nulls for rating/wouldReorder when no reviews exist, without affecting the PO-derived fields", async () => {
+    prisma.purchaseOrder.findMany.mockResolvedValue([]);
+    prisma.supplierReview.findMany.mockResolvedValue([]);
+
+    const result = await service.scorecard(COMPANY_A, "sup-1");
+
+    expect(result.reviewCount).toBe(0);
+    expect(result.averageRating).toBeNull();
+    expect(result.wouldReorderPercent).toBeNull();
+  });
+
+  it("aggregates rating and would-reorder% across reviews", async () => {
+    prisma.purchaseOrder.findMany.mockResolvedValue([]);
+    prisma.supplierReview.findMany.mockResolvedValue([
+      { rating: 5, wouldReorder: true },
+      { rating: 3, wouldReorder: false },
+      { rating: 4, wouldReorder: null },
+    ]);
+
+    const result = await service.scorecard(COMPANY_A, "sup-1");
+
+    expect(result.reviewCount).toBe(3);
+    expect(result.averageRating).toBeCloseTo(4, 1);
+    // Of the 2 reviews that answered wouldReorder, 1 was true -> 50%
+    expect(result.wouldReorderPercent).toBe(50);
+  });
+});
+
+describe("SuppliersService documents/reviews", () => {
+  let service: SuppliersService;
+  let prisma: {
+    supplier: { findFirst: jest.Mock };
+    supplierDocument: { findMany: jest.Mock; create: jest.Mock; findFirst: jest.Mock; delete: jest.Mock };
+    supplierReview: { create: jest.Mock };
+  };
+  let audit: { record: jest.Mock };
+
+  beforeEach(async () => {
+    prisma = {
+      supplier: { findFirst: jest.fn() },
+      supplierDocument: { findMany: jest.fn(), create: jest.fn(), findFirst: jest.fn(), delete: jest.fn() },
+      supplierReview: { create: jest.fn() },
+    };
+    audit = { record: jest.fn() };
+
+    const module = await Test.createTestingModule({
+      providers: [SuppliersService, { provide: PrismaService, useValue: prisma }, { provide: AuditService, useValue: audit }],
+    }).compile();
+
+    service = module.get(SuppliersService);
+  });
+
+  describe("addDocument()", () => {
+    it("rejects a supplier that doesn't belong to this company", async () => {
+      prisma.supplier.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.addDocument(COMPANY_A, ACTOR, "sup-1", { type: "general_liability_insurance", name: "GL Policy", expiresAt: new Date().toISOString() }),
+      ).rejects.toThrow(NotFoundException);
+      expect(prisma.supplierDocument.create).not.toHaveBeenCalled();
+    });
+
+    it("records an audit entry on success", async () => {
+      prisma.supplier.findFirst.mockResolvedValue({ id: "sup-1", name: "Acme Supply" });
+      prisma.supplierDocument.create.mockResolvedValue({ id: "doc-1", expiresAt: new Date() });
+
+      await service.addDocument(COMPANY_A, ACTOR, "sup-1", {
+        type: "general_liability_insurance",
+        name: "GL Policy",
+        expiresAt: new Date().toISOString(),
+      });
+
+      expect(audit.record).toHaveBeenCalled();
+    });
+  });
+
+  describe("deleteDocument()", () => {
+    it("rejects deleting a document that doesn't belong to this company's supplier", async () => {
+      prisma.supplierDocument.findFirst.mockResolvedValue(null);
+
+      await expect(service.deleteDocument(COMPANY_A, "sup-1", "doc-1")).rejects.toThrow(NotFoundException);
+      expect(prisma.supplierDocument.delete).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("addReview()", () => {
+    it("rejects a supplier that doesn't belong to this company", async () => {
+      prisma.supplier.findFirst.mockResolvedValue(null);
+
+      await expect(service.addReview(COMPANY_A, ACTOR, "sup-1", { rating: 5 })).rejects.toThrow(NotFoundException);
+      expect(prisma.supplierReview.create).not.toHaveBeenCalled();
+    });
+
+    it("records a review with the reviewer's identity", async () => {
+      prisma.supplier.findFirst.mockResolvedValue({ id: "sup-1", name: "Acme Supply" });
+      prisma.supplierReview.create.mockResolvedValue({ id: "review-1" });
+
+      await service.addReview(COMPANY_A, ACTOR, "sup-1", { rating: 4, wouldReorder: true, comments: "Reliable" });
+
+      expect(prisma.supplierReview.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          companyId: COMPANY_A,
+          supplierId: "sup-1",
+          reviewedByUserId: ACTOR.userId,
+          reviewedByName: ACTOR.name,
+          rating: 4,
+          wouldReorder: true,
+          comments: "Reliable",
+        }),
+      });
+    });
+  });
 });
 
 describe("SuppliersService.syncCatalog", () => {
@@ -76,7 +194,7 @@ describe("SuppliersService.syncCatalog", () => {
     };
 
     const module = await Test.createTestingModule({
-      providers: [SuppliersService, { provide: PrismaService, useValue: prisma }],
+      providers: [SuppliersService, { provide: PrismaService, useValue: prisma }, { provide: AuditService, useValue: { record: jest.fn() } }],
     }).compile();
 
     service = module.get(SuppliersService);

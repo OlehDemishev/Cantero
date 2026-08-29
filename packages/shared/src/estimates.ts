@@ -148,6 +148,12 @@ export const updateProjectGeofenceSchema = z.object({
 });
 export type UpdateProjectGeofenceInput = z.infer<typeof updateProjectGeofenceSchema>;
 
+export const updateProjectPublicWorkSchema = z.object({
+  isPublicWork: z.boolean(),
+  contractNumber: z.string().max(80).nullable().optional(),
+});
+export type UpdateProjectPublicWorkInput = z.infer<typeof updateProjectPublicWorkSchema>;
+
 export const createClientSchema = z.object({
   name: z.string().min(1).max(160),
   email: z.string().email().optional(),

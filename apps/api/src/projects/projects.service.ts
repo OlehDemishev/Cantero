@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
-import type { CreateProjectInput, ImportResult, UpdateProjectGeofenceInput, UpdateProjectWarrantyInput } from "@cantero/shared";
+import type { CreateProjectInput, ImportResult, UpdateProjectGeofenceInput, UpdateProjectPublicWorkInput, UpdateProjectWarrantyInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { WeatherService } from "../weather/weather.service";
 import { parseCsvRecords } from "../common/csv";
@@ -142,6 +142,15 @@ export class ProjectsService {
     return this.prisma.project.update({
       where: { id },
       data: { geofenceLat: null, geofenceLng: null, geofenceRadiusMeters: null },
+      include: { client: true },
+    });
+  }
+
+  async updatePublicWork(companyId: string, id: string, input: UpdateProjectPublicWorkInput) {
+    await this.get(companyId, id);
+    return this.prisma.project.update({
+      where: { id },
+      data: { isPublicWork: input.isPublicWork, contractNumber: input.contractNumber },
       include: { client: true },
     });
   }

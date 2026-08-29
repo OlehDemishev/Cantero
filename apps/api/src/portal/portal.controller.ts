@@ -2,8 +2,12 @@ import { Body, Controller, Get, Header, Param, Post, Req, StreamableFile, UseGua
 import type { Request } from "express";
 import {
   clientDecisionSchema,
+  createPortalMessageSchema,
+  payInvoiceSchema,
   portalCreateWarrantyClaimSchema,
   type ClientDecisionInput,
+  type CreatePortalMessageInput,
+  type PayInvoiceInput,
   type PortalCreateWarrantyClaimInput,
 } from "@cantero/shared";
 import { Public } from "../common/decorators/public.decorator";
@@ -12,13 +16,17 @@ import { PortalAuthGuard } from "./portal-auth.guard";
 import { CurrentPortalClient } from "./current-portal-client.decorator";
 import type { PortalClientContext } from "./portal-jwt.service";
 import { PortalService } from "./portal.service";
+import { PortalMessagesService } from "./portal-messages.service";
 
 /** @Public() bypasses the internal-user JwtAuthGuard chain; PortalAuthGuard independently requires a valid client-portal token. */
 @Public()
 @UseGuards(PortalAuthGuard)
 @Controller("portal")
 export class PortalController {
-  constructor(private readonly service: PortalService) {}
+  constructor(
+    private readonly service: PortalService,
+    private readonly messages: PortalMessagesService,
+  ) {}
 
   @Get("me")
   me(@CurrentPortalClient() client: PortalClientContext) {
@@ -111,13 +119,31 @@ export class PortalController {
   }
 
   @Post("invoices/:id/pay")
-  createPaymentCheckout(@CurrentPortalClient() client: PortalClientContext, @Param("id") id: string) {
-    return this.service.createPaymentCheckout(client, id);
+  createPaymentCheckout(
+    @CurrentPortalClient() client: PortalClientContext,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(payInvoiceSchema)) body: PayInvoiceInput,
+  ) {
+    return this.service.createPaymentCheckout(client, id, body.amount);
   }
 
   @Get("projects")
   listProjects(@CurrentPortalClient() client: PortalClientContext) {
     return this.service.listProjects(client);
+  }
+
+  @Get("projects/:id/messages")
+  listMessages(@CurrentPortalClient() client: PortalClientContext, @Param("id") projectId: string) {
+    return this.messages.listForClient(client, projectId);
+  }
+
+  @Post("projects/:id/messages")
+  createMessage(
+    @CurrentPortalClient() client: PortalClientContext,
+    @Param("id") projectId: string,
+    @Body(new ZodValidationPipe(createPortalMessageSchema)) body: CreatePortalMessageInput,
+  ) {
+    return this.messages.createForClient(client, projectId, body.content);
   }
 
   @Get("warranty")

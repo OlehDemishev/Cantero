@@ -46,3 +46,20 @@ export const updateSafetyBriefingSchema = z.object({
   attendeeWorkerIds: z.array(z.string().uuid()).optional(),
 });
 export type UpdateSafetyBriefingInput = z.infer<typeof updateSafetyBriefingSchema>;
+
+export const createJhaSchema = z.object({
+  projectId: z.string().uuid(),
+  taskId: z.string().uuid().optional(),
+  date: z.string().datetime(),
+  taskDescription: z.string().min(1).max(300),
+  hazards: z.string().min(1).max(2000),
+  controlMeasures: z.string().min(1).max(2000),
+  requiredPpe: z.string().max(500).optional(),
+  acknowledgedWorkerIds: z.array(z.string().uuid()).default([]),
+});
+export type CreateJhaInput = z.infer<typeof createJhaSchema>;
+
+export const acknowledgeJhaSchema = z.object({
+  workerIds: z.array(z.string().uuid()).min(1),
+});
+export type AcknowledgeJhaInput = z.infer<typeof acknowledgeJhaSchema>;

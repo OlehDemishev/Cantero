@@ -39,6 +39,10 @@ export const updateCompanySchema = z.object({
   changeOrderRequiredApprovalCount: z.number().int().min(1).max(10).optional(),
   leadFollowUpEnabled: z.boolean().optional(),
   estimateRemindersEnabled: z.boolean().optional(),
+  /// SMS to a worker's phone (in their preferredLocale) when assigned to a task, or when a
+  /// safety briefing they're listed on is created — off by default, same "unsolicited message"
+  /// reasoning as invoiceRemindersEnabled.
+  workerSmsNotificationsEnabled: z.boolean().optional(),
   reviewRequestUrl: z.string().url().nullable().optional(),
   ipAllowlist: z.array(z.string().min(1).max(64)).max(50).optional(),
   sessionTimeoutMinutes: z.number().int().min(5).max(43_200).nullable().optional(),
@@ -97,6 +101,27 @@ export const API_KEY_SCOPES = [
   "budget",
 ] as const;
 export type ApiKeyScope = (typeof API_KEY_SCOPES)[number];
+
+export const COMPANY_DOCUMENT_TYPES = [
+  "general_liability_insurance",
+  "workers_comp_insurance",
+  "umbrella_insurance",
+  "builders_risk_insurance",
+  "other",
+] as const;
+export type CompanyDocumentType = (typeof COMPANY_DOCUMENT_TYPES)[number];
+
+export const addCompanyDocumentSchema = z.object({
+  type: z.enum(COMPANY_DOCUMENT_TYPES),
+  name: z.string().min(1).max(160),
+  expiresAt: z.string().datetime(),
+});
+export type AddCompanyDocumentInput = z.infer<typeof addCompanyDocumentSchema>;
+
+export const setCoiPubliclySharedSchema = z.object({
+  coiPubliclyShared: z.boolean(),
+});
+export type SetCoiPubliclySharedInput = z.infer<typeof setCoiPubliclySharedSchema>;
 
 export const createApiKeySchema = z.object({
   name: z.string().min(1).max(80),

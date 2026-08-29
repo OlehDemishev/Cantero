@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { EXPENSE_CATEGORIES, RFI_PRIORITIES, WEATHER_CONDITIONS, type ExpenseCategory, type RfiPriority, type WeatherCondition } from "@cantero/shared";
-import { clearToken, getToken } from "@/lib/api-client";
+import { apiUpload, clearToken, getToken } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { submitOrQueue, submitOrQueueUpload, useOfflineQueue } from "@/lib/offline-queue";
 import { fetchCached, updateCache } from "@/lib/offline-cache";
@@ -382,6 +382,12 @@ function TimeTab({ projectId, meUserId }: { projectId: string; meUserId: string 
   );
 }
 
+interface ReceiptExtraction {
+  amount: number | null;
+  incurredAt: string | null;
+  vendorGuess: string | null;
+}
+
 function ExpensesTab({ projectId, meUserId }: { projectId: string; meUserId: string }) {
   const t = useTranslations("field");
   const tt = useTranslations("team");
@@ -396,9 +402,35 @@ function ExpensesTab({ projectId, meUserId }: { projectId: string; meUserId: str
     incurredAt: new Date().toISOString().slice(0, 10),
   });
   const [receipt, setReceipt] = useState<File | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [scanMessage, setScanMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState(false);
+
+  async function scanReceipt() {
+    if (!receipt) return;
+    setScanning(true);
+    setScanMessage(null);
+    try {
+      const result = await apiUpload<ReceiptExtraction>("/expenses/scan-receipt", receipt);
+      if (result.amount === null && result.incurredAt === null && result.vendorGuess === null) {
+        setScanMessage(t("scanReceiptNoData"));
+        return;
+      }
+      setForm((f) => ({
+        ...f,
+        amount: result.amount !== null ? String(result.amount) : f.amount,
+        incurredAt: result.incurredAt ? result.incurredAt.slice(0, 10) : f.incurredAt,
+        description: !f.description && result.vendorGuess ? result.vendorGuess : f.description,
+      }));
+      setScanMessage(t("scanReceiptDone"));
+    } catch {
+      setScanMessage(t("scanReceiptFailed"));
+    } finally {
+      setScanning(false);
+    }
+  }
 
   useEffect(() => {
     fetchCached<Worker[]>("field:workers", "/workers")
@@ -443,6 +475,7 @@ function ExpensesTab({ projectId, meUserId }: { projectId: string; meUserId: str
       }
       setForm((f) => ({ ...f, amount: "", description: "" }));
       setReceipt(null);
+      setScanMessage(null);
     } finally {
       setBusy(false);
     }
@@ -514,9 +547,20 @@ function ExpensesTab({ projectId, meUserId }: { projectId: string; meUserId: str
           type="file"
           accept="image/*,application/pdf"
           className="input"
-          onChange={(e) => setReceipt(e.target.files?.[0] ?? null)}
+          onChange={(e) => {
+            setReceipt(e.target.files?.[0] ?? null);
+            setScanMessage(null);
+          }}
         />
       </label>
+      {receipt && (
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={scanReceipt} disabled={scanning} className="btn-secondary px-3 py-1 text-xs">
+            {scanning ? t("scanReceiptScanning") : t("scanReceiptButton")}
+          </button>
+          {scanMessage && <span className="text-xs text-gray-500">{scanMessage}</span>}
+        </div>
+      )}
       <button type="submit" disabled={busy} className="btn-primary mt-1">
         {te("submit")}
       </button>

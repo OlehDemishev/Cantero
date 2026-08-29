@@ -14,6 +14,8 @@ interface Subcontractor {
 interface Assignment {
   id: string;
   projectId: string;
+  startDate: string | null;
+  endDate: string | null;
 }
 
 export function SubcontractorAssignmentsPanel({ projectId }: { projectId: string }) {
@@ -25,6 +27,8 @@ export function SubcontractorAssignmentsPanel({ projectId }: { projectId: string
   const [selectedId, setSelectedId] = useState("");
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -61,10 +65,16 @@ export function SubcontractorAssignmentsPanel({ projectId }: { projectId: string
       }
       await apiFetch(`/finance/subcontractors/${subcontractorId}/assignments`, {
         method: "POST",
-        body: JSON.stringify({ projectId }),
+        body: JSON.stringify({
+          projectId,
+          startDate: startDate ? new Date(startDate).toISOString() : undefined,
+          endDate: endDate ? new Date(endDate).toISOString() : undefined,
+        }),
       });
       setNewName("");
       setNewEmail("");
+      setStartDate("");
+      setEndDate("");
       load();
     } catch (err) {
       setError(err instanceof Error ? err.message : tc("error"));
@@ -105,6 +115,11 @@ export function SubcontractorAssignmentsPanel({ projectId }: { projectId: string
               <span>
                 {subcontractor.name}
                 {subcontractor.email && <span className="ml-2 text-xs text-gray-400">{subcontractor.email}</span>}
+                {assignment.startDate && assignment.endDate && (
+                  <span className="ml-2 text-xs text-gray-400">
+                    {new Date(assignment.startDate).toLocaleDateString()} – {new Date(assignment.endDate).toLocaleDateString()}
+                  </span>
+                )}
               </span>
               <button onClick={() => unassign(subcontractor.id, assignment.id)} className="btn-secondary px-2 py-1 text-xs">
                 {t("unassign")}
@@ -141,6 +156,14 @@ export function SubcontractorAssignmentsPanel({ projectId }: { projectId: string
             />
           </>
         )}
+        <label className="flex flex-col gap-1 text-xs text-gray-500">
+          {t("startDate")}
+          <input type="date" className="input w-auto" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-gray-500">
+          {t("endDate")}
+          <input type="date" className="input w-auto" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+        </label>
         <button type="submit" disabled={busy} className="btn-secondary">
           {t("assignToProject")}
         </button>

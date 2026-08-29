@@ -20,6 +20,9 @@ describe("NotificationsService.list", () => {
     warrantyClaim: { findMany: jest.Mock };
     commentMention: { findMany: jest.Mock };
     subcontractorDocument: { findMany: jest.Mock };
+    supplierDocument: { findMany: jest.Mock };
+    permit: { findMany: jest.Mock };
+    companyDocument: { findMany: jest.Mock };
     workerCertification: { findMany: jest.Mock };
     task: { findMany: jest.Mock };
     project: { findMany: jest.Mock };
@@ -41,6 +44,9 @@ describe("NotificationsService.list", () => {
       warrantyClaim: { findMany: jest.fn().mockResolvedValue([]) },
       commentMention: { findMany: jest.fn().mockResolvedValue([]) },
       subcontractorDocument: { findMany: jest.fn().mockResolvedValue([]) },
+      supplierDocument: { findMany: jest.fn().mockResolvedValue([]) },
+      permit: { findMany: jest.fn().mockResolvedValue([]) },
+      companyDocument: { findMany: jest.fn().mockResolvedValue([]) },
       workerCertification: { findMany: jest.fn().mockResolvedValue([]) },
       task: { findMany: jest.fn().mockResolvedValue([]) },
       project: { findMany: jest.fn().mockResolvedValue([]) },
@@ -130,6 +136,33 @@ describe("NotificationsService.list", () => {
 
     expect(byKey["warranty_claim:claim-1"].severity).toBe("critical");
     expect(byKey["warranty_claim:claim-2"].severity).toBe("warning");
+  });
+
+  it("flags an expired permit as critical and one expiring soon as a warning", async () => {
+    const project = { id: "project-1", name: "Site A" };
+    prisma.permit.findMany.mockResolvedValue([
+      { id: "permit-1", permitType: "Building permit", expiresAt: new Date(Date.now() - 86_400_000), project },
+      { id: "permit-2", permitType: "Electrical permit", expiresAt: new Date(Date.now() + 86_400_000), project },
+    ]);
+
+    const { notifications } = await service.list(COMPANY_A, USER_A);
+    const byKey = Object.fromEntries(notifications.map((n) => [n.key, n]));
+
+    expect(byKey["permit:permit-1"].severity).toBe("critical");
+    expect(byKey["permit:permit-2"].severity).toBe("warning");
+  });
+
+  it("flags an expired company insurance document as critical and one expiring soon as a warning", async () => {
+    prisma.companyDocument.findMany.mockResolvedValue([
+      { id: "doc-1", name: "GL Policy", expiresAt: new Date(Date.now() - 86_400_000) },
+      { id: "doc-2", name: "Workers Comp Policy", expiresAt: new Date(Date.now() + 86_400_000) },
+    ]);
+
+    const { notifications } = await service.list(COMPANY_A, USER_A);
+    const byKey = Object.fromEntries(notifications.map((n) => [n.key, n]));
+
+    expect(byKey["company_document:doc-1"].severity).toBe("critical");
+    expect(byKey["company_document:doc-2"].severity).toBe("warning");
   });
 
   it("surfaces a mention on an RFI comment, labelled with the commenter and the RFI's project", async () => {
@@ -325,6 +358,9 @@ describe("NotificationsService — read tracking", () => {
     warrantyClaim: { findMany: jest.Mock };
     commentMention: { findMany: jest.Mock };
     subcontractorDocument: { findMany: jest.Mock };
+    supplierDocument: { findMany: jest.Mock };
+    permit: { findMany: jest.Mock };
+    companyDocument: { findMany: jest.Mock };
     workerCertification: { findMany: jest.Mock };
     task: { findMany: jest.Mock };
     project: { findMany: jest.Mock };
@@ -344,6 +380,9 @@ describe("NotificationsService — read tracking", () => {
       warrantyClaim: { findMany: jest.fn().mockResolvedValue([]) },
       commentMention: { findMany: jest.fn().mockResolvedValue([]) },
       subcontractorDocument: { findMany: jest.fn().mockResolvedValue([]) },
+      supplierDocument: { findMany: jest.fn().mockResolvedValue([]) },
+      permit: { findMany: jest.fn().mockResolvedValue([]) },
+      companyDocument: { findMany: jest.fn().mockResolvedValue([]) },
       workerCertification: { findMany: jest.fn().mockResolvedValue([]) },
       task: { findMany: jest.fn().mockResolvedValue([]) },
       project: { findMany: jest.fn().mockResolvedValue([]) },

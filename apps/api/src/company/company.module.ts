@@ -15,6 +15,9 @@ import { CustomRolesController } from "./custom-roles.controller";
 import { CustomRolesService } from "./custom-roles.service";
 import { OnboardingTemplateController } from "./onboarding-template.controller";
 import { OnboardingTemplateService } from "./onboarding-template.service";
+import { CompanyCoiController } from "./company-coi.controller";
+import { PublicCompanyCoiController } from "./public-company-coi.controller";
+import { CompanyCoiService } from "./company-coi.service";
 
 @Module({
   controllers: [
@@ -27,7 +30,18 @@ import { OnboardingTemplateService } from "./onboarding-template.service";
     DataExportController,
     CustomRolesController,
     OnboardingTemplateController,
+    CompanyCoiController,
+    PublicCompanyCoiController,
   ],
-  providers: [CompanyService, MembersService, InvitesService, ApiKeysService, DataExportService, CustomRolesService, OnboardingTemplateService],
+  providers: [
+    CompanyService,
+    MembersService,
+    InvitesService,
+    ApiKeysService,
+    DataExportService,
+    CustomRolesService,
+    OnboardingTemplateService,
+    CompanyCoiService,
+  ],
 })
 export class CompanyModule {}

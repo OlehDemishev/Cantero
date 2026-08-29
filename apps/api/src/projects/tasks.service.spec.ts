@@ -210,3 +210,72 @@ describe("TasksService.getLookAhead", () => {
     expect(call.where.status).toEqual({ not: "done" });
   });
 });
+
+describe("TasksService.portfolioSchedule", () => {
+  let service: TasksService;
+  let prisma: {
+    project: { findMany: jest.Mock };
+    task: { findMany: jest.Mock };
+    milestone: { findMany: jest.Mock };
+    taskDependency: { findMany: jest.Mock };
+  };
+
+  beforeEach(async () => {
+    prisma = {
+      project: { findMany: jest.fn() },
+      task: { findMany: jest.fn().mockResolvedValue([]) },
+      milestone: { findMany: jest.fn().mockResolvedValue([]) },
+      taskDependency: { findMany: jest.fn().mockResolvedValue([]) },
+    };
+
+    const module = await Test.createTestingModule({
+      providers: [TasksService, { provide: PrismaService, useValue: prisma }],
+    }).compile();
+
+    service = module.get(TasksService);
+  });
+
+  it("computes an independent critical path per project rather than one merged graph", async () => {
+    prisma.project.findMany.mockResolvedValue([
+      { id: "project-1", name: "Site A" },
+      { id: "project-2", name: "Site B" },
+    ]);
+    prisma.task.findMany.mockImplementation(({ where }: { where: { projectId: string } }) => {
+      if (where.projectId === "project-1") {
+        return Promise.resolve([
+          { id: "task-1", name: "Foundation", status: "planned", startDate: new Date("2026-09-01"), dueDate: new Date("2026-09-05") },
+        ]);
+      }
+      return Promise.resolve([
+        { id: "task-2", name: "Framing", status: "planned", startDate: new Date("2026-10-01"), dueDate: new Date("2026-10-10") },
+      ]);
+    });
+
+    const result = await service.portfolioSchedule(COMPANY_A, ["project-1", "project-2"]);
+
+    expect(result).toHaveLength(2);
+    expect(result[0].projectName).toBe("Site A");
+    expect(result[0].tasks[0].isCritical).toBe(true); // sole task on its own project's chain is always critical
+    expect(result[1].projectName).toBe("Site B");
+    expect(result[1].tasks[0].id).toBe("task-2");
+  });
+
+  it("only returns projects that belong to this company", async () => {
+    prisma.project.findMany.mockResolvedValue([{ id: "project-1", name: "Site A" }]);
+
+    const result = await service.portfolioSchedule(COMPANY_A, ["project-1", "foreign-project"]);
+
+    expect(result).toHaveLength(1);
+    const call = prisma.project.findMany.mock.calls[0][0];
+    expect(call.where.companyId).toBe(COMPANY_A);
+  });
+
+  it("includes milestones alongside tasks", async () => {
+    prisma.project.findMany.mockResolvedValue([{ id: "project-1", name: "Site A" }]);
+    prisma.milestone.findMany.mockResolvedValue([{ id: "m-1", name: "Permit approval", dueDate: new Date("2026-09-01") }]);
+
+    const result = await service.portfolioSchedule(COMPANY_A, ["project-1"]);
+
+    expect(result[0].milestones).toEqual([{ id: "m-1", name: "Permit approval", dueDate: new Date("2026-09-01") }]);
+  });
+});

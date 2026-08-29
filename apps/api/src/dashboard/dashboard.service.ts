@@ -42,6 +42,10 @@ export class DashboardService {
       case "custom_report":
         if (typeof cfg.customReportId !== "string") return null;
         return this.customReports.run(companyId, cfg.customReportId);
+      case "backlog":
+        return this.reports.backlog(companyId);
+      case "compliance_calendar":
+        return this.reports.complianceCalendar(companyId, typeof cfg.lookaheadDays === "number" ? cfg.lookaheadDays : undefined);
     }
   }
 
@@ -130,6 +134,10 @@ export class DashboardService {
     if (type === "portfolio_summary" && typeof data === "object") {
       const d = data as { summary?: { projectsTotal?: number; projectsAtRisk?: number } };
       return d.summary ? `${d.summary.projectsTotal ?? 0} projects, ${d.summary.projectsAtRisk ?? 0} at risk` : "No data";
+    }
+    if (type === "compliance_calendar" && typeof data === "object") {
+      const d = data as { expiredCount?: number; expiringCount?: number };
+      return `${d.expiredCount ?? 0} expired, ${d.expiringCount ?? 0} expiring soon`;
     }
     if (Array.isArray(data)) return `${data.length} row(s)`;
     return "See dashboard for detail";

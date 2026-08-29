@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import type { BulkActionResult, CreatePunchListItemInput, UpdatePunchListItemInput } from "@cantero/shared";
+import type { BulkActionResult, CreatePunchListItemInput, SetDrawingPinInput, UpdatePunchListItemInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { WebhooksService } from "../common/webhooks/webhooks.service";
@@ -50,6 +50,18 @@ export class PunchListService {
     });
     this.audit.record(companyId, actor, "punch_list.created", "PunchListItem", item.id, `Logged punch list item "${item.title}"`);
     return item;
+  }
+
+  async setPin(companyId: string, id: string, input: SetDrawingPinInput) {
+    const item = await this.get(companyId, id);
+    if (input.drawingSheetId) {
+      const sheet = await this.prisma.drawingSheet.findFirst({ where: { id: input.drawingSheetId, companyId } });
+      if (!sheet) throw new NotFoundException("Drawing sheet not found");
+    }
+    return this.prisma.punchListItem.update({
+      where: { id: item.id },
+      data: { drawingSheetId: input.drawingSheetId, pinX: input.pinX, pinY: input.pinY },
+    });
   }
 
   async update(companyId: string, actor: AuditActor, id: string, input: UpdatePunchListItemInput) {

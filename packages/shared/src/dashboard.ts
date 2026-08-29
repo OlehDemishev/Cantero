@@ -9,6 +9,8 @@ export const DASHBOARD_WIDGET_TYPES = [
   "warehouse_turnover",
   "labor_cost",
   "custom_report",
+  "backlog",
+  "compliance_calendar",
 ] as const;
 export type DashboardWidgetType = (typeof DASHBOARD_WIDGET_TYPES)[number];
 

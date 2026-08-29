@@ -24,6 +24,18 @@ interface Expense {
   id: string;
   description: string;
 }
+interface MatchCandidate {
+  type: MatchTarget;
+  id: string;
+  label: string;
+  amount: number;
+  daysApart: number;
+  exact: boolean;
+}
+interface MatchSuggestion {
+  transactionId: string;
+  candidates: MatchCandidate[];
+}
 
 type MatchTarget = "invoice" | "expense";
 
@@ -39,11 +51,15 @@ export default function BankReconciliationPage() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [filter, setFilter] = useState<"all" | "unreconciled">("unreconciled");
   const [matchDrafts, setMatchDrafts] = useState<Record<string, { target: MatchTarget; id: string }>>({});
+  const [suggestions, setSuggestions] = useState<Record<string, MatchCandidate[]>>({});
   const [busy, setBusy] = useState(false);
 
   function load() {
     const query = filter === "unreconciled" ? "?reconciled=false" : "";
     apiFetch<BankTransaction[]>(`/bank-transactions${query}`).then(setTransactions);
+    apiFetch<MatchSuggestion[]>("/bank-transactions/suggested-matches").then((list) =>
+      setSuggestions(Object.fromEntries(list.map((s) => [s.transactionId, s.candidates]))),
+    );
   }
 
   useEffect(load, [filter]);
@@ -68,6 +84,19 @@ export default function BankReconciliationPage() {
       await apiFetch(`/bank-transactions/${txId}/match`, {
         method: "POST",
         body: JSON.stringify(draft.target === "invoice" ? { invoiceId: draft.id } : { expenseId: draft.id }),
+      });
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function matchSuggested(txId: string, candidate: MatchCandidate) {
+    setBusy(true);
+    try {
+      await apiFetch(`/bank-transactions/${txId}/match`, {
+        method: "POST",
+        body: JSON.stringify(candidate.type === "invoice" ? { invoiceId: candidate.id } : { expenseId: candidate.id }),
       });
       load();
     } finally {
@@ -139,7 +168,23 @@ export default function BankReconciliationPage() {
                     </button>
                   </div>
                 ) : (
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <div className="mt-2 flex flex-col gap-2">
+                    {(suggestions[tx.id] ?? []).length > 0 && (
+                      <div className="flex flex-wrap items-center gap-2 rounded-lg bg-brand-50 px-2.5 py-1.5">
+                        <span className="text-xs font-medium text-brand-700">{t("suggestedMatch")}</span>
+                        {(suggestions[tx.id] ?? []).map((c) => (
+                          <button
+                            key={`${c.type}-${c.id}`}
+                            onClick={() => matchSuggested(tx.id, c)}
+                            disabled={busy}
+                            className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-brand-700 shadow-theme-xs hover:bg-brand-100"
+                          >
+                            {c.label} {c.exact ? "" : `(${t("approxMatch")})`}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex flex-wrap items-center gap-2">
                     <select
                       className="input w-auto text-xs"
                       value={draft.target}
@@ -166,6 +211,7 @@ export default function BankReconciliationPage() {
                     <button onClick={() => match(tx.id)} disabled={busy || !draft.id} className="btn-secondary px-3 py-1 text-xs">
                       {t("match")}
                     </button>
+                    </div>
                   </div>
                 )}
               </li>
