@@ -5,6 +5,7 @@ import type {
   CheckInEquipmentInput,
   CheckOutEquipmentInput,
   CreateEquipmentInput,
+  StartEquipmentRentalInput,
   UpdateEquipmentInput,
   UpdateMaintenanceScheduleInput,
   UpdateMeterReadingInput,
@@ -13,6 +14,7 @@ import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { checkGeofence } from "../team/geofence";
 import { calculateCostPerHour } from "./equipment-cost";
+import { calculateRentalRevenue } from "./equipment-rental";
 
 @Injectable()
 export class EquipmentService {
@@ -244,9 +246,74 @@ export class EquipmentService {
     if (equipment.status === "in_use") {
       throw new BadRequestException("Check the equipment in before retiring it");
     }
+    if (equipment.status === "rented_out") {
+      throw new BadRequestException("End the active rental before retiring this equipment");
+    }
     await this.prisma.equipment.update({ where: { id }, data: { status: "retired" } });
     this.audit.record(companyId, actor, "equipment.retired", "Equipment", id, `Retired "${equipment.name}"`);
     return this.findOrThrow(companyId, id);
+  }
+
+  /** Renting OUR equipment out to an external party — the mirror image of checkOut(), which is
+   * OUR use of OUR equipment. Same "must be available" gate as checkOut(), so a rental can't be
+   * started on top of an internal assignment or an existing rental. */
+  async startRental(companyId: string, actor: AuditActor, id: string, input: StartEquipmentRentalInput) {
+    const equipment = await this.findOrThrow(companyId, id);
+    if (equipment.status !== "available") {
+      throw new BadRequestException(`Equipment is ${equipment.status.replace("_", " ")}, not available to rent out`);
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.equipmentRental.create({
+        data: {
+          companyId,
+          equipmentId: id,
+          renterName: input.renterName,
+          renterContact: input.renterContact,
+          dailyRate: input.dailyRate,
+          expectedReturnDate: input.expectedReturnDate ? new Date(input.expectedReturnDate) : undefined,
+          notes: input.notes,
+        },
+      }),
+      this.prisma.equipment.update({ where: { id }, data: { status: "rented_out" } }),
+    ]);
+
+    this.audit.record(companyId, actor, "equipment.rental_started", "Equipment", id, `Rented out "${equipment.name}" to ${input.renterName}`);
+    return this.findOrThrow(companyId, id);
+  }
+
+  async endRental(companyId: string, actor: AuditActor, id: string) {
+    const equipment = await this.findOrThrow(companyId, id);
+    if (equipment.status !== "rented_out") {
+      throw new BadRequestException("Equipment is not currently rented out");
+    }
+
+    const openRental = await this.prisma.equipmentRental.findFirst({
+      where: { equipmentId: id, actualReturnDate: null },
+      orderBy: { startDate: "desc" },
+    });
+    if (!openRental) throw new BadRequestException("No open rental found for this equipment");
+
+    await this.prisma.$transaction([
+      this.prisma.equipmentRental.update({ where: { id: openRental.id }, data: { actualReturnDate: new Date() } }),
+      this.prisma.equipment.update({ where: { id }, data: { status: "available" } }),
+    ]);
+
+    this.audit.record(companyId, actor, "equipment.rental_ended", "Equipment", id, `Returned "${equipment.name}" from rental to ${openRental.renterName}`);
+    return this.findOrThrow(companyId, id);
+  }
+
+  async listRentals(companyId: string, id: string) {
+    await this.findOrThrow(companyId, id);
+    const rentals = await this.prisma.equipmentRental.findMany({
+      where: { equipmentId: id, companyId },
+      orderBy: { startDate: "desc" },
+    });
+    const now = new Date();
+    return rentals.map((r) => ({
+      ...r,
+      ...calculateRentalRevenue({ dailyRate: Number(r.dailyRate), startDate: r.startDate, asOf: r.actualReturnDate ?? now }),
+    }));
   }
 
   async addMaintenanceRecord(companyId: string, actor: AuditActor, id: string, input: AddMaintenanceRecordInput) {

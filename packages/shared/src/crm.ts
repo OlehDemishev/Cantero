@@ -13,6 +13,12 @@ export const updateClientSchema = z.object({
   referredByClientId: z.string().uuid().nullable().optional(),
   probability: z.number().int().min(0).max(100).nullable().optional(),
   expectedCloseDate: z.string().datetime().nullable().optional(),
+  /// Buyer billing details for generated e-invoices — see InvoicesService.generateXRechnungXml.
+  street: z.string().max(200).nullable().optional(),
+  city: z.string().max(100).nullable().optional(),
+  postalCode: z.string().max(20).nullable().optional(),
+  country: z.string().length(2).nullable().optional(), // ISO 3166-1 alpha-2
+  vatId: z.string().max(30).nullable().optional(),
 });
 export type UpdateClientInput = z.infer<typeof updateClientSchema>;
 

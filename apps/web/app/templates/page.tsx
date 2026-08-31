@@ -6,7 +6,7 @@ import type { ChecklistTemplateType } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch } from "@/lib/api-client";
 
-const TYPES: ChecklistTemplateType[] = ["punch_list", "rfi", "safety_briefing"];
+const TYPES: ChecklistTemplateType[] = ["punch_list", "rfi", "safety_briefing", "jha"];
 
 interface TemplateItem {
   id: string;
@@ -20,6 +20,9 @@ interface Template {
   name: string;
   defaultSubject: string | null;
   defaultBody: string | null;
+  defaultHazards: string | null;
+  defaultControlMeasures: string | null;
+  defaultPpe: string | null;
   items: TemplateItem[];
 }
 interface ItemDraft {
@@ -39,6 +42,9 @@ export default function TemplatesPage() {
   const [name, setName] = useState("");
   const [defaultSubject, setDefaultSubject] = useState("");
   const [defaultBody, setDefaultBody] = useState("");
+  const [defaultHazards, setDefaultHazards] = useState("");
+  const [defaultControlMeasures, setDefaultControlMeasures] = useState("");
+  const [defaultPpe, setDefaultPpe] = useState("");
   const [items, setItems] = useState<ItemDraft[]>([{ ...EMPTY_ITEM }]);
   const [busy, setBusy] = useState(false);
 
@@ -52,6 +58,9 @@ export default function TemplatesPage() {
     setName("");
     setDefaultSubject("");
     setDefaultBody("");
+    setDefaultHazards("");
+    setDefaultControlMeasures("");
+    setDefaultPpe("");
     setItems([{ ...EMPTY_ITEM }]);
   }
 
@@ -82,7 +91,10 @@ export default function TemplatesPage() {
             location: it.location || undefined,
           })) : undefined,
           defaultSubject: type !== "punch_list" ? defaultSubject : undefined,
-          defaultBody: type !== "punch_list" ? defaultBody || undefined : undefined,
+          defaultBody: type !== "punch_list" && type !== "jha" ? defaultBody || undefined : undefined,
+          defaultHazards: type === "jha" ? defaultHazards || undefined : undefined,
+          defaultControlMeasures: type === "jha" ? defaultControlMeasures || undefined : undefined,
+          defaultPpe: type === "jha" ? defaultPpe || undefined : undefined,
         }),
       });
       resetForm();
@@ -150,6 +162,25 @@ export default function TemplatesPage() {
                 {t("addItem")}
               </button>
             </div>
+          ) : type === "jha" ? (
+            <>
+              <label className="flex flex-col gap-1.5 text-sm">
+                <span className="font-medium text-gray-700">{t("jhaTaskDescription")}</span>
+                <input required className="input" value={defaultSubject} onChange={(e) => setDefaultSubject(e.target.value)} />
+              </label>
+              <label className="flex flex-col gap-1.5 text-sm">
+                <span className="font-medium text-gray-700">{t("jhaHazards")}</span>
+                <textarea rows={2} className="input" value={defaultHazards} onChange={(e) => setDefaultHazards(e.target.value)} />
+              </label>
+              <label className="flex flex-col gap-1.5 text-sm">
+                <span className="font-medium text-gray-700">{t("jhaControlMeasures")}</span>
+                <textarea rows={2} className="input" value={defaultControlMeasures} onChange={(e) => setDefaultControlMeasures(e.target.value)} />
+              </label>
+              <label className="flex flex-col gap-1.5 text-sm">
+                <span className="font-medium text-gray-700">{t("jhaPpe")}</span>
+                <input className="input" value={defaultPpe} onChange={(e) => setDefaultPpe(e.target.value)} />
+              </label>
+            </>
           ) : (
             <>
               <label className="flex flex-col gap-1.5 text-sm">

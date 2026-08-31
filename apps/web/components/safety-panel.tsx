@@ -430,7 +430,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
         <form onSubmit={submitBriefing} className="card mb-4 flex flex-col gap-3">
           <TemplatePicker
             type="safety_briefing"
-            onSelect={(subject, body) => setBriefingForm((f) => ({ ...f, topic: subject, notes: body }))}
+            onSelect={({ subject, body }) => setBriefingForm((f) => ({ ...f, topic: subject, notes: body }))}
           />
           <div className="flex gap-3">
             <label className="flex flex-1 flex-col gap-1.5 text-sm">
@@ -526,6 +526,12 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
 
       {creatingJha && (
         <form onSubmit={submitJha} className="card mb-4 flex flex-col gap-3">
+          <TemplatePicker
+            type="jha"
+            onSelect={({ subject, hazards, controlMeasures, ppe }) =>
+              setJhaForm((f) => ({ ...f, taskDescription: subject, hazards, controlMeasures, requiredPpe: ppe }))
+            }
+          />
           <div className="flex gap-3">
             <label className="flex flex-1 flex-col gap-1.5 text-sm">
               <span className="font-medium text-gray-700">{t("taskDescription")}</span>

@@ -6,6 +6,7 @@ import {
   checkOutEquipmentSchema,
   createEquipmentSchema,
   recordEquipmentGpsPingSchema,
+  startEquipmentRentalSchema,
   updateEquipmentSchema,
   updateMaintenanceScheduleSchema,
   updateMeterReadingSchema,
@@ -16,6 +17,7 @@ import {
   type CheckOutEquipmentInput,
   type CreateEquipmentInput,
   type RecordEquipmentGpsPingInput,
+  type StartEquipmentRentalInput,
   type UpdateEquipmentInput,
   type UpdateMaintenanceScheduleInput,
   type UpdateMeterReadingInput,
@@ -134,6 +136,25 @@ export class EquipmentController {
   @Get(":id/cost-per-hour")
   costPerHour(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.costPerHour(user.companyId, id);
+  }
+
+  @Get(":id/rentals")
+  listRentals(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.listRentals(user.companyId, id);
+  }
+
+  @Post(":id/rentals")
+  startRental(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(startEquipmentRentalSchema)) body: StartEquipmentRentalInput,
+  ) {
+    return this.service.startRental(user.companyId, { userId: user.userId, name: user.name }, id, body);
+  }
+
+  @Post(":id/rentals/return")
+  endRental(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.endRental(user.companyId, { userId: user.userId, name: user.name }, id);
   }
 
   @Get(":id/assignments")

@@ -119,7 +119,7 @@ export function RfiPanel({ projectId }: { projectId: string }) {
 
       {creating && (
         <form onSubmit={submit} className="card mb-4 flex flex-col gap-3">
-          <TemplatePicker type="rfi" onSelect={(subject, body) => setForm((f) => ({ ...f, subject, question: body }))} />
+          <TemplatePicker type="rfi" onSelect={({ subject, body }) => setForm((f) => ({ ...f, subject, question: body }))} />
           <label className="flex flex-col gap-1.5 text-sm">
             <span className="font-medium text-gray-700">{t("subject")}</span>
             <input

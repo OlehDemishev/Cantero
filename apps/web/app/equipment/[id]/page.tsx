@@ -66,6 +66,18 @@ interface CostPerHour {
   totalCost: number;
   costPerHour: number | null;
 }
+interface Rental {
+  id: string;
+  renterName: string;
+  renterContact: string | null;
+  dailyRate: string;
+  startDate: string;
+  expectedReturnDate: string | null;
+  actualReturnDate: string | null;
+  notes: string | null;
+  daysElapsed: number;
+  revenue: number;
+}
 interface Assignment {
   id: string;
   checkedOutAt: string;
@@ -90,6 +102,7 @@ const STATUS_STYLES: Record<EquipmentStatus, string> = {
   in_use: "bg-warning-50 text-warning-700",
   maintenance: "bg-gray-100 text-gray-600",
   retired: "bg-error-50 text-error-700",
+  rented_out: "bg-brand-50 text-brand-700",
 };
 
 export default function EquipmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -107,9 +120,11 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
   const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[] | null>(null);
   const [fuelLogs, setFuelLogs] = useState<FuelLog[] | null>(null);
   const [costPerHour, setCostPerHour] = useState<CostPerHour | null>(null);
+  const [rentals, setRentals] = useState<Rental[] | null>(null);
   const [checkOutForm, setCheckOutForm] = useState({ projectId: "", workerId: "" });
   const [maintenanceForm, setMaintenanceForm] = useState({ description: "", cost: "", supplierId: "", meterHours: "" });
   const [fuelForm, setFuelForm] = useState({ quantity: "", cost: "", supplierId: "", meterHours: "" });
+  const [rentalForm, setRentalForm] = useState({ renterName: "", renterContact: "", dailyRate: "", expectedReturnDate: "", notes: "" });
   const [scheduleIntervalDays, setScheduleIntervalDays] = useState("");
   const [scheduleIntervalHours, setScheduleIntervalHours] = useState("");
   const [meterReading, setMeterReading] = useState("");
@@ -127,6 +142,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
     apiFetch<MaintenanceRecord[]>(`/equipment/${id}/maintenance-records`).then(setMaintenanceRecords);
     apiFetch<FuelLog[]>(`/equipment/${id}/fuel-logs`).then(setFuelLogs);
     apiFetch<CostPerHour>(`/equipment/${id}/cost-per-hour`).then(setCostPerHour);
+    apiFetch<Rental[]>(`/equipment/${id}/rentals`).then(setRentals);
   }
 
   useEffect(() => {
@@ -182,6 +198,36 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
 
   async function retire() {
     await apiFetch(`/equipment/${id}/retire`, { method: "POST" });
+    load();
+  }
+
+  async function startRental(e: React.FormEvent) {
+    e.preventDefault();
+    if (!rentalForm.renterName || !rentalForm.dailyRate) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await apiFetch(`/equipment/${id}/rentals`, {
+        method: "POST",
+        body: JSON.stringify({
+          renterName: rentalForm.renterName,
+          renterContact: rentalForm.renterContact || undefined,
+          dailyRate: Number(rentalForm.dailyRate),
+          expectedReturnDate: rentalForm.expectedReturnDate ? new Date(rentalForm.expectedReturnDate).toISOString() : undefined,
+          notes: rentalForm.notes || undefined,
+        }),
+      });
+      setRentalForm({ renterName: "", renterContact: "", dailyRate: "", expectedReturnDate: "", notes: "" });
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : tc("error"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function endRental() {
+    await apiFetch(`/equipment/${id}/rentals/return`, { method: "POST" });
     load();
   }
 
@@ -369,6 +415,52 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
               {t("completeMaintenance")}
             </button>
           )}
+          {equipment.status === "rented_out" && (
+            <div>
+              {rentals?.find((r) => !r.actualReturnDate) && (
+                <p className="mb-3 text-sm text-gray-600">
+                  {t("currentlyRentedTo")}: {rentals.find((r) => !r.actualReturnDate)!.renterName}
+                </p>
+              )}
+              <button onClick={endRental} className="btn-primary">
+                {t("returnFromRental")}
+              </button>
+            </div>
+          )}
+
+          {equipment.status === "available" && (
+            <form onSubmit={startRental} className="mt-4 flex flex-col gap-2 border-t border-gray-100 pt-4">
+              <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">{t("rentOutToThirdParty")}</span>
+              <input
+                required
+                placeholder={t("renterNamePlaceholder")}
+                className="input"
+                value={rentalForm.renterName}
+                onChange={(e) => setRentalForm((f) => ({ ...f, renterName: e.target.value }))}
+              />
+              <div className="flex flex-wrap gap-2">
+                <input
+                  required
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder={t("dailyRatePlaceholder", { currency })}
+                  className="input w-40"
+                  value={rentalForm.dailyRate}
+                  onChange={(e) => setRentalForm((f) => ({ ...f, dailyRate: e.target.value }))}
+                />
+                <input
+                  type="date"
+                  className="input w-auto"
+                  value={rentalForm.expectedReturnDate}
+                  onChange={(e) => setRentalForm((f) => ({ ...f, expectedReturnDate: e.target.value }))}
+                />
+                <button type="submit" disabled={busy} className="btn-secondary shrink-0 px-3 py-1.5 text-xs">
+                  {t("startRental")}
+                </button>
+              </div>
+            </form>
+          )}
 
           <div className="mt-4 flex flex-wrap gap-2 border-t border-gray-100 pt-4">
             {equipment.status === "available" && (
@@ -376,7 +468,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
                 {t("startMaintenance")}
               </button>
             )}
-            {equipment.status !== "in_use" && equipment.status !== "retired" && (
+            {equipment.status !== "in_use" && equipment.status !== "rented_out" && equipment.status !== "retired" && (
               <button onClick={retire} className="btn-secondary px-3 py-1.5 text-xs">
                 {t("retire")}
               </button>
@@ -616,6 +708,48 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
               {t("addFuelLog")}
             </button>
           </form>
+        </section>
+
+        <section className="card lg:col-span-2">
+          <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("rentalHistory")}</h2>
+          <p className="mb-3 text-xs text-gray-500">{t("rentalHistoryHint")}</p>
+          {!rentals || rentals.length === 0 ? (
+            <p className="text-sm text-gray-400">{t("noRentals")}</p>
+          ) : (
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 text-left text-gray-500">
+                  <th className="py-2">{t("renter")}</th>
+                  <th>{t("dailyRate")}</th>
+                  <th>{t("rentalStart")}</th>
+                  <th>{t("rentalReturn")}</th>
+                  <th className="text-right">{t("rentalRevenue")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rentals.map((r) => (
+                  <tr key={r.id} className="border-b border-gray-100">
+                    <td className="py-2">
+                      {r.renterName}
+                      {!r.actualReturnDate && (
+                        <span className="ml-1.5 rounded-full bg-brand-50 px-1.5 py-0.5 text-[10px] font-medium text-brand-700">
+                          {t("rentalActive")}
+                        </span>
+                      )}
+                    </td>
+                    <td>
+                      {r.dailyRate} {currency}
+                    </td>
+                    <td>{new Date(r.startDate).toLocaleDateString()}</td>
+                    <td>{r.actualReturnDate ? new Date(r.actualReturnDate).toLocaleDateString() : t("stillOut")}</td>
+                    <td className="text-right font-medium">
+                      {r.revenue} {currency}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </section>
 
         <EquipmentGpsPanel equipmentId={id} />

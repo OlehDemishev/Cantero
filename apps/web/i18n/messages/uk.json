@@ -314,7 +314,15 @@
     "auditFilterDateTo": "До",
     "auditFilterEntityType": "Тип об'єкта",
     "auditFilterAction": "Дія",
-    "auditFilterApply": "Фільтрувати"
+    "auditFilterApply": "Фільтрувати",
+    "eInvoicing": "Електронний рахунок",
+    "eInvoicingTooltip": "Потрібно для створення електронних рахунків, сумісних з вимогами ЄС (XRechnung/Factur-X).",
+    "eInvoicingHint": "Юридична адреса та VAT-номер компанії відображаються як дані продавця у створених е-рахунках. IBAN необов'язковий і вказується як спосіб оплати.",
+    "streetAddress": "Вулиця, будинок",
+    "city": "Місто",
+    "postalCode": "Поштовий індекс",
+    "vatIdPlaceholder": "VAT-номер (напр. DE123456789)",
+    "ibanPlaceholder": "IBAN"
   },
   "projects": {
     "title": "Проєкти",
@@ -385,7 +393,14 @@
     "referralReward": "Винагорода за рекомендацію",
     "referralReward_pending": "Винагорода очікує виплати",
     "referralReward_paid": "Винагорода виплачена",
-    "markRewardPaid": "Позначити як виплачену"
+    "markRewardPaid": "Позначити як виплачену",
+    "billingAddress": "Платіжна адреса",
+    "billingAddressHint": "Використовується як дані покупця під час створення е-рахунку ЄС для цього клієнта.",
+    "street": "Вулиця, будинок",
+    "city": "Місто",
+    "postalCode": "Поштовий індекс",
+    "countryCode": "Країна",
+    "vatIdPlaceholder": "VAT-номер (необов'язково)"
   },
   "team": {
     "title": "Команда",
@@ -648,7 +663,8 @@
     "cashFlowForecastLink": "Переглянути 13-тижневий прогноз грошового потоку в звітах",
     "exportQuickBooks": "Експортувати в QuickBooks",
     "exportXero": "Експортувати в Xero",
-    "downloadScheduleOfValues": "Завантажити відомість вартості"
+    "downloadScheduleOfValues": "Завантажити відомість вартості",
+    "downloadEInvoice": "Завантажити е-рахунок (XML XRechnung)"
   },
   "portal": {
     "signInTitle": "Кабінет клієнта",
@@ -755,7 +771,23 @@
     "gpsDenied": "У доступі до місцезнаходження відмовлено.",
     "gpsUnsupported": "Цей браузер не підтримує відстеження місцезнаходження.",
     "gpsNoRoute": "Сьогодні маршрут не зафіксовано.",
-    "offSite": "Поза майданчиком"
+    "offSite": "Поза майданчиком",
+    "status_rented_out": "В оренді",
+    "currentlyRentedTo": "Зараз в оренді у",
+    "returnFromRental": "Повернути з оренди",
+    "rentOutToThirdParty": "Здати в оренду стороннім",
+    "renterNamePlaceholder": "Назва орендаря",
+    "dailyRatePlaceholder": "Денна ставка ({currency})",
+    "startRental": "Почати оренду",
+    "rentalHistory": "Історія оренди",
+    "rentalHistoryHint": "Власна техніка, здана в оренду стороннім як джерело доходу — окремо від видачі техніки, яка фіксує власне використання.",
+    "noRentals": "Оренд ще не зареєстровано.",
+    "renter": "Орендар",
+    "dailyRate": "Денна ставка",
+    "rentalStart": "Початок",
+    "rentalReturn": "Повернено",
+    "rentalRevenue": "Дохід",
+    "rentalActive": "Активна"
   },
   "subcontractorPortal": {
     "signInTitle": "Кабінет субпідрядника",
@@ -1446,7 +1478,12 @@
     "useTemplate": "Використати шаблон…",
     "punch_list": "Список дефектів",
     "rfi": "RFI",
-    "safety_briefing": "Інструктаж з ТБ"
+    "safety_briefing": "Інструктаж з ТБ",
+    "jha": "Аналіз небезпек на роботі",
+    "jhaTaskDescription": "Опис завдання",
+    "jhaHazards": "Небезпеки",
+    "jhaControlMeasures": "Заходи контролю",
+    "jhaPpe": "Необхідні ЗІЗ"
   },
   "subcontractorCompliance": {
     "title": "Субпідрядники",

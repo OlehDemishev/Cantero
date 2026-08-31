@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const CHECKLIST_TEMPLATE_TYPES = ["punch_list", "rfi", "safety_briefing"] as const;
+export const CHECKLIST_TEMPLATE_TYPES = ["punch_list", "rfi", "safety_briefing", "jha"] as const;
 export type ChecklistTemplateType = (typeof CHECKLIST_TEMPLATE_TYPES)[number];
 
 export const checklistTemplateItemSchema = z.object({
@@ -17,6 +17,10 @@ export const createChecklistTemplateSchema = z
     items: z.array(checklistTemplateItemSchema).max(50).optional(),
     defaultSubject: z.string().min(1).max(200).optional(),
     defaultBody: z.string().max(4000).optional(),
+    /// Only meaningful for type=jha.
+    defaultHazards: z.string().max(2000).optional(),
+    defaultControlMeasures: z.string().max(2000).optional(),
+    defaultPpe: z.string().max(500).optional(),
   })
   .refine((v) => v.type !== "punch_list" || (v.items?.length ?? 0) > 0, {
     message: "At least one checklist item is required for a punch list template",
@@ -33,6 +37,9 @@ export const updateChecklistTemplateSchema = z.object({
   items: z.array(checklistTemplateItemSchema).max(50).optional(),
   defaultSubject: z.string().min(1).max(200).optional(),
   defaultBody: z.string().max(4000).optional(),
+  defaultHazards: z.string().max(2000).optional(),
+  defaultControlMeasures: z.string().max(2000).optional(),
+  defaultPpe: z.string().max(500).optional(),
 });
 export type UpdateChecklistTemplateInput = z.infer<typeof updateChecklistTemplateSchema>;
 

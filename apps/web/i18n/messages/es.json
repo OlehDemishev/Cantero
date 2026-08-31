@@ -314,7 +314,15 @@
     "auditFilterDateTo": "Hasta",
     "auditFilterEntityType": "Tipo de entidad",
     "auditFilterAction": "Acción",
-    "auditFilterApply": "Filtrar"
+    "auditFilterApply": "Filtrar",
+    "eInvoicing": "Facturación electrónica",
+    "eInvoicingTooltip": "Necesario para generar facturas electrónicas conformes con la UE (XRechnung/Factur-X) a partir de sus facturas.",
+    "eInvoicingHint": "Su dirección fiscal y NIF/IVA aparecen como datos del vendedor en las facturas electrónicas generadas. El IBAN es opcional y se muestra como medio de pago.",
+    "streetAddress": "Dirección",
+    "city": "Ciudad",
+    "postalCode": "Código postal",
+    "vatIdPlaceholder": "NIF/IVA (p. ej. DE123456789)",
+    "ibanPlaceholder": "IBAN"
   },
   "projects": {
     "title": "Proyectos",
@@ -385,7 +393,14 @@
     "referralReward": "Recompensa por referido",
     "referralReward_pending": "Recompensa pendiente",
     "referralReward_paid": "Recompensa pagada",
-    "markRewardPaid": "Marcar como pagada"
+    "markRewardPaid": "Marcar como pagada",
+    "billingAddress": "Dirección de facturación",
+    "billingAddressHint": "Se utiliza como datos del comprador al generar una factura electrónica de la UE para este cliente.",
+    "street": "Dirección",
+    "city": "Ciudad",
+    "postalCode": "Código postal",
+    "countryCode": "País",
+    "vatIdPlaceholder": "NIF/IVA (opcional)"
   },
   "team": {
     "title": "Equipo",
@@ -648,7 +663,8 @@
     "cashFlowForecastLink": "Ver la previsión de flujo de caja a 13 semanas en Informes",
     "exportQuickBooks": "Exportar a QuickBooks",
     "exportXero": "Exportar a Xero",
-    "downloadScheduleOfValues": "Descargar cuadro de valores"
+    "downloadScheduleOfValues": "Descargar cuadro de valores",
+    "downloadEInvoice": "Descargar factura electrónica (XML XRechnung)"
   },
   "portal": {
     "signInTitle": "Portal del cliente",
@@ -755,7 +771,23 @@
     "gpsDenied": "Se denegó el acceso a la ubicación.",
     "gpsUnsupported": "Este navegador no admite el seguimiento de ubicación.",
     "gpsNoRoute": "No se registró ninguna ruta hoy.",
-    "offSite": "Fuera del sitio"
+    "offSite": "Fuera del sitio",
+    "status_rented_out": "Alquilado",
+    "currentlyRentedTo": "Actualmente alquilado a",
+    "returnFromRental": "Devolver del alquiler",
+    "rentOutToThirdParty": "Alquilar a un tercero",
+    "renterNamePlaceholder": "Nombre del arrendatario",
+    "dailyRatePlaceholder": "Tarifa diaria ({currency})",
+    "startRental": "Iniciar alquiler",
+    "rentalHistory": "Historial de alquileres",
+    "rentalHistoryHint": "Equipo propio alquilado a terceros como fuente de ingresos — independiente de la asignación de equipo, que registra nuestro propio uso.",
+    "noRentals": "Aún no se han registrado alquileres.",
+    "renter": "Arrendatario",
+    "dailyRate": "Tarifa diaria",
+    "rentalStart": "Inicio",
+    "rentalReturn": "Devuelto",
+    "rentalRevenue": "Ingresos",
+    "rentalActive": "Activo"
   },
   "subcontractorPortal": {
     "signInTitle": "Portal de subcontratistas",
@@ -1446,7 +1478,12 @@
     "useTemplate": "Usar plantilla…",
     "punch_list": "Lista de defectos",
     "rfi": "RFI",
-    "safety_briefing": "Instrucción de seguridad"
+    "safety_briefing": "Instrucción de seguridad",
+    "jha": "Análisis de riesgos laborales",
+    "jhaTaskDescription": "Descripción de la tarea",
+    "jhaHazards": "Peligros",
+    "jhaControlMeasures": "Medidas de control",
+    "jhaPpe": "EPP requerido"
   },
   "subcontractorCompliance": {
     "title": "Subcontratistas",

@@ -250,8 +250,20 @@ model Company {
   /// currency", only meaningful for a parent company with linked branches.
   reportingCurrency                  Currency?
   /// Contractor's mailing address, printed in the header of certified payroll reports (WH-347).
-  /// Null just means it hasn't been filled in yet — unrelated to any other feature.
+  /// Also used as the street line of the seller's postal address on generated e-invoices (see
+  /// InvoicesService.generateXRechnungXml). Null just means it hasn't been filled in yet.
   address                            String?
+  /// City/postal code, split out from `address` specifically for the structured postal-address
+  /// block EN16931 e-invoices require (BT-37/BT-38) — `address` itself stays a single free-text
+  /// street line, consistent with how every other address field in this schema is modeled.
+  city                                String?
+  postalCode                         String?
+  /// EU VAT identification number (e.g. "DE123456789") — required on an XRechnung/Factur-X
+  /// e-invoice as the seller's tax registration (BT-31). Null blocks e-invoice generation.
+  vatId                               String?
+  /// IBAN shown as the e-invoice's payment means (BT-84) — null just omits the PaymentMeans
+  /// block rather than blocking generation, since not every seller pays by bank transfer.
+  iban                                String?
   /// Set when coiPubliclyShared is turned on; the public COI page lives at /company-coi/:coiPublicToken.
   /// Same shareable-link pattern as Subcontractor.publicToken/publicListed — lets a client or lender
   /// view/download this company's current insurance certificates without an account.
@@ -294,6 +306,7 @@ model Company {
   webhookEndpoints                WebhookEndpoint[]
   recurringInvoices               RecurringInvoice[]
   equipment                       Equipment[]
+  equipmentRentals                EquipmentRental[]
   dailyLogs                       DailyLog[]
   punchListItems                  PunchListItem[]
   rfis                            Rfi[]
@@ -2429,6 +2442,15 @@ model Client {
   /// there's no payment-processor integration to automate the actual payout.
   referralRewardStatus   ReferralRewardStatus @default(none)
   referralRewardAmount   Decimal?             @db.Decimal(12, 2)
+  /// Billing/postal address, split into the structured fields an EN16931 e-invoice's buyer party
+  /// requires (BT-50/BT-52/BT-55/BT-40) — separate from Project.address (the job site), since a
+  /// client is billed at their own address even when the site is elsewhere.
+  street                 String?
+  city                   String?
+  postalCode             String?
+  country                String? // ISO 3166-1 alpha-2 — null falls back to the company's own country on e-invoices.
+  /// Buyer's EU VAT ID (BT-48) — optional, since many clients are private individuals with none.
+  vatId                  String?
 
   company           Company                  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   owner             Worker?                  @relation(fields: [ownerWorkerId], references: [id], onDelete: SetNull)
@@ -2888,6 +2910,7 @@ enum EquipmentStatus {
   in_use
   maintenance
   retired
+  rented_out
 }
 
 model Equipment {
@@ -2927,9 +2950,37 @@ model Equipment {
   resourceAssignments ResourceAssignment[]
   gpsPings            EquipmentGpsPing[]
   fuelLogs            EquipmentFuelLog[]
+  rentals             EquipmentRental[]
 
   @@index([companyId])
   @@map("equipment")
+}
+
+/// This company's own equipment rented OUT to an external party as a revenue source — the
+/// mirror image of EquipmentAssignment (which tracks OUR use of OUR equipment on OUR projects).
+/// renterName is free text rather than a Subcontractor FK since a rental customer is often not
+/// an existing subcontractor relationship at all. Revenue is computed at read time from
+/// dailyRate × elapsed days (open-ended while actualReturnDate is null), same
+/// no-denormalized-total reasoning as EquipmentService.costPerHour().
+model EquipmentRental {
+  id                 String    @id @default(uuid())
+  companyId          String
+  equipmentId        String
+  renterName         String
+  renterContact      String?
+  dailyRate          Decimal   @db.Decimal(12, 2)
+  startDate          DateTime  @default(now())
+  expectedReturnDate DateTime?
+  actualReturnDate   DateTime?
+  notes              String?
+  createdAt          DateTime  @default(now())
+
+  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([equipmentId])
+  @@map("equipment_rentals")
 }
 
 /// A self-reported fuel purchase — same "no telematics hardware or provider integration" framing
@@ -3543,6 +3594,7 @@ enum ChecklistTemplateType {
   punch_list
   rfi
   safety_briefing
+  jha
 }
 
 /// A reusable, company-defined template. Shape depends on `type`: punch_list templates carry
@@ -3550,13 +3602,19 @@ enum ChecklistTemplateType {
 /// safety_briefing templates are single-entry prefill text (defaultSubject/defaultBody) that the
 /// frontend copies into a new RFI/briefing form — there's nothing to "apply" server-side for those.
 model ChecklistTemplate {
-  id             String                @id @default(uuid())
-  companyId      String
-  type           ChecklistTemplateType
-  name           String
-  defaultSubject String?
-  defaultBody    String?
-  createdAt      DateTime              @default(now())
+  id                     String                @id @default(uuid())
+  companyId              String
+  type                   ChecklistTemplateType
+  name                   String
+  defaultSubject         String?
+  defaultBody            String?
+  /// Only meaningful for type=jha — defaultSubject doubles as the default task description for
+  /// that type, same reuse-not-duplicate reasoning as punch_list reusing `items` instead of a
+  /// jha-specific list field.
+  defaultHazards         String?
+  defaultControlMeasures String?
+  defaultPpe             String?
+  createdAt              DateTime              @default(now())
 
   company Company                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
   items   ChecklistTemplateItem[]

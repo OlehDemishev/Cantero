@@ -27,6 +27,7 @@ const STATUS_STYLES: Record<EquipmentStatus, string> = {
   in_use: "bg-warning-50 text-warning-700",
   maintenance: "bg-gray-100 text-gray-600",
   retired: "bg-error-50 text-error-700",
+  rented_out: "bg-brand-50 text-brand-700",
 };
 
 export default function EquipmentPage() {

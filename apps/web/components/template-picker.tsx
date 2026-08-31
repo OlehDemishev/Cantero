@@ -10,17 +10,28 @@ interface Template {
   name: string;
   defaultSubject: string | null;
   defaultBody: string | null;
+  defaultHazards: string | null;
+  defaultControlMeasures: string | null;
+  defaultPpe: string | null;
+}
+export interface TemplateSelection {
+  subject: string;
+  body: string;
+  hazards: string;
+  controlMeasures: string;
+  ppe: string;
 }
 
-/** A small "prefill from template" dropdown for rfi/safety_briefing forms — selecting a template
- * copies its defaultSubject/defaultBody into the form via onSelect; there's nothing to "apply"
- * server-side for these two types, unlike punch_list templates. */
+/** A small "prefill from template" dropdown for rfi/safety_briefing/jha forms — selecting a
+ * template copies its default* fields into the form via onSelect; there's nothing to "apply"
+ * server-side for these types, unlike punch_list templates. Every field is always passed so a
+ * caller that only uses subject/body (rfi, safety_briefing) can ignore the rest. */
 export function TemplatePicker({
   type,
   onSelect,
 }: {
-  type: Extract<ChecklistTemplateType, "rfi" | "safety_briefing">;
-  onSelect: (subject: string, body: string) => void;
+  type: Extract<ChecklistTemplateType, "rfi" | "safety_briefing" | "jha">;
+  onSelect: (selection: TemplateSelection) => void;
 }) {
   const t = useTranslations("checklistTemplates");
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -37,7 +48,15 @@ export function TemplatePicker({
       value=""
       onChange={(e) => {
         const template = templates.find((tpl) => tpl.id === e.target.value);
-        if (template) onSelect(template.defaultSubject ?? "", template.defaultBody ?? "");
+        if (template) {
+          onSelect({
+            subject: template.defaultSubject ?? "",
+            body: template.defaultBody ?? "",
+            hazards: template.defaultHazards ?? "",
+            controlMeasures: template.defaultControlMeasures ?? "",
+            ppe: template.defaultPpe ?? "",
+          });
+        }
       }}
     >
       <option value="">{t("useTemplate")}</option>

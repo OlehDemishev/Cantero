@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const EQUIPMENT_STATUSES = ["available", "in_use", "maintenance", "retired"] as const;
+export const EQUIPMENT_STATUSES = ["available", "in_use", "maintenance", "retired", "rented_out"] as const;
 export type EquipmentStatus = (typeof EQUIPMENT_STATUSES)[number];
 
 export const createEquipmentSchema = z.object({
@@ -78,3 +78,12 @@ export const addFuelLogSchema = z.object({
   notes: z.string().max(500).optional(),
 });
 export type AddFuelLogInput = z.infer<typeof addFuelLogSchema>;
+
+export const startEquipmentRentalSchema = z.object({
+  renterName: z.string().min(1).max(200),
+  renterContact: z.string().max(200).optional(),
+  dailyRate: z.number().positive(),
+  expectedReturnDate: z.string().datetime().optional(),
+  notes: z.string().max(500).optional(),
+});
+export type StartEquipmentRentalInput = z.infer<typeof startEquipmentRentalSchema>;

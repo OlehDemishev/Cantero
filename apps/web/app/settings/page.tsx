@@ -37,6 +37,11 @@ interface Company {
   name: string;
   locale: string;
   brandColor: string | null;
+  address: string | null;
+  city: string | null;
+  postalCode: string | null;
+  vatId: string | null;
+  iban: string | null;
   approvalThresholdAmount: string | null;
   requiredApprovalCount: number;
   changeOrderApprovalThresholdAmount: string | null;
@@ -140,6 +145,11 @@ export default function SettingsPage() {
     name: string;
     locale: string;
     brandColor: string | null;
+    address: string;
+    city: string;
+    postalCode: string;
+    vatId: string;
+    iban: string;
     approvalThresholdAmount: string;
     requiredApprovalCount: string;
     changeOrderApprovalThresholdAmount: string;
@@ -156,6 +166,11 @@ export default function SettingsPage() {
     name: "",
     locale: "en",
     brandColor: null,
+    address: "",
+    city: "",
+    postalCode: "",
+    vatId: "",
+    iban: "",
     approvalThresholdAmount: "",
     requiredApprovalCount: "1",
     changeOrderApprovalThresholdAmount: "",
@@ -227,6 +242,11 @@ export default function SettingsPage() {
         name: c.name,
         locale: c.locale,
         brandColor: c.brandColor,
+        address: c.address ?? "",
+        city: c.city ?? "",
+        postalCode: c.postalCode ?? "",
+        vatId: c.vatId ?? "",
+        iban: c.iban ?? "",
         approvalThresholdAmount: c.approvalThresholdAmount ?? "",
         requiredApprovalCount: String(c.requiredApprovalCount),
         changeOrderApprovalThresholdAmount: c.changeOrderApprovalThresholdAmount ?? "",
@@ -345,6 +365,11 @@ export default function SettingsPage() {
           name: companyForm.name,
           locale: companyForm.locale,
           brandColor: companyForm.brandColor,
+          address: companyForm.address || null,
+          city: companyForm.city || null,
+          postalCode: companyForm.postalCode || null,
+          vatId: companyForm.vatId || null,
+          iban: companyForm.iban || null,
           approvalThresholdAmount: companyForm.approvalThresholdAmount ? Number(companyForm.approvalThresholdAmount) : null,
           requiredApprovalCount: Number(companyForm.requiredApprovalCount) || 1,
           changeOrderApprovalThresholdAmount: companyForm.changeOrderApprovalThresholdAmount
@@ -688,6 +713,54 @@ export default function SettingsPage() {
                 ))}
               </select>
             </label>
+            <div className="border-t border-gray-100 pt-3">
+              <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-gray-700">
+                {t("eInvoicing")}
+                <HelpTooltip text={t("eInvoicingTooltip")} />
+              </p>
+              <p className="mb-2 text-xs text-gray-500">{t("eInvoicingHint")}</p>
+              <div className="flex flex-col gap-2">
+                <input
+                  className="input"
+                  placeholder={t("streetAddress")}
+                  value={companyForm.address}
+                  onChange={(e) => setCompanyForm((f) => ({ ...f, address: e.target.value }))}
+                  disabled={!isManager}
+                />
+                <div className="flex gap-2">
+                  <input
+                    className="input flex-1"
+                    placeholder={t("city")}
+                    value={companyForm.city}
+                    onChange={(e) => setCompanyForm((f) => ({ ...f, city: e.target.value }))}
+                    disabled={!isManager}
+                  />
+                  <input
+                    className="input w-28"
+                    placeholder={t("postalCode")}
+                    value={companyForm.postalCode}
+                    onChange={(e) => setCompanyForm((f) => ({ ...f, postalCode: e.target.value }))}
+                    disabled={!isManager}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    className="input flex-1"
+                    placeholder={t("vatIdPlaceholder")}
+                    value={companyForm.vatId}
+                    onChange={(e) => setCompanyForm((f) => ({ ...f, vatId: e.target.value }))}
+                    disabled={!isManager}
+                  />
+                  <input
+                    className="input flex-1"
+                    placeholder={t("ibanPlaceholder")}
+                    value={companyForm.iban}
+                    onChange={(e) => setCompanyForm((f) => ({ ...f, iban: e.target.value }))}
+                    disabled={!isManager}
+                  />
+                </div>
+              </div>
+            </div>
             <div className="border-t border-gray-100 pt-3">
               <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-gray-700">
                 {t("approvalChains")}

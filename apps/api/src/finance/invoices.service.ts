@@ -9,6 +9,7 @@ import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
 import { WebhooksService } from "../common/webhooks/webhooks.service";
 import { calculateProgressDraw, round2 } from "./progress-billing";
+import { buildXRechnungXml } from "./e-invoice";
 
 @Injectable()
 export class InvoicesService {
@@ -304,6 +305,70 @@ export class InvoicesService {
       ],
       branding: { logoBuffer, accentColor: company.brandColor ?? undefined },
     });
+  }
+
+  /**
+   * A UBL 2.1/XRechnung 3.0 e-invoice XML for this invoice (see buildXRechnungXml). Requires the
+   * company's e-invoicing fields (address/city/postalCode/vatId) and the client's billing address
+   * to be filled in first — throws a specific, actionable message naming exactly what's missing
+   * rather than a generic validation failure.
+   */
+  async generateXRechnungXml(companyId: string, id: string): Promise<{ xml: string; filename: string }> {
+    const invoice = await this.findOrThrow(companyId, id);
+    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+
+    const missing: string[] = [];
+    if (!company.address) missing.push("company street address");
+    if (!company.city) missing.push("company city");
+    if (!company.postalCode) missing.push("company postal code");
+    if (!company.vatId) missing.push("company VAT ID");
+    if (!invoice.client.street) missing.push("client street address");
+    if (!invoice.client.city) missing.push("client city");
+    if (!invoice.client.postalCode) missing.push("client postal code");
+    if (!invoice.client.country) missing.push("client country");
+    if (missing.length > 0) {
+      throw new BadRequestException(
+        `Can't generate an e-invoice — missing: ${missing.join(", ")}. Fill these in under company settings and the client's billing address first.`,
+      );
+    }
+
+    const xml = buildXRechnungXml({
+      invoiceNumber: invoice.number,
+      issueDate: invoice.createdAt,
+      dueDate: invoice.dueDate,
+      currency: company.currency,
+      seller: {
+        name: company.name,
+        street: company.address!,
+        city: company.city!,
+        postalCode: company.postalCode!,
+        countryCode: company.country,
+        vatId: company.vatId,
+        iban: company.iban,
+      },
+      buyer: {
+        name: invoice.client.name,
+        street: invoice.client.street!,
+        city: invoice.client.city!,
+        postalCode: invoice.client.postalCode!,
+        countryCode: invoice.client.country!,
+        vatId: invoice.client.vatId,
+      },
+      lines: invoice.lines.map((line) => ({
+        description: line.description,
+        quantity: Number(line.quantity),
+        unitPrice: Number(line.unitPrice),
+        lineTotal: Number(line.lineTotal),
+      })),
+      subtotal: Number(invoice.subtotal),
+      taxAmount: Number(invoice.taxAmount),
+      total: Number(invoice.total),
+    });
+
+    // Content-Disposition header values must be ASCII — an invoice number in another script
+    // (e.g. "РАХ-2026-001") would otherwise throw ERR_INVALID_CHAR when the controller sets it.
+    const asciiNumber = invoice.number.replace(/[^\x20-\x7e]/g, "_");
+    return { xml, filename: `${asciiNumber}-xrechnung.xml` };
   }
 
   /** Accounting export: one row per invoice, with paid/outstanding derived from its payments. */

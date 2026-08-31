@@ -133,4 +133,12 @@ export class InvoicesController {
     const buffer = await this.aiaBilling.generatePdf(user.companyId, id);
     return new StreamableFile(buffer, { disposition: `attachment; filename="schedule-of-values.pdf"` });
   }
+
+  @Get(":id/e-invoice.xml")
+  @Header("Content-Type", "application/xml")
+  async eInvoiceXml(@CurrentUser() user: AuthUser, @Param("id") id: string, @Res({ passthrough: true }) res: Response) {
+    const { xml, filename } = await this.service.generateXRechnungXml(user.companyId, id);
+    res.set("Content-Disposition", `attachment; filename="${filename}"`);
+    return xml;
+  }
 }

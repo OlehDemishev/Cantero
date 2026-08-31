@@ -314,7 +314,15 @@
     "auditFilterDateTo": "Bis",
     "auditFilterEntityType": "Objekttyp",
     "auditFilterAction": "Aktion",
-    "auditFilterApply": "Filtern"
+    "auditFilterApply": "Filtern",
+    "eInvoicing": "E-Rechnung",
+    "eInvoicingTooltip": "Erforderlich zur Erstellung EU-konformer E-Rechnungen (XRechnung/Factur-X) aus Ihren Rechnungen.",
+    "eInvoicingHint": "Ihre Geschäftsadresse und USt-IdNr. erscheinen als Verkäuferangaben auf erstellten E-Rechnungen. Die IBAN ist optional und wird als Zahlungsmittel angezeigt.",
+    "streetAddress": "Straße und Hausnummer",
+    "city": "Stadt",
+    "postalCode": "Postleitzahl",
+    "vatIdPlaceholder": "USt-IdNr. (z. B. DE123456789)",
+    "ibanPlaceholder": "IBAN"
   },
   "projects": {
     "title": "Projekte",
@@ -385,7 +393,14 @@
     "referralReward": "Empfehlungsprämie",
     "referralReward_pending": "Prämie offen",
     "referralReward_paid": "Prämie ausgezahlt",
-    "markRewardPaid": "Als ausgezahlt markieren"
+    "markRewardPaid": "Als ausgezahlt markieren",
+    "billingAddress": "Rechnungsadresse",
+    "billingAddressHint": "Wird als Käuferangabe bei der Erstellung einer EU-E-Rechnung für diesen Kunden verwendet.",
+    "street": "Straße und Hausnummer",
+    "city": "Stadt",
+    "postalCode": "Postleitzahl",
+    "countryCode": "Land",
+    "vatIdPlaceholder": "USt-IdNr. (optional)"
   },
   "team": {
     "title": "Team",
@@ -648,7 +663,8 @@
     "cashFlowForecastLink": "13-Wochen-Cashflow-Prognose in den Berichten ansehen",
     "exportQuickBooks": "Nach QuickBooks exportieren",
     "exportXero": "Nach Xero exportieren",
-    "downloadScheduleOfValues": "Leistungsverzeichnis herunterladen"
+    "downloadScheduleOfValues": "Leistungsverzeichnis herunterladen",
+    "downloadEInvoice": "E-Rechnung herunterladen (XRechnung-XML)"
   },
   "portal": {
     "signInTitle": "Kundenportal",
@@ -755,7 +771,23 @@
     "gpsDenied": "Der Standortzugriff wurde verweigert.",
     "gpsUnsupported": "Dieser Browser unterstützt keine Standortverfolgung.",
     "gpsNoRoute": "Heute wurde keine Route aufgezeichnet.",
-    "offSite": "Außerhalb"
+    "offSite": "Außerhalb",
+    "status_rented_out": "Vermietet",
+    "currentlyRentedTo": "Derzeit vermietet an",
+    "returnFromRental": "Aus Vermietung zurückholen",
+    "rentOutToThirdParty": "An Dritte vermieten",
+    "renterNamePlaceholder": "Name des Mieters",
+    "dailyRatePlaceholder": "Tagessatz ({currency})",
+    "startRental": "Vermietung starten",
+    "rentalHistory": "Vermietungshistorie",
+    "rentalHistoryHint": "Eigene Geräte, die als Einnahmequelle an externe Parteien vermietet werden — getrennt von der Geräteausgabe, die die eigene Nutzung erfasst.",
+    "noRentals": "Noch keine Vermietungen erfasst.",
+    "renter": "Mieter",
+    "dailyRate": "Tagessatz",
+    "rentalStart": "Beginn",
+    "rentalReturn": "Zurückgegeben",
+    "rentalRevenue": "Einnahmen",
+    "rentalActive": "Aktiv"
   },
   "subcontractorPortal": {
     "signInTitle": "Subunternehmer-Portal",
@@ -1446,7 +1478,12 @@
     "useTemplate": "Vorlage verwenden…",
     "punch_list": "Mängelliste",
     "rfi": "RFI",
-    "safety_briefing": "Sicherheitsunterweisung"
+    "safety_briefing": "Sicherheitsunterweisung",
+    "jha": "Gefährdungsbeurteilung",
+    "jhaTaskDescription": "Aufgabenbeschreibung",
+    "jhaHazards": "Gefahren",
+    "jhaControlMeasures": "Schutzmaßnahmen",
+    "jhaPpe": "Erforderliche PSA"
   },
   "subcontractorCompliance": {
     "title": "Subunternehmer",

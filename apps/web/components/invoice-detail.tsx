@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { DocumentsPanel } from "@/components/documents-panel";
-import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { apiFetch, downloadBlob, ApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
 const PAYMENT_METHODS = ["bank_transfer", "card", "cash", "other"] as const;
@@ -54,6 +54,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   const [installmentForm, setInstallmentForm] = useState({ label: "", amount: "", dueDate: "" });
   const [busy, setBusy] = useState(false);
   const [emailSentTo, setEmailSentTo] = useState<string | null | undefined>(undefined);
+  const [eInvoiceError, setEInvoiceError] = useState<string | null>(null);
 
   function load() {
     apiFetch<Invoice>(`/invoices/${invoiceId}`).then((inv) => {
@@ -72,6 +73,16 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   async function downloadScheduleOfValues() {
     const blob = await apiFetch<Blob>(`/invoices/${invoiceId}/schedule-of-values-pdf`);
     downloadBlob(blob, `${invoice?.number ?? "invoice"}-schedule-of-values.pdf`);
+  }
+
+  async function downloadEInvoice() {
+    setEInvoiceError(null);
+    try {
+      const blob = await apiFetch<Blob>(`/invoices/${invoiceId}/e-invoice.xml`);
+      downloadBlob(blob, `${invoice?.number ?? "invoice"}-xrechnung.xml`);
+    } catch (err) {
+      setEInvoiceError(err instanceof ApiError ? err.message : tc("error"));
+    }
   }
 
   async function send() {
@@ -342,6 +353,10 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
                 {t("downloadScheduleOfValues")}
               </button>
             )}
+            <button onClick={downloadEInvoice} className="btn-secondary">
+              {t("downloadEInvoice")}
+            </button>
+            {eInvoiceError && <p className="text-xs text-error-600">{eInvoiceError}</p>}
             {emailSentTo !== undefined && (
               <p className="text-xs text-gray-500">
                 {emailSentTo ? tc("emailedTo", { email: emailSentTo }) : tc("noClientEmail")}

@@ -16,6 +16,7 @@ describe("EquipmentService", () => {
     equipmentGpsPing: { create: jest.Mock; findMany: jest.Mock };
     equipmentMaintenanceRecord: { create: jest.Mock; findMany: jest.Mock };
     equipmentFuelLog: { create: jest.Mock; findMany: jest.Mock };
+    equipmentRental: { create: jest.Mock; findFirst: jest.Mock; findMany: jest.Mock; update: jest.Mock };
     $transaction: jest.Mock;
   };
 
@@ -28,6 +29,7 @@ describe("EquipmentService", () => {
       equipmentGpsPing: { create: jest.fn(), findMany: jest.fn() },
       equipmentMaintenanceRecord: { create: jest.fn(), findMany: jest.fn() },
       equipmentFuelLog: { create: jest.fn(), findMany: jest.fn() },
+      equipmentRental: { create: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), update: jest.fn() },
       $transaction: jest.fn((ops) => Promise.all(ops)),
     };
 
@@ -341,6 +343,76 @@ describe("EquipmentService", () => {
 
       await expect(service.retire(COMPANY_A, { name: "Owner" }, "eq-1")).rejects.toThrow(BadRequestException);
       expect(prisma.equipment.update).not.toHaveBeenCalled();
+    });
+
+    it("rejects retiring equipment that's currently rented out", async () => {
+      prisma.equipment.findFirst.mockResolvedValue({ id: "eq-1", companyId: COMPANY_A, name: "Drill", status: "rented_out" });
+
+      await expect(service.retire(COMPANY_A, { name: "Owner" }, "eq-1")).rejects.toThrow(BadRequestException);
+      expect(prisma.equipment.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("startRental()", () => {
+    it("rejects renting out equipment that isn't available", async () => {
+      prisma.equipment.findFirst.mockResolvedValue({ id: "eq-1", companyId: COMPANY_A, name: "Excavator", status: "in_use" });
+
+      await expect(
+        service.startRental(COMPANY_A, { name: "Owner" }, "eq-1", { renterName: "Acme Rentals", dailyRate: 100 }),
+      ).rejects.toThrow(BadRequestException);
+      expect(prisma.equipmentRental.create).not.toHaveBeenCalled();
+    });
+
+    it("creates a rental and marks the equipment rented_out", async () => {
+      prisma.equipment.findFirst.mockResolvedValue({ id: "eq-1", companyId: COMPANY_A, name: "Excavator", status: "available" });
+
+      await service.startRental(COMPANY_A, { name: "Owner" }, "eq-1", { renterName: "Acme Rentals", dailyRate: 100 });
+
+      expect(prisma.equipmentRental.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ companyId: COMPANY_A, equipmentId: "eq-1", renterName: "Acme Rentals", dailyRate: 100 }),
+      });
+      expect(prisma.equipment.update).toHaveBeenCalledWith({ where: { id: "eq-1" }, data: { status: "rented_out" } });
+    });
+  });
+
+  describe("endRental()", () => {
+    it("rejects ending a rental on equipment that isn't rented out", async () => {
+      prisma.equipment.findFirst.mockResolvedValue({ id: "eq-1", companyId: COMPANY_A, name: "Excavator", status: "available" });
+
+      await expect(service.endRental(COMPANY_A, { name: "Owner" }, "eq-1")).rejects.toThrow(BadRequestException);
+      expect(prisma.equipmentRental.update).not.toHaveBeenCalled();
+    });
+
+    it("closes the open rental and marks the equipment available again", async () => {
+      prisma.equipment.findFirst.mockResolvedValue({ id: "eq-1", companyId: COMPANY_A, name: "Excavator", status: "rented_out" });
+      prisma.equipmentRental.findFirst.mockResolvedValue({ id: "rental-1", renterName: "Acme Rentals", actualReturnDate: null });
+
+      await service.endRental(COMPANY_A, { name: "Owner" }, "eq-1");
+
+      expect(prisma.equipmentRental.update).toHaveBeenCalledWith({
+        where: { id: "rental-1" },
+        data: { actualReturnDate: expect.any(Date) },
+      });
+      expect(prisma.equipment.update).toHaveBeenCalledWith({ where: { id: "eq-1" }, data: { status: "available" } });
+    });
+  });
+
+  describe("listRentals()", () => {
+    it("computes revenue per rental, open-ended ones valued as of now", async () => {
+      prisma.equipment.findFirst.mockResolvedValue({ id: "eq-1", companyId: COMPANY_A, name: "Excavator" });
+      prisma.equipmentRental.findMany.mockResolvedValue([
+        {
+          id: "rental-1",
+          dailyRate: 100,
+          startDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+          actualReturnDate: null,
+        },
+      ]);
+
+      const result = await service.listRentals(COMPANY_A, "eq-1");
+
+      expect(result[0].daysElapsed).toBeGreaterThanOrEqual(5);
+      expect(result[0].revenue).toBe(result[0].daysElapsed * 100);
     });
   });
 

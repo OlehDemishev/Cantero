@@ -314,7 +314,15 @@
     "auditFilterDateTo": "To",
     "auditFilterEntityType": "Entity type",
     "auditFilterAction": "Action",
-    "auditFilterApply": "Filter"
+    "auditFilterApply": "Filter",
+    "eInvoicing": "E-invoicing",
+    "eInvoicingTooltip": "Required for generating EU-compliant e-invoices (XRechnung/Factur-X) from your invoices.",
+    "eInvoicingHint": "Your legal billing address and VAT ID appear as the seller details on generated e-invoices. IBAN is optional and shown as the payment method.",
+    "streetAddress": "Street address",
+    "city": "City",
+    "postalCode": "Postal code",
+    "vatIdPlaceholder": "VAT ID (e.g. DE123456789)",
+    "ibanPlaceholder": "IBAN"
   },
   "projects": {
     "title": "Projects",
@@ -385,7 +393,14 @@
     "referralReward": "Referral reward",
     "referralReward_pending": "Reward owed",
     "referralReward_paid": "Reward paid",
-    "markRewardPaid": "Mark as paid"
+    "markRewardPaid": "Mark as paid",
+    "billingAddress": "Billing address",
+    "billingAddressHint": "Used as the buyer details when generating an EU e-invoice for this client's invoices.",
+    "street": "Street address",
+    "city": "City",
+    "postalCode": "Postal code",
+    "countryCode": "Country",
+    "vatIdPlaceholder": "VAT ID (optional)"
   },
   "team": {
     "title": "Team",
@@ -648,7 +663,8 @@
     "cashFlowForecastLink": "See the 13-week cash flow forecast in Reports",
     "exportQuickBooks": "Export to QuickBooks",
     "exportXero": "Export to Xero",
-    "downloadScheduleOfValues": "Download schedule of values"
+    "downloadScheduleOfValues": "Download schedule of values",
+    "downloadEInvoice": "Download e-invoice (XRechnung XML)"
   },
   "portal": {
     "signInTitle": "Client portal",
@@ -755,7 +771,23 @@
     "gpsDenied": "Location access was denied.",
     "gpsUnsupported": "This browser doesn't support location tracking.",
     "gpsNoRoute": "No route recorded today.",
-    "offSite": "Off-site"
+    "offSite": "Off-site",
+    "status_rented_out": "Rented out",
+    "currentlyRentedTo": "Currently rented to",
+    "returnFromRental": "Return from rental",
+    "rentOutToThirdParty": "Rent out to a third party",
+    "renterNamePlaceholder": "Renter name",
+    "dailyRatePlaceholder": "Daily rate ({currency})",
+    "startRental": "Start rental",
+    "rentalHistory": "Rental history",
+    "rentalHistoryHint": "This company's own equipment rented out to external parties as a revenue source — separate from EquipmentAssignment, which tracks our own use of it.",
+    "noRentals": "No rentals recorded yet.",
+    "renter": "Renter",
+    "dailyRate": "Daily rate",
+    "rentalStart": "Start",
+    "rentalReturn": "Returned",
+    "rentalRevenue": "Revenue",
+    "rentalActive": "Active"
   },
   "subcontractorPortal": {
     "signInTitle": "Subcontractor portal",
@@ -1446,7 +1478,12 @@
     "useTemplate": "Use template…",
     "punch_list": "Punch list",
     "rfi": "RFI",
-    "safety_briefing": "Safety briefing"
+    "safety_briefing": "Safety briefing",
+    "jha": "Job hazard analysis",
+    "jhaTaskDescription": "Task description",
+    "jhaHazards": "Hazards",
+    "jhaControlMeasures": "Control measures",
+    "jhaPpe": "Required PPE"
   },
   "subcontractorCompliance": {
     "title": "Subcontractors",

@@ -53,6 +53,12 @@ export const updateCompanySchema = z.object({
   teamsWebhookUrl: z.string().url().nullable().optional(),
   ptoAccrualHoursPerMonth: z.number().nonnegative().nullable().optional(),
   reportingCurrency: z.enum(SUPPORTED_CURRENCIES).nullable().optional(),
+  /// Seller details for generated e-invoices (XRechnung/Factur-X) — see InvoicesService.generateXRechnungXml.
+  address: z.string().max(200).nullable().optional(),
+  city: z.string().max(100).nullable().optional(),
+  postalCode: z.string().max(20).nullable().optional(),
+  vatId: z.string().max(30).nullable().optional(),
+  iban: z.string().max(34).nullable().optional(),
 });
 export type UpdateCompanyInput = z.infer<typeof updateCompanySchema>;
 
