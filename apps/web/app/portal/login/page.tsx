@@ -1,14 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { portalApiFetch } from "@/lib/portal-api-client";
+
+type PortalBrandingResponse = { found: true; name: string; brandColor: string | null; hasLogo: boolean } | { found: false };
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
 
 export default function PortalLoginPage() {
   const t = useTranslations("portal");
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
+  const [branding, setBranding] = useState<PortalBrandingResponse>({ found: false });
+
+  useEffect(() => {
+    const domain = window.location.hostname;
+    portalApiFetch<PortalBrandingResponse>(`/public/portal-branding?domain=${encodeURIComponent(domain)}`)
+      .then(setBranding)
+      .catch(() => setBranding({ found: false }));
+  }, []);
 
   async function requestLink(e: React.FormEvent) {
     e.preventDefault();
@@ -25,10 +37,24 @@ export default function PortalLoginPage() {
     <main className="flex min-h-screen items-center justify-center bg-gray-50 px-6 py-12">
       <div className="w-full max-w-sm">
         <div className="mb-6 flex items-center justify-center gap-2">
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500 text-sm font-semibold text-white">
-            C
-          </span>
-          <span className="text-lg font-semibold tracking-tight text-gray-900">Cantero</span>
+          {branding.found && branding.hasLogo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={`${API_URL}/public/portal-branding/logo?domain=${encodeURIComponent(window.location.hostname)}`}
+              alt={branding.name}
+              className="h-9 max-w-[180px] object-contain"
+            />
+          ) : (
+            <>
+              <span
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-sm font-semibold text-white"
+                style={{ backgroundColor: (branding.found && branding.brandColor) || "#465fff" }}
+              >
+                {(branding.found ? branding.name : "Cantero").slice(0, 1).toUpperCase()}
+              </span>
+              <span className="text-lg font-semibold tracking-tight text-gray-900">{branding.found ? branding.name : "Cantero"}</span>
+            </>
+          )}
         </div>
 
         <div className="card">

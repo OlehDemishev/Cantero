@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { EXPENSE_CATEGORIES, type ExpenseCategory } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { CsvImportButton } from "@/components/csv-import-button";
 import { apiFetch } from "@/lib/api-client";
@@ -13,8 +14,14 @@ interface BankTransaction {
   description: string;
   amount: string;
   reconciled: boolean;
+  category: ExpenseCategory | null;
   matchedInvoice: { id: string; number: string } | null;
   matchedExpense: { id: string; description: string } | null;
+}
+interface BankTransactionRule {
+  id: string;
+  pattern: string;
+  category: ExpenseCategory;
 }
 interface Invoice {
   id: string;
@@ -43,16 +50,21 @@ export default function BankReconciliationPage() {
   const t = useTranslations("bankReconciliation");
   const tc = useTranslations("common");
   const ti = useTranslations("import");
+  const te = useTranslations("expenses");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
   const [transactions, setTransactions] = useState<BankTransaction[] | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [rules, setRules] = useState<BankTransactionRule[] | null>(null);
+  const [ruleForm, setRuleForm] = useState<{ pattern: string; category: ExpenseCategory }>({ pattern: "", category: "other" });
+  const [showRules, setShowRules] = useState(false);
   const [filter, setFilter] = useState<"all" | "unreconciled">("unreconciled");
   const [matchDrafts, setMatchDrafts] = useState<Record<string, { target: MatchTarget; id: string }>>({});
   const [suggestions, setSuggestions] = useState<Record<string, MatchCandidate[]>>({});
   const [busy, setBusy] = useState(false);
+  const [applyResult, setApplyResult] = useState<{ categorized: number } | null>(null);
 
   function load() {
     const query = filter === "unreconciled" ? "?reconciled=false" : "";
@@ -62,11 +74,61 @@ export default function BankReconciliationPage() {
     );
   }
 
+  function loadRules() {
+    apiFetch<BankTransactionRule[]>("/bank-transactions/rules").then(setRules);
+  }
+
   useEffect(load, [filter]);
   useEffect(() => {
     apiFetch<Invoice[]>("/invoices").then(setInvoices);
     apiFetch<Expense[]>("/expenses").then(setExpenses);
+    loadRules();
   }, []);
+
+  async function createRule(e: React.FormEvent) {
+    e.preventDefault();
+    if (!ruleForm.pattern.trim()) return;
+    setBusy(true);
+    try {
+      await apiFetch("/bank-transactions/rules", { method: "POST", body: JSON.stringify(ruleForm) });
+      setRuleForm({ pattern: "", category: "other" });
+      loadRules();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteRule(id: string) {
+    setBusy(true);
+    try {
+      await apiFetch(`/bank-transactions/rules/${id}`, { method: "DELETE" });
+      loadRules();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function applyRules() {
+    setBusy(true);
+    setApplyResult(null);
+    try {
+      const result = await apiFetch<{ categorized: number }>("/bank-transactions/apply-rules", { method: "POST" });
+      setApplyResult(result);
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function setCategory(txId: string, category: ExpenseCategory | "") {
+    setBusy(true);
+    try {
+      await apiFetch(`/bank-transactions/${txId}/category`, { method: "POST", body: JSON.stringify({ category: category || null }) });
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
 
   function draftFor(txId: string): { target: MatchTarget; id: string } {
     return matchDrafts[txId] ?? { target: "invoice", id: invoices[0]?.id ?? "" };
@@ -118,9 +180,67 @@ export default function BankReconciliationPage() {
     <AuthenticatedShell>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">{t("title")}</h1>
-        <CsvImportButton endpoint="/bank-transactions/import" label={ti("importBankTransactions")} onDone={load} />
+        <div className="flex items-center gap-2">
+          <button onClick={() => setShowRules((v) => !v)} className="btn-secondary px-3 py-1 text-xs">
+            {t("categorizationRules")}
+          </button>
+          <CsvImportButton endpoint="/bank-transactions/import" label={ti("importBankTransactions")} onDone={load} />
+        </div>
       </div>
       <p className="mt-2 text-sm text-gray-500">{t("hint")}</p>
+
+      {showRules && (
+        <div className="card mt-4">
+          <div className="mb-1 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-700">{t("categorizationRules")}</h2>
+            <div className="flex items-center gap-2">
+              <button onClick={applyRules} disabled={busy} className="btn-secondary px-3 py-1 text-xs">
+                {t("applyRulesNow")}
+              </button>
+              {applyResult && <span className="text-xs text-success-700">{t("applyRulesResult", { count: applyResult.categorized })}</span>}
+            </div>
+          </div>
+          <p className="mb-3 text-xs text-gray-500">{t("categorizationRulesHint")}</p>
+
+          <form onSubmit={createRule} className="flex flex-wrap items-end gap-2">
+            <input
+              className="input flex-1"
+              placeholder={t("rulePatternPlaceholder")}
+              value={ruleForm.pattern}
+              onChange={(e) => setRuleForm((f) => ({ ...f, pattern: e.target.value }))}
+            />
+            <select
+              className="input w-auto"
+              value={ruleForm.category}
+              onChange={(e) => setRuleForm((f) => ({ ...f, category: e.target.value as ExpenseCategory }))}
+            >
+              {EXPENSE_CATEGORIES.map((c) => (
+                <option key={c} value={c}>
+                  {te(c)}
+                </option>
+              ))}
+            </select>
+            <button type="submit" disabled={busy || !ruleForm.pattern.trim()} className="btn-primary px-3 py-1 text-xs">
+              {t("addRule")}
+            </button>
+          </form>
+
+          {rules && rules.length > 0 && (
+            <ul className="mt-3 flex flex-col gap-1.5">
+              {rules.map((r) => (
+                <li key={r.id} className="flex items-center justify-between text-xs">
+                  <span className="text-gray-700">
+                    &ldquo;{r.pattern}&rdquo; → <span className="font-medium">{te(r.category)}</span>
+                  </span>
+                  <button onClick={() => deleteRule(r.id)} disabled={busy} className="text-error-600 hover:underline">
+                    {tc("delete")}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       <div className="mt-4 flex gap-2">
         <button
@@ -155,6 +275,22 @@ export default function BankReconciliationPage() {
                   <div className={`text-sm font-semibold ${Number(tx.amount) < 0 ? "text-error-700" : "text-success-700"}`}>
                     {tx.amount} {currency}
                   </div>
+                </div>
+
+                <div className="mt-1.5 flex items-center gap-2">
+                  <span className="text-xs text-gray-400">{t("category")}</span>
+                  <select
+                    className="input w-auto py-0.5 text-xs"
+                    value={tx.category ?? ""}
+                    onChange={(e) => setCategory(tx.id, e.target.value as ExpenseCategory | "")}
+                  >
+                    <option value="">{t("uncategorized")}</option>
+                    {EXPENSE_CATEGORIES.map((c) => (
+                      <option key={c} value={c}>
+                        {te(c)}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 {tx.reconciled ? (

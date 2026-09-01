@@ -3,6 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import Stripe from "stripe";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { InvoicesService } from "../finance/invoices.service";
+import { ClientPaymentMethodsService } from "../finance/client-payment-methods.service";
 
 const STRIPE_PAYMENT_ACTOR = { userId: "stripe", name: "Online payment" };
 
@@ -15,6 +16,7 @@ export class BillingService {
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
     private readonly invoices: InvoicesService,
+    private readonly clientPaymentMethods: ClientPaymentMethodsService,
   ) {
     this.stripe = new Stripe(this.config.getOrThrow<string>("STRIPE_SECRET_KEY"));
   }
@@ -189,6 +191,8 @@ export class BillingService {
         const session = event.data.object as Stripe.Checkout.Session;
         if (session.mode === "payment" && session.metadata?.kind === "invoice_payment") {
           await this.recordInvoicePayment(session);
+        } else if (session.mode === "setup" && session.metadata?.kind === "save_payment_method") {
+          await this.clientPaymentMethods.handleSetupSessionCompleted(session);
         } else {
           await this.syncFromStripe(session);
         }

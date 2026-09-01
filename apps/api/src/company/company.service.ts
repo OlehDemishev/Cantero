@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
+import { promises as dns } from "node:dns";
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import type { LinkToParentCompanyInput, UpdateCompanyInput } from "@cantero/shared";
+import type { LinkToParentCompanyInput, SetCustomPortalDomainInput, UpdateCompanyInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { StorageService } from "../common/storage/storage.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
@@ -10,6 +11,12 @@ import { ExchangeRateService } from "../common/exchange-rate/exchange-rate.servi
 const MAX_LOGO_SIZE_BYTES = 1 * 1024 * 1024; // 1MB — a logo, not a photo
 // pdfkit only rasterizes JPEG/PNG, so SVG (however common for logos) isn't accepted here.
 const ALLOWED_LOGO_MIME_TYPES = new Set(["image/png", "image/jpeg"]);
+
+/** The CNAME target a company's custom portal domain must point to before verifyCustomPortalDomain()
+ * will mark it verified. This is the DNS-level check only — actually routing browser traffic for
+ * the domain to this app (plus a TLS certificate for it) is infrastructure/ops work, not something
+ * this check can provision. */
+const CUSTOM_PORTAL_DOMAIN_CNAME_TARGET = "portal.cantero.dev";
 
 @Injectable()
 export class CompanyService {
@@ -172,5 +179,90 @@ export class CompanyService {
         memberCount: branches.reduce((sum, b) => sum + b.memberCount, 0),
       },
     };
+  }
+
+  /** Registers (or clears) the desired vanity domain — always unverified until verifyCustomPortalDomain()
+   * confirms the CNAME. Setting a new value here doesn't touch a prior verified timestamp's meaning:
+   * changing the domain string always resets verification, since the old timestamp verified a
+   * different string. */
+  async setCustomPortalDomain(companyId: string, actor: AuditActor, input: SetCustomPortalDomainInput) {
+    try {
+      const updated = await this.prisma.company.update({
+        where: { id: companyId },
+        data: { customPortalDomain: input.domain, customPortalDomainVerifiedAt: null },
+      });
+      this.audit.record(
+        companyId,
+        actor,
+        "company.portal_domain_set",
+        "Company",
+        companyId,
+        input.domain ? `Set custom portal domain to "${input.domain}"` : "Cleared custom portal domain",
+      );
+      return { customPortalDomain: updated.customPortalDomain, customPortalDomainVerifiedAt: updated.customPortalDomainVerifiedAt };
+    } catch (err) {
+      if ((err as { code?: string }).code === "P2002") {
+        throw new BadRequestException(`Domain "${input.domain}" is already registered to another company`);
+      }
+      throw err;
+    }
+  }
+
+  /** Live DNS check — resolves the registered domain's CNAME and confirms it points at our
+   * target. Never throws on a DNS lookup failure (no record, NXDOMAIN, timeout); it just reports
+   * not-yet-verified, since "the customer hasn't finished their DNS setup yet" is the expected
+   * steady state right after setCustomPortalDomain(), not an error condition. */
+  async verifyCustomPortalDomain(companyId: string, actor: AuditActor) {
+    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    if (!company.customPortalDomain) {
+      throw new BadRequestException("Set a custom portal domain before verifying it");
+    }
+
+    let verified = false;
+    try {
+      const records = await dns.resolveCname(company.customPortalDomain);
+      verified = records.some((r) => r.toLowerCase() === CUSTOM_PORTAL_DOMAIN_CNAME_TARGET.toLowerCase());
+    } catch {
+      verified = false;
+    }
+
+    if (!verified) {
+      return { verified: false, cnameTarget: CUSTOM_PORTAL_DOMAIN_CNAME_TARGET, customPortalDomainVerifiedAt: null };
+    }
+
+    const updated = await this.prisma.company.update({
+      where: { id: companyId },
+      data: { customPortalDomainVerifiedAt: new Date() },
+    });
+    this.audit.record(
+      companyId,
+      actor,
+      "company.portal_domain_verified",
+      "Company",
+      companyId,
+      `Verified custom portal domain "${company.customPortalDomain}"`,
+    );
+    return { verified: true, cnameTarget: CUSTOM_PORTAL_DOMAIN_CNAME_TARGET, customPortalDomainVerifiedAt: updated.customPortalDomainVerifiedAt };
+  }
+
+  /** Public, unauthenticated lookup for the portal's branded login page — returns null for any
+   * domain that isn't registered and verified, so the frontend falls back to generic branding. */
+  async getPortalBrandingForDomain(domain: string) {
+    const company = await this.prisma.company.findFirst({
+      where: { customPortalDomain: domain, customPortalDomainVerifiedAt: { not: null } },
+      select: { name: true, brandColor: true, logoStorageKey: true },
+    });
+    if (!company) return null;
+    return { name: company.name, brandColor: company.brandColor, hasLogo: !!company.logoStorageKey };
+  }
+
+  async getPortalLogoForDomain(domain: string): Promise<{ buffer: Buffer; mimeType: string }> {
+    const company = await this.prisma.company.findFirst({
+      where: { customPortalDomain: domain, customPortalDomainVerifiedAt: { not: null } },
+      select: { logoStorageKey: true, logoMimeType: true },
+    });
+    if (!company?.logoStorageKey || !company.logoMimeType) throw new NotFoundException("No logo uploaded");
+    const buffer = await this.storage.read(company.logoStorageKey);
+    return { buffer, mimeType: company.logoMimeType };
   }
 }

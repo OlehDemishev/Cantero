@@ -323,7 +323,33 @@
     "city": "Miasto",
     "postalCode": "Kod pocztowy",
     "vatIdPlaceholder": "NIP UE (np. DE123456789)",
-    "ibanPlaceholder": "IBAN"
+    "ibanPlaceholder": "IBAN",
+    "webhookEvent_insurance_claim_filed": "Zgłoszono roszczenie ubezpieczeniowe",
+    "webhookEvent_insurance_claim_status_changed": "Zmieniono status roszczenia ubezpieczeniowego",
+    "changeOrderReminders": "Automatyczne przypomnienia o zleceniach zmian",
+    "changeOrderRemindersHint": "Wysyła eskalujące przypomnienia e-mail do klienta po 3, 7 i 14 dniach od wysłania zlecenia zmiany, dopóki oczekuje ono na decyzję.",
+    "webhookEvent_material_price_changed": "Zmieniono cenę materiału w katalogu",
+    "webhookEvent_nps_survey_responded": "Odpowiedziano na ankietę NPS",
+    "enpsSurveys": "Kwartalna ankieta satysfakcji zespołu (eNPS)",
+    "enpsSurveysHint": "Wysyła SMS-em do każdego aktywnego pracownika z numerem telefonu anonimowe pytanie 0-10, jak prawdopodobne jest polecenie pracy tutaj, raz na kwartał.",
+    "enpsSendNow": "Wyślij falę teraz",
+    "enpsSentCount": "{count, plural, one {Wysłano do # pracownika} few {Wysłano do # pracowników} many {Wysłano do # pracowników} other {Wysłano do # pracownika}}",
+    "webhookEvent_estimate_client_countered": "Klient zaproponował inną cenę",
+    "webhookEvent_enps_survey_responded": "Odpowiedziano na ankietę eNPS",
+    "budgetAlertThreshold": "Próg alertu budżetowego (%)",
+    "budgetAlertThresholdHint": "Projekt zostaje oznaczony, gdy rzeczywisty koszt osiągnie ten % budżetu całkowitego. Projekty mogą indywidualnie zastąpić tę wartość.",
+    "defaultPaymentTermsDays": "Domyślny termin płatności (dni)",
+    "lateFeePercentPerMonth": "Opłata za zwłokę (% miesięcznie)",
+    "lateFeeDisabledPlaceholder": "Wyłączone",
+    "lateFeeHint": "Po ustawieniu przeterminowane faktury automatycznie naliczają opłatę za zwłokę, proporcjonalnie do liczby dni opóźnienia. Pozostaw puste, aby wyłączyć.",
+    "holidays": "Dni wolne od pracy",
+    "holidaysHint": "Dni ustawowo wolne od pracy i dni wolne w całej firmie, używane do oznaczania dat harmonogramu przypadających na dzień wolny.",
+    "noHolidays": "Nie skonfigurowano jeszcze żadnych dni wolnych.",
+    "holidayDate": "Data",
+    "holidayLabel": "Nazwa",
+    "holidayLabelPlaceholder": "np. Nowy Rok",
+    "addHoliday": "Dodaj",
+    "holidaysError": "Nie udało się zapisać tego dnia wolnego."
   },
   "projects": {
     "title": "Projekty",
@@ -341,7 +367,8 @@
     "health_at_risk": "Zagrożony",
     "projectChannel": "Kanał projektu",
     "billingCurrency": "Waluta rozliczeniowa",
-    "billingCurrencyDefault": "Domyślna firmy ({currency})"
+    "billingCurrencyDefault": "Domyślna firmy ({currency})",
+    "budgetAlertThreshold": "Nadpisz próg alertu budżetowego"
   },
   "clients": {
     "title": "Klienci",
@@ -403,7 +430,9 @@
     "city": "Miasto",
     "postalCode": "Kod pocztowy",
     "countryCode": "Kraj",
-    "vatIdPlaceholder": "NIP UE (opcjonalnie)"
+    "vatIdPlaceholder": "NIP UE (opcjonalnie)",
+    "paymentTermsDays": "Termin płatności (dni)",
+    "paymentTermsDaysPlaceholder": "Użyj domyślnego ustawienia firmy"
   },
   "team": {
     "title": "Zespół",
@@ -466,7 +495,13 @@
     "onboardingTaskTitlePlaceholder": "Nazwa zadania",
     "addOnboardingTask": "Dodaj zadanie",
     "payrollEmployeeId": "ID pracownika w systemie płacowym",
-    "payrollEmployeeIdPlaceholder": "ID w ADP/Gusto itp."
+    "payrollEmployeeIdPlaceholder": "ID w ADP/Gusto itp.",
+    "kioskPin": "PIN rejestracji na kiosku",
+    "kioskPinHint": "Pozwala temu pracownikowi zidentyfikować się na współdzielonym tablecie bez własnego logowania.",
+    "kioskPinSet": "PIN ustawiony",
+    "kioskPinClear": "Usuń PIN",
+    "kioskPinPlaceholder": "PIN 4-6 cyfr",
+    "kioskPinSave": "Ustaw PIN"
   },
   "documents": {
     "title": "Dokumenty",
@@ -607,7 +642,15 @@
     "costCodeUnassigned": "Bez kodu kosztowego",
     "benchmarkHint": "Typowa cena dla tego kodu kosztowego w {count} poprzednich kosztorysach: {median} {currency}/jednostkę",
     "computeFormula": "Oblicz",
-    "computedQuantity": "= {value} {unit}"
+    "computedQuantity": "= {value} {unit}",
+    "clientDecision_countered": "Klient zaproponował inną cenę",
+    "clientDecisionThanksCountered": "Dziękujemy — przekazaliśmy zespołowi Twoją propozycję ceny {amount} {currency}.",
+    "counterOfferAmountLabel": "Twoja proponowana cena",
+    "proposeDifferentPrice": "Zaproponuj inną cenę",
+    "sendCounterOffer": "Wyślij propozycję",
+    "counterOfferReceived": "Klient zaproponował zamiast tego {amount} {currency}.",
+    "createRevisedVariant": "Utwórz poprawioną wersję",
+    "revisedVariantLabel": "Poprawiona"
   },
   "invoices": {
     "title": "Faktury",
@@ -669,7 +712,10 @@
     "exportQuickBooks": "Eksportuj do QuickBooks",
     "exportXero": "Eksportuj do Xero",
     "downloadScheduleOfValues": "Pobierz zestawienie wartości",
-    "downloadEInvoice": "Pobierz e-fakturę (XML XRechnung)"
+    "downloadEInvoice": "Pobierz e-fakturę (XML XRechnung)",
+    "autopay": "Autopłatność",
+    "lateFeeAccrued": "Naliczona opłata za zwłokę: {amount} {currency}",
+    "chargeLateFee": "Naliczyć opłatę za zwłokę"
   },
   "portal": {
     "signInTitle": "Portal klienta",
@@ -713,7 +759,12 @@
     "messagePlaceholder": "Napisz wiadomość…",
     "send": "Wyślij",
     "noMessages": "Brak jeszcze wiadomości.",
-    "payThisInstallment": "Zapłać tę ratę"
+    "payThisInstallment": "Zapłać tę ratę",
+    "paymentMethod": "Metoda płatności",
+    "cardOnFile": "{brand} kończąca się na {last4}",
+    "removeCard": "Usuń kartę",
+    "noCardOnFile": "Brak zapisanej karty.",
+    "saveCard": "Zapisz kartę"
   },
   "equipment": {
     "title": "Sprzęt",
@@ -841,7 +892,12 @@
     "notes": "Uwagi",
     "submitBid": "Złóż ofertę",
     "updateBid": "Zaktualizuj ofertę",
-    "yourBidWas": "Twoja oferta: {amount} {currency}"
+    "yourBidWas": "Twoja oferta: {amount} {currency}",
+    "punchListItems": "Twoje pozycje listy usterek",
+    "noPunchListItems": "Nie przypisano Ci jeszcze żadnych pozycji listy usterek.",
+    "punchListStatus_open": "Otwarte",
+    "punchListStatus_resolved": "Rozwiązane",
+    "punchListStatus_verified": "Zweryfikowane"
   },
   "budget": {
     "title": "Budżet vs. wykonanie",
@@ -1007,7 +1063,8 @@
     "scanReceiptScanning": "Skanowanie…",
     "scanReceiptDone": "Zeskanowano — sprawdź pola poniżej przed zapisaniem.",
     "scanReceiptFailed": "Nie udało się odczytać paragonu — wypełnij pola ręcznie.",
-    "scanReceiptNoData": "Nie znaleziono kwoty, daty ani dostawcy na tym paragonie — wypełnij pola ręcznie."
+    "scanReceiptNoData": "Nie znaleziono kwoty, daty ani dostawcy na tym paragonie — wypełnij pola ręcznie.",
+    "kioskMode": "Tryb kiosku"
   },
   "subcontractors": {
     "title": "Koszty podwykonawców",
@@ -1143,7 +1200,8 @@
     "type_permit_expiring": "Pozwolenia",
     "type_company_document_expiring": "Własne ubezpieczenie",
     "type_weather_risk": "Ryzyko pogodowe",
-    "type_budget_overrun": "Przekroczenia budżetu"
+    "type_budget_overrun": "Przekroczenia budżetu",
+    "type_material_price_changed": "Zmiany cen materiałów"
   },
   "search": {
     "placeholder": "Szukaj wszędzie…",
@@ -1226,7 +1284,16 @@
     "delaysPlaceholder": "Co dziś blokowało lub spowalniało prace",
     "notes": "Notatki",
     "noLogs": "Brak wpisów w dzienniku budowy.",
-    "hasDelays": "Opóźnienia"
+    "hasDelays": "Opóźnienia",
+    "weatherDelayHours": "Opóźnienie pogodowe (godz.)",
+    "weatherDelayBadge": "{hours} godz. opóźnienia pogodowego",
+    "weatherDelayReport": "Raport opóźnień pogodowych",
+    "weatherDelayTotal": "{hours} godzin utraconych przez pogodę — sugeruje przesunięcie harmonogramu o {days} dni.",
+    "exportWeatherDelayReport": "Eksportuj CSV",
+    "shiftScheduleDays": "Przesuń o (dni)",
+    "shiftSchedule": "Przesuń harmonogram",
+    "shiftScheduleResult": "Przesunięto {tasks} zadanie(a) i {milestones} kamień/kamienie milowe.",
+    "shiftScheduleHint": "Przesuwa termin każdego nieukończonego zadania i kamienia milowego o tyle dni — cofnij ręcznie w razie pomyłki."
   },
   "punchList": {
     "title": "Lista usterek",
@@ -1251,7 +1318,9 @@
     "bulkVerify": "Zweryfikuj wybrane",
     "applyTemplate": "Zastosuj",
     "selectTemplate": "Zastosuj szablon…",
-    "escalated": "Eskalowano"
+    "escalated": "Eskalowano",
+    "assigneeWorkers": "Pracownicy",
+    "assigneeSubcontractors": "Podwykonawcy"
   },
   "rfi": {
     "title": "Zapytania (RFI)",
@@ -1604,7 +1673,13 @@
     "awarded": "Przyznano",
     "cancelBidRequest": "Anuluj zapytanie ofertowe",
     "open": "Otwarte",
-    "cancelled": "Anulowane"
+    "cancelled": "Anulowane",
+    "scoringCriteria": "Kryteria oceny",
+    "criterionLabelPlaceholder": "np. Harmonogram, Historia BHP",
+    "addCriterion": "Dodaj",
+    "subcontractor": "Podwykonawca",
+    "amount": "Kwota",
+    "weightedScore": "Wynik ważony"
   },
   "customFields": {
     "title": "Pola niestandardowe",
@@ -1669,7 +1744,11 @@
     "reviewDescription": "Poproś klienta o opinię po zakończeniu projektu.",
     "requestReview": "Poproś o opinię",
     "reviewSent": "Wysłano prośbę o opinię",
-    "reviewError": "Nie udało się wysłać prośby o opinię"
+    "reviewError": "Nie udało się wysłać prośby o opinię",
+    "npsDescription": "Zapytaj klienta, jak prawdopodobne jest, że Cię poleci, gdy projekt zostanie zakończony.",
+    "sendNps": "Wyślij ankietę NPS",
+    "npsSent": "Ankieta wysłana",
+    "npsError": "Nie udało się wysłać ankiety"
   },
   "dataPrivacy": {
     "title": "Dane i prywatność",
@@ -1901,7 +1980,15 @@
     "expense": "Wydatek",
     "match": "Dopasuj",
     "suggestedMatch": "Sugestia:",
-    "approxMatch": "przybliżone"
+    "approxMatch": "przybliżone",
+    "categorizationRules": "Reguły kategoryzacji",
+    "categorizationRulesHint": "Transakcja, której opis zawiera ten tekst, zostaje automatycznie oznaczona kategorią — stosowane automatycznie po każdym imporcie CSV oraz na żądanie poniżej.",
+    "applyRulesNow": "Zastosuj reguły teraz",
+    "applyRulesResult": "Skategoryzowano {count} transakcji.",
+    "rulePatternPlaceholder": "np. Home Depot",
+    "addRule": "Dodaj regułę",
+    "category": "Kategoria",
+    "uncategorized": "Bez kategorii"
   },
   "quality": {
     "title": "Kontrola jakości",
@@ -2373,5 +2460,130 @@
     "status_denied": "Odrzucone",
     "status_settled": "Wypłacone",
     "status_closed": "Zamknięte"
+  },
+  "customPortalDomain": {
+    "title": "Własna domena portalu",
+    "hint": "Pokaż własną markę zamiast Cantero przy logowaniu do portalu klienta — np. portal.mojafirma.pl.",
+    "cnameInstructions": "Ustaw rekord CNAME dla tej domeny wskazujący na {target}, a następnie zweryfikuj.",
+    "verified": "Zweryfikowano",
+    "notVerified": "Jeszcze niezweryfikowano",
+    "verifyNow": "Zweryfikuj teraz",
+    "verifyFailedHint": "Nie znaleziono jeszcze CNAME — zmiany DNS mogą się propagować przez jakiś czas.",
+    "infraHint": "To potwierdza tylko rekord DNS. Routing ruchu i certyfikat TLS dla domeny to osobne kroki infrastrukturalne poza aplikacją."
+  },
+  "materialPrices": {
+    "title": "Ceny materiałów",
+    "recentChanges": "Ostatnie zmiany cen",
+    "showAffectedEstimates": "Pokaż powiązane otwarte kosztorysy",
+    "noAffectedEstimates": "Żaden otwarty kosztorys nie używa tego materiału.",
+    "code": "Kod",
+    "unit": "Jednostka",
+    "price": "Cena"
+  },
+  "npsSurvey": {
+    "title": "Jak prawdopodobne jest, że nas polecisz?",
+    "thanks": "Dziękujemy za opinię!",
+    "error": "Nie udało się wysłać odpowiedzi. Spróbuj ponownie.",
+    "scoreLabel": "Ocena {n}",
+    "notLikely": "Zupełnie nieprawdopodobne",
+    "veryLikely": "Bardzo prawdopodobne",
+    "comment": "Coś jeszcze chcesz dodać? (opcjonalnie)",
+    "submit": "Wyślij"
+  },
+  "npsTrend": {
+    "title": "Zadowolenie klientów (NPS)",
+    "npsScore": "Wynik NPS",
+    "averageScore": "Średni wynik",
+    "responses": "Odpowiedzi",
+    "promoters": "Promotorzy",
+    "passives": "Neutralni",
+    "detractors": "Krytycy",
+    "recentComments": "Ostatnie komentarze"
+  },
+  "crewSmsBroadcast": {
+    "title": "Wiadomość SMS do ekipy",
+    "placeholder": "np. Budowa zamknięta jutro z powodu pogody",
+    "sending": "Wysyłanie…",
+    "send": "Wyślij",
+    "error": "Nie udało się wysłać wiadomości",
+    "recipientCount": "{count, plural, one {# odbiorca} few {# odbiorców} many {# odbiorców} other {# odbiorcy}}"
+  },
+  "geofenceViolations": {
+    "title": "Naruszenia geostrefy",
+    "from": "Od",
+    "to": "Do",
+    "filter": "Filtruj",
+    "exportCsv": "Eksportuj CSV",
+    "empty": "Brak naruszeń geostrefy w tym okresie.",
+    "date": "Data",
+    "worker": "Pracownik",
+    "project": "Projekt",
+    "hours": "Godziny",
+    "distance": "Odległość od budowy"
+  },
+  "messageTemplates": {
+    "title": "Szablony wiadomości",
+    "description": "Zastąp treść automatycznych wiadomości. Pozostaw puste, aby użyć wbudowanego tekstu (przetłumaczonego na język odbiorcy).",
+    "key_task_assigned_sms": "Przypisano zadanie (SMS)",
+    "key_safety_briefing_sms": "Zaplanowano odprawę BHP (SMS)",
+    "key_review_request_email": "Prośba o opinię (e-mail)",
+    "key_nps_survey_email": "Zaproszenie do ankiety NPS (e-mail)",
+    "placeholders": "Symbole zastępcze",
+    "placeholder": "Własny tekst wiadomości...",
+    "save": "Zapisz",
+    "resetToDefault": "Przywróć domyślne",
+    "customizedBy": "Dostosowane przez {name}",
+    "error": "Nie udało się zapisać szablonu"
+  },
+  "equipmentUtilization": {
+    "title": "Wykorzystanie sprzętu",
+    "description": "% okresu, w którym każdy sprzęt był przypisany do projektu — pomaga zdecydować, czy kupić, czy wynająć.",
+    "equipment": "Sprzęt",
+    "category": "Kategoria",
+    "hoursInUse": "Godziny w użyciu",
+    "utilization": "Wykorzystanie"
+  },
+  "siteSignIns": {
+    "title": "Rejestr wejść na budowę",
+    "name": "Imię i nazwisko",
+    "visitorCompany": "Firma",
+    "purpose": "Cel wizyty",
+    "signIn": "Zarejestruj wejście",
+    "onSite": "{count, plural, one {# na budowie} few {# na budowie} many {# na budowie} other {# na budowie}}",
+    "signOut": "Zarejestruj wyjście",
+    "history": "Historia"
+  },
+  "enpsTrend": {
+    "title": "Zadowolenie zespołu (eNPS)",
+    "enpsScore": "Wynik eNPS",
+    "averageScore": "Średni wynik",
+    "responses": "Odpowiedzi",
+    "promoters": "Promotorzy",
+    "passives": "Neutralni",
+    "detractors": "Krytycy",
+    "recentComments": "Ostatnie komentarze"
+  },
+  "enpsSurvey": {
+    "title": "Jak prawdopodobne jest, że polecisz pracę tutaj?",
+    "anonymousNote": "Twoja odpowiedź nie jest nigdzie w aplikacji powiązana z Twoim imieniem i nazwiskiem.",
+    "thanks": "Dziękujemy za opinię!",
+    "error": "Nie udało się wysłać odpowiedzi. Spróbuj ponownie.",
+    "scoreLabel": "Ocena {n}",
+    "notLikely": "Zupełnie nieprawdopodobne",
+    "veryLikely": "Bardzo prawdopodobne",
+    "comment": "Coś jeszcze chcesz dodać? (opcjonalnie)",
+    "submit": "Wyślij"
+  },
+  "kiosk": {
+    "title": "Rejestracja czasu",
+    "noWorkers": "Żaden pracownik nie ma ustawionego PIN-u kiosku — ustaw go w profilu pracownika.",
+    "enterPin": "Wprowadź swój PIN",
+    "wrongPin": "Nieprawidłowy PIN — spróbuj ponownie.",
+    "submitPin": "Dalej",
+    "project": "Projekt",
+    "selectProject": "Wybierz projekt...",
+    "hours": "Godziny",
+    "logHours": "Zarejestruj godziny",
+    "entrySaved": "Godziny zarejestrowane. Dziękujemy!"
   }
 }

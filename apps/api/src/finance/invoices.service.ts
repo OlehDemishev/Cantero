@@ -10,6 +10,7 @@ import { MailService } from "../common/mail/mail.service";
 import { WebhooksService } from "../common/webhooks/webhooks.service";
 import { calculateProgressDraw, round2 } from "./progress-billing";
 import { buildXRechnungXml } from "./e-invoice";
+import { calculateLateFee, daysOverdue } from "./late-fee";
 
 @Injectable()
 export class InvoicesService {
@@ -29,7 +30,47 @@ export class InvoicesService {
 
   async get(companyId: string, id: string) {
     const invoice = await this.findOrThrow(companyId, id);
-    return invoice;
+    return { ...invoice, lateFeeAccrued: await this.computeLateFeeAccrued(companyId, invoice) };
+  }
+
+  /** Live-computed, never stored — a company's rate can change, and a settled invoice shouldn't
+   * keep accruing, so this is recalculated on every read rather than cached. Only ever billed for
+   * real once chargeLateFee() adds it as an actual line. */
+  private async computeLateFeeAccrued(
+    companyId: string,
+    invoice: { status: string; dueDate: Date | null; total: unknown; payments: { amount: unknown }[] },
+  ): Promise<number> {
+    if (invoice.status !== "sent" || !invoice.dueDate) return 0;
+    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId }, select: { lateFeePercentPerMonth: true } });
+    if (!company.lateFeePercentPerMonth) return 0;
+
+    const paid = invoice.payments.reduce((sum, p) => sum + Number(p.amount), 0);
+    const outstanding = Number(invoice.total) - paid;
+    const overdue = daysOverdue(invoice.dueDate, new Date());
+    return calculateLateFee(outstanding, overdue, Number(company.lateFeePercentPerMonth));
+  }
+
+  /** Locks in the currently-accrued late fee as a real InvoiceLine, so it actually gets billed —
+   * chargeable multiple times as more time passes, each time adding only the newly-accrued
+   * portion since the last charge (computed the same way, against the balance excluding
+   * already-charged late-fee lines, so nothing double-counts). */
+  async chargeLateFee(companyId: string, actor: AuditActor, id: string) {
+    const invoice = await this.findOrThrow(companyId, id);
+    const accrued = await this.computeLateFeeAccrued(companyId, invoice);
+    if (accrued <= 0) {
+      throw new BadRequestException("No late fee has accrued on this invoice");
+    }
+
+    await this.prisma.invoiceLine.create({
+      data: { invoiceId: id, description: "Late fee", quantity: 1, unitPrice: accrued, lineTotal: accrued },
+    });
+    const updated = await this.prisma.invoice.update({
+      where: { id },
+      data: { total: { increment: accrued } },
+      include: { lines: true, client: true, project: true, payments: true, installments: true },
+    });
+    this.audit.record(companyId, actor, "invoice.late_fee_charged", "Invoice", id, `Charged a ${accrued} late fee on invoice ${invoice.number}`);
+    return updated;
   }
 
   /** Generates an Invoice + InvoiceLines pre-filled from an approved estimate's totals. */
@@ -196,9 +237,17 @@ export class InvoicesService {
     if (invoice.status !== "draft") {
       throw new BadRequestException("Only a draft invoice can be sent");
     }
+
+    let dueDate = invoice.dueDate;
+    if (!dueDate) {
+      const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId }, select: { defaultPaymentTermsDays: true } });
+      const termsDays = invoice.client.paymentTermsDays ?? company.defaultPaymentTermsDays;
+      dueDate = new Date(Date.now() + termsDays * 24 * 60 * 60 * 1000);
+    }
+
     const updated = await this.prisma.invoice.update({
       where: { id },
-      data: { status: "sent" },
+      data: { status: "sent", dueDate },
       include: { lines: true, client: true, project: true, payments: true, installments: true },
     });
     this.audit.record(companyId, actor, "invoice.sent", "Invoice", id, `Sent invoice ${invoice.number} to ${invoice.client.name}`);

@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Post, StreamableFile } from "@nestjs/common";
 import { submitPublicLeadSchema, type AuthUser, type SubmitPublicLeadInput } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
@@ -32,5 +32,19 @@ export class LeadsController {
   @Post("public/leads/:token")
   submit(@Param("token") token: string, @Body(new ZodValidationPipe(submitPublicLeadSchema)) body: SubmitPublicLeadInput) {
     return this.service.submitLead(token, body);
+  }
+
+  @Public()
+  @Get("public/leads/:token/logo")
+  async showcaseLogo(@Param("token") token: string) {
+    const { buffer, mimeType } = await this.service.getShowcaseLogo(token);
+    return new StreamableFile(buffer, { type: mimeType });
+  }
+
+  @Public()
+  @Get("public/leads/:token/photo/:documentId")
+  async showcasePhoto(@Param("token") token: string, @Param("documentId") documentId: string) {
+    const { buffer, mimeType } = await this.service.getShowcasePhoto(token, documentId);
+    return new StreamableFile(buffer, { type: mimeType });
   }
 }

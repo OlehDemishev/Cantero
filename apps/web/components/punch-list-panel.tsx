@@ -12,6 +12,10 @@ interface Worker {
   id: string;
   name: string;
 }
+interface Subcontractor {
+  id: string;
+  name: string;
+}
 interface Template {
   id: string;
   name: string;
@@ -24,6 +28,7 @@ interface PunchListItem {
   status: PunchListItemStatus;
   dueDate: string | null;
   assignee: Worker | null;
+  assigneeSubcontractor: Subcontractor | null;
   createdByName: string;
   resolvedByName: string | null;
   verifiedByName: string | null;
@@ -43,10 +48,11 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
 
   const [items, setItems] = useState<PunchListItem[] | null>(null);
   const [workers, setWorkers] = useState<Worker[]>([]);
+  const [subcontractors, setSubcontractors] = useState<Subcontractor[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({ title: "", description: "", location: "", assigneeWorkerId: "", dueDate: "" });
+  const [form, setForm] = useState({ title: "", description: "", location: "", assignee: "", dueDate: "" });
   const [busy, setBusy] = useState(false);
   const bulk = useBulkSelection();
 
@@ -57,6 +63,7 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
   useEffect(() => {
     load();
     apiFetch<Worker[]>("/workers").then(setWorkers);
+    apiFetch<Subcontractor[]>("/finance/subcontractors").then(setSubcontractors);
     apiFetch<Template[]>("/checklist-templates?type=punch_list").then(setTemplates);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
@@ -81,6 +88,7 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
     e.preventDefault();
     setBusy(true);
     try {
+      const [kind, assigneeId] = form.assignee.split(":");
       await apiFetch("/punch-list", {
         method: "POST",
         body: JSON.stringify({
@@ -88,11 +96,12 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
           title: form.title,
           description: form.description || undefined,
           location: form.location || undefined,
-          assigneeWorkerId: form.assigneeWorkerId || undefined,
+          assigneeWorkerId: kind === "worker" ? assigneeId : undefined,
+          assigneeSubcontractorId: kind === "sub" ? assigneeId : undefined,
           dueDate: form.dueDate ? new Date(form.dueDate).toISOString() : undefined,
         }),
       });
-      setForm({ title: "", description: "", location: "", assigneeWorkerId: "", dueDate: "" });
+      setForm({ title: "", description: "", location: "", assignee: "", dueDate: "" });
       setCreating(false);
       load();
     } finally {
@@ -170,17 +179,22 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
             </label>
             <label className="flex flex-1 flex-col gap-1.5 text-sm">
               <span className="font-medium text-gray-700">{t("assignee")}</span>
-              <select
-                className="input"
-                value={form.assigneeWorkerId}
-                onChange={(e) => setForm((f) => ({ ...f, assigneeWorkerId: e.target.value }))}
-              >
+              <select className="input" value={form.assignee} onChange={(e) => setForm((f) => ({ ...f, assignee: e.target.value }))}>
                 <option value="">{tc("none")}</option>
-                {workers.map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.name}
-                  </option>
-                ))}
+                <optgroup label={t("assigneeWorkers")}>
+                  {workers.map((w) => (
+                    <option key={w.id} value={`worker:${w.id}`}>
+                      {w.name}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label={t("assigneeSubcontractors")}>
+                  {subcontractors.map((s) => (
+                    <option key={s.id} value={`sub:${s.id}`}>
+                      {s.name}
+                    </option>
+                  ))}
+                </optgroup>
               </select>
             </label>
           </div>
@@ -270,6 +284,7 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
                   <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-gray-500">
                     {item.location && <span>{item.location}</span>}
                     {item.assignee && <span>{t("assignedTo", { name: item.assignee.name })}</span>}
+                    {item.assigneeSubcontractor && <span>{t("assignedTo", { name: item.assigneeSubcontractor.name })}</span>}
                     {item.dueDate && <span>{new Date(item.dueDate).toLocaleDateString()}</span>}
                   </div>
                   {item.description && <p className="mt-1.5 text-xs text-gray-500">{item.description}</p>}

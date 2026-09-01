@@ -17,6 +17,7 @@ export interface MeResponse {
     requiredApprovalCount: number;
     changeOrderApprovalThresholdAmount: string | null;
     changeOrderRequiredApprovalCount: number;
+    budgetAlertThresholdPercent: number;
   };
   subscriptionStatus: "incomplete" | "active" | "past_due" | "canceled";
   emailDigestFrequency: "off" | "daily" | "weekly";

@@ -23,7 +23,8 @@ export interface NotificationItem {
     | "permit_expiring"
     | "company_document_expiring"
     | "weather_risk"
-    | "budget_overrun";
+    | "budget_overrun"
+    | "material_price_changed";
   severity: Severity;
   title: string;
   body: string;
@@ -34,9 +35,7 @@ export interface NotificationItem {
 const REMINDER_LOOKAHEAD_DAYS = 3;
 const DOCUMENT_EXPIRY_LOOKAHEAD_DAYS = 30;
 const WEATHER_RISK_LOOKAHEAD_DAYS = 7;
-/** A project at or above this fraction of its budgeted grand total (materials + labor +
- * subcontractor actuals combined) gets flagged — "at risk", not necessarily already over. */
-const BUDGET_OVERRUN_THRESHOLD = 0.9;
+const MATERIAL_PRICE_CHANGE_LOOKBACK_DAYS = 14;
 
 /**
  * Notifications are fully derived from live data, not a persisted table —
@@ -71,6 +70,7 @@ export class NotificationsService {
       expiringCompanyDocuments,
       weatherRisks,
       budgetOverruns,
+      materialPriceChanges,
       membership,
     ] = await Promise.all([
       this.lowStockItems(companyId),
@@ -89,6 +89,7 @@ export class NotificationsService {
       this.expiringCompanyDocuments(companyId),
       this.weatherRiskTasks(companyId),
       this.budgetOverruns(companyId),
+      this.materialPriceChanges(companyId),
       this.prisma.membership.findFirst({ where: { companyId, userId } }),
     ]);
 
@@ -109,6 +110,7 @@ export class NotificationsService {
       ...expiringCompanyDocuments,
       ...weatherRisks,
       ...budgetOverruns,
+      ...materialPriceChanges,
     ].sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
 
     const lastViewedAt = membership?.notificationsLastViewedAt ?? null;
@@ -405,6 +407,24 @@ export class NotificationsService {
     }));
   }
 
+  private async materialPriceChanges(companyId: string): Promise<NotificationItem[]> {
+    const cutoff = new Date(Date.now() - MATERIAL_PRICE_CHANGE_LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
+    const changes = await this.prisma.materialPriceChange.findMany({
+      where: { companyId, createdAt: { gte: cutoff } },
+      include: { materialCatalogItem: { select: { id: true, name: true } } },
+    });
+
+    return changes.map((change) => ({
+      key: `material_price_change:${change.id}`,
+      type: "material_price_changed" as const,
+      severity: (Math.abs(Number(change.changePercent)) >= 25 ? "critical" : "warning") as Severity,
+      title: change.materialCatalogItem.name,
+      body: `Price ${Number(change.changePercent) > 0 ? "rose" : "fell"} ${Math.abs(Number(change.changePercent))}% (${change.oldPrice} → ${change.newPrice})`,
+      link: `/rate-catalog`,
+      occurredAt: change.createdAt,
+    }));
+  }
+
   private async expiringPermits(companyId: string): Promise<NotificationItem[]> {
     const cutoff = new Date(Date.now() + DOCUMENT_EXPIRY_LOOKAHEAD_DAYS * 24 * 60 * 60 * 1000);
     const permits = await this.prisma.permit.findMany({
@@ -524,19 +544,25 @@ export class NotificationsService {
   }
 
   /** Flags any project whose combined actual cost (materials + labor + subcontractor) has
-   * reached BUDGET_OVERRUN_THRESHOLD of its budgeted grand total — only projects with at least
-   * one approved estimate have a budget to compare against, so unestimated projects are silent. */
+   * reached Company.budgetAlertThresholdPercent (or the project's own override) of its budgeted
+   * grand total — only projects with at least one approved estimate have a budget to compare
+   * against, so unestimated projects are silent. */
   private async budgetOverruns(companyId: string): Promise<NotificationItem[]> {
-    const projects = await this.prisma.project.findMany({ where: { companyId }, select: { id: true, name: true } });
+    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId }, select: { budgetAlertThresholdPercent: true } });
+    const projects = await this.prisma.project.findMany({
+      where: { companyId },
+      select: { id: true, name: true, budgetAlertThresholdPercent: true },
+    });
 
     const items: NotificationItem[] = [];
     for (const project of projects) {
       const b = await this.budget.getForProject(companyId, project.id);
       if (b.grandTotalBudget <= 0) continue;
 
+      const threshold = (project.budgetAlertThresholdPercent ?? company.budgetAlertThresholdPercent) / 100;
       const actualTotal = b.materialsCostActual + b.laborCostActual + b.subcontractorCostActual;
       const ratio = actualTotal / b.grandTotalBudget;
-      if (ratio < BUDGET_OVERRUN_THRESHOLD) continue;
+      if (ratio < threshold) continue;
 
       items.push({
         key: `budget_overrun:${project.id}`,

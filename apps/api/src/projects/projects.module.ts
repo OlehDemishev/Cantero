@@ -16,6 +16,10 @@ import { SubmittalsService } from "./submittals.service";
 import { WarrantyClaimsController } from "./warranty-claims.controller";
 import { WarrantyClaimsService } from "./warranty-claims.service";
 import { ProjectCloseoutService } from "./project-closeout.service";
+import { NpsSurveysController } from "./nps-surveys.controller";
+import { NpsSurveysService } from "./nps-surveys.service";
+import { SiteSignInsController } from "./site-sign-ins.controller";
+import { SiteSignInsService } from "./site-sign-ins.service";
 import { WeatherModule } from "../weather/weather.module";
 import { FinanceModule } from "../finance/finance.module";
 import { DocumentsModule } from "../documents/documents.module";
@@ -31,6 +35,8 @@ import { DocumentsModule } from "../documents/documents.module";
     RfiController,
     SubmittalsController,
     WarrantyClaimsController,
+    NpsSurveysController,
+    SiteSignInsController,
   ],
   providers: [
     ProjectsService,
@@ -42,7 +48,9 @@ import { DocumentsModule } from "../documents/documents.module";
     SubmittalsService,
     WarrantyClaimsService,
     ProjectCloseoutService,
+    NpsSurveysService,
+    SiteSignInsService,
   ],
-  exports: [ProjectsService, PunchListService],
+  exports: [ProjectsService, PunchListService, TasksService],
 })
 export class ProjectsModule {}

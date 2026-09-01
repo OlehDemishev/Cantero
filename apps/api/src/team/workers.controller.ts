@@ -4,11 +4,15 @@ import {
   adjustPtoBalanceSchema,
   createWorkerSchema,
   updateWorkerSchema,
+  setClockInPinSchema,
+  verifyClockInPinSchema,
   type AddWorkerCertificationInput,
   type AdjustPtoBalanceInput,
   type AuthUser,
   type CreateWorkerInput,
   type UpdateWorkerInput,
+  type SetClockInPinInput,
+  type VerifyClockInPinInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
@@ -28,6 +32,12 @@ export class WorkersController {
   @Get("certifications/dashboard")
   certificationsDashboard(@CurrentUser() user: AuthUser) {
     return this.service.certificationsDashboard(user.companyId);
+  }
+
+  // Declared before ":id" so "kiosk" isn't swallowed as a worker id.
+  @Get("kiosk")
+  listKioskWorkers(@CurrentUser() user: AuthUser) {
+    return this.service.listKioskWorkers(user.companyId);
   }
 
   @Get(":id")
@@ -86,6 +96,31 @@ export class WorkersController {
     @Body(new ZodValidationPipe(adjustPtoBalanceSchema)) body: AdjustPtoBalanceInput,
   ) {
     return this.service.adjustPtoBalance(user.companyId, { userId: user.userId, name: user.name }, id, body);
+  }
+
+  @Roles("owner", "admin")
+  @Patch(":id/clock-in-pin")
+  setClockInPin(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(setClockInPinSchema)) body: SetClockInPinInput,
+  ) {
+    return this.service.setClockInPin(user.companyId, { userId: user.userId, name: user.name }, id, body.pin);
+  }
+
+  @Roles("owner", "admin")
+  @Delete(":id/clock-in-pin")
+  clearClockInPin(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.clearClockInPin(user.companyId, { userId: user.userId, name: user.name }, id);
+  }
+
+  @Post(":id/verify-clock-in-pin")
+  verifyClockInPin(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(verifyClockInPinSchema)) body: VerifyClockInPinInput,
+  ) {
+    return this.service.verifyClockInPin(user.companyId, id, body.pin);
   }
 
   @Get(":id/onboarding-tasks")

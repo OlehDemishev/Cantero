@@ -1,11 +1,13 @@
-import { BadRequestException, Body, Controller, Get, Param, Patch, Post, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Get, Param, Patch, Post, Query, UploadedFile, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import {
   createMaterialCatalogItemSchema,
+  updateMaterialPriceSchema,
   updateMaterialReorderSchema,
   updateMaterialSustainabilitySchema,
   type AuthUser,
   type CreateMaterialCatalogItemInput,
+  type UpdateMaterialPriceInput,
   type UpdateMaterialReorderInput,
   type UpdateMaterialSustainabilityInput,
 } from "@cantero/shared";
@@ -20,6 +22,12 @@ export class MaterialCatalogController {
   @Get()
   list(@CurrentUser() user: AuthUser) {
     return this.service.list(user.companyId);
+  }
+
+  // Declared before ":id" so "price-changes" isn't swallowed as a material id.
+  @Get("price-changes")
+  priceChanges(@CurrentUser() user: AuthUser, @Query("sinceDays") sinceDays?: string) {
+    return this.service.priceChanges(user.companyId, sinceDays ? Number(sinceDays) : undefined);
   }
 
   @Get(":id")
@@ -37,6 +45,11 @@ export class MaterialCatalogController {
     return this.service.supplierPrices(user.companyId, id);
   }
 
+  @Get(":id/affected-estimates")
+  affectedOpenEstimates(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.affectedOpenEstimates(user.companyId, id);
+  }
+
   @Post()
   create(
     @CurrentUser() user: AuthUser,
@@ -50,6 +63,15 @@ export class MaterialCatalogController {
   importCsv(@CurrentUser() user: AuthUser, @UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException("No file provided");
     return this.service.importCsv(user.companyId, { userId: user.userId, name: user.name }, file.buffer.toString("utf-8"));
+  }
+
+  @Patch(":id/price")
+  updatePrice(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(updateMaterialPriceSchema)) body: UpdateMaterialPriceInput,
+  ) {
+    return this.service.updatePrice(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
   @Patch(":id/reorder-settings")

@@ -1,10 +1,11 @@
 import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { Injectable } from "@nestjs/common";
-import type { ClientDecisionInput, PortalCreateWarrantyClaimInput } from "@cantero/shared";
+import type { ClientDecisionInput, EstimateClientDecisionInput, PortalCreateWarrantyClaimInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { EstimatesService } from "../estimates/estimates.service";
 import { ChangeOrdersService } from "../estimates/change-orders.service";
 import { InvoicesService } from "../finance/invoices.service";
+import { ClientPaymentMethodsService } from "../finance/client-payment-methods.service";
 import { WebhooksService } from "../common/webhooks/webhooks.service";
 import { BillingService } from "../billing/billing.service";
 import type { PortalClientContext } from "./portal-jwt.service";
@@ -25,6 +26,7 @@ export class PortalService {
     private readonly invoices: InvoicesService,
     private readonly webhooks: WebhooksService,
     private readonly billing: BillingService,
+    private readonly clientPaymentMethods: ClientPaymentMethodsService,
   ) {}
 
   async me(client: PortalClientContext) {
@@ -32,7 +34,22 @@ export class PortalService {
       where: { id: client.clientId },
       include: { company: { select: { name: true, currency: true } } },
     });
-    return { name: record.name, email: record.email, companyName: record.company.name, currency: record.company.currency };
+    return {
+      name: record.name,
+      email: record.email,
+      companyName: record.company.name,
+      currency: record.company.currency,
+      savedCardBrand: record.stripePaymentMethodBrand,
+      savedCardLast4: record.stripePaymentMethodLast4,
+    };
+  }
+
+  createPaymentMethodSetupSession(client: PortalClientContext) {
+    return this.clientPaymentMethods.createSetupSession(client.companyId, client.clientId);
+  }
+
+  removePaymentMethod(client: PortalClientContext) {
+    return this.clientPaymentMethods.removePaymentMethod(client.companyId, client.clientId);
   }
 
   listEstimates(client: PortalClientContext) {
@@ -80,7 +97,7 @@ export class PortalService {
     };
   }
 
-  async decideEstimate(client: PortalClientContext, id: string, input: ClientDecisionInput, signerIp?: string) {
+  async decideEstimate(client: PortalClientContext, id: string, input: EstimateClientDecisionInput, signerIp?: string) {
     return this.estimates.decideForClient(client.companyId, client.clientId, id, input, signerIp);
   }
 

@@ -13,6 +13,7 @@ interface DailyLog {
   authorName: string;
   weatherCondition: WeatherCondition | null;
   weatherNotes: string | null;
+  weatherDelayHours: number | null;
   crewCount: number | null;
   crewNotes: string | null;
   workPerformed: string;
@@ -24,6 +25,7 @@ const EMPTY_FORM = {
   date: new Date().toISOString().slice(0, 10),
   weatherCondition: "" as WeatherCondition | "",
   weatherNotes: "",
+  weatherDelayHours: "",
   crewCount: "",
   crewNotes: "",
   workPerformed: "",
@@ -57,6 +59,7 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
       date: log.date.slice(0, 10),
       weatherCondition: log.weatherCondition ?? "",
       weatherNotes: log.weatherNotes ?? "",
+      weatherDelayHours: log.weatherDelayHours?.toString() ?? "",
       crewCount: log.crewCount?.toString() ?? "",
       crewNotes: log.crewNotes ?? "",
       workPerformed: log.workPerformed,
@@ -85,6 +88,7 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
     const body = {
       weatherCondition: form.weatherCondition || undefined,
       weatherNotes: form.weatherNotes || undefined,
+      weatherDelayHours: form.weatherDelayHours ? Number(form.weatherDelayHours) : undefined,
       crewCount: form.crewCount ? Number(form.crewCount) : undefined,
       crewNotes: form.crewNotes || undefined,
       workPerformed: form.workPerformed,
@@ -160,6 +164,18 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
                 placeholder={t("weatherNotesPlaceholder")}
                 value={form.weatherNotes}
                 onChange={(e) => setForm((f) => ({ ...f, weatherNotes: e.target.value }))}
+              />
+            </label>
+            <label className="flex w-40 flex-col gap-1.5 text-sm">
+              <span className="font-medium text-gray-700">{t("weatherDelayHours")}</span>
+              <input
+                type="number"
+                min="0"
+                max="24"
+                step="0.5"
+                className="input"
+                value={form.weatherDelayHours}
+                onChange={(e) => setForm((f) => ({ ...f, weatherDelayHours: e.target.value }))}
               />
             </label>
           </div>
@@ -256,6 +272,11 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
                     {log.delays && (
                       <span className="rounded-full bg-warning-50 px-2 py-0.5 text-xs font-medium text-warning-700">
                         {t("hasDelays")}
+                      </span>
+                    )}
+                    {!!log.weatherDelayHours && (
+                      <span className="rounded-full bg-warning-50 px-2 py-0.5 text-xs font-medium text-warning-700">
+                        {t("weatherDelayBadge", { hours: log.weatherDelayHours })}
                       </span>
                     )}
                   </div>

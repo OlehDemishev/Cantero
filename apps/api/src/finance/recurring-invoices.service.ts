@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException, OnModuleInit } from "@nestjs/common";
+import { BadRequestException, Injectable, Logger, NotFoundException, OnModuleInit } from "@nestjs/common";
 import { InjectQueue } from "@nestjs/bullmq";
 import type { Queue } from "bullmq";
 import type { Prisma } from "@prisma/client";
@@ -8,8 +8,11 @@ import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { WebhooksService } from "../common/webhooks/webhooks.service";
 import { RECURRING_INVOICES_QUEUE } from "../common/queue/queue.module";
 import { advanceDate, calculateRecurringInvoice } from "./recurring-invoice-schedule";
+import { InvoicesService } from "./invoices.service";
+import { ClientPaymentMethodsService } from "./client-payment-methods.service";
 
 const RECURRING_INVOICES_CHECK_INTERVAL_MS = 60 * 60 * 1000;
+const AUTOPAY_ACTOR: AuditActor = { name: "Autopay" };
 
 type RecurringInvoiceWithLines = Prisma.RecurringInvoiceGetPayload<{ include: { lines: true } }>;
 
@@ -21,6 +24,8 @@ export class RecurringInvoicesService implements OnModuleInit {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly webhooks: WebhooksService,
+    private readonly invoices: InvoicesService,
+    private readonly clientPaymentMethods: ClientPaymentMethodsService,
     @InjectQueue(RECURRING_INVOICES_QUEUE) private readonly queue: Queue,
   ) {}
 
@@ -88,6 +93,13 @@ export class RecurringInvoicesService implements OnModuleInit {
   async update(companyId: string, actor: AuditActor, id: string, input: UpdateRecurringInvoiceInput) {
     const existing = await this.findOrThrow(companyId, id);
 
+    if (input.autopayEnabled) {
+      const client = await this.prisma.client.findUniqueOrThrow({ where: { id: existing.clientId } });
+      if (!client.stripePaymentMethodId) {
+        throw new BadRequestException("This client has no saved card — save one from the portal before turning on autopay");
+      }
+    }
+
     if (input.lines) {
       await this.prisma.$transaction([
         this.prisma.recurringInvoiceLine.deleteMany({ where: { recurringInvoiceId: id } }),
@@ -111,6 +123,7 @@ export class RecurringInvoicesService implements OnModuleInit {
         taxPercent: input.taxPercent,
         endDate: input.endDate === undefined ? undefined : input.endDate ? new Date(input.endDate) : null,
         active: input.active,
+        autopayEnabled: input.autopayEnabled,
       },
       include: { lines: { orderBy: { sortOrder: "asc" } } },
     });
@@ -234,7 +247,26 @@ export class RecurringInvoicesService implements OnModuleInit {
       recurringInvoiceId: recurring.id,
     });
 
+    if (recurring.autopayEnabled) {
+      await this.attemptAutopay(recurring.companyId, invoice.id, invoice.number, invoice.clientId, Number(invoice.total), invoice.currency);
+    }
+
     return invoice;
+  }
+
+  /** Sends the freshly-generated invoice, then tries to charge the client's saved card. A
+   * decline just leaves the invoice "sent" for InvoiceRemindersService to chase normally — same
+   * outcome as a manually-sent invoice the client hasn't paid yet, not a failure worth surfacing
+   * to whoever's watching the due-pass logs. */
+  private async attemptAutopay(companyId: string, invoiceId: string, number: string, clientId: string, amount: number, currency: string) {
+    await this.invoices.send(companyId, AUTOPAY_ACTOR, invoiceId);
+    const result = await this.clientPaymentMethods.chargeOffSession(companyId, clientId, amount, currency);
+    if (result.succeeded) {
+      await this.invoices.recordPayment(companyId, AUTOPAY_ACTOR, invoiceId, { amount, method: "card" });
+      this.logger.log(`Autopay succeeded for invoice ${number}`);
+    } else {
+      this.logger.warn(`Autopay failed for invoice ${number}: ${result.error} — left as sent for normal reminders`);
+    }
   }
 
   private async findOrThrow(companyId: string, id: string) {

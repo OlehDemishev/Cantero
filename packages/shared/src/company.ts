@@ -39,6 +39,11 @@ export const updateCompanySchema = z.object({
   changeOrderRequiredApprovalCount: z.number().int().min(1).max(10).optional(),
   leadFollowUpEnabled: z.boolean().optional(),
   estimateRemindersEnabled: z.boolean().optional(),
+  changeOrderRemindersEnabled: z.boolean().optional(),
+  enpsSurveysEnabled: z.boolean().optional(),
+  budgetAlertThresholdPercent: z.number().int().min(1).max(100).optional(),
+  lateFeePercentPerMonth: z.number().nonnegative().max(100).nullable().optional(),
+  defaultPaymentTermsDays: z.number().int().min(0).max(365).optional(),
   /// SMS to a worker's phone (in their preferredLocale) when assigned to a task, or when a
   /// safety briefing they're listed on is created — off by default, same "unsolicited message"
   /// reasoning as invoiceRemindersEnabled.
@@ -66,6 +71,15 @@ export const linkToParentCompanySchema = z.object({
   code: z.string().min(6).max(40),
 });
 export type LinkToParentCompanyInput = z.infer<typeof linkToParentCompanySchema>;
+
+export const setCustomPortalDomainSchema = z.object({
+  domain: z
+    .string()
+    .max(253)
+    .regex(/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/i, "Must be a plain domain name, e.g. portal.example.com")
+    .nullable(),
+});
+export type SetCustomPortalDomainInput = z.infer<typeof setCustomPortalDomainSchema>;
 
 export const updateMemberRoleSchema = z.object({
   role: z.enum(MEMBERSHIP_ROLES_MANAGEABLE),
@@ -136,3 +150,9 @@ export const createApiKeySchema = z.object({
   expiresAt: z.string().datetime().optional(),
 });
 export type CreateApiKeyInput = z.infer<typeof createApiKeySchema>;
+
+export const createCompanyHolidaySchema = z.object({
+  date: z.string().datetime(),
+  label: z.string().min(1).max(120),
+});
+export type CreateCompanyHolidayInput = z.infer<typeof createCompanyHolidaySchema>;

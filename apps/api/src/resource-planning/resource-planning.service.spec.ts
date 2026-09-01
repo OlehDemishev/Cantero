@@ -4,6 +4,7 @@ import { ResourcePlanningService } from "./resource-planning.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService } from "../common/audit/audit.service";
 import { SmsService } from "../common/sms/sms.service";
+import { MessageTemplatesService } from "../message-templates/message-templates.service";
 
 const COMPANY_A = "company-a";
 const ACTOR = { userId: "user-1", name: "PM" };
@@ -43,6 +44,7 @@ describe("ResourcePlanningService", () => {
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: audit },
         { provide: SmsService, useValue: sms },
+        { provide: MessageTemplatesService, useValue: { render: jest.fn().mockResolvedValue(null) } },
       ],
     }).compile();
 

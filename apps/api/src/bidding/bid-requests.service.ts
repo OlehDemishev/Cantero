@@ -1,9 +1,10 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import type { CreateBidRequestInput, SubmitBidInput } from "@cantero/shared";
+import type { AddBidScoreCriterionInput, CreateBidRequestInput, ScoreBidInput, SubmitBidInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { SubcontractorsService } from "../finance/subcontractors.service";
 import type { PortalSubcontractorContext } from "../subcontractor-portal/subcontractor-portal-jwt.service";
+import { weightedBidScore } from "./bid-scoring";
 
 @Injectable()
 export class BidRequestsService {
@@ -31,11 +32,77 @@ export class BidRequestsService {
       include: {
         project: { select: { name: true } },
         invites: { include: { subcontractor: { select: { id: true, name: true } } } },
-        bids: { include: { subcontractor: { select: { id: true, name: true } } }, orderBy: { amount: "asc" } },
+        bids: {
+          include: { subcontractor: { select: { id: true, name: true } }, scores: true },
+          orderBy: { amount: "asc" },
+        },
+        criteria: true,
       },
     });
     if (!bidRequest) throw new NotFoundException("Bid request not found");
-    return bidRequest;
+
+    const criteriaWeights = bidRequest.criteria.map((c) => ({ criterionId: c.id, weight: c.weight }));
+    return {
+      ...bidRequest,
+      bids: bidRequest.bids.map((bid) => ({
+        ...bid,
+        weightedScore: weightedBidScore(
+          bid.scores.map((s) => ({ criterionId: s.criterionId, score: s.score })),
+          criteriaWeights,
+        ),
+      })),
+    };
+  }
+
+  async addCriterion(companyId: string, actor: AuditActor, bidRequestId: string, input: AddBidScoreCriterionInput) {
+    const bidRequest = await this.prisma.bidRequest.findFirst({ where: { id: bidRequestId, companyId } });
+    if (!bidRequest) throw new NotFoundException("Bid request not found");
+
+    const criterion = await this.prisma.bidScoreCriterion.create({
+      data: { bidRequestId, label: input.label, weight: input.weight },
+    });
+    this.audit.record(
+      companyId,
+      actor,
+      "bid_request.criterion_added",
+      "BidRequest",
+      bidRequestId,
+      `Added scoring criterion "${input.label}" (weight ${input.weight}) to "${bidRequest.title}"`,
+    );
+    return criterion;
+  }
+
+  async removeCriterion(companyId: string, actor: AuditActor, bidRequestId: string, criterionId: string) {
+    const criterion = await this.prisma.bidScoreCriterion.findFirst({
+      where: { id: criterionId, bidRequestId, bidRequest: { companyId } },
+    });
+    if (!criterion) throw new NotFoundException("Criterion not found");
+
+    await this.prisma.bidScoreCriterion.delete({ where: { id: criterionId } });
+    this.audit.record(companyId, actor, "bid_request.criterion_removed", "BidRequest", bidRequestId, `Removed scoring criterion "${criterion.label}"`);
+    return { ok: true };
+  }
+
+  async scoreBid(companyId: string, actor: AuditActor, bidRequestId: string, bidId: string, input: ScoreBidInput) {
+    const bid = await this.prisma.bid.findFirst({ where: { id: bidId, bidRequestId, bidRequest: { companyId } } });
+    if (!bid) throw new NotFoundException("Bid not found");
+    const criterion = await this.prisma.bidScoreCriterion.findFirst({ where: { id: input.criterionId, bidRequestId } });
+    if (!criterion) throw new NotFoundException("Criterion not found");
+
+    const score = await this.prisma.bidScore.upsert({
+      where: { bidId_criterionId: { bidId, criterionId: input.criterionId } },
+      create: { bidId, criterionId: input.criterionId, score: input.score },
+      update: { score: input.score },
+    });
+    this.audit.record(
+      companyId,
+      actor,
+      "bid_request.bid_scored",
+      "BidRequest",
+      bidRequestId,
+      `Scored a bid ${input.score}/5 on "${criterion.label}"`,
+    );
+    return score;
   }
 
   async create(companyId: string, actor: AuditActor, input: CreateBidRequestInput) {

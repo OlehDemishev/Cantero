@@ -15,6 +15,7 @@ import { CurrentPortalSubcontractor } from "./current-portal-subcontractor.decor
 import type { PortalSubcontractorContext } from "./subcontractor-portal-jwt.service";
 import { SubcontractorPortalService } from "./subcontractor-portal.service";
 import { BidRequestsService } from "../bidding/bid-requests.service";
+import { PunchListService } from "../projects/punch-list.service";
 
 /** @Public() bypasses the internal-user JwtAuthGuard chain; SubcontractorPortalAuthGuard independently requires a valid subcontractor-portal token. */
 @Public()
@@ -24,6 +25,7 @@ export class SubcontractorPortalController {
   constructor(
     private readonly service: SubcontractorPortalService,
     private readonly bidRequests: BidRequestsService,
+    private readonly punchList: PunchListService,
   ) {}
 
   @Get("me")
@@ -76,5 +78,10 @@ export class SubcontractorPortalController {
     @Body(new ZodValidationPipe(submitBidSchema)) body: SubmitBidInput,
   ) {
     return this.bidRequests.submitBid(subcontractor, id, body);
+  }
+
+  @Get("punch-list-items")
+  listPunchListItems(@CurrentPortalSubcontractor() subcontractor: PortalSubcontractorContext) {
+    return this.punchList.listForSubcontractor(subcontractor.companyId, subcontractor.subcontractorId);
   }
 }

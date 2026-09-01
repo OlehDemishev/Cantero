@@ -168,6 +168,18 @@ export const submitBidSchema = z.object({
 });
 export type SubmitBidInput = z.infer<typeof submitBidSchema>;
 
+export const addBidScoreCriterionSchema = z.object({
+  label: z.string().min(1).max(80),
+  weight: z.number().int().min(1).max(10),
+});
+export type AddBidScoreCriterionInput = z.infer<typeof addBidScoreCriterionSchema>;
+
+export const scoreBidSchema = z.object({
+  criterionId: z.string().uuid(),
+  score: z.number().int().min(1).max(5),
+});
+export type ScoreBidInput = z.infer<typeof scoreBidSchema>;
+
 export const RECURRING_INVOICE_FREQUENCIES = ["weekly", "monthly", "quarterly", "yearly"] as const;
 export type RecurringInvoiceFrequency = (typeof RECURRING_INVOICE_FREQUENCIES)[number];
 
@@ -196,6 +208,7 @@ export const updateRecurringInvoiceSchema = z.object({
   taxPercent: z.number().min(0).max(100).optional(),
   endDate: z.string().datetime().nullable().optional(),
   active: z.boolean().optional(),
+  autopayEnabled: z.boolean().optional(),
   lines: z.array(recurringInvoiceLineSchema).min(1).optional(),
 });
 export type UpdateRecurringInvoiceInput = z.infer<typeof updateRecurringInvoiceSchema>;

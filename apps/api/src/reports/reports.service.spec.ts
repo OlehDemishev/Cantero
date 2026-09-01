@@ -648,3 +648,166 @@ describe("ReportsService.complianceCalendar", () => {
     expect(Math.abs(cutoff.getTime() - expectedCutoff)).toBeLessThan(5000);
   });
 });
+
+describe("ReportsService.geofenceViolations", () => {
+  let service: ReportsService;
+  let prisma: { timeEntry: { findMany: jest.Mock } };
+
+  beforeEach(async () => {
+    prisma = { timeEntry: { findMany: jest.fn() } };
+
+    const module = await Test.createTestingModule({
+      providers: [ReportsService, { provide: PrismaService, useValue: prisma }, ...PDF_PROVIDERS],
+    }).compile();
+
+    service = module.get(ReportsService);
+  });
+
+  it("only queries entries flagged withinGeofence: false", async () => {
+    prisma.timeEntry.findMany.mockResolvedValue([]);
+
+    await service.geofenceViolations(COMPANY_A);
+
+    const call = prisma.timeEntry.findMany.mock.calls[0][0];
+    expect(call.where.withinGeofence).toBe(false);
+    expect(call.where.date).toBeUndefined();
+  });
+
+  it("maps worker/project names and distance onto each violation", async () => {
+    prisma.timeEntry.findMany.mockResolvedValue([
+      {
+        id: "te-1",
+        date: new Date("2026-03-01"),
+        hours: "8.00",
+        distanceFromSiteMeters: 340,
+        worker: { name: "Ivan" },
+        project: { name: "Site A" },
+      },
+    ]);
+
+    const result = await service.geofenceViolations(COMPANY_A);
+
+    expect(result).toEqual([
+      { id: "te-1", date: new Date("2026-03-01"), workerName: "Ivan", projectName: "Site A", hours: 8, distanceFromSiteMeters: 340 },
+    ]);
+  });
+
+  it("scopes the date range when from/to are given", async () => {
+    prisma.timeEntry.findMany.mockResolvedValue([]);
+
+    await service.geofenceViolations(COMPANY_A, "2026-01-01", "2026-01-31");
+
+    const call = prisma.timeEntry.findMany.mock.calls[0][0];
+    expect(call.where.date.gte).toEqual(new Date("2026-01-01"));
+    expect(call.where.date.lte).toEqual(new Date("2026-01-31"));
+  });
+
+  it("renders a CSV row per violation", async () => {
+    prisma.timeEntry.findMany.mockResolvedValue([
+      {
+        id: "te-1",
+        date: new Date("2026-03-01"),
+        hours: "8.00",
+        distanceFromSiteMeters: 340,
+        worker: { name: "Ivan" },
+        project: { name: "Site A" },
+      },
+    ]);
+
+    const csv = await service.geofenceViolationsCsv(COMPANY_A);
+
+    expect(csv).toContain("Ivan");
+    expect(csv).toContain("Site A");
+    expect(csv).toContain("340");
+  });
+});
+
+describe("ReportsService.equipmentUtilization", () => {
+  let service: ReportsService;
+  let prisma: { equipment: { findMany: jest.Mock } };
+
+  beforeEach(async () => {
+    prisma = { equipment: { findMany: jest.fn() } };
+
+    const module = await Test.createTestingModule({
+      providers: [ReportsService, { provide: PrismaService, useValue: prisma }, ...PDF_PROVIDERS],
+    }).compile();
+
+    service = module.get(ReportsService);
+  });
+
+  it("computes 100% utilization for a piece of equipment checked out for the whole period", async () => {
+    const from = "2026-01-01T00:00:00.000Z";
+    const to = "2026-01-11T00:00:00.000Z"; // 10 days
+    prisma.equipment.findMany.mockResolvedValue([
+      {
+        id: "eq-1",
+        name: "Excavator",
+        category: "heavy",
+        status: "in_use",
+        assignments: [{ checkedOutAt: new Date(from), checkedInAt: new Date(to) }],
+      },
+    ]);
+
+    const result = await service.equipmentUtilization("company-a", from, to);
+
+    expect(result[0].utilizationPercent).toBe(100);
+    expect(result[0].hoursInUse).toBe(240);
+  });
+
+  it("computes 0% for equipment with no assignments in the period", async () => {
+    prisma.equipment.findMany.mockResolvedValue([
+      { id: "eq-1", name: "Idle crane", category: "heavy", status: "available", assignments: [] },
+    ]);
+
+    const result = await service.equipmentUtilization("company-a", "2026-01-01T00:00:00.000Z", "2026-01-11T00:00:00.000Z");
+
+    expect(result[0].utilizationPercent).toBe(0);
+  });
+
+  it("clips an assignment that started before the period to the period start", async () => {
+    prisma.equipment.findMany.mockResolvedValue([
+      {
+        id: "eq-1",
+        name: "Loader",
+        category: "heavy",
+        status: "in_use",
+        assignments: [{ checkedOutAt: new Date("2025-12-25T00:00:00.000Z"), checkedInAt: new Date("2026-01-06T00:00:00.000Z") }],
+      },
+    ]);
+
+    // 10-day period, assignment overlaps the first 5 days of it → 50%
+    const result = await service.equipmentUtilization("company-a", "2026-01-01T00:00:00.000Z", "2026-01-11T00:00:00.000Z");
+
+    expect(result[0].utilizationPercent).toBe(50);
+  });
+
+  it("treats a still-checked-out assignment (checkedInAt null) as in-use through the period end", async () => {
+    prisma.equipment.findMany.mockResolvedValue([
+      {
+        id: "eq-1",
+        name: "Generator",
+        category: "power",
+        status: "in_use",
+        assignments: [{ checkedOutAt: new Date("2026-01-06T00:00:00.000Z"), checkedInAt: null }],
+      },
+    ]);
+
+    const result = await service.equipmentUtilization("company-a", "2026-01-01T00:00:00.000Z", "2026-01-11T00:00:00.000Z");
+
+    expect(result[0].utilizationPercent).toBe(50);
+  });
+
+  it("sorts by utilization ascending so the most idle equipment surfaces first", async () => {
+    const from = "2026-01-01T00:00:00.000Z";
+    const to = "2026-01-11T00:00:00.000Z";
+    prisma.equipment.findMany.mockResolvedValue([
+      { id: "busy", name: "Busy", category: "heavy", status: "in_use", assignments: [{ checkedOutAt: new Date(from), checkedInAt: new Date(to) }] },
+      { id: "idle", name: "Idle", category: "heavy", status: "available", assignments: [] },
+    ]);
+
+    const result = await service.equipmentUtilization("company-a", from, to);
+
+    expect(result.map((r) => r.id)).toEqual(["idle", "busy"]);
+  });
+});

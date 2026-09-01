@@ -4,6 +4,7 @@ import { PrismaService } from "../common/prisma/prisma.service";
 import { WeatherService } from "../weather/weather.service";
 import { AuditService } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
+import { MessageTemplatesService } from "../message-templates/message-templates.service";
 
 describe("ProjectsService.importCsv", () => {
   let service: ProjectsService;
@@ -27,6 +28,7 @@ describe("ProjectsService.importCsv", () => {
         { provide: WeatherService, useValue: {} },
         { provide: AuditService, useValue: audit },
         { provide: MailService, useValue: { send: jest.fn() } },
+        { provide: MessageTemplatesService, useValue: { render: jest.fn().mockResolvedValue(null) } },
       ],
     }).compile();
 
@@ -120,6 +122,7 @@ describe("ProjectsService.requestReview", () => {
         { provide: WeatherService, useValue: {} },
         { provide: AuditService, useValue: audit },
         { provide: MailService, useValue: mail },
+        { provide: MessageTemplatesService, useValue: { render: jest.fn().mockResolvedValue(null) } },
       ],
     }).compile();
 
@@ -180,6 +183,7 @@ describe("ProjectsService.gallery", () => {
         { provide: WeatherService, useValue: {} },
         { provide: AuditService, useValue: { record: jest.fn() } },
         { provide: MailService, useValue: { send: jest.fn() } },
+        { provide: MessageTemplatesService, useValue: { render: jest.fn().mockResolvedValue(null) } },
       ],
     }).compile();
 
@@ -230,6 +234,7 @@ describe("ProjectsService record-level permissions", () => {
         { provide: WeatherService, useValue: {} },
         { provide: AuditService, useValue: audit },
         { provide: MailService, useValue: { send: jest.fn() } },
+        { provide: MessageTemplatesService, useValue: { render: jest.fn().mockResolvedValue(null) } },
       ],
     }).compile();
 

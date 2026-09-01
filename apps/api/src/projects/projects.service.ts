@@ -3,6 +3,7 @@ import type {
   CreateProjectInput,
   ImportResult,
   UpdateProjectCurrencyInput,
+  UpdateProjectBudgetAlertThresholdInput,
   UpdateProjectGeofenceInput,
   UpdateProjectPublicWorkInput,
   UpdateProjectWarrantyInput,
@@ -12,6 +13,7 @@ import { WeatherService } from "../weather/weather.service";
 import { parseCsvRecords } from "../common/csv";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
+import { MessageTemplatesService } from "../message-templates/message-templates.service";
 
 @Injectable()
 export class ProjectsService {
@@ -20,6 +22,7 @@ export class ProjectsService {
     private readonly weather: WeatherService,
     private readonly audit: AuditService,
     private readonly mail: MailService,
+    private readonly messageTemplates: MessageTemplatesService,
   ) {}
 
   /** Owner/admin always see every project. Everyone else sees a restricted project only if
@@ -171,6 +174,15 @@ export class ProjectsService {
     });
   }
 
+  async updateBudgetAlertThreshold(companyId: string, id: string, input: UpdateProjectBudgetAlertThresholdInput) {
+    await this.get(companyId, id);
+    return this.prisma.project.update({
+      where: { id },
+      data: { budgetAlertThresholdPercent: input.budgetAlertThresholdPercent },
+      include: { client: true },
+    });
+  }
+
   async updateWarranty(companyId: string, id: string, input: UpdateProjectWarrantyInput) {
     await this.get(companyId, id);
     return this.prisma.project.update({
@@ -244,11 +256,22 @@ export class ProjectsService {
       throw new BadRequestException("This project's client has no email on file");
     }
 
+    const custom = await this.messageTemplates.render(companyId, "review_request_email", {
+      clientName: project.client.name,
+      companyName: company.name,
+      projectName: project.name,
+      reviewUrl: company.reviewRequestUrl,
+    });
+
     await this.mail.send({
       to: project.client.email,
       subject: `How did we do on ${project.name}?`,
-      text: `Hi ${project.client.name},\n\nThank you for choosing ${company.name} for ${project.name}. If you have a moment, we'd really appreciate a review: ${company.reviewRequestUrl}\n\nThank you!`,
-      html: `<p>Hi ${project.client.name},</p><p>Thank you for choosing ${company.name} for <strong>${project.name}</strong>. If you have a moment, we'd really appreciate a review:</p><p><a href="${company.reviewRequestUrl}">${company.reviewRequestUrl}</a></p><p>Thank you!</p>`,
+      text:
+        custom ??
+        `Hi ${project.client.name},\n\nThank you for choosing ${company.name} for ${project.name}. If you have a moment, we'd really appreciate a review: ${company.reviewRequestUrl}\n\nThank you!`,
+      html: custom
+        ? `<p>${custom.replace(/\n/g, "<br>")}</p>`
+        : `<p>Hi ${project.client.name},</p><p>Thank you for choosing ${company.name} for <strong>${project.name}</strong>. If you have a moment, we'd really appreciate a review:</p><p><a href="${company.reviewRequestUrl}">${company.reviewRequestUrl}</a></p><p>Thank you!</p>`,
     });
 
     const updated = await this.prisma.project.update({

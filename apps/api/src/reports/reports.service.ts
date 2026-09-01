@@ -896,6 +896,88 @@ export class ReportsService {
       ]),
     );
   }
+
+  /** Time entries clocked in outside the project's geofence — compliance view across every
+   * project at once, since GeofencePanel only ever shows one project's entries at a time.
+   * withinGeofence stays null (excluded here, not a violation) when the project had no geofence
+   * configured at submission time. */
+  private async geofenceViolationEntries(companyId: string, from?: string, to?: string) {
+    return this.prisma.timeEntry.findMany({
+      where: {
+        companyId,
+        withinGeofence: false,
+        ...(from || to
+          ? { date: { ...(from ? { gte: new Date(from) } : {}), ...(to ? { lte: new Date(to) } : {}) } }
+          : {}),
+      },
+      include: { worker: { select: { name: true } }, project: { select: { name: true } } },
+      orderBy: { date: "desc" },
+    });
+  }
+
+  async geofenceViolations(companyId: string, from?: string, to?: string) {
+    const entries = await this.geofenceViolationEntries(companyId, from, to);
+    return entries.map((e) => ({
+      id: e.id,
+      date: e.date,
+      workerName: e.worker.name,
+      projectName: e.project.name,
+      hours: Number(e.hours),
+      distanceFromSiteMeters: e.distanceFromSiteMeters,
+    }));
+  }
+
+  async geofenceViolationsCsv(companyId: string, from?: string, to?: string): Promise<string> {
+    const entries = await this.geofenceViolationEntries(companyId, from, to);
+    return toCsv(
+      ["Date", "Worker", "Project", "Hours", "Distance from site (m)"],
+      entries.map((e) => [
+        e.date.toISOString().slice(0, 10),
+        e.worker.name,
+        e.project.name,
+        e.hours.toString(),
+        e.distanceFromSiteMeters !== null ? String(e.distanceFromSiteMeters) : "",
+      ]),
+    );
+  }
+
+  /** % of the period each active piece of equipment spent checked out, from
+   * EquipmentAssignment.checkedOutAt/checkedInAt overlap with [from, to] — defaults to the
+   * trailing 30 days. A still-checked-out assignment counts as in-use through `to` (or now,
+   * whichever is earlier), not through some assumed end date. */
+  async equipmentUtilization(companyId: string, from?: string, to?: string) {
+    const periodEnd = to ? new Date(to) : new Date();
+    const periodStart = from ? new Date(from) : new Date(periodEnd.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const periodMs = periodEnd.getTime() - periodStart.getTime();
+
+    const equipment = await this.prisma.equipment.findMany({
+      where: { companyId, status: { not: "retired" } },
+      include: {
+        assignments: {
+          where: { checkedOutAt: { lte: periodEnd }, OR: [{ checkedInAt: null }, { checkedInAt: { gte: periodStart } }] },
+        },
+      },
+      orderBy: { name: "asc" },
+    });
+
+    return equipment
+      .map((eq) => {
+        const inUseMs = eq.assignments.reduce((sum, a) => {
+          const start = Math.max(a.checkedOutAt.getTime(), periodStart.getTime());
+          const end = Math.min((a.checkedInAt ?? periodEnd).getTime(), periodEnd.getTime());
+          return sum + Math.max(0, end - start);
+        }, 0);
+        return {
+          id: eq.id,
+          name: eq.name,
+          category: eq.category,
+          status: eq.status,
+          hoursInUse: round2(inUseMs / 3_600_000),
+          utilizationPercent: periodMs > 0 ? round2((inUseMs / periodMs) * 100) : 0,
+        };
+      })
+      .sort((a, b) => a.utilizationPercent - b.utilizationPercent);
+  }
 }
 
 const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;

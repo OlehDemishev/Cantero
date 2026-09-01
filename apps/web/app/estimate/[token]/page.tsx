@@ -12,7 +12,7 @@ interface PublicLine {
   quantity: string;
   lineTotal: string;
 }
-type ClientDecision = "pending" | "approved" | "rejected";
+type ClientDecision = "pending" | "approved" | "rejected" | "countered";
 interface PublicEstimate {
   id: string;
   name: string;
@@ -20,6 +20,7 @@ interface PublicEstimate {
   clientDecision: ClientDecision;
   decisionAt: string | null;
   clientDecisionNote: string | null;
+  counterOfferAmount: string | null;
   companyName: string;
   currency: string;
   projectName: string | null;
@@ -42,6 +43,8 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
   const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
   const [signatureError, setSignatureError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [counterMode, setCounterMode] = useState(false);
+  const [counterAmount, setCounterAmount] = useState("");
 
   function load() {
     apiFetch<PublicEstimate>(`/public/estimates/${token}`)
@@ -67,6 +70,21 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
           signerName: decision === "approved" ? signerName.trim() : undefined,
           signatureDataUrl: decision === "approved" ? signatureDataUrl : undefined,
         }),
+      });
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function decideCounter() {
+    const amount = Number(counterAmount);
+    if (!amount || amount <= 0) return;
+    setBusy(true);
+    try {
+      await apiFetch(`/public/estimates/${token}/decision`, {
+        method: "POST",
+        body: JSON.stringify({ decision: "countered", counterOfferAmount: amount, note: note || undefined }),
       });
       load();
     } finally {
@@ -190,24 +208,61 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
               </div>
               {signatureError && <p className="mt-2 text-xs text-error-600">{signatureError}</p>}
 
-              <div className="mt-3 flex gap-2">
-                <button onClick={() => decide("approved")} disabled={busy} className="btn-primary flex-1">
-                  {t("clientApprove")}
-                </button>
-                <button onClick={() => decide("rejected")} disabled={busy} className="btn-secondary flex-1">
-                  {t("clientReject")}
-                </button>
-              </div>
+              {counterMode ? (
+                <div className="mt-3 rounded-lg bg-gray-50 p-3">
+                  <label className="flex flex-col gap-1.5 text-sm">
+                    <span className="font-medium text-gray-700">
+                      {t("counterOfferAmountLabel")} ({estimate.currency})
+                    </span>
+                    <input
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      className="input"
+                      value={counterAmount}
+                      onChange={(e) => setCounterAmount(e.target.value)}
+                    />
+                  </label>
+                  <div className="mt-3 flex gap-2">
+                    <button onClick={decideCounter} disabled={busy || !counterAmount} className="btn-primary flex-1">
+                      {t("sendCounterOffer")}
+                    </button>
+                    <button onClick={() => setCounterMode(false)} className="btn-secondary flex-1">
+                      {tc("cancel")}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-3 flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    <button onClick={() => decide("approved")} disabled={busy} className="btn-primary flex-1">
+                      {t("clientApprove")}
+                    </button>
+                    <button onClick={() => decide("rejected")} disabled={busy} className="btn-secondary flex-1">
+                      {t("clientReject")}
+                    </button>
+                  </div>
+                  <button onClick={() => setCounterMode(true)} disabled={busy} className="text-xs text-brand-700 hover:underline">
+                    {t("proposeDifferentPrice")}
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <div
               className={`mt-6 rounded-lg border-t px-4 py-3 text-sm ${
                 estimate.clientDecision === "approved"
                   ? "border-success-200 bg-success-50 text-success-700"
-                  : "border-error-200 bg-error-50 text-error-700"
+                  : estimate.clientDecision === "countered"
+                    ? "border-brand-200 bg-brand-50 text-brand-700"
+                    : "border-error-200 bg-error-50 text-error-700"
               }`}
             >
-              {estimate.clientDecision === "approved" ? t("clientDecisionThanksApproved") : t("clientDecisionThanksRejected")}
+              {estimate.clientDecision === "approved"
+                ? t("clientDecisionThanksApproved")
+                : estimate.clientDecision === "countered"
+                  ? t("clientDecisionThanksCountered", { amount: estimate.counterOfferAmount ?? "", currency: estimate.currency })
+                  : t("clientDecisionThanksRejected")}
               {estimate.decisionAt && (
                 <span className="block text-xs opacity-75">{new Date(estimate.decisionAt).toLocaleString()}</span>
               )}

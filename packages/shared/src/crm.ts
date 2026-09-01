@@ -19,6 +19,7 @@ export const updateClientSchema = z.object({
   postalCode: z.string().max(20).nullable().optional(),
   country: z.string().length(2).nullable().optional(), // ISO 3166-1 alpha-2
   vatId: z.string().max(30).nullable().optional(),
+  paymentTermsDays: z.number().int().min(0).max(365).nullable().optional(),
 });
 export type UpdateClientInput = z.infer<typeof updateClientSchema>;
 

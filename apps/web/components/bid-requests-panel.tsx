@@ -9,6 +9,10 @@ interface Subcontractor {
   id: string;
   name: string;
 }
+interface BidScore {
+  criterionId: string;
+  score: number;
+}
 interface Bid {
   id: string;
   amount: string;
@@ -16,9 +20,16 @@ interface Bid {
   isAwarded: boolean;
   submittedAt: string;
   subcontractor: Subcontractor;
+  scores?: BidScore[];
+  weightedScore?: number | null;
 }
 interface Invite {
   subcontractor: Subcontractor;
+}
+interface Criterion {
+  id: string;
+  label: string;
+  weight: number;
 }
 type BidRequestStatus = "open" | "awarded" | "cancelled";
 interface BidRequest {
@@ -29,6 +40,9 @@ interface BidRequest {
   status: BidRequestStatus;
   invites: Invite[];
   bids: Bid[];
+}
+interface BidRequestDetail extends BidRequest {
+  criteria: Criterion[];
 }
 
 const STATUS_STYLES: Record<BidRequestStatus, string> = {
@@ -46,6 +60,8 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
   const [requests, setRequests] = useState<BidRequest[] | null>(null);
   const [subcontractors, setSubcontractors] = useState<Subcontractor[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [detail, setDetail] = useState<BidRequestDetail | null>(null);
+  const [criterionForm, setCriterionForm] = useState({ label: "", weight: "5" });
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", dueDate: "", subcontractorIds: new Set<string>() });
   const [busy, setBusy] = useState(false);
@@ -53,6 +69,20 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
 
   function load() {
     apiFetch<BidRequest[]>(`/bid-requests?projectId=${projectId}`).then(setRequests);
+  }
+
+  function loadDetail(id: string) {
+    apiFetch<BidRequestDetail>(`/bid-requests/${id}`).then(setDetail);
+  }
+
+  function toggleExpand(id: string) {
+    if (expandedId === id) {
+      setExpandedId(null);
+      setDetail(null);
+    } else {
+      setExpandedId(id);
+      loadDetail(id);
+    }
   }
 
   useEffect(() => {
@@ -102,6 +132,7 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
     try {
       await apiFetch(`/bid-requests/${bidRequestId}/award/${bidId}`, { method: "POST" });
       load();
+      loadDetail(bidRequestId);
     } catch (err) {
       setError(err instanceof Error ? err.message : tc("error"));
     } finally {
@@ -114,9 +145,44 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
     try {
       await apiFetch(`/bid-requests/${bidRequestId}/cancel`, { method: "POST" });
       load();
+      loadDetail(bidRequestId);
     } finally {
       setBusy(false);
     }
+  }
+
+  async function addCriterion(bidRequestId: string, e: React.FormEvent) {
+    e.preventDefault();
+    if (!criterionForm.label.trim()) return;
+    setBusy(true);
+    try {
+      await apiFetch(`/bid-requests/${bidRequestId}/criteria`, {
+        method: "POST",
+        body: JSON.stringify({ label: criterionForm.label.trim(), weight: Number(criterionForm.weight) }),
+      });
+      setCriterionForm({ label: "", weight: "5" });
+      loadDetail(bidRequestId);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removeCriterion(bidRequestId: string, criterionId: string) {
+    setBusy(true);
+    try {
+      await apiFetch(`/bid-requests/${bidRequestId}/criteria/${criterionId}`, { method: "DELETE" });
+      loadDetail(bidRequestId);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function scoreBid(bidRequestId: string, bidId: string, criterionId: string, score: number) {
+    await apiFetch(`/bid-requests/${bidRequestId}/bids/${bidId}/score`, {
+      method: "POST",
+      body: JSON.stringify({ criterionId, score }),
+    });
+    loadDetail(bidRequestId);
   }
 
   return (
@@ -189,13 +255,11 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
         <ul className="flex flex-col gap-2">
           {requests.map((r) => {
             const expanded = expandedId === r.id;
+            const d = expanded && detail?.id === r.id ? detail : null;
             const bidsBySubId = Object.fromEntries(r.bids.map((b) => [b.subcontractor.id, b]));
             return (
               <li key={r.id} className="card">
-                <button
-                  onClick={() => setExpandedId(expanded ? null : r.id)}
-                  className="flex w-full items-center justify-between text-left"
-                >
+                <button onClick={() => toggleExpand(r.id)} className="flex w-full items-center justify-between text-left">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-gray-900">{r.title}</span>
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[r.status]}`}>{t(r.status)}</span>
@@ -203,19 +267,95 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                   <span className="text-xs text-gray-400">{t("bidCount", { count: r.bids.length, total: r.invites.length })}</span>
                 </button>
 
-                {expanded && (
-                  <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 pt-3 text-sm">
-                    {r.description && <p className="text-gray-600">{r.description}</p>}
+                {expanded && !d && <p className="mt-3 text-xs text-gray-400">{tc("loading")}</p>}
+
+                {d && (
+                  <div className="mt-3 flex flex-col gap-3 border-t border-gray-100 pt-3 text-sm">
+                    {d.description && <p className="text-gray-600">{d.description}</p>}
                     {error && <p className="text-xs text-error-600">{error}</p>}
+
+                    <div>
+                      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("scoringCriteria")}</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {d.criteria.map((c) => (
+                          <span key={c.id} className="flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
+                            {c.label} ({c.weight})
+                            <button onClick={() => removeCriterion(r.id, c.id)} className="text-gray-400 hover:text-error-700">
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                      <form onSubmit={(e) => addCriterion(r.id, e)} className="mt-1.5 flex items-center gap-1.5">
+                        <input
+                          placeholder={t("criterionLabelPlaceholder")}
+                          className="input py-1 text-xs"
+                          value={criterionForm.label}
+                          onChange={(e) => setCriterionForm((f) => ({ ...f, label: e.target.value }))}
+                        />
+                        <input
+                          type="number"
+                          min="1"
+                          max="10"
+                          className="input w-16 py-1 text-xs"
+                          value={criterionForm.weight}
+                          onChange={(e) => setCriterionForm((f) => ({ ...f, weight: e.target.value }))}
+                        />
+                        <button type="submit" disabled={busy || !criterionForm.label.trim()} className="btn-secondary px-2 py-1 text-xs">
+                          {t("addCriterion")}
+                        </button>
+                      </form>
+                    </div>
+
                     <table className="w-full border-collapse text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-200 text-left text-xs text-gray-500">
+                          <th className="py-1">{t("subcontractor")}</th>
+                          <th className="text-right">{t("amount")}</th>
+                          {d.criteria.map((c) => (
+                            <th key={c.id} className="px-1 text-center">
+                              {c.label}
+                            </th>
+                          ))}
+                          <th className="text-right">{t("weightedScore")}</th>
+                          <th></th>
+                        </tr>
+                      </thead>
                       <tbody>
-                        {r.invites.map((inv) => {
-                          const bid = bidsBySubId[inv.subcontractor.id];
+                        {d.invites.map((inv) => {
+                          const bid = bidsBySubId[inv.subcontractor.id] as Bid | undefined;
+                          const dBid = d.bids.find((b) => b.subcontractor.id === inv.subcontractor.id);
+                          const scoresByCriterion = Object.fromEntries((dBid?.scores ?? []).map((s) => [s.criterionId, s.score]));
                           return (
                             <tr key={inv.subcontractor.id} className="border-b border-gray-100">
                               <td className="py-1">{inv.subcontractor.name}</td>
                               <td className="text-right font-medium tabular-nums">
                                 {bid ? `${bid.amount} ${currency}` : <span className="text-gray-400">{t("noBidYet")}</span>}
+                              </td>
+                              {d.criteria.map((c) => (
+                                <td key={c.id} className="px-1 text-center">
+                                  {dBid ? (
+                                    <select
+                                      className="input w-14 py-0.5 text-center text-xs"
+                                      value={scoresByCriterion[c.id] ?? ""}
+                                      onChange={(e) => scoreBid(r.id, dBid.id, c.id, Number(e.target.value))}
+                                    >
+                                      <option value="" disabled>
+                                        —
+                                      </option>
+                                      {[1, 2, 3, 4, 5].map((n) => (
+                                        <option key={n} value={n}>
+                                          {n}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  ) : (
+                                    <span className="text-gray-300">—</span>
+                                  )}
+                                </td>
+                              ))}
+                              <td className="text-right text-xs font-medium text-gray-700">
+                                {dBid?.weightedScore ?? "—"}
                               </td>
                               <td className="pl-2 text-right">
                                 {bid?.isAwarded && (

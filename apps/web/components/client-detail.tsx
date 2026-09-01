@@ -43,6 +43,7 @@ interface Client {
   postalCode: string | null;
   country: string | null;
   vatId: string | null;
+  paymentTermsDays: number | null;
 }
 interface Activity {
   id: string;
@@ -78,7 +79,7 @@ export function ClientDetail({ clientId }: { clientId: string }) {
     expectedCloseDate: "",
   });
   const [dealSaved, setDealSaved] = useState(false);
-  const [billingForm, setBillingForm] = useState({ street: "", city: "", postalCode: "", country: "", vatId: "" });
+  const [billingForm, setBillingForm] = useState({ street: "", city: "", postalCode: "", country: "", vatId: "", paymentTermsDays: "" });
   const [billingSaved, setBillingSaved] = useState(false);
   const [activityForm, setActivityForm] = useState({ type: "note" as ActivityType, content: "" });
   const [reminderForm, setReminderForm] = useState({ title: "", dueDate: "" });
@@ -106,6 +107,7 @@ export function ClientDetail({ clientId }: { clientId: string }) {
         postalCode: c.postalCode ?? "",
         country: c.country ?? "",
         vatId: c.vatId ?? "",
+        paymentTermsDays: c.paymentTermsDays?.toString() ?? "",
       });
     });
     apiFetch<Activity[]>(`/clients/${clientId}/activities`).then(setActivities);
@@ -210,6 +212,7 @@ export function ClientDetail({ clientId }: { clientId: string }) {
           postalCode: billingForm.postalCode || null,
           country: billingForm.country || null,
           vatId: billingForm.vatId || null,
+          paymentTermsDays: billingForm.paymentTermsDays ? Number(billingForm.paymentTermsDays) : null,
         }),
       });
       setBillingSaved(true);
@@ -481,6 +484,18 @@ export function ClientDetail({ clientId }: { clientId: string }) {
             value={billingForm.vatId}
             onChange={(e) => setBillingForm((f) => ({ ...f, vatId: e.target.value }))}
           />
+          <label className="flex w-40 flex-col gap-1 text-xs text-gray-500">
+            {t("paymentTermsDays")}
+            <input
+              type="number"
+              min="0"
+              max="365"
+              className="input"
+              placeholder={t("paymentTermsDaysPlaceholder")}
+              value={billingForm.paymentTermsDays}
+              onChange={(e) => setBillingForm((f) => ({ ...f, paymentTermsDays: e.target.value }))}
+            />
+          </label>
           <div className="flex items-center gap-2">
             <button type="submit" disabled={busy} className="btn-secondary self-start">
               {tc("save")}

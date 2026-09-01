@@ -6,9 +6,10 @@ import { SubcontractorPortalAuthGuard } from "./subcontractor-portal-auth.guard"
 import { SubcontractorPortalController } from "./subcontractor-portal.controller";
 import { SubcontractorPortalService } from "./subcontractor-portal.service";
 import { BiddingModule } from "../bidding/bidding.module";
+import { ProjectsModule } from "../projects/projects.module";
 
 @Module({
-  imports: [BiddingModule],
+  imports: [BiddingModule, ProjectsModule],
   controllers: [SubcontractorPortalAuthController, SubcontractorPortalController],
   providers: [
     SubcontractorPortalJwtService,

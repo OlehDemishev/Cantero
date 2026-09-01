@@ -51,7 +51,7 @@ interface IssueReportLine {
   required: number;
   remainingStock: number;
 }
-type ClientDecision = "pending" | "approved" | "rejected";
+type ClientDecision = "pending" | "approved" | "rejected" | "countered";
 type EstimateStatus = "draft" | "pending_approval" | "approved";
 interface EstimateApproval {
   id: string;
@@ -82,6 +82,7 @@ interface Estimate {
   sentAt: string | null;
   decisionAt: string | null;
   clientDecisionNote: string | null;
+  counterOfferAmount: string | null;
   clientAccessToken: string | null;
   variantOfId: string | null;
   variantLabel: string | null;
@@ -463,6 +464,19 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
     }
   }
 
+  async function createRevisedVariant() {
+    setBusy(true);
+    try {
+      const created = await apiFetch<{ id: string }>(`/estimates/${estimateId}/create-variant`, {
+        method: "POST",
+        body: JSON.stringify({ label: t("revisedVariantLabel") }),
+      });
+      router.push(`/estimates/${created.id}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function saveAsTemplate(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -554,7 +568,9 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
                   ? "bg-success-50 text-success-700"
                   : estimate.clientDecision === "rejected"
                     ? "bg-error-50 text-error-700"
-                    : "bg-warning-50 text-warning-700"
+                    : estimate.clientDecision === "countered"
+                      ? "bg-brand-50 text-brand-700"
+                      : "bg-warning-50 text-warning-700"
               }`}
             >
               {t(`clientDecision_${estimate.clientDecision}`)}
@@ -587,6 +603,17 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
         <p className="mt-2 text-sm text-error-700">
           {t("clientNote")}: {estimate.clientDecisionNote}
         </p>
+      )}
+      {estimate.clientDecision === "countered" && (
+        <div className="mt-2 rounded-lg border border-brand-200 bg-brand-50 px-4 py-3">
+          <p className="text-sm font-medium text-brand-700">
+            {t("counterOfferReceived", { amount: estimate.counterOfferAmount ?? "", currency: estimate.currency })}
+          </p>
+          {estimate.clientDecisionNote && <p className="mt-1 text-sm text-brand-700">{estimate.clientDecisionNote}</p>}
+          <button onClick={createRevisedVariant} disabled={busy} className="btn-secondary mt-2 px-3 py-1 text-xs">
+            {t("createRevisedVariant")}
+          </button>
+        </div>
       )}
       {estimate.clientDecision === "approved" && estimate.signerName && (
         <div className="mt-2 flex items-center gap-2 text-sm text-gray-600">

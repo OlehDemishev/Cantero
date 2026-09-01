@@ -8,6 +8,9 @@ import { CommentsThread } from "@/components/comments-thread";
 import { SchedulingPanel } from "@/components/scheduling-panel";
 import { LookAheadPanel } from "@/components/look-ahead-panel";
 import { DailyLogsPanel } from "@/components/daily-logs-panel";
+import { CrewSmsBroadcastPanel } from "@/components/crew-sms-broadcast-panel";
+import { SiteSignInsPanel } from "@/components/site-sign-ins-panel";
+import { WeatherDelayReportPanel } from "@/components/weather-delay-report-panel";
 import { WeatherForecastPanel } from "@/components/weather-forecast-panel";
 import { GeofencePanel } from "@/components/geofence-panel";
 import { CertifiedPayrollPanel } from "@/components/certified-payroll-panel";
@@ -48,6 +51,7 @@ interface Project {
   address: string | null;
   client: { id: string; name: string } | null;
   currency: string | null;
+  budgetAlertThresholdPercent: number | null;
 }
 interface Estimate {
   id: string;
@@ -80,9 +84,14 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
   });
   const [submitting, setSubmitting] = useState(false);
   const [currencyBusy, setCurrencyBusy] = useState(false);
+  const [budgetThresholdBusy, setBudgetThresholdBusy] = useState(false);
+  const [budgetThresholdDraft, setBudgetThresholdDraft] = useState("");
 
   useEffect(() => {
-    apiFetch<Project>(`/projects/${projectId}`).then(setProject);
+    apiFetch<Project>(`/projects/${projectId}`).then((p) => {
+      setProject(p);
+      setBudgetThresholdDraft(p.budgetAlertThresholdPercent !== null ? String(p.budgetAlertThresholdPercent) : "");
+    });
     apiFetch<Estimate[]>("/estimates").then((all) => setEstimates(all.filter((e) => e.project.id === projectId)));
     apiFetch<Template[]>("/estimates/templates").then(setTemplates);
   }, [projectId]);
@@ -97,6 +106,20 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
       setProject((p) => (p ? { ...p, currency: value || null } : p));
     } finally {
       setCurrencyBusy(false);
+    }
+  }
+
+  async function saveBudgetThreshold() {
+    setBudgetThresholdBusy(true);
+    try {
+      const value = budgetThresholdDraft ? Number(budgetThresholdDraft) : null;
+      await apiFetch(`/projects/${projectId}/budget-alert-threshold`, {
+        method: "PATCH",
+        body: JSON.stringify({ budgetAlertThresholdPercent: value }),
+      });
+      setProject((p) => (p ? { ...p, budgetAlertThresholdPercent: value } : p));
+    } finally {
+      setBudgetThresholdBusy(false);
     }
   }
 
@@ -147,6 +170,23 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
               </option>
             ))}
           </select>
+        </label>
+      )}
+      {project && (
+        <label className="mt-2 flex w-fit items-center gap-2 text-xs text-gray-500">
+          {tp("budgetAlertThreshold")}
+          <input
+            type="number"
+            min="1"
+            max="100"
+            className="input w-20 py-1"
+            placeholder={String(me?.company.budgetAlertThresholdPercent ?? 90)}
+            value={budgetThresholdDraft}
+            disabled={budgetThresholdBusy}
+            onChange={(e) => setBudgetThresholdDraft(e.target.value)}
+            onBlur={saveBudgetThreshold}
+          />
+          %
         </label>
       )}
 
@@ -261,8 +301,11 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
       <ProjectMembersPanel projectId={projectId} />
       <CustomFieldsValuesPanel entityType="project" entityId={projectId} />
       <DailyLogsPanel projectId={projectId} />
+      <CrewSmsBroadcastPanel projectId={projectId} />
+      <WeatherDelayReportPanel projectId={projectId} />
       <PunchListPanel projectId={projectId} />
       <RfiPanel projectId={projectId} />
+      <SiteSignInsPanel projectId={projectId} />
       <SafetyPanel projectId={projectId} />
       <QualityPanel projectId={projectId} />
       <SubmittalsPanel projectId={projectId} />

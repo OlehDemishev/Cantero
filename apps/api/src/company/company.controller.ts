@@ -14,9 +14,11 @@ import {
 import { FileInterceptor } from "@nestjs/platform-express";
 import {
   linkToParentCompanySchema,
+  setCustomPortalDomainSchema,
   updateCompanySchema,
   type AuthUser,
   type LinkToParentCompanyInput,
+  type SetCustomPortalDomainInput,
   type UpdateCompanyInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
@@ -100,5 +102,20 @@ export class CompanyController {
   @Get("franchise-overview")
   franchiseOverview(@CurrentUser() user: AuthUser) {
     return this.service.franchiseOverview(user.companyId);
+  }
+
+  @Roles("owner", "admin")
+  @Post("portal-domain")
+  setCustomPortalDomain(
+    @CurrentUser() user: AuthUser,
+    @Body(new ZodValidationPipe(setCustomPortalDomainSchema)) body: SetCustomPortalDomainInput,
+  ) {
+    return this.service.setCustomPortalDomain(user.companyId, { userId: user.userId, name: user.name }, body);
+  }
+
+  @Roles("owner", "admin")
+  @Post("portal-domain/verify")
+  verifyCustomPortalDomain(@CurrentUser() user: AuthUser) {
+    return this.service.verifyCustomPortalDomain(user.companyId, { userId: user.userId, name: user.name });
   }
 }

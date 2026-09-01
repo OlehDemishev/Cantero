@@ -2,18 +2,22 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import type {
   CreateMaterialCatalogItemInput,
   ImportResult,
+  UpdateMaterialPriceInput,
   UpdateMaterialReorderInput,
   UpdateMaterialSustainabilityInput,
 } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { parseCsvRecords } from "../common/csv";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
+import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { calculatePriceChangePercent, isSignificantPriceChange, round2 } from "./price-change";
 
 @Injectable()
 export class MaterialCatalogService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly webhooks: WebhooksService,
   ) {}
 
   list(companyId: string) {
@@ -99,6 +103,74 @@ export class MaterialCatalogService {
       data: input,
       include: { preferredSupplier: true },
     });
+  }
+
+  /** Updates the catalog price and, only when the move is significant (see price-change.ts),
+   * logs a MaterialPriceChange — which is what feeds the notification and the affected-estimates
+   * lookup. A minor tweak still updates the price but leaves no trace, same as before this
+   * feature existed. */
+  async updatePrice(companyId: string, actor: AuditActor, id: string, input: UpdateMaterialPriceInput) {
+    const item = await this.get(companyId, id);
+    const oldPrice = Number(item.defaultUnitPrice);
+    const newPrice = input.defaultUnitPrice;
+    const changePercent = calculatePriceChangePercent(oldPrice, newPrice);
+
+    const updated = await this.prisma.materialCatalogItem.update({
+      where: { id },
+      data: { defaultUnitPrice: newPrice },
+      include: { preferredSupplier: true },
+    });
+
+    if (isSignificantPriceChange(changePercent)) {
+      const change = await this.prisma.materialPriceChange.create({
+        data: { companyId, materialCatalogItemId: id, oldPrice, newPrice, changePercent, changedByUserId: actor.userId, changedByName: actor.name },
+      });
+      this.audit.record(
+        companyId,
+        actor,
+        "material.price_changed",
+        "MaterialCatalogItem",
+        id,
+        `"${item.name}" price ${changePercent > 0 ? "rose" : "fell"} ${Math.abs(changePercent)}% (${oldPrice} → ${newPrice})`,
+      );
+      this.webhooks.trigger(companyId, "material.price_changed", { materialCatalogItemId: id, changeId: change.id, changePercent, oldPrice, newPrice });
+    }
+
+    return updated;
+  }
+
+  /** Recent significant price changes, newest first — the notification bell's data source. */
+  priceChanges(companyId: string, sinceDays = 14) {
+    const cutoff = new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000);
+    return this.prisma.materialPriceChange.findMany({
+      where: { companyId, createdAt: { gte: cutoff } },
+      include: { materialCatalogItem: { select: { id: true, code: true, name: true } } },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  /** Draft estimates (not yet approved/sent — nothing to warn about on a finished document) whose
+   * lines use a rate item this material feeds into, so a price swing after they were priced out
+   * is visible before the client sees a now-outdated number. */
+  async affectedOpenEstimates(companyId: string, materialCatalogItemId: string) {
+    await this.get(companyId, materialCatalogItemId);
+    const rateItemLinks = await this.prisma.rateCatalogItemMaterial.findMany({
+      where: { materialCatalogItemId },
+      select: { rateCatalogItemId: true },
+    });
+    const rateCatalogItemIds = rateItemLinks.map((l) => l.rateCatalogItemId);
+    if (rateCatalogItemIds.length === 0) return [];
+
+    const estimates = await this.prisma.estimate.findMany({
+      where: {
+        companyId,
+        isTemplate: false,
+        status: { in: ["draft", "pending_approval"] },
+        lines: { some: { rateCatalogItemId: { in: rateCatalogItemIds } } },
+      },
+      select: { id: true, name: true, grandTotal: true, project: { select: { id: true, name: true } } },
+    });
+    return estimates.map((e) => ({ id: e.id, name: e.name, grandTotal: round2(Number(e.grandTotal)), project: e.project }));
   }
 
   async updateSustainability(companyId: string, id: string, input: UpdateMaterialSustainabilityInput) {

@@ -13,7 +13,8 @@ describe("PunchListService", () => {
   let prisma: {
     project: { findFirst: jest.Mock };
     worker: { findFirst: jest.Mock };
-    punchListItem: { findFirst: jest.Mock; create: jest.Mock; update: jest.Mock };
+    subcontractor: { findFirst: jest.Mock };
+    punchListItem: { findFirst: jest.Mock; create: jest.Mock; update: jest.Mock; findMany: jest.Mock };
   };
   let audit: { record: jest.Mock };
   let webhooks: { trigger: jest.Mock };
@@ -22,7 +23,8 @@ describe("PunchListService", () => {
     prisma = {
       project: { findFirst: jest.fn() },
       worker: { findFirst: jest.fn() },
-      punchListItem: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
+      subcontractor: { findFirst: jest.fn() },
+      punchListItem: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn(), findMany: jest.fn() },
     };
     audit = { record: jest.fn() };
     webhooks = { trigger: jest.fn() };
@@ -57,6 +59,39 @@ describe("PunchListService", () => {
         service.create(COMPANY_A, ACTOR, { projectId: "project-1", title: "Chipped tile", assigneeWorkerId: "worker-1" }),
       ).rejects.toThrow(BadRequestException);
       expect(prisma.punchListItem.create).not.toHaveBeenCalled();
+    });
+
+    it("rejects when the assignee subcontractor does not belong to this company", async () => {
+      prisma.project.findFirst.mockResolvedValue({ id: "project-1", companyId: COMPANY_A });
+      prisma.subcontractor.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.create(COMPANY_A, ACTOR, { projectId: "project-1", title: "Chipped tile", assigneeSubcontractorId: "sub-1" }),
+      ).rejects.toThrow(BadRequestException);
+      expect(prisma.punchListItem.create).not.toHaveBeenCalled();
+    });
+
+    it("creates the item assigned to a subcontractor instead of a worker", async () => {
+      prisma.project.findFirst.mockResolvedValue({ id: "project-1", companyId: COMPANY_A });
+      prisma.subcontractor.findFirst.mockResolvedValue({ id: "sub-1", companyId: COMPANY_A });
+      prisma.punchListItem.create.mockResolvedValue({ id: "item-1" });
+
+      await service.create(COMPANY_A, ACTOR, { projectId: "project-1", title: "Chipped tile", assigneeSubcontractorId: "sub-1" });
+
+      expect(prisma.punchListItem.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ assigneeSubcontractorId: "sub-1" }) }),
+      );
+    });
+  });
+
+  describe("listForSubcontractor()", () => {
+    it("scopes the query to the given subcontractor within the company", async () => {
+      prisma.punchListItem.findMany.mockResolvedValue([]);
+
+      await service.listForSubcontractor(COMPANY_A, "sub-1");
+
+      const call = prisma.punchListItem.findMany.mock.calls[0][0];
+      expect(call.where).toEqual({ companyId: COMPANY_A, assigneeSubcontractorId: "sub-1" });
     });
   });
 

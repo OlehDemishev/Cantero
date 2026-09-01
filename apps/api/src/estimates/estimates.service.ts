@@ -4,7 +4,7 @@ import { ConfigService } from "@nestjs/config";
 import type { Currency, Estimate } from "@prisma/client";
 import type {
   AddAssemblyToEstimateInput,
-  ClientDecisionInput,
+  EstimateClientDecisionInput,
   CreateEstimateInput,
   CreateEstimateLineInput,
   CreateFromTemplateInput,
@@ -484,6 +484,7 @@ export class EstimatesService {
       clientDecision: estimate.clientDecision,
       decisionAt: estimate.decisionAt,
       clientDecisionNote: estimate.clientDecisionNote,
+      counterOfferAmount: estimate.counterOfferAmount,
       companyName: estimate.company.name,
       currency: estimate.currency,
       projectName: estimate.project?.name ?? null,
@@ -502,14 +503,14 @@ export class EstimatesService {
   }
 
   /** Client approval auto-declines sibling variants still pending — picking one option settles the others. */
-  async decide(token: string, input: ClientDecisionInput, signerIp?: string) {
+  async decide(token: string, input: EstimateClientDecisionInput, signerIp?: string) {
     const estimate = await this.prisma.estimate.findFirst({ where: { clientAccessToken: token } });
     if (!estimate) throw new NotFoundException("Estimate not found");
     return this.applyDecision(estimate, input, signerIp);
   }
 
   /** Same decision flow as decide(), reached from the client portal (JWT-authenticated) instead of a one-off email token. */
-  async decideForClient(companyId: string, clientId: string, estimateId: string, input: ClientDecisionInput, signerIp?: string) {
+  async decideForClient(companyId: string, clientId: string, estimateId: string, input: EstimateClientDecisionInput, signerIp?: string) {
     const estimate = await this.prisma.estimate.findFirst({
       where: { id: estimateId, companyId, sentAt: { not: null }, project: { clientId } },
     });
@@ -517,13 +518,13 @@ export class EstimatesService {
     return this.applyDecision(estimate, input, signerIp);
   }
 
-  private async applyDecision(estimate: Estimate, input: ClientDecisionInput, signerIp?: string) {
+  private async applyDecision(estimate: Estimate, input: EstimateClientDecisionInput, signerIp?: string) {
     if (estimate.clientDecision !== "pending") {
       throw new BadRequestException("This estimate has already been decided");
     }
 
     let signatureImageKey: string | undefined;
-    if (input.decision === "approved" && input.signatureDataUrl) {
+    if (input.decision === "approved") {
       const stored = await this.storage.save(estimate.companyId, "signature.png", decodePngDataUrl(input.signatureDataUrl));
       signatureImageKey = stored.storageKey;
     }
@@ -534,6 +535,7 @@ export class EstimatesService {
         clientDecision: input.decision,
         decisionAt: new Date(),
         clientDecisionNote: input.note,
+        counterOfferAmount: input.decision === "countered" ? input.counterOfferAmount : undefined,
         signerName: input.decision === "approved" ? input.signerName : undefined,
         signatureImageKey,
         signedIp: input.decision === "approved" ? signerIp : undefined,
@@ -557,18 +559,26 @@ export class EstimatesService {
       });
     }
 
+    const webhookEvent =
+      input.decision === "approved"
+        ? "estimate.client_approved"
+        : input.decision === "countered"
+          ? "estimate.client_countered"
+          : "estimate.client_rejected";
+
     this.audit.record(
       estimate.companyId,
       { name: "Client" },
-      input.decision === "approved" ? "estimate.client_approved" : "estimate.client_rejected",
+      webhookEvent,
       "Estimate",
       estimate.id,
       `Client ${input.decision} estimate "${estimate.name}"${input.note ? ` — "${input.note}"` : ""}`,
     );
-    this.webhooks.trigger(estimate.companyId, input.decision === "approved" ? "estimate.client_approved" : "estimate.client_rejected", {
+    this.webhooks.trigger(estimate.companyId, webhookEvent, {
       estimateId: estimate.id,
       name: estimate.name,
       decision: input.decision,
+      counterOfferAmount: input.decision === "countered" ? input.counterOfferAmount : undefined,
     });
 
     return { clientDecision: updated.clientDecision };

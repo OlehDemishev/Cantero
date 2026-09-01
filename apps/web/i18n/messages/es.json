@@ -323,7 +323,33 @@
     "city": "Ciudad",
     "postalCode": "Código postal",
     "vatIdPlaceholder": "NIF/IVA (p. ej. DE123456789)",
-    "ibanPlaceholder": "IBAN"
+    "ibanPlaceholder": "IBAN",
+    "webhookEvent_insurance_claim_filed": "Reclamación de seguro presentada",
+    "webhookEvent_insurance_claim_status_changed": "Estado de la reclamación de seguro cambiado",
+    "changeOrderReminders": "Recordatorios automáticos de seguimiento de órdenes de cambio",
+    "changeOrderRemindersHint": "Envía correos de recordatorio escalonados al cliente a los 3, 7 y 14 días después de enviar una orden de cambio, mientras siga pendiente de decisión.",
+    "webhookEvent_material_price_changed": "Precio de material del catálogo modificado",
+    "webhookEvent_nps_survey_responded": "Encuesta NPS respondida",
+    "enpsSurveys": "Encuesta trimestral de satisfacción del equipo (eNPS)",
+    "enpsSurveysHint": "Envía por SMS a cada trabajador activo con teléfono una pregunta anónima 0-10 sobre si recomendaría trabajar aquí, una vez por trimestre.",
+    "enpsSendNow": "Enviar una ronda ahora",
+    "enpsSentCount": "{count, plural, one {Enviado a # trabajador} other {Enviado a # trabajadores}}",
+    "webhookEvent_estimate_client_countered": "El cliente propuso un precio diferente",
+    "webhookEvent_enps_survey_responded": "Encuesta eNPS respondida",
+    "budgetAlertThreshold": "Umbral de alerta de presupuesto (%)",
+    "budgetAlertThresholdHint": "Un proyecto se marca cuando su coste real alcanza este % de su presupuesto total. Cada proyecto puede anular este valor individualmente.",
+    "defaultPaymentTermsDays": "Plazo de pago predeterminado (días)",
+    "lateFeePercentPerMonth": "Recargo por mora (% mensual)",
+    "lateFeeDisabledPlaceholder": "Desactivado",
+    "lateFeeHint": "Si se establece, las facturas vencidas acumulan un recargo por mora automáticamente, prorrateado por días de atraso. Déjelo en blanco para desactivarlo.",
+    "holidays": "Días no laborables",
+    "holidaysHint": "Días festivos y no laborables de toda la empresa, usados para marcar fechas del cronograma que caen en un día no laborable.",
+    "noHolidays": "Aún no hay días no laborables configurados.",
+    "holidayDate": "Fecha",
+    "holidayLabel": "Etiqueta",
+    "holidayLabelPlaceholder": "p. ej. Año Nuevo",
+    "addHoliday": "Añadir",
+    "holidaysError": "No se pudo guardar este día no laborable."
   },
   "projects": {
     "title": "Proyectos",
@@ -341,7 +367,8 @@
     "health_at_risk": "En riesgo",
     "projectChannel": "Canal del proyecto",
     "billingCurrency": "Moneda de facturación",
-    "billingCurrencyDefault": "Predeterminada de la empresa ({currency})"
+    "billingCurrencyDefault": "Predeterminada de la empresa ({currency})",
+    "budgetAlertThreshold": "Anular umbral de alerta de presupuesto"
   },
   "clients": {
     "title": "Clientes",
@@ -403,7 +430,9 @@
     "city": "Ciudad",
     "postalCode": "Código postal",
     "countryCode": "País",
-    "vatIdPlaceholder": "NIF/IVA (opcional)"
+    "vatIdPlaceholder": "NIF/IVA (opcional)",
+    "paymentTermsDays": "Plazo de pago (días)",
+    "paymentTermsDaysPlaceholder": "Usar el predeterminado de la empresa"
   },
   "team": {
     "title": "Equipo",
@@ -466,7 +495,13 @@
     "onboardingTaskTitlePlaceholder": "Título de la tarea",
     "addOnboardingTask": "Añadir tarea",
     "payrollEmployeeId": "ID de empleado en nómina",
-    "payrollEmployeeIdPlaceholder": "ID en ADP/Gusto/etc."
+    "payrollEmployeeIdPlaceholder": "ID en ADP/Gusto/etc.",
+    "kioskPin": "PIN de fichaje en kiosco",
+    "kioskPinHint": "Permite que este trabajador se identifique en una tableta compartida sin su propio inicio de sesión.",
+    "kioskPinSet": "PIN establecido",
+    "kioskPinClear": "Borrar PIN",
+    "kioskPinPlaceholder": "PIN de 4-6 dígitos",
+    "kioskPinSave": "Establecer PIN"
   },
   "documents": {
     "title": "Documentos",
@@ -607,7 +642,15 @@
     "costCodeUnassigned": "Sin código de costo",
     "benchmarkHint": "Precio habitual para este código de costo en {count} presupuesto(s) anteriores: {median} {currency}/unidad",
     "computeFormula": "Calcular",
-    "computedQuantity": "= {value} {unit}"
+    "computedQuantity": "= {value} {unit}",
+    "clientDecision_countered": "El cliente propuso un precio diferente",
+    "clientDecisionThanksCountered": "Gracias — hemos enviado su precio propuesto de {amount} {currency} al equipo.",
+    "counterOfferAmountLabel": "Su precio propuesto",
+    "proposeDifferentPrice": "Proponer un precio diferente en su lugar",
+    "sendCounterOffer": "Enviar propuesta",
+    "counterOfferReceived": "El cliente propuso {amount} {currency} en su lugar.",
+    "createRevisedVariant": "Crear una versión revisada",
+    "revisedVariantLabel": "Revisado"
   },
   "invoices": {
     "title": "Facturas",
@@ -669,7 +712,10 @@
     "exportQuickBooks": "Exportar a QuickBooks",
     "exportXero": "Exportar a Xero",
     "downloadScheduleOfValues": "Descargar cuadro de valores",
-    "downloadEInvoice": "Descargar factura electrónica (XML XRechnung)"
+    "downloadEInvoice": "Descargar factura electrónica (XML XRechnung)",
+    "autopay": "Pago automático",
+    "lateFeeAccrued": "Recargo por mora acumulado: {amount} {currency}",
+    "chargeLateFee": "Cobrar recargo por mora"
   },
   "portal": {
     "signInTitle": "Portal del cliente",
@@ -713,7 +759,12 @@
     "messagePlaceholder": "Escriba un mensaje…",
     "send": "Enviar",
     "noMessages": "Aún no hay mensajes.",
-    "payThisInstallment": "Pagar esta cuota"
+    "payThisInstallment": "Pagar esta cuota",
+    "paymentMethod": "Método de pago",
+    "cardOnFile": "{brand} terminada en {last4}",
+    "removeCard": "Eliminar tarjeta",
+    "noCardOnFile": "No hay tarjeta registrada.",
+    "saveCard": "Guardar una tarjeta"
   },
   "equipment": {
     "title": "Equipos",
@@ -841,7 +892,12 @@
     "notes": "Notas",
     "submitBid": "Enviar oferta",
     "updateBid": "Actualizar oferta",
-    "yourBidWas": "Su oferta: {amount} {currency}"
+    "yourBidWas": "Su oferta: {amount} {currency}",
+    "punchListItems": "Sus puntos de la lista de pendientes",
+    "noPunchListItems": "Aún no se le han asignado puntos de la lista de pendientes.",
+    "punchListStatus_open": "Abierto",
+    "punchListStatus_resolved": "Resuelto",
+    "punchListStatus_verified": "Verificado"
   },
   "budget": {
     "title": "Presupuesto vs. real",
@@ -1007,7 +1063,8 @@
     "scanReceiptScanning": "Escaneando…",
     "scanReceiptDone": "Escaneado — revise los campos a continuación antes de guardar.",
     "scanReceiptFailed": "No se pudo leer el recibo — complete los campos manualmente.",
-    "scanReceiptNoData": "No se encontró importe, fecha ni proveedor en este recibo — complete los campos manualmente."
+    "scanReceiptNoData": "No se encontró importe, fecha ni proveedor en este recibo — complete los campos manualmente.",
+    "kioskMode": "Modo kiosco"
   },
   "subcontractors": {
     "title": "Costos de subcontratistas",
@@ -1143,7 +1200,8 @@
     "type_permit_expiring": "Permisos",
     "type_company_document_expiring": "Seguro propio",
     "type_weather_risk": "Riesgo climático",
-    "type_budget_overrun": "Sobrecostes de presupuesto"
+    "type_budget_overrun": "Sobrecostes de presupuesto",
+    "type_material_price_changed": "Cambios de precio de materiales"
   },
   "search": {
     "placeholder": "Buscar en todo…",
@@ -1226,7 +1284,16 @@
     "delaysPlaceholder": "Cualquier cosa que haya bloqueado o retrasado el trabajo hoy",
     "notes": "Notas",
     "noLogs": "Aún no hay partes diarios.",
-    "hasDelays": "Retrasos"
+    "hasDelays": "Retrasos",
+    "weatherDelayHours": "Retraso por clima (horas)",
+    "weatherDelayBadge": "{hours} h de retraso por clima",
+    "weatherDelayReport": "Informe de retrasos por clima",
+    "weatherDelayTotal": "{hours} horas perdidas por el clima — sugiere retrasar el calendario {days} día(s).",
+    "exportWeatherDelayReport": "Exportar CSV",
+    "shiftScheduleDays": "Retrasar (días)",
+    "shiftSchedule": "Retrasar calendario",
+    "shiftScheduleResult": "Se retrasaron {tasks} tarea(s) y {milestones} hito(s).",
+    "shiftScheduleHint": "Retrasa la fecha de cada tarea e hito aún no finalizado en este número de días — deshazlo manualmente si te equivocas."
   },
   "punchList": {
     "title": "Lista de defectos",
@@ -1251,7 +1318,9 @@
     "bulkVerify": "Verificar seleccionados",
     "applyTemplate": "Aplicar",
     "selectTemplate": "Aplicar plantilla…",
-    "escalated": "Escalado"
+    "escalated": "Escalado",
+    "assigneeWorkers": "Trabajadores",
+    "assigneeSubcontractors": "Subcontratistas"
   },
   "rfi": {
     "title": "Solicitudes de información (RFI)",
@@ -1604,7 +1673,13 @@
     "awarded": "Adjudicado",
     "cancelBidRequest": "Cancelar licitación",
     "open": "Abierta",
-    "cancelled": "Cancelada"
+    "cancelled": "Cancelada",
+    "scoringCriteria": "Criterios de evaluación",
+    "criterionLabelPlaceholder": "p. ej. Plazos, Historial de seguridad",
+    "addCriterion": "Añadir",
+    "subcontractor": "Subcontratista",
+    "amount": "Importe",
+    "weightedScore": "Puntuación ponderada"
   },
   "customFields": {
     "title": "Campos personalizados",
@@ -1669,7 +1744,11 @@
     "reviewDescription": "Pida al cliente una reseña una vez cerrado el proyecto.",
     "requestReview": "Solicitar reseña",
     "reviewSent": "Reseña solicitada",
-    "reviewError": "No se pudo enviar la solicitud de reseña"
+    "reviewError": "No se pudo enviar la solicitud de reseña",
+    "npsDescription": "Pregunte al cliente qué probabilidad hay de que lo recomiende, una vez finalizado el proyecto.",
+    "sendNps": "Enviar encuesta NPS",
+    "npsSent": "Encuesta enviada",
+    "npsError": "No se pudo enviar la encuesta"
   },
   "dataPrivacy": {
     "title": "Datos y privacidad",
@@ -1901,7 +1980,15 @@
     "expense": "Gasto",
     "match": "Conciliar",
     "suggestedMatch": "Sugerido:",
-    "approxMatch": "aproximado"
+    "approxMatch": "aproximado",
+    "categorizationRules": "Reglas de categorización",
+    "categorizationRulesHint": "Una transacción cuya descripción contenga este texto se etiqueta automáticamente con la categoría — se aplica automáticamente tras cada importación CSV, y bajo demanda a continuación.",
+    "applyRulesNow": "Aplicar reglas ahora",
+    "applyRulesResult": "{count} transacción(es) categorizada(s).",
+    "rulePatternPlaceholder": "p. ej. Home Depot",
+    "addRule": "Añadir regla",
+    "category": "Categoría",
+    "uncategorized": "Sin categorizar"
   },
   "quality": {
     "title": "Control de calidad",
@@ -2373,5 +2460,130 @@
     "status_denied": "Denegada",
     "status_settled": "Liquidada",
     "status_closed": "Cerrada"
+  },
+  "customPortalDomain": {
+    "title": "Dominio personalizado del portal",
+    "hint": "Muestre su propia marca en lugar de la de Cantero al iniciar sesión en el portal — p. ej. portal.miempresa.com.",
+    "cnameInstructions": "Apunte un registro CNAME de este dominio a {target} y luego verifique.",
+    "verified": "Verificado",
+    "notVerified": "Aún no verificado",
+    "verifyNow": "Verificar ahora",
+    "verifyFailedHint": "Aún no se encontró el CNAME — los cambios de DNS pueden tardar en propagarse.",
+    "infraHint": "Esto solo confirma el registro DNS. Enrutar el tráfico y el certificado TLS del dominio son pasos de infraestructura aparte, fuera de la app."
+  },
+  "materialPrices": {
+    "title": "Precios de materiales",
+    "recentChanges": "Cambios de precio recientes",
+    "showAffectedEstimates": "Mostrar presupuestos abiertos afectados",
+    "noAffectedEstimates": "Ningún presupuesto abierto usa este material.",
+    "code": "Código",
+    "unit": "Unidad",
+    "price": "Precio"
+  },
+  "npsSurvey": {
+    "title": "¿Qué probabilidad hay de que nos recomiende?",
+    "thanks": "¡Gracias por su opinión!",
+    "error": "No se pudo enviar su respuesta. Inténtelo de nuevo.",
+    "scoreLabel": "Puntuación {n}",
+    "notLikely": "Nada probable",
+    "veryLikely": "Extremadamente probable",
+    "comment": "¿Algo que le gustaría añadir? (opcional)",
+    "submit": "Enviar"
+  },
+  "npsTrend": {
+    "title": "Satisfacción del cliente (NPS)",
+    "npsScore": "Puntuación NPS",
+    "averageScore": "Puntuación media",
+    "responses": "Respuestas",
+    "promoters": "Promotores",
+    "passives": "Pasivos",
+    "detractors": "Detractores",
+    "recentComments": "Comentarios recientes"
+  },
+  "crewSmsBroadcast": {
+    "title": "Difusión SMS a la cuadrilla",
+    "placeholder": "p. ej. Obra cerrada mañana por el clima",
+    "sending": "Enviando…",
+    "send": "Enviar",
+    "error": "No se pudo enviar la difusión",
+    "recipientCount": "{count, plural, one {# destinatario} other {# destinatarios}}"
+  },
+  "geofenceViolations": {
+    "title": "Infracciones de geocerca",
+    "from": "Desde",
+    "to": "Hasta",
+    "filter": "Filtrar",
+    "exportCsv": "Exportar CSV",
+    "empty": "No hay infracciones de geocerca en este período.",
+    "date": "Fecha",
+    "worker": "Trabajador",
+    "project": "Proyecto",
+    "hours": "Horas",
+    "distance": "Distancia a la obra"
+  },
+  "messageTemplates": {
+    "title": "Plantillas de mensajes",
+    "description": "Anule el texto de los mensajes automáticos. Déjelo en blanco para usar el texto integrado (traducido al idioma del destinatario).",
+    "key_task_assigned_sms": "Tarea asignada (SMS)",
+    "key_safety_briefing_sms": "Charla de seguridad programada (SMS)",
+    "key_review_request_email": "Solicitud de reseña (correo)",
+    "key_nps_survey_email": "Invitación a encuesta NPS (correo)",
+    "placeholders": "Marcadores",
+    "placeholder": "Texto de mensaje personalizado...",
+    "save": "Guardar",
+    "resetToDefault": "Restablecer valor predeterminado",
+    "customizedBy": "Personalizado por {name}",
+    "error": "No se pudo guardar esta plantilla"
+  },
+  "equipmentUtilization": {
+    "title": "Utilización de equipos",
+    "description": "% del período que cada equipo estuvo asignado a un proyecto — ayuda a decidir comprar o alquilar.",
+    "equipment": "Equipo",
+    "category": "Categoría",
+    "hoursInUse": "Horas en uso",
+    "utilization": "Utilización"
+  },
+  "siteSignIns": {
+    "title": "Registro de acceso a la obra",
+    "name": "Nombre",
+    "visitorCompany": "Empresa",
+    "purpose": "Motivo",
+    "signIn": "Registrar entrada",
+    "onSite": "{count, plural, one {# en la obra} other {# en la obra}}",
+    "signOut": "Registrar salida",
+    "history": "Historial"
+  },
+  "enpsTrend": {
+    "title": "Satisfacción del equipo (eNPS)",
+    "enpsScore": "Puntuación eNPS",
+    "averageScore": "Puntuación media",
+    "responses": "Respuestas",
+    "promoters": "Promotores",
+    "passives": "Pasivos",
+    "detractors": "Detractores",
+    "recentComments": "Comentarios recientes"
+  },
+  "enpsSurvey": {
+    "title": "¿Qué probabilidad hay de que recomiende trabajar aquí?",
+    "anonymousNote": "Su respuesta no está vinculada a su nombre en ningún lugar de la aplicación.",
+    "thanks": "¡Gracias por su opinión!",
+    "error": "No se pudo enviar su respuesta. Inténtelo de nuevo.",
+    "scoreLabel": "Puntuación {n}",
+    "notLikely": "Nada probable",
+    "veryLikely": "Extremadamente probable",
+    "comment": "¿Algo que le gustaría añadir? (opcional)",
+    "submit": "Enviar"
+  },
+  "kiosk": {
+    "title": "Fichar",
+    "noWorkers": "Ningún trabajador tiene un PIN de kiosco configurado — configure uno desde el perfil del trabajador.",
+    "enterPin": "Introduzca su PIN",
+    "wrongPin": "PIN incorrecto — inténtelo de nuevo.",
+    "submitPin": "Continuar",
+    "project": "Proyecto",
+    "selectProject": "Seleccione un proyecto...",
+    "hours": "Horas",
+    "logHours": "Registrar horas",
+    "entrySaved": "Horas registradas. ¡Gracias!"
   }
 }

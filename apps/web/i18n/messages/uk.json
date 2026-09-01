@@ -323,7 +323,33 @@
     "city": "Місто",
     "postalCode": "Поштовий індекс",
     "vatIdPlaceholder": "VAT-номер (напр. DE123456789)",
-    "ibanPlaceholder": "IBAN"
+    "ibanPlaceholder": "IBAN",
+    "webhookEvent_insurance_claim_filed": "Подано страхову претензію",
+    "webhookEvent_insurance_claim_status_changed": "Змінено статус страхової претензії",
+    "changeOrderReminders": "Автоматичні нагадування щодо змін до кошторису",
+    "changeOrderRemindersHint": "Надсилає клієнту нагадування електронною поштою через 3, 7 і 14 днів після надсилання зміни до кошторису, поки вона очікує на рішення.",
+    "webhookEvent_material_price_changed": "Змінено ціну матеріалу в каталозі",
+    "webhookEvent_nps_survey_responded": "Отримано відповідь на опитування NPS",
+    "enpsSurveys": "Щоквартальний опит задоволеності команди (eNPS)",
+    "enpsSurveysHint": "Раз на квартал надсилає кожному активному працівнику з телефоном анонімне запитання 0-10, наскільки ймовірно він порекомендує роботу тут.",
+    "enpsSendNow": "Надіслати хвилю зараз",
+    "enpsSentCount": "{count, plural, one {Надіслано # працівнику} few {Надіслано # працівникам} many {Надіслано # працівникам} other {Надіслано # працівника}}",
+    "webhookEvent_estimate_client_countered": "Клієнт запропонував іншу ціну",
+    "webhookEvent_enps_survey_responded": "Отримано відповідь на опитування eNPS",
+    "budgetAlertThreshold": "Поріг сповіщення про бюджет (%)",
+    "budgetAlertThresholdHint": "Проєкт позначається, коли фактичні витрати досягають цього % від бюджету. Кожен проєкт може перевизначити це значення окремо.",
+    "defaultPaymentTermsDays": "Типовий термін оплати (днів)",
+    "lateFeePercentPerMonth": "Пеня за прострочення (% на місяць)",
+    "lateFeeDisabledPlaceholder": "Вимкнено",
+    "lateFeeHint": "Якщо задано, на прострочені рахунки автоматично нараховується пеня пропорційно кількості днів прострочення. Залиште порожнім, щоб вимкнути.",
+    "holidays": "Неробочі дні",
+    "holidaysHint": "Державні свята та вихідні дні компанії, які використовуються для позначення дат графіка, що припадають на неробочий день.",
+    "noHolidays": "Неробочі дні ще не налаштовано.",
+    "holidayDate": "Дата",
+    "holidayLabel": "Назва",
+    "holidayLabelPlaceholder": "напр. Новий рік",
+    "addHoliday": "Додати",
+    "holidaysError": "Не вдалося зберегти цей неробочий день."
   },
   "projects": {
     "title": "Проєкти",
@@ -341,7 +367,8 @@
     "health_at_risk": "Під загрозою",
     "projectChannel": "Канал проєкту",
     "billingCurrency": "Валюта виставлення рахунків",
-    "billingCurrencyDefault": "За замовчуванням компанії ({currency})"
+    "billingCurrencyDefault": "За замовчуванням компанії ({currency})",
+    "budgetAlertThreshold": "Перевизначити поріг сповіщення про бюджет"
   },
   "clients": {
     "title": "Клієнти",
@@ -403,7 +430,9 @@
     "city": "Місто",
     "postalCode": "Поштовий індекс",
     "countryCode": "Країна",
-    "vatIdPlaceholder": "VAT-номер (необов'язково)"
+    "vatIdPlaceholder": "VAT-номер (необов'язково)",
+    "paymentTermsDays": "Термін оплати (днів)",
+    "paymentTermsDaysPlaceholder": "Використати типове значення компанії"
   },
   "team": {
     "title": "Команда",
@@ -466,7 +495,13 @@
     "onboardingTaskTitlePlaceholder": "Назва завдання",
     "addOnboardingTask": "Додати завдання",
     "payrollEmployeeId": "ID працівника в системі нарахування зарплати",
-    "payrollEmployeeIdPlaceholder": "ID у ADP/Gusto тощо"
+    "payrollEmployeeIdPlaceholder": "ID у ADP/Gusto тощо",
+    "kioskPin": "PIN для кіоску обліку часу",
+    "kioskPinHint": "Дозволяє цьому працівнику ідентифікувати себе на спільному планшеті без власного входу.",
+    "kioskPinSet": "PIN встановлено",
+    "kioskPinClear": "Видалити PIN",
+    "kioskPinPlaceholder": "PIN з 4-6 цифр",
+    "kioskPinSave": "Встановити PIN"
   },
   "documents": {
     "title": "Документи",
@@ -607,7 +642,15 @@
     "costCodeUnassigned": "Без коду витрат",
     "benchmarkHint": "Типова ціна для цього коду витрат за {count} попередніми кошторисами: {median} {currency}/од.",
     "computeFormula": "Обчислити",
-    "computedQuantity": "= {value} {unit}"
+    "computedQuantity": "= {value} {unit}",
+    "clientDecision_countered": "Клієнт запропонував іншу ціну",
+    "clientDecisionThanksCountered": "Дякуємо — ми передали вашу пропозицію ціни {amount} {currency} команді.",
+    "counterOfferAmountLabel": "Ваша пропонована ціна",
+    "proposeDifferentPrice": "Запропонувати іншу ціну",
+    "sendCounterOffer": "Надіслати пропозицію",
+    "counterOfferReceived": "Клієнт запропонував замість цього {amount} {currency}.",
+    "createRevisedVariant": "Створити переглянуту версію",
+    "revisedVariantLabel": "Переглянуто"
   },
   "invoices": {
     "title": "Рахунки",
@@ -669,7 +712,10 @@
     "exportQuickBooks": "Експортувати в QuickBooks",
     "exportXero": "Експортувати в Xero",
     "downloadScheduleOfValues": "Завантажити відомість вартості",
-    "downloadEInvoice": "Завантажити е-рахунок (XML XRechnung)"
+    "downloadEInvoice": "Завантажити е-рахунок (XML XRechnung)",
+    "autopay": "Автосписання",
+    "lateFeeAccrued": "Нарахована пеня: {amount} {currency}",
+    "chargeLateFee": "Нарахувати пеню"
   },
   "portal": {
     "signInTitle": "Кабінет клієнта",
@@ -713,7 +759,12 @@
     "messagePlaceholder": "Напишіть повідомлення…",
     "send": "Надіслати",
     "noMessages": "Ще немає повідомлень.",
-    "payThisInstallment": "Оплатити цей внесок"
+    "payThisInstallment": "Оплатити цей внесок",
+    "paymentMethod": "Спосіб оплати",
+    "cardOnFile": "{brand}, що закінчується на {last4}",
+    "removeCard": "Видалити картку",
+    "noCardOnFile": "Картку не збережено.",
+    "saveCard": "Зберегти картку"
   },
   "equipment": {
     "title": "Техніка",
@@ -841,7 +892,12 @@
     "notes": "Примітки",
     "submitBid": "Подати пропозицію",
     "updateBid": "Оновити пропозицію",
-    "yourBidWas": "Ваша пропозиція: {amount} {currency}"
+    "yourBidWas": "Ваша пропозиція: {amount} {currency}",
+    "punchListItems": "Ваші пункти переліку недоробок",
+    "noPunchListItems": "Вам ще не призначено жодного пункту переліку недоробок.",
+    "punchListStatus_open": "Відкрито",
+    "punchListStatus_resolved": "Вирішено",
+    "punchListStatus_verified": "Перевірено"
   },
   "budget": {
     "title": "Бюджет проти факту",
@@ -1007,7 +1063,8 @@
     "scanReceiptScanning": "Сканування…",
     "scanReceiptDone": "Відскановано — перевірте поля нижче перед збереженням.",
     "scanReceiptFailed": "Не вдалося прочитати чек — заповніть поля вручну.",
-    "scanReceiptNoData": "На цьому чеку не знайдено суму, дату чи постачальника — заповніть поля вручну."
+    "scanReceiptNoData": "На цьому чеку не знайдено суму, дату чи постачальника — заповніть поля вручну.",
+    "kioskMode": "Режим кіоску"
   },
   "subcontractors": {
     "title": "Витрати на субпідрядників",
@@ -1143,7 +1200,8 @@
     "type_permit_expiring": "Дозволи",
     "type_company_document_expiring": "Власне страхування",
     "type_weather_risk": "Погодний ризик",
-    "type_budget_overrun": "Перевищення бюджету"
+    "type_budget_overrun": "Перевищення бюджету",
+    "type_material_price_changed": "Зміни цін на матеріали"
   },
   "search": {
     "placeholder": "Пошук по всьому…",
@@ -1226,7 +1284,16 @@
     "delaysPlaceholder": "Що сьогодні блокувало або сповільнювало роботу",
     "notes": "Нотатки",
     "noLogs": "Записів журналу робіт поки немає.",
-    "hasDelays": "Затримки"
+    "hasDelays": "Затримки",
+    "weatherDelayHours": "Затримка через погоду (год.)",
+    "weatherDelayBadge": "{hours} год. затримки через погоду",
+    "weatherDelayReport": "Звіт про погодні затримки",
+    "weatherDelayTotal": "Втрачено {hours} год. через погоду — пропонується перенести графік на {days} дн.",
+    "exportWeatherDelayReport": "Експорт CSV",
+    "shiftScheduleDays": "Перенести на (днів)",
+    "shiftSchedule": "Перенести графік",
+    "shiftScheduleResult": "Перенесено {tasks} завдання(нь) та {milestones} віху(віх).",
+    "shiftScheduleHint": "Переносить термін кожного незавершеного завдання та віхи на вказану кількість днів — скасуйте вручну, якщо перенесли помилково."
   },
   "punchList": {
     "title": "Список дефектів",
@@ -1251,7 +1318,9 @@
     "bulkVerify": "Перевірити вибрані",
     "applyTemplate": "Застосувати",
     "selectTemplate": "Застосувати шаблон…",
-    "escalated": "Ескальовано"
+    "escalated": "Ескальовано",
+    "assigneeWorkers": "Працівники",
+    "assigneeSubcontractors": "Субпідрядники"
   },
   "rfi": {
     "title": "Запити на уточнення (RFI)",
@@ -1604,7 +1673,13 @@
     "awarded": "Присуджено",
     "cancelBidRequest": "Скасувати тендер",
     "open": "Відкрито",
-    "cancelled": "Скасовано"
+    "cancelled": "Скасовано",
+    "scoringCriteria": "Критерії оцінки",
+    "criterionLabelPlaceholder": "напр. Терміни, Історія безпеки",
+    "addCriterion": "Додати",
+    "subcontractor": "Субпідрядник",
+    "amount": "Сума",
+    "weightedScore": "Зважена оцінка"
   },
   "customFields": {
     "title": "Користувацькі поля",
@@ -1669,7 +1744,11 @@
     "reviewDescription": "Попросіть клієнта залишити відгук після завершення проєкту.",
     "requestReview": "Запросити відгук",
     "reviewSent": "Запит на відгук надіслано",
-    "reviewError": "Не вдалося надіслати запит на відгук"
+    "reviewError": "Не вдалося надіслати запит на відгук",
+    "npsDescription": "Запитайте клієнта, наскільки ймовірно він порекомендує вас, коли проєкт завершиться.",
+    "sendNps": "Надіслати опитування NPS",
+    "npsSent": "Опитування надіслано",
+    "npsError": "Не вдалося надіслати опитування"
   },
   "dataPrivacy": {
     "title": "Дані та приватність",
@@ -1901,7 +1980,15 @@
     "expense": "Витрата",
     "match": "Зіставити",
     "suggestedMatch": "Пропозиція:",
-    "approxMatch": "приблизно"
+    "approxMatch": "приблизно",
+    "categorizationRules": "Правила категоризації",
+    "categorizationRulesHint": "Транзакція, опис якої містить цей текст, автоматично позначається категорією — застосовується автоматично після кожного імпорту CSV, а також за запитом нижче.",
+    "applyRulesNow": "Застосувати правила зараз",
+    "applyRulesResult": "Категоризовано транзакцій: {count}.",
+    "rulePatternPlaceholder": "напр. Home Depot",
+    "addRule": "Додати правило",
+    "category": "Категорія",
+    "uncategorized": "Без категорії"
   },
   "quality": {
     "title": "Контроль якості",
@@ -2373,5 +2460,130 @@
     "status_denied": "Відхилено",
     "status_settled": "Виплачено",
     "status_closed": "Закрито"
+  },
+  "customPortalDomain": {
+    "title": "Власний домен порталу",
+    "hint": "Показуйте свій бренд замість Cantero під час входу клієнтів у портал — напр. portal.mycompany.com.",
+    "cnameInstructions": "Налаштуйте CNAME-запис для цього домену на {target}, а потім підтвердьте.",
+    "verified": "Підтверджено",
+    "notVerified": "Ще не підтверджено",
+    "verifyNow": "Підтвердити зараз",
+    "verifyFailedHint": "CNAME ще не знайдено — зміни DNS можуть поширюватися певний час.",
+    "infraHint": "Це підтверджує лише DNS-запис. Маршрутизація трафіку та TLS-сертифікат для домену — окремі кроки інфраструктури поза застосунком."
+  },
+  "materialPrices": {
+    "title": "Ціни на матеріали",
+    "recentChanges": "Останні зміни цін",
+    "showAffectedEstimates": "Показати пов'язані відкриті кошториси",
+    "noAffectedEstimates": "Жоден відкритий кошторис не використовує цей матеріал.",
+    "code": "Код",
+    "unit": "Одиниця",
+    "price": "Ціна"
+  },
+  "npsSurvey": {
+    "title": "Наскільки ймовірно ви порекомендуєте нас?",
+    "thanks": "Дякуємо за ваш відгук!",
+    "error": "Не вдалося надіслати вашу відповідь. Спробуйте ще раз.",
+    "scoreLabel": "Оцінка {n}",
+    "notLikely": "Зовсім не ймовірно",
+    "veryLikely": "Дуже ймовірно",
+    "comment": "Бажаєте щось додати? (необов'язково)",
+    "submit": "Надіслати"
+  },
+  "npsTrend": {
+    "title": "Задоволеність клієнтів (NPS)",
+    "npsScore": "Оцінка NPS",
+    "averageScore": "Середня оцінка",
+    "responses": "Відповіді",
+    "promoters": "Промоутери",
+    "passives": "Нейтральні",
+    "detractors": "Критики",
+    "recentComments": "Останні коментарі"
+  },
+  "crewSmsBroadcast": {
+    "title": "SMS-розсилка бригаді",
+    "placeholder": "напр. Будмайданчик завтра закритий через погоду",
+    "sending": "Надсилання…",
+    "send": "Надіслати",
+    "error": "Не вдалося надіслати розсилку",
+    "recipientCount": "{count, plural, one {# отримувач} few {# отримувачі} many {# отримувачів} other {# отримувача}}"
+  },
+  "geofenceViolations": {
+    "title": "Порушення геозони",
+    "from": "Від",
+    "to": "До",
+    "filter": "Фільтр",
+    "exportCsv": "Експортувати CSV",
+    "empty": "Немає порушень геозони за цей період.",
+    "date": "Дата",
+    "worker": "Робітник",
+    "project": "Проєкт",
+    "hours": "Години",
+    "distance": "Відстань від об'єкта"
+  },
+  "messageTemplates": {
+    "title": "Шаблони повідомлень",
+    "description": "Змініть текст автоматичних повідомлень. Залиште порожнім, щоб використовувати вбудований текст (перекладений мовою одержувача).",
+    "key_task_assigned_sms": "Призначено завдання (SMS)",
+    "key_safety_briefing_sms": "Заплановано інструктаж з безпеки (SMS)",
+    "key_review_request_email": "Запит на відгук (email)",
+    "key_nps_survey_email": "Запрошення на опитування NPS (email)",
+    "placeholders": "Змінні",
+    "placeholder": "Власний текст повідомлення...",
+    "save": "Зберегти",
+    "resetToDefault": "Скинути до типового",
+    "customizedBy": "Змінено користувачем {name}",
+    "error": "Не вдалося зберегти шаблон"
+  },
+  "equipmentUtilization": {
+    "title": "Завантаженість техніки",
+    "description": "% періоду, коли техніка була видана на проєкт — допомагає вирішити, купувати чи орендувати.",
+    "equipment": "Техніка",
+    "category": "Категорія",
+    "hoursInUse": "Годин у роботі",
+    "utilization": "Завантаженість"
+  },
+  "siteSignIns": {
+    "title": "Журнал допуску на об'єкт",
+    "name": "Ім'я",
+    "visitorCompany": "Компанія",
+    "purpose": "Мета візиту",
+    "signIn": "Зареєструвати вхід",
+    "onSite": "{count, plural, one {# на об'єкті} few {# на об'єкті} many {# на об'єкті} other {# на об'єкті}}",
+    "signOut": "Зареєструвати вихід",
+    "history": "Історія"
+  },
+  "enpsTrend": {
+    "title": "Задоволеність команди (eNPS)",
+    "enpsScore": "Оцінка eNPS",
+    "averageScore": "Середня оцінка",
+    "responses": "Відповіді",
+    "promoters": "Промоутери",
+    "passives": "Нейтральні",
+    "detractors": "Критики",
+    "recentComments": "Останні коментарі"
+  },
+  "enpsSurvey": {
+    "title": "Наскільки ймовірно ви порекомендуєте роботу тут?",
+    "anonymousNote": "Ваша відповідь ніде в додатку не пов'язана з вашим ім'ям.",
+    "thanks": "Дякуємо за ваш відгук!",
+    "error": "Не вдалося надіслати вашу відповідь. Спробуйте ще раз.",
+    "scoreLabel": "Оцінка {n}",
+    "notLikely": "Зовсім не ймовірно",
+    "veryLikely": "Дуже ймовірно",
+    "comment": "Бажаєте щось додати? (необов'язково)",
+    "submit": "Надіслати"
+  },
+  "kiosk": {
+    "title": "Реєстрація часу",
+    "noWorkers": "Жоден працівник не має встановленого PIN кіоску — встановіть його в профілі працівника.",
+    "enterPin": "Введіть свій PIN",
+    "wrongPin": "Невірний PIN — спробуйте ще раз.",
+    "submitPin": "Далі",
+    "project": "Проєкт",
+    "selectProject": "Оберіть проєкт...",
+    "hours": "Години",
+    "logHours": "Зафіксувати години",
+    "entrySaved": "Години зафіксовано. Дякуємо!"
   }
 }

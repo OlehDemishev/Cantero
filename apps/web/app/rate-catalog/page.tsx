@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { CsvImportButton } from "@/components/csv-import-button";
 import { AssembliesPanel } from "@/components/assemblies-panel";
 import { EstimateAccuracyPanel } from "@/components/estimate-accuracy-panel";
+import { MaterialPricesPanel } from "@/components/material-prices-panel";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
@@ -397,8 +398,8 @@ export default function RateCatalogPage() {
                       </td>
                     </tr>
                   ) : (
-                    <>
-                      <tr key={item.id} className="border-b border-gray-100">
+                    <Fragment key={item.id}>
+                      <tr className="border-b border-gray-100">
                         <td className="py-2 font-mono text-xs">{item.code}</td>
                         <td>
                           {item.name}
@@ -418,7 +419,7 @@ export default function RateCatalogPage() {
                         </td>
                       </tr>
                       {historyForId === item.id && (
-                        <tr key={`${item.id}-history`} className="border-b border-gray-100 bg-gray-50">
+                        <tr className="border-b border-gray-100 bg-gray-50">
                           <td colSpan={7} className="py-2">
                             {!history ? (
                               <span className="text-xs text-gray-400">{tc("loading")}</span>
@@ -437,7 +438,7 @@ export default function RateCatalogPage() {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </Fragment>
                   ),
                 )}
               </tbody>
@@ -446,6 +447,7 @@ export default function RateCatalogPage() {
         </div>
       </div>
 
+      <MaterialPricesPanel />
       <AssembliesPanel />
       <EstimateAccuracyPanel />
     </AuthenticatedShell>

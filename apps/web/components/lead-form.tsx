@@ -2,10 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, API_URL } from "@/lib/api-client";
 
+interface ShowcasePhoto {
+  id: string;
+  projectName: string | null;
+}
 interface FormInfo {
   companyName: string;
+  brandColor: string | null;
+  hasLogo: boolean;
+  photos: ShowcasePhoto[];
 }
 
 export function LeadForm({ token }: { token: string }) {
@@ -54,10 +61,40 @@ export function LeadForm({ token }: { token: string }) {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-50 px-6 py-12">
-      <div className="w-full max-w-sm">
+    <main className="min-h-screen bg-gray-50 px-6 py-12">
+      <div className="mx-auto flex max-w-3xl flex-col items-center">
+        {info.hasLogo && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={`${API_URL}/public/leads/${token}/logo`} alt={info.companyName} className="mb-4 h-14 w-auto" />
+        )}
+        <h1 className="text-2xl font-semibold text-gray-900" style={info.brandColor ? { color: info.brandColor } : undefined}>
+          {info.companyName}
+        </h1>
+
+        {info.photos.length > 0 && (
+          <div className="mt-8 grid w-full grid-cols-2 gap-2 sm:grid-cols-3">
+            {info.photos.map((photo) => (
+              <div key={photo.id} className="group relative aspect-square overflow-hidden rounded-lg bg-gray-100">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`${API_URL}/public/leads/${token}/photo/${photo.id}`}
+                  alt={photo.projectName ?? info.companyName}
+                  className="h-full w-full object-cover"
+                />
+                {photo.projectName && (
+                  <span className="absolute inset-x-0 bottom-0 truncate bg-black/50 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+                    {photo.projectName}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="mx-auto mt-8 w-full max-w-sm">
         <div className="card">
-          <h1 className="text-xl font-semibold text-gray-900">{t("formTitle", { company: info.companyName })}</h1>
+          <h2 className="text-xl font-semibold text-gray-900">{t("formTitle", { company: info.companyName })}</h2>
           <p className="mt-1 text-sm text-gray-500">{t("formHint")}</p>
 
           {submitted ? (

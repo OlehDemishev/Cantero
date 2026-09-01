@@ -18,6 +18,7 @@ import { useMe } from "@/lib/use-me";
 import { isPushSupported, getExistingSubscription, enablePush, disablePush } from "@/lib/push";
 import { CustomFieldsSettingsPanel } from "@/components/custom-fields-settings-panel";
 import { LeadFormSettingsPanel } from "@/components/lead-form-settings-panel";
+import { CustomPortalDomainPanel } from "@/components/custom-portal-domain-panel";
 import { SsoSettingsPanel } from "@/components/sso-settings-panel";
 import { DataPrivacyPanel } from "@/components/data-privacy-panel";
 import { AccountingSyncPanel } from "@/components/accounting-sync-panel";
@@ -31,6 +32,8 @@ import { WageClassificationsPanel } from "@/components/wage-classifications-pane
 import { SecuritySettingsPanel } from "@/components/security-settings-panel";
 import { ReferralProgramPanel } from "@/components/referral-program-panel";
 import { CompanyCoiPanel } from "@/components/company-coi-panel";
+import { MessageTemplatesPanel } from "@/components/message-templates-panel";
+import { CompanyHolidaysPanel } from "@/components/company-holidays-panel";
 import { HelpTooltip } from "@/components/help-tooltip";
 
 interface Company {
@@ -46,11 +49,16 @@ interface Company {
   requiredApprovalCount: number;
   changeOrderApprovalThresholdAmount: string | null;
   changeOrderRequiredApprovalCount: number;
+  budgetAlertThresholdPercent: number;
+  lateFeePercentPerMonth: string | null;
+  defaultPaymentTermsDays: number;
   rfiSlaDays: number | null;
   punchListSlaDays: number | null;
   invoiceRemindersEnabled: boolean;
   leadFollowUpEnabled: boolean;
   estimateRemindersEnabled: boolean;
+  changeOrderRemindersEnabled: boolean;
+  enpsSurveysEnabled: boolean;
   workerSmsNotificationsEnabled: boolean;
   publicLeadFormToken: string | null;
   reviewRequestUrl: string | null;
@@ -154,11 +162,16 @@ export default function SettingsPage() {
     requiredApprovalCount: string;
     changeOrderApprovalThresholdAmount: string;
     changeOrderRequiredApprovalCount: string;
+    budgetAlertThresholdPercent: string;
+    lateFeePercentPerMonth: string;
+    defaultPaymentTermsDays: string;
     rfiSlaDays: string;
     punchListSlaDays: string;
     invoiceRemindersEnabled: boolean;
     leadFollowUpEnabled: boolean;
     estimateRemindersEnabled: boolean;
+    changeOrderRemindersEnabled: boolean;
+    enpsSurveysEnabled: boolean;
     workerSmsNotificationsEnabled: boolean;
     reviewRequestUrl: string;
     reportingCurrency: string;
@@ -175,11 +188,16 @@ export default function SettingsPage() {
     requiredApprovalCount: "1",
     changeOrderApprovalThresholdAmount: "",
     changeOrderRequiredApprovalCount: "1",
+    budgetAlertThresholdPercent: "90",
+    lateFeePercentPerMonth: "",
+    defaultPaymentTermsDays: "30",
     rfiSlaDays: "",
     punchListSlaDays: "",
     invoiceRemindersEnabled: false,
     leadFollowUpEnabled: false,
     estimateRemindersEnabled: false,
+    changeOrderRemindersEnabled: false,
+    enpsSurveysEnabled: false,
     workerSmsNotificationsEnabled: false,
     reviewRequestUrl: "",
     reportingCurrency: "",
@@ -225,6 +243,19 @@ export default function SettingsPage() {
   const [franchiseOverview, setFranchiseOverview] = useState<FranchiseOverview | null>(null);
   const [franchiseBusy, setFranchiseBusy] = useState(false);
   const [franchiseError, setFranchiseError] = useState<string | null>(null);
+  const [enpsBusy, setEnpsBusy] = useState(false);
+  const [enpsSentMessage, setEnpsSentMessage] = useState<string | null>(null);
+
+  async function sendEnpsNow() {
+    setEnpsBusy(true);
+    setEnpsSentMessage(null);
+    try {
+      const result = await apiFetch<{ sent: number }>("/enps-surveys/send-now", { method: "POST" });
+      setEnpsSentMessage(t("enpsSentCount", { count: result.sent }));
+    } finally {
+      setEnpsBusy(false);
+    }
+  }
 
   function loadLeadFormToken() {
     apiFetch<Company>("/company").then((c) => setLeadFormToken(c.publicLeadFormToken));
@@ -251,11 +282,16 @@ export default function SettingsPage() {
         requiredApprovalCount: String(c.requiredApprovalCount),
         changeOrderApprovalThresholdAmount: c.changeOrderApprovalThresholdAmount ?? "",
         changeOrderRequiredApprovalCount: String(c.changeOrderRequiredApprovalCount),
+        budgetAlertThresholdPercent: String(c.budgetAlertThresholdPercent),
+        lateFeePercentPerMonth: c.lateFeePercentPerMonth ?? "",
+        defaultPaymentTermsDays: String(c.defaultPaymentTermsDays),
         rfiSlaDays: c.rfiSlaDays !== null ? String(c.rfiSlaDays) : "",
         punchListSlaDays: c.punchListSlaDays !== null ? String(c.punchListSlaDays) : "",
         invoiceRemindersEnabled: c.invoiceRemindersEnabled,
         leadFollowUpEnabled: c.leadFollowUpEnabled,
         estimateRemindersEnabled: c.estimateRemindersEnabled,
+        changeOrderRemindersEnabled: c.changeOrderRemindersEnabled,
+        enpsSurveysEnabled: c.enpsSurveysEnabled,
         workerSmsNotificationsEnabled: c.workerSmsNotificationsEnabled,
         reviewRequestUrl: c.reviewRequestUrl ?? "",
         reportingCurrency: c.reportingCurrency ?? "",
@@ -376,11 +412,16 @@ export default function SettingsPage() {
             ? Number(companyForm.changeOrderApprovalThresholdAmount)
             : null,
           changeOrderRequiredApprovalCount: Number(companyForm.changeOrderRequiredApprovalCount) || 1,
+          budgetAlertThresholdPercent: Number(companyForm.budgetAlertThresholdPercent) || 90,
+          lateFeePercentPerMonth: companyForm.lateFeePercentPerMonth ? Number(companyForm.lateFeePercentPerMonth) : null,
+          defaultPaymentTermsDays: Number(companyForm.defaultPaymentTermsDays) || 30,
           rfiSlaDays: companyForm.rfiSlaDays ? Number(companyForm.rfiSlaDays) : null,
           punchListSlaDays: companyForm.punchListSlaDays ? Number(companyForm.punchListSlaDays) : null,
           invoiceRemindersEnabled: companyForm.invoiceRemindersEnabled,
           leadFollowUpEnabled: companyForm.leadFollowUpEnabled,
           estimateRemindersEnabled: companyForm.estimateRemindersEnabled,
+          changeOrderRemindersEnabled: companyForm.changeOrderRemindersEnabled,
+          enpsSurveysEnabled: companyForm.enpsSurveysEnabled,
           workerSmsNotificationsEnabled: companyForm.workerSmsNotificationsEnabled,
           reviewRequestUrl: companyForm.reviewRequestUrl || null,
           reportingCurrency: companyForm.reportingCurrency || null,
@@ -827,6 +868,53 @@ export default function SettingsPage() {
               </div>
             </div>
             <div className="border-t border-gray-100 pt-3">
+              <label className="flex w-40 flex-col gap-1 text-xs text-gray-500">
+                {t("budgetAlertThreshold")}
+                <input
+                  type="number"
+                  min="1"
+                  max="100"
+                  className="input"
+                  value={companyForm.budgetAlertThresholdPercent}
+                  onChange={(e) => setCompanyForm((f) => ({ ...f, budgetAlertThresholdPercent: e.target.value }))}
+                  disabled={!isManager}
+                />
+              </label>
+              <p className="mt-1 text-xs text-gray-500">{t("budgetAlertThresholdHint")}</p>
+            </div>
+            <div className="border-t border-gray-100 pt-3">
+              <div className="flex gap-2">
+                <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500">
+                  {t("defaultPaymentTermsDays")}
+                  <input
+                    type="number"
+                    min="0"
+                    max="365"
+                    className="input"
+                    value={companyForm.defaultPaymentTermsDays}
+                    onChange={(e) => setCompanyForm((f) => ({ ...f, defaultPaymentTermsDays: e.target.value }))}
+                    disabled={!isManager}
+                  />
+                </label>
+                <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500">
+                  {t("lateFeePercentPerMonth")}
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    placeholder={t("lateFeeDisabledPlaceholder")}
+                    className="input"
+                    value={companyForm.lateFeePercentPerMonth}
+                    onChange={(e) => setCompanyForm((f) => ({ ...f, lateFeePercentPerMonth: e.target.value }))}
+                    disabled={!isManager}
+                  />
+                </label>
+              </div>
+              <p className="mt-1 text-xs text-gray-500">{t("lateFeeHint")}</p>
+            </div>
+            <CompanyHolidaysPanel canManage={isManager} />
+            <div className="border-t border-gray-100 pt-3">
               <p className="mb-2 text-xs font-medium text-gray-700">{t("slaEscalation")}</p>
               <p className="mb-2 text-xs text-gray-500">{t("slaEscalationHint")}</p>
               <div className="flex gap-2">
@@ -887,6 +975,41 @@ export default function SettingsPage() {
                   <span className="mt-0.5 block text-gray-500">{t("estimateRemindersHint")}</span>
                 </span>
               </label>
+            </div>
+            <div className="border-t border-gray-100 pt-3">
+              <label className="flex items-start gap-2 text-xs text-gray-700">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={companyForm.changeOrderRemindersEnabled}
+                  onChange={(e) => setCompanyForm((f) => ({ ...f, changeOrderRemindersEnabled: e.target.checked }))}
+                  disabled={!isManager}
+                />
+                <span>
+                  <span className="font-medium text-gray-700">{t("changeOrderReminders")}</span>
+                  <span className="mt-0.5 block text-gray-500">{t("changeOrderRemindersHint")}</span>
+                </span>
+              </label>
+            </div>
+            <div className="border-t border-gray-100 pt-3">
+              <label className="flex items-start gap-2 text-xs text-gray-700">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={companyForm.enpsSurveysEnabled}
+                  onChange={(e) => setCompanyForm((f) => ({ ...f, enpsSurveysEnabled: e.target.checked }))}
+                  disabled={!isManager}
+                />
+                <span>
+                  <span className="font-medium text-gray-700">{t("enpsSurveys")}</span>
+                  <span className="mt-0.5 block text-gray-500">{t("enpsSurveysHint")}</span>
+                </span>
+              </label>
+              {companyForm.enpsSurveysEnabled && (
+                <button type="button" onClick={sendEnpsNow} disabled={enpsBusy} className="btn-secondary mt-2 px-2 py-1 text-xs">
+                  {enpsSentMessage ?? t("enpsSendNow")}
+                </button>
+              )}
             </div>
             <div className="border-t border-gray-100 pt-3">
               <label className="flex items-start gap-2 text-xs text-gray-700">
@@ -1567,9 +1690,13 @@ export default function SettingsPage() {
           </section>
         )}
 
+        <MessageTemplatesPanel />
+
         <CustomFieldsSettingsPanel canManage={isManager} />
 
         <LeadFormSettingsPanel token={leadFormToken} canManage={isManager} onChange={loadLeadFormToken} />
+
+        <CustomPortalDomainPanel canManage={isManager} />
 
         <SsoSettingsPanel canManage={isManager} />
 

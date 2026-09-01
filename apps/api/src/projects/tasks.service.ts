@@ -79,6 +79,39 @@ export class TasksService {
     return updated;
   }
 
+  /** Pushes every not-yet-done task's dates and every milestone's due date forward by `days` —
+   * the bulk counterpart to a single task's cascadeShift, for when the whole schedule needs to
+   * move at once (e.g. a run of weather delay days), not just one task's dependents. */
+  async shiftProjectSchedule(companyId: string, projectId: string, days: number) {
+    await this.assertProject(companyId, projectId);
+    const offsetMs = days * DAY_MS;
+
+    const tasks = await this.prisma.task.findMany({ where: { projectId, status: { not: "done" } } });
+    await Promise.all(
+      tasks.map((task) =>
+        this.prisma.task.update({
+          where: { id: task.id },
+          data: {
+            startDate: task.startDate ? new Date(task.startDate.getTime() + offsetMs) : undefined,
+            dueDate: task.dueDate ? new Date(task.dueDate.getTime() + offsetMs) : undefined,
+          },
+        }),
+      ),
+    );
+
+    const milestones = await this.prisma.milestone.findMany({ where: { projectId, dueDate: { not: null } } });
+    await Promise.all(
+      milestones.map((milestone) =>
+        this.prisma.milestone.update({
+          where: { id: milestone.id },
+          data: { dueDate: new Date(milestone.dueDate!.getTime() + offsetMs) },
+        }),
+      ),
+    );
+
+    return { shiftedTasks: tasks.length, shiftedMilestones: milestones.length };
+  }
+
   /** All dependency edges among a project's tasks, restricted to those with both dates set, run through the CPM calculator. */
   async getCriticalPath(companyId: string, projectId: string) {
     await this.assertProject(companyId, projectId);

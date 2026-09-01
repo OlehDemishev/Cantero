@@ -34,6 +34,7 @@ interface RecurringInvoice {
   frequency: RecurringInvoiceFrequency;
   taxPercent: string;
   active: boolean;
+  autopayEnabled: boolean;
   startDate: string;
   nextRunDate: string;
   endDate: string | null;
@@ -164,6 +165,19 @@ export default function InvoicesPage() {
     loadRecurring();
   }
 
+  async function toggleAutopay(item: RecurringInvoice) {
+    setRecurringError(null);
+    try {
+      await apiFetch(`/recurring-invoices/${item.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ autopayEnabled: !item.autopayEnabled }),
+      });
+      loadRecurring();
+    } catch (err) {
+      setRecurringError(err instanceof Error ? err.message : tc("error"));
+    }
+  }
+
   return (
     <AuthenticatedShell>
       <div className="flex items-center justify-between">
@@ -261,6 +275,10 @@ export default function InvoicesPage() {
                   <button onClick={() => deleteRecurring(r.id)} className="btn-secondary px-2 py-1 text-xs">
                     {tc("delete")}
                   </button>
+                  <label className="ml-auto flex items-center gap-1.5 text-xs text-gray-600">
+                    <input type="checkbox" checked={r.autopayEnabled} onChange={() => toggleAutopay(r)} />
+                    {t("autopay")}
+                  </label>
                 </div>
               </div>
             ))}

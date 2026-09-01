@@ -14,6 +14,7 @@ import { AiaBillingService } from "./aia-billing.service";
 import { PublicSubcontractorsController } from "./public-subcontractors.controller";
 import { DrawRequestsController } from "./draw-requests.controller";
 import { DrawRequestsService } from "./draw-requests.service";
+import { ClientPaymentMethodsService } from "./client-payment-methods.service";
 
 @Module({
   controllers: [
@@ -34,7 +35,8 @@ import { DrawRequestsService } from "./draw-requests.service";
     RecurringInvoicesProcessor,
     AiaBillingService,
     DrawRequestsService,
+    ClientPaymentMethodsService,
   ],
-  exports: [InvoicesService, SubcontractorsService, BudgetService],
+  exports: [InvoicesService, SubcontractorsService, BudgetService, ClientPaymentMethodsService],
 })
 export class FinanceModule {}

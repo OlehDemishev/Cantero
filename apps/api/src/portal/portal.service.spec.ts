@@ -6,6 +6,7 @@ import { ChangeOrdersService } from "../estimates/change-orders.service";
 import { InvoicesService } from "../finance/invoices.service";
 import { WebhooksService } from "../common/webhooks/webhooks.service";
 import { BillingService } from "../billing/billing.service";
+import { ClientPaymentMethodsService } from "../finance/client-payment-methods.service";
 
 const COMPANY_A = "company-a";
 const CLIENT_1 = { companyId: COMPANY_A, clientId: "client-1" };
@@ -36,6 +37,7 @@ describe("PortalService.listProjects — progress", () => {
         { provide: InvoicesService, useValue: {} },
         { provide: WebhooksService, useValue: {} },
         { provide: BillingService, useValue: {} },
+        { provide: ClientPaymentMethodsService, useValue: {} },
       ],
     }).compile();
 

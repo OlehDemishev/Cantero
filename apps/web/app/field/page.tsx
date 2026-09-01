@@ -126,6 +126,9 @@ export default function FieldPage() {
                 {t("pendingSync", { count: pendingCount })}
               </span>
             )}
+            <a href="/field/kiosk" className="mr-1 text-xs font-medium text-brand-700 hover:underline">
+              {t("kioskMode")}
+            </a>
             <a
               href="/dashboard"
               aria-label={t("backToDashboard")}

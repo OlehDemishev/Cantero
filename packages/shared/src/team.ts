@@ -24,6 +24,16 @@ export const updateWorkerSchema = z.object({
 });
 export type UpdateWorkerInput = z.infer<typeof updateWorkerSchema>;
 
+export const setClockInPinSchema = z.object({
+  pin: z.string().regex(/^\d{4,6}$/, "PIN must be 4-6 digits"),
+});
+export type SetClockInPinInput = z.infer<typeof setClockInPinSchema>;
+
+export const verifyClockInPinSchema = z.object({
+  pin: z.string(),
+});
+export type VerifyClockInPinInput = z.infer<typeof verifyClockInPinSchema>;
+
 export const createTimeEntrySchema = z.object({
   workerId: z.string().uuid(),
   projectId: z.string().uuid(),

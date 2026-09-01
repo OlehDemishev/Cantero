@@ -1,6 +1,14 @@
-import { BadRequestException, Body, Controller, Get, Param, Post, Query, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Query, UploadedFile, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { matchBankTransactionSchema, type AuthUser, type MatchBankTransactionInput } from "@cantero/shared";
+import {
+  createBankTransactionRuleSchema,
+  matchBankTransactionSchema,
+  setBankTransactionCategorySchema,
+  type AuthUser,
+  type CreateBankTransactionRuleInput,
+  type MatchBankTransactionInput,
+  type SetBankTransactionCategoryInput,
+} from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
@@ -23,6 +31,29 @@ export class BankReconciliationController {
     return this.service.suggestMatches(user.companyId);
   }
 
+  @Get("rules")
+  listRules(@CurrentUser() user: AuthUser) {
+    return this.service.listRules(user.companyId);
+  }
+
+  @Post("rules")
+  createRule(
+    @CurrentUser() user: AuthUser,
+    @Body(new ZodValidationPipe(createBankTransactionRuleSchema)) body: CreateBankTransactionRuleInput,
+  ) {
+    return this.service.createRule(user.companyId, { userId: user.userId, name: user.name }, body);
+  }
+
+  @Delete("rules/:id")
+  deleteRule(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.deleteRule(user.companyId, { userId: user.userId, name: user.name }, id);
+  }
+
+  @Post("apply-rules")
+  applyRules(@CurrentUser() user: AuthUser) {
+    return this.service.applyRules(user.companyId);
+  }
+
   @Post("import")
   @UseInterceptors(FileInterceptor("file"))
   importCsv(@CurrentUser() user: AuthUser, @UploadedFile() file: Express.Multer.File) {
@@ -42,5 +73,14 @@ export class BankReconciliationController {
   @Post(":id/unmatch")
   unmatch(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.unmatch(user.companyId, { userId: user.userId, name: user.name }, id);
+  }
+
+  @Post(":id/category")
+  setCategory(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(setBankTransactionCategorySchema)) body: SetBankTransactionCategoryInput,
+  ) {
+    return this.service.setCategory(user.companyId, { userId: user.userId, name: user.name }, id, body.category);
   }
 }

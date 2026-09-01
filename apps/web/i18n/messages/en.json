@@ -323,7 +323,33 @@
     "city": "City",
     "postalCode": "Postal code",
     "vatIdPlaceholder": "VAT ID (e.g. DE123456789)",
-    "ibanPlaceholder": "IBAN"
+    "ibanPlaceholder": "IBAN",
+    "webhookEvent_insurance_claim_filed": "Insurance claim filed",
+    "webhookEvent_insurance_claim_status_changed": "Insurance claim status changed",
+    "changeOrderReminders": "Automatic change order follow-up reminders",
+    "changeOrderRemindersHint": "Sends escalating reminder emails to the client at 3, 7, and 14 days after a change order is sent, while it's still awaiting a decision.",
+    "webhookEvent_material_price_changed": "Material catalog price changed",
+    "webhookEvent_nps_survey_responded": "NPS survey answered",
+    "enpsSurveys": "Quarterly team satisfaction survey (eNPS)",
+    "enpsSurveysHint": "Texts every active worker with a phone an anonymous 0-10 \"how likely to recommend working here\" question once a quarter.",
+    "enpsSendNow": "Send a wave now",
+    "enpsSentCount": "{count, plural, one {Sent to # worker} other {Sent to # workers}}",
+    "webhookEvent_estimate_client_countered": "Client proposed a different price",
+    "webhookEvent_enps_survey_responded": "eNPS survey answered",
+    "budgetAlertThreshold": "Budget alert threshold (%)",
+    "budgetAlertThresholdHint": "A project gets flagged once its actual cost reaches this % of its budgeted total. Projects can override this individually.",
+    "defaultPaymentTermsDays": "Default payment terms (days)",
+    "lateFeePercentPerMonth": "Late fee (% per month)",
+    "lateFeeDisabledPlaceholder": "Off",
+    "lateFeeHint": "When set, overdue invoices accrue a late fee automatically, prorated by days overdue. Leave blank to disable.",
+    "holidays": "Non-working days",
+    "holidaysHint": "Public holidays and company-wide days off, used to flag schedule dates that fall on a non-working day.",
+    "noHolidays": "No non-working days configured yet.",
+    "holidayDate": "Date",
+    "holidayLabel": "Label",
+    "holidayLabelPlaceholder": "e.g. New Year's Day",
+    "addHoliday": "Add",
+    "holidaysError": "Could not save this non-working day."
   },
   "projects": {
     "title": "Projects",
@@ -341,7 +367,8 @@
     "health_at_risk": "At risk",
     "projectChannel": "Project channel",
     "billingCurrency": "Billing currency",
-    "billingCurrencyDefault": "Company default ({currency})"
+    "billingCurrencyDefault": "Company default ({currency})",
+    "budgetAlertThreshold": "Budget alert threshold override"
   },
   "clients": {
     "title": "Clients",
@@ -403,7 +430,9 @@
     "city": "City",
     "postalCode": "Postal code",
     "countryCode": "Country",
-    "vatIdPlaceholder": "VAT ID (optional)"
+    "vatIdPlaceholder": "VAT ID (optional)",
+    "paymentTermsDays": "Payment terms (days)",
+    "paymentTermsDaysPlaceholder": "Use company default"
   },
   "team": {
     "title": "Team",
@@ -466,7 +495,13 @@
     "onboardingTaskTitlePlaceholder": "Task title",
     "addOnboardingTask": "Add task",
     "payrollEmployeeId": "Payroll employee ID",
-    "payrollEmployeeIdPlaceholder": "ID in ADP/Gusto/etc."
+    "payrollEmployeeIdPlaceholder": "ID in ADP/Gusto/etc.",
+    "kioskPin": "Kiosk clock-in PIN",
+    "kioskPinHint": "Lets this worker identify themselves on a shared tablet without their own login.",
+    "kioskPinSet": "PIN set",
+    "kioskPinClear": "Clear PIN",
+    "kioskPinPlaceholder": "4-6 digit PIN",
+    "kioskPinSave": "Set PIN"
   },
   "documents": {
     "title": "Documents",
@@ -607,7 +642,15 @@
     "costCodeUnassigned": "Unassigned cost code",
     "benchmarkHint": "Typical price for this cost code across {count} past estimate(s): {median} {currency}/unit",
     "computeFormula": "Calculate",
-    "computedQuantity": "= {value} {unit}"
+    "computedQuantity": "= {value} {unit}",
+    "clientDecision_countered": "Client proposed a different price",
+    "clientDecisionThanksCountered": "Thank you — we've sent your proposed price of {amount} {currency} to the team.",
+    "counterOfferAmountLabel": "Your proposed price",
+    "proposeDifferentPrice": "Propose a different price instead",
+    "sendCounterOffer": "Send proposal",
+    "counterOfferReceived": "Client proposed {amount} {currency} instead.",
+    "createRevisedVariant": "Create a revised version",
+    "revisedVariantLabel": "Revised"
   },
   "invoices": {
     "title": "Invoices",
@@ -669,7 +712,10 @@
     "exportQuickBooks": "Export to QuickBooks",
     "exportXero": "Export to Xero",
     "downloadScheduleOfValues": "Download schedule of values",
-    "downloadEInvoice": "Download e-invoice (XRechnung XML)"
+    "downloadEInvoice": "Download e-invoice (XRechnung XML)",
+    "autopay": "Autopay",
+    "lateFeeAccrued": "Late fee accrued: {amount} {currency}",
+    "chargeLateFee": "Charge late fee"
   },
   "portal": {
     "signInTitle": "Client portal",
@@ -713,7 +759,12 @@
     "messagePlaceholder": "Write a message…",
     "send": "Send",
     "noMessages": "No messages yet.",
-    "payThisInstallment": "Pay this installment"
+    "payThisInstallment": "Pay this installment",
+    "paymentMethod": "Payment method",
+    "cardOnFile": "{brand} ending in {last4}",
+    "removeCard": "Remove card",
+    "noCardOnFile": "No card on file.",
+    "saveCard": "Save a card"
   },
   "equipment": {
     "title": "Equipment",
@@ -841,7 +892,12 @@
     "notes": "Notes",
     "submitBid": "Submit bid",
     "updateBid": "Update bid",
-    "yourBidWas": "Your bid: {amount} {currency}"
+    "yourBidWas": "Your bid: {amount} {currency}",
+    "punchListItems": "Your punch list items",
+    "noPunchListItems": "No punch list items assigned to you yet.",
+    "punchListStatus_open": "Open",
+    "punchListStatus_resolved": "Resolved",
+    "punchListStatus_verified": "Verified"
   },
   "budget": {
     "title": "Budget vs. actual",
@@ -1007,7 +1063,8 @@
     "scanReceiptScanning": "Scanning…",
     "scanReceiptDone": "Scanned — review the fields below before saving.",
     "scanReceiptFailed": "Couldn't read the receipt — fill in the fields manually.",
-    "scanReceiptNoData": "Couldn't find an amount, date, or vendor on this receipt — fill in the fields manually."
+    "scanReceiptNoData": "Couldn't find an amount, date, or vendor on this receipt — fill in the fields manually.",
+    "kioskMode": "Kiosk mode"
   },
   "subcontractors": {
     "title": "Subcontractor costs",
@@ -1143,7 +1200,8 @@
     "type_permit_expiring": "Permits",
     "type_company_document_expiring": "Company insurance",
     "type_weather_risk": "Weather risk",
-    "type_budget_overrun": "Budget overruns"
+    "type_budget_overrun": "Budget overruns",
+    "type_material_price_changed": "Material price changes"
   },
   "search": {
     "placeholder": "Search everything…",
@@ -1226,7 +1284,16 @@
     "delaysPlaceholder": "Anything that blocked or slowed work today",
     "notes": "Notes",
     "noLogs": "No daily logs yet.",
-    "hasDelays": "Delays"
+    "hasDelays": "Delays",
+    "weatherDelayHours": "Weather delay (hours)",
+    "weatherDelayBadge": "{hours}h weather delay",
+    "weatherDelayReport": "Weather delay report",
+    "weatherDelayTotal": "{hours} hours lost to weather — suggests shifting the schedule by {days} day(s).",
+    "exportWeatherDelayReport": "Export CSV",
+    "shiftScheduleDays": "Shift by (days)",
+    "shiftSchedule": "Shift schedule",
+    "shiftScheduleResult": "Shifted {tasks} task(s) and {milestones} milestone(s).",
+    "shiftScheduleHint": "Pushes every not-yet-done task and milestone due date forward by this many days — undo manually if you shift by mistake."
   },
   "punchList": {
     "title": "Punch list",
@@ -1251,7 +1318,9 @@
     "bulkVerify": "Verify selected",
     "applyTemplate": "Apply",
     "selectTemplate": "Apply template…",
-    "escalated": "Escalated"
+    "escalated": "Escalated",
+    "assigneeWorkers": "Workers",
+    "assigneeSubcontractors": "Subcontractors"
   },
   "rfi": {
     "title": "RFIs",
@@ -1604,7 +1673,13 @@
     "awarded": "Awarded",
     "cancelBidRequest": "Cancel bid request",
     "open": "Open",
-    "cancelled": "Cancelled"
+    "cancelled": "Cancelled",
+    "scoringCriteria": "Scoring criteria",
+    "criterionLabelPlaceholder": "e.g. Timeline, Safety record",
+    "addCriterion": "Add",
+    "subcontractor": "Subcontractor",
+    "amount": "Amount",
+    "weightedScore": "Weighted score"
   },
   "customFields": {
     "title": "Custom fields",
@@ -1669,7 +1744,11 @@
     "reviewDescription": "Ask the client for a review, once the project is wrapped up.",
     "requestReview": "Request a review",
     "reviewSent": "Review requested",
-    "reviewError": "Couldn't send the review request"
+    "reviewError": "Couldn't send the review request",
+    "npsDescription": "Ask the client how likely they are to recommend you, once the project wraps up.",
+    "sendNps": "Send NPS survey",
+    "npsSent": "Survey sent",
+    "npsError": "Couldn't send the survey"
   },
   "dataPrivacy": {
     "title": "Data & privacy",
@@ -1901,7 +1980,15 @@
     "expense": "Expense",
     "match": "Match",
     "suggestedMatch": "Suggested:",
-    "approxMatch": "approximate"
+    "approxMatch": "approximate",
+    "categorizationRules": "Categorization rules",
+    "categorizationRulesHint": "A transaction whose description contains this text gets auto-tagged with the category — applied automatically after every CSV import, and on demand below.",
+    "applyRulesNow": "Apply rules now",
+    "applyRulesResult": "{count} transaction(s) categorized.",
+    "rulePatternPlaceholder": "e.g. Home Depot",
+    "addRule": "Add rule",
+    "category": "Category",
+    "uncategorized": "Uncategorized"
   },
   "quality": {
     "title": "Quality control",
@@ -2373,5 +2460,130 @@
     "status_denied": "Denied",
     "status_settled": "Settled",
     "status_closed": "Closed"
+  },
+  "customPortalDomain": {
+    "title": "Custom portal domain",
+    "hint": "Show your own brand instead of Cantero's when clients sign in to their portal — e.g. portal.mycompany.com.",
+    "cnameInstructions": "Point a CNAME record for this domain at {target}, then verify.",
+    "verified": "Verified",
+    "notVerified": "Not verified yet",
+    "verifyNow": "Verify now",
+    "verifyFailedHint": "CNAME not found yet — DNS changes can take a while to propagate.",
+    "infraHint": "This confirms the DNS record only. Routing browser traffic and a TLS certificate for the domain are separate infrastructure steps handled outside the app."
+  },
+  "materialPrices": {
+    "title": "Material prices",
+    "recentChanges": "Recent price changes",
+    "showAffectedEstimates": "Show affected open estimates",
+    "noAffectedEstimates": "No open estimates use this material.",
+    "code": "Code",
+    "unit": "Unit",
+    "price": "Price"
+  },
+  "npsSurvey": {
+    "title": "How likely are you to recommend us?",
+    "thanks": "Thank you for your feedback!",
+    "error": "Couldn't submit your response. Try again.",
+    "scoreLabel": "Score {n}",
+    "notLikely": "Not at all likely",
+    "veryLikely": "Extremely likely",
+    "comment": "Anything you'd like to add? (optional)",
+    "submit": "Submit"
+  },
+  "npsTrend": {
+    "title": "Client satisfaction (NPS)",
+    "npsScore": "NPS score",
+    "averageScore": "Average score",
+    "responses": "Responses",
+    "promoters": "Promoters",
+    "passives": "Passives",
+    "detractors": "Detractors",
+    "recentComments": "Recent comments"
+  },
+  "crewSmsBroadcast": {
+    "title": "Broadcast SMS to crew",
+    "placeholder": "e.g. Site closed tomorrow due to weather",
+    "sending": "Sending…",
+    "send": "Send",
+    "error": "Couldn't send the broadcast",
+    "recipientCount": "{count, plural, one {# recipient} other {# recipients}}"
+  },
+  "geofenceViolations": {
+    "title": "Geofence violations",
+    "from": "From",
+    "to": "To",
+    "filter": "Filter",
+    "exportCsv": "Export CSV",
+    "empty": "No geofence violations in this range.",
+    "date": "Date",
+    "worker": "Worker",
+    "project": "Project",
+    "hours": "Hours",
+    "distance": "Distance from site"
+  },
+  "messageTemplates": {
+    "title": "Message templates",
+    "description": "Override the wording of automated messages. Leave blank to use the built-in text (translated per recipient's language).",
+    "key_task_assigned_sms": "Task assigned (SMS)",
+    "key_safety_briefing_sms": "Safety briefing scheduled (SMS)",
+    "key_review_request_email": "Review request (email)",
+    "key_nps_survey_email": "NPS survey invite (email)",
+    "placeholders": "Placeholders",
+    "placeholder": "Custom message text...",
+    "save": "Save",
+    "resetToDefault": "Reset to default",
+    "customizedBy": "Customized by {name}",
+    "error": "Couldn't save this template"
+  },
+  "equipmentUtilization": {
+    "title": "Equipment utilization",
+    "description": "% of the period each piece of equipment spent checked out to a project — helps decide what to buy vs. rent.",
+    "equipment": "Equipment",
+    "category": "Category",
+    "hoursInUse": "Hours in use",
+    "utilization": "Utilization"
+  },
+  "siteSignIns": {
+    "title": "Site sign-in log",
+    "name": "Name",
+    "visitorCompany": "Company",
+    "purpose": "Purpose",
+    "signIn": "Sign in",
+    "onSite": "{count, plural, one {# on site} other {# on site}}",
+    "signOut": "Sign out",
+    "history": "History"
+  },
+  "enpsTrend": {
+    "title": "Team satisfaction (eNPS)",
+    "enpsScore": "eNPS score",
+    "averageScore": "Average score",
+    "responses": "Responses",
+    "promoters": "Promoters",
+    "passives": "Passives",
+    "detractors": "Detractors",
+    "recentComments": "Recent comments"
+  },
+  "enpsSurvey": {
+    "title": "How likely are you to recommend working here?",
+    "anonymousNote": "Your answer isn't linked to your name anywhere in the app.",
+    "thanks": "Thank you for your feedback!",
+    "error": "Couldn't submit your response. Try again.",
+    "scoreLabel": "Score {n}",
+    "notLikely": "Not at all likely",
+    "veryLikely": "Extremely likely",
+    "comment": "Anything you'd like to add? (optional)",
+    "submit": "Submit"
+  },
+  "kiosk": {
+    "title": "Clock in",
+    "noWorkers": "No workers have a kiosk PIN set yet — set one from a worker's profile.",
+    "enterPin": "Enter your PIN",
+    "wrongPin": "Wrong PIN — try again.",
+    "submitPin": "Continue",
+    "project": "Project",
+    "selectProject": "Select a project...",
+    "hours": "Hours",
+    "logHours": "Log hours",
+    "entrySaved": "Hours logged. Thank you!"
   }
 }

@@ -18,6 +18,9 @@ import { OnboardingTemplateService } from "./onboarding-template.service";
 import { CompanyCoiController } from "./company-coi.controller";
 import { PublicCompanyCoiController } from "./public-company-coi.controller";
 import { CompanyCoiService } from "./company-coi.service";
+import { PublicPortalBrandingController } from "./public-portal-branding.controller";
+import { CompanyHolidaysController } from "./company-holidays.controller";
+import { CompanyHolidaysService } from "./company-holidays.service";
 
 @Module({
   controllers: [
@@ -32,6 +35,8 @@ import { CompanyCoiService } from "./company-coi.service";
     OnboardingTemplateController,
     CompanyCoiController,
     PublicCompanyCoiController,
+    PublicPortalBrandingController,
+    CompanyHolidaysController,
   ],
   providers: [
     CompanyService,
@@ -42,6 +47,7 @@ import { CompanyCoiService } from "./company-coi.service";
     CustomRolesService,
     OnboardingTemplateService,
     CompanyCoiService,
+    CompanyHolidaysService,
   ],
 })
 export class CompanyModule {}

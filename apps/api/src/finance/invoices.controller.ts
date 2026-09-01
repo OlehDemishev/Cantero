@@ -101,6 +101,12 @@ export class InvoicesController {
   }
 
   @Roles("owner", "admin", "accountant")
+  @Post(":id/charge-late-fee")
+  chargeLateFee(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.chargeLateFee(user.companyId, { userId: user.userId, name: user.name }, id);
+  }
+
+  @Roles("owner", "admin", "accountant")
   @Post(":id/installments")
   addInstallment(
     @CurrentUser() user: AuthUser,

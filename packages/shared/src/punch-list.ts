@@ -9,6 +9,7 @@ export const createPunchListItemSchema = z.object({
   description: z.string().max(2000).optional(),
   location: z.string().max(160).optional(),
   assigneeWorkerId: z.string().uuid().optional(),
+  assigneeSubcontractorId: z.string().uuid().optional(),
   dueDate: z.string().datetime().optional(),
 });
 export type CreatePunchListItemInput = z.infer<typeof createPunchListItemSchema>;
@@ -18,6 +19,7 @@ export const updatePunchListItemSchema = z.object({
   description: z.string().max(2000).optional(),
   location: z.string().max(160).optional(),
   assigneeWorkerId: z.string().uuid().nullable().optional(),
+  assigneeSubcontractorId: z.string().uuid().nullable().optional(),
   dueDate: z.string().datetime().nullable().optional(),
 });
 export type UpdatePunchListItemInput = z.infer<typeof updatePunchListItemSchema>;

@@ -11,6 +11,8 @@ import {
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { CustomReportsPanel } from "@/components/custom-reports-panel";
 import { SafetyScorecardPanel } from "@/components/safety-scorecard-panel";
+import { GeofenceViolationsPanel } from "@/components/geofence-violations-panel";
+import { EquipmentUtilizationPanel } from "@/components/equipment-utilization-panel";
 import { CarbonSummaryPanel } from "@/components/carbon-summary-panel";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
@@ -864,6 +866,8 @@ export default function ReportsPage() {
       )}
 
       <SafetyScorecardPanel />
+      <GeofenceViolationsPanel />
+      <EquipmentUtilizationPanel />
       <CarbonSummaryPanel />
       <CustomReportsPanel />
     </AuthenticatedShell>

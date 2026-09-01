@@ -16,7 +16,7 @@ export class PunchListService {
     await this.assertProject(companyId, projectId);
     return this.prisma.punchListItem.findMany({
       where: { projectId },
-      include: { assignee: { select: { id: true, name: true } } },
+      include: { assignee: { select: { id: true, name: true } }, assigneeSubcontractor: { select: { id: true, name: true } } },
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],
     });
   }
@@ -24,7 +24,7 @@ export class PunchListService {
   async get(companyId: string, id: string) {
     const item = await this.prisma.punchListItem.findFirst({
       where: { id, companyId },
-      include: { assignee: { select: { id: true, name: true } } },
+      include: { assignee: { select: { id: true, name: true } }, assigneeSubcontractor: { select: { id: true, name: true } } },
     });
     if (!item) throw new NotFoundException("Punch list item not found");
     return item;
@@ -33,6 +33,7 @@ export class PunchListService {
   async create(companyId: string, actor: AuditActor, input: CreatePunchListItemInput) {
     await this.assertProject(companyId, input.projectId);
     if (input.assigneeWorkerId) await this.assertWorker(companyId, input.assigneeWorkerId);
+    if (input.assigneeSubcontractorId) await this.assertSubcontractor(companyId, input.assigneeSubcontractorId);
 
     const item = await this.prisma.punchListItem.create({
       data: {
@@ -42,11 +43,12 @@ export class PunchListService {
         description: input.description,
         location: input.location,
         assigneeWorkerId: input.assigneeWorkerId,
+        assigneeSubcontractorId: input.assigneeSubcontractorId,
         dueDate: input.dueDate ? new Date(input.dueDate) : undefined,
         createdByUserId: actor.userId,
         createdByName: actor.name,
       },
-      include: { assignee: { select: { id: true, name: true } } },
+      include: { assignee: { select: { id: true, name: true } }, assigneeSubcontractor: { select: { id: true, name: true } } },
     });
     this.audit.record(companyId, actor, "punch_list.created", "PunchListItem", item.id, `Logged punch list item "${item.title}"`);
     return item;
@@ -67,6 +69,7 @@ export class PunchListService {
   async update(companyId: string, actor: AuditActor, id: string, input: UpdatePunchListItemInput) {
     const existing = await this.get(companyId, id);
     if (input.assigneeWorkerId) await this.assertWorker(companyId, input.assigneeWorkerId);
+    if (input.assigneeSubcontractorId) await this.assertSubcontractor(companyId, input.assigneeSubcontractorId);
 
     return this.prisma.punchListItem.update({
       where: { id: existing.id },
@@ -75,9 +78,10 @@ export class PunchListService {
         description: input.description,
         location: input.location,
         assigneeWorkerId: input.assigneeWorkerId,
+        assigneeSubcontractorId: input.assigneeSubcontractorId,
         dueDate: input.dueDate === null ? null : input.dueDate ? new Date(input.dueDate) : undefined,
       },
-      include: { assignee: { select: { id: true, name: true } } },
+      include: { assignee: { select: { id: true, name: true } }, assigneeSubcontractor: { select: { id: true, name: true } } },
     });
   }
 
@@ -88,7 +92,7 @@ export class PunchListService {
     const updated = await this.prisma.punchListItem.update({
       where: { id: item.id },
       data: { status: "resolved", resolvedAt: new Date(), resolvedByUserId: actor.userId, resolvedByName: actor.name },
-      include: { assignee: { select: { id: true, name: true } } },
+      include: { assignee: { select: { id: true, name: true } }, assigneeSubcontractor: { select: { id: true, name: true } } },
     });
     this.audit.record(companyId, actor, "punch_list.resolved", "PunchListItem", item.id, `Marked "${item.title}" resolved`);
     this.webhooks.trigger(companyId, "punch_list.resolved", { punchListItemId: item.id, title: item.title });
@@ -102,7 +106,7 @@ export class PunchListService {
     const updated = await this.prisma.punchListItem.update({
       where: { id: item.id },
       data: { status: "verified", verifiedAt: new Date(), verifiedByUserId: actor.userId, verifiedByName: actor.name },
-      include: { assignee: { select: { id: true, name: true } } },
+      include: { assignee: { select: { id: true, name: true } }, assigneeSubcontractor: { select: { id: true, name: true } } },
     });
     this.audit.record(companyId, actor, "punch_list.verified", "PunchListItem", item.id, `Verified fix for "${item.title}"`);
     this.webhooks.trigger(companyId, "punch_list.verified", { punchListItemId: item.id, title: item.title });
@@ -124,7 +128,7 @@ export class PunchListService {
         verifiedByUserId: null,
         verifiedByName: null,
       },
-      include: { assignee: { select: { id: true, name: true } } },
+      include: { assignee: { select: { id: true, name: true } }, assigneeSubcontractor: { select: { id: true, name: true } } },
     });
     this.audit.record(companyId, actor, "punch_list.reopened", "PunchListItem", item.id, `Reopened "${item.title}"`);
     return updated;
@@ -162,5 +166,21 @@ export class PunchListService {
     const worker = await this.prisma.worker.findFirst({ where: { id: workerId, companyId } });
     if (!worker) throw new BadRequestException("Assignee does not belong to this company");
     return worker;
+  }
+
+  private async assertSubcontractor(companyId: string, subcontractorId: string) {
+    const subcontractor = await this.prisma.subcontractor.findFirst({ where: { id: subcontractorId, companyId } });
+    if (!subcontractor) throw new BadRequestException("Assignee does not belong to this company");
+    return subcontractor;
+  }
+
+  /** A subcontractor's own view through the portal — every punch list item assigned to them,
+   * across whichever of the company's projects they're working on. */
+  listForSubcontractor(companyId: string, subcontractorId: string) {
+    return this.prisma.punchListItem.findMany({
+      where: { companyId, assigneeSubcontractorId: subcontractorId },
+      include: { project: { select: { id: true, name: true } } },
+      orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+    });
   }
 }

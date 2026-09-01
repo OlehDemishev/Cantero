@@ -11,6 +11,9 @@ export function ProjectCloseoutPanel({ projectId }: { projectId: string }) {
   const [reviewBusy, setReviewBusy] = useState(false);
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [reviewSent, setReviewSent] = useState(false);
+  const [npsBusy, setNpsBusy] = useState(false);
+  const [npsError, setNpsError] = useState<string | null>(null);
+  const [npsSent, setNpsSent] = useState(false);
 
   async function download() {
     setBusy(true);
@@ -38,6 +41,19 @@ export function ProjectCloseoutPanel({ projectId }: { projectId: string }) {
     }
   }
 
+  async function sendNpsSurvey() {
+    setNpsBusy(true);
+    setNpsError(null);
+    try {
+      await apiFetch(`/projects/${projectId}/nps-survey`, { method: "POST" });
+      setNpsSent(true);
+    } catch (err) {
+      setNpsError(err instanceof Error ? err.message : t("npsError"));
+    } finally {
+      setNpsBusy(false);
+    }
+  }
+
   return (
     <div className="mt-10">
       <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("title")}</h2>
@@ -56,6 +72,14 @@ export function ProjectCloseoutPanel({ projectId }: { projectId: string }) {
         </button>
       </div>
       {reviewError && <p className="mt-2 text-xs text-error-700">{reviewError}</p>}
+
+      <div className="card mt-3 flex items-center justify-between gap-4">
+        <p className="text-sm text-gray-500">{t("npsDescription")}</p>
+        <button onClick={sendNpsSurvey} disabled={npsBusy || npsSent} className="btn-secondary shrink-0">
+          {npsSent ? t("npsSent") : t("sendNps")}
+        </button>
+      </div>
+      {npsError && <p className="mt-2 text-xs text-error-700">{npsError}</p>}
     </div>
   );
 }

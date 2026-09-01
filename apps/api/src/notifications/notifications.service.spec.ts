@@ -11,6 +11,7 @@ describe("NotificationsService.list", () => {
   let service: NotificationsService;
   let prisma: {
     materialCatalogItem: { findMany: jest.Mock };
+    materialPriceChange: { findMany: jest.Mock };
     clientReminder: { findMany: jest.Mock };
     invoice: { findMany: jest.Mock };
     rfi: { findMany: jest.Mock };
@@ -28,6 +29,7 @@ describe("NotificationsService.list", () => {
     project: { findMany: jest.Mock };
     membership: { findFirst: jest.Mock };
     notificationRead: { findMany: jest.Mock };
+    company: { findUniqueOrThrow: jest.Mock };
   };
   let weather: { geocode: jest.Mock; forecast: jest.Mock };
   let budget: { getForProject: jest.Mock };
@@ -35,6 +37,7 @@ describe("NotificationsService.list", () => {
   beforeEach(async () => {
     prisma = {
       materialCatalogItem: { findMany: jest.fn().mockResolvedValue([]) },
+      materialPriceChange: { findMany: jest.fn().mockResolvedValue([]) },
       clientReminder: { findMany: jest.fn().mockResolvedValue([]) },
       invoice: { findMany: jest.fn().mockResolvedValue([]) },
       rfi: { findMany: jest.fn().mockResolvedValue([]) },
@@ -52,6 +55,7 @@ describe("NotificationsService.list", () => {
       project: { findMany: jest.fn().mockResolvedValue([]) },
       membership: { findFirst: jest.fn().mockResolvedValue(null) },
       notificationRead: { findMany: jest.fn().mockResolvedValue([]) },
+      company: { findUniqueOrThrow: jest.fn().mockResolvedValue({ budgetAlertThresholdPercent: 90 }) },
     };
     weather = { geocode: jest.fn(), forecast: jest.fn() };
     budget = { getForProject: jest.fn() };
@@ -343,12 +347,28 @@ describe("NotificationsService.list", () => {
 
     expect(notifications.some((n) => n.key === "budget_overrun:project-unestimated")).toBe(false);
   });
+
+  it("uses a project's own threshold override instead of the company default", async () => {
+    prisma.project.findMany.mockResolvedValue([{ id: "project-tight", name: "Fixed-Price Site", budgetAlertThresholdPercent: 50 }]);
+    budget.getForProject.mockResolvedValue({
+      grandTotalBudget: 1000,
+      materialsCostActual: 600,
+      laborCostActual: 0,
+      subcontractorCostActual: 0,
+    });
+
+    // 60% spent — below the 90% company default but above this project's 50% override.
+    const { notifications } = await service.list(COMPANY_A, USER_A);
+
+    expect(notifications.some((n) => n.key === "budget_overrun:project-tight")).toBe(true);
+  });
 });
 
 describe("NotificationsService — read tracking", () => {
   let service: NotificationsService;
   let prisma: {
     materialCatalogItem: { findMany: jest.Mock };
+    materialPriceChange: { findMany: jest.Mock };
     clientReminder: { findMany: jest.Mock };
     invoice: { findMany: jest.Mock };
     rfi: { findMany: jest.Mock };
@@ -366,11 +386,13 @@ describe("NotificationsService — read tracking", () => {
     project: { findMany: jest.Mock };
     membership: { findFirst: jest.Mock };
     notificationRead: { findMany: jest.Mock; upsert: jest.Mock; createMany: jest.Mock };
+    company: { findUniqueOrThrow: jest.Mock };
   };
 
   beforeEach(async () => {
     prisma = {
       materialCatalogItem: { findMany: jest.fn().mockResolvedValue([]) },
+      materialPriceChange: { findMany: jest.fn().mockResolvedValue([]) },
       clientReminder: { findMany: jest.fn().mockResolvedValue([]) },
       invoice: { findMany: jest.fn().mockResolvedValue([]) },
       rfi: { findMany: jest.fn().mockResolvedValue([]) },
@@ -388,6 +410,7 @@ describe("NotificationsService — read tracking", () => {
       project: { findMany: jest.fn().mockResolvedValue([]) },
       membership: { findFirst: jest.fn().mockResolvedValue(null) },
       notificationRead: { findMany: jest.fn().mockResolvedValue([]), upsert: jest.fn(), createMany: jest.fn() },
+      company: { findUniqueOrThrow: jest.fn().mockResolvedValue({ budgetAlertThresholdPercent: 90 }) },
     };
 
     const module = await Test.createTestingModule({

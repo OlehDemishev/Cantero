@@ -1,7 +1,10 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
+import * as bcrypt from "bcryptjs";
 import type { AddWorkerCertificationInput, AdjustPtoBalanceInput, CreateWorkerInput, UpdateWorkerInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
+
+const PIN_BCRYPT_ROUNDS = 10;
 
 @Injectable()
 export class WorkersService {
@@ -10,14 +13,28 @@ export class WorkersService {
     private readonly audit: AuditService,
   ) {}
 
-  list(companyId: string) {
-    return this.prisma.worker.findMany({ where: { companyId }, orderBy: { name: "asc" } });
+  async list(companyId: string) {
+    const workers = await this.prisma.worker.findMany({ where: { companyId }, orderBy: { name: "asc" } });
+    return workers.map((w) => this.redactPin(w));
   }
 
   async get(companyId: string, id: string) {
+    const worker = await this.getRaw(companyId, id);
+    return this.redactPin(worker);
+  }
+
+  /** Internal-only lookup that keeps clockInPinHash — verifyClockInPin needs the real hash to
+   * compare against; every externally-facing read goes through get()/list(), which redact it. */
+  private async getRaw(companyId: string, id: string) {
     const worker = await this.prisma.worker.findFirst({ where: { id, companyId } });
     if (!worker) throw new NotFoundException("Worker not found");
     return worker;
+  }
+
+  /** Never send the PIN hash to the client — hasClockInPin is all the frontend needs to know. */
+  private redactPin<T extends { clockInPinHash: string | null }>(worker: T) {
+    const { clockInPinHash, ...rest } = worker;
+    return { ...rest, hasClockInPin: clockInPinHash !== null };
   }
 
   /** Clones the company's onboarding template into fresh tasks for this worker — a snapshot at
@@ -67,7 +84,7 @@ export class WorkersService {
         `${input.active ? "Reactivated" : "Deactivated"} worker ${worker.name}`,
       );
     }
-    return worker;
+    return this.redactPin(worker);
   }
 
   /** Cumulative hours/cost for this worker, broken down by project — derived from TimeEntry. */
@@ -199,6 +216,42 @@ export class WorkersService {
     return this.prisma.workerOnboardingTask.update({
       where: { id: taskId },
       data: { done: !task.done, completedAt: !task.done ? new Date() : null },
+    });
+  }
+
+  /** Lets an admin set the PIN this worker uses to identify themselves on a shared kiosk device
+   * — see Worker.clockInPinHash. */
+  async setClockInPin(companyId: string, actor: AuditActor, workerId: string, pin: string) {
+    await this.get(companyId, workerId);
+    const clockInPinHash = await bcrypt.hash(pin, PIN_BCRYPT_ROUNDS);
+    await this.prisma.worker.update({ where: { id: workerId }, data: { clockInPinHash } });
+    this.audit.record(companyId, actor, "worker.clock_in_pin_set", "Worker", workerId, "Set a kiosk clock-in PIN");
+    return { ok: true };
+  }
+
+  async clearClockInPin(companyId: string, actor: AuditActor, workerId: string) {
+    await this.get(companyId, workerId);
+    await this.prisma.worker.update({ where: { id: workerId }, data: { clockInPinHash: null } });
+    this.audit.record(companyId, actor, "worker.clock_in_pin_cleared", "Worker", workerId, "Cleared the kiosk clock-in PIN");
+    return { ok: true };
+  }
+
+  /** Company-scoped, not a general-purpose auth check — the kiosk device is already inside an
+   * authenticated session (someone logged in), so a false PIN here just means "try again", not
+   * "attacker detected"; nothing rate-limits it beyond the normal API. */
+  async verifyClockInPin(companyId: string, workerId: string, pin: string): Promise<{ valid: boolean }> {
+    const worker = await this.getRaw(companyId, workerId);
+    if (!worker.clockInPinHash) return { valid: false };
+    return { valid: await bcrypt.compare(pin, worker.clockInPinHash) };
+  }
+
+  /** Every active worker with a kiosk PIN set — the roster a kiosk device shows to pick from,
+   * deliberately excluding anyone kiosk clock-in hasn't been turned on for. */
+  listKioskWorkers(companyId: string) {
+    return this.prisma.worker.findMany({
+      where: { companyId, active: true, clockInPinHash: { not: null } },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
     });
   }
 }

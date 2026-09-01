@@ -11,6 +11,7 @@ describe("BankReconciliationService", () => {
   let service: BankReconciliationService;
   let prisma: {
     bankTransaction: { findFirst: jest.Mock; findMany: jest.Mock; update: jest.Mock; createMany: jest.Mock };
+    bankTransactionRule: { findMany: jest.Mock; create: jest.Mock; delete: jest.Mock; findFirst: jest.Mock };
     invoice: { findFirst: jest.Mock; findMany: jest.Mock };
     expense: { findFirst: jest.Mock; findMany: jest.Mock };
   };
@@ -18,7 +19,8 @@ describe("BankReconciliationService", () => {
 
   beforeEach(async () => {
     prisma = {
-      bankTransaction: { findFirst: jest.fn(), findMany: jest.fn(), update: jest.fn(), createMany: jest.fn() },
+      bankTransaction: { findFirst: jest.fn(), findMany: jest.fn().mockResolvedValue([]), update: jest.fn(), createMany: jest.fn() },
+      bankTransactionRule: { findMany: jest.fn().mockResolvedValue([]), create: jest.fn(), delete: jest.fn(), findFirst: jest.fn() },
       invoice: { findFirst: jest.fn(), findMany: jest.fn() },
       expense: { findFirst: jest.fn(), findMany: jest.fn() },
     };
@@ -171,6 +173,87 @@ describe("BankReconciliationService", () => {
         where: { id: "tx-1" },
         data: { matchedInvoiceId: null, matchedExpenseId: null, reconciled: false },
       });
+    });
+  });
+
+  describe("applyRules", () => {
+    it("does nothing when there are no rules yet", async () => {
+      prisma.bankTransactionRule.findMany.mockResolvedValue([]);
+      prisma.bankTransaction.findMany.mockResolvedValue([{ id: "tx-1", description: "Home Depot" }]);
+
+      const result = await service.applyRules(COMPANY_A);
+
+      expect(result).toEqual({ categorized: 0 });
+      expect(prisma.bankTransaction.update).not.toHaveBeenCalled();
+    });
+
+    it("categorizes only transactions a rule actually matches, leaving others alone", async () => {
+      prisma.bankTransactionRule.findMany.mockResolvedValue([{ id: "r1", pattern: "Home Depot", category: "materials" }]);
+      prisma.bankTransaction.findMany.mockResolvedValue([
+        { id: "tx-1", description: "HOME DEPOT #4521" },
+        { id: "tx-2", description: "Random Coffee Shop" },
+      ]);
+
+      const result = await service.applyRules(COMPANY_A);
+
+      expect(result).toEqual({ categorized: 1 });
+      expect(prisma.bankTransaction.update).toHaveBeenCalledTimes(1);
+      expect(prisma.bankTransaction.update).toHaveBeenCalledWith({ where: { id: "tx-1" }, data: { category: "materials" } });
+    });
+
+    it("only considers transactions that don't already have a category", async () => {
+      await service.applyRules(COMPANY_A);
+
+      expect(prisma.bankTransaction.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ category: null }) }),
+      );
+    });
+
+    it("is triggered automatically after a successful CSV import", async () => {
+      prisma.bankTransactionRule.findMany.mockResolvedValue([{ id: "r1", pattern: "Home Depot", category: "materials" }]);
+      prisma.bankTransaction.findMany.mockResolvedValue([{ id: "tx-1", description: "HOME DEPOT #4521" }]);
+
+      await service.importCsv(COMPANY_A, ACTOR, "date,description,amount\n2026-06-01,Home Depot,-50\n");
+
+      expect(prisma.bankTransactionRule.findMany).toHaveBeenCalled();
+      expect(prisma.bankTransaction.update).toHaveBeenCalledWith({ where: { id: "tx-1" }, data: { category: "materials" } });
+    });
+  });
+
+  describe("createRule / deleteRule", () => {
+    it("creates a rule scoped to this company", async () => {
+      prisma.bankTransactionRule.create.mockResolvedValue({ id: "rule-1", pattern: "Shell", category: "fuel" });
+
+      await service.createRule(COMPANY_A, ACTOR, { pattern: "Shell", category: "fuel" });
+
+      expect(prisma.bankTransactionRule.create).toHaveBeenCalledWith({
+        data: { companyId: COMPANY_A, pattern: "Shell", category: "fuel" },
+      });
+    });
+
+    it("rejects deleting a rule that doesn't belong to this company", async () => {
+      prisma.bankTransactionRule.findFirst.mockResolvedValue(null);
+
+      await expect(service.deleteRule(COMPANY_A, ACTOR, "rule-1")).rejects.toThrow(NotFoundException);
+      expect(prisma.bankTransactionRule.delete).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("setCategory", () => {
+    it("throws when the transaction doesn't belong to this company", async () => {
+      prisma.bankTransaction.findFirst.mockResolvedValue(null);
+
+      await expect(service.setCategory(COMPANY_A, ACTOR, "tx-1", "fuel")).rejects.toThrow(NotFoundException);
+      expect(prisma.bankTransaction.update).not.toHaveBeenCalled();
+    });
+
+    it("sets the category directly, independent of matching/reconciliation", async () => {
+      prisma.bankTransaction.findFirst.mockResolvedValue({ id: "tx-1", description: "Shell gas station" });
+      prisma.bankTransaction.update.mockResolvedValue({ id: "tx-1", category: "fuel" });
+
+      await service.setCategory(COMPANY_A, ACTOR, "tx-1", "fuel");
+
+      expect(prisma.bankTransaction.update).toHaveBeenCalledWith({ where: { id: "tx-1" }, data: { category: "fuel" } });
     });
   });
 });

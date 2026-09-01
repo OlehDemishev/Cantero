@@ -8,6 +8,7 @@ export const createDailyLogSchema = z.object({
   date: z.string().datetime(),
   weatherCondition: z.enum(WEATHER_CONDITIONS).optional(),
   weatherNotes: z.string().max(500).optional(),
+  weatherDelayHours: z.number().nonnegative().max(24).optional(),
   crewCount: z.number().int().min(0).max(9999).optional(),
   crewNotes: z.string().max(1000).optional(),
   workPerformed: z.string().min(1).max(4000),

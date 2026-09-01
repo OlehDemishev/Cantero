@@ -4,6 +4,7 @@ import { ConfigService } from "@nestjs/config";
 import { BillingService } from "./billing.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { InvoicesService } from "../finance/invoices.service";
+import { ClientPaymentMethodsService } from "../finance/client-payment-methods.service";
 
 const COMPANY_A = "company-a";
 
@@ -41,6 +42,7 @@ describe("BillingService", () => {
         { provide: PrismaService, useValue: prisma },
         { provide: ConfigService, useValue: config },
         { provide: InvoicesService, useValue: invoices },
+        { provide: ClientPaymentMethodsService, useValue: { handleSetupSessionCompleted: jest.fn() } },
       ],
     }).compile();
 

@@ -4,6 +4,7 @@ import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { SmsService } from "../common/sms/sms.service";
 import { smsTemplates } from "../common/sms/sms-templates";
+import { MessageTemplatesService } from "../message-templates/message-templates.service";
 
 const INCLUDE_ATTENDEES = { attendees: { include: { worker: { select: { id: true, name: true } } } } } as const;
 
@@ -13,6 +14,7 @@ export class SafetyBriefingsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly sms: SmsService,
+    private readonly messageTemplates: MessageTemplatesService,
   ) {}
 
   async listForProject(companyId: string, projectId: string) {
@@ -58,11 +60,16 @@ export class SafetyBriefingsService {
         select: { phone: true, preferredLocale: true },
       });
       const dateLabel = briefing.date.toISOString().slice(0, 10);
+      const custom = await this.messageTemplates.render(companyId, "safety_briefing_sms", {
+        topic: input.topic,
+        projectName: project.name,
+        date: dateLabel,
+      });
       for (const attendee of attendeesWithPhones) {
         const locale: Locale = attendee.preferredLocale ?? project.company.locale;
         await this.sms.send({
           to: attendee.phone!,
-          body: smsTemplates.safetyBriefingScheduled(locale, input.topic, project.name, dateLabel),
+          body: custom ?? smsTemplates.safetyBriefingScheduled(locale, input.topic, project.name, dateLabel),
         });
       }
     }

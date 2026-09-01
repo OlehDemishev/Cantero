@@ -129,4 +129,44 @@ describe("DailyLogsService", () => {
       expect(prisma.dailyLog.update).not.toHaveBeenCalled();
     });
   });
+
+  describe("weatherDelayReport()", () => {
+    it("only includes logs with weather delay hours actually recorded, and sums the total", async () => {
+      prisma.project.findFirst.mockResolvedValue({ id: "project-1", companyId: COMPANY_A });
+      prisma.dailyLog.findMany.mockResolvedValue([
+        { id: "log-1", date: new Date("2026-08-20T00:00:00.000Z"), weatherCondition: "rain", weatherDelayHours: "6", weatherNotes: "Heavy rain" },
+        { id: "log-2", date: new Date("2026-08-21T00:00:00.000Z"), weatherCondition: "snow", weatherDelayHours: "8", weatherNotes: null },
+      ]);
+
+      const report = await service.weatherDelayReport(COMPANY_A, "project-1");
+
+      expect(prisma.dailyLog.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ weatherDelayHours: { gt: 0 } }) }),
+      );
+      expect(report.totalHours).toBe(14);
+      expect(report.entries).toHaveLength(2);
+    });
+
+    it("rounds the suggested shift up to a whole day for a partial day's worth of lost hours", async () => {
+      prisma.project.findFirst.mockResolvedValue({ id: "project-1", companyId: COMPANY_A });
+      prisma.dailyLog.findMany.mockResolvedValue([
+        { id: "log-1", date: new Date("2026-08-20T00:00:00.000Z"), weatherCondition: "rain", weatherDelayHours: "9", weatherNotes: null },
+      ]);
+
+      const report = await service.weatherDelayReport(COMPANY_A, "project-1");
+
+      // 9 hours / 8-hour workday = 1.125 -> rounds up to 2 whole days, not down to 1.
+      expect(report.suggestedShiftDays).toBe(2);
+    });
+
+    it("suggests 0 shift days when there's no delay logged at all", async () => {
+      prisma.project.findFirst.mockResolvedValue({ id: "project-1", companyId: COMPANY_A });
+      prisma.dailyLog.findMany.mockResolvedValue([]);
+
+      const report = await service.weatherDelayReport(COMPANY_A, "project-1");
+
+      expect(report.suggestedShiftDays).toBe(0);
+      expect(report.totalHours).toBe(0);
+    });
+  });
 });

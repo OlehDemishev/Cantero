@@ -3,6 +3,11 @@ import type { CreateDailyLogInput, UpdateDailyLogInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { WeatherService } from "../weather/weather.service";
+import { toCsv } from "../common/csv";
+
+/** Standard workday length used to turn accumulated weather-delay hours into a whole-day count
+ * for the "shift schedule" suggestion — a partial day lost still costs a full day of schedule. */
+const HOURS_PER_WORKDAY = 8;
 
 /** Normalizes any time-of-day to UTC midnight so `date` behaves as a calendar day for the unique constraint. */
 function toCalendarDay(iso: string): Date {
@@ -57,6 +62,7 @@ export class DailyLogsService {
         authorName: actor.name,
         weatherCondition,
         weatherNotes,
+        weatherDelayHours: input.weatherDelayHours,
         crewCount: input.crewCount,
         crewNotes: input.crewNotes,
         workPerformed: input.workPerformed,
@@ -75,6 +81,37 @@ export class DailyLogsService {
       where: { id: log.id },
       data: input,
     });
+  }
+
+  /** Every daily log with hours actually logged against weather, oldest first, plus the running
+   * total — the basis for both a delay-claim conversation with the client and the "shift
+   * schedule" action, which needs a whole-day count to push task/milestone dates by. */
+  async weatherDelayReport(companyId: string, projectId: string) {
+    await this.assertProject(companyId, projectId);
+    const logs = await this.prisma.dailyLog.findMany({
+      where: { projectId, companyId, weatherDelayHours: { gt: 0 } },
+      orderBy: { date: "asc" },
+    });
+    const totalHours = logs.reduce((sum, l) => sum + Number(l.weatherDelayHours), 0);
+    return {
+      entries: logs.map((l) => ({
+        id: l.id,
+        date: l.date,
+        weatherCondition: l.weatherCondition,
+        weatherDelayHours: Number(l.weatherDelayHours),
+        weatherNotes: l.weatherNotes,
+      })),
+      totalHours,
+      suggestedShiftDays: Math.ceil(totalHours / HOURS_PER_WORKDAY),
+    };
+  }
+
+  async weatherDelayReportCsv(companyId: string, projectId: string): Promise<string> {
+    const { entries } = await this.weatherDelayReport(companyId, projectId);
+    return toCsv(
+      ["Date", "Condition", "Hours lost", "Notes"],
+      entries.map((e) => [e.date.toISOString().slice(0, 10), e.weatherCondition ?? "", e.weatherDelayHours.toString(), e.weatherNotes ?? ""]),
+    );
   }
 
   private async assertProject(companyId: string, projectId: string) {

@@ -4,6 +4,7 @@ import { LeadsService } from "./leads.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService } from "../common/audit/audit.service";
 import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { StorageService } from "../common/storage/storage.service";
 
 const COMPANY_A = "company-a";
 const ACTOR = { userId: "user-1", name: "Owner" };
@@ -13,17 +14,21 @@ describe("LeadsService", () => {
   let prisma: {
     company: { update: jest.Mock; findUnique: jest.Mock };
     client: { create: jest.Mock };
+    document: { findMany: jest.Mock; findFirst: jest.Mock };
   };
   let audit: { record: jest.Mock };
   let webhooks: { trigger: jest.Mock };
+  let storage: { read: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
       company: { update: jest.fn(), findUnique: jest.fn() },
       client: { create: jest.fn() },
+      document: { findMany: jest.fn(), findFirst: jest.fn() },
     };
     audit = { record: jest.fn() };
     webhooks = { trigger: jest.fn() };
+    storage = { read: jest.fn() };
 
     const module = await Test.createTestingModule({
       providers: [
@@ -31,6 +36,7 @@ describe("LeadsService", () => {
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: audit },
         { provide: WebhooksService, useValue: webhooks },
+        { provide: StorageService, useValue: storage },
       ],
     }).compile();
 
@@ -79,6 +85,61 @@ describe("LeadsService", () => {
         where: { id: COMPANY_A },
         data: { publicLeadFormToken: expect.any(String) },
       });
+    });
+  });
+
+  describe("getFormInfo() showcase", () => {
+    it("returns branding and a list of gallery_after photos scoped to the company", async () => {
+      prisma.company.findUnique.mockResolvedValue({ id: COMPANY_A, name: "Acme Co", brandColor: "#465fff", logoStorageKey: "logo.png" });
+      prisma.document.findMany.mockResolvedValue([{ id: "doc-1", project: { name: "Site A" } }]);
+
+      const result = await service.getFormInfo("good-token");
+
+      expect(result).toEqual({
+        companyName: "Acme Co",
+        brandColor: "#465fff",
+        hasLogo: true,
+        photos: [{ id: "doc-1", projectName: "Site A" }],
+      });
+      const call = prisma.document.findMany.mock.calls[0][0];
+      expect(call.where).toEqual({ companyId: COMPANY_A, category: "gallery_after" });
+    });
+
+    it("reports hasLogo: false when no logo is uploaded", async () => {
+      prisma.company.findUnique.mockResolvedValue({ id: COMPANY_A, name: "Acme Co", brandColor: null, logoStorageKey: null });
+      prisma.document.findMany.mockResolvedValue([]);
+
+      const result = await service.getFormInfo("good-token");
+
+      expect(result.hasLogo).toBe(false);
+    });
+  });
+
+  describe("getShowcasePhoto()", () => {
+    it("404s on an unknown token", async () => {
+      prisma.company.findUnique.mockResolvedValue(null);
+      await expect(service.getShowcasePhoto("bad-token", "doc-1")).rejects.toThrow(NotFoundException);
+    });
+
+    it("404s when the document isn't a gallery_after photo in this company — never fetches arbitrary documents", async () => {
+      prisma.company.findUnique.mockResolvedValue({ id: COMPANY_A });
+      prisma.document.findFirst.mockResolvedValue(null);
+
+      await expect(service.getShowcasePhoto("good-token", "doc-1")).rejects.toThrow(NotFoundException);
+
+      const call = prisma.document.findFirst.mock.calls[0][0];
+      expect(call.where).toEqual({ id: "doc-1", companyId: COMPANY_A, category: "gallery_after" });
+    });
+
+    it("streams the photo bytes for a valid showcase document", async () => {
+      prisma.company.findUnique.mockResolvedValue({ id: COMPANY_A });
+      prisma.document.findFirst.mockResolvedValue({ storageKey: "key.jpg", mimeType: "image/jpeg", name: "site.jpg" });
+      storage.read.mockResolvedValue(Buffer.from("fake-image-bytes"));
+
+      const result = await service.getShowcasePhoto("good-token", "doc-1");
+
+      expect(storage.read).toHaveBeenCalledWith("key.jpg");
+      expect(result.mimeType).toBe("image/jpeg");
     });
   });
 });

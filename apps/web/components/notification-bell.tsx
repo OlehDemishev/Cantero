@@ -21,7 +21,8 @@ type NotificationType =
   | "permit_expiring"
   | "company_document_expiring"
   | "weather_risk"
-  | "budget_overrun";
+  | "budget_overrun"
+  | "material_price_changed";
 type Severity = "warning" | "critical";
 
 interface Notification {

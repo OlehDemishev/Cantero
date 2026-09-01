@@ -15,6 +15,8 @@ export const SERVICE_VISIT_REMINDERS_QUEUE = "service-visit-reminders";
 export const LEAD_FOLLOW_UP_QUEUE = "lead-follow-up";
 export const ESTIMATE_REMINDERS_QUEUE = "estimate-reminders";
 export const PERMIT_EXPIRING_QUEUE = "permit-expiring";
+export const CHANGE_ORDER_REMINDERS_QUEUE = "change-order-reminders";
+export const ENPS_SURVEYS_QUEUE = "enps-surveys";
 
 @Global()
 @Module({
@@ -39,6 +41,8 @@ export const PERMIT_EXPIRING_QUEUE = "permit-expiring";
     BullModule.registerQueue({ name: LEAD_FOLLOW_UP_QUEUE }),
     BullModule.registerQueue({ name: ESTIMATE_REMINDERS_QUEUE }),
     BullModule.registerQueue({ name: PERMIT_EXPIRING_QUEUE }),
+    BullModule.registerQueue({ name: CHANGE_ORDER_REMINDERS_QUEUE }),
+    BullModule.registerQueue({ name: ENPS_SURVEYS_QUEUE }),
   ],
   exports: [BullModule],
 })

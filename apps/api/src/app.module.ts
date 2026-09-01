@@ -22,6 +22,7 @@ import { CompanyModule } from "./company/company.module";
 import { MaterialsModule } from "./materials/materials.module";
 import { EstimatesModule } from "./estimates/estimates.module";
 import { ProjectsModule } from "./projects/projects.module";
+import { SmsWebhooksModule } from "./sms-webhooks/sms-webhooks.module";
 import { CrmModule } from "./crm/crm.module";
 import { FinanceModule } from "./finance/finance.module";
 import { TeamModule } from "./team/team.module";
@@ -63,6 +64,8 @@ import { DrawingsModule } from "./drawings/drawings.module";
 import { PermitsModule } from "./permits/permits.module";
 import { EstimateAccuracyModule } from "./estimate-accuracy/estimate-accuracy.module";
 import { SustainabilityModule } from "./sustainability/sustainability.module";
+import { ChangeOrderRemindersModule } from "./change-order-reminders/change-order-reminders.module";
+import { MessageTemplatesModule } from "./message-templates/message-templates.module";
 
 @Module({
   imports: [
@@ -84,6 +87,7 @@ import { SustainabilityModule } from "./sustainability/sustainability.module";
     MaterialsModule,
     EstimatesModule,
     ProjectsModule,
+    SmsWebhooksModule,
     CrmModule,
     FinanceModule,
     TeamModule,
@@ -117,6 +121,8 @@ import { SustainabilityModule } from "./sustainability/sustainability.module";
     ContractsModule,
     LeadFollowUpModule,
     EstimateRemindersModule,
+    ChangeOrderRemindersModule,
+    MessageTemplatesModule,
     CostCodesModule,
     JobCostingModule,
     ScimModule,

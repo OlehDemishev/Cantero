@@ -16,6 +16,8 @@ describe("BidRequestsService", () => {
     bidRequest: { create: jest.Mock; findFirst: jest.Mock; update: jest.Mock };
     bid: { findFirst: jest.Mock; update: jest.Mock; upsert: jest.Mock };
     bidInvite: { findFirst: jest.Mock };
+    bidScoreCriterion: { create: jest.Mock; findFirst: jest.Mock; delete: jest.Mock };
+    bidScore: { upsert: jest.Mock };
     $transaction: jest.Mock;
   };
   let audit: { record: jest.Mock };
@@ -28,6 +30,8 @@ describe("BidRequestsService", () => {
       bidRequest: { create: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
       bid: { findFirst: jest.fn(), update: jest.fn(), upsert: jest.fn() },
       bidInvite: { findFirst: jest.fn() },
+      bidScoreCriterion: { create: jest.fn(), findFirst: jest.fn(), delete: jest.fn() },
+      bidScore: { upsert: jest.fn() },
       $transaction: jest.fn().mockResolvedValue([]),
     };
     audit = { record: jest.fn() };
@@ -91,6 +95,7 @@ describe("BidRequestsService", () => {
         projectId: "project-1",
         invites: [],
         bids: [],
+        criteria: [],
         project: { name: "Site A" },
       });
 
@@ -132,6 +137,77 @@ describe("BidRequestsService", () => {
         service.submitBid({ subcontractorId: "sub-1", companyId: COMPANY_A }, "br-1", { amount: 5000 }),
       ).rejects.toThrow(BadRequestException);
       expect(prisma.bid.upsert).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("addCriterion()", () => {
+    it("404s on a bid request outside the company", async () => {
+      prisma.bidRequest.findFirst.mockResolvedValue(null);
+      await expect(service.addCriterion(COMPANY_A, ACTOR, "br-1", { label: "Timeline", weight: 3 })).rejects.toThrow(NotFoundException);
+      expect(prisma.bidScoreCriterion.create).not.toHaveBeenCalled();
+    });
+
+    it("creates the criterion scoped to the bid request", async () => {
+      prisma.bidRequest.findFirst.mockResolvedValue({ id: "br-1", title: "Electrical rough-in" });
+      prisma.bidScoreCriterion.create.mockResolvedValue({ id: "crit-1", label: "Timeline", weight: 3 });
+
+      await service.addCriterion(COMPANY_A, ACTOR, "br-1", { label: "Timeline", weight: 3 });
+
+      expect(prisma.bidScoreCriterion.create).toHaveBeenCalledWith({
+        data: { bidRequestId: "br-1", label: "Timeline", weight: 3 },
+      });
+    });
+  });
+
+  describe("scoreBid()", () => {
+    it("404s when the bid doesn't belong to this bid request/company", async () => {
+      prisma.bid.findFirst.mockResolvedValue(null);
+      await expect(service.scoreBid(COMPANY_A, ACTOR, "br-1", "bid-1", { criterionId: "crit-1", score: 4 })).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(prisma.bidScore.upsert).not.toHaveBeenCalled();
+    });
+
+    it("404s when the criterion doesn't belong to this bid request", async () => {
+      prisma.bid.findFirst.mockResolvedValue({ id: "bid-1" });
+      prisma.bidScoreCriterion.findFirst.mockResolvedValue(null);
+      await expect(service.scoreBid(COMPANY_A, ACTOR, "br-1", "bid-1", { criterionId: "crit-1", score: 4 })).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it("upserts the score", async () => {
+      prisma.bid.findFirst.mockResolvedValue({ id: "bid-1" });
+      prisma.bidScoreCriterion.findFirst.mockResolvedValue({ id: "crit-1", label: "Timeline" });
+      prisma.bidScore.upsert.mockResolvedValue({ id: "score-1", score: 4 });
+
+      await service.scoreBid(COMPANY_A, ACTOR, "br-1", "bid-1", { criterionId: "crit-1", score: 4 });
+
+      expect(prisma.bidScore.upsert).toHaveBeenCalledWith({
+        where: { bidId_criterionId: { bidId: "bid-1", criterionId: "crit-1" } },
+        create: { bidId: "bid-1", criterionId: "crit-1", score: 4 },
+        update: { score: 4 },
+      });
+    });
+  });
+
+  describe("get()", () => {
+    it("attaches a weightedScore to each bid based on its recorded scores", async () => {
+      prisma.bidRequest.findFirst.mockResolvedValue({
+        id: "br-1",
+        project: { name: "Site A" },
+        invites: [],
+        criteria: [{ id: "crit-1", weight: 5 }],
+        bids: [
+          { id: "bid-1", amount: 5000, subcontractor: { name: "ElectroPro" }, scores: [{ criterionId: "crit-1", score: 4 }] },
+          { id: "bid-2", amount: 4500, subcontractor: { name: "WireWorks" }, scores: [] },
+        ],
+      });
+
+      const result = await service.get(COMPANY_A, "br-1");
+
+      expect(result.bids[0].weightedScore).toBe(4);
+      expect(result.bids[1].weightedScore).toBeNull();
     });
   });
 });

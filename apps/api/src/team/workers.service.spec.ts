@@ -197,3 +197,109 @@ describe("WorkersService — PTO and onboarding", () => {
     });
   });
 });
+
+describe("WorkersService kiosk PIN", () => {
+  let service: WorkersService;
+  let prisma: {
+    worker: { findFirst: jest.Mock; update: jest.Mock; findMany: jest.Mock };
+  };
+  let audit: { record: jest.Mock };
+
+  beforeEach(async () => {
+    prisma = {
+      worker: { findFirst: jest.fn(), update: jest.fn(), findMany: jest.fn() },
+    };
+    audit = { record: jest.fn() };
+
+    const module = await Test.createTestingModule({
+      providers: [WorkersService, { provide: PrismaService, useValue: prisma }, { provide: AuditService, useValue: audit }],
+    }).compile();
+
+    service = module.get(WorkersService);
+  });
+
+  describe("setClockInPin() / verifyClockInPin()", () => {
+    it("404s when the worker does not belong to this company", async () => {
+      prisma.worker.findFirst.mockResolvedValue(null);
+      await expect(service.setClockInPin(COMPANY_A, ACTOR, "worker-1", "1234")).rejects.toThrow(NotFoundException);
+      expect(prisma.worker.update).not.toHaveBeenCalled();
+    });
+
+    it("hashes the PIN rather than storing it in plain text", async () => {
+      prisma.worker.findFirst.mockResolvedValue({ id: "worker-1", companyId: COMPANY_A });
+      prisma.worker.update.mockResolvedValue({ id: "worker-1" });
+
+      await service.setClockInPin(COMPANY_A, ACTOR, "worker-1", "1234");
+
+      const call = prisma.worker.update.mock.calls[0][0];
+      expect(call.data.clockInPinHash).not.toBe("1234");
+      expect(call.data.clockInPinHash).toMatch(/^\$2[aby]\$/);
+    });
+
+    it("verifies a correct PIN against the stored hash and rejects a wrong one", async () => {
+      prisma.worker.findFirst.mockResolvedValue({ id: "worker-1", companyId: COMPANY_A });
+      prisma.worker.update.mockImplementation(({ data }) => Promise.resolve({ id: "worker-1", clockInPinHash: data.clockInPinHash }));
+
+      await service.setClockInPin(COMPANY_A, ACTOR, "worker-1", "1234");
+      const storedHash = prisma.worker.update.mock.calls[0][0].data.clockInPinHash;
+      prisma.worker.findFirst.mockResolvedValue({ id: "worker-1", companyId: COMPANY_A, clockInPinHash: storedHash });
+
+      const correct = await service.verifyClockInPin(COMPANY_A, "worker-1", "1234");
+      const wrong = await service.verifyClockInPin(COMPANY_A, "worker-1", "9999");
+
+      expect(correct).toEqual({ valid: true });
+      expect(wrong).toEqual({ valid: false });
+    });
+
+    it("returns invalid without comparing when no PIN has been set", async () => {
+      prisma.worker.findFirst.mockResolvedValue({ id: "worker-1", companyId: COMPANY_A, clockInPinHash: null });
+      const result = await service.verifyClockInPin(COMPANY_A, "worker-1", "1234");
+      expect(result).toEqual({ valid: false });
+    });
+  });
+
+  describe("clearClockInPin()", () => {
+    it("clears the hash", async () => {
+      prisma.worker.findFirst.mockResolvedValue({ id: "worker-1", companyId: COMPANY_A });
+      prisma.worker.update.mockResolvedValue({ id: "worker-1", clockInPinHash: null });
+
+      await service.clearClockInPin(COMPANY_A, ACTOR, "worker-1");
+
+      expect(prisma.worker.update).toHaveBeenCalledWith({ where: { id: "worker-1" }, data: { clockInPinHash: null } });
+    });
+  });
+
+  describe("listKioskWorkers()", () => {
+    it("only queries active workers with a kiosk PIN set", async () => {
+      prisma.worker.findMany.mockResolvedValue([]);
+      await service.listKioskWorkers(COMPANY_A);
+
+      const call = prisma.worker.findMany.mock.calls[0][0];
+      expect(call.where).toEqual({ companyId: COMPANY_A, active: true, clockInPinHash: { not: null } });
+    });
+  });
+
+  describe("get() / list() never expose the raw PIN hash", () => {
+    it("replaces clockInPinHash with a hasClockInPin boolean on get()", async () => {
+      prisma.worker.findFirst.mockResolvedValue({ id: "worker-1", companyId: COMPANY_A, name: "Peter Bauer", clockInPinHash: "$2b$10$hashvalue" });
+
+      const result = await service.get(COMPANY_A, "worker-1");
+
+      expect(result).not.toHaveProperty("clockInPinHash");
+      expect(result.hasClockInPin).toBe(true);
+    });
+
+    it("does the same for every row returned by list()", async () => {
+      prisma.worker.findMany.mockResolvedValue([
+        { id: "worker-1", clockInPinHash: "$2b$10$hashvalue" },
+        { id: "worker-2", clockInPinHash: null },
+      ]);
+
+      const result = await service.list(COMPANY_A);
+
+      expect(result.every((w) => !("clockInPinHash" in w))).toBe(true);
+      expect(result[0].hasClockInPin).toBe(true);
+      expect(result[1].hasClockInPin).toBe(false);
+    });
+  });
+});

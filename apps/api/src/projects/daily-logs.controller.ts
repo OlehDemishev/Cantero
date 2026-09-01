@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common";
+import { Body, Controller, Get, Header, Param, Patch, Post, Query, Res } from "@nestjs/common";
+import type { Response } from "express";
 import {
   createDailyLogSchema,
   updateDailyLogSchema,
@@ -17,6 +18,23 @@ export class DailyLogsController {
   @Get()
   list(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string) {
     return this.service.listForProject(user.companyId, projectId);
+  }
+
+  // Declared before ":id" so "weather-delay-report" isn't swallowed as a daily-log id.
+  @Get("weather-delay-report")
+  weatherDelayReport(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string) {
+    return this.service.weatherDelayReport(user.companyId, projectId);
+  }
+
+  @Get("weather-delay-report/export")
+  @Header("Content-Type", "text/csv")
+  async weatherDelayReportExport(
+    @CurrentUser() user: AuthUser,
+    @Res({ passthrough: true }) res: Response,
+    @Query("projectId") projectId: string,
+  ) {
+    res.set("Content-Disposition", "attachment; filename=weather-delay-report.csv");
+    return this.service.weatherDelayReportCsv(user.companyId, projectId);
   }
 
   @Get(":id")

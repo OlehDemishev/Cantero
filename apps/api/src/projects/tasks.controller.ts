@@ -2,10 +2,12 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from "@nestj
 import {
   createTaskDependencySchema,
   createTaskSchema,
+  shiftProjectScheduleSchema,
   updateTaskSchema,
   type AuthUser,
   type CreateTaskDependencyInput,
   type CreateTaskInput,
+  type ShiftProjectScheduleInput,
   type UpdateTaskInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
@@ -39,6 +41,15 @@ export class TasksController {
   @Post()
   create(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(createTaskSchema)) body: CreateTaskInput) {
     return this.service.create(user.companyId, body);
+  }
+
+  @Post("shift-schedule")
+  shiftSchedule(
+    @CurrentUser() user: AuthUser,
+    @Query("projectId") projectId: string,
+    @Body(new ZodValidationPipe(shiftProjectScheduleSchema)) body: ShiftProjectScheduleInput,
+  ) {
+    return this.service.shiftProjectSchedule(user.companyId, projectId, body.days);
   }
 
   @Patch(":id")

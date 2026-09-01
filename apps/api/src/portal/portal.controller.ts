@@ -1,11 +1,13 @@
-import { Body, Controller, Get, Header, Param, Post, Req, StreamableFile, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Header, Param, Post, Req, StreamableFile, UseGuards } from "@nestjs/common";
 import type { Request } from "express";
 import {
   clientDecisionSchema,
+  estimateClientDecisionSchema,
   createPortalMessageSchema,
   payInvoiceSchema,
   portalCreateWarrantyClaimSchema,
   type ClientDecisionInput,
+  type EstimateClientDecisionInput,
   type CreatePortalMessageInput,
   type PayInvoiceInput,
   type PortalCreateWarrantyClaimInput,
@@ -33,6 +35,16 @@ export class PortalController {
     return this.service.me(client);
   }
 
+  @Post("payment-method/setup")
+  setupPaymentMethod(@CurrentPortalClient() client: PortalClientContext) {
+    return this.service.createPaymentMethodSetupSession(client);
+  }
+
+  @Delete("payment-method")
+  removePaymentMethod(@CurrentPortalClient() client: PortalClientContext) {
+    return this.service.removePaymentMethod(client);
+  }
+
   @Get("estimates")
   listEstimates(@CurrentPortalClient() client: PortalClientContext) {
     return this.service.listEstimates(client);
@@ -47,7 +59,7 @@ export class PortalController {
   decideEstimate(
     @CurrentPortalClient() client: PortalClientContext,
     @Param("id") id: string,
-    @Body(new ZodValidationPipe(clientDecisionSchema)) body: ClientDecisionInput,
+    @Body(new ZodValidationPipe(estimateClientDecisionSchema)) body: EstimateClientDecisionInput,
     @Req() req: Request,
   ) {
     return this.service.decideEstimate(client, id, body, req.ip);

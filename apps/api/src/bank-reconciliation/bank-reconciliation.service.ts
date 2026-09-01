@@ -1,8 +1,9 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import type { ImportResult, MatchBankTransactionInput } from "@cantero/shared";
+import type { CreateBankTransactionRuleInput, ExpenseCategory, ImportResult, MatchBankTransactionInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { parseCsvRecords } from "../common/csv";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
+import { categorizeDescription } from "./categorize-transaction";
 
 @Injectable()
 export class BankReconciliationService {
@@ -59,7 +60,55 @@ export class BankReconciliationService {
       companyId,
       `Imported ${result.created} bank transactions from CSV (${result.skipped} skipped)`,
     );
+
+    if (toCreate.length > 0) await this.applyRules(companyId);
     return result;
+  }
+
+  listRules(companyId: string) {
+    return this.prisma.bankTransactionRule.findMany({ where: { companyId }, orderBy: { createdAt: "asc" } });
+  }
+
+  async createRule(companyId: string, actor: AuditActor, input: CreateBankTransactionRuleInput) {
+    const rule = await this.prisma.bankTransactionRule.create({ data: { companyId, ...input } });
+    this.audit.record(
+      companyId,
+      actor,
+      "bank_transaction_rule.created",
+      "BankTransactionRule",
+      rule.id,
+      `Added a rule: "${input.pattern}" → ${input.category}`,
+    );
+    return rule;
+  }
+
+  async deleteRule(companyId: string, actor: AuditActor, id: string) {
+    const rule = await this.prisma.bankTransactionRule.findFirst({ where: { id, companyId } });
+    if (!rule) throw new NotFoundException("Rule not found");
+    await this.prisma.bankTransactionRule.delete({ where: { id } });
+    this.audit.record(companyId, actor, "bank_transaction_rule.deleted", "BankTransactionRule", id, `Removed rule: "${rule.pattern}"`);
+    return { ok: true };
+  }
+
+  /** Categorizes every transaction that doesn't have a category yet — never overwrites a category
+   * someone already set (by a rule or by hand), and never touches matchedInvoiceId/reconciled.
+   * Runs automatically right after a CSV import, and on demand (e.g. after adding a new rule, to
+   * sweep it across transactions imported before the rule existed). */
+  async applyRules(companyId: string): Promise<{ categorized: number }> {
+    const [rules, transactions] = await Promise.all([
+      this.prisma.bankTransactionRule.findMany({ where: { companyId }, orderBy: { createdAt: "asc" } }),
+      this.prisma.bankTransaction.findMany({ where: { companyId, category: null } }),
+    ]);
+    if (rules.length === 0 || transactions.length === 0) return { categorized: 0 };
+
+    const updates = transactions
+      .map((tx) => ({ tx, match: categorizeDescription(tx.description, rules) }))
+      .filter((r): r is { tx: (typeof transactions)[number]; match: NonNullable<typeof r.match> } => !!r.match);
+
+    await Promise.all(
+      updates.map(({ tx, match }) => this.prisma.bankTransaction.update({ where: { id: tx.id }, data: { category: match.category } })),
+    );
+    return { categorized: updates.length };
   }
 
   /**
@@ -147,6 +196,21 @@ export class BankReconciliationService {
       },
     });
     this.audit.record(companyId, actor, "bank_transaction.matched", "BankTransaction", id, `Matched bank transaction "${transaction.description}"`);
+    return updated;
+  }
+
+  async setCategory(companyId: string, actor: AuditActor, id: string, category: ExpenseCategory | null) {
+    const transaction = await this.prisma.bankTransaction.findFirst({ where: { id, companyId } });
+    if (!transaction) throw new NotFoundException("Bank transaction not found");
+    const updated = await this.prisma.bankTransaction.update({ where: { id }, data: { category } });
+    this.audit.record(
+      companyId,
+      actor,
+      "bank_transaction.categorized",
+      "BankTransaction",
+      id,
+      category ? `Categorized "${transaction.description}" as ${category}` : `Cleared category on "${transaction.description}"`,
+    );
     return updated;
   }
 

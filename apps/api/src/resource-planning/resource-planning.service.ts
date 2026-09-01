@@ -4,6 +4,7 @@ import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { SmsService } from "../common/sms/sms.service";
 import { smsTemplates } from "../common/sms/sms-templates";
+import { MessageTemplatesService } from "../message-templates/message-templates.service";
 
 type ResourceType = "worker" | "equipment";
 
@@ -28,6 +29,7 @@ export class ResourcePlanningService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly sms: SmsService,
+    private readonly messageTemplates: MessageTemplatesService,
   ) {}
 
   /** Every active worker and non-retired equipment item with its planned assignments, plus every
@@ -171,7 +173,8 @@ export class ResourcePlanningService {
     // assignments and project-only (no taskId) assignments have nothing worth texting about.
     if (task && worker?.phone && project.company.workerSmsNotificationsEnabled) {
       const locale: Locale = worker.preferredLocale ?? project.company.locale;
-      await this.sms.send({ to: worker.phone, body: smsTemplates.taskAssigned(locale, task.name, project.name) });
+      const custom = await this.messageTemplates.render(companyId, "task_assigned_sms", { taskName: task.name, projectName: project.name });
+      await this.sms.send({ to: worker.phone, body: custom ?? smsTemplates.taskAssigned(locale, task.name, project.name) });
     }
 
     const conflicts = await this.findConflictsFor(companyId, assignment);

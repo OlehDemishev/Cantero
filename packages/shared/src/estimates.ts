@@ -22,6 +22,11 @@ export const updateMaterialReorderSchema = z.object({
 });
 export type UpdateMaterialReorderInput = z.infer<typeof updateMaterialReorderSchema>;
 
+export const updateMaterialPriceSchema = z.object({
+  defaultUnitPrice: z.number().positive(),
+});
+export type UpdateMaterialPriceInput = z.infer<typeof updateMaterialPriceSchema>;
+
 export const updateMaterialSustainabilitySchema = z.object({
   carbonFootprintKgCo2e: z.number().nonnegative().nullable().optional(),
   greenCertified: z.boolean().optional(),
@@ -127,6 +132,16 @@ export const updateProjectCurrencySchema = z.object({
   currency: z.enum(SUPPORTED_CURRENCIES).nullable(),
 });
 export type UpdateProjectCurrencyInput = z.infer<typeof updateProjectCurrencySchema>;
+
+export const updateProjectBudgetAlertThresholdSchema = z.object({
+  budgetAlertThresholdPercent: z.number().int().min(1).max(100).nullable(),
+});
+export type UpdateProjectBudgetAlertThresholdInput = z.infer<typeof updateProjectBudgetAlertThresholdSchema>;
+
+export const shiftProjectScheduleSchema = z.object({
+  days: z.number().int().min(1).max(365),
+});
+export type ShiftProjectScheduleInput = z.infer<typeof shiftProjectScheduleSchema>;
 
 export const updateProjectWarrantySchema = z.object({
   handoverDate: z.string().datetime().nullable().optional(),
@@ -258,6 +273,32 @@ export const clientDecisionSchema = z
     path: ["signatureDataUrl"],
   });
 export type ClientDecisionInput = z.infer<typeof clientDecisionSchema>;
+
+/// Estimate-only variant of clientDecisionSchema — adds "countered" (the client proposes a
+/// different price instead of a flat approve/reject). Kept separate from clientDecisionSchema,
+/// which ChangeOrder's decision endpoints also use, so a change order can never end up in a
+/// "countered" state its own applyDecision() doesn't know how to label correctly.
+export const estimateClientDecisionSchema = z.discriminatedUnion("decision", [
+  z.object({
+    decision: z.literal("approved"),
+    note: z.string().max(2000).optional(),
+    signerName: z.string().min(1).max(160),
+    signatureDataUrl: z
+      .string()
+      .regex(/^data:image\/png;base64,/, "Signature must be a PNG data URL")
+      .max(300_000),
+  }),
+  z.object({
+    decision: z.literal("rejected"),
+    note: z.string().max(2000).optional(),
+  }),
+  z.object({
+    decision: z.literal("countered"),
+    counterOfferAmount: z.number().positive(),
+    note: z.string().max(2000).optional(),
+  }),
+]);
+export type EstimateClientDecisionInput = z.infer<typeof estimateClientDecisionSchema>;
 
 export const createChangeOrderSchema = z.object({
   title: z.string().min(1).max(160),

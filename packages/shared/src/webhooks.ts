@@ -4,6 +4,7 @@ export const WEBHOOK_EVENTS = [
   "estimate.sent",
   "estimate.client_approved",
   "estimate.client_rejected",
+  "estimate.client_countered",
   "change_order.sent",
   "change_order.client_approved",
   "change_order.client_rejected",
@@ -11,6 +12,7 @@ export const WEBHOOK_EVENTS = [
   "invoice.payment_recorded",
   "invoice.recurring_generated",
   "material.low_stock",
+  "material.price_changed",
   "rfi.answered",
   "rfi.closed",
   "punch_list.resolved",
@@ -28,6 +30,8 @@ export const WEBHOOK_EVENTS = [
   "client.lost",
   "client.lead_captured",
   "expense.approved",
+  "nps_survey.responded",
+  "enps_survey.responded",
 ] as const;
 export type WebhookEvent = (typeof WEBHOOK_EVENTS)[number];
 

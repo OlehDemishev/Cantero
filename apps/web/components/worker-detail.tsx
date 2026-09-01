@@ -18,6 +18,7 @@ interface Worker {
   phone: string | null;
   preferredLocale: string | null;
   payrollEmployeeId: string | null;
+  hasClockInPin: boolean;
 }
 interface WageClassification {
   id: string;
@@ -70,6 +71,10 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
   const [onboardingTasks, setOnboardingTasks] = useState<OnboardingTask[] | null>(null);
   const [ptoForm, setPtoForm] = useState({ deltaHours: "", reason: "" });
   const [ptoBusy, setPtoBusy] = useState(false);
+
+  const [pinDraft, setPinDraft] = useState("");
+  const [pinBusy, setPinBusy] = useState(false);
+  const [pinError, setPinError] = useState<string | null>(null);
 
   function load() {
     apiFetch<Summary>(`/workers/${workerId}/summary`).then((s) => {
@@ -169,6 +174,31 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
       load();
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function setClockInPin(e: React.FormEvent) {
+    e.preventDefault();
+    setPinBusy(true);
+    setPinError(null);
+    try {
+      await apiFetch(`/workers/${workerId}/clock-in-pin`, { method: "PATCH", body: JSON.stringify({ pin: pinDraft }) });
+      setPinDraft("");
+      load();
+    } catch (err) {
+      setPinError(err instanceof Error ? err.message : tc("error"));
+    } finally {
+      setPinBusy(false);
+    }
+  }
+
+  async function clearClockInPin() {
+    setPinBusy(true);
+    try {
+      await apiFetch(`/workers/${workerId}/clock-in-pin`, { method: "DELETE" });
+      load();
+    } finally {
+      setPinBusy(false);
     }
   }
 
@@ -302,6 +332,33 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
           <button onClick={toggleActive} disabled={busy} className="btn-secondary mt-3 w-full">
             {summary.worker.active ? t("deactivate") : t("reactivate")}
           </button>
+
+          <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700">{t("kioskPin")}</h2>
+          <p className="mb-2 text-xs text-gray-500">{t("kioskPinHint")}</p>
+          {summary.worker.hasClockInPin ? (
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-success-700">{t("kioskPinSet")}</span>
+              <button onClick={clearClockInPin} disabled={pinBusy} className="text-xs text-error-700 hover:underline">
+                {t("kioskPinClear")}
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={setClockInPin} className="flex items-center gap-2">
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="\d{4,6}"
+                placeholder={t("kioskPinPlaceholder")}
+                className="input flex-1"
+                value={pinDraft}
+                onChange={(e) => setPinDraft(e.target.value)}
+              />
+              <button type="submit" disabled={pinBusy || pinDraft.length < 4} className="btn-secondary shrink-0">
+                {t("kioskPinSave")}
+              </button>
+            </form>
+          )}
+          {pinError && <p className="mt-1 text-xs text-error-700">{pinError}</p>}
 
           <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700">{t("certifications")}</h2>
           {certifications === null ? (

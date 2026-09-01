@@ -5,6 +5,7 @@ import {
   createProjectSchema,
   setProjectRestrictedSchema,
   updateProjectCurrencySchema,
+  updateProjectBudgetAlertThresholdSchema,
   updateProjectGeofenceSchema,
   updateProjectPublicWorkSchema,
   updateProjectWarrantySchema,
@@ -13,6 +14,7 @@ import {
   type CreateProjectInput,
   type SetProjectRestrictedInput,
   type UpdateProjectCurrencyInput,
+  type UpdateProjectBudgetAlertThresholdInput,
   type UpdateProjectGeofenceInput,
   type UpdateProjectPublicWorkInput,
   type UpdateProjectWarrantyInput,
@@ -99,6 +101,15 @@ export class ProjectsController {
     @Body(new ZodValidationPipe(updateProjectCurrencySchema)) body: UpdateProjectCurrencyInput,
   ) {
     return this.service.updateCurrency(user.companyId, id, body);
+  }
+
+  @Patch(":id/budget-alert-threshold")
+  updateBudgetAlertThreshold(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(updateProjectBudgetAlertThresholdSchema)) body: UpdateProjectBudgetAlertThresholdInput,
+  ) {
+    return this.service.updateBudgetAlertThreshold(user.companyId, id, body);
   }
 
   @Patch(":id/warranty")

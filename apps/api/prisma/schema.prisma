@@ -78,6 +78,11 @@ enum EstimateClientDecision {
   pending
   approved
   rejected
+  /// Client proposes a different price instead of a flat approve/reject — see
+  /// Estimate.counterOfferAmount. Terminal like approved/rejected: the PM responds by creating a
+  /// new variant (EstimatesService.createVariant, already existed) with revised pricing and
+  /// sending that instead, rather than this row ever transitioning again.
+  countered
 }
 
 enum InvoiceStatus {
@@ -181,6 +186,30 @@ model Company {
   /// When true, an Estimate sent to the client and still clientDecision=pending gets the same
   /// escalating-reminder treatment invoices already get.
   estimateRemindersEnabled           Boolean          @default(false)
+  /// Same escalating-reminder treatment, applied to a ChangeOrder sent to the client and still
+  /// clientDecision=pending, via ChangeOrderRemindersService.
+  changeOrderRemindersEnabled        Boolean          @default(false)
+  /// When true, EnpsSurveyService's quarterly pass texts every active worker with a phone an
+  /// anonymous-in-the-UI 0-10 "how likely to recommend working here" question — off by default,
+  /// same "unsolicited message" reasoning as workerSmsNotificationsEnabled.
+  enpsSurveysEnabled                 Boolean          @default(false)
+  /// Last time a quarterly eNPS wave went out — null means never. EnpsSurveyService advances this
+  /// by ~90 days per wave rather than using a fixed calendar schedule, so turning the toggle off
+  /// and back on later doesn't immediately fire a wave.
+  lastEnpsSentAt                     DateTime?
+  /// Fraction of budgeted cost (materials + labor + subcontractor actuals) spent before
+  /// NotificationsService.budgetAlerts flags a project — was a hard-coded 90 for every company;
+  /// Project.budgetAlertThresholdPercent overrides this for one project (e.g. a fixed-price
+  /// contract the PM wants watched tighter).
+  budgetAlertThresholdPercent        Int              @default(90)
+  /// Monthly late-fee rate applied to an overdue invoice's outstanding balance (e.g. 1.5 for
+  /// 1.5%/month) — see calculateLateFee. Null disables late fees entirely; this is never applied
+  /// automatically, only ever shown as an accrued amount until InvoicesService.chargeLateFee adds
+  /// it as a real line, so a company can quote it to a client before actually billing it.
+  lateFeePercentPerMonth             Decimal?         @db.Decimal(5, 2)
+  /// Default "net" payment terms in days, used to compute Invoice.dueDate on send() when it
+  /// wasn't already set explicitly — Client.paymentTermsDays overrides this per client.
+  defaultPaymentTermsDays            Int              @default(30)
   /// Days after creation an open RFI/punch list item may stay unanswered/unresolved before
   /// it's auto-escalated (flagged + emailed to the company owner) — null disables escalation.
   rfiSlaDays                         Int?
@@ -195,6 +224,15 @@ model Company {
   workerSmsNotificationsEnabled      Boolean          @default(false)
   /// Public, unauthenticated token embedded in the company's lead-capture form URL — null disables the form entirely.
   publicLeadFormToken                String?          @unique
+  /// Vanity domain (e.g. "portal.mycompany.com") the client portal is branded for once verified —
+  /// null means no custom domain requested. Setting it alone doesn't activate anything: the
+  /// customer must point a CNAME at us (see PortalBrandingService.CNAME_TARGET) and the domain
+  /// must actually resolve there before verifyCustomPortalDomain() sets the verified timestamp.
+  /// Note this covers branding only — routing browser traffic for the domain to this app (DNS
+  /// beyond the CNAME check, plus a TLS certificate for it) is infrastructure/ops work outside
+  /// what application code can provision.
+  customPortalDomain                 String?          @unique
+  customPortalDomainVerifiedAt       DateTime?
   /// Enterprise SSO (SAML 2.0) — all four null means SSO is off for this company. When set,
   /// a user whose email matches ssoDomain is routed to the IdP at ssoEntryPoint instead of
   /// password login, and is just-in-time provisioned (as "worker") on first successful sign-in.
@@ -277,6 +315,13 @@ model Company {
   childCompanies Company[]     @relation("CompanyFranchise")
 
   materialCatalogItems            MaterialCatalogItem[]
+  materialPriceChanges            MaterialPriceChange[]
+  npsSurveys                      NpsSurvey[]
+  crewSmsBroadcasts               CrewSmsBroadcast[]
+  messageTemplates                MessageTemplate[]
+  siteSignIns                     SiteSignIn[]
+  enpsSurveys                     EnpsSurvey[]
+  holidays                        CompanyHoliday[]
   rateCatalogItems                RateCatalogItem[]
   assemblies                      Assembly[]
   projects                        Project[]
@@ -343,6 +388,7 @@ model Company {
   onboardingTemplateItems         OnboardingTemplateItem[]
   workerOnboardingTasks           WorkerOnboardingTask[]
   bankTransactions                BankTransaction[]
+  bankTransactionRules            BankTransactionRule[]
   clientStageHistory              ClientStageHistory[]
   inspectionTemplates             InspectionTemplate[]
   inspectionChecklists            InspectionChecklist[]
@@ -662,11 +708,36 @@ model MaterialCatalogItem {
   requirementLines    EstimateMaterialRequirement[]
   stockCountLines     StockCountLine[]
   rfqLines            MaterialRfqLine[]
+  priceChanges        MaterialPriceChange[]
 
   @@unique([companyId, code])
   @@index([companyId])
   @@index([preferredSupplierId])
   @@map("material_catalog_items")
+}
+
+/// Logged only when defaultUnitPrice moves by at least MaterialCatalogService's significance
+/// threshold — a routine rounding tweak doesn't create a record or a notification, a real price
+/// swing does. Feeds both the notification bell and the "which open estimates does this affect"
+/// lookup, neither of which existed before this — MaterialCatalogService.priceHistory() already
+/// tracked purchase-order prices over time, but nothing surfaced a catalog-price change itself.
+model MaterialPriceChange {
+  id                    String   @id @default(uuid())
+  companyId             String
+  materialCatalogItemId String
+  oldPrice              Decimal  @db.Decimal(12, 4)
+  newPrice              Decimal  @db.Decimal(12, 4)
+  changePercent         Decimal  @db.Decimal(6, 2)
+  changedByUserId       String?
+  changedByName         String
+  createdAt             DateTime @default(now())
+
+  company             Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  materialCatalogItem MaterialCatalogItem @relation(fields: [materialCatalogItemId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([materialCatalogItemId])
+  @@map("material_price_changes")
 }
 
 /// A named grouping of RateCatalogItems (e.g. "Residential" vs. "Commercial" pricing) a company
@@ -867,6 +938,9 @@ model Estimate {
   sentAt             DateTime?
   decisionAt         DateTime?
   clientDecisionNote String?
+  /// Set together with clientDecision="countered" — the price the client is proposing instead.
+  /// clientDecisionNote carries their reasoning, reusing the same field approve/reject already use.
+  counterOfferAmount Decimal?               @db.Decimal(14, 2)
   /// Random token embedded in the public review link; set on send(), never exposed except there.
   clientAccessToken  String?                @unique
   /// Set together on approval only — a typed name plus a drawn signature (stored via StorageService), never on rejection.
@@ -955,6 +1029,11 @@ model ChangeOrder {
   signerName         String?
   signatureImageKey  String?
   signedIp           String?
+
+  /// Same shape as Estimate.reminderCount/lastReminderSentAt — ChangeOrderRemindersService's
+  /// escalating cadence, capped and self-clearing the same way once clientDecision leaves "pending".
+  reminderCount      Int       @default(0)
+  lastReminderSentAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1424,6 +1503,9 @@ model Project {
   /// behavior. Estimate/Invoice snapshot their own `currency` from this at creation time, so an
   /// override change here never retroactively changes an already-issued document.
   currency             Currency?
+  /// Overrides Company.budgetAlertThresholdPercent for this project only — null means use the
+  /// company default.
+  budgetAlertThresholdPercent Int?
 
   company                  Company                     @relation(fields: [companyId], references: [id], onDelete: Cascade)
   client                   Client?                     @relation(fields: [clientId], references: [id], onDelete: SetNull)
@@ -1465,9 +1547,125 @@ model Project {
   certifiedPayrollReports  CertifiedPayrollReport[]
   drawingSheets            DrawingSheet[]
   permits                  Permit[]
+  npsSurveys               NpsSurvey[]
+  crewSmsBroadcasts        CrewSmsBroadcast[]
+  siteSignIns              SiteSignIn[]
 
   @@index([companyId])
   @@map("projects")
+}
+
+/// Client satisfaction survey (NPS: 0-10) sent once per project, mirroring
+/// Project.reviewRequestedAt's "manual button, once per project" pattern rather than an
+/// automatic trigger — there's no project "closed" status to hook into, so a PM sends it
+/// explicitly from the closeout flow. token is the unauthenticated link the client uses; unlike
+/// ServiceVisit.satisfactionRating (1-5 stars, per visit) this is the standard 0-10 NPS scale
+/// (promoter 9-10 / passive 7-8 / detractor 0-6), aggregated company-wide for a trend view.
+model NpsSurvey {
+  id          String    @id @default(uuid())
+  companyId   String
+  projectId   String
+  token       String    @unique
+  sentAt      DateTime  @default(now())
+  score       Int?
+  comment     String?
+  respondedAt DateTime?
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([projectId])
+  @@map("nps_surveys")
+}
+
+/// A one-way mass SMS sent to every crew member currently assigned to a project (or, when
+/// projectId is null, every active Worker in the company) — distinct from SmsWebhooksService's
+/// two-way per-task status texts. No reply is expected; recipientCount is a snapshot taken at
+/// send time so the log stays accurate even if assignments change afterward.
+model CrewSmsBroadcast {
+  id             String   @id @default(uuid())
+  companyId      String
+  projectId      String?
+  message        String
+  recipientCount Int
+  sentByUserId   String?
+  sentByName     String
+  createdAt      DateTime @default(now())
+
+  company Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([projectId])
+  @@map("crew_sms_broadcasts")
+}
+
+/// A company's override of one hard-coded message body (see MESSAGE_TEMPLATE_KEYS in
+/// @cantero/shared) — e.g. the task-assignment SMS or the NPS survey email. body holds
+/// {{placeholder}} tokens substituted at send time; unlike smsTemplates.ts's per-locale
+/// translations, an override is a single body applied regardless of the recipient's locale — a
+/// documented scope limit, not an oversight, since per-locale custom text would be a much bigger
+/// editor. No row for a key means the built-in template still applies.
+model MessageTemplate {
+  id              String   @id @default(uuid())
+  companyId       String
+  key             String
+  body            String
+  updatedByUserId String?
+  updatedByName   String
+  updatedAt       DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, key])
+  @@map("message_templates")
+}
+
+/// A visitor/subcontractor/inspector sign-in for a project's site roster — distinct from
+/// TimeEntry (internal Worker hours) and SafetyBriefingAttendance (who attended one briefing).
+/// signedOutAt null means still on site. Logged by whoever's running the site (foreman/PM) on
+/// the visitor's behalf through the authenticated project routes — there's no self-serve kiosk
+/// flow, same as DailyLog.
+model SiteSignIn {
+  id             String    @id @default(uuid())
+  companyId      String
+  projectId      String
+  name           String
+  visitorCompany String?
+  purpose        String?
+  signedInAt     DateTime  @default(now())
+  signedOutAt    DateTime?
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([projectId])
+  @@map("site_sign_ins")
+}
+
+/// Quarterly internal "how likely are you to recommend working here" survey (0-10, standard NPS
+/// scale) — the employee-side counterpart to NpsSurvey (client-facing). Sent by SMS, not email,
+/// since Worker has no email field. workerId is kept on the row so the sender can dedupe/track
+/// response rate, but the trend view (EnpsSurveysService.trend) only ever returns aggregate
+/// numbers — no per-worker breakdown — so a respondent is never identifiable from the UI.
+model EnpsSurvey {
+  id          String    @id @default(uuid())
+  companyId   String
+  workerId    String
+  token       String    @unique
+  sentAt      DateTime  @default(now())
+  score       Int?
+  comment     String?
+  respondedAt DateTime?
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  worker  Worker  @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([workerId])
+  @@map("enps_surveys")
 }
 
 /// Opt-in per-project access list — only consulted when Project.restrictedToMembers is true.
@@ -1563,6 +1761,10 @@ model DailyLog {
   authorName       String
   weatherCondition WeatherCondition?
   weatherNotes     String?
+  /// Structured hours of work lost to weather this day — distinct from the free-text `delays`
+  /// field below, which covers any delay cause. Feeds the weather-delay report/export and the
+  /// project's "shift schedule" action, so it needs to be a summable number, not prose.
+  weatherDelayHours Decimal?         @db.Decimal(5, 2)
   crewCount        Int?
   crewNotes        String?
   workPerformed    String
@@ -1590,6 +1792,10 @@ model PunchListItem {
   location         String?
   status           PunchListItemStatus @default(open)
   assigneeWorkerId String?
+  /// Alternative to assigneeWorkerId — a punch list item belongs to whichever assignee is set,
+  /// never both; nothing at the schema level stops both being set, same as
+  /// Document's polymorphic attachment points.
+  assigneeSubcontractorId String?
   dueDate          DateTime?
   createdByUserId  String?
   createdByName    String
@@ -1608,15 +1814,17 @@ model PunchListItem {
   pinX             Float?
   pinY             Float?
 
-  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  project      Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  assignee     Worker?       @relation(fields: [assigneeWorkerId], references: [id], onDelete: SetNull)
-  drawingSheet DrawingSheet? @relation(fields: [drawingSheetId], references: [id], onDelete: SetNull)
-  photos       Document[]
-  comments     Comment[]
+  company              Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project              Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignee             Worker?        @relation(fields: [assigneeWorkerId], references: [id], onDelete: SetNull)
+  assigneeSubcontractor Subcontractor? @relation(fields: [assigneeSubcontractorId], references: [id], onDelete: SetNull)
+  drawingSheet         DrawingSheet?  @relation(fields: [drawingSheetId], references: [id], onDelete: SetNull)
+  photos               Document[]
+  comments             Comment[]
 
   @@index([projectId])
   @@index([companyId])
+  @@index([assigneeSubcontractorId])
   @@map("punch_list_items")
 }
 
@@ -1729,6 +1937,11 @@ model RecurringInvoice {
   frequency       RecurringInvoiceFrequency
   taxPercent      Decimal                   @default(0) @db.Decimal(5, 2)
   active          Boolean                   @default(true)
+  /// Charges the client's saved card (Client.stripePaymentMethodId) immediately after each
+  /// generated invoice is sent — off_session, so no client interaction is needed. Can only be
+  /// turned on when the client already has a card on file; a declined charge just leaves the
+  /// invoice "sent" for the normal reminder flow to chase, same as a manually-sent invoice.
+  autopayEnabled  Boolean                   @default(false)
   startDate       DateTime
   /// The next date this template is due to generate an invoice; advanced by `frequency` after each run.
   nextRunDate     DateTime
@@ -1818,6 +2031,11 @@ model BankTransaction {
   matchedInvoiceId String?
   matchedExpenseId String?
   reconciled       Boolean  @default(false)
+  /// Set by BankReconciliationService.applyRules() matching a saved BankTransactionRule against
+  /// `description`, or manually — independent of matchedInvoiceId/matchedExpenseId/reconciled,
+  /// since a recurring operational transaction (rent, a software subscription) is categorized for
+  /// bookkeeping without ever being "matched" to an Invoice or Expense record.
+  category         ExpenseCategory?
   createdAt        DateTime @default(now())
 
   company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -1826,6 +2044,24 @@ model BankTransaction {
 
   @@index([companyId])
   @@map("bank_transactions")
+}
+
+/// A saved rule that auto-categorizes a bank transaction whose description contains `pattern`
+/// (case-insensitive substring match) — applied in creation order, first match wins, whenever
+/// applyRules() runs (on-demand, and automatically right after a CSV import). Doesn't touch
+/// matchedInvoiceId/matchedExpenseId/reconciled: this is bookkeeping categorization for
+/// transactions that were never going to match an Invoice or Expense in the first place.
+model BankTransactionRule {
+  id        String          @id @default(uuid())
+  companyId String
+  pattern   String
+  category  ExpenseCategory
+  createdAt DateTime        @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@map("bank_transaction_rules")
 }
 
 /// A subcontractor the company pays for labor/work — distinct from Worker
@@ -1870,6 +2106,7 @@ model Subcontractor {
   bids               Bid[]
   contracts          Contract[]
   performanceReviews SubcontractorPerformanceReview[]
+  assignedPunchListItems PunchListItem[]
 
   @@index([companyId])
   @@map("subcontractors")
@@ -2380,10 +2617,11 @@ model BidRequest {
   status      BidRequestStatus @default(open)
   createdAt   DateTime         @default(now())
 
-  company Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  project Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  company Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
   invites BidInvite[]
   bids    Bid[]
+  criteria BidScoreCriterion[]
 
   @@index([companyId])
   @@index([projectId])
@@ -2416,11 +2654,62 @@ model Bid {
 
   bidRequest    BidRequest    @relation(fields: [bidRequestId], references: [id], onDelete: Cascade)
   subcontractor Subcontractor @relation(fields: [subcontractorId], references: [id], onDelete: Cascade)
+  scores        BidScore[]
 
   @@unique([bidRequestId, subcontractorId])
   @@index([bidRequestId])
   @@index([subcontractorId])
   @@map("bids")
+}
+
+/// A qualitative criterion the GC scores every bid against besides price (timeline, quality,
+/// reliability, safety record, ...) — defined per BidRequest so different trades can use
+/// different rubrics. weight is relative, not required to sum to 100 — BidRequestsService
+/// normalizes by the sum of weights actually in use when it computes each bid's weighted total.
+model BidScoreCriterion {
+  id           String @id @default(uuid())
+  bidRequestId String
+  label        String
+  weight       Int
+
+  bidRequest BidRequest  @relation(fields: [bidRequestId], references: [id], onDelete: Cascade)
+  scores     BidScore[]
+
+  @@index([bidRequestId])
+  @@map("bid_score_criteria")
+}
+
+/// One bid's score (1-5) against one criterion — missing rows just mean that criterion hasn't
+/// been scored yet for that bid, not a score of zero.
+model BidScore {
+  id          String @id @default(uuid())
+  bidId       String
+  criterionId String
+  score       Int
+
+  bid       Bid               @relation(fields: [bidId], references: [id], onDelete: Cascade)
+  criterion BidScoreCriterion @relation(fields: [criterionId], references: [id], onDelete: Cascade)
+
+  @@unique([bidId, criterionId])
+  @@index([bidId])
+  @@index([criterionId])
+  @@map("bid_scores")
+}
+
+/// A company-wide non-working day (public holiday, planned shutdown) — used to flag a task/
+/// milestone whose due date lands on one, not to reflow the critical-path engine's own calendar-
+/// day math (a weather delay genuinely costs calendar days; this is a separate, additive check).
+model CompanyHoliday {
+  id        String   @id @default(uuid())
+  companyId String
+  date      DateTime @db.Date
+  label     String
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, date])
+  @@index([companyId])
+  @@map("company_holidays")
 }
 
 // ---------- CRM (thin in Phase 1) ----------
@@ -2434,6 +2723,9 @@ model Client {
   stage                  ClientStage          @default(lead)
   notes                  String?
   createdAt              DateTime             @default(now())
+  /// Overrides Company.defaultPaymentTermsDays for this client only — null means use the
+  /// company default.
+  paymentTermsDays       Int?
   /// Estimated deal value while the client is still in the pipeline (lead/contacted/qualified).
   estimatedValue         Decimal?             @db.Decimal(12, 2)
   ownerWorkerId          String?
@@ -2464,6 +2756,16 @@ model Client {
   country                String? // ISO 3166-1 alpha-2 — null falls back to the company's own country on e-invoices.
   /// Buyer's EU VAT ID (BT-48) — optional, since many clients are private individuals with none.
   vatId                  String?
+  /// Stripe Customer created lazily the first time this client saves a card for autopay — null
+  /// until then. Kept even after the payment method is removed, so re-adding a card doesn't spawn
+  /// duplicate Stripe Customer objects.
+  stripeCustomerId            String?
+  /// Saved default card for RecurringInvoice.autopayEnabled — null means no card on file, and
+  /// autopay can't be turned on for this client's recurring invoices until one is saved via the
+  /// portal's "save card" Checkout (mode "setup", never charges anything itself).
+  stripePaymentMethodId       String?
+  stripePaymentMethodBrand    String?
+  stripePaymentMethodLast4    String?
 
   company           Company                  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   owner             Worker?                  @relation(fields: [ownerWorkerId], references: [id], onDelete: SetNull)
@@ -2600,6 +2902,12 @@ model Worker {
   /// existing employee record — not validated against any external system, same as
   /// Subcontractor.taxId. Null just means it hasn't been filled in yet.
   payrollEmployeeId    String?
+  /// bcrypt hash of a short PIN (set by an admin) letting this worker identify themselves on a
+  /// shared kiosk device without their own login — the device itself is already inside an
+  /// authenticated company session (someone logged in), so this PIN is a consent/identity gate
+  /// for that session, not a replacement for real auth. Null means kiosk clock-in is off for
+  /// this worker.
+  clockInPinHash       String?
 
   company                  Company                    @relation(fields: [companyId], references: [id], onDelete: Cascade)
   user                     User?                      @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -2620,6 +2928,7 @@ model Worker {
   inspectionsPerformed     InspectionChecklist[]
   assignedDeficiencies     Deficiency[]
   jhaAcknowledgments       JhaAcknowledgment[]
+  enpsSurveys              EnpsSurvey[]
 
   @@index([companyId])
   @@map("workers")

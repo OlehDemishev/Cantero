@@ -6,6 +6,8 @@ import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { TriagePanel } from "@/components/triage-panel";
 import { DashboardWidgetsPanel } from "@/components/dashboard-widgets-panel";
 import { OnboardingChecklist } from "@/components/onboarding-checklist";
+import { NpsTrendPanel } from "@/components/nps-trend-panel";
+import { EnpsTrendPanel } from "@/components/enps-trend-panel";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
@@ -70,6 +72,8 @@ export default function DashboardPage() {
 
       <OnboardingChecklist />
       <TriagePanel />
+      <NpsTrendPanel />
+      <EnpsTrendPanel />
       <DashboardWidgetsPanel />
     </AuthenticatedShell>
   );

@@ -38,6 +38,7 @@ interface Invoice {
   currency: string;
   dueDate: string | null;
   percentComplete: string | null;
+  lateFeeAccrued: number;
   lines: InvoiceLine[];
   payments: Payment[];
   installments: Installment[];
@@ -91,6 +92,16 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
     try {
       const result = await apiFetch<{ emailSentTo: string | null }>(`/invoices/${invoiceId}/send`, { method: "POST" });
       setEmailSentTo(result.emailSentTo);
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function chargeLateFee() {
+    setBusy(true);
+    try {
+      await apiFetch(`/invoices/${invoiceId}/charge-late-fee`, { method: "POST" });
       load();
     } finally {
       setBusy(false);
@@ -324,6 +335,17 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
             <Row label={t("paidTotal")} value={`${paidTotal.toFixed(2)} ${currency}`} />
             <Row label={t("balanceDue")} value={`${balanceDue.toFixed(2)} ${currency}`} emphasize />
           </dl>
+
+          {invoice.lateFeeAccrued > 0 && (
+            <div className="mt-3 flex items-center justify-between rounded-lg border border-warning-200 bg-warning-50 px-3 py-2">
+              <span className="text-xs text-warning-700">
+                {t("lateFeeAccrued", { amount: invoice.lateFeeAccrued, currency })}
+              </span>
+              <button onClick={chargeLateFee} disabled={busy} className="btn-secondary px-2 py-1 text-xs">
+                {t("chargeLateFee")}
+              </button>
+            </div>
+          )}
 
           <form onSubmit={saveDueDate} className="mt-4 flex items-end gap-2 border-t border-gray-100 pt-4">
             <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500">

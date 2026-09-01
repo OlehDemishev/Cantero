@@ -10,10 +10,33 @@ import { ExpensesService } from "./expenses.service";
 import { ReceiptOcrService } from "./receipt-ocr.service";
 import { TimeOffController } from "./time-off.controller";
 import { TimeOffService } from "./time-off.service";
+import { CrewSmsBroadcastController } from "./crew-sms-broadcast.controller";
+import { CrewSmsBroadcastService } from "./crew-sms-broadcast.service";
+import { EnpsSurveysController } from "./enps-surveys.controller";
+import { EnpsSurveysService } from "./enps-surveys.service";
+import { EnpsSurveysProcessor } from "./enps-surveys.processor";
 
 @Module({
-  controllers: [WorkersController, TimeEntriesController, LaborCostController, ExpensesController, TimeOffController],
-  providers: [WorkersService, TimeEntriesService, LaborCostService, ExpensesService, ReceiptOcrService, TimeOffService],
+  controllers: [
+    WorkersController,
+    TimeEntriesController,
+    LaborCostController,
+    ExpensesController,
+    TimeOffController,
+    CrewSmsBroadcastController,
+    EnpsSurveysController,
+  ],
+  providers: [
+    WorkersService,
+    TimeEntriesService,
+    LaborCostService,
+    ExpensesService,
+    ReceiptOcrService,
+    TimeOffService,
+    CrewSmsBroadcastService,
+    EnpsSurveysService,
+    EnpsSurveysProcessor,
+  ],
   exports: [WorkersService, TimeEntriesService, LaborCostService],
 })
 export class TeamModule {}

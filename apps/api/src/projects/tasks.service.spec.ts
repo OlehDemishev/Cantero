@@ -279,3 +279,68 @@ describe("TasksService.portfolioSchedule", () => {
     expect(result[0].milestones).toEqual([{ id: "m-1", name: "Permit approval", dueDate: new Date("2026-09-01") }]);
   });
 });
+
+describe("TasksService.shiftProjectSchedule", () => {
+  let service: TasksService;
+  let prisma: {
+    project: { findFirst: jest.Mock };
+    task: { findMany: jest.Mock; update: jest.Mock };
+    milestone: { findMany: jest.Mock; update: jest.Mock };
+  };
+
+  beforeEach(async () => {
+    prisma = {
+      project: { findFirst: jest.fn() },
+      task: { findMany: jest.fn().mockResolvedValue([]), update: jest.fn() },
+      milestone: { findMany: jest.fn().mockResolvedValue([]), update: jest.fn() },
+    };
+
+    const module = await Test.createTestingModule({
+      providers: [TasksService, { provide: PrismaService, useValue: prisma }],
+    }).compile();
+
+    service = module.get(TasksService);
+  });
+
+  it("rejects when the project does not belong to this company", async () => {
+    prisma.project.findFirst.mockResolvedValue(null);
+
+    await expect(service.shiftProjectSchedule(COMPANY_A, "project-1", 3)).rejects.toThrow(NotFoundException);
+    expect(prisma.task.findMany).not.toHaveBeenCalled();
+  });
+
+  it("only shifts not-done tasks, leaving whichever date fields were actually set", async () => {
+    prisma.project.findFirst.mockResolvedValue({ id: "project-1", companyId: COMPANY_A });
+    prisma.task.findMany.mockResolvedValue([
+      { id: "task-1", startDate: new Date("2026-08-20T00:00:00.000Z"), dueDate: new Date("2026-08-25T00:00:00.000Z") },
+      { id: "task-2", startDate: null, dueDate: new Date("2026-08-22T00:00:00.000Z") },
+    ]);
+
+    await service.shiftProjectSchedule(COMPANY_A, "project-1", 2);
+
+    expect(prisma.task.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ projectId: "project-1", status: { not: "done" } }) }),
+    );
+    expect(prisma.task.update).toHaveBeenCalledWith({
+      where: { id: "task-1" },
+      data: { startDate: new Date("2026-08-22T00:00:00.000Z"), dueDate: new Date("2026-08-27T00:00:00.000Z") },
+    });
+    expect(prisma.task.update).toHaveBeenCalledWith({
+      where: { id: "task-2" },
+      data: { startDate: undefined, dueDate: new Date("2026-08-24T00:00:00.000Z") },
+    });
+  });
+
+  it("shifts every milestone with a due date by the same number of days", async () => {
+    prisma.project.findFirst.mockResolvedValue({ id: "project-1", companyId: COMPANY_A });
+    prisma.milestone.findMany.mockResolvedValue([{ id: "m-1", dueDate: new Date("2026-09-01T00:00:00.000Z") }]);
+
+    const result = await service.shiftProjectSchedule(COMPANY_A, "project-1", 5);
+
+    expect(prisma.milestone.update).toHaveBeenCalledWith({
+      where: { id: "m-1" },
+      data: { dueDate: new Date("2026-09-06T00:00:00.000Z") },
+    });
+    expect(result).toEqual({ shiftedTasks: 0, shiftedMilestones: 1 });
+  });
+});

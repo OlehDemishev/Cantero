@@ -323,7 +323,33 @@
     "city": "Stadt",
     "postalCode": "Postleitzahl",
     "vatIdPlaceholder": "USt-IdNr. (z. B. DE123456789)",
-    "ibanPlaceholder": "IBAN"
+    "ibanPlaceholder": "IBAN",
+    "webhookEvent_insurance_claim_filed": "Versicherungsschaden gemeldet",
+    "webhookEvent_insurance_claim_status_changed": "Status des Versicherungsschadens geändert",
+    "changeOrderReminders": "Automatische Erinnerungen für Nachträge",
+    "changeOrderRemindersHint": "Sendet eskalierende Erinnerungs-E-Mails an den Kunden nach 3, 7 und 14 Tagen, nachdem ein Nachtrag gesendet wurde, solange er noch auf eine Entscheidung wartet.",
+    "webhookEvent_material_price_changed": "Materialpreis im Katalog geändert",
+    "webhookEvent_nps_survey_responded": "NPS-Umfrage beantwortet",
+    "enpsSurveys": "Vierteljährliche Team-Zufriedenheitsumfrage (eNPS)",
+    "enpsSurveysHint": "Sendet jedem aktiven Mitarbeiter mit Telefonnummer einmal pro Quartal eine anonyme Frage (0-10), wie wahrscheinlich er die Arbeit hier weiterempfiehlt.",
+    "enpsSendNow": "Jetzt Welle senden",
+    "enpsSentCount": "{count, plural, one {An # Mitarbeiter gesendet} other {An # Mitarbeiter gesendet}}",
+    "webhookEvent_estimate_client_countered": "Kunde hat einen anderen Preis vorgeschlagen",
+    "webhookEvent_enps_survey_responded": "eNPS-Umfrage beantwortet",
+    "budgetAlertThreshold": "Budget-Warnschwelle (%)",
+    "budgetAlertThresholdHint": "Ein Projekt wird markiert, sobald die tatsächlichen Kosten diesen % des Budgets erreichen. Projekte können dies einzeln überschreiben.",
+    "defaultPaymentTermsDays": "Standard-Zahlungsziel (Tage)",
+    "lateFeePercentPerMonth": "Verzugsgebühr (% pro Monat)",
+    "lateFeeDisabledPlaceholder": "Aus",
+    "lateFeeHint": "Ist dieser Wert gesetzt, wird bei überfälligen Rechnungen automatisch eine anteilige Verzugsgebühr berechnet. Leer lassen, um zu deaktivieren.",
+    "holidays": "Arbeitsfreie Tage",
+    "holidaysHint": "Gesetzliche Feiertage und unternehmensweite freie Tage, mit denen Terminierungen an arbeitsfreien Tagen markiert werden.",
+    "noHolidays": "Es sind noch keine arbeitsfreien Tage konfiguriert.",
+    "holidayDate": "Datum",
+    "holidayLabel": "Bezeichnung",
+    "holidayLabelPlaceholder": "z. B. Neujahr",
+    "addHoliday": "Hinzufügen",
+    "holidaysError": "Dieser arbeitsfreie Tag konnte nicht gespeichert werden."
   },
   "projects": {
     "title": "Projekte",
@@ -341,7 +367,8 @@
     "health_at_risk": "Gefährdet",
     "projectChannel": "Projekt-Kanal",
     "billingCurrency": "Abrechnungswährung",
-    "billingCurrencyDefault": "Unternehmensstandard ({currency})"
+    "billingCurrencyDefault": "Unternehmensstandard ({currency})",
+    "budgetAlertThreshold": "Budget-Warnschwelle überschreiben"
   },
   "clients": {
     "title": "Kunden",
@@ -403,7 +430,9 @@
     "city": "Stadt",
     "postalCode": "Postleitzahl",
     "countryCode": "Land",
-    "vatIdPlaceholder": "USt-IdNr. (optional)"
+    "vatIdPlaceholder": "USt-IdNr. (optional)",
+    "paymentTermsDays": "Zahlungsziel (Tage)",
+    "paymentTermsDaysPlaceholder": "Firmenstandard verwenden"
   },
   "team": {
     "title": "Team",
@@ -466,7 +495,13 @@
     "onboardingTaskTitlePlaceholder": "Aufgabentitel",
     "addOnboardingTask": "Aufgabe hinzufügen",
     "payrollEmployeeId": "Mitarbeiter-ID für Gehaltsabrechnung",
-    "payrollEmployeeIdPlaceholder": "ID in ADP/Gusto/etc."
+    "payrollEmployeeIdPlaceholder": "ID in ADP/Gusto/etc.",
+    "kioskPin": "Kiosk-Anmelde-PIN",
+    "kioskPinHint": "Ermöglicht diesem Mitarbeiter, sich auf einem gemeinsam genutzten Tablet ohne eigenen Login zu identifizieren.",
+    "kioskPinSet": "PIN festgelegt",
+    "kioskPinClear": "PIN löschen",
+    "kioskPinPlaceholder": "4-6-stellige PIN",
+    "kioskPinSave": "PIN festlegen"
   },
   "documents": {
     "title": "Dokumente",
@@ -607,7 +642,15 @@
     "costCodeUnassigned": "Ohne Kostenart",
     "benchmarkHint": "Typischer Preis für diese Kostenart über {count} frühere Kalkulation(en): {median} {currency}/Einheit",
     "computeFormula": "Berechnen",
-    "computedQuantity": "= {value} {unit}"
+    "computedQuantity": "= {value} {unit}",
+    "clientDecision_countered": "Kunde hat einen anderen Preis vorgeschlagen",
+    "clientDecisionThanksCountered": "Vielen Dank — wir haben Ihren vorgeschlagenen Preis von {amount} {currency} an das Team weitergeleitet.",
+    "counterOfferAmountLabel": "Ihr vorgeschlagener Preis",
+    "proposeDifferentPrice": "Stattdessen einen anderen Preis vorschlagen",
+    "sendCounterOffer": "Vorschlag senden",
+    "counterOfferReceived": "Kunde hat stattdessen {amount} {currency} vorgeschlagen.",
+    "createRevisedVariant": "Überarbeitete Version erstellen",
+    "revisedVariantLabel": "Überarbeitet"
   },
   "invoices": {
     "title": "Rechnungen",
@@ -669,7 +712,10 @@
     "exportQuickBooks": "Nach QuickBooks exportieren",
     "exportXero": "Nach Xero exportieren",
     "downloadScheduleOfValues": "Leistungsverzeichnis herunterladen",
-    "downloadEInvoice": "E-Rechnung herunterladen (XRechnung-XML)"
+    "downloadEInvoice": "E-Rechnung herunterladen (XRechnung-XML)",
+    "autopay": "Autom. Zahlung",
+    "lateFeeAccrued": "Aufgelaufene Verzugsgebühr: {amount} {currency}",
+    "chargeLateFee": "Verzugsgebühr berechnen"
   },
   "portal": {
     "signInTitle": "Kundenportal",
@@ -713,7 +759,12 @@
     "messagePlaceholder": "Nachricht schreiben…",
     "send": "Senden",
     "noMessages": "Noch keine Nachrichten.",
-    "payThisInstallment": "Diese Rate zahlen"
+    "payThisInstallment": "Diese Rate zahlen",
+    "paymentMethod": "Zahlungsmethode",
+    "cardOnFile": "{brand} endet auf {last4}",
+    "removeCard": "Karte entfernen",
+    "noCardOnFile": "Keine Karte hinterlegt.",
+    "saveCard": "Karte speichern"
   },
   "equipment": {
     "title": "Ausrüstung",
@@ -841,7 +892,12 @@
     "notes": "Notizen",
     "submitBid": "Angebot abgeben",
     "updateBid": "Angebot aktualisieren",
-    "yourBidWas": "Ihr Angebot: {amount} {currency}"
+    "yourBidWas": "Ihr Angebot: {amount} {currency}",
+    "punchListItems": "Ihre Mängelpunkte",
+    "noPunchListItems": "Ihnen wurden noch keine Mängelpunkte zugewiesen.",
+    "punchListStatus_open": "Offen",
+    "punchListStatus_resolved": "Behoben",
+    "punchListStatus_verified": "Geprüft"
   },
   "budget": {
     "title": "Budget vs. Ist",
@@ -1007,7 +1063,8 @@
     "scanReceiptScanning": "Wird gescannt…",
     "scanReceiptDone": "Gescannt — bitte die Felder unten vor dem Speichern prüfen.",
     "scanReceiptFailed": "Beleg konnte nicht gelesen werden — bitte die Felder manuell ausfüllen.",
-    "scanReceiptNoData": "Auf diesem Beleg wurden weder Betrag, Datum noch Anbieter gefunden — bitte die Felder manuell ausfüllen."
+    "scanReceiptNoData": "Auf diesem Beleg wurden weder Betrag, Datum noch Anbieter gefunden — bitte die Felder manuell ausfüllen.",
+    "kioskMode": "Kiosk-Modus"
   },
   "subcontractors": {
     "title": "Nachunternehmerkosten",
@@ -1143,7 +1200,8 @@
     "type_permit_expiring": "Genehmigungen",
     "type_company_document_expiring": "Eigene Versicherung",
     "type_weather_risk": "Wetterrisiko",
-    "type_budget_overrun": "Budgetüberschreitungen"
+    "type_budget_overrun": "Budgetüberschreitungen",
+    "type_material_price_changed": "Materialpreisänderungen"
   },
   "search": {
     "placeholder": "Alles durchsuchen…",
@@ -1226,7 +1284,16 @@
     "delaysPlaceholder": "Was die Arbeit heute behindert oder verzögert hat",
     "notes": "Notizen",
     "noLogs": "Noch keine Bautagebucheinträge.",
-    "hasDelays": "Verzögerungen"
+    "hasDelays": "Verzögerungen",
+    "weatherDelayHours": "Wetterbedingte Verzögerung (Std.)",
+    "weatherDelayBadge": "{hours} Std. wetterbedingte Verzögerung",
+    "weatherDelayReport": "Bericht zu wetterbedingten Verzögerungen",
+    "weatherDelayTotal": "{hours} Stunden durch Wetter verloren — empfiehlt eine Verschiebung des Zeitplans um {days} Tag(e).",
+    "exportWeatherDelayReport": "CSV exportieren",
+    "shiftScheduleDays": "Verschieben um (Tage)",
+    "shiftSchedule": "Zeitplan verschieben",
+    "shiftScheduleResult": "{tasks} Aufgabe(n) und {milestones} Meilenstein(e) verschoben.",
+    "shiftScheduleHint": "Verschiebt jede noch nicht erledigte Aufgabe und jeden Meilenstein-Termin um diese Anzahl Tage nach hinten — bei Versehen manuell rückgängig machen."
   },
   "punchList": {
     "title": "Mängelliste",
@@ -1251,7 +1318,9 @@
     "bulkVerify": "Ausgewählte verifizieren",
     "applyTemplate": "Anwenden",
     "selectTemplate": "Vorlage anwenden…",
-    "escalated": "Eskaliert"
+    "escalated": "Eskaliert",
+    "assigneeWorkers": "Mitarbeiter",
+    "assigneeSubcontractors": "Subunternehmer"
   },
   "rfi": {
     "title": "Anfragen (RFI)",
@@ -1604,7 +1673,13 @@
     "awarded": "Vergeben",
     "cancelBidRequest": "Ausschreibung abbrechen",
     "open": "Offen",
-    "cancelled": "Abgebrochen"
+    "cancelled": "Abgebrochen",
+    "scoringCriteria": "Bewertungskriterien",
+    "criterionLabelPlaceholder": "z. B. Zeitplan, Sicherheitsbilanz",
+    "addCriterion": "Hinzufügen",
+    "subcontractor": "Subunternehmer",
+    "amount": "Betrag",
+    "weightedScore": "Gewichtete Bewertung"
   },
   "customFields": {
     "title": "Benutzerdefinierte Felder",
@@ -1669,7 +1744,11 @@
     "reviewDescription": "Bitten Sie den Kunden nach Projektabschluss um eine Bewertung.",
     "requestReview": "Bewertung anfordern",
     "reviewSent": "Bewertung angefragt",
-    "reviewError": "Bewertungsanfrage konnte nicht gesendet werden"
+    "reviewError": "Bewertungsanfrage konnte nicht gesendet werden",
+    "npsDescription": "Fragen Sie den Kunden, wie wahrscheinlich es ist, dass er Sie weiterempfiehlt, sobald das Projekt abgeschlossen ist.",
+    "sendNps": "NPS-Umfrage senden",
+    "npsSent": "Umfrage gesendet",
+    "npsError": "Umfrage konnte nicht gesendet werden"
   },
   "dataPrivacy": {
     "title": "Daten & Datenschutz",
@@ -1901,7 +1980,15 @@
     "expense": "Ausgabe",
     "match": "Zuordnen",
     "suggestedMatch": "Vorschlag:",
-    "approxMatch": "ungefähr"
+    "approxMatch": "ungefähr",
+    "categorizationRules": "Kategorisierungsregeln",
+    "categorizationRulesHint": "Eine Transaktion, deren Beschreibung diesen Text enthält, wird automatisch mit der Kategorie markiert — wird nach jedem CSV-Import automatisch angewendet, und unten auch auf Abruf.",
+    "applyRulesNow": "Regeln jetzt anwenden",
+    "applyRulesResult": "{count} Transaktion(en) kategorisiert.",
+    "rulePatternPlaceholder": "z. B. Home Depot",
+    "addRule": "Regel hinzufügen",
+    "category": "Kategorie",
+    "uncategorized": "Nicht kategorisiert"
   },
   "quality": {
     "title": "Qualitätssicherung",
@@ -2373,5 +2460,130 @@
     "status_denied": "Abgelehnt",
     "status_settled": "Reguliert",
     "status_closed": "Abgeschlossen"
+  },
+  "customPortalDomain": {
+    "title": "Eigene Portal-Domain",
+    "hint": "Zeigen Sie beim Kundenportal-Login Ihre eigene Marke statt Cantero — z. B. portal.meinefirma.de.",
+    "cnameInstructions": "Richten Sie für diese Domain einen CNAME-Eintrag auf {target} ein und verifizieren Sie dann.",
+    "verified": "Verifiziert",
+    "notVerified": "Noch nicht verifiziert",
+    "verifyNow": "Jetzt verifizieren",
+    "verifyFailedHint": "CNAME noch nicht gefunden — DNS-Änderungen können etwas dauern.",
+    "infraHint": "Dies prüft nur den DNS-Eintrag. Das Routing des Traffics und ein TLS-Zertifikat für die Domain sind separate Infrastruktur-Schritte außerhalb der App."
+  },
+  "materialPrices": {
+    "title": "Materialpreise",
+    "recentChanges": "Aktuelle Preisänderungen",
+    "showAffectedEstimates": "Betroffene offene Kostenvoranschläge anzeigen",
+    "noAffectedEstimates": "Kein offener Kostenvoranschlag verwendet dieses Material.",
+    "code": "Code",
+    "unit": "Einheit",
+    "price": "Preis"
+  },
+  "npsSurvey": {
+    "title": "Wie wahrscheinlich ist es, dass Sie uns weiterempfehlen?",
+    "thanks": "Vielen Dank für Ihr Feedback!",
+    "error": "Antwort konnte nicht gesendet werden. Bitte versuchen Sie es erneut.",
+    "scoreLabel": "Wert {n}",
+    "notLikely": "Überhaupt nicht wahrscheinlich",
+    "veryLikely": "Äußerst wahrscheinlich",
+    "comment": "Möchten Sie noch etwas hinzufügen? (optional)",
+    "submit": "Absenden"
+  },
+  "npsTrend": {
+    "title": "Kundenzufriedenheit (NPS)",
+    "npsScore": "NPS-Wert",
+    "averageScore": "Durchschnittswert",
+    "responses": "Antworten",
+    "promoters": "Promotoren",
+    "passives": "Passive",
+    "detractors": "Kritiker",
+    "recentComments": "Neueste Kommentare"
+  },
+  "crewSmsBroadcast": {
+    "title": "SMS-Rundruf an die Mannschaft",
+    "placeholder": "z. B. Baustelle morgen wegen Wetter geschlossen",
+    "sending": "Wird gesendet…",
+    "send": "Senden",
+    "error": "Rundruf konnte nicht gesendet werden",
+    "recipientCount": "{count, plural, one {# Empfänger} other {# Empfänger}}"
+  },
+  "geofenceViolations": {
+    "title": "Geozonen-Verstöße",
+    "from": "Von",
+    "to": "Bis",
+    "filter": "Filtern",
+    "exportCsv": "CSV exportieren",
+    "empty": "Keine Geozonen-Verstöße in diesem Zeitraum.",
+    "date": "Datum",
+    "worker": "Mitarbeiter",
+    "project": "Projekt",
+    "hours": "Stunden",
+    "distance": "Entfernung zur Baustelle"
+  },
+  "messageTemplates": {
+    "title": "Nachrichtenvorlagen",
+    "description": "Überschreiben Sie den Wortlaut automatischer Nachrichten. Leer lassen, um den Standardtext zu verwenden (übersetzt in die Sprache des Empfängers).",
+    "key_task_assigned_sms": "Aufgabe zugewiesen (SMS)",
+    "key_safety_briefing_sms": "Sicherheitsunterweisung geplant (SMS)",
+    "key_review_request_email": "Bewertungsanfrage (E-Mail)",
+    "key_nps_survey_email": "NPS-Umfrage-Einladung (E-Mail)",
+    "placeholders": "Platzhalter",
+    "placeholder": "Eigener Nachrichtentext...",
+    "save": "Speichern",
+    "resetToDefault": "Auf Standard zurücksetzen",
+    "customizedBy": "Angepasst von {name}",
+    "error": "Vorlage konnte nicht gespeichert werden"
+  },
+  "equipmentUtilization": {
+    "title": "Auslastung der Technik",
+    "description": "% des Zeitraums, in dem jedes Gerät einem Projekt zugewiesen war — hilft bei der Entscheidung Kauf vs. Miete.",
+    "equipment": "Gerät",
+    "category": "Kategorie",
+    "hoursInUse": "Stunden im Einsatz",
+    "utilization": "Auslastung"
+  },
+  "siteSignIns": {
+    "title": "Anwesenheitsliste Baustelle",
+    "name": "Name",
+    "visitorCompany": "Firma",
+    "purpose": "Zweck",
+    "signIn": "Anmelden",
+    "onSite": "{count, plural, one {# vor Ort} other {# vor Ort}}",
+    "signOut": "Abmelden",
+    "history": "Verlauf"
+  },
+  "enpsTrend": {
+    "title": "Teamzufriedenheit (eNPS)",
+    "enpsScore": "eNPS-Wert",
+    "averageScore": "Durchschnittswert",
+    "responses": "Antworten",
+    "promoters": "Promotoren",
+    "passives": "Passive",
+    "detractors": "Kritiker",
+    "recentComments": "Neueste Kommentare"
+  },
+  "enpsSurvey": {
+    "title": "Wie wahrscheinlich ist es, dass Sie die Arbeit hier weiterempfehlen?",
+    "anonymousNote": "Ihre Antwort ist nirgendwo in der App mit Ihrem Namen verknüpft.",
+    "thanks": "Vielen Dank für Ihr Feedback!",
+    "error": "Antwort konnte nicht gesendet werden. Bitte versuchen Sie es erneut.",
+    "scoreLabel": "Wert {n}",
+    "notLikely": "Überhaupt nicht wahrscheinlich",
+    "veryLikely": "Äußerst wahrscheinlich",
+    "comment": "Möchten Sie noch etwas hinzufügen? (optional)",
+    "submit": "Absenden"
+  },
+  "kiosk": {
+    "title": "Anmelden",
+    "noWorkers": "Für keinen Mitarbeiter ist eine Kiosk-PIN festgelegt — legen Sie eine im Mitarbeiterprofil fest.",
+    "enterPin": "PIN eingeben",
+    "wrongPin": "Falsche PIN — versuchen Sie es erneut.",
+    "submitPin": "Weiter",
+    "project": "Projekt",
+    "selectProject": "Projekt auswählen...",
+    "hours": "Stunden",
+    "logHours": "Stunden erfassen",
+    "entrySaved": "Stunden erfasst. Danke!"
   }
 }

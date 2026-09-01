@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, Post, Req } from "@nestjs/common";
 import type { Request } from "express";
-import { clientDecisionSchema, type ClientDecisionInput } from "@cantero/shared";
+import { estimateClientDecisionSchema, type EstimateClientDecisionInput } from "@cantero/shared";
 import { Public } from "../common/decorators/public.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { EstimatesService } from "./estimates.service";
@@ -20,7 +20,7 @@ export class PublicEstimatesController {
   @Post(":token/decision")
   decide(
     @Param("token") token: string,
-    @Body(new ZodValidationPipe(clientDecisionSchema)) body: ClientDecisionInput,
+    @Body(new ZodValidationPipe(estimateClientDecisionSchema)) body: EstimateClientDecisionInput,
     @Req() req: Request,
   ) {
     return this.service.decide(token, body, req.ip);

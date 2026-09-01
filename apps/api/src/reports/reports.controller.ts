@@ -79,4 +79,20 @@ export class ReportsController {
     const buffer = await this.service.wipReportPdf(user.companyId);
     return new StreamableFile(buffer, { disposition: `attachment; filename="wip-report.pdf"` });
   }
+
+  @Get("geofence-violations")
+  geofenceViolations(@CurrentUser() user: AuthUser, @Query("from") from?: string, @Query("to") to?: string) {
+    return this.service.geofenceViolations(user.companyId, from, to);
+  }
+
+  @Get("geofence-violations/csv")
+  @Header("Content-Type", "text/csv")
+  geofenceViolationsCsv(@CurrentUser() user: AuthUser, @Query("from") from?: string, @Query("to") to?: string) {
+    return this.service.geofenceViolationsCsv(user.companyId, from, to);
+  }
+
+  @Get("equipment-utilization")
+  equipmentUtilization(@CurrentUser() user: AuthUser, @Query("from") from?: string, @Query("to") to?: string) {
+    return this.service.equipmentUtilization(user.companyId, from, to);
+  }
 }

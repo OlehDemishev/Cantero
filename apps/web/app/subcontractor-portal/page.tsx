@@ -52,6 +52,16 @@ interface BidRequest {
   project: { name: string };
   bids: MyBid[];
 }
+type PunchListItemStatus = "open" | "resolved" | "verified";
+interface MyPunchListItem {
+  id: string;
+  title: string;
+  description: string | null;
+  location: string | null;
+  status: PunchListItemStatus;
+  dueDate: string | null;
+  project: { id: string; name: string };
+}
 
 export default function SubcontractorPortalDashboardPage() {
   const t = useTranslations("subcontractorPortal");
@@ -65,6 +75,7 @@ export default function SubcontractorPortalDashboardPage() {
   const [signerName, setSignerName] = useState("");
   const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
   const [bidRequests, setBidRequests] = useState<BidRequest[] | null>(null);
+  const [punchListItems, setPunchListItems] = useState<MyPunchListItem[] | null>(null);
   const [bidForms, setBidForms] = useState<Record<string, { amount: string; notes: string }>>({});
   const [bidBusyId, setBidBusyId] = useState<string | null>(null);
   const [form, setForm] = useState({ projectId: "", description: "", amount: "" });
@@ -108,6 +119,7 @@ export default function SubcontractorPortalDashboardPage() {
     loadCosts();
     loadWaivers();
     loadBidRequests();
+    subcontractorPortalApiFetch<MyPunchListItem[]>("/subcontractor-portal/punch-list-items").then(setPunchListItems);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -213,6 +225,40 @@ export default function SubcontractorPortalDashboardPage() {
                 <li key={a.id} className="rounded-md border border-gray-200 px-3 py-2 text-sm">
                   <span className="font-medium text-gray-900">{a.project.name}</span>
                   {a.project.address && <span className="ml-2 text-xs text-gray-400">{a.project.address}</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="card mt-6">
+          <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("punchListItems")}</h2>
+          {!punchListItems || punchListItems.length === 0 ? (
+            <p className="text-sm text-gray-400">{t("noPunchListItems")}</p>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {punchListItems.map((item) => (
+                <li key={item.id} className="rounded-md border border-gray-200 px-3 py-2 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-gray-900">{item.title}</span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                        item.status === "verified"
+                          ? "bg-success-50 text-success-700"
+                          : item.status === "resolved"
+                            ? "bg-warning-50 text-warning-700"
+                            : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {t(`punchListStatus_${item.status}`)}
+                    </span>
+                  </div>
+                  <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-gray-400">
+                    <span>{item.project.name}</span>
+                    {item.location && <span>{item.location}</span>}
+                    {item.dueDate && <span>{new Date(item.dueDate).toLocaleDateString()}</span>}
+                  </div>
+                  {item.description && <p className="mt-1 text-xs text-gray-500">{item.description}</p>}
                 </li>
               ))}
             </ul>

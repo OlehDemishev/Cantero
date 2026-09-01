@@ -9,6 +9,8 @@ interface Me {
   name: string;
   companyName: string;
   currency: string;
+  savedCardBrand: string | null;
+  savedCardLast4: string | null;
 }
 interface EstimateSummary {
   id: string;
@@ -73,6 +75,31 @@ export default function PortalDashboardPage() {
   const [claimForm, setClaimForm] = useState({ projectId: "", title: "", description: "", location: "" });
   const [claimBusy, setClaimBusy] = useState(false);
   const [claimMessage, setClaimMessage] = useState<string | null>(null);
+  const [paymentMethodBusy, setPaymentMethodBusy] = useState(false);
+
+  function loadMe() {
+    portalApiFetch<Me>("/portal/me").then(setMe);
+  }
+
+  async function saveCard() {
+    setPaymentMethodBusy(true);
+    try {
+      const { url } = await portalApiFetch<{ url: string }>("/portal/payment-method/setup", { method: "POST" });
+      window.location.href = url;
+    } finally {
+      setPaymentMethodBusy(false);
+    }
+  }
+
+  async function removeCard() {
+    setPaymentMethodBusy(true);
+    try {
+      await portalApiFetch("/portal/payment-method", { method: "DELETE" });
+      loadMe();
+    } finally {
+      setPaymentMethodBusy(false);
+    }
+  }
 
   function loadWarranty() {
     portalApiFetch<PortalProject[]>("/portal/projects").then((list) => {
@@ -88,7 +115,7 @@ export default function PortalDashboardPage() {
       router.replace("/portal/login");
       return;
     }
-    portalApiFetch<Me>("/portal/me").then(setMe);
+    loadMe();
     portalApiFetch<EstimateSummary[]>("/portal/estimates").then(setEstimates);
     portalApiFetch<ChangeOrderSummary[]>("/portal/change-orders").then(setChangeOrders);
     portalApiFetch<InvoiceSummary[]>("/portal/invoices").then(setInvoices);
@@ -321,6 +348,27 @@ export default function PortalDashboardPage() {
                 </li>
               ))}
             </ul>
+          )}
+        </section>
+
+        <section className="card mt-6">
+          <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("paymentMethod")}</h2>
+          {me.savedCardLast4 ? (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-700">
+                {t("cardOnFile", { brand: me.savedCardBrand ?? "", last4: me.savedCardLast4 })}
+              </span>
+              <button onClick={removeCard} disabled={paymentMethodBusy} className="btn-secondary px-2 py-1 text-xs">
+                {t("removeCard")}
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-500">{t("noCardOnFile")}</span>
+              <button onClick={saveCard} disabled={paymentMethodBusy} className="btn-secondary px-2 py-1 text-xs">
+                {t("saveCard")}
+              </button>
+            </div>
           )}
         </section>
 
