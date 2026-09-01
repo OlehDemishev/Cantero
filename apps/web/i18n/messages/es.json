@@ -58,7 +58,8 @@
     "bankReconciliation": "Conciliación bancaria",
     "contracts": "Contratos",
     "schedule": "Cronograma",
-    "integrations": "Integraciones"
+    "integrations": "Integraciones",
+    "insuranceClaims": "Reclamaciones de seguro"
   },
   "auth": {
     "signupTitle": "Crea tu cuenta de Cantero",
@@ -338,7 +339,9 @@
     "health_good": "En curso",
     "health_watch": "A vigilar",
     "health_at_risk": "En riesgo",
-    "projectChannel": "Canal del proyecto"
+    "projectChannel": "Canal del proyecto",
+    "billingCurrency": "Moneda de facturación",
+    "billingCurrencyDefault": "Predeterminada de la empresa ({currency})"
   },
   "clients": {
     "title": "Clientes",
@@ -461,7 +464,9 @@
     "onboardingTemplate": "Plantilla de lista de incorporación",
     "onboardingTemplateHint": "Las tareas aquí se copian a la lista de incorporación de cada nuevo trabajador al crearlo",
     "onboardingTaskTitlePlaceholder": "Título de la tarea",
-    "addOnboardingTask": "Añadir tarea"
+    "addOnboardingTask": "Añadir tarea",
+    "payrollEmployeeId": "ID de empleado en nómina",
+    "payrollEmployeeIdPlaceholder": "ID en ADP/Gusto/etc."
   },
   "documents": {
     "title": "Documentos",
@@ -1113,7 +1118,9 @@
     "earnedRevenue": "Ingresos devengados",
     "billedToDate": "Facturado a la fecha",
     "overUnderBilling": "Facturación en exceso/(defecto)",
-    "total": "Total"
+    "total": "Total",
+    "downloadPayrollExportAdp": "Descargar exportación ADP",
+    "downloadPayrollExportGusto": "Descargar exportación Gusto"
   },
   "notifications": {
     "title": "Notificaciones",
@@ -1322,7 +1329,8 @@
     "acknowledgedBy": "Reconocido por",
     "noJhas": "Aún no se han registrado análisis de riesgos.",
     "acknowledgedCount": "{count} confirmaron",
-    "acknowledgeFor": "Confirmar por {name}"
+    "acknowledgeFor": "Confirmar por {name}",
+    "fileInsuranceClaim": "Presentar reclamación de seguro"
   },
   "submittals": {
     "title": "Solicitudes de aprobación",
@@ -2330,5 +2338,40 @@
     "validUntil": "Válido hasta {date}",
     "download": "Descargar",
     "notFound": "Este enlace no es válido o ya no está compartido."
+  },
+  "insuranceClaims": {
+    "title": "Reclamaciones de seguro",
+    "subtitle": "Reclamaciones presentadas a su aseguradora, desde el primer parte hasta la liquidación.",
+    "newClaim": "Presentar reclamación",
+    "exportCsv": "Exportar CSV",
+    "openTotal": "{amount} {currency} en reclamaciones abiertas",
+    "noProject": "Sin proyecto",
+    "allProjects": "Todos los proyectos",
+    "allStatuses": "Todos los estados",
+    "empty": "Aún no se han presentado reclamaciones.",
+    "details": "Detalles",
+    "insurerName": "Aseguradora",
+    "policyNumber": "Número de póliza",
+    "claimNumber": "Número de reclamación",
+    "claimAmount": "Importe reclamado",
+    "description": "Descripción",
+    "adjusterName": "Perito",
+    "adjusterContact": "Contacto del perito",
+    "fileClaim": "Presentar reclamación",
+    "settledAmount": "Importe liquidado",
+    "settledAt": "Liquidada el",
+    "recordSettlement": "Registrar liquidación",
+    "type_general_liability": "Responsabilidad civil",
+    "type_workers_comp": "Accidentes laborales",
+    "type_property": "Daños materiales",
+    "type_auto": "Vehículos",
+    "type_equipment": "Maquinaria",
+    "type_other": "Otro",
+    "status_filed": "Presentada",
+    "status_under_review": "En revisión",
+    "status_approved": "Aprobada",
+    "status_denied": "Denegada",
+    "status_settled": "Liquidada",
+    "status_closed": "Cerrada"
   }
 }

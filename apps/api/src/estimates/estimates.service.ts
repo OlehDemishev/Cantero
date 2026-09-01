@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import type { Estimate } from "@prisma/client";
+import type { Currency, Estimate } from "@prisma/client";
 import type {
   AddAssemblyToEstimateInput,
   ClientDecisionInput,
@@ -103,11 +103,19 @@ export class EstimatesService {
   async create(companyId: string, input: CreateEstimateInput) {
     const project = await this.prisma.project.findFirst({ where: { id: input.projectId, companyId } });
     if (!project) throw new NotFoundException("Project not found");
+    const currency = await this.resolveCurrency(companyId, project);
 
     return this.prisma.estimate.create({
-      data: { ...input, companyId },
+      data: { ...input, companyId, currency },
       include: { lines: true, sections: true },
     });
+  }
+
+  /** `project.currency` overrides the company default when set — see Project.currency. */
+  private async resolveCurrency(companyId: string, project: { currency: Currency | null }): Promise<Currency> {
+    if (project.currency) return project.currency;
+    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    return company.currency;
   }
 
   async addLine(companyId: string, estimateId: string, input: CreateEstimateLineInput) {
@@ -440,6 +448,7 @@ export class EstimatesService {
         laborRatePerHour: source.laborRatePerHour,
         markupPercent: source.markupPercent,
         taxPercent: source.taxPercent,
+        currency: source.currency,
         variantOfId: rootId,
         variantLabel: input.label,
       },
@@ -463,7 +472,7 @@ export class EstimatesService {
       include: {
         lines: { orderBy: { sortOrder: "asc" }, include: { rateCatalogItem: true } },
         project: true,
-        company: { select: { name: true, currency: true } },
+        company: { select: { name: true } },
       },
     });
     if (!estimate) throw new NotFoundException("Estimate not found");
@@ -476,7 +485,7 @@ export class EstimatesService {
       decisionAt: estimate.decisionAt,
       clientDecisionNote: estimate.clientDecisionNote,
       companyName: estimate.company.name,
-      currency: estimate.company.currency,
+      currency: estimate.currency,
       projectName: estimate.project?.name ?? null,
       lines: estimate.lines.map((l) => ({
         id: l.id,
@@ -588,6 +597,9 @@ export class EstimatesService {
       include: { sections: { orderBy: { sortOrder: "asc" } }, lines: { orderBy: { sortOrder: "asc" } } },
     });
     if (!template) throw new NotFoundException("Template not found");
+    const project = await this.prisma.project.findFirst({ where: { id: input.projectId, companyId } });
+    if (!project) throw new NotFoundException("Project not found");
+    const currency = await this.resolveCurrency(companyId, project);
 
     const estimate = await this.prisma.estimate.create({
       data: {
@@ -597,6 +609,7 @@ export class EstimatesService {
         laborRatePerHour: input.laborRatePerHour,
         markupPercent: input.markupPercent,
         taxPercent: input.taxPercent,
+        currency,
       },
     });
     return this.cloneSectionsAndLines(companyId, template.sections, template.lines, estimate.id);
@@ -691,7 +704,7 @@ export class EstimatesService {
       coverLetter: estimate.coverLetter ?? undefined,
       meta: [
         { label: "Status", value: estimate.status },
-        { label: "Currency", value: company.currency },
+        { label: "Currency", value: estimate.currency },
       ],
       tableHeader: ["Item", "Qty", "Unit", "Materials", "Labor", "Line total"],
       tableRows: estimate.lines.map((line) => {
@@ -708,12 +721,12 @@ export class EstimatesService {
         };
       }),
       totals: [
-        { label: "Materials total", value: `${estimate.materialsCostTotal} ${company.currency}` },
-        { label: "Labor total", value: `${estimate.laborCostTotal} ${company.currency}` },
-        { label: "Subtotal", value: `${estimate.subtotal} ${company.currency}` },
-        { label: `Markup (${estimate.markupPercent}%)`, value: `${estimate.markupAmount} ${company.currency}` },
-        { label: `Tax (${estimate.taxPercent}%)`, value: `${estimate.taxAmount} ${company.currency}` },
-        { label: "Grand total", value: `${estimate.grandTotal} ${company.currency}`, emphasize: true },
+        { label: "Materials total", value: `${estimate.materialsCostTotal} ${estimate.currency}` },
+        { label: "Labor total", value: `${estimate.laborCostTotal} ${estimate.currency}` },
+        { label: "Subtotal", value: `${estimate.subtotal} ${estimate.currency}` },
+        { label: `Markup (${estimate.markupPercent}%)`, value: `${estimate.markupAmount} ${estimate.currency}` },
+        { label: `Tax (${estimate.taxPercent}%)`, value: `${estimate.taxAmount} ${estimate.currency}` },
+        { label: "Grand total", value: `${estimate.grandTotal} ${estimate.currency}`, emphasize: true },
       ],
       branding: { logoBuffer, accentColor: company.brandColor ?? undefined },
       signature:

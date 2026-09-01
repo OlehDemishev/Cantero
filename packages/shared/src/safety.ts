@@ -63,3 +63,39 @@ export const acknowledgeJhaSchema = z.object({
   workerIds: z.array(z.string().uuid()).min(1),
 });
 export type AcknowledgeJhaInput = z.infer<typeof acknowledgeJhaSchema>;
+
+export const INSURANCE_CLAIM_TYPES = ["general_liability", "workers_comp", "property", "auto", "equipment", "other"] as const;
+export type InsuranceClaimType = (typeof INSURANCE_CLAIM_TYPES)[number];
+
+export const INSURANCE_CLAIM_STATUSES = ["filed", "under_review", "approved", "denied", "settled", "closed"] as const;
+export type InsuranceClaimStatus = (typeof INSURANCE_CLAIM_STATUSES)[number];
+
+export const createInsuranceClaimSchema = z.object({
+  projectId: z.string().uuid().optional(),
+  incidentReportId: z.string().uuid().optional(),
+  claimType: z.enum(INSURANCE_CLAIM_TYPES),
+  claimNumber: z.string().max(80).optional(),
+  insurerName: z.string().min(1).max(160),
+  policyNumber: z.string().max(80).optional(),
+  dateFiled: z.string().datetime(),
+  description: z.string().min(1).max(4000),
+  adjusterName: z.string().max(160).optional(),
+  adjusterContact: z.string().max(200).optional(),
+  claimAmount: z.number().nonnegative().optional(),
+});
+export type CreateInsuranceClaimInput = z.infer<typeof createInsuranceClaimSchema>;
+
+export const updateInsuranceClaimSchema = z.object({
+  status: z.enum(INSURANCE_CLAIM_STATUSES).optional(),
+  claimNumber: z.string().max(80).nullable().optional(),
+  insurerName: z.string().min(1).max(160).optional(),
+  policyNumber: z.string().max(80).nullable().optional(),
+  description: z.string().min(1).max(4000).optional(),
+  adjusterName: z.string().max(160).nullable().optional(),
+  adjusterContact: z.string().max(200).nullable().optional(),
+  claimAmount: z.number().nonnegative().nullable().optional(),
+  settledAmount: z.number().nonnegative().nullable().optional(),
+  settledAt: z.string().datetime().nullable().optional(),
+  notes: z.string().max(2000).nullable().optional(),
+});
+export type UpdateInsuranceClaimInput = z.infer<typeof updateInsuranceClaimSchema>;

@@ -17,7 +17,15 @@ interface Document {
   uploadedBy: { name: string } | null;
 }
 
-export function DocumentsPanel({ projectId, invoiceId }: { projectId?: string; invoiceId?: string }) {
+export function DocumentsPanel({
+  projectId,
+  invoiceId,
+  insuranceClaimId,
+}: {
+  projectId?: string;
+  invoiceId?: string;
+  insuranceClaimId?: string;
+}) {
   const t = useTranslations("documents");
   const tc = useTranslations("common");
   const [documents, setDocuments] = useState<Document[] | null>(null);
@@ -41,6 +49,7 @@ export function DocumentsPanel({ projectId, invoiceId }: { projectId?: string; i
     const params = new URLSearchParams();
     if (projectId) params.set("projectId", projectId);
     if (invoiceId) params.set("invoiceId", invoiceId);
+    if (insuranceClaimId) params.set("insuranceClaimId", insuranceClaimId);
     return params.toString();
   }
 
@@ -51,7 +60,7 @@ export function DocumentsPanel({ projectId, invoiceId }: { projectId?: string; i
     apiFetch<Document[]>(`/documents?${params.toString()}`).then(setDocuments);
   }
 
-  useEffect(load, [projectId, invoiceId, search, tagFilter]);
+  useEffect(load, [projectId, invoiceId, insuranceClaimId, search, tagFilter]);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];

@@ -58,7 +58,8 @@
     "bankReconciliation": "Uzgodnienie bankowe",
     "contracts": "Umowy",
     "schedule": "Harmonogram",
-    "integrations": "Integracje"
+    "integrations": "Integracje",
+    "insuranceClaims": "Roszczenia ubezpieczeniowe"
   },
   "auth": {
     "signupTitle": "Utwórz konto Cantero",
@@ -338,7 +339,9 @@
     "health_good": "Na dobrej drodze",
     "health_watch": "Do obserwacji",
     "health_at_risk": "Zagrożony",
-    "projectChannel": "Kanał projektu"
+    "projectChannel": "Kanał projektu",
+    "billingCurrency": "Waluta rozliczeniowa",
+    "billingCurrencyDefault": "Domyślna firmy ({currency})"
   },
   "clients": {
     "title": "Klienci",
@@ -461,7 +464,9 @@
     "onboardingTemplate": "Szablon listy wdrożeniowej",
     "onboardingTemplateHint": "Zadania stąd są kopiowane do listy wdrożeniowej każdego nowego pracownika w momencie jego utworzenia",
     "onboardingTaskTitlePlaceholder": "Nazwa zadania",
-    "addOnboardingTask": "Dodaj zadanie"
+    "addOnboardingTask": "Dodaj zadanie",
+    "payrollEmployeeId": "ID pracownika w systemie płacowym",
+    "payrollEmployeeIdPlaceholder": "ID w ADP/Gusto itp."
   },
   "documents": {
     "title": "Dokumenty",
@@ -1113,7 +1118,9 @@
     "earnedRevenue": "Przychód zarobiony",
     "billedToDate": "Zafakturowano dotychczas",
     "overUnderBilling": "Nad-/(niedo-)fakturowanie",
-    "total": "Razem"
+    "total": "Razem",
+    "downloadPayrollExportAdp": "Pobierz eksport ADP",
+    "downloadPayrollExportGusto": "Pobierz eksport Gusto"
   },
   "notifications": {
     "title": "Powiadomienia",
@@ -1322,7 +1329,8 @@
     "acknowledgedBy": "Potwierdzone przez",
     "noJhas": "Nie zarejestrowano jeszcze żadnych analiz zagrożeń.",
     "acknowledgedCount": "Potwierdzono: {count}",
-    "acknowledgeFor": "Potwierdź za {name}"
+    "acknowledgeFor": "Potwierdź za {name}",
+    "fileInsuranceClaim": "Zgłoś roszczenie ubezpieczeniowe"
   },
   "submittals": {
     "title": "Zatwierdzenia materiałowe",
@@ -2330,5 +2338,40 @@
     "validUntil": "Ważne do {date}",
     "download": "Pobierz",
     "notFound": "Ten link jest nieprawidłowy lub nie jest już udostępniany."
+  },
+  "insuranceClaims": {
+    "title": "Roszczenia ubezpieczeniowe",
+    "subtitle": "Roszczenia zgłoszone do ubezpieczyciela — od pierwszego zgłoszenia po wypłatę odszkodowania.",
+    "newClaim": "Zgłoś roszczenie",
+    "exportCsv": "Eksportuj CSV",
+    "openTotal": "{amount} {currency} w otwartych roszczeniach",
+    "noProject": "Brak projektu",
+    "allProjects": "Wszystkie projekty",
+    "allStatuses": "Wszystkie statusy",
+    "empty": "Nie zgłoszono jeszcze żadnych roszczeń.",
+    "details": "Szczegóły",
+    "insurerName": "Ubezpieczyciel",
+    "policyNumber": "Numer polisy",
+    "claimNumber": "Numer roszczenia",
+    "claimAmount": "Kwota roszczenia",
+    "description": "Opis",
+    "adjusterName": "Rzeczoznawca",
+    "adjusterContact": "Kontakt do rzeczoznawcy",
+    "fileClaim": "Zgłoś roszczenie",
+    "settledAmount": "Kwota wypłaty",
+    "settledAt": "Data wypłaty",
+    "recordSettlement": "Zarejestruj wypłatę",
+    "type_general_liability": "OC ogólne",
+    "type_workers_comp": "Wypadki przy pracy",
+    "type_property": "Mienie",
+    "type_auto": "Pojazdy",
+    "type_equipment": "Sprzęt",
+    "type_other": "Inne",
+    "status_filed": "Zgłoszone",
+    "status_under_review": "W trakcie rozpatrywania",
+    "status_approved": "Zatwierdzone",
+    "status_denied": "Odrzucone",
+    "status_settled": "Wypłacone",
+    "status_closed": "Zamknięte"
   }
 }

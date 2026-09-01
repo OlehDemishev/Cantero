@@ -58,7 +58,8 @@
     "bankReconciliation": "Bank reconciliation",
     "contracts": "Contracts",
     "schedule": "Schedule",
-    "integrations": "Integrations"
+    "integrations": "Integrations",
+    "insuranceClaims": "Insurance claims"
   },
   "auth": {
     "signupTitle": "Create your Cantero account",
@@ -338,7 +339,9 @@
     "health_good": "On track",
     "health_watch": "Watch",
     "health_at_risk": "At risk",
-    "projectChannel": "Project channel"
+    "projectChannel": "Project channel",
+    "billingCurrency": "Billing currency",
+    "billingCurrencyDefault": "Company default ({currency})"
   },
   "clients": {
     "title": "Clients",
@@ -461,7 +464,9 @@
     "onboardingTemplate": "Onboarding checklist template",
     "onboardingTemplateHint": "Tasks here are cloned onto every new worker's onboarding checklist when they're created",
     "onboardingTaskTitlePlaceholder": "Task title",
-    "addOnboardingTask": "Add task"
+    "addOnboardingTask": "Add task",
+    "payrollEmployeeId": "Payroll employee ID",
+    "payrollEmployeeIdPlaceholder": "ID in ADP/Gusto/etc."
   },
   "documents": {
     "title": "Documents",
@@ -1113,7 +1118,9 @@
     "earnedRevenue": "Earned revenue",
     "billedToDate": "Billed to date",
     "overUnderBilling": "Over/(under) billing",
-    "total": "Total"
+    "total": "Total",
+    "downloadPayrollExportAdp": "Download ADP export",
+    "downloadPayrollExportGusto": "Download Gusto export"
   },
   "notifications": {
     "title": "Notifications",
@@ -1322,7 +1329,8 @@
     "acknowledgedBy": "Acknowledged by",
     "noJhas": "No job hazard analyses logged yet.",
     "acknowledgedCount": "{count} acknowledged",
-    "acknowledgeFor": "Acknowledge for {name}"
+    "acknowledgeFor": "Acknowledge for {name}",
+    "fileInsuranceClaim": "File insurance claim"
   },
   "submittals": {
     "title": "Submittals",
@@ -2330,5 +2338,40 @@
     "validUntil": "Valid until {date}",
     "download": "Download",
     "notFound": "This link is invalid or no longer shared."
+  },
+  "insuranceClaims": {
+    "title": "Insurance claims",
+    "subtitle": "Claims filed with your insurer, from first report through settlement.",
+    "newClaim": "File claim",
+    "exportCsv": "Export CSV",
+    "openTotal": "{amount} {currency} in open claims",
+    "noProject": "No project",
+    "allProjects": "All projects",
+    "allStatuses": "All statuses",
+    "empty": "No claims filed yet.",
+    "details": "Details",
+    "insurerName": "Insurer name",
+    "policyNumber": "Policy number",
+    "claimNumber": "Claim number",
+    "claimAmount": "Claim amount",
+    "description": "Description",
+    "adjusterName": "Adjuster name",
+    "adjusterContact": "Adjuster contact",
+    "fileClaim": "File claim",
+    "settledAmount": "Settled amount",
+    "settledAt": "Settled on",
+    "recordSettlement": "Record settlement",
+    "type_general_liability": "General liability",
+    "type_workers_comp": "Workers' comp",
+    "type_property": "Property",
+    "type_auto": "Auto",
+    "type_equipment": "Equipment",
+    "type_other": "Other",
+    "status_filed": "Filed",
+    "status_under_review": "Under review",
+    "status_approved": "Approved",
+    "status_denied": "Denied",
+    "status_settled": "Settled",
+    "status_closed": "Closed"
   }
 }

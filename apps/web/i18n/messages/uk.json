@@ -58,7 +58,8 @@
     "bankReconciliation": "Звірка банку",
     "contracts": "Договори",
     "schedule": "Графік",
-    "integrations": "Інтеграції"
+    "integrations": "Інтеграції",
+    "insuranceClaims": "Страхові претензії"
   },
   "auth": {
     "signupTitle": "Створіть обліковий запис Cantero",
@@ -338,7 +339,9 @@
     "health_good": "Все гаразд",
     "health_watch": "Слідкувати",
     "health_at_risk": "Під загрозою",
-    "projectChannel": "Канал проєкту"
+    "projectChannel": "Канал проєкту",
+    "billingCurrency": "Валюта виставлення рахунків",
+    "billingCurrencyDefault": "За замовчуванням компанії ({currency})"
   },
   "clients": {
     "title": "Клієнти",
@@ -461,7 +464,9 @@
     "onboardingTemplate": "Шаблон чек-листа адаптації",
     "onboardingTemplateHint": "Завдання звідси копіюються в чек-лист адаптації кожного нового працівника під час його створення",
     "onboardingTaskTitlePlaceholder": "Назва завдання",
-    "addOnboardingTask": "Додати завдання"
+    "addOnboardingTask": "Додати завдання",
+    "payrollEmployeeId": "ID працівника в системі нарахування зарплати",
+    "payrollEmployeeIdPlaceholder": "ID у ADP/Gusto тощо"
   },
   "documents": {
     "title": "Документи",
@@ -1113,7 +1118,9 @@
     "earnedRevenue": "Зароблений дохід",
     "billedToDate": "Виставлено рахунків на сьогодні",
     "overUnderBilling": "Над-/(недо-)фактурування",
-    "total": "Разом"
+    "total": "Разом",
+    "downloadPayrollExportAdp": "Завантажити експорт ADP",
+    "downloadPayrollExportGusto": "Завантажити експорт Gusto"
   },
   "notifications": {
     "title": "Сповіщення",
@@ -1322,7 +1329,8 @@
     "acknowledgedBy": "Підтверджено",
     "noJhas": "Аналізи небезпек ще не зареєстровано.",
     "acknowledgedCount": "Підтвердили: {count}",
-    "acknowledgeFor": "Підтвердити за {name}"
+    "acknowledgeFor": "Підтвердити за {name}",
+    "fileInsuranceClaim": "Подати страхову претензію"
   },
   "submittals": {
     "title": "Погодження матеріалів",
@@ -2330,5 +2338,40 @@
     "validUntil": "Дійсний до {date}",
     "download": "Завантажити",
     "notFound": "Це посилання недійсне або більше не є відкритим."
+  },
+  "insuranceClaims": {
+    "title": "Страхові претензії",
+    "subtitle": "Претензії, подані до страховика — від першого звернення до виплати.",
+    "newClaim": "Подати претензію",
+    "exportCsv": "Експорт CSV",
+    "openTotal": "{amount} {currency} у відкритих претензіях",
+    "noProject": "Без проєкту",
+    "allProjects": "Усі проєкти",
+    "allStatuses": "Усі статуси",
+    "empty": "Претензій ще не подано.",
+    "details": "Деталі",
+    "insurerName": "Страховик",
+    "policyNumber": "Номер полісу",
+    "claimNumber": "Номер претензії",
+    "claimAmount": "Сума претензії",
+    "description": "Опис",
+    "adjusterName": "Аджастер",
+    "adjusterContact": "Контакт аджастера",
+    "fileClaim": "Подати претензію",
+    "settledAmount": "Сума виплати",
+    "settledAt": "Дата виплати",
+    "recordSettlement": "Зафіксувати виплату",
+    "type_general_liability": "Загальна відповідальність",
+    "type_workers_comp": "Виробничий травматизм",
+    "type_property": "Майно",
+    "type_auto": "Автотранспорт",
+    "type_equipment": "Техніка",
+    "type_other": "Інше",
+    "status_filed": "Подано",
+    "status_under_review": "На розгляді",
+    "status_approved": "Схвалено",
+    "status_denied": "Відхилено",
+    "status_settled": "Виплачено",
+    "status_closed": "Закрито"
   }
 }

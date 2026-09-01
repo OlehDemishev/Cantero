@@ -3,10 +3,14 @@ import { ReportsService } from "./reports.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { PdfService } from "../common/pdf/pdf.service";
 import { StorageService } from "../common/storage/storage.service";
+import { ExchangeRateService } from "../common/exchange-rate/exchange-rate.service";
 
 const PDF_PROVIDERS = [
   { provide: PdfService, useValue: { render: jest.fn() } },
   { provide: StorageService, useValue: { read: jest.fn() } },
+  // Identity conversion — matches the real service's own graceful-degrade for a missing rate,
+  // and keeps every existing single-currency fixture's numbers unchanged.
+  { provide: ExchangeRateService, useValue: { convert: jest.fn((amount: number) => Promise.resolve(amount)) } },
 ];
 
 const COMPANY_A = "company-a";
@@ -318,10 +322,13 @@ describe("ReportsService.cashFlowForecast", () => {
 
 describe("ReportsService.revenueTrend", () => {
   let service: ReportsService;
-  let prisma: { payment: { findMany: jest.Mock } };
+  let prisma: { payment: { findMany: jest.Mock }; company: { findUniqueOrThrow: jest.Mock } };
 
   beforeEach(async () => {
-    prisma = { payment: { findMany: jest.fn().mockResolvedValue([]) } };
+    prisma = {
+      payment: { findMany: jest.fn().mockResolvedValue([]) },
+      company: { findUniqueOrThrow: jest.fn().mockResolvedValue({ currency: "EUR" }) },
+    };
 
     const module = await Test.createTestingModule({
       providers: [ReportsService, { provide: PrismaService, useValue: prisma }, ...PDF_PROVIDERS],
@@ -341,7 +348,7 @@ describe("ReportsService.revenueTrend", () => {
   it("buckets a payment into the month it was actually paid", async () => {
     const now = new Date();
     const thisMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    prisma.payment.findMany.mockResolvedValue([{ amount: "250.5", paidAt: now }]);
+    prisma.payment.findMany.mockResolvedValue([{ amount: "250.5", paidAt: now, invoice: { currency: "EUR" } }]);
 
     const result = await service.revenueTrend(COMPANY_A, 3);
 
@@ -351,13 +358,34 @@ describe("ReportsService.revenueTrend", () => {
   it("sums multiple payments landing in the same month", async () => {
     const now = new Date();
     prisma.payment.findMany.mockResolvedValue([
-      { amount: "100", paidAt: now },
-      { amount: "50", paidAt: now },
+      { amount: "100", paidAt: now, invoice: { currency: "EUR" } },
+      { amount: "50", paidAt: now, invoice: { currency: "EUR" } },
     ]);
 
     const result = await service.revenueTrend(COMPANY_A, 1);
 
     expect(result[0].revenue).toBe(150);
+  });
+
+  it("converts a payment from its own invoice's currency into the company's default before summing", async () => {
+    const now = new Date();
+    prisma.company.findUniqueOrThrow.mockResolvedValue({ currency: "EUR" });
+    prisma.payment.findMany.mockResolvedValue([{ amount: "100", paidAt: now, invoice: { currency: "USD" } }]);
+    const exchangeRates = { convert: jest.fn().mockResolvedValue(92) };
+    const module = await Test.createTestingModule({
+      providers: [
+        ReportsService,
+        { provide: PrismaService, useValue: prisma },
+        ...PDF_PROVIDERS.filter((p) => p.provide !== ExchangeRateService),
+        { provide: ExchangeRateService, useValue: exchangeRates },
+      ],
+    }).compile();
+    service = module.get(ReportsService);
+
+    const result = await service.revenueTrend(COMPANY_A, 1);
+
+    expect(exchangeRates.convert).toHaveBeenCalledWith(100, "USD", "EUR");
+    expect(result[0].revenue).toBe(92);
   });
 });
 

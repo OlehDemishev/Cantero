@@ -74,7 +74,7 @@ export class ProjectCloseoutService {
     punchListItems: { title: string; status: string; createdAt: Date; resolvedAt: Date | null; verifiedAt: Date | null }[],
     rfis: { number: string; subject: string; status: string; createdAt: Date; closedAt: Date | null; answeredAt: Date | null }[],
     warrantyClaims: { title: string; status: string; createdAt: Date; resolvedAt: Date | null }[],
-    invoices: { total: unknown; status: string }[],
+    invoices: { total: unknown; status: string; currency: string }[],
   ): Promise<Buffer> {
     const logoBuffer = company.logoStorageKey ? await this.storage.read(company.logoStorageKey) : undefined;
 
@@ -84,6 +84,10 @@ export class ProjectCloseoutService {
     const totalInvoiced = invoices
       .filter((i) => i.status !== "void")
       .reduce((sum, i) => sum + Number(i.total), 0);
+    // All of a project's invoices are expected to share one currency (see Invoice.currency) — the
+    // first invoice's is used as the label rather than the company default, so a project billed
+    // in an override currency doesn't get its total mislabeled.
+    const invoicedCurrency = invoices[0]?.currency ?? company.currency;
 
     const warrantyExpires = project.handoverDate && project.warrantyMonths != null
       ? new Date(project.handoverDate.getTime())
@@ -118,7 +122,7 @@ export class ProjectCloseoutService {
         { label: "Open punch list items", value: String(openPunchList) },
         { label: "Open RFIs", value: String(openRfis) },
         { label: "Open warranty claims", value: String(openWarrantyClaims) },
-        { label: "Total invoiced", value: `${totalInvoiced.toFixed(2)} ${company.currency}`, emphasize: true },
+        { label: "Total invoiced", value: `${totalInvoiced.toFixed(2)} ${invoicedCurrency}`, emphasize: true },
       ],
       branding: { logoBuffer, accentColor: company.brandColor ?? undefined },
     });

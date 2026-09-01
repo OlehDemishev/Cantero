@@ -38,6 +38,7 @@ import { BidRequestsPanel } from "@/components/bid-requests-panel";
 import { DocumentsPanel } from "@/components/documents-panel";
 import { GalleryPanel } from "@/components/gallery-panel";
 import { ProjectHealthBadge } from "@/components/project-health-badge";
+import { SUPPORTED_CURRENCIES } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
@@ -46,6 +47,7 @@ interface Project {
   name: string;
   address: string | null;
   client: { id: string; name: string } | null;
+  currency: string | null;
 }
 interface Estimate {
   id: string;
@@ -77,12 +79,26 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
     templateId: "",
   });
   const [submitting, setSubmitting] = useState(false);
+  const [currencyBusy, setCurrencyBusy] = useState(false);
 
   useEffect(() => {
     apiFetch<Project>(`/projects/${projectId}`).then(setProject);
     apiFetch<Estimate[]>("/estimates").then((all) => setEstimates(all.filter((e) => e.project.id === projectId)));
     apiFetch<Template[]>("/estimates/templates").then(setTemplates);
   }, [projectId]);
+
+  async function saveCurrency(value: string) {
+    setCurrencyBusy(true);
+    try {
+      await apiFetch(`/projects/${projectId}/currency`, {
+        method: "PATCH",
+        body: JSON.stringify({ currency: value || null }),
+      });
+      setProject((p) => (p ? { ...p, currency: value || null } : p));
+    } finally {
+      setCurrencyBusy(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -115,6 +131,24 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
         {project && <ProjectHealthBadge projectId={projectId} />}
       </div>
       {project?.client && <p className="text-sm text-gray-500">{project.client.name}</p>}
+      {project && (
+        <label className="mt-2 flex w-fit items-center gap-2 text-xs text-gray-500">
+          {tp("billingCurrency")}
+          <select
+            className="input w-auto py-1"
+            value={project.currency ?? ""}
+            disabled={currencyBusy}
+            onChange={(e) => saveCurrency(e.target.value)}
+          >
+            <option value="">{tp("billingCurrencyDefault", { currency: me?.company.currency ?? "" })}</option>
+            {SUPPORTED_CURRENCIES.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
 
       <div className="mt-6">
         <h2 className="mb-3 text-sm font-semibold text-gray-700">{tp("projectChannel")}</h2>

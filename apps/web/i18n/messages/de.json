@@ -58,7 +58,8 @@
     "bankReconciliation": "Kontoabgleich",
     "contracts": "Verträge",
     "schedule": "Zeitplan",
-    "integrations": "Integrationen"
+    "integrations": "Integrationen",
+    "insuranceClaims": "Versicherungsschäden"
   },
   "auth": {
     "signupTitle": "Cantero-Konto erstellen",
@@ -338,7 +339,9 @@
     "health_good": "Im Plan",
     "health_watch": "Beobachten",
     "health_at_risk": "Gefährdet",
-    "projectChannel": "Projekt-Kanal"
+    "projectChannel": "Projekt-Kanal",
+    "billingCurrency": "Abrechnungswährung",
+    "billingCurrencyDefault": "Unternehmensstandard ({currency})"
   },
   "clients": {
     "title": "Kunden",
@@ -461,7 +464,9 @@
     "onboardingTemplate": "Onboarding-Checklistenvorlage",
     "onboardingTemplateHint": "Aufgaben hier werden bei der Erstellung auf die Onboarding-Checkliste jedes neuen Mitarbeiters übertragen",
     "onboardingTaskTitlePlaceholder": "Aufgabentitel",
-    "addOnboardingTask": "Aufgabe hinzufügen"
+    "addOnboardingTask": "Aufgabe hinzufügen",
+    "payrollEmployeeId": "Mitarbeiter-ID für Gehaltsabrechnung",
+    "payrollEmployeeIdPlaceholder": "ID in ADP/Gusto/etc."
   },
   "documents": {
     "title": "Dokumente",
@@ -1113,7 +1118,9 @@
     "earnedRevenue": "Realisierter Umsatz",
     "billedToDate": "Fakturiert bisher",
     "overUnderBilling": "Über-/(Unter-)Fakturierung",
-    "total": "Gesamt"
+    "total": "Gesamt",
+    "downloadPayrollExportAdp": "ADP-Export herunterladen",
+    "downloadPayrollExportGusto": "Gusto-Export herunterladen"
   },
   "notifications": {
     "title": "Benachrichtigungen",
@@ -1322,7 +1329,8 @@
     "acknowledgedBy": "Bestätigt von",
     "noJhas": "Noch keine Gefährdungsbeurteilungen erfasst.",
     "acknowledgedCount": "{count} bestätigt",
-    "acknowledgeFor": "Für {name} bestätigen"
+    "acknowledgeFor": "Für {name} bestätigen",
+    "fileInsuranceClaim": "Versicherungsschaden melden"
   },
   "submittals": {
     "title": "Freigaben (Submittals)",
@@ -2330,5 +2338,40 @@
     "validUntil": "Gültig bis {date}",
     "download": "Herunterladen",
     "notFound": "Dieser Link ist ungültig oder wird nicht mehr freigegeben."
+  },
+  "insuranceClaims": {
+    "title": "Versicherungsschäden",
+    "subtitle": "Bei Ihrer Versicherung gemeldete Schäden – von der ersten Meldung bis zur Regulierung.",
+    "newClaim": "Schaden melden",
+    "exportCsv": "CSV exportieren",
+    "openTotal": "{amount} {currency} in offenen Schäden",
+    "noProject": "Kein Projekt",
+    "allProjects": "Alle Projekte",
+    "allStatuses": "Alle Status",
+    "empty": "Noch keine Schäden gemeldet.",
+    "details": "Details",
+    "insurerName": "Versicherer",
+    "policyNumber": "Policennummer",
+    "claimNumber": "Schadennummer",
+    "claimAmount": "Schadenhöhe",
+    "description": "Beschreibung",
+    "adjusterName": "Gutachter",
+    "adjusterContact": "Kontakt Gutachter",
+    "fileClaim": "Schaden melden",
+    "settledAmount": "Regulierter Betrag",
+    "settledAt": "Reguliert am",
+    "recordSettlement": "Regulierung erfassen",
+    "type_general_liability": "Betriebshaftpflicht",
+    "type_workers_comp": "Berufsgenossenschaft",
+    "type_property": "Sachschaden",
+    "type_auto": "Kfz",
+    "type_equipment": "Geräte",
+    "type_other": "Sonstiges",
+    "status_filed": "Gemeldet",
+    "status_under_review": "In Prüfung",
+    "status_approved": "Genehmigt",
+    "status_denied": "Abgelehnt",
+    "status_settled": "Reguliert",
+    "status_closed": "Abgeschlossen"
   }
 }

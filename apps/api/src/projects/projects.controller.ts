@@ -4,6 +4,7 @@ import {
   addProjectMemberSchema,
   createProjectSchema,
   setProjectRestrictedSchema,
+  updateProjectCurrencySchema,
   updateProjectGeofenceSchema,
   updateProjectPublicWorkSchema,
   updateProjectWarrantySchema,
@@ -11,6 +12,7 @@ import {
   type AuthUser,
   type CreateProjectInput,
   type SetProjectRestrictedInput,
+  type UpdateProjectCurrencyInput,
   type UpdateProjectGeofenceInput,
   type UpdateProjectPublicWorkInput,
   type UpdateProjectWarrantyInput,
@@ -88,6 +90,15 @@ export class ProjectsController {
   importCsv(@CurrentUser() user: AuthUser, @UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException("No file provided");
     return this.service.importCsv(user.companyId, { userId: user.userId, name: user.name }, file.buffer.toString("utf-8"));
+  }
+
+  @Patch(":id/currency")
+  updateCurrency(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(updateProjectCurrencySchema)) body: UpdateProjectCurrencyInput,
+  ) {
+    return this.service.updateCurrency(user.companyId, id, body);
   }
 
   @Patch(":id/warranty")

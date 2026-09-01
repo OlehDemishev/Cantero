@@ -35,6 +35,7 @@ interface Invoice {
   subtotal: string;
   taxAmount: string;
   total: string;
+  currency: string;
   dueDate: string | null;
   percentComplete: string | null;
   lines: InvoiceLine[];
@@ -152,7 +153,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
     );
   }
 
-  const currency = me?.company.currency ?? "";
+  const currency = invoice.currency ?? me?.company.currency ?? "";
   const paidTotal = invoice.payments.reduce((sum, p) => sum + Number(p.amount), 0);
   const balanceDue = Number(invoice.total) - paidTotal;
 

@@ -64,7 +64,7 @@ export class PortalService {
       signerName: estimate.signerName,
       hasSignature: !!estimate.signatureImageKey,
       companyName: estimate.company.name,
-      currency: estimate.company.currency,
+      currency: estimate.currency,
       projectName: estimate.project?.name ?? null,
       lines: estimate.lines.map((l) => ({
         id: l.id,
@@ -124,7 +124,7 @@ export class PortalService {
       signerName: co.signerName,
       hasSignature: !!co.signatureImageKey,
       companyName: co.company.name,
-      currency: co.company.currency,
+      currency: co.estimate.currency,
       estimateName: co.estimate.name,
       lines: co.lines.map((l) => ({
         id: l.id,
@@ -278,7 +278,7 @@ export class PortalService {
       include: {
         lines: { orderBy: { sortOrder: "asc" }, include: { rateCatalogItem: true } },
         project: true,
-        company: { select: { name: true, currency: true } },
+        company: { select: { name: true } },
       },
     });
     if (!estimate) throw new NotFoundException("Estimate not found");
@@ -290,8 +290,8 @@ export class PortalService {
       where: { id, companyId: client.companyId, sentAt: { not: null }, estimate: { project: { clientId: client.clientId } } },
       include: {
         lines: { include: { rateCatalogItem: true }, orderBy: { sortOrder: "asc" } },
-        estimate: { select: { name: true } },
-        company: { select: { name: true, currency: true } },
+        estimate: { select: { name: true, currency: true } },
+        company: { select: { name: true } },
       },
     });
     if (!co) throw new NotFoundException("Change order not found");

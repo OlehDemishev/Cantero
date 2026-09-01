@@ -65,6 +65,7 @@ export class InvoicesService {
         estimateId: estimate.id,
         number,
         status: "draft",
+        currency: estimate.currency,
         subtotal: estimate.subtotal.add(estimate.markupAmount),
         taxAmount: estimate.taxAmount,
         total: estimate.grandTotal,
@@ -107,6 +108,7 @@ export class InvoicesService {
         estimateId: estimate.id,
         number,
         status: "draft",
+        currency: estimate.currency,
         subtotal: calc.grossAmount,
         taxAmount: 0,
         total: calc.netAmount,
@@ -148,6 +150,7 @@ export class InvoicesService {
         estimateId: estimate.id,
         number,
         status: "draft",
+        currency: estimate.currency,
         subtotal: totalHeld,
         taxAmount: 0,
         total: totalHeld,
@@ -207,8 +210,8 @@ export class InvoicesService {
       this.mail.send({
         to: updated.client.email,
         subject: `Invoice ${updated.number} from ${company.name}`,
-        html: `<p>${company.name} has sent you invoice <strong>${updated.number}</strong> for ${updated.total} ${company.currency}.</p><p>The invoice is attached as a PDF.</p>`,
-        text: `${company.name} has sent you invoice ${updated.number} for ${updated.total} ${company.currency}. The invoice is attached as a PDF.`,
+        html: `<p>${company.name} has sent you invoice <strong>${updated.number}</strong> for ${updated.total} ${updated.currency}.</p><p>The invoice is attached as a PDF.</p>`,
+        text: `${company.name} has sent you invoice ${updated.number} for ${updated.total} ${updated.currency}. The invoice is attached as a PDF.`,
         attachments: [{ filename: `${updated.number}.pdf`, content: pdf, contentType: "application/pdf" }],
       });
     }
@@ -292,16 +295,16 @@ export class InvoicesService {
       subtitle: `${invoice.client.name} — ${invoice.project.name}`,
       meta: [
         { label: "Status", value: invoice.status },
-        { label: "Currency", value: company.currency },
+        { label: "Currency", value: invoice.currency },
       ],
       tableHeader: ["Description", "Qty", "Unit price", "Line total"],
       tableRows: invoice.lines.map((line) => ({
         cells: [line.description, line.quantity.toString(), line.unitPrice.toString(), line.lineTotal.toString()],
       })),
       totals: [
-        { label: "Subtotal", value: `${invoice.subtotal} ${company.currency}` },
-        { label: "Tax", value: `${invoice.taxAmount} ${company.currency}` },
-        { label: "Total due", value: `${invoice.total} ${company.currency}`, emphasize: true },
+        { label: "Subtotal", value: `${invoice.subtotal} ${invoice.currency}` },
+        { label: "Tax", value: `${invoice.taxAmount} ${invoice.currency}` },
+        { label: "Total due", value: `${invoice.total} ${invoice.currency}`, emphasize: true },
       ],
       branding: { logoBuffer, accentColor: company.brandColor ?? undefined },
     });
@@ -336,7 +339,7 @@ export class InvoicesService {
       invoiceNumber: invoice.number,
       issueDate: invoice.createdAt,
       dueDate: invoice.dueDate,
-      currency: company.currency,
+      currency: invoice.currency,
       seller: {
         name: company.name,
         street: company.address!,
@@ -384,6 +387,7 @@ export class InvoicesService {
       "Status",
       "Client",
       "Project",
+      "Currency",
       "Subtotal",
       "Tax",
       "Total",
@@ -399,6 +403,7 @@ export class InvoicesService {
         inv.status,
         inv.client.name,
         inv.project.name,
+        inv.currency,
         inv.subtotal.toString(),
         inv.taxAmount.toString(),
         inv.total.toString(),
@@ -450,7 +455,6 @@ export class InvoicesService {
    * rather than guessing a tax rate name that may not exist in the target organisation.
    */
   async exportXeroCsv(companyId: string): Promise<string> {
-    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
     const invoices = await this.prisma.invoice.findMany({
       where: { companyId, status: { not: "draft" } },
       include: { client: true, lines: true },
@@ -480,7 +484,7 @@ export class InvoicesService {
         line.unitPrice.toString(),
         "200",
         "NONE",
-        company.currency,
+        inv.currency,
       ]),
     );
     return toCsv(header, rows);

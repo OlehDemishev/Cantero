@@ -233,8 +233,8 @@ export class ChangeOrdersService {
       where: { clientAccessToken: token },
       include: {
         lines: { include: { rateCatalogItem: true }, orderBy: { sortOrder: "asc" } },
-        estimate: { select: { name: true } },
-        company: { select: { name: true, currency: true } },
+        estimate: { select: { name: true, currency: true } },
+        company: { select: { name: true } },
       },
     });
     if (!changeOrder) throw new NotFoundException("Change order not found");
@@ -248,7 +248,7 @@ export class ChangeOrdersService {
       decisionAt: changeOrder.decisionAt,
       clientDecisionNote: changeOrder.clientDecisionNote,
       companyName: changeOrder.company.name,
-      currency: changeOrder.company.currency,
+      currency: changeOrder.estimate.currency,
       estimateName: changeOrder.estimate.name,
       lines: changeOrder.lines.map((l) => ({
         id: l.id,
@@ -344,7 +344,7 @@ export class ChangeOrdersService {
       subtitle: estimate.name,
       meta: [
         { label: "Status", value: changeOrder.status },
-        { label: "Currency", value: company.currency },
+        { label: "Currency", value: estimate.currency },
       ],
       tableHeader: ["Item", "Qty", "Unit", "Materials", "Labor", "Line total"],
       tableRows: changeOrder.lines.map((line) => ({
@@ -358,12 +358,12 @@ export class ChangeOrdersService {
         ],
       })),
       totals: [
-        { label: "Materials total", value: `${changeOrder.materialsCostTotal} ${company.currency}` },
-        { label: "Labor total", value: `${changeOrder.laborCostTotal} ${company.currency}` },
-        { label: "Subtotal", value: `${changeOrder.subtotal} ${company.currency}` },
-        { label: `Markup (${estimate.markupPercent}%)`, value: `${changeOrder.markupAmount} ${company.currency}` },
-        { label: `Tax (${estimate.taxPercent}%)`, value: `${changeOrder.taxAmount} ${company.currency}` },
-        { label: "Grand total", value: `${changeOrder.grandTotal} ${company.currency}`, emphasize: true },
+        { label: "Materials total", value: `${changeOrder.materialsCostTotal} ${estimate.currency}` },
+        { label: "Labor total", value: `${changeOrder.laborCostTotal} ${estimate.currency}` },
+        { label: "Subtotal", value: `${changeOrder.subtotal} ${estimate.currency}` },
+        { label: `Markup (${estimate.markupPercent}%)`, value: `${changeOrder.markupAmount} ${estimate.currency}` },
+        { label: `Tax (${estimate.taxPercent}%)`, value: `${changeOrder.taxAmount} ${estimate.currency}` },
+        { label: "Grand total", value: `${changeOrder.grandTotal} ${estimate.currency}`, emphasize: true },
       ],
       branding: { logoBuffer, accentColor: company.brandColor ?? undefined },
       signature:

@@ -411,7 +411,15 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
               <div className="mt-2">
                 <PhotoAttachments param="incidentReportId" entityId={item.id} />
               </div>
-              <p className="mt-1 text-xs text-gray-400">{item.reportedByName}</p>
+              <div className="mt-1 flex items-center justify-between">
+                <p className="text-xs text-gray-400">{item.reportedByName}</p>
+                <a
+                  href={`/insurance-claims?projectId=${projectId}&incidentReportId=${item.id}`}
+                  className="text-xs text-brand-700 hover:underline"
+                >
+                  {t("fileInsuranceClaim")}
+                </a>
+              </div>
             </li>
           ))}
         </ul>

@@ -311,6 +311,7 @@ model Company {
   punchListItems                  PunchListItem[]
   rfis                            Rfi[]
   incidentReports                 IncidentReport[]
+  insuranceClaims                 InsuranceClaim[]
   safetyBriefings                 SafetyBriefing[]
   submittals                      Submittal[]
   warrantyClaims                  WarrantyClaim[]
@@ -844,6 +845,9 @@ model Estimate {
   laborRatePerHour Decimal        @db.Decimal(10, 2)
   markupPercent    Decimal        @default(15) @db.Decimal(5, 2)
   taxPercent       Decimal        @default(0) @db.Decimal(5, 2)
+  /// Snapshotted from `project.currency ?? company.currency` at creation — see Project.currency.
+  /// A later change to the project's override never retroactively changes an issued estimate.
+  currency         Currency       @default(EUR)
   /// A template is a reusable line-item structure with no project of its own;
   /// "create from template" clones its sections/lines into a brand-new estimate.
   isTemplate       Boolean        @default(false)
@@ -1415,6 +1419,11 @@ model Project {
   /// Awarding-body contract number, printed on certified payroll reports. Free text since the
   /// format varies by agency.
   contractNumber       String?
+  /// Bills this project in a currency other than the company's default (e.g. a EUR-based company
+  /// running one CAD-denominated job) — null means "use the company's currency", unchanged
+  /// behavior. Estimate/Invoice snapshot their own `currency` from this at creation time, so an
+  /// override change here never retroactively changes an already-issued document.
+  currency             Currency?
 
   company                  Company                     @relation(fields: [companyId], references: [id], onDelete: Cascade)
   client                   Client?                     @relation(fields: [clientId], references: [id], onDelete: SetNull)
@@ -1434,6 +1443,7 @@ model Project {
   punchListItems           PunchListItem[]
   rfis                     Rfi[]
   incidentReports          IncidentReport[]
+  insuranceClaims          InsuranceClaim[]
   safetyBriefings          SafetyBriefing[]
   jobHazardAnalyses        JobHazardAnalysis[]
   submittals               Submittal[]
@@ -1667,6 +1677,9 @@ model Invoice {
   subtotal                   Decimal       @db.Decimal(14, 2)
   taxAmount                  Decimal       @default(0) @db.Decimal(14, 2)
   total                      Decimal       @db.Decimal(14, 2)
+  /// Snapshotted from the source estimate's currency (or `project.currency ?? company.currency`
+  /// for an invoice with no estimate) at creation — see Estimate.currency.
+  currency                   Currency      @default(EUR)
   dueDate                    DateTime?
   createdAt                  DateTime      @default(now())
   /// Cumulative % of the linked estimate billed as of this draw — set only on progress-billing
@@ -2582,6 +2595,11 @@ model Worker {
   /// locale. Independent of Company.locale/the NEXT_LOCALE cookie, which only cover logged-in
   /// User accounts viewing the web app.
   preferredLocale      Locale?
+  /// Self-reported employee ID in an external payroll processor (ADP/Gusto/etc.), used only as
+  /// the identifier column on payroll CSV exports so the importing side can match rows to an
+  /// existing employee record — not validated against any external system, same as
+  /// Subcontractor.taxId. Null just means it hasn't been filled in yet.
+  payrollEmployeeId    String?
 
   company                  Company                    @relation(fields: [companyId], references: [id], onDelete: Cascade)
   user                     User?                      @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -2716,6 +2734,7 @@ model Document {
   safetyBriefingId        String?
   supplierDocumentId      String?
   companyDocumentId       String?
+  insuranceClaimId        String?
   name                    String
   storageKey              String
   mimeType                String
@@ -2751,6 +2770,7 @@ model Document {
   safetyBriefing        SafetyBriefing?        @relation(fields: [safetyBriefingId], references: [id], onDelete: Cascade)
   supplierDocument      SupplierDocument?      @relation(fields: [supplierDocumentId], references: [id], onDelete: Cascade)
   companyDocument       CompanyDocument?       @relation(fields: [companyDocumentId], references: [id], onDelete: Cascade)
+  insuranceClaim        InsuranceClaim?        @relation(fields: [insuranceClaimId], references: [id], onDelete: Cascade)
   uploadedBy            User?                  @relation(fields: [uploadedByUserId], references: [id], onDelete: SetNull)
   rootDocument          Document?              @relation("DocumentVersions", fields: [rootDocumentId], references: [id], onDelete: Cascade)
   versions              Document[]             @relation("DocumentVersions")
@@ -2767,6 +2787,7 @@ model Document {
   @@index([safetyBriefingId])
   @@index([supplierDocumentId])
   @@index([companyDocumentId])
+  @@index([insuranceClaimId])
   @@map("documents")
 }
 
@@ -3158,13 +3179,71 @@ model IncidentReport {
   reportedByName               String
   createdAt                    DateTime         @default(now())
 
-  company Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  project Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  photos  Document[]
+  company         Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project         Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  photos          Document[]
+  insuranceClaims InsuranceClaim[]
 
   @@index([projectId])
   @@index([companyId])
   @@map("incident_reports")
+}
+
+enum InsuranceClaimType {
+  general_liability
+  workers_comp
+  property
+  auto
+  equipment
+  other
+}
+
+enum InsuranceClaimStatus {
+  filed
+  under_review
+  approved
+  denied
+  settled
+  closed
+}
+
+/// A claim filed with the company's insurer — optionally tied to the IncidentReport that caused
+/// it (a workers' comp or general-liability claim usually is), but not required to be: property,
+/// auto, and equipment claims often have no linked safety incident at all. Likewise optionally
+/// tied to a Project — a company-wide policy claim (e.g. office property damage) has none.
+model InsuranceClaim {
+  id               String                @id @default(uuid())
+  companyId        String
+  projectId        String?
+  incidentReportId String?
+  claimType        InsuranceClaimType
+  status           InsuranceClaimStatus  @default(filed)
+  claimNumber      String?
+  insurerName      String
+  policyNumber     String?
+  dateFiled        DateTime
+  description      String
+  adjusterName     String?
+  adjusterContact  String?
+  claimAmount      Decimal?              @db.Decimal(14, 2)
+  /// Set once the insurer pays out — null before then, regardless of status (a claim can move to
+  /// "approved" before the actual settlement amount/date is known).
+  settledAmount    Decimal?              @db.Decimal(14, 2)
+  settledAt        DateTime?
+  notes            String?
+  createdByUserId  String?
+  createdByName    String
+  createdAt        DateTime              @default(now())
+
+  company        Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project        Project?        @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  incidentReport IncidentReport? @relation(fields: [incidentReportId], references: [id], onDelete: SetNull)
+  documents      Document[]
+
+  @@index([companyId])
+  @@index([projectId])
+  @@index([incidentReportId])
+  @@map("insurance_claims")
 }
 
 /// Pre-work safety briefing ("toolbox talk") with per-worker attendance — the standard

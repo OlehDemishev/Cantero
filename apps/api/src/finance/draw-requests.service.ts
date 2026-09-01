@@ -161,7 +161,15 @@ export class DrawRequestsService {
       lenderName: string | null;
       lenderContactEmail: string | null;
       notes: string | null;
-      invoice: { number: string; total: unknown; percentComplete: unknown; retainageAmount: unknown; project: { name: string }; client: { name: string } };
+      invoice: {
+        number: string;
+        total: unknown;
+        currency: string;
+        percentComplete: unknown;
+        retainageAmount: unknown;
+        project: { name: string };
+        client: { name: string };
+      };
     },
     company: { name: string; currency: string; logoStorageKey: string | null; brandColor: string | null },
   ): Promise<Buffer> {
@@ -180,10 +188,10 @@ export class DrawRequestsService {
       tableHeader: ["Item", "Value"],
       tableRows: [
         { cells: ["% complete", `${Number(draw.invoice.percentComplete)}%`] },
-        { cells: ["Retainage withheld this draw", `${Number(draw.invoice.retainageAmount)} ${company.currency}`] },
+        { cells: ["Retainage withheld this draw", `${Number(draw.invoice.retainageAmount)} ${draw.invoice.currency}`] },
         ...(draw.notes ? [{ cells: ["Notes", draw.notes] }] : []),
       ],
-      totals: [{ label: "Amount requested", value: `${Number(draw.invoice.total)} ${company.currency}`, emphasize: true }],
+      totals: [{ label: "Amount requested", value: `${Number(draw.invoice.total)} ${draw.invoice.currency}`, emphasize: true }],
       branding: { logoBuffer, accentColor: company.brandColor ?? undefined },
     });
   }

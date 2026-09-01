@@ -303,6 +303,15 @@ export function ExpensesIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function InsuranceClaimsIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M10 2.5l6.5 2.5v4.5c0 4-2.8 6.9-6.5 8.5-3.7-1.6-6.5-4.5-6.5-8.5V5z" />
+      <path d="M7.5 10l1.8 1.8L12.5 8" />
+    </Icon>
+  );
+}
+
 export function ServiceContractsIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <Icon {...props}>

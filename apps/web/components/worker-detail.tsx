@@ -17,6 +17,7 @@ interface Worker {
   wageClassificationId: string | null;
   phone: string | null;
   preferredLocale: string | null;
+  payrollEmployeeId: string | null;
 }
 interface WageClassification {
   id: string;
@@ -53,7 +54,15 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [certifications, setCertifications] = useState<Certification[] | null>(null);
   const [certForm, setCertForm] = useState({ name: "", expiresAt: "" });
-  const [form, setForm] = useState({ name: "", role: "", hourlyCost: "", wageClassificationId: "", phone: "", preferredLocale: "" });
+  const [form, setForm] = useState({
+    name: "",
+    role: "",
+    hourlyCost: "",
+    wageClassificationId: "",
+    phone: "",
+    preferredLocale: "",
+    payrollEmployeeId: "",
+  });
   const [wageClassifications, setWageClassifications] = useState<WageClassification[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -72,6 +81,7 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
         wageClassificationId: s.worker.wageClassificationId ?? "",
         phone: s.worker.phone ?? "",
         preferredLocale: s.worker.preferredLocale ?? "",
+        payrollEmployeeId: s.worker.payrollEmployeeId ?? "",
       });
     });
     apiFetch<Certification[]>(`/workers/${workerId}/certifications`).then(setCertifications);
@@ -138,6 +148,7 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
           wageClassificationId: form.wageClassificationId || null,
           phone: form.phone || null,
           preferredLocale: form.preferredLocale || null,
+          payrollEmployeeId: form.payrollEmployeeId || null,
         }),
       });
       setSaved(true);
@@ -230,6 +241,15 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
                 className="input mt-1"
                 value={form.hourlyCost}
                 onChange={(e) => setForm((f) => ({ ...f, hourlyCost: e.target.value }))}
+              />
+            </label>
+            <label className="text-xs text-gray-500">
+              {t("payrollEmployeeId")}
+              <input
+                placeholder={t("payrollEmployeeIdPlaceholder")}
+                className="input mt-1"
+                value={form.payrollEmployeeId}
+                onChange={(e) => setForm((f) => ({ ...f, payrollEmployeeId: e.target.value }))}
               />
             </label>
             <label className="text-xs text-gray-500">

@@ -72,6 +72,7 @@ interface Estimate {
   markupAmount: string;
   taxAmount: string;
   grandTotal: string;
+  currency: string;
   currentVersion: number;
   isStale: boolean;
   lines: EstimateLine[];
@@ -306,7 +307,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
   }, [estimateId]);
 
   const rateItemsById = Object.fromEntries(rateItems.map((r) => [r.id, r]));
-  const currency = me?.company.currency ?? "";
+  const currency = estimate?.currency ?? me?.company.currency ?? "";
 
   const selectedRateItem = rateItemsById[newLine.rateCatalogItemId];
 

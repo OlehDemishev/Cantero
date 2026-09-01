@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { SUPPORTED_CURRENCIES } from "./company";
 
 export const createMaterialCatalogItemSchema = z.object({
   code: z.string().min(1).max(40),
@@ -121,6 +122,11 @@ export const createProjectSchema = z.object({
   clientId: z.string().uuid().optional(),
 });
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;
+
+export const updateProjectCurrencySchema = z.object({
+  currency: z.enum(SUPPORTED_CURRENCIES).nullable(),
+});
+export type UpdateProjectCurrencyInput = z.infer<typeof updateProjectCurrencySchema>;
 
 export const updateProjectWarrantySchema = z.object({
   handoverDate: z.string().datetime().nullable().optional(),

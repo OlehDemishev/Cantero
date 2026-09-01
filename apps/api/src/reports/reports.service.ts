@@ -6,6 +6,7 @@ import { calculateEac } from "./estimate-at-completion";
 import { toCsv } from "../common/csv";
 import { PdfService } from "../common/pdf/pdf.service";
 import { StorageService } from "../common/storage/storage.service";
+import { ExchangeRateService } from "../common/exchange-rate/exchange-rate.service";
 
 const CASH_FLOW_WEEKS = 13;
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -17,6 +18,7 @@ export class ReportsService {
     private readonly prisma: PrismaService,
     private readonly pdf: PdfService,
     private readonly storage: StorageService,
+    private readonly exchangeRates: ExchangeRateService,
   ) {}
 
   async overview(companyId: string) {
@@ -217,6 +219,12 @@ export class ReportsService {
    * "total estimated cost" is the larger of the original budget and the EAC, so a project running
    * over budget doesn't show over 100% complete. Only projects with an approved estimate (i.e. an
    * actual contract value) are included — nothing to recognize revenue against otherwise.
+   *
+   * Known scope limit: each project's own contractValue/earned/billed figures are correct in that
+   * project's own currency (see Project.currency), but this report lists every project side by
+   * side under one company-wide "Currency" label without converting — same limit cashFlowForecast
+   * documents. A company running a project in an override currency will see that row's numbers
+   * under the company's default currency label, not its own.
    */
   async wipReport(companyId: string) {
     const projects = await this.prisma.project.findMany({
@@ -679,6 +687,13 @@ export class ReportsService {
    * With a `projectId`, scopes to that project instead of the whole company — purchase orders are
    * excluded entirely in that case, since PurchaseOrder restocks a warehouse rather than billing
    * against a specific job (same scope limit JobCostingService documents for material costs).
+   *
+   * Known scope limit: the company-wide pass (no projectId) sums Invoice/RecurringInvoice amounts
+   * as raw numbers without converting a project-currency-override invoice's amount into the
+   * company's default first (unlike revenueTrend, which does convert via ExchangeRateService) — a
+   * company running one override-currency project alongside its normal ones will see a
+   * company-wide forecast that mixes units. Scoping to a single project's own `projectId` isn't
+   * affected, since every invoice under one project always shares that project's currency.
    */
   async cashFlowForecast(companyId: string, projectId?: string) {
     const now = new Date();
@@ -800,14 +815,20 @@ export class ReportsService {
 
   /** Paid-invoice revenue by month over the trailing `months` window, oldest first — the
    * simplest honest trend line (no revenue-recognition smoothing, just when payment happened). */
+  /** Converts each payment from its own invoice's currency (see Invoice.currency) into the
+   * company's default before bucketing — a project billed in an override currency would
+   * otherwise get its payments silently added as if they were company.currency. */
   async revenueTrend(companyId: string, months = 12) {
     const now = new Date();
     const windowStart = new Date(now.getFullYear(), now.getMonth() - (months - 1), 1);
 
-    const payments = await this.prisma.payment.findMany({
-      where: { invoice: { companyId }, paidAt: { gte: windowStart } },
-      select: { amount: true, paidAt: true },
-    });
+    const [company, payments] = await Promise.all([
+      this.prisma.company.findUniqueOrThrow({ where: { id: companyId } }),
+      this.prisma.payment.findMany({
+        where: { invoice: { companyId }, paidAt: { gte: windowStart } },
+        select: { amount: true, paidAt: true, invoice: { select: { currency: true } } },
+      }),
+    ]);
 
     const buckets = new Map<string, number>();
     for (let i = 0; i < months; i++) {
@@ -816,7 +837,9 @@ export class ReportsService {
     }
     for (const p of payments) {
       const key = `${p.paidAt.getFullYear()}-${String(p.paidAt.getMonth() + 1).padStart(2, "0")}`;
-      if (buckets.has(key)) buckets.set(key, buckets.get(key)! + Number(p.amount));
+      if (!buckets.has(key)) continue;
+      const converted = await this.exchangeRates.convert(Number(p.amount), p.invoice.currency, company.currency);
+      buckets.set(key, buckets.get(key)! + converted);
     }
 
     return [...buckets.entries()].map(([month, revenue]) => ({ month, revenue: round2(revenue) }));

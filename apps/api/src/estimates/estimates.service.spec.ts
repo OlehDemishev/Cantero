@@ -19,6 +19,69 @@ const OTHER_COMPANY_ESTIMATE = {
   project: null,
 };
 
+describe("EstimatesService — currency resolution", () => {
+  let service: EstimatesService;
+  let prisma: {
+    project: { findFirst: jest.Mock };
+    company: { findUniqueOrThrow: jest.Mock };
+    estimate: { create: jest.Mock };
+  };
+
+  beforeEach(async () => {
+    prisma = {
+      project: { findFirst: jest.fn() },
+      company: { findUniqueOrThrow: jest.fn() },
+      estimate: { create: jest.fn().mockResolvedValue({ id: "estimate-1" }) },
+    };
+
+    const module = await Test.createTestingModule({
+      providers: [
+        EstimatesService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: PdfService, useValue: { render: jest.fn() } },
+        { provide: StorageService, useValue: { save: jest.fn(), read: jest.fn() } },
+        { provide: AuditService, useValue: { record: jest.fn(), list: jest.fn() } },
+        { provide: ConfigService, useValue: { get: jest.fn(), getOrThrow: jest.fn() } },
+        { provide: MailService, useValue: { send: jest.fn() } },
+        { provide: WebhooksService, useValue: { trigger: jest.fn() } },
+      ],
+    }).compile();
+
+    service = module.get(EstimatesService);
+  });
+
+  it("falls back to the company's default currency when the project has no override", async () => {
+    prisma.project.findFirst.mockResolvedValue({ id: "project-1", companyId: COMPANY_A, currency: null });
+    prisma.company.findUniqueOrThrow.mockResolvedValue({ currency: "EUR" });
+
+    await service.create(COMPANY_A, {
+      projectId: "project-1",
+      name: "Estimate A",
+      laborRatePerHour: 40,
+      markupPercent: 15,
+      taxPercent: 0,
+    });
+
+    expect(prisma.estimate.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ currency: "EUR" }) }));
+  });
+
+  it("uses the project's override currency instead of the company default when set", async () => {
+    prisma.project.findFirst.mockResolvedValue({ id: "project-1", companyId: COMPANY_A, currency: "CAD" });
+
+    await service.create(COMPANY_A, {
+      projectId: "project-1",
+      name: "Estimate A",
+      laborRatePerHour: 40,
+      markupPercent: 15,
+      taxPercent: 0,
+    });
+
+    expect(prisma.estimate.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ currency: "CAD" }) }));
+    // The company is never looked up once the project already settles the question.
+    expect(prisma.company.findUniqueOrThrow).not.toHaveBeenCalled();
+  });
+});
+
 describe("EstimatesService — hideCostDataFromRoles", () => {
   let service: EstimatesService;
   let prisma: {

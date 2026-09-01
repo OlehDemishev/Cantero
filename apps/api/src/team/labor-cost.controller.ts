@@ -26,4 +26,30 @@ export class LaborCostController {
     res.set("Content-Disposition", "attachment; filename=payroll-export.csv");
     return this.service.payrollExportCsv(user.companyId, { from, to });
   }
+
+  @Roles("owner", "admin", "accountant")
+  @Get("payroll-export/adp")
+  @Header("Content-Type", "text/csv")
+  async payrollExportAdp(
+    @CurrentUser() user: AuthUser,
+    @Res({ passthrough: true }) res: Response,
+    @Query("from") from?: string,
+    @Query("to") to?: string,
+  ) {
+    res.set("Content-Disposition", "attachment; filename=payroll-export-adp.csv");
+    return this.service.payrollExportAdpCsv(user.companyId, { from, to });
+  }
+
+  @Roles("owner", "admin", "accountant")
+  @Get("payroll-export/gusto")
+  @Header("Content-Type", "text/csv")
+  async payrollExportGusto(
+    @CurrentUser() user: AuthUser,
+    @Res({ passthrough: true }) res: Response,
+    @Query("from") from?: string,
+    @Query("to") to?: string,
+  ) {
+    res.set("Content-Disposition", "attachment; filename=payroll-export-gusto.csv");
+    return this.service.payrollExportGustoCsv(user.companyId, { from, to });
+  }
 }

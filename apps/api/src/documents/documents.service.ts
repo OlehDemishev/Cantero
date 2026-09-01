@@ -34,6 +34,7 @@ export interface DocumentListFilter {
   safetyBriefingId?: string;
   supplierDocumentId?: string;
   companyDocumentId?: string;
+  insuranceClaimId?: string;
   category?: string;
   search?: string;
   tag?: string;
@@ -52,6 +53,7 @@ export interface DocumentAttachmentMeta {
   safetyBriefingId?: string;
   supplierDocumentId?: string;
   companyDocumentId?: string;
+  insuranceClaimId?: string;
   /** Only meaningful alongside safetyBriefingId today — which language this file's content is in. */
   locale?: Locale;
   category?: string;
@@ -86,6 +88,7 @@ export class DocumentsService {
         ...(filter.safetyBriefingId ? { safetyBriefingId: filter.safetyBriefingId } : {}),
         ...(filter.supplierDocumentId ? { supplierDocumentId: filter.supplierDocumentId } : {}),
         ...(filter.companyDocumentId ? { companyDocumentId: filter.companyDocumentId } : {}),
+        ...(filter.insuranceClaimId ? { insuranceClaimId: filter.insuranceClaimId } : {}),
         ...(category ? { category } : {}),
         ...(filter.tag ? { tags: { has: filter.tag } } : {}),
         ...(filter.search ? { name: { contains: filter.search, mode: "insensitive" as const } } : {}),
@@ -159,6 +162,10 @@ export class DocumentsService {
       const doc = await this.prisma.companyDocument.findFirst({ where: { id: meta.companyDocumentId, companyId } });
       if (!doc) throw new NotFoundException("Company document not found");
     }
+    if (meta.insuranceClaimId) {
+      const claim = await this.prisma.insuranceClaim.findFirst({ where: { id: meta.insuranceClaimId, companyId } });
+      if (!claim) throw new NotFoundException("Insurance claim not found");
+    }
     const category: DocumentCategory = meta.category ? documentCategorySchema.parse(meta.category) : "other";
 
     const stored = await this.storage.save(companyId, file.originalname, file.buffer);
@@ -178,6 +185,7 @@ export class DocumentsService {
         safetyBriefingId: meta.safetyBriefingId,
         supplierDocumentId: meta.supplierDocumentId,
         companyDocumentId: meta.companyDocumentId,
+        insuranceClaimId: meta.insuranceClaimId,
         locale: meta.locale,
         name: file.originalname,
         storageKey: stored.storageKey,
@@ -228,6 +236,7 @@ export class DocumentsService {
         safetyBriefingId: current.safetyBriefingId,
         supplierDocumentId: current.supplierDocumentId,
         companyDocumentId: current.companyDocumentId,
+        insuranceClaimId: current.insuranceClaimId,
         locale: current.locale,
         name: file.originalname,
         storageKey: stored.storageKey,

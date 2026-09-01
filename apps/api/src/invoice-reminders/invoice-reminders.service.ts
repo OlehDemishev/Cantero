@@ -96,7 +96,7 @@ export class InvoiceRemindersService implements OnModuleInit {
 
   private async sendReminder(
     company: { id: string; name: string; currency: string },
-    invoice: { id: string; number: string; total: unknown; client: { email: string | null } },
+    invoice: { id: string; number: string; total: unknown; currency: string; client: { email: string | null } },
     toneIndex: number,
   ): Promise<void> {
     const { subject, body } = TONE[toneIndex](invoice.number);
@@ -113,8 +113,8 @@ export class InvoiceRemindersService implements OnModuleInit {
     await this.mail.send({
       to: invoice.client.email!,
       subject: `[${company.name}] ${subject}`,
-      html: `<div style="font-family:sans-serif;max-width:480px;"><h2 style="margin-bottom:4px;">${subject}</h2><p>${body}</p><p>Amount due: <strong>${invoice.total} ${company.currency}</strong></p><p style="margin-top:16px;"><a href="${link}">View invoice →</a></p></div>`,
-      text: `${subject}\n\n${body}\n\nAmount due: ${invoice.total} ${company.currency}\n\nView: ${link}`,
+      html: `<div style="font-family:sans-serif;max-width:480px;"><h2 style="margin-bottom:4px;">${subject}</h2><p>${body}</p><p>Amount due: <strong>${invoice.total} ${invoice.currency}</strong></p><p style="margin-top:16px;"><a href="${link}">View invoice →</a></p></div>`,
+      text: `${subject}\n\n${body}\n\nAmount due: ${invoice.total} ${invoice.currency}\n\nView: ${link}`,
       ...(pdf ? { attachments: [{ filename: `${invoice.number}.pdf`, content: pdf, contentType: "application/pdf" }] } : {}),
     });
   }

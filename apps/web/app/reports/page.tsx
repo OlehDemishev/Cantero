@@ -234,6 +234,20 @@ export default function ReportsPage() {
     downloadBlob(blob, "payroll-export.csv");
   }
 
+  async function downloadPayrollExportAdp() {
+    const blob = await apiFetch<Blob>(
+      `/team/labor-cost-report/payroll-export/adp?from=${new Date(workloadFrom).toISOString()}&to=${new Date(workloadTo).toISOString()}`,
+    );
+    downloadBlob(blob, "payroll-export-adp.csv");
+  }
+
+  async function downloadPayrollExportGusto() {
+    const blob = await apiFetch<Blob>(
+      `/team/labor-cost-report/payroll-export/gusto?from=${new Date(workloadFrom).toISOString()}&to=${new Date(workloadTo).toISOString()}`,
+    );
+    downloadBlob(blob, "payroll-export-gusto.csv");
+  }
+
   async function downloadSafetyExport() {
     const blob = await apiFetch<Blob>("/safety/incidents/export");
     downloadBlob(blob, "incident-report-export.csv");
@@ -702,6 +716,12 @@ export default function ReportsPage() {
           <input type="date" className="input w-auto" value={workloadTo} onChange={(e) => setWorkloadTo(e.target.value)} />
           <button onClick={downloadPayrollExport} className="btn-secondary px-3 py-1 text-xs">
             {t("downloadPayrollExport")}
+          </button>
+          <button onClick={downloadPayrollExportAdp} className="btn-secondary px-3 py-1 text-xs">
+            {t("downloadPayrollExportAdp")}
+          </button>
+          <button onClick={downloadPayrollExportGusto} className="btn-secondary px-3 py-1 text-xs">
+            {t("downloadPayrollExportGusto")}
           </button>
           <button onClick={downloadSafetyExport} className="btn-secondary px-3 py-1 text-xs">
             {t("downloadSafetyExport")}
