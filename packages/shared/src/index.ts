@@ -15,6 +15,8 @@ export * from "./webhooks";
 export * from "./portal";
 export * from "./equipment";
 export * from "./subcontractor-portal";
+export * from "./supplier-portal";
+export * from "./signature-requests";
 export * from "./daily-logs";
 export * from "./punch-list";
 export * from "./rfi";

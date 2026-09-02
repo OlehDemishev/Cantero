@@ -14,6 +14,7 @@ import { SafetyScorecardPanel } from "@/components/safety-scorecard-panel";
 import { GeofenceViolationsPanel } from "@/components/geofence-violations-panel";
 import { EquipmentUtilizationPanel } from "@/components/equipment-utilization-panel";
 import { CarbonSummaryPanel } from "@/components/carbon-summary-panel";
+import { ComplianceCalendarPanel } from "@/components/compliance-calendar-panel";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
@@ -865,6 +866,7 @@ export default function ReportsPage() {
         </ul>
       )}
 
+      <ComplianceCalendarPanel />
       <SafetyScorecardPanel />
       <GeofenceViolationsPanel />
       <EquipmentUtilizationPanel />

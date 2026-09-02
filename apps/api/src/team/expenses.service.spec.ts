@@ -14,7 +14,7 @@ describe("ExpensesService", () => {
   let prisma: {
     project: { findFirst: jest.Mock };
     worker: { findFirst: jest.Mock };
-    expense: { create: jest.Mock; findFirst: jest.Mock; update: jest.Mock };
+    expense: { create: jest.Mock; findFirst: jest.Mock; findMany: jest.Mock; update: jest.Mock };
   };
   let storage: { save: jest.Mock; read: jest.Mock };
   let audit: { record: jest.Mock };
@@ -24,7 +24,7 @@ describe("ExpensesService", () => {
     prisma = {
       project: { findFirst: jest.fn() },
       worker: { findFirst: jest.fn() },
-      expense: { create: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
+      expense: { create: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), update: jest.fn() },
     };
     storage = { save: jest.fn(), read: jest.fn() };
     audit = { record: jest.fn() };
@@ -41,6 +41,34 @@ describe("ExpensesService", () => {
     }).compile();
 
     service = module.get(ExpensesService);
+  });
+
+  describe("list", () => {
+    it("flags an expense far above the company's own category history and excludes itself from the baseline", async () => {
+      prisma.expense.findMany
+        .mockResolvedValueOnce([{ id: "exp-1", category: "fuel", amount: "1000" }])
+        .mockResolvedValueOnce([
+          { id: "exp-1", category: "fuel", amount: "1000" },
+          { id: "exp-2", category: "fuel", amount: "100" },
+          { id: "exp-3", category: "fuel", amount: "110" },
+          { id: "exp-4", category: "fuel", amount: "95" },
+        ]);
+
+      const [result] = await service.list(COMPANY_A, {});
+
+      expect(result.anomaly.isAnomaly).toBe(true);
+      expect(result.anomaly.historicalSampleSize).toBe(3);
+    });
+
+    it("does not flag anything when the category has too little history", async () => {
+      prisma.expense.findMany
+        .mockResolvedValueOnce([{ id: "exp-1", category: "other", amount: "500" }])
+        .mockResolvedValueOnce([{ id: "exp-1", category: "other", amount: "500" }]);
+
+      const [result] = await service.list(COMPANY_A, {});
+
+      expect(result.anomaly).toEqual({ isAnomaly: false, historicalAverage: null, historicalSampleSize: 0, deviationPercent: null });
+    });
   });
 
   describe("create", () => {

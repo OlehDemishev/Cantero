@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { DOCUMENT_CATEGORIES, type DocumentCategory } from "@cantero/shared";
 import { apiFetch, apiUpload, downloadBlob } from "@/lib/api-client";
+import { SignatureRequestsPanel } from "@/components/signature-requests-panel";
 
 interface Project {
   id: string;
@@ -204,6 +205,8 @@ export default function DocumentsPage() {
           <input ref={fileInputRef} type="file" onChange={handleFileChange} disabled={busy} className="text-sm" />
         </div>
       </div>
+
+      <SignatureRequestsPanel documents={documents ?? []} />
     </AuthenticatedShell>
   );
 }

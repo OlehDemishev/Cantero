@@ -32,6 +32,8 @@ export const WEBHOOK_EVENTS = [
   "expense.approved",
   "nps_survey.responded",
   "enps_survey.responded",
+  "purchase_order.acknowledged",
+  "signature_request.completed",
 ] as const;
 export type WebhookEvent = (typeof WEBHOOK_EVENTS)[number];
 

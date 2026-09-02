@@ -4,6 +4,7 @@ import { PrismaService } from "../common/prisma/prisma.service";
 import { StorageService } from "../common/storage/storage.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { detectExpenseAnomaly } from "./expense-anomaly";
 
 export interface ExpenseFilter {
   projectId?: string;
@@ -20,8 +21,8 @@ export class ExpensesService {
     private readonly webhooks: WebhooksService,
   ) {}
 
-  list(companyId: string, filter: ExpenseFilter) {
-    return this.prisma.expense.findMany({
+  async list(companyId: string, filter: ExpenseFilter) {
+    const expenses = await this.prisma.expense.findMany({
       where: {
         companyId,
         ...(filter.projectId ? { projectId: filter.projectId } : {}),
@@ -30,6 +31,24 @@ export class ExpensesService {
       },
       include: { worker: { select: { id: true, name: true } }, project: { select: { id: true, name: true } } },
       orderBy: { incurredAt: "desc" },
+    });
+
+    /** Baseline is every non-rejected expense in the company, by category — not scoped to this
+     * list's own filters, so a single-project view still has enough history to compare against. */
+    const history = await this.prisma.expense.findMany({
+      where: { companyId, status: { not: "rejected" } },
+      select: { id: true, category: true, amount: true },
+    });
+    const byCategory = new Map<string, { id: string; amount: number }[]>();
+    for (const h of history) {
+      const arr = byCategory.get(h.category) ?? [];
+      arr.push({ id: h.id, amount: Number(h.amount) });
+      byCategory.set(h.category, arr);
+    }
+
+    return expenses.map((e) => {
+      const historicalAmounts = (byCategory.get(e.category) ?? []).filter((h) => h.id !== e.id).map((h) => h.amount);
+      return { ...e, anomaly: detectExpenseAnomaly(Number(e.amount), historicalAmounts) };
     });
   }
 

@@ -34,6 +34,8 @@ import { PublicApiModule } from "./public-api/public-api.module";
 import { PortalModule } from "./portal/portal.module";
 import { EquipmentModule } from "./equipment/equipment.module";
 import { SubcontractorPortalModule } from "./subcontractor-portal/subcontractor-portal.module";
+import { SupplierPortalModule } from "./supplier-portal/supplier-portal.module";
+import { SignatureRequestsModule } from "./signature-requests/signature-requests.module";
 import { SafetyModule } from "./safety/safety.module";
 import { CommentsModule } from "./comments/comments.module";
 import { ResourcePlanningModule } from "./resource-planning/resource-planning.module";
@@ -99,6 +101,8 @@ import { MessageTemplatesModule } from "./message-templates/message-templates.mo
     PortalModule,
     EquipmentModule,
     SubcontractorPortalModule,
+    SupplierPortalModule,
+    SignatureRequestsModule,
     SafetyModule,
     CommentsModule,
     ResourcePlanningModule,

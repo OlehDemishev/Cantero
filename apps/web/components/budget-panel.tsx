@@ -5,6 +5,13 @@ import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
+interface BudgetRevision {
+  id: string;
+  amount: number;
+  reason: string;
+  createdByName: string;
+  createdAt: string;
+}
 interface BudgetVsActual {
   estimatesCount: number;
   materialsCostBudget: number;
@@ -18,6 +25,9 @@ interface BudgetVsActual {
   subcontractorCostActual: number;
   subcontractorCostUnpaid: number;
   grandTotalBudget: number;
+  budgetRevisionsTotal: number;
+  revisedBudgetTotal: number;
+  revisions: BudgetRevision[];
   invoicedTotal: number;
   paidTotal: number;
   outstandingTotal: number;
@@ -25,12 +35,35 @@ interface BudgetVsActual {
 
 export function BudgetPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("budget");
+  const tc = useTranslations("common");
   const { data: me } = useMe();
   const [budget, setBudget] = useState<BudgetVsActual | null>(null);
+  const [addingRevision, setAddingRevision] = useState(false);
+  const [revisionForm, setRevisionForm] = useState({ amount: "", reason: "" });
+  const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
+  function load() {
     apiFetch<BudgetVsActual>(`/finance/budget-vs-actual?projectId=${projectId}`).then(setBudget);
-  }, [projectId]);
+  }
+
+  useEffect(load, [projectId]);
+
+  async function submitRevision(e: React.FormEvent) {
+    e.preventDefault();
+    if (!revisionForm.amount || !revisionForm.reason.trim()) return;
+    setBusy(true);
+    try {
+      await apiFetch("/finance/budget-vs-actual/revisions", {
+        method: "POST",
+        body: JSON.stringify({ projectId, amount: Number(revisionForm.amount), reason: revisionForm.reason.trim() }),
+      });
+      setRevisionForm({ amount: "", reason: "" });
+      setAddingRevision(false);
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
 
   if (!budget) return null;
   const currency = me?.company.currency ?? "";
@@ -95,11 +128,79 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
           title={t("grandTotalBudget")}
           rows={[
             [t("grandTotalBudget"), `${budget.grandTotalBudget} ${currency}`],
+            ...(budget.budgetRevisionsTotal !== 0
+              ? ([
+                  [t("budgetRevisionsTotal"), `${budget.budgetRevisionsTotal >= 0 ? "+" : ""}${budget.budgetRevisionsTotal} ${currency}`],
+                  [t("revisedBudgetTotal"), `${budget.revisedBudgetTotal} ${currency}`, "font-medium text-gray-900"],
+                ] as [string, string, string?][])
+              : []),
             [t("invoicedTotal"), `${budget.invoicedTotal} ${currency}`],
             [t("paidTotal"), `${budget.paidTotal} ${currency}`],
             [t("outstandingTotal"), `${budget.outstandingTotal} ${currency}`],
           ]}
         />
+      </div>
+
+      <div className="mt-4">
+        <div className="mb-2 flex items-center justify-between">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">{t("revisionLog")}</h3>
+          {!addingRevision && (
+            <button onClick={() => setAddingRevision(true)} className="btn-secondary px-2.5 py-1 text-xs">
+              {t("addRevision")}
+            </button>
+          )}
+        </div>
+
+        {addingRevision && (
+          <form onSubmit={submitRevision} className="card mb-3 flex flex-col gap-2">
+            <div className="flex gap-2">
+              <input
+                required
+                type="number"
+                step="0.01"
+                placeholder={t("revisionAmountPlaceholder")}
+                className="input w-40"
+                value={revisionForm.amount}
+                onChange={(e) => setRevisionForm((f) => ({ ...f, amount: e.target.value }))}
+              />
+              <input
+                required
+                placeholder={t("revisionReasonPlaceholder")}
+                className="input flex-1"
+                value={revisionForm.reason}
+                onChange={(e) => setRevisionForm((f) => ({ ...f, reason: e.target.value }))}
+              />
+            </div>
+            <div className="flex gap-2">
+              <button type="submit" disabled={busy} className="btn-primary px-3 py-1 text-xs">
+                {tc("save")}
+              </button>
+              <button type="button" onClick={() => setAddingRevision(false)} className="btn-secondary px-3 py-1 text-xs">
+                {tc("cancel")}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {budget.revisions.length === 0 ? (
+          <p className="text-sm text-gray-400">{t("noRevisions")}</p>
+        ) : (
+          <ul className="flex flex-col gap-1.5">
+            {budget.revisions.map((r) => (
+              <li key={r.id} className="rounded-md border border-gray-200 px-3 py-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className={`font-medium ${Number(r.amount) >= 0 ? "text-success-700" : "text-error-700"}`}>
+                    {Number(r.amount) >= 0 ? "+" : ""}
+                    {r.amount} {currency}
+                  </span>
+                  <span className="text-xs text-gray-400">{new Date(r.createdAt).toLocaleDateString()}</span>
+                </div>
+                <p className="mt-0.5 text-xs text-gray-500">{r.reason}</p>
+                <p className="mt-0.5 text-xs text-gray-400">{r.createdByName}</p>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );

@@ -295,7 +295,7 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
                     <p className="mt-1.5 text-xs text-warning-700">{t("resolvedBy", { name: item.resolvedByName })}</p>
                   )}
                   <div className="mt-2">
-                    <PhotoAttachments param="punchListItemId" entityId={item.id} />
+                    <PhotoAttachments param="punchListItemId" entityId={item.id} beforeAfter />
                   </div>
                   <div className="mt-3 border-t border-gray-100 pt-3">
                     <CommentsThread param="punchListItemId" entityId={item.id} />

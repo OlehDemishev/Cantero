@@ -332,6 +332,8 @@ model Company {
   suppliers                       Supplier[]
   workers                         Worker[]
   documents                       Document[]
+  signatureRequests               SignatureRequest[]
+  budgetRevisions                 BudgetRevision[]
   subcontractors                  Subcontractor[]
   subcontractorCosts              SubcontractorCost[]
   subcontractorPerformanceReviews SubcontractorPerformanceReview[]
@@ -520,6 +522,7 @@ model User {
   notificationReads   NotificationRead[]
   dashboardWidgets    DashboardWidget[]
   projectMemberships  ProjectMember[]
+  signatureRequests   SignatureRequest[]
 
   @@map("users")
 }
@@ -1287,6 +1290,7 @@ model Supplier {
   equipmentFuelLogs           EquipmentFuelLog[]
   documents                   SupplierDocument[]
   reviews                     SupplierReview[]
+  portalLoginTokens           SupplierPortalLoginToken[]
 
   @@index([companyId])
   @@map("suppliers")
@@ -1445,6 +1449,12 @@ model PurchaseOrder {
   expectedDate  DateTime?
   receivedAt    DateTime?
   createdAt     DateTime            @default(now())
+  /// Set when the supplier confirms the order from their own portal — independent of internal
+  /// status (a PO can be "ordered" and separately "acknowledged" by the vendor).
+  acknowledgedAt DateTime?
+  /// Supplier's own delivery estimate, which may differ from the internally-set expectedDate.
+  supplierEta    DateTime?
+  supplierNote   String?
 
   supplier Supplier            @relation(fields: [supplierId], references: [id], onDelete: Restrict)
   lines    PurchaseOrderLine[]
@@ -1550,6 +1560,7 @@ model Project {
   npsSurveys               NpsSurvey[]
   crewSmsBroadcasts        CrewSmsBroadcast[]
   siteSignIns              SiteSignIn[]
+  budgetRevisions          BudgetRevision[]
 
   @@index([companyId])
   @@map("projects")
@@ -1864,6 +1875,7 @@ model Rfi {
   project      Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
   drawingSheet DrawingSheet? @relation(fields: [drawingSheetId], references: [id], onDelete: SetNull)
   comments     Comment[]
+  documents    Document[]
 
   @@unique([projectId, number])
   @@index([companyId])
@@ -1871,6 +1883,30 @@ model Rfi {
 }
 
 // ---------- Finance (thin in Phase 1; Payments/budget-vs-actual in Phase 4) ----------
+
+/// A manual log entry recording that a project's budget baseline moved — distinct from a
+/// ChangeOrder (which is client-billed scope/price change) and from BudgetService's live
+/// budget-vs-actual snapshot (which just compares approved-estimate totals against current
+/// actuals with no memory of past baselines). This is purely an internal record of why/when
+/// the target moved, e.g. "unforeseen site conditions, +5,000 EUR, approved internally."
+model BudgetRevision {
+  id              String   @id @default(uuid())
+  companyId       String
+  projectId       String
+  /// Signed delta against the current budget baseline — positive increases it, negative reduces it.
+  amount          Decimal  @db.Decimal(14, 2)
+  reason          String
+  createdByUserId String?
+  createdByName   String
+  createdAt       DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([projectId])
+  @@map("budget_revisions")
+}
 
 model Invoice {
   id                         String        @id @default(uuid())
@@ -2341,6 +2377,22 @@ model SubcontractorPortalLoginToken {
   @@map("subcontractor_portal_login_tokens")
 }
 
+/// Same magic-link login pattern as SubcontractorPortalLoginToken, for the material-supplier
+/// self-service portal (PO visibility + acknowledgment).
+model SupplierPortalLoginToken {
+  id         String    @id @default(uuid())
+  supplierId String
+  token      String    @unique
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@index([supplierId])
+  @@map("supplier_portal_login_tokens")
+}
+
 /// A bill from a subcontractor against a project — an actual cost the moment
 /// it's logged (mirrors how stock issue counts as actual at issue-time, not
 /// payment-time); `paid` and `dueDate` exist for the cash-flow forecast, not
@@ -2596,6 +2648,58 @@ model Contract {
   @@index([companyId])
   @@index([projectId])
   @@map("contracts")
+}
+
+enum SignatureRequestStatus {
+  draft
+  sent
+  completed
+  voided
+}
+
+/// A general-purpose, reusable e-signature workflow over any already-uploaded Document — unlike
+/// Contract/ChangeOrder/LienWaiver's single-signer trio baked into each entity, this supports an
+/// ordered chain of multiple external signers (e.g. contractor countersigns, then the client) on
+/// any document type, without adding a signing mechanism to every new entity that needs one.
+model SignatureRequest {
+  id              String                  @id @default(uuid())
+  companyId       String
+  documentId      String
+  title           String
+  status          SignatureRequestStatus  @default(draft)
+  createdByUserId String?
+  createdAt       DateTime                @default(now())
+  completedAt     DateTime?
+
+  company   Company                  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  document  Document                 @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  createdBy User?                    @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  signers   SignatureRequestSigner[]
+
+  @@index([companyId])
+  @@index([documentId])
+  @@map("signature_requests")
+}
+
+/// One recipient in a SignatureRequest's chain. `order` controls sequencing — SignatureRequestsService
+/// only emails a signer once every signer with a lower order has signed, so a later signer can't
+/// sign out of turn even though each has their own independent access token.
+model SignatureRequestSigner {
+  id                 String    @id @default(uuid())
+  signatureRequestId String
+  order              Int
+  name               String
+  email              String
+  accessToken        String    @unique
+  notifiedAt         DateTime?
+  signedAt           DateTime?
+  signatureImageKey  String?
+  signedIp           String?
+
+  signatureRequest SignatureRequest @relation(fields: [signatureRequestId], references: [id], onDelete: Cascade)
+
+  @@index([signatureRequestId])
+  @@map("signature_request_signers")
 }
 
 enum BidRequestStatus {
@@ -3044,6 +3148,9 @@ model Document {
   supplierDocumentId      String?
   companyDocumentId       String?
   insuranceClaimId        String?
+  /// An RFI reference photo (e.g. a site condition photo attached to the question or answer) —
+  /// same generic attachment pattern as punchListItemId above.
+  rfiId                   String?
   name                    String
   storageKey              String
   mimeType                String
@@ -3080,6 +3187,8 @@ model Document {
   supplierDocument      SupplierDocument?      @relation(fields: [supplierDocumentId], references: [id], onDelete: Cascade)
   companyDocument       CompanyDocument?       @relation(fields: [companyDocumentId], references: [id], onDelete: Cascade)
   insuranceClaim        InsuranceClaim?        @relation(fields: [insuranceClaimId], references: [id], onDelete: Cascade)
+  rfi                   Rfi?                   @relation(fields: [rfiId], references: [id], onDelete: Cascade)
+  signatureRequests     SignatureRequest[]
   uploadedBy            User?                  @relation(fields: [uploadedByUserId], references: [id], onDelete: SetNull)
   rootDocument          Document?              @relation("DocumentVersions", fields: [rootDocumentId], references: [id], onDelete: Cascade)
   versions              Document[]             @relation("DocumentVersions")
@@ -3097,6 +3206,7 @@ model Document {
   @@index([supplierDocumentId])
   @@index([companyDocumentId])
   @@index([insuranceClaimId])
+  @@index([rfiId])
   @@map("documents")
 }
 
@@ -3191,15 +3301,26 @@ model DrawingSheet {
   mimeType         String
   uploadedByUserId String?
   createdAt        DateTime  @default(now())
+  /// 1 on the first upload of a sheet number; each supersede() call increments this within the
+  /// same version chain — same rootDocumentId/version pattern as Document.
+  version          Int       @default(1)
+  /// Null on the first version of a chain (the root); every later version points back to the
+  /// root's id, so "current version" can be found by grouping on COALESCE(rootSheetId, id) and
+  /// taking max(version). Annotations/RFI/punch-list pins stay attached to the specific sheet
+  /// version they were made on, rather than migrating forward automatically.
+  rootSheetId      String?
 
   company        Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
   project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
   annotations    Annotation[]
   rfis           Rfi[]
   punchListItems PunchListItem[]
+  rootSheet      DrawingSheet?   @relation("DrawingSheetVersions", fields: [rootSheetId], references: [id], onDelete: Cascade)
+  versions       DrawingSheet[]  @relation("DrawingSheetVersions")
 
   @@index([companyId])
   @@index([projectId])
+  @@index([rootSheetId])
   @@map("drawing_sheets")
 }
 

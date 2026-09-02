@@ -17,6 +17,9 @@ describe("CompanyService — franchise linking", () => {
     invoice: { aggregate: jest.Mock };
     project: { count: jest.Mock };
     membership: { count: jest.Mock };
+    stockMovement: { findMany: jest.Mock };
+    timeEntry: { findMany: jest.Mock };
+    subcontractorCost: { findMany: jest.Mock };
   };
   let audit: { record: jest.Mock };
   let exchangeRates: { convert: jest.Mock };
@@ -33,6 +36,9 @@ describe("CompanyService — franchise linking", () => {
       invoice: { aggregate: jest.fn() },
       project: { count: jest.fn() },
       membership: { count: jest.fn() },
+      stockMovement: { findMany: jest.fn().mockResolvedValue([]) },
+      timeEntry: { findMany: jest.fn().mockResolvedValue([]) },
+      subcontractorCost: { findMany: jest.fn().mockResolvedValue([]) },
     };
     audit = { record: jest.fn() };
     // Identity conversion by default — tests that care about real conversion override this.
@@ -126,9 +132,43 @@ describe("CompanyService — franchise linking", () => {
       const result = await service.franchiseOverview(COMPANY_A);
 
       expect(result.branches).toEqual([
-        { companyId: "child-1", name: "Branch A", currency: "EUR", revenue: 500, revenueConverted: 500, projectCount: 3, memberCount: 4 },
+        {
+          companyId: "child-1",
+          name: "Branch A",
+          currency: "EUR",
+          revenue: 500,
+          revenueConverted: 500,
+          materialsCost: 0,
+          laborCost: 0,
+          subcontractorCost: 0,
+          costConverted: 0,
+          marginConverted: 500,
+          projectCount: 3,
+          memberCount: 4,
+        },
       ]);
-      expect(result.totals).toEqual({ revenue: 500, projectCount: 3, memberCount: 4 });
+      expect(result.totals).toEqual({ revenue: 500, cost: 0, margin: 500, projectCount: 3, memberCount: 4 });
+    });
+
+    it("computes margin as revenue minus materials/labor/subcontractor cost", async () => {
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ id: COMPANY_A, currency: "EUR", reportingCurrency: null });
+      prisma.company.findMany.mockResolvedValue([{ id: "child-1", name: "Branch A", currency: "EUR" }]);
+      prisma.invoice.aggregate.mockResolvedValue({ _sum: { total: "10000" } });
+      prisma.project.count.mockResolvedValue(1);
+      prisma.membership.count.mockResolvedValue(1);
+      prisma.stockMovement.findMany.mockResolvedValue([{ quantity: "10", materialCatalogItem: { defaultUnitPrice: "100" } }]);
+      prisma.timeEntry.findMany.mockResolvedValue([{ hours: "8", hourlyCostSnapshot: "25", worker: { hourlyCost: null } }]);
+      prisma.subcontractorCost.findMany.mockResolvedValue([{ amount: "500" }]);
+
+      const result = await service.franchiseOverview(COMPANY_A);
+
+      const branch = result.branches[0];
+      expect(branch.materialsCost).toBe(1000);
+      expect(branch.laborCost).toBe(200);
+      expect(branch.subcontractorCost).toBe(500);
+      expect(branch.costConverted).toBe(1700);
+      expect(branch.marginConverted).toBe(8300);
+      expect(result.totals?.margin).toBe(8300);
     });
 
     it("converts each branch's revenue into the parent's reporting currency before summing", async () => {

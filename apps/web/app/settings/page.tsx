@@ -82,13 +82,18 @@ interface FranchiseBranch {
   currency: string;
   revenue: number;
   revenueConverted: number;
+  materialsCost: number;
+  laborCost: number;
+  subcontractorCost: number;
+  costConverted: number;
+  marginConverted: number;
   projectCount: number;
   memberCount: number;
 }
 interface FranchiseOverview {
   branches: FranchiseBranch[];
   reportingCurrency?: string;
-  totals?: { revenue: number; projectCount: number; memberCount: number };
+  totals?: { revenue: number; cost: number; margin: number; projectCount: number; memberCount: number };
 }
 interface CustomRole {
   id: string;
@@ -1198,6 +1203,8 @@ export default function SettingsPage() {
                     <tr className="border-b border-gray-200 text-left text-gray-500">
                       <th className="py-2">{tc("name")}</th>
                       <th className="py-2">{t("branchRevenue")}</th>
+                      <th className="py-2">{t("branchCost")}</th>
+                      <th className="py-2">{t("branchMargin")}</th>
                       <th className="py-2">{t("branchProjects")}</th>
                       <th className="py-2">{t("branchMembers")}</th>
                     </tr>
@@ -1214,6 +1221,12 @@ export default function SettingsPage() {
                             </span>
                           )}
                         </td>
+                        <td className="py-2">
+                          {b.costConverted.toFixed(2)} {franchiseOverview.reportingCurrency}
+                        </td>
+                        <td className={`py-2 font-medium ${b.marginConverted >= 0 ? "text-success-700" : "text-error-700"}`}>
+                          {b.marginConverted.toFixed(2)} {franchiseOverview.reportingCurrency}
+                        </td>
                         <td className="py-2">{b.projectCount}</td>
                         <td className="py-2">{b.memberCount}</td>
                       </tr>
@@ -1223,6 +1236,12 @@ export default function SettingsPage() {
                         <td className="py-2">{t("total")}</td>
                         <td className="py-2">
                           {franchiseOverview.totals.revenue.toFixed(2)} {franchiseOverview.reportingCurrency}
+                        </td>
+                        <td className="py-2">
+                          {franchiseOverview.totals.cost.toFixed(2)} {franchiseOverview.reportingCurrency}
+                        </td>
+                        <td className={franchiseOverview.totals.margin >= 0 ? "py-2 text-success-700" : "py-2 text-error-700"}>
+                          {franchiseOverview.totals.margin.toFixed(2)} {franchiseOverview.reportingCurrency}
                         </td>
                         <td className="py-2">{franchiseOverview.totals.projectCount}</td>
                         <td className="py-2">{franchiseOverview.totals.memberCount}</td>

@@ -40,6 +40,23 @@ export class DrawingSheetsController {
     return this.service.get(user.companyId, id);
   }
 
+  @Get("drawing-sheets/:id/versions")
+  versions(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.versions(user.companyId, id);
+  }
+
+  @Post("drawing-sheets/:id/supersede")
+  @UseInterceptors(FileInterceptor("file"))
+  supersede(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Query("revision") revision?: string,
+    @Query("revisionDate") revisionDate?: string,
+  ) {
+    return this.service.supersede(user.companyId, { userId: user.userId, name: user.name }, id, file, { revision, revisionDate });
+  }
+
   @Patch("drawing-sheets/:id")
   update(
     @CurrentUser() user: AuthUser,

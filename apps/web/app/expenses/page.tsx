@@ -18,6 +18,7 @@ interface Expense {
   receiptStorageKey: string | null;
   worker: { id: string; name: string };
   project: { id: string; name: string };
+  anomaly: { isAnomaly: boolean; historicalAverage: number | null; deviationPercent: number | null };
 }
 interface Project {
   id: string;
@@ -142,6 +143,14 @@ export default function ExpensesPage() {
                       <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
                         {EXPENSE_CATEGORIES.includes(e.category as never) ? t(e.category) : e.category}
                       </span>
+                      {e.anomaly.isAnomaly && (
+                        <span
+                          className="rounded-full bg-error-50 px-2 py-0.5 text-xs font-medium text-error-700"
+                          title={t("anomalyHint", { average: e.anomaly.historicalAverage ?? 0, currency })}
+                        >
+                          {t("anomaly", { percent: e.anomaly.deviationPercent ?? 0 })}
+                        </span>
+                      )}
                     </div>
                     <div className="mt-1 text-xs text-gray-500">
                       {e.worker.name} · {e.project.name} · {new Date(e.incurredAt).toLocaleDateString()}

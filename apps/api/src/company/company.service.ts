@@ -151,19 +151,26 @@ export class CompanyService {
 
     const branches = await Promise.all(
       children.map(async (child) => {
-        const [revenue, projectCount, memberCount] = await Promise.all([
+        const [revenue, projectCount, memberCount, costs] = await Promise.all([
           this.prisma.invoice.aggregate({ where: { companyId: child.id, status: "paid" }, _sum: { total: true } }),
           this.prisma.project.count({ where: { companyId: child.id } }),
           this.prisma.membership.count({ where: { companyId: child.id } }),
+          this.branchActualCosts(child.id),
         ]);
         const rawRevenue = Number(revenue._sum.total ?? 0);
         const revenueConverted = await this.exchangeRates.convert(rawRevenue, child.currency, reportingCurrency);
+        const costsConverted = await this.exchangeRates.convert(costs.total, child.currency, reportingCurrency);
         return {
           companyId: child.id,
           name: child.name,
           currency: child.currency,
           revenue: rawRevenue,
           revenueConverted,
+          materialsCost: costs.materialsCost,
+          laborCost: costs.laborCost,
+          subcontractorCost: costs.subcontractorCost,
+          costConverted: costsConverted,
+          marginConverted: revenueConverted - costsConverted,
           projectCount,
           memberCount,
         };
@@ -175,10 +182,37 @@ export class CompanyService {
       reportingCurrency,
       totals: {
         revenue: branches.reduce((sum, b) => sum + b.revenueConverted, 0),
+        cost: branches.reduce((sum, b) => sum + b.costConverted, 0),
+        margin: branches.reduce((sum, b) => sum + b.marginConverted, 0),
         projectCount: branches.reduce((sum, b) => sum + b.projectCount, 0),
         memberCount: branches.reduce((sum, b) => sum + b.memberCount, 0),
       },
     };
+  }
+
+  /** Company-wide actual cost — same materials/labor/subcontractor-cost valuation as
+   * BudgetService.getForProject(), just summed across all of the branch's projects instead of one. */
+  private async branchActualCosts(companyId: string) {
+    const [consumptionMovements, timeEntries, subcontractorCosts] = await Promise.all([
+      this.prisma.stockMovement.findMany({
+        where: { companyId, type: { in: ["issue", "write_off"] } },
+        include: { materialCatalogItem: true },
+      }),
+      this.prisma.timeEntry.findMany({ where: { companyId }, include: { worker: true } }),
+      this.prisma.subcontractorCost.findMany({ where: { companyId } }),
+    ]);
+
+    const materialsCost = consumptionMovements.reduce(
+      (sum, m) => sum + Number(m.quantity) * Number(m.materialCatalogItem.defaultUnitPrice),
+      0,
+    );
+    const laborCost = timeEntries.reduce((sum, entry) => {
+      const rate = entry.hourlyCostSnapshot !== null ? Number(entry.hourlyCostSnapshot) : entry.worker.hourlyCost !== null ? Number(entry.worker.hourlyCost) : null;
+      return rate !== null ? sum + Number(entry.hours) * rate : sum;
+    }, 0);
+    const subcontractorCost = subcontractorCosts.reduce((sum, c) => sum + Number(c.amount), 0);
+
+    return { materialsCost, laborCost, subcontractorCost, total: materialsCost + laborCost + subcontractorCost };
   }
 
   /** Registers (or clears) the desired vanity domain — always unverified until verifyCustomPortalDomain()

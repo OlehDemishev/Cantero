@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
+import type { CreateBudgetRevisionInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { AuditService, type AuditActor } from "../common/audit/audit.service";
 
 /**
  * Budget-vs-actual per project. Materials are compared at the catalog's
@@ -13,7 +15,10 @@ import { PrismaService } from "../common/prisma/prisma.service";
  */
 @Injectable()
 export class BudgetService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   async getForProject(companyId: string, projectId: string) {
     const project = await this.prisma.project.findFirst({ where: { id: projectId, companyId } });
@@ -25,6 +30,9 @@ export class BudgetService {
     const materialsCostBudget = approvedEstimates.reduce((sum, e) => sum + Number(e.materialsCostTotal), 0);
     const laborCostBudget = approvedEstimates.reduce((sum, e) => sum + Number(e.laborCostTotal), 0);
     const grandTotalBudget = approvedEstimates.reduce((sum, e) => sum + Number(e.grandTotal), 0);
+
+    const revisions = await this.prisma.budgetRevision.findMany({ where: { companyId, projectId }, orderBy: { createdAt: "desc" } });
+    const budgetRevisionsTotal = revisions.reduce((sum, r) => sum + Number(r.amount), 0);
 
     const consumptionMovements = await this.prisma.stockMovement.findMany({
       where: { companyId, projectId, type: { in: ["issue", "write_off"] } },
@@ -85,10 +93,37 @@ export class BudgetService {
       subcontractorCostActual: round2(subcontractorCostActual),
       subcontractorCostUnpaid: round2(subcontractorCostUnpaid),
       grandTotalBudget: round2(grandTotalBudget),
+      budgetRevisionsTotal: round2(budgetRevisionsTotal),
+      revisedBudgetTotal: round2(grandTotalBudget + budgetRevisionsTotal),
+      revisions: revisions.map((r) => ({
+        id: r.id,
+        amount: Number(r.amount),
+        reason: r.reason,
+        createdByName: r.createdByName,
+        createdAt: r.createdAt,
+      })),
       invoicedTotal: round2(invoicedTotal),
       paidTotal: round2(paidTotal),
       outstandingTotal: round2(invoicedTotal - paidTotal),
     };
+  }
+
+  async addRevision(companyId: string, actor: AuditActor, input: CreateBudgetRevisionInput) {
+    const project = await this.prisma.project.findFirst({ where: { id: input.projectId, companyId } });
+    if (!project) throw new NotFoundException("Project not found");
+
+    const revision = await this.prisma.budgetRevision.create({
+      data: { companyId, projectId: input.projectId, amount: input.amount, reason: input.reason, createdByUserId: actor.userId, createdByName: actor.name },
+    });
+    this.audit.record(
+      companyId,
+      actor,
+      "budget_revision.created",
+      "BudgetRevision",
+      revision.id,
+      `Recorded a budget revision of ${input.amount >= 0 ? "+" : ""}${input.amount} on "${project.name}": ${input.reason}`,
+    );
+    return revision;
   }
 }
 

@@ -14,6 +14,13 @@ export const updateInvoiceSchema = z.object({
 });
 export type UpdateInvoiceInput = z.infer<typeof updateInvoiceSchema>;
 
+export const createBudgetRevisionSchema = z.object({
+  projectId: z.string().uuid(),
+  amount: z.number().refine((n) => n !== 0, "Amount must not be zero"),
+  reason: z.string().min(1).max(500),
+});
+export type CreateBudgetRevisionInput = z.infer<typeof createBudgetRevisionSchema>;
+
 export const generateProgressInvoiceSchema = z.object({
   estimateId: z.string().uuid(),
   percentComplete: z.number().min(0.01).max(100),

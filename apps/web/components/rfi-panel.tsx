@@ -7,6 +7,7 @@ import { apiFetch } from "@/lib/api-client";
 import { useBulkSelection } from "@/components/bulk-select";
 import { CommentsThread } from "@/components/comments-thread";
 import { TemplatePicker } from "@/components/template-picker";
+import { PhotoAttachments } from "@/components/photo-attachments";
 
 interface Rfi {
   id: string;
@@ -317,6 +318,9 @@ export function RfiPanel({ projectId }: { projectId: string }) {
                         {t("reopen")}
                       </button>
                     )}
+                    <div className="mt-2">
+                      <PhotoAttachments param="rfiId" entityId={item.id} />
+                    </div>
                     <div className="mt-3 border-t border-gray-100 pt-3">
                       <CommentsThread param="rfiId" entityId={item.id} />
                     </div>
