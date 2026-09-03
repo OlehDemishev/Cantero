@@ -188,4 +188,62 @@ describe("InvoicesService — late fees & payment terms", () => {
       await expect(service.send(COMPANY_A, ACTOR, "inv-1")).rejects.toThrow(NotFoundException);
     });
   });
+
+  describe("send() — client-locale email", () => {
+    it("sends the notification email in the client's preferredLocale, not the company's own", async () => {
+      prisma.invoice.findFirst.mockResolvedValue({
+        id: "inv-1",
+        number: "INV-0001",
+        status: "draft",
+        dueDate: new Date(),
+        total: 1000,
+        currency: "EUR",
+        lines: [],
+        client: { email: "client@example.com", name: "Acme", paymentTermsDays: null, preferredLocale: "uk" },
+        project: { name: "Project" },
+      });
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ locale: "en", logoStorageKey: null, brandColor: null });
+      prisma.invoice.update.mockResolvedValue({
+        id: "inv-1",
+        number: "INV-0001",
+        total: 1000,
+        currency: "EUR",
+        client: { email: "client@example.com", preferredLocale: "uk" },
+      });
+
+      await service.send(COMPANY_A, ACTOR, "inv-1");
+
+      expect(mail.send).toHaveBeenCalledWith(
+        expect.objectContaining({ to: "client@example.com", subject: expect.stringContaining("Рахунок") }),
+      );
+    });
+
+    it("falls back to the company's own locale when the client has none set", async () => {
+      prisma.invoice.findFirst.mockResolvedValue({
+        id: "inv-1",
+        number: "INV-0001",
+        status: "draft",
+        dueDate: new Date(),
+        total: 1000,
+        currency: "EUR",
+        lines: [],
+        client: { email: "client@example.com", name: "Acme", paymentTermsDays: null, preferredLocale: null },
+        project: { name: "Project" },
+      });
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ locale: "de", logoStorageKey: null, brandColor: null });
+      prisma.invoice.update.mockResolvedValue({
+        id: "inv-1",
+        number: "INV-0001",
+        total: 1000,
+        currency: "EUR",
+        client: { email: "client@example.com", preferredLocale: null },
+      });
+
+      await service.send(COMPANY_A, ACTOR, "inv-1");
+
+      expect(mail.send).toHaveBeenCalledWith(
+        expect.objectContaining({ subject: expect.stringContaining("Rechnung") }),
+      );
+    });
+  });
 });

@@ -15,6 +15,8 @@ import { CrewSmsBroadcastService } from "./crew-sms-broadcast.service";
 import { EnpsSurveysController } from "./enps-surveys.controller";
 import { EnpsSurveysService } from "./enps-surveys.service";
 import { EnpsSurveysProcessor } from "./enps-surveys.processor";
+import { TrainingController } from "./training.controller";
+import { TrainingService } from "./training.service";
 
 @Module({
   controllers: [
@@ -25,6 +27,7 @@ import { EnpsSurveysProcessor } from "./enps-surveys.processor";
     TimeOffController,
     CrewSmsBroadcastController,
     EnpsSurveysController,
+    TrainingController,
   ],
   providers: [
     WorkersService,
@@ -36,6 +39,7 @@ import { EnpsSurveysProcessor } from "./enps-surveys.processor";
     CrewSmsBroadcastService,
     EnpsSurveysService,
     EnpsSurveysProcessor,
+    TrainingService,
   ],
   exports: [WorkersService, TimeEntriesService, LaborCostService],
 })

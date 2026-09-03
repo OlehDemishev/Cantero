@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface PortfolioProject {
   id: string;
@@ -63,6 +64,7 @@ export default function PortfolioPage() {
   const tc = useTranslations("common");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
+  const money = (amount: number | string | null | undefined) => formatCurrency(amount, currency, me?.company.locale);
 
   const [data, setData] = useState<Portfolio | null>(null);
 
@@ -85,7 +87,7 @@ export default function PortfolioPage() {
             <SummaryCard label={t("projectsAtRisk")} value={`${data.summary.projectsAtRisk} / ${data.summary.projectsTotal}`} tone={data.summary.projectsAtRisk > 0 ? "error" : "success"} />
             <SummaryCard
               label={t("varianceTotal")}
-              value={`${data.summary.varianceTotal} ${currency}`}
+              value={money(data.summary.varianceTotal)}
               tone={data.summary.varianceTotal < 0 ? "error" : "success"}
             />
             <SummaryCard label={t("openRfiTotal")} value={data.summary.openRfiTotal} />
@@ -93,8 +95,8 @@ export default function PortfolioPage() {
             <SummaryCard label={t("pendingSubmittalTotal")} value={data.summary.pendingSubmittalTotal} />
             <SummaryCard label={t("incidentTotal")} value={data.summary.incidentTotal} />
             <SummaryCard label={t("overdueTaskTotal")} value={data.summary.overdueTaskTotal} />
-            <SummaryCard label={t("billedToDateTotal")} value={`${data.summary.billedToDateTotal} ${currency}`} />
-            <SummaryCard label={t("fundedToDateTotal")} value={`${data.summary.fundedToDateTotal} ${currency}`} />
+            <SummaryCard label={t("billedToDateTotal")} value={money(data.summary.billedToDateTotal)} />
+            <SummaryCard label={t("fundedToDateTotal")} value={money(data.summary.fundedToDateTotal)} />
             <SummaryCard label={t("openDrawTotal")} value={data.summary.openDrawTotal} />
           </div>
 
@@ -129,21 +131,11 @@ export default function PortfolioPage() {
                       </a>
                     </td>
                     <td className="text-gray-500">{p.clientName ?? "—"}</td>
-                    <td className="text-right">
-                      {p.budgetTotal} {currency}
-                    </td>
-                    <td className="text-right">
-                      {p.actualTotal} {currency}
-                    </td>
-                    <td className={`text-right ${p.variance < 0 ? "text-error-700" : "text-success-700"}`}>
-                      {p.variance} {currency}
-                    </td>
-                    <td className="text-right">
-                      {p.billedToDate} {currency}
-                    </td>
-                    <td className="text-right">
-                      {p.fundedToDate} {currency}
-                    </td>
+                    <td className="text-right">{money(p.budgetTotal)}</td>
+                    <td className="text-right">{money(p.actualTotal)}</td>
+                    <td className={`text-right ${p.variance < 0 ? "text-error-700" : "text-success-700"}`}>{money(p.variance)}</td>
+                    <td className="text-right">{money(p.billedToDate)}</td>
+                    <td className="text-right">{money(p.fundedToDate)}</td>
                     <td className="text-right">{p.openDrawCount || "—"}</td>
                     <td className="text-right">{p.openRfiCount || "—"}</td>
                     <td className="text-right">{p.openPunchListCount || "—"}</td>

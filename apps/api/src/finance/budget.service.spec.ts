@@ -1,4 +1,4 @@
-import { NotFoundException } from "@nestjs/common";
+import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { BudgetService } from "./budget.service";
 import { PrismaService } from "../common/prisma/prisma.service";
@@ -14,6 +14,7 @@ describe("BudgetService", () => {
     project: { findFirst: jest.Mock };
     estimate: { findMany: jest.Mock };
     budgetRevision: { findMany: jest.Mock; create: jest.Mock };
+    contingencyDraw: { findMany: jest.Mock; create: jest.Mock };
     stockMovement: { findMany: jest.Mock };
     timeEntry: { findMany: jest.Mock };
     invoice: { findMany: jest.Mock };
@@ -26,6 +27,7 @@ describe("BudgetService", () => {
       project: { findFirst: jest.fn() },
       estimate: { findMany: jest.fn().mockResolvedValue([]) },
       budgetRevision: { findMany: jest.fn().mockResolvedValue([]), create: jest.fn() },
+      contingencyDraw: { findMany: jest.fn().mockResolvedValue([]), create: jest.fn() },
       stockMovement: { findMany: jest.fn().mockResolvedValue([]) },
       timeEntry: { findMany: jest.fn().mockResolvedValue([]) },
       invoice: { findMany: jest.fn().mockResolvedValue([]) },
@@ -47,7 +49,7 @@ describe("BudgetService", () => {
     });
 
     it("folds budget revisions into the revised budget total", async () => {
-      prisma.project.findFirst.mockResolvedValue({ id: PROJECT_A });
+      prisma.project.findFirst.mockResolvedValue({ id: PROJECT_A, contingencyAmount: null });
       prisma.estimate.findMany.mockResolvedValue([{ materialsCostTotal: "1000", laborCostTotal: "500", grandTotal: "1650" }]);
       prisma.budgetRevision.findMany.mockResolvedValue([
         { id: "rev-1", amount: "500", reason: "Unforeseen site conditions", createdByName: "Anke", createdAt: new Date() },
@@ -60,6 +62,78 @@ describe("BudgetService", () => {
       expect(result.budgetRevisionsTotal).toBe(400);
       expect(result.revisedBudgetTotal).toBe(2050);
       expect(result.revisions).toHaveLength(2);
+    });
+
+    it("returns null contingency fields when the project has no reserve set", async () => {
+      prisma.project.findFirst.mockResolvedValue({ id: PROJECT_A, contingencyAmount: null });
+
+      const result = await service.getForProject(COMPANY_A, PROJECT_A);
+
+      expect(result.contingencyAmount).toBeNull();
+      expect(result.contingencyRemaining).toBeNull();
+      expect(result.contingencyDrawnTotal).toBe(0);
+    });
+
+    it("computes contingency remaining as the reserve minus drawn total", async () => {
+      prisma.project.findFirst.mockResolvedValue({ id: PROJECT_A, contingencyAmount: "10000" });
+      prisma.contingencyDraw.findMany.mockResolvedValue([
+        { id: "draw-1", amount: "1500", reason: "Weather delay cleanup", createdByName: "Anke", createdAt: new Date() },
+        { id: "draw-2", amount: "500", reason: "Extra permit fee", createdByName: "Anke", createdAt: new Date() },
+      ]);
+
+      const result = await service.getForProject(COMPANY_A, PROJECT_A);
+
+      expect(result.contingencyAmount).toBe(10000);
+      expect(result.contingencyDrawnTotal).toBe(2000);
+      expect(result.contingencyRemaining).toBe(8000);
+      expect(result.contingencyDraws).toHaveLength(2);
+    });
+  });
+
+  describe("addContingencyDraw", () => {
+    it("throws when the project doesn't belong to this company", async () => {
+      prisma.project.findFirst.mockResolvedValue(null);
+      await expect(
+        service.addContingencyDraw(COMPANY_A, ACTOR, { projectId: PROJECT_A, amount: 500, reason: "Weather delay" }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it("throws when the project has no contingency reserve set", async () => {
+      prisma.project.findFirst.mockResolvedValue({ id: PROJECT_A, name: "Hotel Renovation", contingencyAmount: null });
+      await expect(
+        service.addContingencyDraw(COMPANY_A, ACTOR, { projectId: PROJECT_A, amount: 500, reason: "Weather delay" }),
+      ).rejects.toThrow(BadRequestException);
+      expect(prisma.contingencyDraw.create).not.toHaveBeenCalled();
+    });
+
+    it("throws when the draw would exceed the remaining reserve", async () => {
+      prisma.project.findFirst.mockResolvedValue({ id: PROJECT_A, name: "Hotel Renovation", contingencyAmount: "1000" });
+      prisma.contingencyDraw.findMany.mockResolvedValue([{ amount: "800" }]);
+
+      await expect(
+        service.addContingencyDraw(COMPANY_A, ACTOR, { projectId: PROJECT_A, amount: 500, reason: "Weather delay" }),
+      ).rejects.toThrow(BadRequestException);
+      expect(prisma.contingencyDraw.create).not.toHaveBeenCalled();
+    });
+
+    it("creates the draw and audits it when within the remaining reserve", async () => {
+      prisma.project.findFirst.mockResolvedValue({ id: PROJECT_A, name: "Hotel Renovation", contingencyAmount: "1000" });
+      prisma.contingencyDraw.findMany.mockResolvedValue([{ amount: "300" }]);
+      prisma.contingencyDraw.create.mockResolvedValue({ id: "draw-1" });
+
+      await service.addContingencyDraw(COMPANY_A, ACTOR, { projectId: PROJECT_A, amount: 500, reason: "Weather delay" });
+
+      expect(prisma.contingencyDraw.create).toHaveBeenCalledWith({
+        data: {
+          companyId: COMPANY_A,
+          projectId: PROJECT_A,
+          amount: 500,
+          reason: "Weather delay",
+          createdByUserId: "user-1",
+          createdByName: "Anke Müller",
+        },
+      });
+      expect(audit.record).toHaveBeenCalled();
     });
   });
 

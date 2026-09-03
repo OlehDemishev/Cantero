@@ -21,6 +21,13 @@ export const createBudgetRevisionSchema = z.object({
 });
 export type CreateBudgetRevisionInput = z.infer<typeof createBudgetRevisionSchema>;
 
+export const createContingencyDrawSchema = z.object({
+  projectId: z.string().uuid(),
+  amount: z.number().positive(),
+  reason: z.string().min(1).max(500),
+});
+export type CreateContingencyDrawInput = z.infer<typeof createContingencyDrawSchema>;
+
 export const generateProgressInvoiceSchema = z.object({
   estimateId: z.string().uuid(),
   percentComplete: z.number().min(0.01).max(100),

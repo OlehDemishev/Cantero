@@ -6,6 +6,7 @@ import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { DocumentsPanel } from "@/components/documents-panel";
 import { apiFetch, downloadBlob, ApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatCurrency } from "@/lib/format-currency";
 
 const PAYMENT_METHODS = ["bank_transfer", "card", "cash", "other"] as const;
 
@@ -165,6 +166,8 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   }
 
   const currency = invoice.currency ?? me?.company.currency ?? "";
+  const locale = me?.company.locale;
+  const money = (amount: number | string | null | undefined) => formatCurrency(amount, currency, locale);
   const paidTotal = invoice.payments.reduce((sum, p) => sum + Number(p.amount), 0);
   const balanceDue = Number(invoice.total) - paidTotal;
 
@@ -210,9 +213,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
               {invoice.lines.map((line) => (
                 <tr key={line.id} className="border-b border-gray-100">
                   <td className="py-2">{line.description}</td>
-                  <td>
-                    {line.lineTotal} {currency}
-                  </td>
+                  <td>{money(line.lineTotal)}</td>
                 </tr>
               ))}
             </tbody>
@@ -243,9 +244,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
                         {inst.fulfilled ? t("fulfilled") : inst.partial ? t("partial") : t("pending")}
                       </span>
                     </td>
-                    <td className="text-right font-medium">
-                      {inst.amount} {currency}
-                    </td>
+                    <td className="text-right font-medium">{money(inst.amount)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -291,9 +290,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
                   <tr key={p.id} className="border-b border-gray-100">
                     <td className="py-1">{new Date(p.paidAt).toLocaleDateString()}</td>
                     <td>{t(p.method as (typeof PAYMENT_METHODS)[number])}</td>
-                    <td className="text-right">
-                      {p.amount} {currency}
-                    </td>
+                    <td className="text-right">{money(p.amount)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -331,9 +328,9 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
 
         <div className="card lg:col-span-1 h-fit">
           <dl className="flex flex-col gap-2 text-sm">
-            <Row label={t("total")} value={`${invoice.total} ${currency}`} />
-            <Row label={t("paidTotal")} value={`${paidTotal.toFixed(2)} ${currency}`} />
-            <Row label={t("balanceDue")} value={`${balanceDue.toFixed(2)} ${currency}`} emphasize />
+            <Row label={t("total")} value={money(invoice.total)} />
+            <Row label={t("paidTotal")} value={money(paidTotal)} />
+            <Row label={t("balanceDue")} value={money(balanceDue)} emphasize />
           </dl>
 
           {invoice.lateFeeAccrued > 0 && (

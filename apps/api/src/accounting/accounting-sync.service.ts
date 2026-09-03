@@ -183,6 +183,53 @@ export class AccountingSyncService {
     });
   }
 
+  /** AP-side counterpart to syncInvoices() — pushes every not-yet-synced SubcontractorCost as a
+   * Bill (QuickBooks) / ACCPAY invoice (Xero), creating the vendor/supplier contact first if
+   * needed. Same one-failure-doesn't-block-the-rest shape. */
+  async syncBills(companyId: string): Promise<SyncSummary> {
+    const connection = await this.getConnectionOrThrow(companyId);
+    const fresh = await this.ensureFreshToken(connection);
+
+    const bills = await this.prisma.subcontractorCost.findMany({
+      where: { companyId, externalAccountingId: null },
+      include: { subcontractor: true },
+    });
+
+    const summary: SyncSummary = { synced: 0, failed: 0, errors: [] };
+    for (const bill of bills) {
+      const reference = `${bill.subcontractor.name} — ${bill.description}`;
+      try {
+        const externalVendorId = await this.ensureVendor(fresh, bill.subcontractor);
+        const externalBillId = await this.pushBill(fresh, bill, externalVendorId);
+        await this.prisma.subcontractorCost.update({
+          where: { id: bill.id },
+          data: { externalAccountingId: externalBillId, externalAccountingSyncedAt: new Date() },
+        });
+        summary.synced++;
+        await this.logBillAttempt(companyId, connection.provider, bill.id, reference, "success");
+      } catch (err) {
+        const message = (err as Error).message ?? "sync failed";
+        summary.failed++;
+        summary.errors.push(`${reference}: ${message}`);
+        await this.logBillAttempt(companyId, connection.provider, bill.id, reference, "failed", message);
+      }
+    }
+    return summary;
+  }
+
+  private logBillAttempt(
+    companyId: string,
+    provider: AccountingProviderEnum,
+    subcontractorCostId: string,
+    reference: string,
+    status: "success" | "failed",
+    errorMessage?: string,
+  ) {
+    return this.prisma.accountingSyncLog.create({
+      data: { companyId, provider, subcontractorCostId, subcontractorCostReference: reference, status, errorMessage },
+    });
+  }
+
   /** Recent sync attempts (success and failure), newest first — the persistent trail the
    * transient SyncSummary toast can't provide once the page reloads. */
   syncHistory(companyId: string, limit = 50) {
@@ -194,11 +241,16 @@ export class AccountingSyncService {
    * without requiring the user to comb through every invoice by hand. */
   async integrityCheck(companyId: string) {
     const connection = await this.prisma.accountingConnection.findUnique({ where: { companyId } });
-    const [unsyncedInvoices, recentFailures] = await Promise.all([
+    const [unsyncedInvoices, unsyncedBills, recentFailures] = await Promise.all([
       this.prisma.invoice.findMany({
         where: { companyId, externalAccountingId: null, status: { not: "draft" } },
         select: { id: true, number: true, total: true, createdAt: true },
         orderBy: { createdAt: "desc" },
+      }),
+      this.prisma.subcontractorCost.findMany({
+        where: { companyId, externalAccountingId: null },
+        select: { id: true, description: true, amount: true, incurredDate: true, subcontractor: { select: { name: true } } },
+        orderBy: { incurredDate: "desc" },
       }),
       this.prisma.accountingSyncLog.findMany({
         where: { companyId, status: "failed" },
@@ -206,7 +258,7 @@ export class AccountingSyncService {
         take: 20,
       }),
     ]);
-    return { connected: !!connection, provider: connection?.provider ?? null, unsyncedInvoices, recentFailures };
+    return { connected: !!connection, provider: connection?.provider ?? null, unsyncedInvoices, unsyncedBills, recentFailures };
   }
 
   private async getConnectionOrThrow(companyId: string) {
@@ -309,6 +361,79 @@ export class AccountingSyncService {
       Contacts: [{ Name: client.name, ...(client.email ? { EmailAddress: client.email } : {}) }],
     });
     return created.Contacts[0].ContactID;
+  }
+
+  /** Same find-by-name-or-create pattern as ensureCustomer(), but for the AP side: a QuickBooks
+   * Vendor or a Xero Contact flagged IsSupplier — neither provider shares its AR contact list
+   * with the AP one, so this is a genuinely separate lookup even for a name that also exists as
+   * a customer. */
+  private async ensureVendor(
+    connection: { provider: AccountingProviderEnum; accessToken: string; externalAccountId: string },
+    subcontractor: { name: string; email: string | null },
+  ): Promise<string> {
+    if (connection.provider === "quickbooks") {
+      const query = `select Id from Vendor where DisplayName = '${subcontractor.name.replace(/'/g, "\\'")}'`;
+      const found = await this.quickbooksQuery(connection, query);
+      const existingId = found?.QueryResponse?.Vendor?.[0]?.Id;
+      if (existingId) return existingId;
+
+      const created = await this.quickbooksRequest(connection, "POST", "vendor", {
+        DisplayName: subcontractor.name,
+        ...(subcontractor.email ? { PrimaryEmailAddr: { Address: subcontractor.email } } : {}),
+      });
+      return created.Vendor.Id;
+    }
+
+    const found = await this.xeroRequest(connection, "GET", `Contacts?where=${encodeURIComponent(`Name=="${subcontractor.name}"`)}`);
+    const existingId = found?.Contacts?.[0]?.ContactID;
+    if (existingId) return existingId;
+
+    const created = await this.xeroRequest(connection, "POST", "Contacts", {
+      Contacts: [{ Name: subcontractor.name, IsSupplier: true, ...(subcontractor.email ? { EmailAddress: subcontractor.email } : {}) }],
+    });
+    return created.Contacts[0].ContactID;
+  }
+
+  /**
+   * Pushes the bill as a single line for its total — same single-default-account simplification
+   * as pushInvoice(). QuickBooks account "64" (Miscellaneous Expense) and Xero account code "400"
+   * (conventional default Expense) are each provider's fallback when no per-company mapping exists.
+   */
+  private async pushBill(
+    connection: { provider: AccountingProviderEnum; accessToken: string; externalAccountId: string },
+    bill: { description: string; amount: unknown; dueDate: Date | null },
+    externalVendorId: string,
+  ): Promise<string> {
+    const dueDate = bill.dueDate ? bill.dueDate.toISOString().slice(0, 10) : undefined;
+
+    if (connection.provider === "quickbooks") {
+      const created = await this.quickbooksRequest(connection, "POST", "bill", {
+        VendorRef: { value: externalVendorId },
+        Line: [
+          {
+            Amount: Number(bill.amount),
+            DetailType: "AccountBasedExpenseLineDetail",
+            AccountBasedExpenseLineDetail: { AccountRef: { value: "64" } },
+            Description: bill.description,
+          },
+        ],
+        ...(dueDate ? { DueDate: dueDate } : {}),
+      });
+      return created.Bill.Id;
+    }
+
+    const created = await this.xeroRequest(connection, "POST", "Invoices", {
+      Invoices: [
+        {
+          Type: "ACCPAY",
+          Contact: { ContactID: externalVendorId },
+          LineItems: [{ Description: bill.description, Quantity: 1, UnitAmount: Number(bill.amount), AccountCode: "400" }],
+          Status: "AUTHORISED",
+          ...(dueDate ? { DueDate: dueDate } : {}),
+        },
+      ],
+    });
+    return created.Invoices[0].InvoiceID;
   }
 
   /**

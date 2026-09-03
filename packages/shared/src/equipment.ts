@@ -87,3 +87,19 @@ export const startEquipmentRentalSchema = z.object({
   notes: z.string().max(500).optional(),
 });
 export type StartEquipmentRentalInput = z.infer<typeof startEquipmentRentalSchema>;
+
+export const DEPRECIATION_METHODS = ["straight_line", "declining_balance"] as const;
+export type DepreciationMethod = (typeof DEPRECIATION_METHODS)[number];
+
+export const setDepreciationScheduleSchema = z.object({
+  depreciationMethod: z.enum(DEPRECIATION_METHODS).nullable(),
+  usefulLifeMonths: z.number().int().min(1).max(600).nullable(),
+  salvageValue: z.number().nonnegative().nullable(),
+});
+export type SetDepreciationScheduleInput = z.infer<typeof setDepreciationScheduleSchema>;
+
+export const disposeEquipmentSchema = z.object({
+  saleAmount: z.number().nonnegative().optional(),
+  notes: z.string().max(1000).optional(),
+});
+export type DisposeEquipmentInput = z.infer<typeof disposeEquipmentSchema>;

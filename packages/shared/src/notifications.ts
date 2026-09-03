@@ -17,8 +17,33 @@ export type PushUnsubscribeInput = z.infer<typeof pushUnsubscribeSchema>;
 export const EMAIL_DIGEST_FREQUENCIES = ["off", "daily", "weekly"] as const;
 export type EmailDigestFrequency = (typeof EMAIL_DIGEST_FREQUENCIES)[number];
 
+/** Every NotificationsService.NotificationItem["type"] value — kept in sync manually since the
+ * type union lives in the API (deriving it here would need the API to depend on shared, not the
+ * other way around). A member can mute any subset of these. */
+export const NOTIFICATION_TYPES = [
+  "low_stock",
+  "reminder_due",
+  "invoice_overdue",
+  "rfi_open",
+  "punch_list_open",
+  "submittal_pending",
+  "safety_incident",
+  "warranty_claim_open",
+  "mention",
+  "subcontractor_document_expiring",
+  "supplier_document_expiring",
+  "worker_certification_expiring",
+  "permit_expiring",
+  "company_document_expiring",
+  "weather_risk",
+  "budget_overrun",
+  "material_price_changed",
+] as const;
+export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
+
 export const updateNotificationPreferencesSchema = z.object({
-  emailDigestFrequency: z.enum(EMAIL_DIGEST_FREQUENCIES),
+  emailDigestFrequency: z.enum(EMAIL_DIGEST_FREQUENCIES).optional(),
+  mutedNotificationTypes: z.array(z.enum(NOTIFICATION_TYPES)).optional(),
 });
 export type UpdateNotificationPreferencesInput = z.infer<typeof updateNotificationPreferencesSchema>;
 

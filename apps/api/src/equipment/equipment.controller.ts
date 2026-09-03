@@ -5,7 +5,9 @@ import {
   checkInEquipmentSchema,
   checkOutEquipmentSchema,
   createEquipmentSchema,
+  disposeEquipmentSchema,
   recordEquipmentGpsPingSchema,
+  setDepreciationScheduleSchema,
   startEquipmentRentalSchema,
   updateEquipmentSchema,
   updateMaintenanceScheduleSchema,
@@ -16,7 +18,9 @@ import {
   type CheckInEquipmentInput,
   type CheckOutEquipmentInput,
   type CreateEquipmentInput,
+  type DisposeEquipmentInput,
   type RecordEquipmentGpsPingInput,
+  type SetDepreciationScheduleInput,
   type StartEquipmentRentalInput,
   type UpdateEquipmentInput,
   type UpdateMaintenanceScheduleInput,
@@ -33,6 +37,11 @@ export class EquipmentController {
   @Get()
   list(@CurrentUser() user: AuthUser) {
     return this.service.list(user.companyId);
+  }
+
+  @Get("fixed-asset-register")
+  fixedAssetRegister(@CurrentUser() user: AuthUser) {
+    return this.service.fixedAssetRegister(user.companyId);
   }
 
   @Get(":id")
@@ -103,6 +112,24 @@ export class EquipmentController {
   @Post(":id/retire")
   retire(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.retire(user.companyId, { userId: user.userId, name: user.name }, id);
+  }
+
+  @Patch(":id/depreciation-schedule")
+  setDepreciationSchedule(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(setDepreciationScheduleSchema)) body: SetDepreciationScheduleInput,
+  ) {
+    return this.service.setDepreciationSchedule(user.companyId, { userId: user.userId, name: user.name }, id, body);
+  }
+
+  @Post(":id/dispose")
+  dispose(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(disposeEquipmentSchema)) body: DisposeEquipmentInput,
+  ) {
+    return this.service.dispose(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
   @Get(":id/maintenance-records")

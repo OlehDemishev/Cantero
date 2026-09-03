@@ -93,6 +93,7 @@ export class NotificationsService {
       this.prisma.membership.findFirst({ where: { companyId, userId } }),
     ]);
 
+    const mutedTypes = new Set(membership?.mutedNotificationTypes ?? []);
     const items = [
       ...lowStock,
       ...reminders,
@@ -111,7 +112,9 @@ export class NotificationsService {
       ...weatherRisks,
       ...budgetOverruns,
       ...materialPriceChanges,
-    ].sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
+    ]
+      .filter((n) => !mutedTypes.has(n.type))
+      .sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
 
     const lastViewedAt = membership?.notificationsLastViewedAt ?? null;
     const unreadCount = lastViewedAt

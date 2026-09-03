@@ -6,6 +6,9 @@ export type RfiStatus = (typeof RFI_STATUSES)[number];
 export const RFI_PRIORITIES = ["low", "medium", "high"] as const;
 export type RfiPriority = (typeof RFI_PRIORITIES)[number];
 
+export const BALL_IN_COURT_PARTIES = ["internal", "client", "subcontractor"] as const;
+export type BallInCourtParty = (typeof BALL_IN_COURT_PARTIES)[number];
+
 export const createRfiSchema = z.object({
   projectId: z.string().uuid(),
   subject: z.string().min(1).max(200),
@@ -26,6 +29,11 @@ export const updateRfiSchema = z.object({
   scheduleImpactDays: z.number().int().min(0).max(3650).nullable().optional(),
 });
 export type UpdateRfiInput = z.infer<typeof updateRfiSchema>;
+
+export const setRfiBallInCourtSchema = z.object({
+  ballInCourtParty: z.enum(BALL_IN_COURT_PARTIES),
+});
+export type SetRfiBallInCourtInput = z.infer<typeof setRfiBallInCourtSchema>;
 
 export const answerRfiSchema = z.object({
   answer: z.string().min(1).max(4000),

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { SUPPORTED_LOCALES } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { CustomFieldsValuesPanel } from "@/components/custom-fields-values-panel";
 import { apiFetch } from "@/lib/api-client";
@@ -44,6 +45,14 @@ interface Client {
   country: string | null;
   vatId: string | null;
   paymentTermsDays: number | null;
+  preferredLocale: string | null;
+  source: string | null;
+  campaignId: string | null;
+}
+interface MarketingCampaign {
+  id: string;
+  name: string;
+  channel: string;
 }
 interface Activity {
   id: string;
@@ -77,9 +86,20 @@ export function ClientDetail({ clientId }: { clientId: string }) {
     referredByClientId: "",
     probability: "",
     expectedCloseDate: "",
+    source: "",
+    campaignId: "",
   });
   const [dealSaved, setDealSaved] = useState(false);
-  const [billingForm, setBillingForm] = useState({ street: "", city: "", postalCode: "", country: "", vatId: "", paymentTermsDays: "" });
+  const [campaigns, setCampaigns] = useState<MarketingCampaign[]>([]);
+  const [billingForm, setBillingForm] = useState({
+    street: "",
+    city: "",
+    postalCode: "",
+    country: "",
+    vatId: "",
+    paymentTermsDays: "",
+    preferredLocale: "",
+  });
   const [billingSaved, setBillingSaved] = useState(false);
   const [activityForm, setActivityForm] = useState({ type: "note" as ActivityType, content: "" });
   const [reminderForm, setReminderForm] = useState({ title: "", dueDate: "" });
@@ -100,6 +120,8 @@ export function ClientDetail({ clientId }: { clientId: string }) {
         referredByClientId: c.referredBy?.id ?? "",
         probability: c.probability?.toString() ?? "",
         expectedCloseDate: c.expectedCloseDate ? c.expectedCloseDate.slice(0, 10) : "",
+        source: c.source ?? "",
+        campaignId: c.campaignId ?? "",
       });
       setBillingForm({
         street: c.street ?? "",
@@ -108,6 +130,7 @@ export function ClientDetail({ clientId }: { clientId: string }) {
         country: c.country ?? "",
         vatId: c.vatId ?? "",
         paymentTermsDays: c.paymentTermsDays?.toString() ?? "",
+        preferredLocale: c.preferredLocale ?? "",
       });
     });
     apiFetch<Activity[]>(`/clients/${clientId}/activities`).then(setActivities);
@@ -118,6 +141,7 @@ export function ClientDetail({ clientId }: { clientId: string }) {
     load();
     apiFetch<Worker[]>("/workers").then(setWorkers);
     apiFetch<ReferralClient[]>("/clients").then((cs) => setAllClients(cs.filter((c) => c.id !== clientId)));
+    apiFetch<MarketingCampaign[]>("/marketing/campaigns").then(setCampaigns);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientId]);
 
@@ -190,6 +214,8 @@ export function ClientDetail({ clientId }: { clientId: string }) {
           referredByClientId: dealForm.referredByClientId || null,
           probability: dealForm.probability ? Number(dealForm.probability) : null,
           expectedCloseDate: dealForm.expectedCloseDate ? new Date(dealForm.expectedCloseDate).toISOString() : null,
+          source: dealForm.source || null,
+          campaignId: dealForm.campaignId || null,
         }),
       });
       setDealSaved(true);
@@ -213,6 +239,7 @@ export function ClientDetail({ clientId }: { clientId: string }) {
           country: billingForm.country || null,
           vatId: billingForm.vatId || null,
           paymentTermsDays: billingForm.paymentTermsDays ? Number(billingForm.paymentTermsDays) : null,
+          preferredLocale: billingForm.preferredLocale || null,
         }),
       });
       setBillingSaved(true);
@@ -390,6 +417,30 @@ export function ClientDetail({ clientId }: { clientId: string }) {
             />
           </label>
           <label className="text-xs text-gray-500">
+            {t("source")}
+            <input
+              className="input mt-1"
+              placeholder={t("sourcePlaceholder")}
+              value={dealForm.source}
+              onChange={(e) => setDealForm((f) => ({ ...f, source: e.target.value }))}
+            />
+          </label>
+          <label className="text-xs text-gray-500">
+            {t("campaign")}
+            <select
+              className="input mt-1"
+              value={dealForm.campaignId}
+              onChange={(e) => setDealForm((f) => ({ ...f, campaignId: e.target.value }))}
+            >
+              <option value="">{tc("none")}</option>
+              {campaigns.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} ({c.channel})
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-xs text-gray-500">
             {t("referredBy")}
             <select
               className="input mt-1"
@@ -495,6 +546,21 @@ export function ClientDetail({ clientId }: { clientId: string }) {
               value={billingForm.paymentTermsDays}
               onChange={(e) => setBillingForm((f) => ({ ...f, paymentTermsDays: e.target.value }))}
             />
+          </label>
+          <label className="flex w-40 flex-col gap-1 text-xs text-gray-500">
+            {t("preferredLocale")}
+            <select
+              className="input"
+              value={billingForm.preferredLocale}
+              onChange={(e) => setBillingForm((f) => ({ ...f, preferredLocale: e.target.value }))}
+            >
+              <option value="">{t("preferredLocaleDefault")}</option>
+              {SUPPORTED_LOCALES.map((l) => (
+                <option key={l} value={l}>
+                  {l.toUpperCase()}
+                </option>
+              ))}
+            </select>
           </label>
           <div className="flex items-center gap-2">
             <button type="submit" disabled={busy} className="btn-secondary self-start">

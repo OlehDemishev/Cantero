@@ -5,6 +5,8 @@ import type {
   CheckInEquipmentInput,
   CheckOutEquipmentInput,
   CreateEquipmentInput,
+  DisposeEquipmentInput,
+  SetDepreciationScheduleInput,
   StartEquipmentRentalInput,
   UpdateEquipmentInput,
   UpdateMaintenanceScheduleInput,
@@ -15,6 +17,7 @@ import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { checkGeofence } from "../team/geofence";
 import { calculateCostPerHour } from "./equipment-cost";
 import { calculateRentalRevenue } from "./equipment-rental";
+import { calculateDepreciation } from "./equipment-depreciation";
 
 @Injectable()
 export class EquipmentService {
@@ -36,8 +39,10 @@ export class EquipmentService {
     });
   }
 
-  get(companyId: string, id: string) {
-    return this.findOrThrow(companyId, id);
+  async get(companyId: string, id: string) {
+    const equipment = await this.findOrThrow(companyId, id);
+    const disposal = await this.prisma.assetDisposal.findUnique({ where: { equipmentId: id } });
+    return { ...equipment, disposal, depreciation: this.depreciation(equipment) };
   }
 
   async create(companyId: string, actor: AuditActor, input: CreateEquipmentInput) {
@@ -252,6 +257,84 @@ export class EquipmentService {
     await this.prisma.equipment.update({ where: { id }, data: { status: "retired" } });
     this.audit.record(companyId, actor, "equipment.retired", "Equipment", id, `Retired "${equipment.name}"`);
     return this.findOrThrow(companyId, id);
+  }
+
+  async setDepreciationSchedule(companyId: string, actor: AuditActor, id: string, input: SetDepreciationScheduleInput) {
+    const equipment = await this.findOrThrow(companyId, id);
+    const updated = await this.prisma.equipment.update({
+      where: { id },
+      data: {
+        depreciationMethod: input.depreciationMethod,
+        usefulLifeMonths: input.usefulLifeMonths,
+        salvageValue: input.salvageValue,
+      },
+    });
+    this.audit.record(companyId, actor, "equipment.depreciation_schedule_set", "Equipment", id, `Set depreciation schedule for "${equipment.name}"`);
+    return updated;
+  }
+
+  /** Book value computed live from purchaseCost/purchaseDate + the depreciation schedule — see
+   * equipment-depreciation.ts. Returns null when purchaseCost, purchaseDate, or the schedule
+   * (method + usefulLifeMonths) isn't fully set, rather than fabricating a number from partial data. */
+  depreciation(equipment: {
+    purchaseCost: unknown;
+    purchaseDate: Date | null;
+    depreciationMethod: "straight_line" | "declining_balance" | null;
+    usefulLifeMonths: number | null;
+    salvageValue: unknown;
+  }) {
+    if (equipment.purchaseCost === null || !equipment.purchaseDate || !equipment.depreciationMethod || !equipment.usefulLifeMonths) return null;
+    return calculateDepreciation({
+      cost: Number(equipment.purchaseCost),
+      purchaseDate: equipment.purchaseDate,
+      method: equipment.depreciationMethod,
+      usefulLifeMonths: equipment.usefulLifeMonths,
+      salvageValue: Number(equipment.salvageValue ?? 0),
+      asOf: new Date(),
+    });
+  }
+
+  /** Recorded once per piece of equipment (AssetDisposal.equipmentId is unique) — the sale (or
+   * scrap) amount vs. book value at disposal time is the accounting gain/loss. Also moves the
+   * equipment to retired, same as retire(), so a disposed asset stops showing as available/in-use. */
+  async dispose(companyId: string, actor: AuditActor, id: string, input: DisposeEquipmentInput) {
+    const equipment = await this.findOrThrow(companyId, id);
+    if (equipment.status === "in_use" || equipment.status === "rented_out") {
+      throw new BadRequestException("Check the equipment in or end its rental before disposing of it");
+    }
+    const existing = await this.prisma.assetDisposal.findUnique({ where: { equipmentId: id } });
+    if (existing) throw new BadRequestException("This equipment has already been disposed of");
+
+    const [disposal] = await this.prisma.$transaction([
+      this.prisma.assetDisposal.create({ data: { companyId, equipmentId: id, saleAmount: input.saleAmount, notes: input.notes } }),
+      this.prisma.equipment.update({ where: { id }, data: { status: "retired" } }),
+    ]);
+
+    this.audit.record(companyId, actor, "equipment.disposed", "Equipment", id, `Disposed of "${equipment.name}"`);
+    return disposal;
+  }
+
+  /** The fixed-asset register: every piece of equipment with a purchase cost, its current book
+   * value, and whether/how it was disposed of — the standard report a bookkeeper or accountant
+   * pulls at year-end. */
+  async fixedAssetRegister(companyId: string) {
+    const equipment = await this.prisma.equipment.findMany({
+      where: { companyId, purchaseCost: { not: null } },
+      include: { disposal: true },
+      orderBy: { purchaseDate: "asc" },
+    });
+    return equipment.map((e) => ({
+      id: e.id,
+      name: e.name,
+      category: e.category,
+      purchaseCost: e.purchaseCost,
+      purchaseDate: e.purchaseDate,
+      depreciationMethod: e.depreciationMethod,
+      usefulLifeMonths: e.usefulLifeMonths,
+      salvageValue: e.salvageValue,
+      depreciation: this.depreciation(e),
+      disposal: e.disposal,
+    }));
   }
 
   /** Renting OUR equipment out to an external party — the mirror image of checkOut(), which is

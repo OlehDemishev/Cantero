@@ -23,4 +23,9 @@ export class SafetyAnalyticsController {
   safetyScorecard(@CurrentUser() user: AuthUser, @Query("year") year?: string) {
     return this.service.safetyScorecard(user.companyId, year ? Number(year) : new Date().getFullYear());
   }
+
+  @Get("training-compliance")
+  trainingCompliance(@CurrentUser() user: AuthUser, @Query("lookbackDays") lookbackDays?: string) {
+    return this.service.trainingCompliance(user.companyId, lookbackDays ? Number(lookbackDays) : undefined);
+  }
 }

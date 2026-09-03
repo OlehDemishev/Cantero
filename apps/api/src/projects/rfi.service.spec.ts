@@ -12,7 +12,7 @@ describe("RfiService", () => {
   let service: RfiService;
   let prisma: {
     project: { findFirst: jest.Mock };
-    rfi: { findFirst: jest.Mock; count: jest.Mock; create: jest.Mock; update: jest.Mock };
+    rfi: { findFirst: jest.Mock; findMany: jest.Mock; count: jest.Mock; create: jest.Mock; update: jest.Mock };
   };
   let audit: { record: jest.Mock };
   let webhooks: { trigger: jest.Mock };
@@ -20,7 +20,7 @@ describe("RfiService", () => {
   beforeEach(async () => {
     prisma = {
       project: { findFirst: jest.fn() },
-      rfi: { findFirst: jest.fn(), count: jest.fn(), create: jest.fn(), update: jest.fn() },
+      rfi: { findFirst: jest.fn(), findMany: jest.fn(), count: jest.fn(), create: jest.fn(), update: jest.fn() },
     };
     audit = { record: jest.fn() };
     webhooks = { trigger: jest.fn() };
@@ -136,6 +136,46 @@ describe("RfiService", () => {
       expect(result.succeeded).toBe(1);
       expect(result.failed).toEqual([{ id: "rfi-2", message: "RFI is already closed" }]);
       expect(prisma.rfi.update).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("setBallInCourt()", () => {
+    it("throws when the RFI doesn't belong to this company", async () => {
+      prisma.rfi.findFirst.mockResolvedValue(null);
+      await expect(service.setBallInCourt(COMPANY_A, ACTOR, "rfi-1", { ballInCourtParty: "client" })).rejects.toThrow(NotFoundException);
+    });
+
+    it("updates the party and records an audit entry", async () => {
+      prisma.rfi.findFirst.mockResolvedValue({ id: "rfi-1", companyId: COMPANY_A, number: "RFI-001" });
+      prisma.rfi.update.mockResolvedValue({ id: "rfi-1", ballInCourtParty: "subcontractor" });
+
+      const result = await service.setBallInCourt(COMPANY_A, ACTOR, "rfi-1", { ballInCourtParty: "subcontractor" });
+
+      expect(prisma.rfi.update).toHaveBeenCalledWith({ where: { id: "rfi-1" }, data: { ballInCourtParty: "subcontractor" } });
+      expect(result.ballInCourtParty).toBe("subcontractor");
+      expect(audit.record).toHaveBeenCalled();
+    });
+  });
+
+  describe("listForProject()", () => {
+    it("filters by ballInCourtParty when provided", async () => {
+      prisma.project.findFirst.mockResolvedValue({ id: "project-1", companyId: COMPANY_A });
+      prisma.rfi.findMany.mockResolvedValue([]);
+
+      await service.listForProject(COMPANY_A, "project-1", "internal");
+
+      expect(prisma.rfi.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { projectId: "project-1", ballInCourtParty: "internal" } }),
+      );
+    });
+
+    it("omits the filter entirely when no party is given", async () => {
+      prisma.project.findFirst.mockResolvedValue({ id: "project-1", companyId: COMPANY_A });
+      prisma.rfi.findMany.mockResolvedValue([]);
+
+      await service.listForProject(COMPANY_A, "project-1");
+
+      expect(prisma.rfi.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { projectId: "project-1" } }));
     });
   });
 });

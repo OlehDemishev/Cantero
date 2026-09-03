@@ -21,6 +21,19 @@ interface SafetyScorecard {
   projects: ProjectSafetyRow[];
   monthlyTrend: { month: number; totalIncidents: number; recordableCount: number }[];
 }
+interface OverdueWorker {
+  workerId: string;
+  workerName: string;
+  lastTrainingAt: string | null;
+  overdue: boolean;
+}
+interface TrainingCompliance {
+  lookbackDays: number;
+  totalActiveWorkers: number;
+  compliantCount: number;
+  completionRate: number | null;
+  overdueWorkers: OverdueWorker[];
+}
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -30,11 +43,16 @@ export function SafetyScorecardPanel() {
   const [year, setYear] = useState(CURRENT_YEAR);
   const [scorecard, setScorecard] = useState<SafetyScorecard | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [training, setTraining] = useState<TrainingCompliance | null>(null);
 
   useEffect(() => {
     setScorecard(null);
     apiFetch<SafetyScorecard>(`/safety/analytics/scorecard?year=${year}`).then(setScorecard);
   }, [year]);
+
+  useEffect(() => {
+    apiFetch<TrainingCompliance>("/safety/analytics/training-compliance").then(setTraining);
+  }, []);
 
   async function downloadOsha300a() {
     setExporting(true);
@@ -132,6 +150,52 @@ export function SafetyScorecardPanel() {
             </table>
           )}
         </>
+      )}
+
+      {training && (
+        <div className="mt-8">
+          <h3 className="mb-1 text-sm font-semibold text-gray-700">{t("trainingCompliance")}</h3>
+          <p className="mb-3 text-xs text-gray-500">{t("trainingComplianceHint", { days: training.lookbackDays })}</p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div className="card">
+              <div className="text-xs text-gray-500">{t("completionRate")}</div>
+              <div className="mt-1 text-lg font-semibold text-gray-900">
+                {training.completionRate !== null ? `${training.completionRate}%` : "—"}
+              </div>
+            </div>
+            <div className="card">
+              <div className="text-xs text-gray-500">{t("compliantWorkers")}</div>
+              <div className="mt-1 text-lg font-semibold text-success-700">
+                {training.compliantCount} / {training.totalActiveWorkers}
+              </div>
+            </div>
+            <div className="card">
+              <div className="text-xs text-gray-500">{t("overdueWorkers")}</div>
+              <div className="mt-1 text-lg font-semibold text-warning-700">{training.overdueWorkers.length}</div>
+            </div>
+          </div>
+
+          {training.overdueWorkers.length > 0 && (
+            <table className="mt-4 w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 text-left text-gray-500">
+                  <th className="py-2">{t("worker")}</th>
+                  <th className="text-right">{t("lastTrainingAt")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {training.overdueWorkers.map((w) => (
+                  <tr key={w.workerId} className="border-b border-gray-100">
+                    <td className="py-2">{w.workerName}</td>
+                    <td className="text-right text-warning-700">
+                      {w.lastTrainingAt ? new Date(w.lastTrainingAt).toLocaleDateString() : t("neverTrained")}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
       )}
     </div>
   );

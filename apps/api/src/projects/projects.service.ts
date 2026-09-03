@@ -4,6 +4,7 @@ import type {
   ImportResult,
   UpdateProjectCurrencyInput,
   UpdateProjectBudgetAlertThresholdInput,
+  UpdateProjectContingencyInput,
   UpdateProjectGeofenceInput,
   UpdateProjectPublicWorkInput,
   UpdateProjectWarrantyInput,
@@ -179,6 +180,15 @@ export class ProjectsService {
     return this.prisma.project.update({
       where: { id },
       data: { budgetAlertThresholdPercent: input.budgetAlertThresholdPercent },
+      include: { client: true },
+    });
+  }
+
+  async updateContingency(companyId: string, id: string, input: UpdateProjectContingencyInput) {
+    await this.get(companyId, id);
+    return this.prisma.project.update({
+      where: { id },
+      data: { contingencyAmount: input.contingencyAmount },
       include: { client: true },
     });
   }

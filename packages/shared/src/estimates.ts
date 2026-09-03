@@ -138,6 +138,11 @@ export const updateProjectBudgetAlertThresholdSchema = z.object({
 });
 export type UpdateProjectBudgetAlertThresholdInput = z.infer<typeof updateProjectBudgetAlertThresholdSchema>;
 
+export const updateProjectContingencySchema = z.object({
+  contingencyAmount: z.number().nonnegative().nullable(),
+});
+export type UpdateProjectContingencyInput = z.infer<typeof updateProjectContingencySchema>;
+
 export const shiftProjectScheduleSchema = z.object({
   days: z.number().int().min(1).max(365),
 });
@@ -184,6 +189,8 @@ export const createClientSchema = z.object({
   referredByClientId: z.string().uuid().optional(),
   probability: z.number().int().min(0).max(100).optional(),
   expectedCloseDate: z.string().datetime().optional(),
+  source: z.string().max(80).optional(),
+  campaignId: z.string().uuid().optional(),
 });
 export type CreateClientInput = z.infer<typeof createClientSchema>;
 

@@ -15,6 +15,8 @@ import { WeatherForecastPanel } from "@/components/weather-forecast-panel";
 import { GeofencePanel } from "@/components/geofence-panel";
 import { CertifiedPayrollPanel } from "@/components/certified-payroll-panel";
 import { PermitsPanel } from "@/components/permits-panel";
+import { SuretyBondsPanel } from "@/components/surety-bonds-panel";
+import { ContractClaimsPanel } from "@/components/contract-claims-panel";
 import { ProjectMembersPanel } from "@/components/project-members-panel";
 import { ContractsPanel } from "@/components/contracts-panel";
 import { DrawRequestsPanel } from "@/components/draw-requests-panel";
@@ -52,6 +54,7 @@ interface Project {
   client: { id: string; name: string } | null;
   currency: string | null;
   budgetAlertThresholdPercent: number | null;
+  contingencyAmount: string | null;
 }
 interface Estimate {
   id: string;
@@ -86,11 +89,14 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
   const [currencyBusy, setCurrencyBusy] = useState(false);
   const [budgetThresholdBusy, setBudgetThresholdBusy] = useState(false);
   const [budgetThresholdDraft, setBudgetThresholdDraft] = useState("");
+  const [contingencyBusy, setContingencyBusy] = useState(false);
+  const [contingencyDraft, setContingencyDraft] = useState("");
 
   useEffect(() => {
     apiFetch<Project>(`/projects/${projectId}`).then((p) => {
       setProject(p);
       setBudgetThresholdDraft(p.budgetAlertThresholdPercent !== null ? String(p.budgetAlertThresholdPercent) : "");
+      setContingencyDraft(p.contingencyAmount !== null ? p.contingencyAmount : "");
     });
     apiFetch<Estimate[]>("/estimates").then((all) => setEstimates(all.filter((e) => e.project.id === projectId)));
     apiFetch<Template[]>("/estimates/templates").then(setTemplates);
@@ -120,6 +126,20 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
       setProject((p) => (p ? { ...p, budgetAlertThresholdPercent: value } : p));
     } finally {
       setBudgetThresholdBusy(false);
+    }
+  }
+
+  async function saveContingency() {
+    setContingencyBusy(true);
+    try {
+      const value = contingencyDraft ? Number(contingencyDraft) : null;
+      await apiFetch(`/projects/${projectId}/contingency`, {
+        method: "PATCH",
+        body: JSON.stringify({ contingencyAmount: value }),
+      });
+      setProject((p) => (p ? { ...p, contingencyAmount: value !== null ? String(value) : null } : p));
+    } finally {
+      setContingencyBusy(false);
     }
   }
 
@@ -187,6 +207,23 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
             onBlur={saveBudgetThreshold}
           />
           %
+        </label>
+      )}
+      {project && (
+        <label className="mt-2 flex w-fit items-center gap-2 text-xs text-gray-500">
+          {tp("contingencyAmount")}
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            className="input w-28 py-1"
+            placeholder={tp("contingencyAmountPlaceholder")}
+            value={contingencyDraft}
+            disabled={contingencyBusy}
+            onChange={(e) => setContingencyDraft(e.target.value)}
+            onBlur={saveContingency}
+          />
+          {project.currency ?? me?.company.currency}
         </label>
       )}
 
@@ -298,6 +335,8 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
       <GeofencePanel projectId={projectId} />
       <CertifiedPayrollPanel projectId={projectId} />
       <PermitsPanel projectId={projectId} />
+      <SuretyBondsPanel projectId={projectId} />
+      <ContractClaimsPanel projectId={projectId} />
       <ProjectMembersPanel projectId={projectId} />
       <CustomFieldsValuesPanel entityType="project" entityId={projectId} />
       <DailyLogsPanel projectId={projectId} />

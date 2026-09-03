@@ -326,7 +326,7 @@ export class ReportsService {
     const cutoff = new Date(now.getTime() + lookaheadDays * 24 * 60 * 60 * 1000);
     const within = { lte: cutoff };
 
-    const [subDocs, supplierDocs, certs, permits, companyDocs] = await Promise.all([
+    const [subDocs, supplierDocs, certs, permits, companyDocs, vehiclesByRegistration, vehiclesByInsurance, driversWithCdl] = await Promise.all([
       this.prisma.subcontractorDocument.findMany({
         where: { companyId, expiresAt: within },
         include: { subcontractor: { select: { name: true } } },
@@ -344,6 +344,9 @@ export class ReportsService {
         include: { project: { select: { name: true } } },
       }),
       this.prisma.companyDocument.findMany({ where: { companyId, expiresAt: within } }),
+      this.prisma.vehicle.findMany({ where: { companyId, registrationExpiresAt: within } }),
+      this.prisma.vehicle.findMany({ where: { companyId, insuranceExpiresAt: within } }),
+      this.prisma.worker.findMany({ where: { companyId, cdlExpiresAt: within }, select: { name: true, cdlExpiresAt: true } }),
     ]);
 
     const items = [
@@ -376,6 +379,24 @@ export class ReportsService {
         label: `${d.type.replace(/_/g, " ")} — ${d.name}`,
         holderName: null,
         expiresAt: d.expiresAt,
+      })),
+      ...vehiclesByRegistration.map((v) => ({
+        type: "vehicle_registration" as const,
+        label: "Registration",
+        holderName: v.name,
+        expiresAt: v.registrationExpiresAt!,
+      })),
+      ...vehiclesByInsurance.map((v) => ({
+        type: "vehicle_insurance" as const,
+        label: "Insurance",
+        holderName: v.name,
+        expiresAt: v.insuranceExpiresAt!,
+      })),
+      ...driversWithCdl.map((w) => ({
+        type: "driver_cdl" as const,
+        label: "CDL",
+        holderName: w.name,
+        expiresAt: w.cdlExpiresAt!,
       })),
     ]
       .map((item) => ({ ...item, status: (item.expiresAt < now ? "expired" : "expiring") as "expired" | "expiring" }))

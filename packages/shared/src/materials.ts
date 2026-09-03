@@ -93,3 +93,22 @@ export const updateStockCountLineSchema = z.object({
   countedQuantity: z.number().nonnegative(),
 });
 export type UpdateStockCountLineInput = z.infer<typeof updateStockCountLineSchema>;
+
+export const vendorBillLineSchema = z.object({
+  materialCatalogItemId: z.string().uuid().optional(),
+  description: z.string().min(1).max(300),
+  quantity: z.number().positive(),
+  unitPrice: z.number().nonnegative(),
+});
+export type VendorBillLineInput = z.infer<typeof vendorBillLineSchema>;
+
+export const createVendorBillSchema = z.object({
+  supplierId: z.string().uuid(),
+  purchaseOrderId: z.string().uuid().optional(),
+  billNumber: z.string().min(1).max(80),
+  billDate: z.string().datetime().optional(),
+  dueDate: z.string().datetime().optional(),
+  notes: z.string().max(2000).optional(),
+  lines: z.array(vendorBillLineSchema).min(1),
+});
+export type CreateVendorBillInput = z.infer<typeof createVendorBillSchema>;

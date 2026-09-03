@@ -46,6 +46,12 @@ export class AccountingSyncController {
   }
 
   @Roles("owner", "admin", "accountant")
+  @Post("company/accounting/sync-bills")
+  syncBills(@CurrentUser() user: AuthUser) {
+    return this.service.syncBills(user.companyId);
+  }
+
+  @Roles("owner", "admin", "accountant")
   @Get("company/accounting/sync-history")
   syncHistory(@CurrentUser() user: AuthUser) {
     return this.service.syncHistory(user.companyId);

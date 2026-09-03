@@ -4,12 +4,15 @@ import {
   bulkActionIdsSchema,
   createRfiSchema,
   setDrawingPinSchema,
+  setRfiBallInCourtSchema,
   updateRfiSchema,
   type AnswerRfiInput,
   type AuthUser,
+  type BallInCourtParty,
   type BulkActionIdsInput,
   type CreateRfiInput,
   type SetDrawingPinInput,
+  type SetRfiBallInCourtInput,
   type UpdateRfiInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
@@ -21,8 +24,12 @@ export class RfiController {
   constructor(private readonly service: RfiService) {}
 
   @Get()
-  list(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string) {
-    return this.service.listForProject(user.companyId, projectId);
+  list(
+    @CurrentUser() user: AuthUser,
+    @Query("projectId") projectId: string,
+    @Query("ballInCourtParty") ballInCourtParty?: BallInCourtParty,
+  ) {
+    return this.service.listForProject(user.companyId, projectId, ballInCourtParty);
   }
 
   @Get(":id")
@@ -38,6 +45,15 @@ export class RfiController {
   @Patch(":id")
   update(@CurrentUser() user: AuthUser, @Param("id") id: string, @Body(new ZodValidationPipe(updateRfiSchema)) body: UpdateRfiInput) {
     return this.service.update(user.companyId, id, body);
+  }
+
+  @Patch(":id/ball-in-court")
+  setBallInCourt(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(setRfiBallInCourtSchema)) body: SetRfiBallInCourtInput,
+  ) {
+    return this.service.setBallInCourt(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
   @Patch(":id/pin")

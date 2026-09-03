@@ -1,5 +1,13 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import type { AnswerRfiInput, BulkActionResult, CreateRfiInput, SetDrawingPinInput, UpdateRfiInput } from "@cantero/shared";
+import type {
+  AnswerRfiInput,
+  BallInCourtParty,
+  BulkActionResult,
+  CreateRfiInput,
+  SetDrawingPinInput,
+  SetRfiBallInCourtInput,
+  UpdateRfiInput,
+} from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { WebhooksService } from "../common/webhooks/webhooks.service";
@@ -12,9 +20,12 @@ export class RfiService {
     private readonly webhooks: WebhooksService,
   ) {}
 
-  async listForProject(companyId: string, projectId: string) {
+  async listForProject(companyId: string, projectId: string, ballInCourtParty?: BallInCourtParty) {
     await this.assertProject(companyId, projectId);
-    return this.prisma.rfi.findMany({ where: { projectId }, orderBy: [{ status: "asc" }, { createdAt: "desc" }] });
+    return this.prisma.rfi.findMany({
+      where: { projectId, ...(ballInCourtParty ? { ballInCourtParty } : {}) },
+      orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+    });
   }
 
   async get(companyId: string, id: string) {
@@ -61,6 +72,20 @@ export class RfiService {
         scheduleImpactDays: input.scheduleImpactDays,
       },
     });
+  }
+
+  async setBallInCourt(companyId: string, actor: AuditActor, id: string, input: SetRfiBallInCourtInput) {
+    const rfi = await this.get(companyId, id);
+    const updated = await this.prisma.rfi.update({ where: { id: rfi.id }, data: { ballInCourtParty: input.ballInCourtParty } });
+    this.audit.record(
+      companyId,
+      actor,
+      "rfi.ball_in_court_changed",
+      "Rfi",
+      rfi.id,
+      `Set ball-in-court to "${input.ballInCourtParty}" on ${rfi.number}`,
+    );
+    return updated;
   }
 
   async setPin(companyId: string, id: string, input: SetDrawingPinInput) {

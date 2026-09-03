@@ -59,6 +59,13 @@ interface WarrantyClaimSummary {
   status: WarrantyClaimStatus;
   project: { id: string; name: string };
 }
+type TicketStatus = "open" | "in_progress" | "waiting_on_customer" | "resolved" | "closed";
+interface TicketSummary {
+  id: string;
+  subject: string;
+  status: TicketStatus;
+  createdAt: string;
+}
 
 export default function PortalDashboardPage() {
   const t = useTranslations("portal");
@@ -76,6 +83,9 @@ export default function PortalDashboardPage() {
   const [claimBusy, setClaimBusy] = useState(false);
   const [claimMessage, setClaimMessage] = useState<string | null>(null);
   const [paymentMethodBusy, setPaymentMethodBusy] = useState(false);
+  const [tickets, setTickets] = useState<TicketSummary[] | null>(null);
+  const [ticketForm, setTicketForm] = useState({ subject: "", content: "" });
+  const [ticketBusy, setTicketBusy] = useState(false);
 
   function loadMe() {
     portalApiFetch<Me>("/portal/me").then(setMe);
@@ -120,8 +130,29 @@ export default function PortalDashboardPage() {
     portalApiFetch<ChangeOrderSummary[]>("/portal/change-orders").then(setChangeOrders);
     portalApiFetch<InvoiceSummary[]>("/portal/invoices").then(setInvoices);
     loadWarranty();
+    loadTickets();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  function loadTickets() {
+    portalApiFetch<TicketSummary[]>("/portal/tickets").then(setTickets);
+  }
+
+  async function submitTicket(e: React.FormEvent) {
+    e.preventDefault();
+    if (!ticketForm.subject.trim() || !ticketForm.content.trim()) return;
+    setTicketBusy(true);
+    try {
+      await portalApiFetch("/portal/tickets", {
+        method: "POST",
+        body: JSON.stringify({ subject: ticketForm.subject.trim(), content: ticketForm.content.trim() }),
+      });
+      setTicketForm({ subject: "", content: "" });
+      loadTickets();
+    } finally {
+      setTicketBusy(false);
+    }
+  }
 
   async function submitClaim(e: React.FormEvent) {
     e.preventDefault();
@@ -449,6 +480,61 @@ export default function PortalDashboardPage() {
               {claimMessage && <p className="text-xs text-gray-600">{claimMessage}</p>}
             </form>
           )}
+        </section>
+
+        <section className="card mt-6">
+          <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("myTickets")}</h2>
+          {!tickets || tickets.length === 0 ? (
+            <p className="mb-4 text-sm text-gray-400">{t("noTickets")}</p>
+          ) : (
+            <ul className="mb-4 flex flex-col gap-2">
+              {tickets.map((ticket) => (
+                <li key={ticket.id}>
+                  <a
+                    href={`/portal/tickets/${ticket.id}`}
+                    className="flex items-center justify-between rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-brand-300"
+                  >
+                    <span>
+                      {ticket.subject}
+                      <span className="ml-2 text-xs text-gray-400">{new Date(ticket.createdAt).toLocaleDateString()}</span>
+                    </span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                        ticket.status === "resolved" || ticket.status === "closed"
+                          ? "bg-success-50 text-success-700"
+                          : ticket.status === "waiting_on_customer"
+                            ? "bg-warning-50 text-warning-700"
+                            : "bg-brand-50 text-brand-700"
+                      }`}
+                    >
+                      {t(`ticketStatus_${ticket.status}`)}
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <form onSubmit={submitTicket} className="flex flex-col gap-2">
+            <input
+              required
+              placeholder={t("ticketSubjectPlaceholder")}
+              className="input"
+              value={ticketForm.subject}
+              onChange={(e) => setTicketForm((f) => ({ ...f, subject: e.target.value }))}
+            />
+            <textarea
+              required
+              rows={2}
+              placeholder={t("ticketContentPlaceholder")}
+              className="input"
+              value={ticketForm.content}
+              onChange={(e) => setTicketForm((f) => ({ ...f, content: e.target.value }))}
+            />
+            <button type="submit" disabled={ticketBusy} className="btn-primary self-start">
+              {t("submitTicket")}
+            </button>
+          </form>
         </section>
       </div>
     </main>

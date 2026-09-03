@@ -5,11 +5,15 @@ import {
   estimateClientDecisionSchema,
   createPortalMessageSchema,
   payInvoiceSchema,
+  portalAddTicketMessageSchema,
+  portalCreateTicketSchema,
   portalCreateWarrantyClaimSchema,
   type ClientDecisionInput,
   type EstimateClientDecisionInput,
   type CreatePortalMessageInput,
   type PayInvoiceInput,
+  type PortalAddTicketMessageInput,
+  type PortalCreateTicketInput,
   type PortalCreateWarrantyClaimInput,
 } from "@cantero/shared";
 import { Public } from "../common/decorators/public.decorator";
@@ -19,6 +23,7 @@ import { CurrentPortalClient } from "./current-portal-client.decorator";
 import type { PortalClientContext } from "./portal-jwt.service";
 import { PortalService } from "./portal.service";
 import { PortalMessagesService } from "./portal-messages.service";
+import { SupportTicketsService } from "../support-tickets/support-tickets.service";
 
 /** @Public() bypasses the internal-user JwtAuthGuard chain; PortalAuthGuard independently requires a valid client-portal token. */
 @Public()
@@ -28,6 +33,7 @@ export class PortalController {
   constructor(
     private readonly service: PortalService,
     private readonly messages: PortalMessagesService,
+    private readonly tickets: SupportTicketsService,
   ) {}
 
   @Get("me")
@@ -169,5 +175,32 @@ export class PortalController {
     @Body(new ZodValidationPipe(portalCreateWarrantyClaimSchema)) body: PortalCreateWarrantyClaimInput,
   ) {
     return this.service.createWarrantyClaim(client, body);
+  }
+
+  @Get("tickets")
+  listTickets(@CurrentPortalClient() client: PortalClientContext) {
+    return this.tickets.listForClient(client);
+  }
+
+  @Get("tickets/:id")
+  getTicket(@CurrentPortalClient() client: PortalClientContext, @Param("id") id: string) {
+    return this.tickets.getForClient(client, id);
+  }
+
+  @Post("tickets")
+  createTicket(
+    @CurrentPortalClient() client: PortalClientContext,
+    @Body(new ZodValidationPipe(portalCreateTicketSchema)) body: PortalCreateTicketInput,
+  ) {
+    return this.tickets.createForClient(client, body);
+  }
+
+  @Post("tickets/:id/messages")
+  addTicketMessage(
+    @CurrentPortalClient() client: PortalClientContext,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(portalAddTicketMessageSchema)) body: PortalAddTicketMessageInput,
+  ) {
+    return this.tickets.addMessageForClient(client, id, body);
   }
 }

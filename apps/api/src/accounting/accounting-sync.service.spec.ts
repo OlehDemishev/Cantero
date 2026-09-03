@@ -11,6 +11,7 @@ describe("AccountingSyncService", () => {
   let prisma: {
     accountingConnection: { findUnique: jest.Mock; upsert: jest.Mock; update: jest.Mock; deleteMany: jest.Mock };
     invoice: { findMany: jest.Mock; update: jest.Mock };
+    subcontractorCost: { findMany: jest.Mock; update: jest.Mock };
     accountingSyncLog: { create: jest.Mock; findMany: jest.Mock };
   };
   let config: { get: jest.Mock; getOrThrow: jest.Mock };
@@ -29,6 +30,7 @@ describe("AccountingSyncService", () => {
     prisma = {
       accountingConnection: { findUnique: jest.fn(), upsert: jest.fn(), update: jest.fn(), deleteMany: jest.fn() },
       invoice: { findMany: jest.fn().mockResolvedValue([]), update: jest.fn() },
+      subcontractorCost: { findMany: jest.fn().mockResolvedValue([]), update: jest.fn() },
       accountingSyncLog: { create: jest.fn(), findMany: jest.fn() },
     };
     config = {
@@ -261,6 +263,80 @@ describe("AccountingSyncService", () => {
     });
   });
 
+  describe("syncBills", () => {
+    const activeConnection = {
+      id: "conn-1",
+      companyId: "company-a",
+      provider: "quickbooks",
+      accessToken: "at",
+      refreshToken: "rt",
+      tokenExpiresAt: new Date(Date.now() + 3600_000),
+      externalAccountId: "realm-1",
+    };
+
+    it("throws when there's no connection", async () => {
+      prisma.accountingConnection.findUnique.mockResolvedValue(null);
+      await expect(service.syncBills("company-a")).rejects.toThrow(NotFoundException);
+    });
+
+    it("creates the vendor, pushes the bill, and records the external ID", async () => {
+      prisma.accountingConnection.findUnique.mockResolvedValue(activeConnection);
+      prisma.subcontractorCost.findMany.mockResolvedValue([
+        {
+          id: "cost-1",
+          description: "Electrical rough-in",
+          amount: "2500.00",
+          dueDate: new Date("2026-09-01"),
+          subcontractor: { name: "ElectroPro LLC", email: "billing@electropro.test" },
+        },
+      ]);
+      fetchMock
+        .mockResolvedValueOnce(jsonResponse({ QueryResponse: {} })) // vendor lookup: none found
+        .mockResolvedValueOnce(jsonResponse({ Vendor: { Id: "vendor-9" } })) // vendor created
+        .mockResolvedValueOnce(jsonResponse({ Bill: { Id: "qb-bill-7" } })); // bill created
+
+      const result = await service.syncBills("company-a");
+
+      expect(result).toEqual({ synced: 1, failed: 0, errors: [] });
+      expect(prisma.subcontractorCost.update).toHaveBeenCalledWith({
+        where: { id: "cost-1" },
+        data: { externalAccountingId: "qb-bill-7", externalAccountingSyncedAt: expect.any(Date) },
+      });
+    });
+
+    it("reuses an existing vendor instead of creating a duplicate", async () => {
+      prisma.accountingConnection.findUnique.mockResolvedValue(activeConnection);
+      prisma.subcontractorCost.findMany.mockResolvedValue([
+        { id: "cost-1", description: "Framing", amount: "800", dueDate: null, subcontractor: { name: "FrameCo", email: null } },
+      ]);
+      fetchMock
+        .mockResolvedValueOnce(jsonResponse({ QueryResponse: { Vendor: [{ Id: "vendor-existing" }] } }))
+        .mockResolvedValueOnce(jsonResponse({ Bill: { Id: "qb-bill-8" } }));
+
+      await service.syncBills("company-a");
+
+      expect(fetchMock).toHaveBeenCalledTimes(2); // lookup + bill create, no vendor-create call
+    });
+
+    it("collects one bill's failure without aborting the rest of the batch", async () => {
+      prisma.accountingConnection.findUnique.mockResolvedValue(activeConnection);
+      prisma.subcontractorCost.findMany.mockResolvedValue([
+        { id: "cost-1", description: "Broken", amount: "100", dueDate: null, subcontractor: { name: "Broken Co", email: null } },
+        { id: "cost-2", description: "OK", amount: "200", dueDate: null, subcontractor: { name: "FrameCo", email: null } },
+      ]);
+      fetchMock
+        .mockResolvedValueOnce(jsonResponse({}, false, 500))
+        .mockResolvedValueOnce(jsonResponse({ QueryResponse: { Vendor: [{ Id: "vendor-2" }] } }))
+        .mockResolvedValueOnce(jsonResponse({ Bill: { Id: "qb-bill-2" } }));
+
+      const result = await service.syncBills("company-a");
+
+      expect(result.synced).toBe(1);
+      expect(result.failed).toBe(1);
+      expect(prisma.subcontractorCost.update).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe("syncHistory", () => {
     it("returns recent log entries newest-first", async () => {
       prisma.accountingSyncLog.findMany.mockResolvedValue([{ id: "log-1" }]);
@@ -297,6 +373,17 @@ describe("AccountingSyncService", () => {
       expect(result.provider).toBe("quickbooks");
       expect(result.unsyncedInvoices).toHaveLength(1);
       expect(result.recentFailures).toHaveLength(1);
+    });
+
+    it("also lists unsynced bills (AP side) alongside unsynced invoices", async () => {
+      prisma.accountingConnection.findUnique.mockResolvedValue({ provider: "quickbooks" });
+      prisma.subcontractorCost.findMany.mockResolvedValue([
+        { id: "cost-1", description: "Framing", amount: "800", incurredDate: new Date(), subcontractor: { name: "FrameCo" } },
+      ]);
+
+      const result = await service.integrityCheck("company-a");
+
+      expect(result.unsyncedBills).toHaveLength(1);
     });
   });
 });

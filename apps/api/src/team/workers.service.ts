@@ -83,8 +83,28 @@ export class WorkersService {
         id,
         `${input.active ? "Reactivated" : "Deactivated"} worker ${worker.name}`,
       );
+      if (!input.active) await this.cloneOffboardingTemplate(companyId, id);
     }
     return this.redactPin(worker);
+  }
+
+  /** Same clone-the-template-into-fresh-tasks pattern as create()'s onboarding clone, triggered
+   * the moment a worker is deactivated rather than at creation. Only clones once — if the worker
+   * is reactivated and later deactivated again, any tasks left over from the first departure stay
+   * as-is rather than duplicating. */
+  private async cloneOffboardingTemplate(companyId: string, workerId: string) {
+    const alreadyCloned = await this.prisma.workerOffboardingTask.count({ where: { companyId, workerId } });
+    if (alreadyCloned > 0) return;
+
+    const templateItems = await this.prisma.offboardingTemplateItem.findMany({
+      where: { companyId },
+      orderBy: { sortOrder: "asc" },
+    });
+    if (templateItems.length === 0) return;
+
+    await this.prisma.workerOffboardingTask.createMany({
+      data: templateItems.map((item) => ({ companyId, workerId, title: item.title, sortOrder: item.sortOrder })),
+    });
   }
 
   /** Cumulative hours/cost for this worker, broken down by project — derived from TimeEntry. */
@@ -214,6 +234,22 @@ export class WorkersService {
     const task = await this.prisma.workerOnboardingTask.findFirst({ where: { id: taskId, companyId, workerId } });
     if (!task) throw new NotFoundException("Onboarding task not found");
     return this.prisma.workerOnboardingTask.update({
+      where: { id: taskId },
+      data: { done: !task.done, completedAt: !task.done ? new Date() : null },
+    });
+  }
+
+  listOffboardingTasks(companyId: string, workerId: string) {
+    return this.prisma.workerOffboardingTask.findMany({
+      where: { companyId, workerId },
+      orderBy: { sortOrder: "asc" },
+    });
+  }
+
+  async toggleOffboardingTask(companyId: string, workerId: string, taskId: string) {
+    const task = await this.prisma.workerOffboardingTask.findFirst({ where: { id: taskId, companyId, workerId } });
+    if (!task) throw new NotFoundException("Offboarding task not found");
+    return this.prisma.workerOffboardingTask.update({
       where: { id: taskId },
       data: { done: !task.done, completedAt: !task.done ? new Date() : null },
     });

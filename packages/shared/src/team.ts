@@ -92,3 +92,14 @@ export const updateOnboardingTemplateItemSchema = z.object({
   sortOrder: z.number().int().optional(),
 });
 export type UpdateOnboardingTemplateItemInput = z.infer<typeof updateOnboardingTemplateItemSchema>;
+
+export const createOffboardingTemplateItemSchema = z.object({
+  title: z.string().min(1).max(200),
+});
+export type CreateOffboardingTemplateItemInput = z.infer<typeof createOffboardingTemplateItemSchema>;
+
+export const updateOffboardingTemplateItemSchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  sortOrder: z.number().int().optional(),
+});
+export type UpdateOffboardingTemplateItemInput = z.infer<typeof updateOffboardingTemplateItemSchema>;

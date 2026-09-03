@@ -362,6 +362,28 @@ describe("NotificationsService.list", () => {
 
     expect(notifications.some((n) => n.key === "budget_overrun:project-tight")).toBe(true);
   });
+
+  it("excludes a notification type the member has muted", async () => {
+    prisma.rfi.findMany.mockResolvedValue([
+      { id: "rfi-1", number: "RFI-001", subject: "Roof detail", dueDate: null, createdAt: new Date(), project: { id: "p1", name: "Site" } },
+    ]);
+    prisma.membership.findFirst.mockResolvedValue({ notificationsLastViewedAt: null, mutedNotificationTypes: ["rfi_open"] });
+
+    const { notifications } = await service.list(COMPANY_A, USER_A);
+
+    expect(notifications.some((n) => n.type === "rfi_open")).toBe(false);
+  });
+
+  it("still surfaces a type that isn't muted", async () => {
+    prisma.rfi.findMany.mockResolvedValue([
+      { id: "rfi-1", number: "RFI-001", subject: "Roof detail", dueDate: null, createdAt: new Date(), project: { id: "p1", name: "Site" } },
+    ]);
+    prisma.membership.findFirst.mockResolvedValue({ notificationsLastViewedAt: null, mutedNotificationTypes: ["low_stock"] });
+
+    const { notifications } = await service.list(COMPANY_A, USER_A);
+
+    expect(notifications.some((n) => n.type === "rfi_open")).toBe(true);
+  });
 });
 
 describe("NotificationsService — read tracking", () => {

@@ -17,6 +17,7 @@ describe("EquipmentService", () => {
     equipmentMaintenanceRecord: { create: jest.Mock; findMany: jest.Mock };
     equipmentFuelLog: { create: jest.Mock; findMany: jest.Mock };
     equipmentRental: { create: jest.Mock; findFirst: jest.Mock; findMany: jest.Mock; update: jest.Mock };
+    assetDisposal: { findUnique: jest.Mock; create: jest.Mock };
     $transaction: jest.Mock;
   };
 
@@ -30,6 +31,7 @@ describe("EquipmentService", () => {
       equipmentMaintenanceRecord: { create: jest.fn(), findMany: jest.fn() },
       equipmentFuelLog: { create: jest.fn(), findMany: jest.fn() },
       equipmentRental: { create: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), update: jest.fn() },
+      assetDisposal: { findUnique: jest.fn(), create: jest.fn() },
       $transaction: jest.fn((ops) => Promise.all(ops)),
     };
 
@@ -350,6 +352,60 @@ describe("EquipmentService", () => {
 
       await expect(service.retire(COMPANY_A, { name: "Owner" }, "eq-1")).rejects.toThrow(BadRequestException);
       expect(prisma.equipment.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("dispose()", () => {
+    it("rejects disposing of equipment that's currently checked out", async () => {
+      prisma.equipment.findFirst.mockResolvedValue({ id: "eq-1", companyId: COMPANY_A, name: "Drill", status: "in_use" });
+
+      await expect(service.dispose(COMPANY_A, { name: "Owner" }, "eq-1", {})).rejects.toThrow(BadRequestException);
+      expect(prisma.assetDisposal.create).not.toHaveBeenCalled();
+    });
+
+    it("rejects disposing of the same equipment twice", async () => {
+      prisma.equipment.findFirst.mockResolvedValue({ id: "eq-1", companyId: COMPANY_A, name: "Drill", status: "retired" });
+      prisma.assetDisposal.findUnique.mockResolvedValue({ id: "disposal-1", equipmentId: "eq-1" });
+
+      await expect(service.dispose(COMPANY_A, { name: "Owner" }, "eq-1", {})).rejects.toThrow(BadRequestException);
+      expect(prisma.assetDisposal.create).not.toHaveBeenCalled();
+    });
+
+    it("records the disposal and retires the equipment", async () => {
+      prisma.equipment.findFirst.mockResolvedValue({ id: "eq-1", companyId: COMPANY_A, name: "Drill", status: "available" });
+      prisma.assetDisposal.findUnique.mockResolvedValue(null);
+      prisma.assetDisposal.create.mockResolvedValue({ id: "disposal-1", equipmentId: "eq-1", saleAmount: 500 });
+      prisma.equipment.update.mockResolvedValue({});
+
+      const result = await service.dispose(COMPANY_A, { name: "Owner" }, "eq-1", { saleAmount: 500, notes: "Sold at auction" });
+
+      expect(result).toEqual({ id: "disposal-1", equipmentId: "eq-1", saleAmount: 500 });
+      expect(prisma.equipment.update).toHaveBeenCalledWith({ where: { id: "eq-1" }, data: { status: "retired" } });
+    });
+  });
+
+  describe("depreciation()", () => {
+    it("returns null when no depreciation schedule is set", () => {
+      const result = service.depreciation({
+        purchaseCost: 10000,
+        purchaseDate: new Date("2025-01-01"),
+        depreciationMethod: null,
+        usefulLifeMonths: null,
+        salvageValue: null,
+      });
+      expect(result).toBeNull();
+    });
+
+    it("computes book value once a full schedule is set", () => {
+      const result = service.depreciation({
+        purchaseCost: 12000,
+        purchaseDate: new Date("2024-01-01"),
+        depreciationMethod: "straight_line",
+        usefulLifeMonths: 24,
+        salvageValue: 0,
+      });
+      expect(result).not.toBeNull();
+      expect(result!.bookValue).toBeLessThan(12000);
     });
   });
 

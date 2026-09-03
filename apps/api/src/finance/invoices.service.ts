@@ -11,6 +11,8 @@ import { WebhooksService } from "../common/webhooks/webhooks.service";
 import { calculateProgressDraw, round2 } from "./progress-billing";
 import { buildXRechnungXml } from "./e-invoice";
 import { calculateLateFee, daysOverdue } from "./late-fee";
+import { documentPdfLabels } from "../common/pdf/pdf-labels";
+import { invoiceSentEmail } from "../common/mail/client-mail-templates";
 
 @Injectable()
 export class InvoicesService {
@@ -256,11 +258,18 @@ export class InvoicesService {
     if (updated.client.email) {
       const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
       const pdf = await this.generatePdf(companyId, id);
+      const email = invoiceSentEmail(
+        updated.client.preferredLocale ?? company.locale,
+        company.name,
+        updated.number,
+        updated.total.toString(),
+        updated.currency,
+      );
       this.mail.send({
         to: updated.client.email,
-        subject: `Invoice ${updated.number} from ${company.name}`,
-        html: `<p>${company.name} has sent you invoice <strong>${updated.number}</strong> for ${updated.total} ${updated.currency}.</p><p>The invoice is attached as a PDF.</p>`,
-        text: `${company.name} has sent you invoice ${updated.number} for ${updated.total} ${updated.currency}. The invoice is attached as a PDF.`,
+        subject: email.subject,
+        html: email.html,
+        text: email.text,
         attachments: [{ filename: `${updated.number}.pdf`, content: pdf, contentType: "application/pdf" }],
       });
     }
@@ -338,22 +347,23 @@ export class InvoicesService {
     const invoice = await this.findOrThrow(companyId, id);
     const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
     const logoBuffer = company.logoStorageKey ? await this.storage.read(company.logoStorageKey) : undefined;
+    const labels = documentPdfLabels(invoice.client.preferredLocale ?? company.locale);
 
     return this.pdfService.render({
       title: `Invoice ${invoice.number}`,
       subtitle: `${invoice.client.name} — ${invoice.project.name}`,
       meta: [
-        { label: "Status", value: invoice.status },
-        { label: "Currency", value: invoice.currency },
+        { label: labels.status, value: invoice.status },
+        { label: labels.currency, value: invoice.currency },
       ],
-      tableHeader: ["Description", "Qty", "Unit price", "Line total"],
+      tableHeader: [labels.description, labels.qty, labels.unitPrice, labels.lineTotal],
       tableRows: invoice.lines.map((line) => ({
         cells: [line.description, line.quantity.toString(), line.unitPrice.toString(), line.lineTotal.toString()],
       })),
       totals: [
-        { label: "Subtotal", value: `${invoice.subtotal} ${invoice.currency}` },
-        { label: "Tax", value: `${invoice.taxAmount} ${invoice.currency}` },
-        { label: "Total due", value: `${invoice.total} ${invoice.currency}`, emphasize: true },
+        { label: labels.subtotal, value: `${invoice.subtotal} ${invoice.currency}` },
+        { label: labels.tax, value: `${invoice.taxAmount} ${invoice.currency}` },
+        { label: labels.totalDue, value: `${invoice.total} ${invoice.currency}`, emphasize: true },
       ],
       branding: { logoBuffer, accentColor: company.brandColor ?? undefined },
     });

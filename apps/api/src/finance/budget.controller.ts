@@ -1,5 +1,11 @@
 import { Body, Controller, Get, Post, Query } from "@nestjs/common";
-import { createBudgetRevisionSchema, type AuthUser, type CreateBudgetRevisionInput } from "@cantero/shared";
+import {
+  createBudgetRevisionSchema,
+  createContingencyDrawSchema,
+  type AuthUser,
+  type CreateBudgetRevisionInput,
+  type CreateContingencyDrawInput,
+} from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { BudgetService } from "./budget.service";
@@ -19,5 +25,13 @@ export class BudgetController {
     @Body(new ZodValidationPipe(createBudgetRevisionSchema)) body: CreateBudgetRevisionInput,
   ) {
     return this.service.addRevision(user.companyId, { userId: user.userId, name: user.name }, body);
+  }
+
+  @Post("contingency-draws")
+  addContingencyDraw(
+    @CurrentUser() user: AuthUser,
+    @Body(new ZodValidationPipe(createContingencyDrawSchema)) body: CreateContingencyDrawInput,
+  ) {
+    return this.service.addContingencyDraw(user.companyId, { userId: user.userId, name: user.name }, body);
   }
 }

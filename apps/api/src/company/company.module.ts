@@ -15,6 +15,8 @@ import { CustomRolesController } from "./custom-roles.controller";
 import { CustomRolesService } from "./custom-roles.service";
 import { OnboardingTemplateController } from "./onboarding-template.controller";
 import { OnboardingTemplateService } from "./onboarding-template.service";
+import { OffboardingTemplateController } from "./offboarding-template.controller";
+import { OffboardingTemplateService } from "./offboarding-template.service";
 import { CompanyCoiController } from "./company-coi.controller";
 import { PublicCompanyCoiController } from "./public-company-coi.controller";
 import { CompanyCoiService } from "./company-coi.service";
@@ -33,6 +35,7 @@ import { CompanyHolidaysService } from "./company-holidays.service";
     DataExportController,
     CustomRolesController,
     OnboardingTemplateController,
+    OffboardingTemplateController,
     CompanyCoiController,
     PublicCompanyCoiController,
     PublicPortalBrandingController,
@@ -46,6 +49,7 @@ import { CompanyHolidaysService } from "./company-holidays.service";
     DataExportService,
     CustomRolesService,
     OnboardingTemplateService,
+    OffboardingTemplateService,
     CompanyCoiService,
     CompanyHolidaysService,
   ],

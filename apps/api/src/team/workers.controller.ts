@@ -132,4 +132,14 @@ export class WorkersController {
   toggleOnboardingTask(@CurrentUser() user: AuthUser, @Param("id") id: string, @Param("taskId") taskId: string) {
     return this.service.toggleOnboardingTask(user.companyId, id, taskId);
   }
+
+  @Get(":id/offboarding-tasks")
+  listOffboardingTasks(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.listOffboardingTasks(user.companyId, id);
+  }
+
+  @Post(":id/offboarding-tasks/:taskId/toggle")
+  toggleOffboardingTask(@CurrentUser() user: AuthUser, @Param("id") id: string, @Param("taskId") taskId: string) {
+    return this.service.toggleOffboardingTask(user.companyId, id, taskId);
+  }
 }

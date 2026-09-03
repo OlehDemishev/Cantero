@@ -14,6 +14,8 @@ import { StockCountsController } from "./stock-counts.controller";
 import { StockCountsService } from "./stock-counts.service";
 import { MaterialRfqsController } from "./material-rfqs.controller";
 import { MaterialRfqsService } from "./material-rfqs.service";
+import { VendorBillsController } from "./vendor-bills.controller";
+import { VendorBillsService } from "./vendor-bills.service";
 
 @Module({
   controllers: [
@@ -24,6 +26,7 @@ import { MaterialRfqsService } from "./material-rfqs.service";
     PurchaseOrdersController,
     StockCountsController,
     MaterialRfqsController,
+    VendorBillsController,
   ],
   providers: [
     MaterialCatalogService,
@@ -34,6 +37,7 @@ import { MaterialRfqsService } from "./material-rfqs.service";
     LowStockProcessor,
     StockCountsService,
     MaterialRfqsService,
+    VendorBillsService,
   ],
   exports: [MaterialCatalogService, StockService],
 })

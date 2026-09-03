@@ -11,6 +11,8 @@ import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
 import { WebhooksService } from "../common/webhooks/webhooks.service";
 import { calculateEstimate, type EstimateLineInput, type MaterialPrice, type RateItemForCalc } from "./estimate-calc";
+import { documentPdfLabels } from "../common/pdf/pdf-labels";
+import { changeOrderSentEmail } from "../common/mail/client-mail-templates";
 
 /**
  * Change orders are addenda to an already-approved Estimate: extra scope proposed after
@@ -216,12 +218,14 @@ export class ChangeOrdersService {
       const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
       const webOrigin = this.config.get<string>("WEB_ORIGIN") ?? "http://localhost:3000";
       const link = `${webOrigin}/change-order/${updated.clientAccessToken}`;
-      this.mail.send({
-        to: client.email,
-        subject: `Change order for ${estimate.name} from ${company.name}`,
-        html: `<p>${company.name} has proposed a change order for <strong>${estimate.name}</strong>: <strong>${changeOrder.title}</strong>.</p><p><a href="${link}">View and respond to the change order</a></p>`,
-        text: `${company.name} has proposed a change order for ${estimate.name}: ${changeOrder.title}.\n\nView and respond: ${link}`,
-      });
+      const email = changeOrderSentEmail(
+        client.preferredLocale ?? company.locale,
+        company.name,
+        changeOrder.number,
+        changeOrder.title,
+        link,
+      );
+      this.mail.send({ to: client.email, subject: email.subject, html: email.html, text: email.text });
     }
 
     return { ...updated, emailSentTo: client?.email ?? null };
@@ -332,21 +336,28 @@ export class ChangeOrdersService {
 
   async generatePdf(companyId: string, changeOrderId: string): Promise<Buffer> {
     const changeOrder = await this.findOrThrow(companyId, changeOrderId);
-    const estimate = await this.prisma.estimate.findUniqueOrThrow({ where: { id: changeOrder.estimateId } });
+    const estimate = await this.prisma.estimate.findUniqueOrThrow({
+      where: { id: changeOrder.estimateId },
+      include: { project: true },
+    });
     const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
     const logoBuffer = company.logoStorageKey ? await this.storage.read(company.logoStorageKey) : undefined;
     const signatureImageBuffer = changeOrder.signatureImageKey
       ? await this.storage.read(changeOrder.signatureImageKey)
       : undefined;
+    const client = estimate.project?.clientId
+      ? await this.prisma.client.findUnique({ where: { id: estimate.project.clientId }, select: { preferredLocale: true } })
+      : null;
+    const labels = documentPdfLabels(client?.preferredLocale ?? company.locale);
 
     return this.pdfService.render({
       title: `Change Order CO-${changeOrder.number} — ${changeOrder.title}`,
       subtitle: estimate.name,
       meta: [
-        { label: "Status", value: changeOrder.status },
-        { label: "Currency", value: estimate.currency },
+        { label: labels.status, value: changeOrder.status },
+        { label: labels.currency, value: estimate.currency },
       ],
-      tableHeader: ["Item", "Qty", "Unit", "Materials", "Labor", "Line total"],
+      tableHeader: [labels.item, labels.qty, labels.unit, labels.materialsTotal, labels.laborTotal, labels.lineTotal],
       tableRows: changeOrder.lines.map((line) => ({
         cells: [
           line.rateCatalogItem.name,
@@ -358,12 +369,12 @@ export class ChangeOrdersService {
         ],
       })),
       totals: [
-        { label: "Materials total", value: `${changeOrder.materialsCostTotal} ${estimate.currency}` },
-        { label: "Labor total", value: `${changeOrder.laborCostTotal} ${estimate.currency}` },
-        { label: "Subtotal", value: `${changeOrder.subtotal} ${estimate.currency}` },
-        { label: `Markup (${estimate.markupPercent}%)`, value: `${changeOrder.markupAmount} ${estimate.currency}` },
-        { label: `Tax (${estimate.taxPercent}%)`, value: `${changeOrder.taxAmount} ${estimate.currency}` },
-        { label: "Grand total", value: `${changeOrder.grandTotal} ${estimate.currency}`, emphasize: true },
+        { label: labels.materialsTotal, value: `${changeOrder.materialsCostTotal} ${estimate.currency}` },
+        { label: labels.laborTotal, value: `${changeOrder.laborCostTotal} ${estimate.currency}` },
+        { label: labels.subtotal, value: `${changeOrder.subtotal} ${estimate.currency}` },
+        { label: `${labels.markup} (${estimate.markupPercent}%)`, value: `${changeOrder.markupAmount} ${estimate.currency}` },
+        { label: `${labels.tax} (${estimate.taxPercent}%)`, value: `${changeOrder.taxAmount} ${estimate.currency}` },
+        { label: labels.grandTotal, value: `${changeOrder.grandTotal} ${estimate.currency}`, emphasize: true },
       ],
       branding: { logoBuffer, accentColor: company.brandColor ?? undefined },
       signature:

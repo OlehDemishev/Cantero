@@ -18,6 +18,8 @@ import { decodePngDataUrl } from "../common/signature";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
 import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { documentPdfLabels } from "../common/pdf/pdf-labels";
+import { estimateSentEmail } from "../common/mail/client-mail-templates";
 import {
   calculateEstimate,
   type EstimateCalcOptions,
@@ -425,12 +427,8 @@ export class EstimatesService {
       const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
       const webOrigin = this.config.get<string>("WEB_ORIGIN") ?? "http://localhost:3000";
       const link = `${webOrigin}/estimate/${updated.clientAccessToken}`;
-      this.mail.send({
-        to: client.email,
-        subject: `Estimate from ${company.name}: ${estimate.name}`,
-        html: `<p>${company.name} has sent you an estimate for review: <strong>${estimate.name}</strong>.</p><p><a href="${link}">View and respond to the estimate</a></p>`,
-        text: `${company.name} has sent you an estimate for review: ${estimate.name}.\n\nView and respond: ${link}`,
-      });
+      const email = estimateSentEmail(client.preferredLocale ?? company.locale, company.name, estimate.name, link);
+      this.mail.send({ to: client.email, subject: email.subject, html: email.html, text: email.text });
     }
 
     return { ...updated, emailSentTo: client?.email ?? null };
@@ -707,16 +705,20 @@ export class EstimatesService {
     const rateItemsById = Object.fromEntries(rateItems.map((ri) => [ri.id, ri]));
     const logoBuffer = company.logoStorageKey ? await this.storage.read(company.logoStorageKey) : undefined;
     const signatureImageBuffer = estimate.signatureImageKey ? await this.storage.read(estimate.signatureImageKey) : undefined;
+    const client = estimate.project?.clientId
+      ? await this.prisma.client.findUnique({ where: { id: estimate.project.clientId }, select: { preferredLocale: true } })
+      : null;
+    const labels = documentPdfLabels(client?.preferredLocale ?? company.locale);
 
     return this.pdfService.render({
       title: `Estimate — ${estimate.name}`,
       subtitle: estimate.project?.name ?? "",
       coverLetter: estimate.coverLetter ?? undefined,
       meta: [
-        { label: "Status", value: estimate.status },
-        { label: "Currency", value: estimate.currency },
+        { label: labels.status, value: estimate.status },
+        { label: labels.currency, value: estimate.currency },
       ],
-      tableHeader: ["Item", "Qty", "Unit", "Materials", "Labor", "Line total"],
+      tableHeader: [labels.item, labels.qty, labels.unit, labels.materialsTotal, labels.laborTotal, labels.lineTotal],
       tableRows: estimate.lines.map((line) => {
         const rateItem = rateItemsById[line.rateCatalogItemId];
         return {
@@ -731,12 +733,12 @@ export class EstimatesService {
         };
       }),
       totals: [
-        { label: "Materials total", value: `${estimate.materialsCostTotal} ${estimate.currency}` },
-        { label: "Labor total", value: `${estimate.laborCostTotal} ${estimate.currency}` },
-        { label: "Subtotal", value: `${estimate.subtotal} ${estimate.currency}` },
-        { label: `Markup (${estimate.markupPercent}%)`, value: `${estimate.markupAmount} ${estimate.currency}` },
-        { label: `Tax (${estimate.taxPercent}%)`, value: `${estimate.taxAmount} ${estimate.currency}` },
-        { label: "Grand total", value: `${estimate.grandTotal} ${estimate.currency}`, emphasize: true },
+        { label: labels.materialsTotal, value: `${estimate.materialsCostTotal} ${estimate.currency}` },
+        { label: labels.laborTotal, value: `${estimate.laborCostTotal} ${estimate.currency}` },
+        { label: labels.subtotal, value: `${estimate.subtotal} ${estimate.currency}` },
+        { label: `${labels.markup} (${estimate.markupPercent}%)`, value: `${estimate.markupAmount} ${estimate.currency}` },
+        { label: `${labels.tax} (${estimate.taxPercent}%)`, value: `${estimate.taxAmount} ${estimate.currency}` },
+        { label: labels.grandTotal, value: `${estimate.grandTotal} ${estimate.currency}`, emphasize: true },
       ],
       branding: { logoBuffer, accentColor: company.brandColor ?? undefined },
       signature:

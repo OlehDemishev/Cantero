@@ -21,7 +21,7 @@ export class MeController {
     const subscription = await this.prisma.subscription.findUnique({ where: { companyId: user.companyId } });
     const membership = await this.prisma.membership.findUniqueOrThrow({
       where: { userId_companyId: { userId: user.userId, companyId: user.companyId } },
-      select: { emailDigestFrequency: true },
+      select: { emailDigestFrequency: true, mutedNotificationTypes: true },
     });
     const userRecord = await this.prisma.user.findUniqueOrThrow({ where: { id: user.userId }, select: { totpEnabledAt: true } });
     return {
@@ -29,6 +29,7 @@ export class MeController {
       company,
       subscriptionStatus: subscription?.status ?? "incomplete",
       emailDigestFrequency: membership.emailDigestFrequency,
+      mutedNotificationTypes: membership.mutedNotificationTypes,
     };
   }
 
@@ -63,7 +64,10 @@ export class MeController {
   ) {
     await this.prisma.membership.update({
       where: { userId_companyId: { userId: user.userId, companyId: user.companyId } },
-      data: { emailDigestFrequency: body.emailDigestFrequency },
+      data: {
+        emailDigestFrequency: body.emailDigestFrequency,
+        mutedNotificationTypes: body.mutedNotificationTypes,
+      },
     });
     return { ok: true };
   }

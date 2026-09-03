@@ -9,8 +9,10 @@ import {
   WEBHOOK_EVENTS,
   WEBHOOK_TEMPLATES,
   API_KEY_SCOPES,
+  NOTIFICATION_TYPES,
   type WebhookEvent,
   type ApiKeyScope,
+  type NotificationType,
 } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch, apiUpload, downloadBlob } from "@/lib/api-client";
@@ -26,6 +28,11 @@ import { TwoFactorSettingsPanel } from "@/components/two-factor-settings-panel";
 import { SessionsPanel } from "@/components/sessions-panel";
 import { IntegrationsPanel } from "@/components/integrations-panel";
 import { OnboardingTemplatePanel } from "@/components/onboarding-template-panel";
+import { OffboardingTemplatePanel } from "@/components/offboarding-template-panel";
+import { TrainingCatalogPanel } from "@/components/training-catalog-panel";
+import { BondingCapacityPanel } from "@/components/bonding-capacity-panel";
+import { MarketingCampaignsPanel } from "@/components/marketing-campaigns-panel";
+import { SlaPoliciesPanel } from "@/components/sla-policies-panel";
 import { InspectionTemplatesPanel } from "@/components/inspection-templates-panel";
 import { CostCodesPanel } from "@/components/cost-codes-panel";
 import { WageClassificationsPanel } from "@/components/wage-classifications-panel";
@@ -240,6 +247,9 @@ export default function SettingsPage() {
   const [digestFrequency, setDigestFrequency] = useState<"off" | "daily" | "weekly">("off");
   const [digestBusy, setDigestBusy] = useState(false);
   const [digestSaved, setDigestSaved] = useState(false);
+  const [mutedTypes, setMutedTypes] = useState<NotificationType[]>([]);
+  const [mutedTypesBusy, setMutedTypesBusy] = useState(false);
+  const [mutedTypesSaved, setMutedTypesSaved] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [leadFormToken, setLeadFormToken] = useState<string | null>(null);
@@ -358,7 +368,10 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
-    if (me) setDigestFrequency(me.emailDigestFrequency);
+    if (me) {
+      setDigestFrequency(me.emailDigestFrequency);
+      setMutedTypes(me.mutedNotificationTypes as NotificationType[]);
+    }
   }, [me]);
 
   async function togglePush() {
@@ -392,6 +405,23 @@ export default function SettingsPage() {
       setTimeout(() => setDigestSaved(false), 2000);
     } finally {
       setDigestBusy(false);
+    }
+  }
+
+  async function toggleMutedType(type: NotificationType) {
+    const next = mutedTypes.includes(type) ? mutedTypes.filter((t) => t !== type) : [...mutedTypes, type];
+    setMutedTypes(next);
+    setMutedTypesBusy(true);
+    setMutedTypesSaved(false);
+    try {
+      await apiFetch("/me/notification-preferences", {
+        method: "PATCH",
+        body: JSON.stringify({ mutedNotificationTypes: next }),
+      });
+      setMutedTypesSaved(true);
+      setTimeout(() => setMutedTypesSaved(false), 2000);
+    } finally {
+      setMutedTypesBusy(false);
     }
   }
 
@@ -728,6 +758,25 @@ export default function SettingsPage() {
           </select>
           {digestSaved && <span className="text-sm text-green-700">{tc("saved")}</span>}
         </div>
+      </section>
+
+      <section className="card mt-6">
+        <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("mutedNotificationTypes")}</h2>
+        <p className="mb-4 text-xs text-gray-500">{t("mutedNotificationTypesHint")}</p>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {NOTIFICATION_TYPES.map((type) => (
+            <label key={type} className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={!mutedTypes.includes(type)}
+                disabled={mutedTypesBusy}
+                onChange={() => toggleMutedType(type)}
+              />
+              {t(`notificationType_${type}`)}
+            </label>
+          ))}
+        </div>
+        {mutedTypesSaved && <span className="mt-2 inline-block text-sm text-green-700">{tc("saved")}</span>}
       </section>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -1810,6 +1859,11 @@ export default function SettingsPage() {
         )}
 
         {isManager && <OnboardingTemplatePanel />}
+        {isManager && <OffboardingTemplatePanel />}
+        {isManager && <TrainingCatalogPanel />}
+        {isManager && <BondingCapacityPanel />}
+        {isManager && <MarketingCampaignsPanel />}
+        {isManager && <SlaPoliciesPanel />}
         {isManager && <InspectionTemplatesPanel />}
         {isManager && <CostCodesPanel />}
         {isManager && <WageClassificationsPanel />}

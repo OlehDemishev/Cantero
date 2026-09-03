@@ -10,9 +10,10 @@ import { PortalController } from "./portal.controller";
 import { PortalService } from "./portal.service";
 import { PortalMessagesController } from "./portal-messages.controller";
 import { PortalMessagesService } from "./portal-messages.service";
+import { SupportTicketsModule } from "../support-tickets/support-tickets.module";
 
 @Module({
-  imports: [EstimatesModule, FinanceModule, BillingModule],
+  imports: [EstimatesModule, FinanceModule, BillingModule, SupportTicketsModule],
   controllers: [PortalAuthController, PortalController, PortalMessagesController],
   providers: [PortalJwtService, PortalAuthGuard, PortalAuthService, PortalService, PortalMessagesService],
 })

@@ -568,6 +568,8 @@ describe("ReportsService.complianceCalendar", () => {
     workerCertification: { findMany: jest.Mock };
     permit: { findMany: jest.Mock };
     companyDocument: { findMany: jest.Mock };
+    vehicle: { findMany: jest.Mock };
+    worker: { findMany: jest.Mock };
   };
 
   beforeEach(async () => {
@@ -577,6 +579,8 @@ describe("ReportsService.complianceCalendar", () => {
       workerCertification: { findMany: jest.fn().mockResolvedValue([]) },
       permit: { findMany: jest.fn().mockResolvedValue([]) },
       companyDocument: { findMany: jest.fn().mockResolvedValue([]) },
+      vehicle: { findMany: jest.fn().mockResolvedValue([]) },
+      worker: { findMany: jest.fn().mockResolvedValue([]) },
     };
 
     const module = await Test.createTestingModule({

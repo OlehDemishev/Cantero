@@ -30,6 +30,9 @@ describe("SafetyAnalyticsService", () => {
     timeEntry: { groupBy: jest.Mock; aggregate: jest.Mock };
     project: { findMany: jest.Mock };
     company: { findUniqueOrThrow: jest.Mock };
+    worker: { findMany: jest.Mock };
+    jhaAcknowledgment: { findMany: jest.Mock };
+    safetyBriefingAttendance: { findMany: jest.Mock };
   };
 
   beforeEach(async () => {
@@ -38,6 +41,9 @@ describe("SafetyAnalyticsService", () => {
       timeEntry: { groupBy: jest.fn(), aggregate: jest.fn() },
       project: { findMany: jest.fn() },
       company: { findUniqueOrThrow: jest.fn() },
+      worker: { findMany: jest.fn().mockResolvedValue([]) },
+      jhaAcknowledgment: { findMany: jest.fn().mockResolvedValue([]) },
+      safetyBriefingAttendance: { findMany: jest.fn().mockResolvedValue([]) },
     };
 
     const module = await Test.createTestingModule({
@@ -146,6 +152,58 @@ describe("SafetyAnalyticsService", () => {
       expect(result.monthlyTrend[5].totalIncidents).toBe(1);
       expect(result.monthlyTrend[5].month).toBe(6);
       expect(result.monthlyTrend[0].totalIncidents).toBe(0);
+    });
+  });
+
+  describe("trainingCompliance()", () => {
+    it("marks a worker with no JHA/briefing history at all as overdue", async () => {
+      prisma.worker.findMany.mockResolvedValue([{ id: "w1", name: "Jane" }]);
+
+      const result = await service.trainingCompliance(COMPANY_A, 90);
+
+      expect(result.totalActiveWorkers).toBe(1);
+      expect(result.completionRate).toBe(0);
+      expect(result.overdueWorkers).toEqual([expect.objectContaining({ workerId: "w1", lastTrainingAt: null, overdue: true })]);
+    });
+
+    it("counts a worker current via a recent JHA acknowledgment as compliant", async () => {
+      prisma.worker.findMany.mockResolvedValue([{ id: "w1", name: "Jane" }]);
+      prisma.jhaAcknowledgment.findMany.mockResolvedValue([{ workerId: "w1", signedAt: new Date() }]);
+
+      const result = await service.trainingCompliance(COMPANY_A, 90);
+
+      expect(result.completionRate).toBe(100);
+      expect(result.overdueWorkers).toHaveLength(0);
+    });
+
+    it("counts a worker current via a recent briefing attendance as compliant", async () => {
+      prisma.worker.findMany.mockResolvedValue([{ id: "w1", name: "Jane" }]);
+      prisma.safetyBriefingAttendance.findMany.mockResolvedValue([{ workerId: "w1", briefing: { date: new Date() } }]);
+
+      const result = await service.trainingCompliance(COMPANY_A, 90);
+
+      expect(result.completionRate).toBe(100);
+      expect(result.overdueWorkers).toHaveLength(0);
+    });
+
+    it("treats training outside the lookback window as overdue", async () => {
+      prisma.worker.findMany.mockResolvedValue([{ id: "w1", name: "Jane" }]);
+      const staleDate = new Date(Date.now() - 200 * 24 * 60 * 60 * 1000);
+      prisma.jhaAcknowledgment.findMany.mockResolvedValue([{ workerId: "w1", signedAt: staleDate }]);
+
+      const result = await service.trainingCompliance(COMPANY_A, 90);
+
+      expect(result.overdueWorkers).toHaveLength(1);
+      expect(result.overdueWorkers[0].lastTrainingAt).toEqual(staleDate);
+    });
+
+    it("returns a null completion rate rather than dividing by zero when there are no active workers", async () => {
+      prisma.worker.findMany.mockResolvedValue([]);
+
+      const result = await service.trainingCompliance(COMPANY_A, 90);
+
+      expect(result.completionRate).toBeNull();
+      expect(result.totalActiveWorkers).toBe(0);
     });
   });
 });

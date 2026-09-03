@@ -18,7 +18,8 @@ interface SyncSummary {
 }
 interface SyncLogEntry {
   id: string;
-  invoiceNumber: string;
+  invoiceNumber: string | null;
+  subcontractorCostReference: string | null;
   status: "success" | "failed";
   errorMessage: string | null;
   attemptedAt: string;
@@ -26,6 +27,7 @@ interface SyncLogEntry {
 interface IntegrityCheck {
   connected: boolean;
   unsyncedInvoices: { id: string; number: string; total: string }[];
+  unsyncedBills: { id: string; description: string; amount: string; subcontractor: { name: string } }[];
   recentFailures: SyncLogEntry[];
 }
 
@@ -106,6 +108,19 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
     }
   }
 
+  async function syncBills() {
+    setBusy(true);
+    setSyncResult(null);
+    try {
+      const result = await apiFetch<SyncSummary>("/company/accounting/sync-bills", { method: "POST" });
+      setSyncResult(result);
+      apiFetch<IntegrityCheck>("/company/accounting/integrity-check").then(setIntegrity);
+      if (showHistory) apiFetch<SyncLogEntry[]>("/company/accounting/sync-history").then(setHistory);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (!status) return null;
 
   return (
@@ -128,6 +143,9 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
               <button onClick={sync} disabled={busy} className="btn-primary">
                 {t("syncNow")}
               </button>
+              <button onClick={syncBills} disabled={busy} className="btn-secondary">
+                {t("syncBillsNow")}
+              </button>
               <button onClick={disconnect} disabled={busy} className="btn-secondary text-error-600">
                 {t("disconnect")}
               </button>
@@ -147,11 +165,14 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
               <p className="font-medium text-gray-700">
                 {t("integrityCheck", { count: integrity.unsyncedInvoices.length })}
               </p>
+              <p className="mt-1 font-medium text-gray-700">
+                {t("integrityCheckBills", { count: integrity.unsyncedBills.length })}
+              </p>
               {integrity.recentFailures.length > 0 && (
                 <ul className="mt-2 flex flex-col gap-1">
                   {integrity.recentFailures.slice(0, 5).map((f) => (
                     <li key={f.id} className="text-error-600">
-                      {f.invoiceNumber} — {f.errorMessage} ({new Date(f.attemptedAt).toLocaleDateString()})
+                      {f.invoiceNumber ?? f.subcontractorCostReference} — {f.errorMessage} ({new Date(f.attemptedAt).toLocaleDateString()})
                     </li>
                   ))}
                 </ul>
@@ -168,7 +189,7 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
                   ) : (
                     history.map((h) => (
                       <li key={h.id} className={h.status === "failed" ? "text-error-600" : "text-success-700"}>
-                        {new Date(h.attemptedAt).toLocaleString()} — {h.invoiceNumber} — {h.status}
+                        {new Date(h.attemptedAt).toLocaleString()} — {h.invoiceNumber ?? h.subcontractorCostReference} — {h.status}
                         {h.errorMessage ? `: ${h.errorMessage}` : ""}
                       </li>
                     ))

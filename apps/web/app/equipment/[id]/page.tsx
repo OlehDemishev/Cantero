@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import type { EquipmentStatus } from "@cantero/shared";
+import { DEPRECIATION_METHODS, type DepreciationMethod, type EquipmentStatus } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { EquipmentGpsPanel } from "@/components/equipment-gps-panel";
 import { apiFetch } from "@/lib/api-client";
@@ -34,6 +34,17 @@ interface AssignmentSummary {
   project: { name: string } | null;
   worker: { name: string } | null;
 }
+interface DepreciationResult {
+  monthsElapsed: number;
+  accumulatedDepreciation: number;
+  bookValue: number;
+}
+interface AssetDisposal {
+  id: string;
+  disposedAt: string;
+  saleAmount: string | null;
+  notes: string | null;
+}
 interface Equipment {
   id: string;
   name: string;
@@ -49,6 +60,11 @@ interface Equipment {
   currentMeterHours: string | null;
   maintenanceIntervalHours: string | null;
   nextMaintenanceDueHours: string | null;
+  depreciationMethod: DepreciationMethod | null;
+  usefulLifeMonths: number | null;
+  salvageValue: string | null;
+  depreciation: DepreciationResult | null;
+  disposal: AssetDisposal | null;
 }
 interface Supplier {
   id: string;
@@ -128,6 +144,9 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
   const [scheduleIntervalDays, setScheduleIntervalDays] = useState("");
   const [scheduleIntervalHours, setScheduleIntervalHours] = useState("");
   const [meterReading, setMeterReading] = useState("");
+  const [depreciationForm, setDepreciationForm] = useState({ method: "" as DepreciationMethod | "", usefulLifeMonths: "", salvageValue: "" });
+  const [disposeForm, setDisposeForm] = useState({ saleAmount: "", notes: "" });
+  const [disposing, setDisposing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -137,6 +156,11 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
       setScheduleIntervalDays(e.maintenanceIntervalDays !== null ? String(e.maintenanceIntervalDays) : "");
       setScheduleIntervalHours(e.maintenanceIntervalHours !== null ? e.maintenanceIntervalHours : "");
       setMeterReading(e.currentMeterHours !== null ? e.currentMeterHours : "");
+      setDepreciationForm({
+        method: e.depreciationMethod ?? "",
+        usefulLifeMonths: e.usefulLifeMonths !== null ? String(e.usefulLifeMonths) : "",
+        salvageValue: e.salvageValue !== null ? e.salvageValue : "",
+      });
     });
     apiFetch<Assignment[]>(`/equipment/${id}/assignments`).then(setAssignments);
     apiFetch<MaintenanceRecord[]>(`/equipment/${id}/maintenance-records`).then(setMaintenanceRecords);
@@ -229,6 +253,45 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
   async function endRental() {
     await apiFetch(`/equipment/${id}/rentals/return`, { method: "POST" });
     load();
+  }
+
+  async function saveDepreciationSchedule(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      await apiFetch(`/equipment/${id}/depreciation-schedule`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          depreciationMethod: depreciationForm.method || null,
+          usefulLifeMonths: depreciationForm.usefulLifeMonths ? Number(depreciationForm.usefulLifeMonths) : null,
+          salvageValue: depreciationForm.salvageValue ? Number(depreciationForm.salvageValue) : null,
+        }),
+      });
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function dispose(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      await apiFetch(`/equipment/${id}/dispose`, {
+        method: "POST",
+        body: JSON.stringify({
+          saleAmount: disposeForm.saleAmount ? Number(disposeForm.saleAmount) : undefined,
+          notes: disposeForm.notes || undefined,
+        }),
+      });
+      setDisposing(false);
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : tc("error"));
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function saveSchedule(e: React.FormEvent) {
@@ -565,6 +628,108 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
               )}
             </form>
           </div>
+        </section>
+
+        <section className="card">
+          <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("depreciation")}</h2>
+          <p className="mb-3 text-xs text-gray-500">{t("depreciationHint")}</p>
+
+          {equipment.disposal ? (
+            <p className="text-sm text-gray-600">
+              {t("disposedOn", { date: new Date(equipment.disposal.disposedAt).toLocaleDateString() })}
+              {equipment.disposal.saleAmount !== null && (
+                <span className="block text-xs text-gray-400">
+                  {t("saleAmount")}: {equipment.disposal.saleAmount} {currency}
+                </span>
+              )}
+            </p>
+          ) : (
+            <>
+              {equipment.depreciation && (
+                <p className="mb-3 text-sm text-gray-700">
+                  {t("bookValue")}: <span className="font-medium">{equipment.depreciation.bookValue} {currency}</span>
+                  <span className="ml-2 text-xs text-gray-400">
+                    ({t("accumulatedDepreciation")}: {equipment.depreciation.accumulatedDepreciation} {currency})
+                  </span>
+                </p>
+              )}
+              <form onSubmit={saveDepreciationSchedule} className="flex flex-wrap items-end gap-2">
+                <select
+                  className="input"
+                  value={depreciationForm.method}
+                  onChange={(e) => setDepreciationForm((f) => ({ ...f, method: e.target.value as DepreciationMethod }))}
+                >
+                  <option value="">{t("noDepreciationMethod")}</option>
+                  {DEPRECIATION_METHODS.map((m) => (
+                    <option key={m} value={m}>
+                      {t(`depreciationMethod_${m}`)}
+                    </option>
+                  ))}
+                </select>
+                <label className="flex flex-col gap-1 text-xs text-gray-500">
+                  {t("usefulLifeMonths")}
+                  <input
+                    type="number"
+                    min="1"
+                    max="600"
+                    className="input w-32"
+                    value={depreciationForm.usefulLifeMonths}
+                    onChange={(e) => setDepreciationForm((f) => ({ ...f, usefulLifeMonths: e.target.value }))}
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-gray-500">
+                  {t("salvageValue")}
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    className="input w-32"
+                    value={depreciationForm.salvageValue}
+                    onChange={(e) => setDepreciationForm((f) => ({ ...f, salvageValue: e.target.value }))}
+                  />
+                </label>
+                <button type="submit" disabled={busy} className="btn-secondary">
+                  {tc("save")}
+                </button>
+              </form>
+
+              {equipment.status !== "in_use" && equipment.status !== "rented_out" && (
+                <div className="mt-4 border-t border-gray-100 pt-4">
+                  {!disposing ? (
+                    <button onClick={() => setDisposing(true)} className="btn-secondary px-3 py-1.5 text-xs">
+                      {t("disposeOfEquipment")}
+                    </button>
+                  ) : (
+                    <form onSubmit={dispose} className="flex flex-wrap items-end gap-2">
+                      <label className="flex flex-col gap-1 text-xs text-gray-500">
+                        {t("saleAmount")}
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          className="input w-32"
+                          value={disposeForm.saleAmount}
+                          onChange={(e) => setDisposeForm((f) => ({ ...f, saleAmount: e.target.value }))}
+                        />
+                      </label>
+                      <input
+                        placeholder={t("disposalNotesPlaceholder")}
+                        className="input"
+                        value={disposeForm.notes}
+                        onChange={(e) => setDisposeForm((f) => ({ ...f, notes: e.target.value }))}
+                      />
+                      <button type="submit" disabled={busy} className="btn-primary">
+                        {t("confirmDisposal")}
+                      </button>
+                      <button type="button" onClick={() => setDisposing(false)} className="btn-secondary">
+                        {tc("cancel")}
+                      </button>
+                    </form>
+                  )}
+                </div>
+              )}
+            </>
+          )}
         </section>
 
         <section className="card">

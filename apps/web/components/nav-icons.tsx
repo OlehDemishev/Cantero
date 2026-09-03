@@ -360,3 +360,52 @@ export function HelpCircleIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function RecruitingIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <circle cx="8" cy="6" r="2.75" />
+      <path d="M2.75 17c0-3 2.3-5.25 5.25-5.25S13.25 14 13.25 17" />
+      <path d="M14 4.5l1.5 1.5 2.5-2.5" />
+    </Icon>
+  );
+}
+
+export function PerformanceIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M3 17V9.5M8.5 17V3M14 17v-5.5" />
+      <path d="M2.5 17h15" />
+    </Icon>
+  );
+}
+
+export function SupportTicketsIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M3 5.5A1.5 1.5 0 0 1 4.5 4h11A1.5 1.5 0 0 1 17 5.5v6A1.5 1.5 0 0 1 15.5 13H9l-3 3v-3H4.5A1.5 1.5 0 0 1 3 11.5z" />
+      <path d="M6.5 7.5h7M6.5 10h4" />
+    </Icon>
+  );
+}
+
+export function LoansIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M10 2.5 2.5 6.5 10 10.5l7.5-4z" />
+      <path d="M4.5 8.5V13c0 1 2.5 2 5.5 2s5.5-1 5.5-2V8.5" />
+      <path d="M17.5 6.5V12" />
+    </Icon>
+  );
+}
+
+export function FleetIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M2.5 12.5V8l1.5-3h7l2 3h2a1.5 1.5 0 0 1 1.5 1.5v3h-1.5" />
+      <circle cx="6" cy="13" r="1.6" />
+      <circle cx="14" cy="13" r="1.6" />
+      <path d="M7.6 13h4.8M2.5 12.5h2M4.5 5h6.5" />
+    </Icon>
+  );
+}
+

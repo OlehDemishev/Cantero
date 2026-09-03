@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import type { BulkActionResult, RfiPriority, RfiStatus } from "@cantero/shared";
+import type { BallInCourtParty, BulkActionResult, RfiPriority, RfiStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useBulkSelection } from "@/components/bulk-select";
 import { CommentsThread } from "@/components/comments-thread";
@@ -16,6 +16,7 @@ interface Rfi {
   question: string;
   priority: RfiPriority;
   status: RfiStatus;
+  ballInCourtParty: BallInCourtParty;
   dueDate: string | null;
   costImpact: boolean;
   scheduleImpactDays: number | null;
@@ -36,6 +37,12 @@ const PRIORITY_STYLES: Record<RfiPriority, string> = {
   medium: "bg-brand-50 text-brand-700",
   high: "bg-error-50 text-error-700",
 };
+const BALL_IN_COURT_STYLES: Record<BallInCourtParty, string> = {
+  internal: "bg-brand-50 text-brand-700",
+  client: "bg-warning-50 text-warning-700",
+  subcontractor: "bg-gray-100 text-gray-600",
+};
+const BALL_IN_COURT_PARTIES: BallInCourtParty[] = ["internal", "client", "subcontractor"];
 
 const EMPTY_FORM = { subject: "", question: "", priority: "medium" as RfiPriority, dueDate: "", costImpact: false, scheduleImpactDays: "" };
 
@@ -51,12 +58,20 @@ export function RfiPanel({ projectId }: { projectId: string }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [answerDraft, setAnswerDraft] = useState("");
   const [busy, setBusy] = useState(false);
+  const [myTurnOnly, setMyTurnOnly] = useState(false);
 
   function load() {
-    apiFetch<Rfi[]>(`/rfis?projectId=${projectId}`).then(setItems);
+    const query = new URLSearchParams({ projectId });
+    if (myTurnOnly) query.set("ballInCourtParty", "internal");
+    apiFetch<Rfi[]>(`/rfis?${query.toString()}`).then(setItems);
   }
 
-  useEffect(load, [projectId]);
+  useEffect(load, [projectId, myTurnOnly]);
+
+  async function setBallInCourt(id: string, ballInCourtParty: BallInCourtParty) {
+    await apiFetch(`/rfis/${id}/ball-in-court`, { method: "PATCH", body: JSON.stringify({ ballInCourtParty }) });
+    load();
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -111,11 +126,17 @@ export function RfiPanel({ projectId }: { projectId: string }) {
     <div className="mt-10">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-gray-700">{t("title")}</h2>
-        {!creating && (
-          <button onClick={() => setCreating(true)} className="btn-secondary px-3 py-1 text-xs">
-            {t("newRfi")}
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          <label className="flex items-center gap-1.5 text-xs text-gray-500">
+            <input type="checkbox" checked={myTurnOnly} onChange={(e) => setMyTurnOnly(e.target.checked)} />
+            {t("myTurnOnly")}
+          </label>
+          {!creating && (
+            <button onClick={() => setCreating(true)} className="btn-secondary px-3 py-1 text-xs">
+              {t("newRfi")}
+            </button>
+          )}
+        </div>
       </div>
 
       {creating && (
@@ -251,6 +272,9 @@ export function RfiPanel({ projectId }: { projectId: string }) {
                         <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${PRIORITY_STYLES[item.priority]}`}>
                           {t(item.priority)}
                         </span>
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${BALL_IN_COURT_STYLES[item.ballInCourtParty]}`}>
+                          {t("ballInCourt", { party: t(`ballInCourtParty_${item.ballInCourtParty}`) })}
+                        </span>
                         {item.costImpact && (
                           <span className="rounded-full bg-error-50 px-2 py-0.5 text-xs font-medium text-error-700">
                             {t("costImpact")}
@@ -273,6 +297,22 @@ export function RfiPanel({ projectId }: { projectId: string }) {
                       <span className="font-medium text-gray-700">{t("question")}: </span>
                       {item.question}
                     </p>
+                    {item.status !== "closed" && (
+                      <label className="flex w-fit items-center gap-1.5 text-xs text-gray-500">
+                        {t("ballInCourtLabel")}
+                        <select
+                          className="input w-auto py-1 text-xs"
+                          value={item.ballInCourtParty}
+                          onChange={(e) => setBallInCourt(item.id, e.target.value as BallInCourtParty)}
+                        >
+                          {BALL_IN_COURT_PARTIES.map((p) => (
+                            <option key={p} value={p}>
+                              {t(`ballInCourtParty_${p}`)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
                     {item.scheduleImpactDays != null && (
                       <p>
                         <span className="font-medium text-gray-700">{t("scheduleImpactDays")}: </span>

@@ -21,6 +21,7 @@ export interface MeResponse {
   };
   subscriptionStatus: "incomplete" | "active" | "past_due" | "canceled";
   emailDigestFrequency: "off" | "daily" | "weekly";
+  mutedNotificationTypes: string[];
 }
 
 export function useMe() {

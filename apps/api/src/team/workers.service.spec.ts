@@ -97,6 +97,8 @@ describe("WorkersService — PTO and onboarding", () => {
     worker: { findFirst: jest.Mock; create: jest.Mock; update: jest.Mock };
     onboardingTemplateItem: { findMany: jest.Mock };
     workerOnboardingTask: { createMany: jest.Mock; findMany: jest.Mock; findFirst: jest.Mock; update: jest.Mock };
+    offboardingTemplateItem: { findMany: jest.Mock };
+    workerOffboardingTask: { createMany: jest.Mock; findMany: jest.Mock; findFirst: jest.Mock; update: jest.Mock; count: jest.Mock };
   };
   let audit: { record: jest.Mock };
 
@@ -105,6 +107,8 @@ describe("WorkersService — PTO and onboarding", () => {
       worker: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
       onboardingTemplateItem: { findMany: jest.fn() },
       workerOnboardingTask: { createMany: jest.fn(), findMany: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
+      offboardingTemplateItem: { findMany: jest.fn() },
+      workerOffboardingTask: { createMany: jest.fn(), findMany: jest.fn(), findFirst: jest.fn(), update: jest.fn(), count: jest.fn().mockResolvedValue(0) },
     };
     audit = { record: jest.fn() };
 
@@ -194,6 +198,65 @@ describe("WorkersService — PTO and onboarding", () => {
         where: { id: "task-1" },
         data: { done: false, completedAt: null },
       });
+    });
+  });
+
+  describe("toggleOffboardingTask()", () => {
+    it("throws when the task doesn't belong to this worker/company", async () => {
+      prisma.workerOffboardingTask.findFirst.mockResolvedValue(null);
+      await expect(service.toggleOffboardingTask(COMPANY_A, "worker-1", "task-1")).rejects.toThrow(NotFoundException);
+    });
+
+    it("marks an undone task done, stamping completedAt", async () => {
+      prisma.workerOffboardingTask.findFirst.mockResolvedValue({ id: "task-1", done: false });
+      prisma.workerOffboardingTask.update.mockResolvedValue({ id: "task-1", done: true });
+
+      await service.toggleOffboardingTask(COMPANY_A, "worker-1", "task-1");
+
+      expect(prisma.workerOffboardingTask.update).toHaveBeenCalledWith({
+        where: { id: "task-1" },
+        data: { done: true, completedAt: expect.any(Date) },
+      });
+    });
+  });
+
+  describe("update() — deactivation clones the offboarding template", () => {
+    it("clones offboarding tasks the moment a worker is deactivated", async () => {
+      prisma.worker.findFirst.mockResolvedValue({ id: "worker-1", name: "Sam", active: true, clockInPinHash: null });
+      prisma.worker.update.mockResolvedValue({ id: "worker-1", name: "Sam", active: false, clockInPinHash: null });
+      prisma.offboardingTemplateItem.findMany.mockResolvedValue([
+        { title: "Return equipment", sortOrder: 0 },
+        { title: "Revoke access", sortOrder: 1 },
+      ]);
+
+      await service.update(COMPANY_A, ACTOR, "worker-1", { active: false });
+
+      expect(prisma.workerOffboardingTask.createMany).toHaveBeenCalledWith({
+        data: [
+          { companyId: COMPANY_A, workerId: "worker-1", title: "Return equipment", sortOrder: 0 },
+          { companyId: COMPANY_A, workerId: "worker-1", title: "Revoke access", sortOrder: 1 },
+        ],
+      });
+    });
+
+    it("does not clone anything when the worker is merely reactivated", async () => {
+      prisma.worker.findFirst.mockResolvedValue({ id: "worker-1", name: "Sam", active: false, clockInPinHash: null });
+      prisma.worker.update.mockResolvedValue({ id: "worker-1", name: "Sam", active: true, clockInPinHash: null });
+
+      await service.update(COMPANY_A, ACTOR, "worker-1", { active: true });
+
+      expect(prisma.workerOffboardingTask.createMany).not.toHaveBeenCalled();
+    });
+
+    it("does not re-clone if offboarding tasks already exist for this worker", async () => {
+      prisma.worker.findFirst.mockResolvedValue({ id: "worker-1", name: "Sam", active: true, clockInPinHash: null });
+      prisma.worker.update.mockResolvedValue({ id: "worker-1", name: "Sam", active: false, clockInPinHash: null });
+      prisma.workerOffboardingTask.count.mockResolvedValue(2);
+
+      await service.update(COMPANY_A, ACTOR, "worker-1", { active: false });
+
+      expect(prisma.offboardingTemplateItem.findMany).not.toHaveBeenCalled();
+      expect(prisma.workerOffboardingTask.createMany).not.toHaveBeenCalled();
     });
   });
 });

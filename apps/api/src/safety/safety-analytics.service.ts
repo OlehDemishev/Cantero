@@ -170,4 +170,57 @@ export class SafetyAnalyticsService {
       monthlyTrend,
     };
   }
+
+  /**
+   * Neither JobHazardAnalysis nor SafetyBriefing has a "required roster" — attendance/
+   * acknowledgment rows only exist for workers who actually showed up or signed. So "completion
+   * rate" here means something specific and useful: of the company's currently active workers,
+   * what fraction have been reached by EITHER a JHA acknowledgment or a briefing attendance
+   * within the lookback window — and, for the rest, how long it's actually been (or "never").
+   */
+  async trainingCompliance(companyId: string, lookbackDays = 90) {
+    const cutoff = new Date(Date.now() - lookbackDays * 24 * 60 * 60 * 1000);
+
+    const [activeWorkers, jhaAcks, briefingAttendance] = await Promise.all([
+      this.prisma.worker.findMany({ where: { companyId, active: true }, select: { id: true, name: true } }),
+      this.prisma.jhaAcknowledgment.findMany({
+        where: { worker: { companyId } },
+        select: { workerId: true, signedAt: true },
+        orderBy: { signedAt: "desc" },
+      }),
+      this.prisma.safetyBriefingAttendance.findMany({
+        where: { worker: { companyId } },
+        select: { workerId: true, briefing: { select: { date: true } } },
+      }),
+    ]);
+
+    const lastTrainingByWorker = new Map<string, Date>();
+    for (const ack of jhaAcks) {
+      const existing = lastTrainingByWorker.get(ack.workerId);
+      if (!existing || ack.signedAt > existing) lastTrainingByWorker.set(ack.workerId, ack.signedAt);
+    }
+    for (const attendance of briefingAttendance) {
+      const existing = lastTrainingByWorker.get(attendance.workerId);
+      if (!existing || attendance.briefing.date > existing) lastTrainingByWorker.set(attendance.workerId, attendance.briefing.date);
+    }
+
+    const workers = activeWorkers.map((w) => {
+      const lastTrainingAt = lastTrainingByWorker.get(w.id) ?? null;
+      return {
+        workerId: w.id,
+        workerName: w.name,
+        lastTrainingAt,
+        overdue: !lastTrainingAt || lastTrainingAt < cutoff,
+      };
+    });
+    const overdueWorkers = workers.filter((w) => w.overdue).sort((a, b) => (a.lastTrainingAt?.getTime() ?? 0) - (b.lastTrainingAt?.getTime() ?? 0));
+
+    return {
+      lookbackDays,
+      totalActiveWorkers: activeWorkers.length,
+      compliantCount: workers.length - overdueWorkers.length,
+      completionRate: activeWorkers.length > 0 ? round2(((workers.length - overdueWorkers.length) / activeWorkers.length) * 100) : null,
+      overdueWorkers,
+    };
+  }
 }

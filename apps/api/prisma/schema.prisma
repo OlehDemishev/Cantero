@@ -157,6 +157,15 @@ enum RfiPriority {
   high
 }
 
+/// Who needs to act next — unlike status (open/answered/closed), this doesn't follow automatically
+/// from the RFI's own fields since there's no fixed external-reviewer step in this model; it's a
+/// manually-set field so a PM can see at a glance whose desk something is sitting on.
+enum BallInCourtParty {
+  internal
+  client
+  subcontractor
+}
+
 // ---------- Tenancy & Identity ----------
 
 model Company {
@@ -294,19 +303,23 @@ model Company {
   /// City/postal code, split out from `address` specifically for the structured postal-address
   /// block EN16931 e-invoices require (BT-37/BT-38) — `address` itself stays a single free-text
   /// street line, consistent with how every other address field in this schema is modeled.
-  city                                String?
+  city                               String?
   postalCode                         String?
   /// EU VAT identification number (e.g. "DE123456789") — required on an XRechnung/Factur-X
   /// e-invoice as the seller's tax registration (BT-31). Null blocks e-invoice generation.
-  vatId                               String?
+  vatId                              String?
   /// IBAN shown as the e-invoice's payment means (BT-84) — null just omits the PaymentMeans
   /// block rather than blocking generation, since not every seller pays by bank transfer.
-  iban                                String?
+  iban                               String?
   /// Set when coiPubliclyShared is turned on; the public COI page lives at /company-coi/:coiPublicToken.
   /// Same shareable-link pattern as Subcontractor.publicToken/publicListed — lets a client or lender
   /// view/download this company's current insurance certificates without an account.
   coiPublicToken                     String?          @unique
   coiPubliclyShared                  Boolean          @default(false)
+  /// Aggregate bonding capacity this company's surety will support — the sum of active
+  /// SuretyBond.penalSum against this limit is the bonding-capacity-utilization figure GCs
+  /// track before bidding new public/large work. Null means no limit has been recorded yet.
+  bondingCapacityLimit               Decimal?         @db.Decimal(14, 2)
 
   memberships    Membership[]
   invites        Invite[]
@@ -334,6 +347,7 @@ model Company {
   documents                       Document[]
   signatureRequests               SignatureRequest[]
   budgetRevisions                 BudgetRevision[]
+  contingencyDraws                ContingencyDraw[]
   subcontractors                  Subcontractor[]
   subcontractorCosts              SubcontractorCost[]
   subcontractorPerformanceReviews SubcontractorPerformanceReview[]
@@ -389,6 +403,8 @@ model Company {
   serviceVisits                   ServiceVisit[]
   onboardingTemplateItems         OnboardingTemplateItem[]
   workerOnboardingTasks           WorkerOnboardingTask[]
+  offboardingTemplateItems        OffboardingTemplateItem[]
+  workerOffboardingTasks          WorkerOffboardingTask[]
   bankTransactions                BankTransaction[]
   bankTransactionRules            BankTransactionRule[]
   clientStageHistory              ClientStageHistory[]
@@ -405,6 +421,28 @@ model Company {
   certifiedPayrollReports         CertifiedPayrollReport[]
   drawingSheets                   DrawingSheet[]
   annotations                     Annotation[]
+  vendorBills                     VendorBill[]
+  trainingCourses                 TrainingCourse[]
+  trainingEnrollments             TrainingEnrollment[]
+  assetDisposals                  AssetDisposal[]
+  suretyBonds                     SuretyBond[]
+  contractClaims                  ContractClaim[]
+  jobPostings                     JobPosting[]
+  candidates                      Candidate[]
+  interviews                      Interview[]
+  performanceReviewCycles         PerformanceReviewCycle[]
+  performanceReviews              PerformanceReview[]
+  performanceGoals                PerformanceGoal[]
+  marketingCampaigns              MarketingCampaign[]
+  slaPolicies                     SlaPolicy[]
+  supportTickets                  SupportTicket[]
+  ticketMessages                  TicketMessage[]
+  hrCases                         HrCase[]
+  hrCaseActions                   HrCaseAction[]
+  loans                           Loan[]
+  loanPayments                    LoanPayment[]
+  vehicles                        Vehicle[]
+  vehicleInspections              VehicleInspection[]
   referredByCompany               Company?                         @relation("CompanyReferrals", fields: [referredByCompanyId], references: [id], onDelete: SetNull)
   referrals                       Company[]                        @relation("CompanyReferrals")
 
@@ -523,6 +561,7 @@ model User {
   dashboardWidgets    DashboardWidget[]
   projectMemberships  ProjectMember[]
   signatureRequests   SignatureRequest[]
+  assignedTickets     SupportTicket[]
 
   @@map("users")
 }
@@ -574,6 +613,10 @@ model Membership {
   /// regardless of whether anything new was found, so the daily/weekly clock always resets cleanly.
   emailDigestFrequency        EmailDigestFrequency @default(off)
   emailDigestLastSentAt       DateTime?
+  /// Notification `type` values (see NotificationsService.NotificationItem) this member has opted
+  /// out of — filtered out of both the bell list and the email digest before either is built.
+  /// Empty means everything shows, same as before this field existed.
+  mutedNotificationTypes      String[]             @default([])
   /// Grants this member every permission tier listed in the custom role's basePermissions, on
   /// top of whatever `role` above already allows — never a reduction, always additive. Null
   /// means no custom role; `role` alone still governs, exactly as before this feature existed.
@@ -712,6 +755,7 @@ model MaterialCatalogItem {
   stockCountLines     StockCountLine[]
   rfqLines            MaterialRfqLine[]
   priceChanges        MaterialPriceChange[]
+  vendorBillLines     VendorBillLine[]
 
   @@unique([companyId, code])
   @@index([companyId])
@@ -1291,6 +1335,7 @@ model Supplier {
   documents                   SupplierDocument[]
   reviews                     SupplierReview[]
   portalLoginTokens           SupplierPortalLoginToken[]
+  vendorBills                 VendorBill[]
 
   @@index([companyId])
   @@map("suppliers")
@@ -1438,17 +1483,17 @@ model MaterialRfqQuote {
 }
 
 model PurchaseOrder {
-  id            String              @id @default(uuid())
-  companyId     String
-  supplierId    String
-  status        PurchaseOrderStatus @default(draft)
+  id             String              @id @default(uuid())
+  companyId      String
+  supplierId     String
+  status         PurchaseOrderStatus @default(draft)
   /// True when created by the low-stock processor rather than a person — surfaced
   /// in the UI as a nudge to review quantities/pricing before ordering.
-  autoGenerated Boolean             @default(false)
+  autoGenerated  Boolean             @default(false)
   /// When the supplier is expected to deliver/be paid — feeds the cash-flow forecast's outflow buckets.
-  expectedDate  DateTime?
-  receivedAt    DateTime?
-  createdAt     DateTime            @default(now())
+  expectedDate   DateTime?
+  receivedAt     DateTime?
+  createdAt      DateTime            @default(now())
   /// Set when the supplier confirms the order from their own portal — independent of internal
   /// status (a PO can be "ordered" and separately "acknowledged" by the vendor).
   acknowledgedAt DateTime?
@@ -1456,8 +1501,9 @@ model PurchaseOrder {
   supplierEta    DateTime?
   supplierNote   String?
 
-  supplier Supplier            @relation(fields: [supplierId], references: [id], onDelete: Restrict)
-  lines    PurchaseOrderLine[]
+  supplier    Supplier            @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  lines       PurchaseOrderLine[]
+  vendorBills VendorBill[]
 
   @@index([companyId])
   @@map("purchase_orders")
@@ -1477,45 +1523,101 @@ model PurchaseOrderLine {
   @@map("purchase_order_lines")
 }
 
+enum VendorBillStatus {
+  draft
+  approved
+  paid
+}
+
+/// A supplier invoice for materials or services — the AP-side counterpart to the AR-side
+/// Invoice/InvoiceLine. When purchaseOrderId is set, VendorBillsService.matchStatus() 3-way
+/// matches this bill's line quantities/prices (by materialCatalogItemId) against what the PO
+/// ordered, so a variance is caught before the bill is approved for payment; a bill with no PO
+/// (e.g. a one-off service invoice) skips matching entirely.
+model VendorBill {
+  id              String           @id @default(uuid())
+  companyId       String
+  supplierId      String
+  purchaseOrderId String?
+  billNumber      String
+  billDate        DateTime         @default(now())
+  dueDate         DateTime?
+  status          VendorBillStatus @default(draft)
+  approvedAt      DateTime?
+  approvedByName  String?
+  paidAt          DateTime?
+  notes           String?
+  createdAt       DateTime         @default(now())
+
+  company       Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  supplier      Supplier         @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  purchaseOrder PurchaseOrder?   @relation(fields: [purchaseOrderId], references: [id], onDelete: SetNull)
+  lines         VendorBillLine[]
+
+  @@index([companyId])
+  @@index([supplierId])
+  @@index([purchaseOrderId])
+  @@map("vendor_bills")
+}
+
+model VendorBillLine {
+  id                    String  @id @default(uuid())
+  vendorBillId          String
+  materialCatalogItemId String?
+  description           String
+  quantity              Decimal @db.Decimal(14, 4)
+  unitPrice             Decimal @db.Decimal(12, 4)
+
+  vendorBill          VendorBill           @relation(fields: [vendorBillId], references: [id], onDelete: Cascade)
+  materialCatalogItem MaterialCatalogItem? @relation(fields: [materialCatalogItemId], references: [id], onDelete: SetNull)
+
+  @@index([vendorBillId])
+  @@map("vendor_bill_lines")
+}
+
 // ---------- Projects (thin in Phase 1; Scheduling schema-only until Phase 3) ----------
 
 model Project {
-  id                   String    @id @default(uuid())
-  companyId            String
-  name                 String
-  address              String?
-  clientId             String?
-  createdAt            DateTime  @default(now())
+  id                          String    @id @default(uuid())
+  companyId                   String
+  name                        String
+  address                     String?
+  clientId                    String?
+  createdAt                   DateTime  @default(now())
   /// When the finished project was handed over to the client — the anchor date for the warranty window.
-  handoverDate         DateTime?
+  handoverDate                DateTime?
   /// Warranty length in months from handoverDate; null means no warranty is configured yet.
-  warrantyMonths       Int?
+  warrantyMonths              Int?
   /// Set when a review-request email has been sent to the client — null means never sent, and
   /// the UI uses this to avoid nagging the client twice for the same project.
-  reviewRequestedAt    DateTime?
+  reviewRequestedAt           DateTime?
   /// Site geofence center + radius for field-app clock-in proximity checks — all three null
   /// disables the check entirely (TimeEntry.withinGeofence stays null for this project's entries).
-  geofenceLat          Float?
-  geofenceLng          Float?
-  geofenceRadiusMeters Int?
+  geofenceLat                 Float?
+  geofenceLng                 Float?
+  geofenceRadiusMeters        Int?
   /// When true, only members listed in ProjectMember (plus owner/admin, who always see
   /// everything) can see this project — false (the default) means visible to the whole company,
   /// same as before this field existed.
-  restrictedToMembers  Boolean   @default(false)
+  restrictedToMembers         Boolean   @default(false)
   /// Marks a government-funded contract subject to prevailing-wage rules — surfaces the
   /// Certified Payroll panel on the project and is printed on the WH-347-style report header.
-  isPublicWork         Boolean   @default(false)
+  isPublicWork                Boolean   @default(false)
   /// Awarding-body contract number, printed on certified payroll reports. Free text since the
   /// format varies by agency.
-  contractNumber       String?
+  contractNumber              String?
   /// Bills this project in a currency other than the company's default (e.g. a EUR-based company
   /// running one CAD-denominated job) — null means "use the company's currency", unchanged
   /// behavior. Estimate/Invoice snapshot their own `currency` from this at creation time, so an
   /// override change here never retroactively changes an already-issued document.
-  currency             Currency?
+  currency                    Currency?
   /// Overrides Company.budgetAlertThresholdPercent for this project only — null means use the
   /// company default.
   budgetAlertThresholdPercent Int?
+  /// Total reserve set aside for unforeseen costs on this project, distinct from the markup/margin
+  /// already baked into estimate pricing — null means no contingency fund tracked. Remaining
+  /// balance is computed live as this minus the sum of ContingencyDraw.amount, never stored.
+  contingencyAmount           Decimal?  @db.Decimal(14, 2)
 
   company                  Company                     @relation(fields: [companyId], references: [id], onDelete: Cascade)
   client                   Client?                     @relation(fields: [clientId], references: [id], onDelete: SetNull)
@@ -1561,9 +1663,75 @@ model Project {
   crewSmsBroadcasts        CrewSmsBroadcast[]
   siteSignIns              SiteSignIn[]
   budgetRevisions          BudgetRevision[]
+  contingencyDraws         ContingencyDraw[]
+  suretyBonds              SuretyBond[]
+  contractClaims           ContractClaim[]
+  supportTickets           SupportTicket[]
 
   @@index([companyId])
   @@map("projects")
+}
+
+enum ContractClaimType {
+  delay
+  differing_conditions
+  scope_dispute
+  other
+}
+
+enum ContractClaimStatus {
+  notice_given
+  submitted
+  negotiating
+  resolved
+  rejected
+}
+
+/// A formal contractual claim (delay, differing site conditions, scope dispute) — distinct from
+/// ChangeOrder, which is for scope changes both parties have already agreed to. Most construction
+/// contracts require a documented notice-and-evidence trail before a claim can be pursued, which
+/// is what ContractClaimEvent's timeline is for.
+model ContractClaim {
+  id              String              @id @default(uuid())
+  companyId       String
+  projectId       String
+  type            ContractClaimType
+  title           String
+  description     String?
+  noticeDate      DateTime
+  requestedAmount Decimal?            @db.Decimal(14, 2)
+  requestedDays   Int?
+  status          ContractClaimStatus @default(notice_given)
+  resolution      String?
+  resolvedAt      DateTime?
+  createdAt       DateTime            @default(now())
+
+  company Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  events  ContractClaimEvent[]
+
+  @@index([companyId])
+  @@index([projectId])
+  @@map("contract_claims")
+}
+
+/// One timeline entry in a claim's notice-and-documentation trail (notice served, evidence
+/// submitted, response received, negotiation meeting, etc.) — same append-only journal shape as
+/// DailyLog, but scoped to a single claim.
+model ContractClaimEvent {
+  id            String   @id @default(uuid())
+  companyId     String
+  claimId       String
+  description   String
+  occurredAt    DateTime @default(now())
+  createdByName String
+  createdAt     DateTime @default(now())
+
+  claim ContractClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([claimId])
+  @@map("contract_claim_events")
 }
 
 /// Client satisfaction survey (NPS: 0-10) sent once per project, mirroring
@@ -1764,25 +1932,25 @@ model Milestone {
 /// One entry per project per calendar date — the standard site-diary convention (Procore et al.),
 /// so a day's record is edited in place rather than accumulating duplicate entries.
 model DailyLog {
-  id               String            @id @default(uuid())
-  companyId        String
-  projectId        String
-  date             DateTime
-  authorUserId     String?
-  authorName       String
-  weatherCondition WeatherCondition?
-  weatherNotes     String?
+  id                String            @id @default(uuid())
+  companyId         String
+  projectId         String
+  date              DateTime
+  authorUserId      String?
+  authorName        String
+  weatherCondition  WeatherCondition?
+  weatherNotes      String?
   /// Structured hours of work lost to weather this day — distinct from the free-text `delays`
   /// field below, which covers any delay cause. Feeds the weather-delay report/export and the
   /// project's "shift schedule" action, so it needs to be a summable number, not prose.
-  weatherDelayHours Decimal?         @db.Decimal(5, 2)
-  crewCount        Int?
-  crewNotes        String?
-  workPerformed    String
-  delays           String?
-  notes            String?
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  weatherDelayHours Decimal?          @db.Decimal(5, 2)
+  crewCount         Int?
+  crewNotes         String?
+  workPerformed     String
+  delays            String?
+  notes             String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 
   company Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
   project Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -1795,43 +1963,43 @@ model DailyLog {
 }
 
 model PunchListItem {
-  id               String              @id @default(uuid())
-  companyId        String
-  projectId        String
-  title            String
-  description      String?
-  location         String?
-  status           PunchListItemStatus @default(open)
-  assigneeWorkerId String?
+  id                      String              @id @default(uuid())
+  companyId               String
+  projectId               String
+  title                   String
+  description             String?
+  location                String?
+  status                  PunchListItemStatus @default(open)
+  assigneeWorkerId        String?
   /// Alternative to assigneeWorkerId — a punch list item belongs to whichever assignee is set,
   /// never both; nothing at the schema level stops both being set, same as
   /// Document's polymorphic attachment points.
   assigneeSubcontractorId String?
-  dueDate          DateTime?
-  createdByUserId  String?
-  createdByName    String
-  resolvedAt       DateTime?
-  resolvedByUserId String?
-  resolvedByName   String?
-  verifiedAt       DateTime?
-  verifiedByUserId String?
-  verifiedByName   String?
-  createdAt        DateTime            @default(now())
-  escalatedAt      DateTime?
+  dueDate                 DateTime?
+  createdByUserId         String?
+  createdByName           String
+  resolvedAt              DateTime?
+  resolvedByUserId        String?
+  resolvedByName          String?
+  verifiedAt              DateTime?
+  verifiedByUserId        String?
+  verifiedByName          String?
+  createdAt               DateTime            @default(now())
+  escalatedAt             DateTime?
   /// Optional pin location on a plan-room sheet — drawingSheetId set with pinX/pinY null (or vice
   /// versa) shouldn't happen but isn't enforced at the schema level, same as Document's attachment
   /// points above.
-  drawingSheetId   String?
-  pinX             Float?
-  pinY             Float?
+  drawingSheetId          String?
+  pinX                    Float?
+  pinY                    Float?
 
-  company              Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  project              Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  assignee             Worker?        @relation(fields: [assigneeWorkerId], references: [id], onDelete: SetNull)
+  company               Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project               Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignee              Worker?        @relation(fields: [assigneeWorkerId], references: [id], onDelete: SetNull)
   assigneeSubcontractor Subcontractor? @relation(fields: [assigneeSubcontractorId], references: [id], onDelete: SetNull)
-  drawingSheet         DrawingSheet?  @relation(fields: [drawingSheetId], references: [id], onDelete: SetNull)
-  photos               Document[]
-  comments             Comment[]
+  drawingSheet          DrawingSheet?  @relation(fields: [drawingSheetId], references: [id], onDelete: SetNull)
+  photos                Document[]
+  comments              Comment[]
 
   @@index([projectId])
   @@index([companyId])
@@ -1843,17 +2011,18 @@ model PunchListItem {
 /// commercial-construction mechanism for resolving ambiguity in plans/specs that could affect
 /// schedule or cost — closing without an answer is normal (the question was withdrawn or moot).
 model Rfi {
-  id                 String      @id @default(uuid())
+  id                 String           @id @default(uuid())
   companyId          String
   projectId          String
   /// Human reference code, e.g. "RFI-001" — numbered per project, not globally.
   number             String
   subject            String
   question           String
-  priority           RfiPriority @default(medium)
-  status             RfiStatus   @default(open)
+  priority           RfiPriority      @default(medium)
+  status             RfiStatus        @default(open)
+  ballInCourtParty   BallInCourtParty @default(internal)
   dueDate            DateTime?
-  costImpact         Boolean     @default(false)
+  costImpact         Boolean          @default(false)
   scheduleImpactDays Int?
   askedByUserId      String?
   askedByName        String
@@ -1864,7 +2033,7 @@ model Rfi {
   closedAt           DateTime?
   closedByUserId     String?
   closedByName       String?
-  createdAt          DateTime    @default(now())
+  createdAt          DateTime         @default(now())
   escalatedAt        DateTime?
   /// Optional pin location on a plan-room sheet — see PunchListItem's identical fields.
   drawingSheetId     String?
@@ -1906,6 +2075,28 @@ model BudgetRevision {
   @@index([companyId])
   @@index([projectId])
   @@map("budget_revisions")
+}
+
+/// A withdrawal against Project.contingencyAmount — logged when a change order, overrun, or
+/// unforeseen cost is deliberately funded from the reserve instead of a fresh budget revision.
+/// Same manual-log shape as BudgetRevision, kept as its own model since a contingency draw always
+/// reduces the reserve (never negative/additive the way a budget revision can go either way).
+model ContingencyDraw {
+  id              String   @id @default(uuid())
+  companyId       String
+  projectId       String
+  amount          Decimal  @db.Decimal(14, 2)
+  reason          String
+  createdByUserId String?
+  createdByName   String
+  createdAt       DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([projectId])
+  @@map("contingency_draws")
 }
 
 model Invoice {
@@ -2059,20 +2250,20 @@ model Payment {
 /// against an Invoice (money in) or Expense (money out), since there's no live bank-feed
 /// integration (no Plaid-style API key available) to auto-match against.
 model BankTransaction {
-  id               String   @id @default(uuid())
+  id               String           @id @default(uuid())
   companyId        String
   date             DateTime
   description      String
-  amount           Decimal  @db.Decimal(14, 2)
+  amount           Decimal          @db.Decimal(14, 2)
   matchedInvoiceId String?
   matchedExpenseId String?
-  reconciled       Boolean  @default(false)
+  reconciled       Boolean          @default(false)
   /// Set by BankReconciliationService.applyRules() matching a saved BankTransactionRule against
   /// `description`, or manually — independent of matchedInvoiceId/matchedExpenseId/reconciled,
   /// since a recurring operational transaction (rent, a software subscription) is categorized for
   /// bookkeeping without ever being "matched" to an Invoice or Expense record.
   category         ExpenseCategory?
-  createdAt        DateTime @default(now())
+  createdAt        DateTime         @default(now())
 
   company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   matchedInvoice Invoice? @relation(fields: [matchedInvoiceId], references: [id], onDelete: SetNull)
@@ -2131,17 +2322,17 @@ model Subcontractor {
   legalBusinessName    String?
   mailingAddress       String?
 
-  company            Company                          @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  costs              SubcontractorCost[]
-  payments           SubcontractorPayment[]
-  assignments        SubcontractorAssignment[]
-  portalLoginTokens  SubcontractorPortalLoginToken[]
-  documents          SubcontractorDocument[]
-  lienWaivers        LienWaiver[]
-  bidInvites         BidInvite[]
-  bids               Bid[]
-  contracts          Contract[]
-  performanceReviews SubcontractorPerformanceReview[]
+  company                Company                          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  costs                  SubcontractorCost[]
+  payments               SubcontractorPayment[]
+  assignments            SubcontractorAssignment[]
+  portalLoginTokens      SubcontractorPortalLoginToken[]
+  documents              SubcontractorDocument[]
+  lienWaivers            LienWaiver[]
+  bidInvites             BidInvite[]
+  bids                   Bid[]
+  contracts              Contract[]
+  performanceReviews     SubcontractorPerformanceReview[]
   assignedPunchListItems PunchListItem[]
 
   @@index([companyId])
@@ -2201,6 +2392,53 @@ model WorkerCertification {
   @@map("worker_certifications")
 }
 
+enum TrainingEnrollmentStatus {
+  enrolled
+  completed
+}
+
+/// The company's catalog of structured training courses — distinct from WorkerCertification,
+/// which just tracks a name+expiry with no course content, enrollment, or completion workflow
+/// behind it. validityMonths, when set, is how long a completion stays current before the
+/// worker needs to retake it; TrainingService.completeEnrollment() auto-issues/renews a matching
+/// WorkerCertification on completion so the existing expiry-notification pipeline covers it too.
+model TrainingCourse {
+  id             String   @id @default(uuid())
+  companyId      String
+  title          String
+  description    String?
+  category       String?
+  validityMonths Int?
+  createdAt      DateTime @default(now())
+
+  company     Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  enrollments TrainingEnrollment[]
+
+  @@index([companyId])
+  @@map("training_courses")
+}
+
+model TrainingEnrollment {
+  id          String                   @id @default(uuid())
+  companyId   String
+  courseId    String
+  workerId    String
+  status      TrainingEnrollmentStatus @default(enrolled)
+  enrolledAt  DateTime                 @default(now())
+  completedAt DateTime?
+  score       Int?
+  notes       String?
+
+  company Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  course  TrainingCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  worker  Worker         @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([courseId])
+  @@index([workerId])
+  @@map("training_enrollments")
+}
+
 /// The company's standard onboarding checklist — WorkerOnboardingTask rows are cloned from this
 /// list (by title, at that moment) whenever a new Worker is created, so editing the template
 /// later never rewrites tasks already assigned to someone.
@@ -2232,6 +2470,41 @@ model WorkerOnboardingTask {
   @@index([companyId])
   @@index([workerId])
   @@map("worker_onboarding_tasks")
+}
+
+/// Same reusable-checklist-template pattern as OnboardingTemplateItem, for the reverse process —
+/// equipment return, access revocation, final pay, etc. when a worker is deactivated.
+model OffboardingTemplateItem {
+  id        String @id @default(uuid())
+  companyId String
+  title     String
+  sortOrder Int    @default(0)
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@map("offboarding_template_items")
+}
+
+/// Cloned from OffboardingTemplateItem the moment a worker's `active` flips to false — same
+/// snapshot-at-the-moment semantics as WorkerOnboardingTask, so editing the template later never
+/// rewrites a departure already in progress.
+model WorkerOffboardingTask {
+  id          String    @id @default(uuid())
+  companyId   String
+  workerId    String
+  title       String
+  done        Boolean   @default(false)
+  completedAt DateTime?
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  worker  Worker  @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([workerId])
+  @@map("worker_offboarding_tasks")
 }
 
 enum TimeOffType {
@@ -2398,17 +2671,21 @@ model SupplierPortalLoginToken {
 /// payment-time); `paid` and `dueDate` exist for the cash-flow forecast, not
 /// for gating whether it counts toward budget-vs-actual.
 model SubcontractorCost {
-  id              String    @id @default(uuid())
-  companyId       String
-  subcontractorId String
-  projectId       String
-  description     String
-  amount          Decimal   @db.Decimal(14, 2)
-  incurredDate    DateTime  @default(now())
-  dueDate         DateTime?
-  paid            Boolean   @default(false)
+  id                         String    @id @default(uuid())
+  companyId                  String
+  subcontractorId            String
+  projectId                  String
+  description                String
+  amount                     Decimal   @db.Decimal(14, 2)
+  incurredDate               DateTime  @default(now())
+  dueDate                    DateTime?
+  paid                       Boolean   @default(false)
   /// Optional CSI cost code, for job-costing roll-ups — see JobCostingService.
-  costCodeId      String?
+  costCodeId                 String?
+  /// Set once pushed to the connected accounting system as a Bill — same
+  /// externalAccountingId/SyncedAt idempotency pair as Invoice, see AccountingSyncService.syncBills().
+  externalAccountingId       String?
+  externalAccountingSyncedAt DateTime?
 
   company       Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
   subcontractor Subcontractor          @relation(fields: [subcontractorId], references: [id], onDelete: Restrict)
@@ -2650,6 +2927,49 @@ model Contract {
   @@map("contracts")
 }
 
+enum SuretyBondType {
+  bid
+  performance
+  payment
+  maintenance
+}
+
+enum SuretyBondStatus {
+  active
+  released
+  expired
+}
+
+/// A surety bond THIS company carries (bid/performance/payment/maintenance) — as opposed to
+/// Subcontractor.bondingCapacity, which is prequalification info about a sub's OWN bonding
+/// capacity. Tracked per-project when tied to a specific contract, or company-wide (projectId
+/// null) for e.g. an aggregate program bond. SuretyBondsService.bondingCapacityUtilization()
+/// sums active bonds' penalSum against Company.bondingCapacityLimit to show how much headroom
+/// is left to bid new work.
+model SuretyBond {
+  id           String           @id @default(uuid())
+  companyId    String
+  projectId    String?
+  type         SuretyBondType
+  bondNumber   String?
+  suretyName   String
+  agentContact String?
+  penalSum     Decimal          @db.Decimal(14, 2)
+  premium      Decimal?         @db.Decimal(12, 2)
+  issueDate    DateTime
+  expiryDate   DateTime?
+  status       SuretyBondStatus @default(active)
+  notes        String?
+  createdAt    DateTime         @default(now())
+
+  company Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([companyId])
+  @@index([projectId])
+  @@map("surety_bonds")
+}
+
 enum SignatureRequestStatus {
   draft
   sent
@@ -2662,13 +2982,13 @@ enum SignatureRequestStatus {
 /// ordered chain of multiple external signers (e.g. contractor countersigns, then the client) on
 /// any document type, without adding a signing mechanism to every new entity that needs one.
 model SignatureRequest {
-  id              String                  @id @default(uuid())
+  id              String                 @id @default(uuid())
   companyId       String
   documentId      String
   title           String
-  status          SignatureRequestStatus  @default(draft)
+  status          SignatureRequestStatus @default(draft)
   createdByUserId String?
-  createdAt       DateTime                @default(now())
+  createdAt       DateTime               @default(now())
   completedAt     DateTime?
 
   company   Company                  @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -2721,10 +3041,10 @@ model BidRequest {
   status      BidRequestStatus @default(open)
   createdAt   DateTime         @default(now())
 
-  company Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  project Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  invites BidInvite[]
-  bids    Bid[]
+  company  Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project  Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  invites  BidInvite[]
+  bids     Bid[]
   criteria BidScoreCriterion[]
 
   @@index([companyId])
@@ -2776,7 +3096,7 @@ model BidScoreCriterion {
   label        String
   weight       Int
 
-  bidRequest BidRequest  @relation(fields: [bidRequestId], references: [id], onDelete: Cascade)
+  bidRequest BidRequest @relation(fields: [bidRequestId], references: [id], onDelete: Cascade)
   scores     BidScore[]
 
   @@index([bidRequestId])
@@ -2819,62 +3139,71 @@ model CompanyHoliday {
 // ---------- CRM (thin in Phase 1) ----------
 
 model Client {
-  id                     String               @id @default(uuid())
-  companyId              String
-  name                   String
-  email                  String?
-  phone                  String?
-  stage                  ClientStage          @default(lead)
-  notes                  String?
-  createdAt              DateTime             @default(now())
+  id                       String               @id @default(uuid())
+  companyId                String
+  name                     String
+  email                    String?
+  phone                    String?
+  stage                    ClientStage          @default(lead)
+  notes                    String?
+  createdAt                DateTime             @default(now())
   /// Overrides Company.defaultPaymentTermsDays for this client only — null means use the
   /// company default.
-  paymentTermsDays       Int?
+  paymentTermsDays         Int?
+  /// Which of the 5 launch locales to send invoice/estimate/change-order PDFs and their "sent"
+  /// emails in — null falls back to Company.locale. Same independence from the logged-in user's
+  /// own UI locale as Worker.preferredLocale for SMS.
+  preferredLocale          Locale?
   /// Estimated deal value while the client is still in the pipeline (lead/contacted/qualified).
-  estimatedValue         Decimal?             @db.Decimal(12, 2)
-  ownerWorkerId          String?
-  wonAt                  DateTime?
-  lostAt                 DateTime?
-  lostReason             String?
+  estimatedValue           Decimal?             @db.Decimal(12, 2)
+  ownerWorkerId            String?
+  wonAt                    DateTime?
+  lostAt                   DateTime?
+  lostReason               String?
   /// The existing client who referred this one in — self-referential, so a company can trace
   /// its referral chains through the CRM without a separate tracking system.
-  referredByClientId     String?
+  referredByClientId       String?
   /// Manually-set win likelihood (0-100) for pipeline forecasting. When unset, the forecast
   /// falls back to a per-stage default so every open deal still contributes a weighted value.
-  probability            Int?
-  expectedCloseDate      DateTime?
+  probability              Int?
+  expectedCloseDate        DateTime?
   /// Automated day-1/3/7 follow-up emails while still in stage=lead — see LeadFollowUpService.
-  leadFollowUpCount      Int                  @default(0)
-  lastLeadFollowUpSentAt DateTime?
+  leadFollowUpCount        Int                  @default(0)
+  lastLeadFollowUpSentAt   DateTime?
   /// Referral reward tracking for the client who *made* the referral (not the referred-in one) —
   /// set to "pending" once a client they referred reaches "won"; marked "paid" manually, since
   /// there's no payment-processor integration to automate the actual payout.
-  referralRewardStatus   ReferralRewardStatus @default(none)
-  referralRewardAmount   Decimal?             @db.Decimal(12, 2)
+  referralRewardStatus     ReferralRewardStatus @default(none)
+  referralRewardAmount     Decimal?             @db.Decimal(12, 2)
   /// Billing/postal address, split into the structured fields an EN16931 e-invoice's buyer party
   /// requires (BT-50/BT-52/BT-55/BT-40) — separate from Project.address (the job site), since a
   /// client is billed at their own address even when the site is elsewhere.
-  street                 String?
-  city                   String?
-  postalCode             String?
-  country                String? // ISO 3166-1 alpha-2 — null falls back to the company's own country on e-invoices.
+  street                   String?
+  city                     String?
+  postalCode               String?
+  country                  String? // ISO 3166-1 alpha-2 — null falls back to the company's own country on e-invoices.
   /// Buyer's EU VAT ID (BT-48) — optional, since many clients are private individuals with none.
-  vatId                  String?
+  vatId                    String?
   /// Stripe Customer created lazily the first time this client saves a card for autopay — null
   /// until then. Kept even after the payment method is removed, so re-adding a card doesn't spawn
   /// duplicate Stripe Customer objects.
-  stripeCustomerId            String?
+  stripeCustomerId         String?
   /// Saved default card for RecurringInvoice.autopayEnabled — null means no card on file, and
   /// autopay can't be turned on for this client's recurring invoices until one is saved via the
   /// portal's "save card" Checkout (mode "setup", never charges anything itself).
-  stripePaymentMethodId       String?
-  stripePaymentMethodBrand    String?
-  stripePaymentMethodLast4    String?
+  stripePaymentMethodId    String?
+  stripePaymentMethodBrand String?
+  stripePaymentMethodLast4 String?
+  /// Free-text acquisition channel (e.g. "referral", "google_ads", "trade_show", "cold_call") —
+  /// independent of campaignId, since not every source is a tracked, spend-attributed campaign.
+  source                   String?
+  campaignId               String?
 
   company           Company                  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   owner             Worker?                  @relation(fields: [ownerWorkerId], references: [id], onDelete: SetNull)
   referredBy        Client?                  @relation("ClientReferrals", fields: [referredByClientId], references: [id], onDelete: SetNull)
   referrals         Client[]                 @relation("ClientReferrals")
+  campaign          MarketingCampaign?       @relation(fields: [campaignId], references: [id], onDelete: SetNull)
   projects          Project[]
   invoices          Invoice[]
   recurringInvoices RecurringInvoice[]
@@ -2886,11 +3215,34 @@ model Client {
   stageHistory      ClientStageHistory[]
   contracts         Contract[]
   portalMessages    PortalMessage[]
+  supportTickets    SupportTicket[]
 
   @@index([companyId])
   @@index([ownerWorkerId])
   @@index([referredByClientId])
+  @@index([campaignId])
   @@map("clients")
+}
+
+/// A tracked, spend-attributed lead source — as opposed to Client.source (free text, no spend
+/// tracking). MarketingAttributionService.roiByChannel() groups clients by campaign.channel (or
+/// bare Client.source when no campaign is linked) to compute cost-per-lead and cost-per-won-deal.
+model MarketingCampaign {
+  id        String    @id @default(uuid())
+  companyId String
+  name      String
+  channel   String
+  spend     Decimal?  @db.Decimal(12, 2)
+  startDate DateTime?
+  endDate   DateTime?
+  notes     String?
+  createdAt DateTime  @default(now())
+
+  company Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  clients Client[]
+
+  @@index([companyId])
+  @@map("marketing_campaigns")
 }
 
 enum ReferralRewardStatus {
@@ -2976,20 +3328,97 @@ model ClientReminder {
   @@map("client_reminders")
 }
 
+// ---------- Recruiting (applicant tracking) ----------
+
+enum JobPostingStatus {
+  open
+  closed
+}
+
+model JobPosting {
+  id          String           @id @default(uuid())
+  companyId   String
+  title       String
+  trade       String?
+  location    String?
+  description String?
+  status      JobPostingStatus @default(open)
+  createdAt   DateTime         @default(now())
+
+  company    Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  candidates Candidate[]
+
+  @@index([companyId])
+  @@map("job_postings")
+}
+
+enum CandidateStage {
+  applied
+  screening
+  interviewing
+  offer
+  hired
+  rejected
+}
+
+/// hiredWorkerId is set once convertToWorker() creates a Worker record from this candidate —
+/// same "soft link to the resulting record" shape as WarrantyClaim referencing its resolution,
+/// left null for every candidate who never reaches "hired".
+model Candidate {
+  id            String         @id @default(uuid())
+  companyId     String
+  jobPostingId  String
+  name          String
+  email         String?
+  phone         String?
+  source        String?
+  notes         String?
+  stage         CandidateStage @default(applied)
+  hiredWorkerId String?
+  createdAt     DateTime       @default(now())
+
+  company    Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  jobPosting JobPosting  @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
+  interviews Interview[]
+
+  @@index([companyId])
+  @@index([jobPostingId])
+  @@map("candidates")
+}
+
+model Interview {
+  id              String    @id @default(uuid())
+  companyId       String
+  candidateId     String
+  scheduledAt     DateTime?
+  interviewerName String?
+  notes           String?
+  /// 1-5, null until the interview has actually happened and been scored.
+  rating          Int?
+  createdAt       DateTime  @default(now())
+
+  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([candidateId])
+  @@map("interviews")
+}
+
 // ---------- Team/HR (schema-only until Phase 5) ----------
 
 model Worker {
-  id                   String   @id @default(uuid())
+  id                   String    @id @default(uuid())
   companyId            String
   userId               String?
   name                 String
   role                 String?
   /// Cost rate used to value TimeEntry hours into actual labor cost (Finance budget-vs-actual).
-  hourlyCost           Decimal? @db.Decimal(10, 2)
-  active               Boolean  @default(true)
+  hourlyCost           Decimal?  @db.Decimal(10, 2)
+  active               Boolean   @default(true)
   /// Running PTO balance in hours — can go negative (unpaid/advance time off). Adjusted manually
   /// by an admin and auto-deducted when a vacation-type TimeOffRequest is approved.
-  ptoBalanceHours      Decimal  @default(0) @db.Decimal(8, 2)
+  ptoBalanceHours      Decimal   @default(0) @db.Decimal(8, 2)
   /// Trade classification for prevailing-wage compliance (certified payroll) — null means this
   /// worker hasn't been tagged yet and is excluded from wage-floor checks, not that they're exempt.
   wageClassificationId String?
@@ -3012,6 +3441,10 @@ model Worker {
   /// for that session, not a replacement for real auth. Null means kiosk clock-in is off for
   /// this worker.
   clockInPinHash       String?
+  /// CDL (commercial driver's license) expiry, for a worker who drives a company Vehicle — null
+  /// means this worker either doesn't hold a CDL or it isn't tracked. Feeds the same compliance
+  /// calendar as WorkerCertification's expiry tracking.
+  cdlExpiresAt         DateTime?
 
   company                  Company                    @relation(fields: [companyId], references: [id], onDelete: Cascade)
   user                     User?                      @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -3027,15 +3460,174 @@ model Worker {
   crewMemberships          CrewMember[]
   certifications           WorkerCertification[]
   onboardingTasks          WorkerOnboardingTask[]
+  offboardingTasks         WorkerOffboardingTask[]
   timeOffRequests          TimeOffRequest[]
   serviceVisits            ServiceVisit[]
   inspectionsPerformed     InspectionChecklist[]
   assignedDeficiencies     Deficiency[]
   jhaAcknowledgments       JhaAcknowledgment[]
   enpsSurveys              EnpsSurvey[]
+  trainingEnrollments      TrainingEnrollment[]
+  performanceReviews       PerformanceReview[]
+  performanceGoals         PerformanceGoal[]
+  hrCases                  HrCase[]
+  assignedVehicles         Vehicle[]
 
   @@index([companyId])
   @@map("workers")
+}
+
+enum HrCaseCategory {
+  safety_violation
+  complaint
+  attendance
+  performance
+  harassment
+  other
+}
+
+enum HrCaseSeverity {
+  low
+  medium
+  high
+}
+
+enum HrCaseStatus {
+  open
+  investigating
+  resolved
+  closed
+}
+
+/// An incident-driven HR case (disciplinary write-up, complaint, harassment report) — distinct
+/// from PerformanceReview, which is a periodic rating, not an event-triggered record needing a
+/// defensible paper trail. confidential defaults true since most of these carry sensitive
+/// content; the UI gates the whole case list behind manager-only access regardless.
+model HrCase {
+  id           String         @id @default(uuid())
+  companyId    String
+  workerId     String
+  reporterName String
+  category     HrCaseCategory
+  severity     HrCaseSeverity @default(medium)
+  status       HrCaseStatus   @default(open)
+  description  String
+  confidential Boolean        @default(true)
+  closedAt     DateTime?
+  createdAt    DateTime       @default(now())
+
+  company Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  worker  Worker         @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  actions HrCaseAction[]
+
+  @@index([companyId])
+  @@index([workerId])
+  @@map("hr_cases")
+}
+
+enum HrCaseActionType {
+  coaching
+  verbal_warning
+  written_warning
+  suspension
+  termination
+  note
+}
+
+/// One entry in a case's action/investigation log — a write-up, a coaching conversation, a
+/// suspension, or just an investigation note. acknowledgedAt is set once the worker has signed
+/// off on a formal action (write-up, suspension), left null for informal notes.
+model HrCaseAction {
+  id             String           @id @default(uuid())
+  companyId      String
+  caseId         String
+  type           HrCaseActionType
+  description    String
+  actionDate     DateTime         @default(now())
+  createdByName  String
+  acknowledgedAt DateTime?
+  createdAt      DateTime         @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  case    HrCase  @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([caseId])
+  @@map("hr_case_actions")
+}
+
+enum PerformanceReviewCycleStatus {
+  open
+  closed
+}
+
+/// A named review period (e.g. "H1 2026") that PerformanceReview rows are grouped under — closing
+/// a cycle is a manual signal that its reviews are final, mirroring TrainingCourse's own
+/// "the record itself carries the meaning" simplicity rather than a workflow-engine state machine.
+model PerformanceReviewCycle {
+  id          String                       @id @default(uuid())
+  companyId   String
+  name        String
+  periodStart DateTime
+  periodEnd   DateTime
+  status      PerformanceReviewCycleStatus @default(open)
+  createdAt   DateTime                     @default(now())
+
+  company Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  reviews PerformanceReview[]
+
+  @@index([companyId])
+  @@map("performance_review_cycles")
+}
+
+enum PerformanceRating {
+  below_expectations
+  meets_expectations
+  exceeds_expectations
+}
+
+/// One review per worker per cycle (see @@unique below) — rating/strengths/improvementAreas are
+/// all optional until submittedAt is set, so a reviewer can save a draft before finalizing.
+model PerformanceReview {
+  id               String             @id @default(uuid())
+  companyId        String
+  cycleId          String
+  workerId         String
+  reviewerName     String
+  rating           PerformanceRating?
+  strengths        String?
+  improvementAreas String?
+  submittedAt      DateTime?
+  createdAt        DateTime           @default(now())
+
+  company Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  cycle   PerformanceReviewCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  worker  Worker                 @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  @@unique([cycleId, workerId])
+  @@index([companyId])
+  @@index([workerId])
+  @@map("performance_reviews")
+}
+
+/// A worker's individual goal, tracked independently of any review cycle — progressPercent is
+/// self-reported/manager-set, not derived from anything else in the system.
+model PerformanceGoal {
+  id              String    @id @default(uuid())
+  companyId       String
+  workerId        String
+  title           String
+  targetDate      DateTime?
+  progressPercent Int       @default(0)
+  completedAt     DateTime?
+  createdAt       DateTime  @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  worker  Worker  @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([workerId])
+  @@map("performance_goals")
 }
 
 model TimeEntry {
@@ -3364,17 +3956,22 @@ enum EquipmentStatus {
   rented_out
 }
 
+enum DepreciationMethod {
+  straight_line
+  declining_balance
+}
+
 model Equipment {
-  id                                String          @id @default(uuid())
+  id                                String              @id @default(uuid())
   companyId                         String
   name                              String
   category                          String
   serialNumber                      String?
   purchaseDate                      DateTime?
-  purchaseCost                      Decimal?        @db.Decimal(12, 2)
-  status                            EquipmentStatus @default(available)
+  purchaseCost                      Decimal?            @db.Decimal(12, 2)
+  status                            EquipmentStatus     @default(available)
   notes                             String?
-  createdAt                         DateTime        @default(now())
+  createdAt                         DateTime            @default(now())
   /// Recurring preventive-maintenance interval — null disables scheduling entirely for this
   /// piece of equipment. nextMaintenanceDueAt advances by this many days each time maintenance
   /// completes, mirroring RecurringInvoice.nextRunDate's advance-on-completion pattern.
@@ -3388,12 +3985,18 @@ model Equipment {
   /// means this equipment isn't hour-tracked. Mirrors the day-interval fields above but keyed
   /// off usage instead of the calendar; the two schedules are independent and either or both
   /// can be active at once.
-  currentMeterHours                 Decimal?        @db.Decimal(10, 1)
-  maintenanceIntervalHours          Decimal?        @db.Decimal(10, 1)
-  nextMaintenanceDueHours           Decimal?        @db.Decimal(10, 1)
+  currentMeterHours                 Decimal?            @db.Decimal(10, 1)
+  maintenanceIntervalHours          Decimal?            @db.Decimal(10, 1)
+  nextMaintenanceDueHours           Decimal?            @db.Decimal(10, 1)
   /// Separate dedupe flag from maintenanceOverdueNotifiedAt so an hours-overdue notification and
   /// a date-overdue notification don't suppress each other.
   maintenanceOverdueHoursNotifiedAt DateTime?
+  /// Fixed-asset depreciation schedule — all three null means depreciation isn't tracked for
+  /// this piece of equipment (purchaseCost/purchaseDate alone aren't enough to compute a book
+  /// value). See equipment-depreciation.ts for the pure calculation.
+  depreciationMethod                DepreciationMethod?
+  usefulLifeMonths                  Int?
+  salvageValue                      Decimal?            @db.Decimal(12, 2)
 
   company             Company                      @relation(fields: [companyId], references: [id], onDelete: Cascade)
   assignments         EquipmentAssignment[]
@@ -3402,9 +4005,145 @@ model Equipment {
   gpsPings            EquipmentGpsPing[]
   fuelLogs            EquipmentFuelLog[]
   rentals             EquipmentRental[]
+  disposal            AssetDisposal?
+  loans               Loan[]
 
   @@index([companyId])
   @@map("equipment")
+}
+
+/// Recorded once when a piece of equipment is sold or scrapped — saleAmount vs. its book value
+/// at disposedAt (per equipment-depreciation.ts) gives the gain/loss. A one-to-one with
+/// Equipment (unique equipmentId) since a given asset is disposed of exactly once; disposing
+/// also moves Equipment.status to retired.
+model AssetDisposal {
+  id          String   @id @default(uuid())
+  companyId   String
+  equipmentId String   @unique
+  disposedAt  DateTime @default(now())
+  saleAmount  Decimal? @db.Decimal(12, 2)
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@map("asset_disposals")
+}
+
+enum LoanStatus {
+  active
+  paid_off
+  defaulted
+}
+
+/// A loan the company itself owes (equipment financing, working-capital line, term loan) — as
+/// opposed to DrawRequest/ContingencyDraw, which track money drawn from a CLIENT's construction
+/// lender or a project's own contingency fund. equipmentId links the loan to what it financed,
+/// when applicable; a working-capital loan leaves it null. The full amortization schedule is
+/// generated as LoanPayment rows at creation time (see loan-amortization.ts), not computed live,
+/// so a payment can be recorded against a specific due row.
+model Loan {
+  id                  String     @id @default(uuid())
+  companyId           String
+  equipmentId         String?
+  lenderName          String
+  principal           Decimal    @db.Decimal(14, 2)
+  interestRatePercent Decimal    @db.Decimal(5, 2)
+  termMonths          Int
+  startDate           DateTime
+  status              LoanStatus @default(active)
+  notes               String?
+  createdAt           DateTime   @default(now())
+
+  company   Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  equipment Equipment?    @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
+  payments  LoanPayment[]
+
+  @@index([companyId])
+  @@map("loans")
+}
+
+/// One scheduled installment — principalPortion/interestPortion come from the amortization
+/// schedule computed at loan creation. paidAt/paidAmount are null until recordPayment() is
+/// called; paidAmount can differ from principalPortion+interestPortion (a partial or extra
+/// payment), which is deliberately not reconciled back into later rows — the schedule is fixed,
+/// actual payment history is a separate fact layered on top of it.
+model LoanPayment {
+  id               String    @id @default(uuid())
+  companyId        String
+  loanId           String
+  dueDate          DateTime
+  principalPortion Decimal   @db.Decimal(12, 2)
+  interestPortion  Decimal   @db.Decimal(12, 2)
+  paidAt           DateTime?
+  paidAmount       Decimal?  @db.Decimal(12, 2)
+  createdAt        DateTime  @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  loan    Loan    @relation(fields: [loanId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([loanId])
+  @@map("loan_payments")
+}
+
+enum VehicleType {
+  truck
+  van
+  trailer
+  other
+}
+
+/// A licensed road vehicle (truck, van, trailer) — distinct from Equipment (excavators, cranes,
+/// etc.), which tracks engine-hours and preventive maintenance rather than VIN/plate/registration
+/// and a driver's CDL. assignedDriverId points at a Worker; that worker's own cdlExpiresAt (not a
+/// separate assignment-history table) is what compliance tracking reads.
+model Vehicle {
+  id                    String      @id @default(uuid())
+  companyId             String
+  name                  String
+  vin                   String?
+  licensePlate          String?
+  type                  VehicleType @default(truck)
+  assignedDriverId      String?
+  registrationExpiresAt DateTime?
+  insuranceExpiresAt    DateTime?
+  odometerMiles         Decimal?    @db.Decimal(10, 1)
+  createdAt             DateTime    @default(now())
+
+  company        Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  assignedDriver Worker?             @relation(fields: [assignedDriverId], references: [id], onDelete: SetNull)
+  inspections    VehicleInspection[]
+
+  @@index([companyId])
+  @@index([assignedDriverId])
+  @@map("vehicles")
+}
+
+enum VehicleInspectionResult {
+  passed
+  failed
+}
+
+/// A DOT (or equivalent) annual/periodic inspection record for one vehicle.
+model VehicleInspection {
+  id            String                  @id @default(uuid())
+  companyId     String
+  vehicleId     String
+  inspectedAt   DateTime                @default(now())
+  result        VehicleInspectionResult
+  inspectorName String?
+  notes         String?
+  createdAt     DateTime                @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([vehicleId])
+  @@map("vehicle_inspections")
 }
 
 /// This company's own equipment rented OUT to an external party as a revenue source — the
@@ -3642,12 +4381,12 @@ enum InsuranceClaimStatus {
 /// auto, and equipment claims often have no linked safety incident at all. Likewise optionally
 /// tied to a Project — a company-wide policy claim (e.g. office property damage) has none.
 model InsuranceClaim {
-  id               String                @id @default(uuid())
+  id               String               @id @default(uuid())
   companyId        String
   projectId        String?
   incidentReportId String?
   claimType        InsuranceClaimType
-  status           InsuranceClaimStatus  @default(filed)
+  status           InsuranceClaimStatus @default(filed)
   claimNumber      String?
   insurerName      String
   policyNumber     String?
@@ -3655,15 +4394,15 @@ model InsuranceClaim {
   description      String
   adjusterName     String?
   adjusterContact  String?
-  claimAmount      Decimal?              @db.Decimal(14, 2)
+  claimAmount      Decimal?             @db.Decimal(14, 2)
   /// Set once the insurer pays out — null before then, regardless of status (a claim can move to
   /// "approved" before the actual settlement amount/date is known).
-  settledAmount    Decimal?              @db.Decimal(14, 2)
+  settledAmount    Decimal?             @db.Decimal(14, 2)
   settledAt        DateTime?
   notes            String?
   createdByUserId  String?
   createdByName    String
-  createdAt        DateTime              @default(now())
+  createdAt        DateTime             @default(now())
 
   company        Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
   project        Project?        @relation(fields: [projectId], references: [id], onDelete: SetNull)
@@ -3959,6 +4698,92 @@ model PortalMessage {
   @@index([companyId])
   @@index([projectId])
   @@map("portal_messages")
+}
+
+enum TicketPriority {
+  low
+  medium
+  high
+  urgent
+}
+
+enum TicketStatus {
+  open
+  in_progress
+  waiting_on_customer
+  resolved
+  closed
+}
+
+/// Per-priority response/resolution targets, applied to a ticket's slaResponseDueAt/
+/// slaResolutionDueAt at creation time — SupportTicketsService computes "past due" live by
+/// comparing against these stamped deadlines rather than running a background job.
+model SlaPolicy {
+  id                String         @id @default(uuid())
+  companyId         String
+  priority          TicketPriority
+  responseMinutes   Int
+  resolutionMinutes Int
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, priority])
+  @@map("sla_policies")
+}
+
+/// A support ticket — distinct from PortalMessage's free-form per-project chat: this has a
+/// lifecycle (status, priority, SLA deadlines, assignment) suited to accountable post-sale
+/// support (warranty questions, portal access issues, billing disputes) rather than ad hoc
+/// project conversation. requesterClientId is optional since staff can also file an internal
+/// ticket with no client attached, in which case requesterName/requesterEmail carry the contact.
+model SupportTicket {
+  id                 String         @id @default(uuid())
+  companyId          String
+  projectId          String?
+  requesterClientId  String?
+  requesterName      String
+  requesterEmail     String?
+  subject            String
+  category           String?
+  priority           TicketPriority @default(medium)
+  status             TicketStatus   @default(open)
+  assignedToUserId   String?
+  slaResponseDueAt   DateTime?
+  slaResolutionDueAt DateTime?
+  firstRespondedAt   DateTime?
+  resolvedAt         DateTime?
+  createdAt          DateTime       @default(now())
+
+  company         Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project         Project?        @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  requesterClient Client?         @relation(fields: [requesterClientId], references: [id], onDelete: SetNull)
+  assignedTo      User?           @relation(fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  messages        TicketMessage[]
+
+  @@index([companyId])
+  @@index([projectId])
+  @@index([requesterClientId])
+  @@map("support_tickets")
+}
+
+/// isInternal marks a staff-only note invisible to the client-portal "My Tickets" thread — every
+/// message a portal client posts is public by construction (the portal has no internal-note UI).
+model TicketMessage {
+  id           String   @id @default(uuid())
+  companyId    String
+  ticketId     String
+  content      String
+  authorName   String
+  authorUserId String?
+  isInternal   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  company Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  ticket  SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([ticketId])
+  @@map("ticket_messages")
 }
 
 /// Marks one derived notification item (identified by its stable NotificationItem.key) as read
@@ -4406,15 +5231,20 @@ enum AccountingSyncStatus {
 /// One row per invoice sync attempt (success or failure) — the persistent trail that
 /// AccountingSyncService.syncInvoices()'s previously-transient SyncSummary lacked, so a failure
 /// is still visible after the page that showed the toast is long gone.
+/// One attempt to push either an AR record (Invoice) or an AP record (SubcontractorCost, as a
+/// Bill) to the connected provider — exactly one of the invoice/subcontractorCost id+label pairs
+/// is set per row, mirroring the optional-attachment-point convention Document already uses.
 model AccountingSyncLog {
-  id            String               @id @default(uuid())
-  companyId     String
-  provider      AccountingProvider
-  invoiceId     String
-  invoiceNumber String
-  status        AccountingSyncStatus
-  errorMessage  String?
-  attemptedAt   DateTime             @default(now())
+  id                         String               @id @default(uuid())
+  companyId                  String
+  provider                   AccountingProvider
+  invoiceId                  String?
+  invoiceNumber              String?
+  subcontractorCostId        String?
+  subcontractorCostReference String?
+  status                     AccountingSyncStatus
+  errorMessage               String?
+  attemptedAt                DateTime             @default(now())
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 

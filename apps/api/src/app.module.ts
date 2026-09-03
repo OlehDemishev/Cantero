@@ -68,6 +68,15 @@ import { EstimateAccuracyModule } from "./estimate-accuracy/estimate-accuracy.mo
 import { SustainabilityModule } from "./sustainability/sustainability.module";
 import { ChangeOrderRemindersModule } from "./change-order-reminders/change-order-reminders.module";
 import { MessageTemplatesModule } from "./message-templates/message-templates.module";
+import { SuretyBondsModule } from "./surety-bonds/surety-bonds.module";
+import { ContractClaimsModule } from "./contract-claims/contract-claims.module";
+import { RecruitingModule } from "./recruiting/recruiting.module";
+import { PerformanceModule } from "./performance/performance.module";
+import { MarketingModule } from "./marketing/marketing.module";
+import { SupportTicketsModule } from "./support-tickets/support-tickets.module";
+import { HrCasesModule } from "./hr-cases/hr-cases.module";
+import { LoansModule } from "./loans/loans.module";
+import { FleetModule } from "./fleet/fleet.module";
 
 @Module({
   imports: [
@@ -135,6 +144,15 @@ import { MessageTemplatesModule } from "./message-templates/message-templates.mo
     PermitsModule,
     EstimateAccuracyModule,
     SustainabilityModule,
+    SuretyBondsModule,
+    ContractClaimsModule,
+    RecruitingModule,
+    PerformanceModule,
+    MarketingModule,
+    SupportTicketsModule,
+    HrCasesModule,
+    LoansModule,
+    FleetModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { SUPPORTED_LOCALES } from "./company";
 
 export const CLIENT_STAGES = ["lead", "contacted", "qualified", "won", "lost"] as const;
 export type ClientStage = (typeof CLIENT_STAGES)[number];
@@ -20,6 +21,11 @@ export const updateClientSchema = z.object({
   country: z.string().length(2).nullable().optional(), // ISO 3166-1 alpha-2
   vatId: z.string().max(30).nullable().optional(),
   paymentTermsDays: z.number().int().min(0).max(365).nullable().optional(),
+  /// Which locale to send invoice/estimate/change-order PDFs and emails in — null uses the company's own.
+  preferredLocale: z.enum(SUPPORTED_LOCALES).nullable().optional(),
+  /// Free-text acquisition channel, independent of campaignId — see MarketingCampaign.
+  source: z.string().max(80).nullable().optional(),
+  campaignId: z.string().uuid().nullable().optional(),
 });
 export type UpdateClientInput = z.infer<typeof updateClientSchema>;
 
