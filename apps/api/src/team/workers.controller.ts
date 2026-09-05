@@ -50,6 +50,11 @@ export class WorkersController {
     return this.service.summary(user.companyId, id);
   }
 
+  @Get(":id/loaded-rate")
+  loadedRate(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.loadedRate(user.companyId, id);
+  }
+
   @Post()
   create(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(createWorkerSchema)) body: CreateWorkerInput) {
     return this.service.create(user.companyId, body);

@@ -19,6 +19,10 @@ export const recordStockMovementSchema = z.object({
   type: z.enum(GENERIC_MOVEMENT_TYPES),
   quantity: z.number().positive(),
   projectId: z.string().uuid().optional(),
+  /// Per-unit cost paid — only meaningful for type=receipt (an issue/write_off's cost is computed
+  /// by the costing engine, not entered by hand). Omit to record the movement with no cost data,
+  /// same as before this field existed.
+  unitCost: z.number().nonnegative().optional(),
 });
 export type RecordStockMovementInput = z.infer<typeof recordStockMovementSchema>;
 
@@ -34,6 +38,20 @@ export const transferStockSchema = z
     path: ["toWarehouseId"],
   });
 export type TransferStockInput = z.infer<typeof transferStockSchema>;
+
+/// The in-transit counterpart to transferStockSchema's instant transfer — see StockTransfer.
+export const initiateStockTransferSchema = z
+  .object({
+    fromWarehouseId: z.string().uuid(),
+    toWarehouseId: z.string().uuid(),
+    materialCatalogItemId: z.string().uuid(),
+    quantity: z.number().positive(),
+  })
+  .refine((data) => data.fromWarehouseId !== data.toWarehouseId, {
+    message: "fromWarehouseId and toWarehouseId must differ",
+    path: ["toWarehouseId"],
+  });
+export type InitiateStockTransferInput = z.infer<typeof initiateStockTransferSchema>;
 
 export const issueFromEstimateSchema = z.object({
   estimateId: z.string().uuid(),
@@ -112,3 +130,8 @@ export const createVendorBillSchema = z.object({
   lines: z.array(vendorBillLineSchema).min(1),
 });
 export type CreateVendorBillInput = z.infer<typeof createVendorBillSchema>;
+
+export const schedulePaymentSchema = z.object({
+  scheduledPaymentDate: z.string().datetime(),
+});
+export type SchedulePaymentInput = z.infer<typeof schedulePaymentSchema>;

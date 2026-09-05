@@ -33,6 +33,8 @@ interface PunchListItem {
   resolvedByName: string | null;
   verifiedByName: string | null;
   escalatedAt: string | null;
+  estimatedCostImpact: string | null;
+  changeOrderId: string | null;
 }
 
 const STATUS_STYLES: Record<PunchListItemStatus, string> = {
@@ -52,8 +54,9 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({ title: "", description: "", location: "", assignee: "", dueDate: "" });
+  const [form, setForm] = useState({ title: "", description: "", location: "", assignee: "", dueDate: "", estimatedCostImpact: "" });
   const [busy, setBusy] = useState(false);
+  const [changeOrderIdDrafts, setChangeOrderIdDrafts] = useState<Record<string, string>>({});
   const bulk = useBulkSelection();
 
   function load() {
@@ -99,9 +102,10 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
           assigneeWorkerId: kind === "worker" ? assigneeId : undefined,
           assigneeSubcontractorId: kind === "sub" ? assigneeId : undefined,
           dueDate: form.dueDate ? new Date(form.dueDate).toISOString() : undefined,
+          estimatedCostImpact: form.estimatedCostImpact ? Number(form.estimatedCostImpact) : undefined,
         }),
       });
-      setForm({ title: "", description: "", location: "", assignee: "", dueDate: "" });
+      setForm({ title: "", description: "", location: "", assignee: "", dueDate: "", estimatedCostImpact: "" });
       setCreating(false);
       load();
     } finally {
@@ -112,6 +116,29 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
   async function transition(id: string, action: "resolve" | "verify" | "reopen") {
     await apiFetch(`/punch-list/${id}/${action}`, { method: "POST" });
     load();
+  }
+
+  async function linkChangeOrder(id: string) {
+    const changeOrderId = changeOrderIdDrafts[id];
+    if (!changeOrderId) return;
+    setBusy(true);
+    try {
+      await apiFetch(`/punch-list/${id}/change-order`, { method: "PATCH", body: JSON.stringify({ changeOrderId }) });
+      setChangeOrderIdDrafts((f) => ({ ...f, [id]: "" }));
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function unlinkChangeOrder(id: string) {
+    setBusy(true);
+    try {
+      await apiFetch(`/punch-list/${id}/change-order`, { method: "PATCH", body: JSON.stringify({ changeOrderId: null }) });
+      load();
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function bulkTransition(action: "resolve" | "verify") {
@@ -207,6 +234,17 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
               onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
             />
           </label>
+          <label className="flex w-40 flex-col gap-1.5 text-sm">
+            <span className="font-medium text-gray-700">{t("estimatedCostImpact")}</span>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              className="input"
+              value={form.estimatedCostImpact}
+              onChange={(e) => setForm((f) => ({ ...f, estimatedCostImpact: e.target.value }))}
+            />
+          </label>
           <label className="flex flex-col gap-1.5 text-sm">
             <span className="font-medium text-gray-700">{t("description")}</span>
             <textarea
@@ -288,6 +326,39 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
                     {item.dueDate && <span>{new Date(item.dueDate).toLocaleDateString()}</span>}
                   </div>
                   {item.description && <p className="mt-1.5 text-xs text-gray-500">{item.description}</p>}
+                  {(item.estimatedCostImpact !== null || item.changeOrderId) && (
+                    <div className="mt-1.5 rounded-md bg-gray-50 p-2 text-xs">
+                      {item.changeOrderId ? (
+                        <p className="flex items-center justify-between text-success-700">
+                          <span>{t("costImpactConfirmed")}</span>
+                          <button onClick={() => unlinkChangeOrder(item.id)} className="text-gray-400 hover:text-error-600">
+                            {t("unlinkChangeOrder")}
+                          </button>
+                        </p>
+                      ) : (
+                        <>
+                          {item.estimatedCostImpact !== null && (
+                            <p className="text-gray-500">{t("estimatedCostImpactLabel", { amount: item.estimatedCostImpact })}</p>
+                          )}
+                          <div className="mt-1 flex items-center gap-1.5">
+                            <input
+                              placeholder={t("changeOrderIdPlaceholder")}
+                              className="input py-0.5 text-xs"
+                              value={changeOrderIdDrafts[item.id] ?? ""}
+                              onChange={(e) => setChangeOrderIdDrafts((f) => ({ ...f, [item.id]: e.target.value }))}
+                            />
+                            <button
+                              onClick={() => linkChangeOrder(item.id)}
+                              disabled={busy || !changeOrderIdDrafts[item.id]}
+                              className="btn-secondary px-2 py-0.5 text-xs"
+                            >
+                              {t("linkChangeOrder")}
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
                   {item.status === "verified" && item.verifiedByName && (
                     <p className="mt-1.5 text-xs text-success-700">{t("verifiedBy", { name: item.verifiedByName })}</p>
                   )}

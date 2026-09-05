@@ -26,6 +26,7 @@ export const WEBHOOK_EVENTS = [
   "warranty_claim.submitted",
   "warranty_claim.resolved",
   "warranty_claim.denied",
+  "client_change_request.submitted",
   "client.won",
   "client.lost",
   "client.lead_captured",

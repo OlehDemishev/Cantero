@@ -32,6 +32,22 @@ interface Inspection {
 interface VehicleDetail extends Vehicle {
   inspections: Inspection[];
 }
+interface FuelLog {
+  id: string;
+  filledAt: string;
+  quantity: string;
+  cost: string | null;
+  odometerMiles: string | null;
+  idleHours: string | null;
+  notes: string | null;
+}
+interface FuelEfficiencyRow {
+  vehicleId: string;
+  vehicleName: string;
+  totalQuantity: number;
+  totalIdleHours: number;
+  milesPerUnit: number | null;
+}
 
 function isExpiringSoon(dateStr: string | null): "expired" | "soon" | null {
   if (!dateStr) return null;
@@ -61,10 +77,14 @@ export default function FleetPage() {
     insuranceExpiresAt: "",
   });
   const [inspectionForm, setInspectionForm] = useState({ result: "passed" as VehicleInspectionResult, inspectorName: "", notes: "" });
+  const [fuelLogs, setFuelLogs] = useState<FuelLog[] | null>(null);
+  const [fuelForm, setFuelForm] = useState({ quantity: "", cost: "", odometerMiles: "", idleHours: "" });
+  const [fuelEfficiency, setFuelEfficiency] = useState<FuelEfficiencyRow[] | null>(null);
   const [busy, setBusy] = useState(false);
 
   function load() {
     apiFetch<Vehicle[]>("/vehicles").then(setVehicles);
+    apiFetch<FuelEfficiencyRow[]>("/vehicles/fuel-efficiency-report").then(setFuelEfficiency);
   }
   useEffect(load, []);
   useEffect(() => {
@@ -100,11 +120,34 @@ export default function FleetPage() {
     if (expandedId === id) {
       setExpandedId(null);
       setDetail(null);
+      setFuelLogs(null);
       return;
     }
     setExpandedId(id);
     const d = await apiFetch<VehicleDetail>(`/vehicles/${id}`);
     setDetail(d);
+    apiFetch<FuelLog[]>(`/vehicles/${id}/fuel-logs`).then(setFuelLogs);
+  }
+
+  async function addFuelLog(id: string) {
+    if (!fuelForm.quantity) return;
+    setBusy(true);
+    try {
+      await apiFetch(`/vehicles/${id}/fuel-logs`, {
+        method: "POST",
+        body: JSON.stringify({
+          quantity: Number(fuelForm.quantity),
+          cost: fuelForm.cost ? Number(fuelForm.cost) : undefined,
+          odometerMiles: fuelForm.odometerMiles ? Number(fuelForm.odometerMiles) : undefined,
+          idleHours: fuelForm.idleHours ? Number(fuelForm.idleHours) : undefined,
+        }),
+      });
+      setFuelForm({ quantity: "", cost: "", odometerMiles: "", idleHours: "" });
+      apiFetch<FuelLog[]>(`/vehicles/${id}/fuel-logs`).then(setFuelLogs);
+      apiFetch<FuelEfficiencyRow[]>("/vehicles/fuel-efficiency-report").then(setFuelEfficiency);
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function logInspection(id: string) {
@@ -202,6 +245,32 @@ export default function FleetPage() {
         </form>
       )}
 
+      {fuelEfficiency && fuelEfficiency.some((r) => r.totalQuantity > 0) && (
+        <div className="card mt-6 overflow-x-auto">
+          <h2 className="mb-2 text-sm font-semibold text-gray-700">{t("fuelEfficiencyTitle")}</h2>
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-gray-200 text-left text-gray-500">
+                <th className="py-1.5">{t("vehicle")}</th>
+                <th className="text-right">{t("milesPerUnit")}</th>
+                <th className="text-right">{t("totalIdleHours")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {fuelEfficiency
+                .filter((r) => r.totalQuantity > 0)
+                .map((r) => (
+                  <tr key={r.vehicleId} className="border-b border-gray-100">
+                    <td className="py-1.5 font-medium text-gray-900">{r.vehicleName}</td>
+                    <td className="text-right tabular-nums">{r.milesPerUnit ?? "—"}</td>
+                    <td className="text-right tabular-nums">{r.totalIdleHours}</td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       <div className="mt-6">
         {!vehicles ? (
           <p className="text-gray-500">{tc("loading")}</p>
@@ -277,6 +346,64 @@ export default function FleetPage() {
                           />
                           <button onClick={() => logInspection(v.id)} disabled={busy} className="btn-secondary shrink-0 px-2.5 py-1 text-xs">
                             {t("logInspection")}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("fuelLogs")}</h3>
+                        {!fuelLogs || fuelLogs.length === 0 ? (
+                          <p className="mb-2 text-xs text-gray-400">{t("noFuelLogs")}</p>
+                        ) : (
+                          <ul className="mb-2 flex flex-col gap-1">
+                            {fuelLogs.map((f) => (
+                              <li key={f.id} className="text-xs text-gray-600">
+                                {f.quantity} · {new Date(f.filledAt).toLocaleDateString()}
+                                {f.odometerMiles && <span className="text-gray-400"> · {f.odometerMiles} mi</span>}
+                                {f.idleHours && <span className="text-gray-400"> · {t("idleHoursShort", { hours: f.idleHours })}</span>}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                        <div className="flex flex-wrap items-end gap-2">
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            placeholder={t("quantityPlaceholder")}
+                            className="input w-28"
+                            value={fuelForm.quantity}
+                            onChange={(e) => setFuelForm((f) => ({ ...f, quantity: e.target.value }))}
+                          />
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            placeholder={t("costPlaceholder")}
+                            className="input w-28"
+                            value={fuelForm.cost}
+                            onChange={(e) => setFuelForm((f) => ({ ...f, cost: e.target.value }))}
+                          />
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.1"
+                            placeholder={t("odometerPlaceholder")}
+                            className="input w-32"
+                            value={fuelForm.odometerMiles}
+                            onChange={(e) => setFuelForm((f) => ({ ...f, odometerMiles: e.target.value }))}
+                          />
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.1"
+                            placeholder={t("idleHoursPlaceholder")}
+                            className="input w-28"
+                            value={fuelForm.idleHours}
+                            onChange={(e) => setFuelForm((f) => ({ ...f, idleHours: e.target.value }))}
+                          />
+                          <button onClick={() => addFuelLog(v.id)} disabled={busy} className="btn-secondary shrink-0 px-2.5 py-1 text-xs">
+                            {t("addFuelLog")}
                           </button>
                         </div>
                       </div>

@@ -13,6 +13,8 @@ describe("RfiService", () => {
   let prisma: {
     project: { findFirst: jest.Mock };
     rfi: { findFirst: jest.Mock; findMany: jest.Mock; count: jest.Mock; create: jest.Mock; update: jest.Mock };
+    changeOrder: { findFirst: jest.Mock };
+    punchListItem: { findMany: jest.Mock };
   };
   let audit: { record: jest.Mock };
   let webhooks: { trigger: jest.Mock };
@@ -21,6 +23,8 @@ describe("RfiService", () => {
     prisma = {
       project: { findFirst: jest.fn() },
       rfi: { findFirst: jest.fn(), findMany: jest.fn(), count: jest.fn(), create: jest.fn(), update: jest.fn() },
+      changeOrder: { findFirst: jest.fn() },
+      punchListItem: { findMany: jest.fn() },
     };
     audit = { record: jest.fn() };
     webhooks = { trigger: jest.fn() };
@@ -176,6 +180,72 @@ describe("RfiService", () => {
       await service.listForProject(COMPANY_A, "project-1");
 
       expect(prisma.rfi.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { projectId: "project-1" } }));
+    });
+  });
+
+  describe("linkChangeOrder()", () => {
+    it("rejects a change order that doesn't belong to this company", async () => {
+      prisma.rfi.findFirst.mockResolvedValue({ id: "rfi-1", companyId: COMPANY_A });
+      prisma.changeOrder.findFirst.mockResolvedValue(null);
+
+      await expect(service.linkChangeOrder(COMPANY_A, "rfi-1", { changeOrderId: "co-1" })).rejects.toThrow(NotFoundException);
+      expect(prisma.rfi.update).not.toHaveBeenCalled();
+    });
+
+    it("links a valid change order", async () => {
+      prisma.rfi.findFirst.mockResolvedValue({ id: "rfi-1", companyId: COMPANY_A });
+      prisma.changeOrder.findFirst.mockResolvedValue({ id: "co-1", companyId: COMPANY_A });
+
+      await service.linkChangeOrder(COMPANY_A, "rfi-1", { changeOrderId: "co-1" });
+
+      expect(prisma.rfi.update).toHaveBeenCalledWith({ where: { id: "rfi-1" }, data: { changeOrderId: "co-1" } });
+    });
+
+    it("unlinks when changeOrderId is null, without checking a change order exists", async () => {
+      prisma.rfi.findFirst.mockResolvedValue({ id: "rfi-1", companyId: COMPANY_A });
+
+      await service.linkChangeOrder(COMPANY_A, "rfi-1", { changeOrderId: null });
+
+      expect(prisma.changeOrder.findFirst).not.toHaveBeenCalled();
+      expect(prisma.rfi.update).toHaveBeenCalledWith({ where: { id: "rfi-1" }, data: { changeOrderId: null } });
+    });
+  });
+
+  describe("costImpactSummary()", () => {
+    it("combines RFIs and punch list items into one report", async () => {
+      prisma.project.findFirst.mockResolvedValue({ id: "project-1", companyId: COMPANY_A });
+      prisma.rfi.findMany.mockResolvedValue([
+        { id: "rfi-1", number: "RFI-001", subject: "Ceiling height", estimatedCostImpact: "500", changeOrder: null },
+      ]);
+      prisma.punchListItem.findMany.mockResolvedValue([
+        { id: "p-1", title: "Fix cracked slab", estimatedCostImpact: "300", changeOrder: { grandTotal: "350" } },
+      ]);
+
+      const result = await service.costImpactSummary(COMPANY_A, "project-1");
+
+      expect(result.totalEstimated).toBe(800);
+      expect(result.totalConfirmed).toBe(350);
+      expect(result.rows).toHaveLength(2);
+    });
+  });
+
+  describe("analytics()", () => {
+    it("throws when the project doesn't belong to the company", async () => {
+      prisma.project.findFirst.mockResolvedValue(null);
+      await expect(service.analytics(COMPANY_A, "project-x")).rejects.toThrow(NotFoundException);
+    });
+
+    it("delegates to calculateRfiAnalytics with the project's RFIs", async () => {
+      prisma.project.findFirst.mockResolvedValue({ id: "project-1", companyId: COMPANY_A });
+      const createdAt = new Date();
+      prisma.rfi.findMany.mockResolvedValue([
+        { id: "rfi-1", number: "RFI-001", status: "open", ballInCourtParty: "client", createdAt, dueDate: null, answeredAt: null },
+      ]);
+
+      const result = await service.analytics(COMPANY_A, "project-1");
+
+      expect(result.openCount).toBe(1);
+      expect(result.ballInCourtBreakdown).toEqual([{ party: "client", count: 1 }]);
     });
   });
 });

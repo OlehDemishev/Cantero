@@ -44,6 +44,20 @@ interface BidRequest {
 interface BidRequestDetail extends BidRequest {
   criteria: Criterion[];
 }
+interface LevelingBid {
+  id: string;
+  subcontractorId: string;
+  subcontractorName: string;
+  amount: number;
+}
+interface LevelingScopeRow {
+  description: string;
+  byBid: Record<string, { amount: number; included: boolean } | null>;
+}
+interface Leveling {
+  bids: LevelingBid[];
+  scopeItems: LevelingScopeRow[];
+}
 
 const STATUS_STYLES: Record<BidRequestStatus, string> = {
   open: "bg-brand-50 text-brand-700",
@@ -61,6 +75,8 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
   const [subcontractors, setSubcontractors] = useState<Subcontractor[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<BidRequestDetail | null>(null);
+  const [leveling, setLeveling] = useState<Leveling | null>(null);
+  const [showLeveling, setShowLeveling] = useState(false);
   const [criterionForm, setCriterionForm] = useState({ label: "", weight: "5" });
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", dueDate: "", subcontractorIds: new Set<string>() });
@@ -79,10 +95,23 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
     if (expandedId === id) {
       setExpandedId(null);
       setDetail(null);
+      setLeveling(null);
+      setShowLeveling(false);
     } else {
       setExpandedId(id);
       loadDetail(id);
+      setLeveling(null);
+      setShowLeveling(false);
     }
+  }
+
+  async function toggleLeveling(bidRequestId: string) {
+    if (showLeveling) {
+      setShowLeveling(false);
+      return;
+    }
+    setShowLeveling(true);
+    if (!leveling) apiFetch<Leveling>(`/bid-requests/${bidRequestId}/leveling`).then(setLeveling);
   }
 
   useEffect(() => {
@@ -374,10 +403,73 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                         })}
                       </tbody>
                     </table>
-                    {r.status === "open" && (
-                      <button onClick={() => cancel(r.id)} disabled={busy} className="btn-secondary mt-1 w-fit px-3 py-1 text-xs">
-                        {t("cancelBidRequest")}
-                      </button>
+                    <div className="flex items-center gap-2">
+                      {r.bids.length > 1 && (
+                        <button onClick={() => toggleLeveling(r.id)} className="btn-secondary w-fit px-3 py-1 text-xs">
+                          {showLeveling ? t("hideLeveling") : t("viewLeveling")}
+                        </button>
+                      )}
+                      {r.status === "open" && (
+                        <button onClick={() => cancel(r.id)} disabled={busy} className="btn-secondary w-fit px-3 py-1 text-xs">
+                          {t("cancelBidRequest")}
+                        </button>
+                      )}
+                    </div>
+
+                    {showLeveling && (
+                      <div className="border-t border-gray-100 pt-3">
+                        {!leveling ? (
+                          <p className="text-xs text-gray-400">{tc("loading")}</p>
+                        ) : leveling.scopeItems.length === 0 ? (
+                          <p className="text-xs text-gray-400">{t("noLevelingData")}</p>
+                        ) : (
+                          <div className="overflow-x-auto">
+                            <table className="w-full min-w-[480px] border-collapse text-xs">
+                              <thead>
+                                <tr className="border-b border-gray-200 text-left text-gray-500">
+                                  <th className="py-1">{t("scopeItem")}</th>
+                                  {leveling.bids.map((b) => (
+                                    <th key={b.id} className="px-1 text-right">
+                                      {b.subcontractorName}
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {leveling.scopeItems.map((row) => (
+                                  <tr key={row.description} className="border-b border-gray-100">
+                                    <td className="py-1">{row.description}</td>
+                                    {leveling.bids.map((b) => {
+                                      const cell = row.byBid[b.id];
+                                      return (
+                                        <td key={b.id} className="px-1 text-right">
+                                          {!cell ? (
+                                            <span className="text-gray-300">{t("notMentioned")}</span>
+                                          ) : (
+                                            <span className={cell.included ? "text-gray-900" : "text-error-600 line-through"}>
+                                              {cell.amount} {currency}
+                                            </span>
+                                          )}
+                                        </td>
+                                      );
+                                    })}
+                                  </tr>
+                                ))}
+                              </tbody>
+                              <tfoot>
+                                <tr className="font-semibold">
+                                  <td className="pt-1">{t("totalBid")}</td>
+                                  {leveling.bids.map((b) => (
+                                    <td key={b.id} className="pt-1 text-right">
+                                      {b.amount} {currency}
+                                    </td>
+                                  ))}
+                                </tr>
+                              </tfoot>
+                            </table>
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}

@@ -24,6 +24,9 @@ interface Template {
   defaultControlMeasures: string | null;
   defaultPpe: string | null;
   items: TemplateItem[];
+  version: number;
+  createdAt: string;
+  previousVersionId: string | null;
 }
 interface ItemDraft {
   title: string;
@@ -47,6 +50,9 @@ export default function TemplatesPage() {
   const [defaultPpe, setDefaultPpe] = useState("");
   const [items, setItems] = useState<ItemDraft[]>([{ ...EMPTY_ITEM }]);
   const [busy, setBusy] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [historyFor, setHistoryFor] = useState<string | null>(null);
+  const [history, setHistory] = useState<Template[] | null>(null);
 
   function load() {
     apiFetch<Template[]>("/checklist-templates").then(setTemplates);
@@ -62,6 +68,35 @@ export default function TemplatesPage() {
     setDefaultControlMeasures("");
     setDefaultPpe("");
     setItems([{ ...EMPTY_ITEM }]);
+    setEditingId(null);
+  }
+
+  function startEdit(tpl: Template) {
+    setType(tpl.type);
+    setName(tpl.name);
+    setDefaultSubject(tpl.defaultSubject ?? "");
+    setDefaultBody(tpl.defaultBody ?? "");
+    setDefaultHazards(tpl.defaultHazards ?? "");
+    setDefaultControlMeasures(tpl.defaultControlMeasures ?? "");
+    setDefaultPpe(tpl.defaultPpe ?? "");
+    setItems(
+      tpl.items.length > 0
+        ? tpl.items.map((it) => ({ title: it.title, description: it.description ?? "", location: it.location ?? "" }))
+        : [{ ...EMPTY_ITEM }],
+    );
+    setEditingId(tpl.id);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  async function toggleHistory(id: string) {
+    if (historyFor === id) {
+      setHistoryFor(null);
+      setHistory(null);
+      return;
+    }
+    setHistoryFor(id);
+    const versions = await apiFetch<Template[]>(`/checklist-templates/${id}/history`);
+    setHistory(versions);
   }
 
   function updateItem(index: number, patch: Partial<ItemDraft>) {
@@ -80,23 +115,26 @@ export default function TemplatesPage() {
     e.preventDefault();
     setBusy(true);
     try {
-      await apiFetch("/checklist-templates", {
-        method: "POST",
-        body: JSON.stringify({
-          type,
-          name,
-          items: type === "punch_list" ? items.filter((it) => it.title.trim()).map((it) => ({
-            title: it.title,
-            description: it.description || undefined,
-            location: it.location || undefined,
-          })) : undefined,
-          defaultSubject: type !== "punch_list" ? defaultSubject : undefined,
-          defaultBody: type !== "punch_list" && type !== "jha" ? defaultBody || undefined : undefined,
-          defaultHazards: type === "jha" ? defaultHazards || undefined : undefined,
-          defaultControlMeasures: type === "jha" ? defaultControlMeasures || undefined : undefined,
-          defaultPpe: type === "jha" ? defaultPpe || undefined : undefined,
-        }),
-      });
+      const body = {
+        type,
+        name,
+        items: type === "punch_list" ? items.filter((it) => it.title.trim()).map((it) => ({
+          title: it.title,
+          description: it.description || undefined,
+          location: it.location || undefined,
+        })) : undefined,
+        defaultSubject: type !== "punch_list" ? defaultSubject : undefined,
+        defaultBody: type !== "punch_list" && type !== "jha" ? defaultBody || undefined : undefined,
+        defaultHazards: type === "jha" ? defaultHazards || undefined : undefined,
+        defaultControlMeasures: type === "jha" ? defaultControlMeasures || undefined : undefined,
+        defaultPpe: type === "jha" ? defaultPpe || undefined : undefined,
+      };
+      if (editingId) {
+        const { type: _type, ...updateBody } = body;
+        await apiFetch(`/checklist-templates/${editingId}`, { method: "PATCH", body: JSON.stringify(updateBody) });
+      } else {
+        await apiFetch("/checklist-templates", { method: "POST", body: JSON.stringify(body) });
+      }
       resetForm();
       load();
     } finally {
@@ -117,11 +155,16 @@ export default function TemplatesPage() {
       <p className="mt-1 text-sm text-gray-500">{t("subtitle")}</p>
 
       <div className="mt-6 card max-w-xl">
-        <h2 className="mb-4 text-sm font-semibold text-gray-700">{t("newTemplate")}</h2>
+        <h2 className="mb-4 text-sm font-semibold text-gray-700">{editingId ? t("editTemplate") : t("newTemplate")}</h2>
         <form onSubmit={submit} className="flex flex-col gap-3">
           <label className="flex flex-col gap-1.5 text-sm">
             <span className="font-medium text-gray-700">{t("templateType")}</span>
-            <select className="input" value={type} onChange={(e) => setType(e.target.value as ChecklistTemplateType)}>
+            <select
+              className="input"
+              disabled={!!editingId}
+              value={type}
+              onChange={(e) => setType(e.target.value as ChecklistTemplateType)}
+            >
               {TYPES.map((ty) => (
                 <option key={ty} value={ty}>
                   {t(ty)}
@@ -194,9 +237,16 @@ export default function TemplatesPage() {
             </>
           )}
 
-          <button type="submit" disabled={busy} className="btn-primary self-start">
-            {tc("create")}
-          </button>
+          <div className="flex gap-2">
+            <button type="submit" disabled={busy} className="btn-primary self-start">
+              {editingId ? tc("save") : tc("create")}
+            </button>
+            {editingId && (
+              <button type="button" onClick={resetForm} className="btn-secondary self-start">
+                {tc("cancel")}
+              </button>
+            )}
+          </div>
         </form>
       </div>
 
@@ -211,18 +261,47 @@ export default function TemplatesPage() {
             ) : (
               <ul className="flex flex-col gap-2">
                 {list.map((tpl) => (
-                  <li key={tpl.id} className="card flex items-start justify-between gap-3">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{tpl.name}</div>
-                      {tpl.type === "punch_list" ? (
-                        <div className="mt-1 text-xs text-gray-500">{t("itemCount", { count: tpl.items.length })}</div>
-                      ) : (
-                        <div className="mt-1 text-xs text-gray-500">{tpl.defaultSubject}</div>
-                      )}
+                  <li key={tpl.id} className="card">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-gray-900">{tpl.name}</span>
+                          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">{t("versionBadge", { version: tpl.version })}</span>
+                        </div>
+                        {tpl.type === "punch_list" ? (
+                          <div className="mt-1 text-xs text-gray-500">{t("itemCount", { count: tpl.items.length })}</div>
+                        ) : (
+                          <div className="mt-1 text-xs text-gray-500">{tpl.defaultSubject}</div>
+                        )}
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <button onClick={() => startEdit(tpl)} className="btn-secondary px-2.5 py-1 text-xs">
+                          {tc("edit")}
+                        </button>
+                        {tpl.previousVersionId && (
+                          <button onClick={() => toggleHistory(tpl.id)} className="btn-secondary px-2.5 py-1 text-xs">
+                            {t("history")}
+                          </button>
+                        )}
+                        <button onClick={() => remove(tpl.id)} className="text-gray-400 hover:text-error-600">
+                          ×
+                        </button>
+                      </div>
                     </div>
-                    <button onClick={() => remove(tpl.id)} className="text-gray-400 hover:text-error-600">
-                      ×
-                    </button>
+                    {historyFor === tpl.id && (
+                      <ul className="mt-3 flex flex-col gap-1 border-t border-gray-100 pt-3">
+                        {history === null ? (
+                          <li className="text-xs text-gray-400">{tc("loading")}</li>
+                        ) : (
+                          history.map((v) => (
+                            <li key={v.id} className="flex items-center justify-between text-xs text-gray-500">
+                              <span>{t("versionBadge", { version: v.version })}</span>
+                              <span>{new Date(v.createdAt).toLocaleDateString()}</span>
+                            </li>
+                          ))
+                        )}
+                      </ul>
+                    )}
                   </li>
                 ))}
               </ul>

@@ -5,6 +5,7 @@ import { PdfService } from "../common/pdf/pdf.service";
 import { StorageService } from "../common/storage/storage.service";
 import { InvoicesService } from "../finance/invoices.service";
 import { DocumentsService } from "../documents/documents.service";
+import { computeCloseoutReadiness } from "./closeout-readiness";
 
 /** Builds the client-handoff ZIP: a closeout summary PDF, the project's latest invoice PDF, and its stored documents. */
 @Injectable()
@@ -16,6 +17,27 @@ export class ProjectCloseoutService {
     private readonly invoices: InvoicesService,
     private readonly documents: DocumentsService,
   ) {}
+
+  async readiness(companyId: string, projectId: string) {
+    const project = await this.prisma.project.findFirst({ where: { id: projectId, companyId } });
+    if (!project) throw new NotFoundException("Project not found");
+
+    const [asBuilts, omManuals, openPunchList, openRfis, openWarrantyClaims] = await Promise.all([
+      this.documents.list(companyId, { projectId, category: "as_built" }),
+      this.documents.list(companyId, { projectId, category: "om_manual" }),
+      this.prisma.punchListItem.count({ where: { companyId, projectId, status: { not: "verified" } } }),
+      this.prisma.rfi.count({ where: { companyId, projectId, status: { not: "closed" } } }),
+      this.prisma.warrantyClaim.count({ where: { companyId, projectId, status: { in: ["open", "in_progress"] } } }),
+    ]);
+
+    return computeCloseoutReadiness({
+      asBuiltCount: asBuilts.length,
+      omManualCount: omManuals.length,
+      openPunchList,
+      openRfis,
+      openWarrantyClaims,
+    });
+  }
 
   async buildPackage(companyId: string, projectId: string): Promise<Buffer> {
     const project = await this.prisma.project.findFirst({

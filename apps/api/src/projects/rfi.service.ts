@@ -4,6 +4,7 @@ import type {
   BallInCourtParty,
   BulkActionResult,
   CreateRfiInput,
+  LinkCostImpactChangeOrderInput,
   SetDrawingPinInput,
   SetRfiBallInCourtInput,
   UpdateRfiInput,
@@ -11,6 +12,8 @@ import type {
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { calculateCostImpactSummary, type CostImpactSourceItem } from "./cost-impact-summary";
+import { calculateRfiAnalytics } from "./rfi-analytics";
 
 @Injectable()
 export class RfiService {
@@ -50,6 +53,7 @@ export class RfiService {
         priority: input.priority,
         dueDate: input.dueDate ? new Date(input.dueDate) : undefined,
         costImpact: input.costImpact,
+        estimatedCostImpact: input.estimatedCostImpact,
         scheduleImpactDays: input.scheduleImpactDays,
         askedByUserId: actor.userId,
         askedByName: actor.name,
@@ -69,9 +73,22 @@ export class RfiService {
         priority: input.priority,
         dueDate: input.dueDate === null ? null : input.dueDate ? new Date(input.dueDate) : undefined,
         costImpact: input.costImpact,
+        estimatedCostImpact: input.estimatedCostImpact,
         scheduleImpactDays: input.scheduleImpactDays,
       },
     });
+  }
+
+  /** Links this RFI to the change order raised as its consequence — turns its estimatedCostImpact
+   * from a guess into a confirmed figure backed by an actual priced/approved change order. Pass
+   * changeOrderId: null to unlink. */
+  async linkChangeOrder(companyId: string, id: string, input: LinkCostImpactChangeOrderInput) {
+    const rfi = await this.get(companyId, id);
+    if (input.changeOrderId) {
+      const changeOrder = await this.prisma.changeOrder.findFirst({ where: { id: input.changeOrderId, companyId } });
+      if (!changeOrder) throw new NotFoundException("Change order not found");
+    }
+    return this.prisma.rfi.update({ where: { id: rfi.id }, data: { changeOrderId: input.changeOrderId } });
   }
 
   async setBallInCourt(companyId: string, actor: AuditActor, id: string, input: SetRfiBallInCourtInput) {
@@ -149,6 +166,53 @@ export class RfiService {
       }
     }
     return result;
+  }
+
+  /** Combines this project's cost-impact-carrying RFIs and punch list items into one report — see cost-impact-summary.ts. */
+  async costImpactSummary(companyId: string, projectId: string) {
+    await this.assertProject(companyId, projectId);
+
+    const [rfis, punchListItems] = await Promise.all([
+      this.prisma.rfi.findMany({
+        where: { projectId, OR: [{ estimatedCostImpact: { not: null } }, { changeOrderId: { not: null } }] },
+        select: { id: true, number: true, subject: true, estimatedCostImpact: true, changeOrder: { select: { grandTotal: true } } },
+      }),
+      this.prisma.punchListItem.findMany({
+        where: { projectId, OR: [{ estimatedCostImpact: { not: null } }, { changeOrderId: { not: null } }] },
+        select: { id: true, title: true, estimatedCostImpact: true, changeOrder: { select: { grandTotal: true } } },
+      }),
+    ]);
+
+    const items: CostImpactSourceItem[] = [
+      ...rfis.map((r) => ({
+        type: "rfi" as const,
+        id: r.id,
+        label: `${r.number} — ${r.subject}`,
+        estimatedCostImpact: r.estimatedCostImpact !== null ? Number(r.estimatedCostImpact) : null,
+        confirmedAmount: r.changeOrder ? Number(r.changeOrder.grandTotal) : null,
+      })),
+      ...punchListItems.map((p) => ({
+        type: "punch_list" as const,
+        id: p.id,
+        label: p.title,
+        estimatedCostImpact: p.estimatedCostImpact !== null ? Number(p.estimatedCostImpact) : null,
+        confirmedAmount: p.changeOrder ? Number(p.changeOrder.grandTotal) : null,
+      })),
+    ];
+
+    return calculateCostImpactSummary(items);
+  }
+
+  /** Turnaround-time analytics for a project's RFI log — see rfi-analytics.ts. */
+  async analytics(companyId: string, projectId: string) {
+    await this.assertProject(companyId, projectId);
+
+    const rfis = await this.prisma.rfi.findMany({
+      where: { projectId },
+      select: { id: true, number: true, status: true, ballInCourtParty: true, createdAt: true, dueDate: true, answeredAt: true },
+    });
+
+    return calculateRfiAnalytics(rfis, new Date());
   }
 
   private async assertProject(companyId: string, projectId: string) {

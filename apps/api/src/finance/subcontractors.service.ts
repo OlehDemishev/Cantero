@@ -5,12 +5,15 @@ import type {
   AddSubcontractorPaymentInput,
   CreatePerformanceReviewInput,
   CreateSubcontractorInput,
+  SetSubcontractorDiversityCertificationsInput,
   SubcontractorDocumentType,
   UpdateSubcontractorProfileInput,
   UpdateSubcontractorTaxProfileInput,
 } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
+import { calculateDiversitySpend } from "./diversity-spend";
+import { SubcontractorPrequalificationService } from "../subcontractor-prequalification/subcontractor-prequalification.service";
 
 /// The two documents virtually every jurisdiction requires on file before a sub can legally work
 /// on a job site — assign() blocks on these, complianceStatus() reports on them individually.
@@ -34,6 +37,8 @@ const SUBCONTRACTOR_SELECT_WITHOUT_TAX_ID = {
   safetyProgramSummary: true,
   legalBusinessName: true,
   mailingAddress: true,
+  diversityCertifications: true,
+  diversityCertificationExpiresAt: true,
 } as const;
 
 function maskTaxId(taxId: string | null): string | null {
@@ -47,6 +52,7 @@ export class SubcontractorsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly prequalification: SubcontractorPrequalificationService,
   ) {}
 
   list(companyId: string) {
@@ -252,6 +258,42 @@ export class SubcontractorsService {
     });
   }
 
+  /** Self-reported MBE/WBE/DBE/etc. certifications — see the schema doc comment on
+   * Subcontractor.diversityCertifications. Not gated against anything, purely informational
+   * until diversitySpendReport() rolls it up for public-work compliance reporting. */
+  async setDiversityCertifications(companyId: string, actor: AuditActor, id: string, input: SetSubcontractorDiversityCertificationsInput) {
+    const subcontractor = await this.assertOwned(companyId, id);
+    const updated = await this.prisma.subcontractor.update({
+      where: { id },
+      data: {
+        diversityCertifications: input.diversityCertifications,
+        diversityCertificationExpiresAt: input.diversityCertificationExpiresAt,
+      },
+      select: SUBCONTRACTOR_SELECT_WITHOUT_TAX_ID,
+    });
+    this.audit.record(
+      companyId,
+      actor,
+      "subcontractor.diversity_certifications_updated",
+      "Subcontractor",
+      id,
+      `Updated diversity certifications for "${subcontractor.name}"`,
+    );
+    return updated;
+  }
+
+  /** Spend-by-certification rollup for public-work bid compliance reporting — paid
+   * SubcontractorCost only, since committed-but-unpaid spend isn't yet "spend". Company-wide
+   * when projectId is omitted. */
+  async diversitySpendReport(companyId: string, projectId?: string) {
+    const costs = await this.prisma.subcontractorCost.findMany({
+      where: { companyId, paid: true, ...(projectId ? { projectId } : {}) },
+      select: { amount: true, subcontractor: { select: { diversityCertifications: true } } },
+    });
+
+    return calculateDiversitySpend(costs.map((c) => ({ categories: c.subcontractor.diversityCertifications, amount: Number(c.amount) })));
+  }
+
   /** Public, unauthenticated — track record is this company's own history with the sub
    * (projects worked, amount paid out), not a cross-company rating. Performance review data
    * (SubcontractorPerformanceReview) is deliberately excluded here — it's the GC's private
@@ -380,6 +422,32 @@ export class SubcontractorsService {
       throw new BadRequestException(
         `Cannot assign "${subcontractorName}" — missing or expired: ${missing.map((t) => t.replace(/_/g, " ")).join(", ")}`,
       );
+    }
+
+    await this.assertSafetyGate(companyId, subcontractorId, subcontractorName);
+  }
+
+  /** Independent from the insurance-document check above — a company can require one, both, or
+   * neither. requireSubcontractorPrequalification gates on having an approved, non-expired cycle
+   * at all; subcontractorEmrThreshold (set on its own) additionally gates on the EMR value itself,
+   * so a company can enforce "must be prequalified" and/or "EMR must be under X" independently. */
+  private async assertSafetyGate(companyId: string, subcontractorId: string, subcontractorName: string) {
+    const company = await this.prisma.company.findUniqueOrThrow({
+      where: { id: companyId },
+      select: { requireSubcontractorPrequalification: true, subcontractorEmrThreshold: true },
+    });
+    if (!company.requireSubcontractorPrequalification && company.subcontractorEmrThreshold === null) return;
+
+    const current = await this.prequalification.getCurrentValid(companyId, subcontractorId);
+    if (company.requireSubcontractorPrequalification && !current) {
+      throw new BadRequestException(`Cannot assign "${subcontractorName}" — no approved, current prequalification on file`);
+    }
+    if (company.subcontractorEmrThreshold !== null && current?.safetyEmrRating !== null && current?.safetyEmrRating !== undefined) {
+      if (Number(current.safetyEmrRating) > Number(company.subcontractorEmrThreshold)) {
+        throw new BadRequestException(
+          `Cannot assign "${subcontractorName}" — EMR ${current.safetyEmrRating} exceeds the company threshold of ${company.subcontractorEmrThreshold}`,
+        );
+      }
     }
   }
 }

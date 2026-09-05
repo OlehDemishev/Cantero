@@ -2,10 +2,12 @@ import { Body, Controller, Get, Post, Query } from "@nestjs/common";
 import {
   issueFromEstimateSchema,
   recordStockMovementSchema,
+  setBinLocationSchema,
   transferStockSchema,
   type AuthUser,
   type IssueFromEstimateInput,
   type RecordStockMovementInput,
+  type SetBinLocationInput,
   type TransferStockInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
@@ -24,6 +26,11 @@ export class StockController {
   @Get("movements")
   movements(@CurrentUser() user: AuthUser, @Query("warehouseId") warehouseId?: string) {
     return this.service.listMovements(user.companyId, warehouseId);
+  }
+
+  @Get("valuation")
+  valuation(@CurrentUser() user: AuthUser, @Query("warehouseId") warehouseId?: string) {
+    return this.service.inventoryValuation(user.companyId, warehouseId);
   }
 
   @Post("movements")
@@ -48,5 +55,10 @@ export class StockController {
     @Body(new ZodValidationPipe(issueFromEstimateSchema)) body: IssueFromEstimateInput,
   ) {
     return this.service.issueFromEstimate(user.companyId, body.estimateId, body.warehouseId);
+  }
+
+  @Post("bin-location")
+  setBinLocation(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(setBinLocationSchema)) body: SetBinLocationInput) {
+    return this.service.setBinLocation(user.companyId, body);
   }
 }

@@ -206,4 +206,52 @@ describe("SafetyAnalyticsService", () => {
       expect(result.totalActiveWorkers).toBe(0);
     });
   });
+
+  describe("nearMissAnalytics()", () => {
+    it("counts near-misses and recordable cases company-wide, computing the ratio", async () => {
+      prisma.incidentReport.findMany.mockResolvedValue([
+        incident({ severity: "near_miss", oshaRecordable: false }),
+        incident({ severity: "near_miss", oshaRecordable: false }),
+        incident({ severity: "medical_treatment", oshaRecordable: true }),
+      ]);
+
+      const result = await service.nearMissAnalytics(COMPANY_A, 2026);
+
+      expect(result.totalNearMiss).toBe(2);
+      expect(result.totalRecordable).toBe(1);
+      expect(result.ratio).toBe(2);
+    });
+
+    it("returns a null ratio when there are no recordable cases", async () => {
+      prisma.incidentReport.findMany.mockResolvedValue([incident({ severity: "near_miss", oshaRecordable: false })]);
+
+      const result = await service.nearMissAnalytics(COMPANY_A, 2026);
+
+      expect(result.ratio).toBeNull();
+    });
+
+    it("breaks down near-miss and recordable counts per project", async () => {
+      prisma.incidentReport.findMany.mockResolvedValue([
+        incident({ projectId: "project-1", project: { id: "project-1", name: "Site A" }, severity: "near_miss", oshaRecordable: false }),
+        incident({ projectId: "project-2", project: { id: "project-2", name: "Site B" }, severity: "medical_treatment", oshaRecordable: true }),
+      ]);
+
+      const result = await service.nearMissAnalytics(COMPANY_A, 2026);
+
+      expect(result.projects).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ projectId: "project-1", projectName: "Site A", nearMissCount: 1, recordableCount: 0 }),
+          expect.objectContaining({ projectId: "project-2", projectName: "Site B", nearMissCount: 0, recordableCount: 1 }),
+        ]),
+      );
+    });
+
+    it("returns a 12-point monthly trend", async () => {
+      prisma.incidentReport.findMany.mockResolvedValue([]);
+
+      const result = await service.nearMissAnalytics(COMPANY_A, 2026);
+
+      expect(result.monthlyTrend).toHaveLength(12);
+    });
+  });
 });

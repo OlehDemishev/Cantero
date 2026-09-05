@@ -1,10 +1,22 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import type { AssignCrewInput, CreateCrewInput, CreateResourceAssignmentInput, Locale, UpdateCrewMembersInput } from "@cantero/shared";
+import type {
+  AssignCrewInput,
+  CreateCrewInput,
+  CreateResourceAssignmentInput,
+  CreateScheduleScenarioInput,
+  LevelResourceInput,
+  LevelingMove,
+  Locale,
+  SetScenarioTaskOverrideInput,
+  UpdateCrewMembersInput,
+} from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { SmsService } from "../common/sms/sms.service";
 import { smsTemplates } from "../common/sms/sms-templates";
 import { MessageTemplatesService } from "../message-templates/message-templates.service";
+import { levelAssignments } from "./level-assignments";
+import { computeCriticalPath } from "../projects/critical-path";
 
 type ResourceType = "worker" | "equipment";
 
@@ -320,6 +332,135 @@ export class ResourcePlanningService {
 
     const conflicts = (await Promise.all(created.map((a) => this.findConflictsFor(companyId, a)))).flat();
     return { assignments: created.map((a) => ({ id: a.id })), conflicts };
+  }
+
+  /** Resolves every overlap for one resource by pushing later-starting assignments out to start
+   * right after the previous one ends (see levelAssignments) and persisting the shifted dates.
+   * Applies immediately — there is no separate preview step, since the caller can already see the
+   * conflicts via calendar()/findConflictsFor before choosing to level. */
+  async levelResource(companyId: string, actor: AuditActor, input: LevelResourceInput) {
+    const where = input.resourceType === "worker" ? { companyId, workerId: input.resourceId } : { companyId, equipmentId: input.resourceId };
+    const assignments = await this.prisma.resourceAssignment.findMany({ where, include: { project: { select: { name: true } } } });
+    if (assignments.length === 0) throw new NotFoundException("No assignments found for this resource");
+
+    const leveled = levelAssignments(assignments.map((a) => ({ id: a.id, startDate: a.startDate, endDate: a.endDate })));
+    const byId = new Map(assignments.map((a) => [a.id, a]));
+
+    const moves: LevelingMove[] = [];
+    for (const l of leveled) {
+      if (l.shiftedByDays === 0) continue;
+      const original = byId.get(l.id)!;
+      moves.push({
+        assignmentId: l.id,
+        projectName: original.project.name,
+        originalStartDate: original.startDate.toISOString(),
+        originalEndDate: original.endDate.toISOString(),
+        newStartDate: l.startDate.toISOString(),
+        newEndDate: l.endDate.toISOString(),
+        shiftedByDays: l.shiftedByDays,
+      });
+    }
+
+    if (moves.length > 0) {
+      await this.prisma.$transaction(
+        moves.map((m) =>
+          this.prisma.resourceAssignment.update({
+            where: { id: m.assignmentId },
+            data: { startDate: new Date(m.newStartDate), endDate: new Date(m.newEndDate) },
+          }),
+        ),
+      );
+      this.audit.record(
+        companyId,
+        actor,
+        "resource_assignment.leveled",
+        input.resourceType === "worker" ? "Worker" : "Equipment",
+        input.resourceId,
+        `Leveled ${moves.length} overlapping assignment(s)`,
+      );
+    }
+
+    return { moves };
+  }
+
+  listScenarios(companyId: string, projectId: string) {
+    return this.prisma.scheduleScenario.findMany({
+      where: { companyId, projectId },
+      include: { overrides: true },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  async createScenario(companyId: string, actor: AuditActor, projectId: string, input: CreateScheduleScenarioInput) {
+    const project = await this.prisma.project.findFirst({ where: { id: projectId, companyId } });
+    if (!project) throw new NotFoundException("Project not found");
+
+    const scenario = await this.prisma.scheduleScenario.create({
+      data: { companyId, projectId, name: input.name, createdByUserId: actor.userId },
+    });
+    this.audit.record(companyId, actor, "schedule_scenario.created", "ScheduleScenario", scenario.id, `Created scenario "${input.name}" for "${project.name}"`);
+    return scenario;
+  }
+
+  async deleteScenario(companyId: string, id: string) {
+    const scenario = await this.prisma.scheduleScenario.findFirst({ where: { id, companyId } });
+    if (!scenario) throw new NotFoundException("Scenario not found");
+    await this.prisma.scheduleScenario.delete({ where: { id } });
+    return { ok: true };
+  }
+
+  async setScenarioTaskOverride(companyId: string, id: string, input: SetScenarioTaskOverrideInput) {
+    const scenario = await this.prisma.scheduleScenario.findFirst({ where: { id, companyId } });
+    if (!scenario) throw new NotFoundException("Scenario not found");
+    const task = await this.prisma.task.findFirst({ where: { id: input.taskId, projectId: scenario.projectId } });
+    if (!task) throw new NotFoundException("Task not found on this scenario's project");
+
+    return this.prisma.scheduleScenarioTaskOverride.upsert({
+      where: { scenarioId_taskId: { scenarioId: id, taskId: input.taskId } },
+      create: { scenarioId: id, taskId: input.taskId, startDate: new Date(input.startDate), dueDate: new Date(input.dueDate) },
+      update: { startDate: new Date(input.startDate), dueDate: new Date(input.dueDate) },
+    });
+  }
+
+  /**
+   * Compares the project's real (baseline) task dates against this scenario's overrides by
+   * running computeCriticalPath on each — override rows replace their task's baseline dates,
+   * every other task keeps its real dates — so both runs share the same dependency graph and
+   * only differ where the scenario actually changed something.
+   */
+  async compareScenario(companyId: string, id: string) {
+    const scenario = await this.prisma.scheduleScenario.findFirst({ where: { id, companyId }, include: { overrides: true } });
+    if (!scenario) throw new NotFoundException("Scenario not found");
+
+    const [tasks, dependencies] = await Promise.all([
+      this.prisma.task.findMany({ where: { projectId: scenario.projectId, startDate: { not: null }, dueDate: { not: null } } }),
+      this.prisma.taskDependency.findMany({
+        where: { predecessor: { projectId: scenario.projectId }, successor: { projectId: scenario.projectId } },
+      }),
+    ]);
+
+    const baselineTasks = tasks.map((t) => ({ id: t.id, startDate: t.startDate!, dueDate: t.dueDate! }));
+    const overrideByTask = new Map(scenario.overrides.map((o) => [o.taskId, o]));
+    const scenarioTasks = tasks.map((t) => {
+      const override = overrideByTask.get(t.id);
+      return override ? { id: t.id, startDate: override.startDate, dueDate: override.dueDate } : { id: t.id, startDate: t.startDate!, dueDate: t.dueDate! };
+    });
+
+    const deps = dependencies.map((d) => ({ predecessorId: d.predecessorId, successorId: d.successorId, type: d.type, lagDays: d.lagDays }));
+    const baselineResult = computeCriticalPath(baselineTasks, deps);
+    const scenarioResult = computeCriticalPath(scenarioTasks, deps);
+
+    const baselineFinish = baselineResult.length > 0 ? Math.max(...baselineResult.map((r) => r.earlyFinish.getTime())) : null;
+    const scenarioFinish = scenarioResult.length > 0 ? Math.max(...scenarioResult.map((r) => r.earlyFinish.getTime())) : null;
+    const finishDeltaDays =
+      baselineFinish !== null && scenarioFinish !== null ? Math.round((scenarioFinish - baselineFinish) / (24 * 60 * 60 * 1000)) : null;
+
+    return {
+      scenario,
+      baselineProjectFinish: baselineFinish !== null ? new Date(baselineFinish).toISOString() : null,
+      scenarioProjectFinish: scenarioFinish !== null ? new Date(scenarioFinish).toISOString() : null,
+      finishDeltaDays,
+    };
   }
 
   /** Overlap check scoped to just the one resource this assignment belongs to — used to give

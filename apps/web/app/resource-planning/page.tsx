@@ -72,6 +72,15 @@ interface CreateConflict {
   startDate: string;
   endDate: string;
 }
+interface LevelingMove {
+  assignmentId: string;
+  projectName: string;
+  originalStartDate: string;
+  originalEndDate: string;
+  newStartDate: string;
+  newEndDate: string;
+  shiftedByDays: number;
+}
 
 const EMPTY_FORM = { resourceType: "worker" as ResourceType, resourceId: "", projectId: "", taskId: "", startDate: "", endDate: "", note: "" };
 
@@ -96,6 +105,8 @@ export default function ResourcePlanningPage() {
   const [heatmap, setHeatmap] = useState<HeatmapRow[] | null>(null);
   const [heatmapFrom] = useState(isoDaysFromNow(0));
   const [heatmapTo] = useState(isoDaysFromNow(27));
+  const [leveledMoves, setLeveledMoves] = useState<{ resourceKey: string; moves: LevelingMove[] } | null>(null);
+  const [levelBusy, setLevelBusy] = useState<string | null>(null);
 
   function load() {
     apiFetch<Calendar>("/resource-planning/calendar").then(setCalendar);
@@ -160,6 +171,22 @@ export default function ResourcePlanningPage() {
   async function removeAssignment(id: string) {
     await apiFetch(`/resource-planning/assignments/${id}`, { method: "DELETE" });
     load();
+  }
+
+  async function levelResource(resourceType: ResourceType, resourceId: string) {
+    const resourceKey = `${resourceType}-${resourceId}`;
+    setLevelBusy(resourceKey);
+    setLeveledMoves(null);
+    try {
+      const result = await apiFetch<{ moves: LevelingMove[] }>("/resource-planning/level", {
+        method: "POST",
+        body: JSON.stringify({ resourceType, resourceId }),
+      });
+      setLeveledMoves({ resourceKey, moves: result.moves });
+      load();
+    } finally {
+      setLevelBusy(null);
+    }
   }
 
   const resourceOptions = form.resourceType === "worker" ? workers : equipment;
@@ -296,28 +323,50 @@ export default function ResourcePlanningPage() {
           <div className="flex flex-col gap-2">
             {calendar.resources
               .filter((r) => r.assignments.length > 0)
-              .map((r) => (
-                <div key={`${r.resourceType}-${r.resourceId}`} className="card">
-                  <div className="text-sm font-medium text-gray-900">
-                    {r.resourceName} <span className="text-xs text-gray-400">({t(r.resourceType)})</span>
-                  </div>
-                  <ul className="mt-2 flex flex-col gap-1.5">
-                    {r.assignments.map((a) => (
-                      <li key={a.id} className="flex items-center justify-between text-xs text-gray-600">
-                        <span>
-                          {a.projectName}
-                          {a.taskName && <span className="text-gray-400"> / {a.taskName}</span>} —{" "}
-                          {new Date(a.startDate).toLocaleDateString()} – {new Date(a.endDate).toLocaleDateString()}
-                          {a.note && <span className="text-gray-400"> · {a.note}</span>}
-                        </span>
-                        <button onClick={() => removeAssignment(a.id)} className="text-gray-400 hover:text-error-600">
-                          ×
+              .map((r) => {
+                const resourceKey = `${r.resourceType}-${r.resourceId}`;
+                const hasConflict = calendar.conflicts.some((c) => c.resourceType === r.resourceType && c.resourceId === r.resourceId);
+                return (
+                  <div key={resourceKey} className="card">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm font-medium text-gray-900">
+                        {r.resourceName} <span className="text-xs text-gray-400">({t(r.resourceType)})</span>
+                      </div>
+                      {hasConflict && (
+                        <button
+                          onClick={() => levelResource(r.resourceType, r.resourceId)}
+                          disabled={levelBusy === resourceKey}
+                          className="btn-secondary px-2 py-1 text-xs"
+                        >
+                          {t("levelSchedule")}
                         </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
+                      )}
+                    </div>
+                    <ul className="mt-2 flex flex-col gap-1.5">
+                      {r.assignments.map((a) => (
+                        <li key={a.id} className="flex items-center justify-between text-xs text-gray-600">
+                          <span>
+                            {a.projectName}
+                            {a.taskName && <span className="text-gray-400"> / {a.taskName}</span>} —{" "}
+                            {new Date(a.startDate).toLocaleDateString()} – {new Date(a.endDate).toLocaleDateString()}
+                            {a.note && <span className="text-gray-400"> · {a.note}</span>}
+                          </span>
+                          <button onClick={() => removeAssignment(a.id)} className="text-gray-400 hover:text-error-600">
+                            ×
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                    {leveledMoves && leveledMoves.resourceKey === resourceKey && (
+                      <div className="mt-2 rounded-md bg-success-50 px-2.5 py-1.5 text-xs text-success-700">
+                        {leveledMoves.moves.length === 0
+                          ? t("levelNoChanges")
+                          : t("leveledMoves", { count: leveledMoves.moves.length })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
           </div>
 
           <h2 className="mb-3 mt-10 text-sm font-semibold text-gray-700">{t("workloadHeatmap")}</h2>

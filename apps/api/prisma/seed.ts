@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
+import { CSI_MASTERFORMAT_DIVISIONS } from "@cantero/shared";
 import {
   metricMaterials,
   metricRateItems,
@@ -13,26 +14,10 @@ const prisma = new PrismaClient();
 
 const DEMO_PASSWORD = "cantero-demo-2026";
 
-/** A trimmed CSI MasterFormat starter set — enough divisions to classify a typical
- * renovation/commercial job without overwhelming a first-time user. */
-const STARTER_COST_CODES = [
-  { code: "01 00 00", name: "General Requirements" },
-  { code: "02 00 00", name: "Existing Conditions" },
-  { code: "03 00 00", name: "Concrete" },
-  { code: "04 00 00", name: "Masonry" },
-  { code: "05 00 00", name: "Metals" },
-  { code: "06 00 00", name: "Wood, Plastics, and Composites" },
-  { code: "07 00 00", name: "Thermal and Moisture Protection" },
-  { code: "08 00 00", name: "Openings" },
-  { code: "09 00 00", name: "Finishes" },
-  { code: "10 00 00", name: "Specialties" },
-  { code: "21 00 00", name: "Fire Suppression" },
-  { code: "22 00 00", name: "Plumbing" },
-  { code: "23 00 00", name: "HVAC" },
-  { code: "26 00 00", name: "Electrical" },
-  { code: "31 00 00", name: "Earthwork" },
-  { code: "32 00 00", name: "Exterior Improvements" },
-];
+/** Single source of truth is CSI_MASTERFORMAT_DIVISIONS in @cantero/shared — also what
+ * CostCodesService.importStandardLibrary offers a real company, so a demo company and one that
+ * imports the standard library later end up with the exact same starter set. */
+const STARTER_COST_CODES = CSI_MASTERFORMAT_DIVISIONS;
 
 async function main() {
   const plans = await Promise.all(

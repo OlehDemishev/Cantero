@@ -83,3 +83,72 @@ describe("PortalService.listProjects — progress", () => {
     expect(result[0].progress.budgetPercent).toBe(25);
   });
 });
+
+describe("PortalService — change requests", () => {
+  let service: PortalService;
+  let prisma: {
+    project: { findFirst: jest.Mock };
+    client: { findUniqueOrThrow: jest.Mock };
+    clientChangeRequest: { findMany: jest.Mock; create: jest.Mock };
+  };
+  let webhooks: { trigger: jest.Mock };
+
+  beforeEach(async () => {
+    prisma = {
+      project: { findFirst: jest.fn() },
+      client: { findUniqueOrThrow: jest.fn() },
+      clientChangeRequest: { findMany: jest.fn(), create: jest.fn() },
+    };
+    webhooks = { trigger: jest.fn() };
+
+    const module = await Test.createTestingModule({
+      providers: [
+        PortalService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: EstimatesService, useValue: {} },
+        { provide: ChangeOrdersService, useValue: {} },
+        { provide: InvoicesService, useValue: {} },
+        { provide: WebhooksService, useValue: webhooks },
+        { provide: BillingService, useValue: {} },
+        { provide: ClientPaymentMethodsService, useValue: {} },
+      ],
+    }).compile();
+
+    service = module.get(PortalService);
+  });
+
+  describe("createChangeRequest()", () => {
+    it("rejects a request for a project that isn't this client's own", async () => {
+      prisma.project.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.createChangeRequest(CLIENT_1, { projectId: "p1", title: "Add a deck", description: "We'd like a rear deck added" }),
+      ).rejects.toThrow("Project not found");
+    });
+
+    it("creates a request and fires a webhook", async () => {
+      prisma.project.findFirst.mockResolvedValue({ id: "p1", name: "Reno" });
+      prisma.client.findUniqueOrThrow.mockResolvedValue({ id: "client-1", name: "Jane Homeowner" });
+      prisma.clientChangeRequest.create.mockResolvedValue({ id: "ccr-1", title: "Add a deck" });
+
+      await service.createChangeRequest(CLIENT_1, { projectId: "p1", title: "Add a deck", description: "We'd like a rear deck added" });
+
+      expect(prisma.clientChangeRequest.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ submittedByName: "Jane Homeowner" }) }),
+      );
+      expect(webhooks.trigger).toHaveBeenCalledWith(COMPANY_A, "client_change_request.submitted", expect.any(Object));
+    });
+  });
+
+  describe("listChangeRequests()", () => {
+    it("scopes to this client's own requests", async () => {
+      prisma.clientChangeRequest.findMany.mockResolvedValue([]);
+
+      await service.listChangeRequests(CLIENT_1);
+
+      expect(prisma.clientChangeRequest.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { companyId: COMPANY_A, submittedByClientId: "client-1" } }),
+      );
+    });
+  });
+});

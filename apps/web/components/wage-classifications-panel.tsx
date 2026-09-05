@@ -2,14 +2,24 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { FRINGE_FUND_TYPES, type FringeFundType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+
+interface FringeBenefitFund {
+  id: string;
+  fundType: FringeFundType;
+  name: string;
+  ratePerHour: string;
+}
 
 export interface WageClassification {
   id: string;
   trade: string;
   hourlyRate: string;
   fringeRate: string;
+  apprenticeRatio: string | null;
   active: boolean;
+  fringeBenefitFunds: FringeBenefitFund[];
 }
 
 export function WageClassificationsPanel() {
@@ -17,9 +27,11 @@ export function WageClassificationsPanel() {
   const tc = useTranslations("common");
 
   const [classifications, setClassifications] = useState<WageClassification[] | null>(null);
-  const [form, setForm] = useState({ trade: "", hourlyRate: "", fringeRate: "" });
+  const [form, setForm] = useState({ trade: "", hourlyRate: "", fringeRate: "", apprenticeRatio: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [fundForm, setFundForm] = useState({ fundType: "pension" as FringeFundType, name: "", ratePerHour: "" });
 
   function load() {
     apiFetch<WageClassification[]>("/wage-classifications").then(setClassifications);
@@ -38,9 +50,10 @@ export function WageClassificationsPanel() {
           trade: form.trade,
           hourlyRate: Number(form.hourlyRate),
           fringeRate: form.fringeRate ? Number(form.fringeRate) : 0,
+          apprenticeRatio: form.apprenticeRatio || undefined,
         }),
       });
-      setForm({ trade: "", hourlyRate: "", fringeRate: "" });
+      setForm({ trade: "", hourlyRate: "", fringeRate: "", apprenticeRatio: "" });
       load();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -51,6 +64,21 @@ export function WageClassificationsPanel() {
 
   async function remove(id: string) {
     await apiFetch(`/wage-classifications/${id}`, { method: "DELETE" });
+    load();
+  }
+
+  async function addFund(wageClassificationId: string) {
+    if (!fundForm.name.trim() || !fundForm.ratePerHour) return;
+    await apiFetch(`/wage-classifications/${wageClassificationId}/fringe-funds`, {
+      method: "POST",
+      body: JSON.stringify({ fundType: fundForm.fundType, name: fundForm.name.trim(), ratePerHour: Number(fundForm.ratePerHour) }),
+    });
+    setFundForm({ fundType: "pension", name: "", ratePerHour: "" });
+    load();
+  }
+
+  async function removeFund(id: string) {
+    await apiFetch(`/wage-classifications/fringe-funds/${id}`, { method: "DELETE" });
     load();
   }
 
@@ -66,14 +94,63 @@ export function WageClassificationsPanel() {
       ) : (
         <ul className="mb-4 flex flex-col gap-1.5">
           {classifications.map((wc) => (
-            <li key={wc.id} className="flex items-center justify-between text-sm">
-              <span className="text-gray-700 dark:text-gray-300">
-                {wc.trade} — {Number(wc.hourlyRate).toFixed(2)}/{tc("hour")}
-                {Number(wc.fringeRate) > 0 && <span className="text-gray-400"> + {Number(wc.fringeRate).toFixed(2)} {t("fringeAbbr")}</span>}
-              </span>
-              <button onClick={() => remove(wc.id)} className="text-gray-400 hover:text-error-600">
-                ×
-              </button>
+            <li key={wc.id} className="border-b border-gray-50 pb-1.5 text-sm last:border-0 dark:border-gray-800">
+              <div className="flex items-center justify-between">
+                <button onClick={() => setExpandedId(expandedId === wc.id ? null : wc.id)} className="text-left text-gray-700 hover:underline dark:text-gray-300">
+                  {wc.trade} — {Number(wc.hourlyRate).toFixed(2)}/{tc("hour")}
+                  {Number(wc.fringeRate) > 0 && <span className="text-gray-400"> + {Number(wc.fringeRate).toFixed(2)} {t("fringeAbbr")}</span>}
+                  {wc.apprenticeRatio && <span className="ml-1.5 rounded-full bg-brand-50 px-1.5 py-0.5 text-xs text-brand-700">{t("ratioAbbr", { ratio: wc.apprenticeRatio })}</span>}
+                </button>
+                <button onClick={() => remove(wc.id)} className="text-gray-400 hover:text-error-600">
+                  ×
+                </button>
+              </div>
+
+              {expandedId === wc.id && (
+                <div className="mt-2 flex flex-col gap-1.5 pl-2">
+                  {wc.fringeBenefitFunds.length > 0 && (
+                    <ul className="flex flex-col gap-1">
+                      {wc.fringeBenefitFunds.map((fund) => (
+                        <li key={fund.id} className="flex items-center justify-between text-xs text-gray-500">
+                          <span>
+                            {t(`fundType_${fund.fundType}`)}: {fund.name} — {Number(fund.ratePerHour).toFixed(2)}/{tc("hour")}
+                          </span>
+                          <button onClick={() => removeFund(fund.id)} className="text-gray-400 hover:text-error-600">
+                            ×
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <select className="input py-1 text-xs" value={fundForm.fundType} onChange={(e) => setFundForm((f) => ({ ...f, fundType: e.target.value as FringeFundType }))}>
+                      {FRINGE_FUND_TYPES.map((ft) => (
+                        <option key={ft} value={ft}>
+                          {t(`fundType_${ft}`)}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      placeholder={t("fundNamePlaceholder")}
+                      className="input py-1 text-xs"
+                      value={fundForm.name}
+                      onChange={(e) => setFundForm((f) => ({ ...f, name: e.target.value }))}
+                    />
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder={t("fringeRatePlaceholder")}
+                      className="input w-24 py-1 text-xs"
+                      value={fundForm.ratePerHour}
+                      onChange={(e) => setFundForm((f) => ({ ...f, ratePerHour: e.target.value }))}
+                    />
+                    <button onClick={() => addFund(wc.id)} className="btn-secondary px-2 py-1 text-xs">
+                      {t("addFund")}
+                    </button>
+                  </div>
+                </div>
+              )}
             </li>
           ))}
         </ul>
@@ -105,6 +182,12 @@ export function WageClassificationsPanel() {
           className="input w-32"
           value={form.fringeRate}
           onChange={(e) => setForm((f) => ({ ...f, fringeRate: e.target.value }))}
+        />
+        <input
+          placeholder={t("apprenticeRatioPlaceholder")}
+          className="input w-28"
+          value={form.apprenticeRatio}
+          onChange={(e) => setForm((f) => ({ ...f, apprenticeRatio: e.target.value }))}
         />
         <button type="submit" disabled={busy} className="btn-secondary shrink-0">
           {tc("create")}

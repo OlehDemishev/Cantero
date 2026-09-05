@@ -38,7 +38,15 @@ interface Deficiency {
   status: "open" | "resolved" | "verified";
   assignee: Worker | null;
   dueDate: string | null;
+  location: string | null;
   inspectionChecklistItem: { id: string; description: string } | null;
+}
+interface HeatmapBucket {
+  location: string;
+  total: number;
+  minor: number;
+  major: number;
+  critical: number;
 }
 
 const STATUS_STYLES: Record<Checklist["status"], string> = {
@@ -65,17 +73,25 @@ export function QualityPanel({ projectId }: { projectId: string }) {
 
   const [checklists, setChecklists] = useState<Checklist[] | null>(null);
   const [deficiencies, setDeficiencies] = useState<Deficiency[] | null>(null);
+  const [heatmap, setHeatmap] = useState<HeatmapBucket[] | null>(null);
   const [templates, setTemplates] = useState<InspectionTemplate[]>([]);
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [creating, setCreating] = useState(false);
   const [checklistForm, setChecklistForm] = useState(EMPTY_CHECKLIST_FORM);
   const [deficiencyDraft, setDeficiencyDraft] = useState<{ checklistId: string; itemId: string } | null>(null);
-  const [deficiencyForm, setDeficiencyForm] = useState({ description: "", severity: "minor" as DeficiencySeverity, assigneeWorkerId: "", dueDate: "" });
+  const [deficiencyForm, setDeficiencyForm] = useState({
+    description: "",
+    severity: "minor" as DeficiencySeverity,
+    assigneeWorkerId: "",
+    dueDate: "",
+    location: "",
+  });
   const [busy, setBusy] = useState(false);
 
   function load() {
     apiFetch<Checklist[]>(`/inspection-checklists?projectId=${projectId}`).then(setChecklists);
     apiFetch<Deficiency[]>(`/deficiencies?projectId=${projectId}`).then(setDeficiencies);
+    apiFetch<HeatmapBucket[]>(`/deficiencies/heat-map?projectId=${projectId}`).then(setHeatmap);
   }
 
   useEffect(() => {
@@ -131,7 +147,7 @@ export function QualityPanel({ projectId }: { projectId: string }) {
 
   function startDeficiency(checklistId: string, item: ChecklistItem) {
     setDeficiencyDraft({ checklistId, itemId: item.id });
-    setDeficiencyForm({ description: item.description, severity: "minor", assigneeWorkerId: "", dueDate: "" });
+    setDeficiencyForm({ description: item.description, severity: "minor", assigneeWorkerId: "", dueDate: "", location: "" });
   }
 
   async function submitDeficiency() {
@@ -145,6 +161,7 @@ export function QualityPanel({ projectId }: { projectId: string }) {
           severity: deficiencyForm.severity,
           assigneeWorkerId: deficiencyForm.assigneeWorkerId || undefined,
           dueDate: deficiencyForm.dueDate ? new Date(deficiencyForm.dueDate).toISOString() : undefined,
+          location: deficiencyForm.location.trim() || undefined,
         }),
       });
       setDeficiencyDraft(null);
@@ -327,6 +344,12 @@ export function QualityPanel({ projectId }: { projectId: string }) {
                       value={deficiencyForm.dueDate}
                       onChange={(e) => setDeficiencyForm((f) => ({ ...f, dueDate: e.target.value }))}
                     />
+                    <input
+                      placeholder={t("locationPlaceholder")}
+                      className="input w-auto py-0.5 text-xs"
+                      value={deficiencyForm.location}
+                      onChange={(e) => setDeficiencyForm((f) => ({ ...f, location: e.target.value }))}
+                    />
                     <button onClick={submitDeficiency} disabled={busy} className="btn-primary px-2 py-1 text-xs">
                       {tc("save")}
                     </button>
@@ -347,6 +370,36 @@ export function QualityPanel({ projectId }: { projectId: string }) {
         </ul>
       )}
 
+      {heatmap && heatmap.length > 0 && (
+        <div className="mb-6">
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("heatmapTitle")}</h3>
+          <div className="card overflow-x-auto">
+            <table className="w-full min-w-[420px] border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 text-left text-xs text-gray-500">
+                  <th className="py-1">{t("location")}</th>
+                  <th className="text-right">{t("severity_minor")}</th>
+                  <th className="text-right">{t("severity_major")}</th>
+                  <th className="text-right">{t("severity_critical")}</th>
+                  <th className="text-right">{t("total")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {heatmap.map((row) => (
+                  <tr key={row.location} className="border-b border-gray-100">
+                    <td className="py-1.5">{row.location}</td>
+                    <td className="text-right tabular-nums text-gray-500">{row.minor}</td>
+                    <td className="text-right tabular-nums text-warning-700">{row.major}</td>
+                    <td className="text-right tabular-nums text-error-600">{row.critical}</td>
+                    <td className="text-right font-semibold tabular-nums text-gray-900">{row.total}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("deficiencies")}</h3>
       {deficiencies === null ? (
         <p className="text-sm text-gray-400">{tc("loading")}</p>
@@ -360,6 +413,7 @@ export function QualityPanel({ projectId }: { projectId: string }) {
                 <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${SEVERITY_STYLES[d.severity]}`}>{t(`severity_${d.severity}`)}</span>
                 <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${DEFICIENCY_STATUS_STYLES[d.status]}`}>{t(`deficiencyStatus_${d.status}`)}</span>
                 {d.dueDate && <span className="text-xs text-gray-500">{new Date(d.dueDate).toLocaleDateString()}</span>}
+                {d.location && <span className="text-xs text-gray-500">{d.location}</span>}
               </div>
               <p className="mt-1.5 text-sm text-gray-900">{d.description}</p>
               {d.assignee && <p className="mt-1 text-xs text-gray-400">{t("assignedTo", { name: d.assignee.name })}</p>}

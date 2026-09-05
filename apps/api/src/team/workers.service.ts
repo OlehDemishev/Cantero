@@ -3,6 +3,7 @@ import * as bcrypt from "bcryptjs";
 import type { AddWorkerCertificationInput, AdjustPtoBalanceInput, CreateWorkerInput, UpdateWorkerInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
+import { calculateLoadedLaborRate } from "./labor-burden";
 
 const PIN_BCRYPT_ROUNDS = 10;
 
@@ -21,6 +22,32 @@ export class WorkersService {
   async get(companyId: string, id: string) {
     const worker = await this.getRaw(companyId, id);
     return this.redactPin(worker);
+  }
+
+  /** Fully-loaded hourly cost for one worker — null when the worker has no hourlyCost set,
+   * same "nothing to compute" convention as elsewhere in this codebase, rather than treating
+   * an unset base rate as zero. */
+  async loadedRate(companyId: string, id: string) {
+    const [worker, company] = await Promise.all([
+      this.getRaw(companyId, id),
+      this.prisma.company.findUniqueOrThrow({
+        where: { id: companyId },
+        select: {
+          payrollTaxBurdenPercent: true,
+          workersCompBurdenPercent: true,
+          benefitsBurdenPercent: true,
+          otherBurdenPercent: true,
+        },
+      }),
+    ]);
+    if (worker.hourlyCost === null) return null;
+
+    return calculateLoadedLaborRate(Number(worker.hourlyCost), {
+      payrollTaxBurdenPercent: company.payrollTaxBurdenPercent !== null ? Number(company.payrollTaxBurdenPercent) : null,
+      workersCompBurdenPercent: company.workersCompBurdenPercent !== null ? Number(company.workersCompBurdenPercent) : null,
+      benefitsBurdenPercent: company.benefitsBurdenPercent !== null ? Number(company.benefitsBurdenPercent) : null,
+      otherBurdenPercent: company.otherBurdenPercent !== null ? Number(company.otherBurdenPercent) : null,
+    });
   }
 
   /** Internal-only lookup that keeps clockInPinHash — verifyClockInPin needs the real hash to

@@ -61,7 +61,7 @@ describe("WarrantyClaimsService", () => {
 
     it("triggers the warranty_claim.submitted webhook on success", async () => {
       prisma.project.findFirst.mockResolvedValue({ id: "project-1", companyId: COMPANY_A, name: "Site A" });
-      prisma.warrantyClaim.create.mockResolvedValue({ id: "claim-1", title: "Cracked grout" });
+      prisma.warrantyClaim.create.mockResolvedValue({ id: "claim-1", title: "Cracked grout", repairCost: null });
 
       await service.create(COMPANY_A, ACTOR, { projectId: "project-1", title: "Cracked grout" });
 
@@ -75,7 +75,7 @@ describe("WarrantyClaimsService", () => {
 
   describe("start()", () => {
     it("rejects starting a claim that isn't open", async () => {
-      prisma.warrantyClaim.findFirst.mockResolvedValue({ id: "claim-1", companyId: COMPANY_A, status: "in_progress", title: "Cracked grout" });
+      prisma.warrantyClaim.findFirst.mockResolvedValue({ id: "claim-1", companyId: COMPANY_A, status: "in_progress", title: "Cracked grout", backcharges: [] });
 
       await expect(service.start(COMPANY_A, ACTOR, "claim-1")).rejects.toThrow(BadRequestException);
       expect(prisma.warrantyClaim.update).not.toHaveBeenCalled();
@@ -84,20 +84,20 @@ describe("WarrantyClaimsService", () => {
 
   describe("resolve()", () => {
     it("rejects resolving an already-closed claim", async () => {
-      prisma.warrantyClaim.findFirst.mockResolvedValue({ id: "claim-1", companyId: COMPANY_A, status: "denied", title: "Cracked grout" });
+      prisma.warrantyClaim.findFirst.mockResolvedValue({ id: "claim-1", companyId: COMPANY_A, status: "denied", title: "Cracked grout", backcharges: [] });
 
       await expect(service.resolve(COMPANY_A, ACTOR, "claim-1", {})).rejects.toThrow(BadRequestException);
       expect(prisma.warrantyClaim.update).not.toHaveBeenCalled();
     });
 
     it("resolves an in-progress claim and triggers the webhook", async () => {
-      prisma.warrantyClaim.findFirst.mockResolvedValue({ id: "claim-1", companyId: COMPANY_A, status: "in_progress", title: "Cracked grout" });
-      prisma.warrantyClaim.update.mockResolvedValue({ id: "claim-1", status: "resolved" });
+      prisma.warrantyClaim.findFirst.mockResolvedValue({ id: "claim-1", companyId: COMPANY_A, status: "in_progress", title: "Cracked grout", backcharges: [] });
+      prisma.warrantyClaim.update.mockResolvedValue({ id: "claim-1", status: "resolved", repairCost: "800", backcharges: [] });
 
-      await service.resolve(COMPANY_A, ACTOR, "claim-1", { resolutionNotes: "Re-grouted" });
+      await service.resolve(COMPANY_A, ACTOR, "claim-1", { resolutionNotes: "Re-grouted", repairCost: 800 });
 
       expect(prisma.warrantyClaim.update).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ status: "resolved", resolutionNotes: "Re-grouted" }) }),
+        expect.objectContaining({ data: expect.objectContaining({ status: "resolved", resolutionNotes: "Re-grouted", repairCost: 800 }) }),
       );
       expect(webhooks.trigger).toHaveBeenCalledWith(COMPANY_A, "warranty_claim.resolved", expect.objectContaining({ warrantyClaimId: "claim-1" }));
     });
@@ -105,15 +105,15 @@ describe("WarrantyClaimsService", () => {
 
   describe("deny()", () => {
     it("rejects denying an already-closed claim", async () => {
-      prisma.warrantyClaim.findFirst.mockResolvedValue({ id: "claim-1", companyId: COMPANY_A, status: "resolved", title: "Cracked grout" });
+      prisma.warrantyClaim.findFirst.mockResolvedValue({ id: "claim-1", companyId: COMPANY_A, status: "resolved", title: "Cracked grout", backcharges: [] });
 
       await expect(service.deny(COMPANY_A, ACTOR, "claim-1", { denialReason: "Not a defect" })).rejects.toThrow(BadRequestException);
       expect(prisma.warrantyClaim.update).not.toHaveBeenCalled();
     });
 
     it("denies an open claim and triggers the webhook", async () => {
-      prisma.warrantyClaim.findFirst.mockResolvedValue({ id: "claim-1", companyId: COMPANY_A, status: "open", title: "Cracked grout" });
-      prisma.warrantyClaim.update.mockResolvedValue({ id: "claim-1", status: "denied" });
+      prisma.warrantyClaim.findFirst.mockResolvedValue({ id: "claim-1", companyId: COMPANY_A, status: "open", title: "Cracked grout", backcharges: [] });
+      prisma.warrantyClaim.update.mockResolvedValue({ id: "claim-1", status: "denied", backcharges: [] });
 
       await service.deny(COMPANY_A, ACTOR, "claim-1", { denialReason: "Normal wear, not covered" });
 
@@ -123,7 +123,7 @@ describe("WarrantyClaimsService", () => {
 
   describe("reopen()", () => {
     it("rejects reopening a claim that isn't closed", async () => {
-      prisma.warrantyClaim.findFirst.mockResolvedValue({ id: "claim-1", companyId: COMPANY_A, status: "open", title: "Cracked grout" });
+      prisma.warrantyClaim.findFirst.mockResolvedValue({ id: "claim-1", companyId: COMPANY_A, status: "open", title: "Cracked grout", backcharges: [] });
 
       await expect(service.reopen(COMPANY_A, ACTOR, "claim-1")).rejects.toThrow(BadRequestException);
       expect(prisma.warrantyClaim.update).not.toHaveBeenCalled();
@@ -132,12 +132,12 @@ describe("WarrantyClaimsService", () => {
 
   describe("bulkStart()", () => {
     it("starts every open claim and reports failures for claims already in progress", async () => {
-      const claims: Record<string, { id: string; companyId: string; status: string; title: string }> = {
-        "claim-1": { id: "claim-1", companyId: COMPANY_A, status: "open", title: "Cracked grout" },
-        "claim-2": { id: "claim-2", companyId: COMPANY_A, status: "in_progress", title: "Leaky faucet" },
+      const claims: Record<string, { id: string; companyId: string; status: string; title: string; backcharges: never[] }> = {
+        "claim-1": { id: "claim-1", companyId: COMPANY_A, status: "open", title: "Cracked grout", backcharges: [] },
+        "claim-2": { id: "claim-2", companyId: COMPANY_A, status: "in_progress", title: "Leaky faucet", backcharges: [] },
       };
       prisma.warrantyClaim.findFirst.mockImplementation(({ where }: { where: { id: string } }) => Promise.resolve(claims[where.id] ?? null));
-      prisma.warrantyClaim.update.mockResolvedValue({ id: "claim-1", status: "in_progress" });
+      prisma.warrantyClaim.update.mockResolvedValue({ id: "claim-1", status: "in_progress", backcharges: [] });
 
       const result = await service.bulkStart(COMPANY_A, ACTOR, ["claim-1", "claim-2"]);
 

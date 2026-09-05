@@ -41,6 +41,15 @@ interface Revision {
   changedByName: string;
   createdAt: string;
 }
+interface PendingChange {
+  id: string;
+  laborHoursPerUnit: string | null;
+  name: string | null;
+  unit: string | null;
+  proposedByName: string;
+  proposedAt: string;
+  rateCatalogItem: { id: string; code: string; name: string; laborHoursPerUnit: string };
+}
 
 interface MaterialLine {
   materialCatalogItemId: string;
@@ -68,9 +77,12 @@ export default function RateCatalogPage() {
   const [editForm, setEditForm] = useState(EMPTY_FORM);
   const [historyForId, setHistoryForId] = useState<string | null>(null);
   const [history, setHistory] = useState<Revision[] | null>(null);
+  const [pendingChanges, setPendingChanges] = useState<PendingChange[]>([]);
+  const [pendingNotice, setPendingNotice] = useState<string | null>(null);
 
   function load() {
     apiFetch<RateCatalogItem[]>("/estimates/rate-catalog").then(setItems);
+    apiFetch<PendingChange[]>("/estimates/rate-catalog/pending-changes").then(setPendingChanges);
   }
 
   function loadMaterials() {
@@ -146,7 +158,7 @@ export default function RateCatalogPage() {
   }
 
   async function saveEdit(id: string) {
-    await apiFetch(`/estimates/rate-catalog/${id}`, {
+    const result = await apiFetch<{ pendingApproval: boolean }>(`/estimates/rate-catalog/${id}`, {
       method: "PATCH",
       body: JSON.stringify({
         name: editForm.name,
@@ -159,7 +171,18 @@ export default function RateCatalogPage() {
           : [],
       }),
     });
+    setPendingNotice(result.pendingApproval ? t("changeHeldForApproval") : null);
     setEditingId(null);
+    load();
+  }
+
+  async function approvePendingChange(id: string) {
+    await apiFetch(`/estimates/rate-catalog/pending-changes/${id}/approve`, { method: "POST", body: JSON.stringify({}) });
+    load();
+  }
+
+  async function rejectPendingChange(id: string) {
+    await apiFetch(`/estimates/rate-catalog/pending-changes/${id}/reject`, { method: "POST", body: JSON.stringify({}) });
     load();
   }
 
@@ -190,6 +213,47 @@ export default function RateCatalogPage() {
           <CsvImportButton endpoint="/estimates/rate-catalog/import" label={ti("importRateItems")} onDone={load} />
         </div>
       </div>
+
+      {pendingNotice && (
+        <div className="mt-3 flex items-center justify-between rounded-md bg-warning-50 px-3 py-2 text-xs text-warning-700">
+          <span>{pendingNotice}</span>
+          <button onClick={() => setPendingNotice(null)} className="text-warning-700 hover:underline">
+            {tc("close")}
+          </button>
+        </div>
+      )}
+
+      {pendingChanges.length > 0 && (
+        <div className="card mt-4">
+          <h2 className="mb-2 text-sm font-semibold text-gray-700">{t("pendingChanges")}</h2>
+          <p className="mb-3 text-xs text-gray-500">{t("pendingChangesHint")}</p>
+          <ul className="flex flex-col gap-2">
+            {pendingChanges.map((pc) => (
+              <li key={pc.id} className="flex items-center justify-between rounded-md border border-gray-200 px-3 py-2 text-sm">
+                <div>
+                  <span className="font-medium text-gray-900">
+                    {pc.rateCatalogItem.code} — {pc.name ?? pc.rateCatalogItem.name}
+                  </span>
+                  {pc.laborHoursPerUnit !== null && (
+                    <span className="ml-2 text-xs text-gray-500">
+                      {t("laborHoursChange", { from: pc.rateCatalogItem.laborHoursPerUnit, to: pc.laborHoursPerUnit })}
+                    </span>
+                  )}
+                  <p className="text-xs text-gray-400">{t("proposedBy", { name: pc.proposedByName, date: new Date(pc.proposedAt).toLocaleDateString() })}</p>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => approvePendingChange(pc.id)} className="btn-primary px-2.5 py-1 text-xs">
+                    {t("approveChange")}
+                  </button>
+                  <button onClick={() => rejectPendingChange(pc.id)} className="btn-secondary px-2.5 py-1 text-xs">
+                    {t("rejectChange")}
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <button

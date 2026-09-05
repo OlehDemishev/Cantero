@@ -6,6 +6,7 @@ import {
   createPerformanceReviewSchema,
   createSubcontractorSchema,
   setAssignmentActualEndDateSchema,
+  setSubcontractorDiversityCertificationsSchema,
   setSubcontractorPublicListedSchema,
   updateSubcontractorProfileSchema,
   updateSubcontractorTaxProfileSchema,
@@ -16,6 +17,7 @@ import {
   type CreatePerformanceReviewInput,
   type CreateSubcontractorInput,
   type SetAssignmentActualEndDateInput,
+  type SetSubcontractorDiversityCertificationsInput,
   type SetSubcontractorPublicListedInput,
   type UpdateSubcontractorProfileInput,
   type UpdateSubcontractorTaxProfileInput,
@@ -36,6 +38,11 @@ export class SubcontractorsController {
   @Get("tax-summary")
   taxSummary(@CurrentUser() user: AuthUser, @Query("year") year: string) {
     return this.service.taxSummary(user.companyId, Number(year));
+  }
+
+  @Get("diversity-spend-report")
+  diversitySpendReport(@CurrentUser() user: AuthUser, @Query("projectId") projectId?: string) {
+    return this.service.diversitySpendReport(user.companyId, projectId);
   }
 
   @Post()
@@ -162,5 +169,14 @@ export class SubcontractorsController {
     @Body(new ZodValidationPipe(setSubcontractorPublicListedSchema)) body: SetSubcontractorPublicListedInput,
   ) {
     return this.service.setPublicListed(user.companyId, id, body.publicListed);
+  }
+
+  @Patch(":id/diversity-certifications")
+  setDiversityCertifications(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(setSubcontractorDiversityCertificationsSchema)) body: SetSubcontractorDiversityCertificationsInput,
+  ) {
+    return this.service.setDiversityCertifications(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 }

@@ -18,6 +18,7 @@ export function CostCodesPanel() {
   const [form, setForm] = useState({ code: "", name: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [importResult, setImportResult] = useState<{ created: number; skipped: number } | null>(null);
 
   function load() {
     apiFetch<CostCode[]>("/cost-codes").then(setCostCodes);
@@ -45,10 +46,32 @@ export function CostCodesPanel() {
     load();
   }
 
+  async function importStandardLibrary() {
+    setBusy(true);
+    setImportResult(null);
+    try {
+      const result = await apiFetch<{ created: number; skipped: number }>("/cost-codes/import-standard-library", { method: "POST" });
+      setImportResult(result);
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <section className="card">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("title")}</h2>
-      <p className="mb-4 text-xs text-gray-500">{t("hint")}</p>
+      <div className="mb-1 flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-gray-700">{t("title")}</h2>
+        <button onClick={importStandardLibrary} disabled={busy} className="btn-secondary px-2.5 py-1 text-xs">
+          {t("importStandardLibrary")}
+        </button>
+      </div>
+      <p className="mb-2 text-xs text-gray-500">{t("hint")}</p>
+      {importResult && (
+        <p className="mb-2 text-xs text-success-700">
+          {t("importResult", { created: importResult.created, skipped: importResult.skipped })}
+        </p>
+      )}
 
       {!costCodes ? (
         <p className="text-gray-500">{tc("loading")}</p>

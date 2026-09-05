@@ -9,6 +9,7 @@ export const createWorkerSchema = z.object({
   phone: z.string().max(40).optional(),
   preferredLocale: z.enum(SUPPORTED_LOCALES).optional(),
   payrollEmployeeId: z.string().max(60).optional(),
+  isApprentice: z.boolean().optional(),
 });
 export type CreateWorkerInput = z.infer<typeof createWorkerSchema>;
 
@@ -21,6 +22,7 @@ export const updateWorkerSchema = z.object({
   phone: z.string().max(40).nullable().optional(),
   preferredLocale: z.enum(SUPPORTED_LOCALES).nullable().optional(),
   payrollEmployeeId: z.string().max(60).nullable().optional(),
+  isApprentice: z.boolean().optional(),
 });
 export type UpdateWorkerInput = z.infer<typeof updateWorkerSchema>;
 

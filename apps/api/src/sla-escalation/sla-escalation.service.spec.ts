@@ -14,6 +14,7 @@ describe("SlaEscalationService", () => {
     company: { findMany: jest.Mock };
     rfi: { findMany: jest.Mock; updateMany: jest.Mock };
     punchListItem: { findMany: jest.Mock; updateMany: jest.Mock };
+    submittal: { findMany: jest.Mock; updateMany: jest.Mock };
     membership: { findMany: jest.Mock };
   };
   let mail: { send: jest.Mock };
@@ -23,6 +24,7 @@ describe("SlaEscalationService", () => {
       company: { findMany: jest.fn() },
       rfi: { findMany: jest.fn(), updateMany: jest.fn() },
       punchListItem: { findMany: jest.fn(), updateMany: jest.fn() },
+      submittal: { findMany: jest.fn(), updateMany: jest.fn() },
       membership: { findMany: jest.fn().mockResolvedValue([{ user: { email: "owner@example.com" } }]) },
     };
     mail = { send: jest.fn() };
@@ -80,6 +82,37 @@ describe("SlaEscalationService", () => {
       const queryArg = prisma.rfi.findMany.mock.calls[0][0];
       expect(queryArg.where.escalatedAt).toBeNull();
       expect(queryArg.where.status).toBe("open");
+    });
+
+    it("skips submittal escalation for a company with the flag off, even if it has an RFI/punch-list SLA configured", async () => {
+      prisma.company.findMany.mockResolvedValue([{ id: COMPANY_A, name: "Acme", rfiSlaDays: null, punchListSlaDays: null, submittalEscalationEnabled: false }]);
+      prisma.rfi.findMany.mockResolvedValue([]);
+      prisma.punchListItem.findMany.mockResolvedValue([]);
+
+      const result = await service.runDuePass();
+
+      expect(result.escalated).toBe(0);
+      expect(prisma.submittal.findMany).not.toHaveBeenCalled();
+    });
+
+    it("escalates a submittal past its own dueDate, flags it, and emails the owner", async () => {
+      prisma.company.findMany.mockResolvedValue([{ id: COMPANY_A, name: "Acme", rfiSlaDays: null, punchListSlaDays: null, submittalEscalationEnabled: true }]);
+      prisma.rfi.findMany.mockResolvedValue([]);
+      prisma.punchListItem.findMany.mockResolvedValue([]);
+      prisma.submittal.findMany.mockResolvedValue([{ id: "sub-1", number: "SUB-001", title: "Structural steel shop drawings", projectId: "proj-1" }]);
+
+      const result = await service.runDuePass();
+
+      expect(result.escalated).toBe(1);
+      expect(prisma.submittal.updateMany).toHaveBeenCalledWith({
+        where: { id: { in: ["sub-1"] } },
+        data: { escalatedAt: expect.any(Date) },
+      });
+      const queryArg = prisma.submittal.findMany.mock.calls[0][0];
+      expect(queryArg.where.status).toBe("submitted");
+      expect(queryArg.where.escalatedAt).toBeNull();
+      expect(mail.send).toHaveBeenCalledTimes(1);
+      expect(mail.send.mock.calls[0][0].subject).toContain("Submittal overdue");
     });
   });
 });

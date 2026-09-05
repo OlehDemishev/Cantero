@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import type { AddInstallmentInput, GenerateProgressInvoiceInput, RecordPaymentInput, UpdateInvoiceInput } from "@cantero/shared";
+import type { AddInstallmentInput, GenerateProgressInvoiceInput, RecordPaymentInput, ReleaseRetainageInput, UpdateInvoiceInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { PdfService } from "../common/pdf/pdf.service";
 import { StorageService } from "../common/storage/storage.service";
@@ -13,6 +13,8 @@ import { buildXRechnungXml } from "./e-invoice";
 import { calculateLateFee, daysOverdue } from "./late-fee";
 import { documentPdfLabels } from "../common/pdf/pdf-labels";
 import { invoiceSentEmail } from "../common/mail/client-mail-templates";
+import { ExchangeRateService } from "../common/exchange-rate/exchange-rate.service";
+import { calculateFxSettlement } from "./fx-settlement";
 
 @Injectable()
 export class InvoicesService {
@@ -24,6 +26,7 @@ export class InvoicesService {
     private readonly config: ConfigService,
     private readonly mail: MailService,
     private readonly webhooks: WebhooksService,
+    private readonly exchangeRates: ExchangeRateService,
   ) {}
 
   list(companyId: string) {
@@ -174,15 +177,24 @@ export class InvoicesService {
   }
 
   /** Pays out all retainage withheld across an estimate's progress draws in one final invoice. Can only be done once per estimate. */
-  async releaseRetainage(companyId: string, estimateId: string) {
+  /** Retainage can be released in stages (e.g. half at substantial completion, the rest after
+   * final punch-list/lien-waiver) — each call generates its own release invoice for `input.amount`,
+   * capped at whatever's still held. Omitting amount releases everything still remaining, the
+   * original all-or-nothing behavior, so a plain "release retainage" click still works unchanged. */
+  async releaseRetainage(companyId: string, estimateId: string, input: ReleaseRetainageInput) {
     const estimate = await this.assertInvoiceableEstimate(companyId, estimateId);
 
-    const alreadyReleased = await this.prisma.invoice.findFirst({ where: { companyId, estimateId, isRetainageRelease: true } });
-    if (alreadyReleased) throw new BadRequestException("Retainage has already been released for this estimate");
-
-    const progressDraws = await this.prisma.invoice.findMany({ where: { companyId, estimateId, isRetainageRelease: false } });
+    const [progressDraws, releaseInvoices] = await Promise.all([
+      this.prisma.invoice.findMany({ where: { companyId, estimateId, isRetainageRelease: false } }),
+      this.prisma.invoice.findMany({ where: { companyId, estimateId, isRetainageRelease: true } }),
+    ]);
     const totalHeld = round2(progressDraws.reduce((sum, inv) => sum + Number(inv.retainageAmount), 0));
-    if (totalHeld <= 0) throw new BadRequestException("No retainage held on this estimate to release");
+    const alreadyReleased = round2(releaseInvoices.reduce((sum, inv) => sum + Number(inv.total), 0));
+    const remaining = round2(totalHeld - alreadyReleased);
+    if (remaining <= 0) throw new BadRequestException("No retainage remains to release on this estimate");
+
+    const amount = input.amount ?? remaining;
+    if (amount > remaining) throw new BadRequestException(`Only ${remaining} of retainage remains to release`);
 
     const number = await this.nextInvoiceNumber(companyId);
     return this.prisma.invoice.create({
@@ -194,11 +206,11 @@ export class InvoicesService {
         number,
         status: "draft",
         currency: estimate.currency,
-        subtotal: totalHeld,
+        subtotal: amount,
         taxAmount: 0,
-        total: totalHeld,
+        total: amount,
         isRetainageRelease: true,
-        lines: { create: [{ description: "Retainage release", quantity: 1, unitPrice: totalHeld, lineTotal: totalHeld }] },
+        lines: { create: [{ description: "Retainage release", quantity: 1, unitPrice: amount, lineTotal: amount }] },
       },
       include: { lines: true, client: true, project: true },
     });
@@ -213,15 +225,18 @@ export class InvoicesService {
       orderBy: { createdAt: "asc" },
     });
     const progressDraws = invoices.filter((i) => !i.isRetainageRelease);
-    const releaseInvoice = invoices.find((i) => i.isRetainageRelease) ?? null;
+    const releaseInvoices = invoices.filter((i) => i.isRetainageRelease);
     const percentBilled = progressDraws.length ? Math.max(...progressDraws.map((i) => Number(i.percentComplete))) : 0;
+    const totalRetainageHeld = round2(progressDraws.reduce((sum, i) => sum + Number(i.retainageAmount), 0));
+    const retainageReleasedTotal = round2(releaseInvoices.reduce((sum, i) => sum + Number(i.total), 0));
 
     return {
       contractTotal: Number(estimate.grandTotal),
       percentBilled,
       totalBilledGross: round2(progressDraws.reduce((sum, i) => sum + Number(i.subtotal), 0)),
-      totalRetainageHeld: round2(progressDraws.reduce((sum, i) => sum + Number(i.retainageAmount), 0)),
-      retainageReleased: !!releaseInvoice,
+      totalRetainageHeld,
+      retainageReleasedTotal,
+      retainageRemaining: round2(totalRetainageHeld - retainageReleasedTotal),
       invoices: invoices.map((i) => ({
         id: i.id,
         number: i.number,
@@ -301,7 +316,8 @@ export class InvoicesService {
     return this.findOrThrow(companyId, id);
   }
 
-  /** Records a payment and re-derives invoice status from the running balance. */
+  /** Records a payment and re-derives invoice status from the running balance. A foreignPayment
+   * settles in a currency other than the invoice's own — see fx-settlement.ts. */
   async recordPayment(companyId: string, actor: AuditActor, id: string, input: RecordPaymentInput) {
     const invoice = await this.findOrThrow(companyId, id);
     if (invoice.status === "draft") {
@@ -311,8 +327,26 @@ export class InvoicesService {
       throw new BadRequestException("Cannot record a payment against a void invoice");
     }
 
+    let amount = input.amount ?? 0;
+    let fxFields: { currency?: typeof invoice.currency; foreignAmount?: number; exchangeRate?: number; fxGainLoss?: number | null } = {};
+    if (input.foreignPayment) {
+      const benchmarkRate = await this.exchangeRates.getRate(input.foreignPayment.currency, invoice.currency);
+      const settlement = calculateFxSettlement({
+        foreignAmount: input.foreignPayment.foreignAmount,
+        actualRate: input.foreignPayment.exchangeRate,
+        benchmarkRate,
+      });
+      amount = settlement.convertedAmount;
+      fxFields = {
+        currency: input.foreignPayment.currency,
+        foreignAmount: input.foreignPayment.foreignAmount,
+        exchangeRate: input.foreignPayment.exchangeRate,
+        fxGainLoss: settlement.gainLoss,
+      };
+    }
+
     await this.prisma.payment.create({
-      data: { invoiceId: id, amount: input.amount, method: input.method },
+      data: { invoiceId: id, amount, method: input.method, ...fxFields },
     });
 
     const payments = await this.prisma.payment.findMany({ where: { invoiceId: id } });
@@ -325,13 +359,13 @@ export class InvoicesService {
       "invoice.payment_recorded",
       "Invoice",
       id,
-      `Recorded a ${input.amount} payment (${input.method}) on invoice ${invoice.number}`,
-      { amount: input.amount, method: input.method },
+      `Recorded a ${amount} payment (${input.method}) on invoice ${invoice.number}`,
+      { amount, method: input.method },
     );
     this.webhooks.trigger(companyId, "invoice.payment_recorded", {
       invoiceId: id,
       number: invoice.number,
-      amount: input.amount,
+      amount,
       method: input.method,
       newStatus,
     });

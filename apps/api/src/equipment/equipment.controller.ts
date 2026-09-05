@@ -165,6 +165,11 @@ export class EquipmentController {
     return this.service.costPerHour(user.companyId, id);
   }
 
+  @Get(":id/tco")
+  tco(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.tco(user.companyId, id);
+  }
+
   @Get(":id/rentals")
   listRentals(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.listRentals(user.companyId, id);

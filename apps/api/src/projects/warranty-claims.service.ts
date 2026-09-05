@@ -9,6 +9,7 @@ import type {
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { calculateWarrantyRecovery } from "../subcontractor-claims/warranty-recovery";
 
 @Injectable()
 export class WarrantyClaimsService {
@@ -20,20 +21,30 @@ export class WarrantyClaimsService {
 
   async listForProject(companyId: string, projectId: string) {
     await this.assertProject(companyId, projectId);
-    return this.prisma.warrantyClaim.findMany({
+    const claims = await this.prisma.warrantyClaim.findMany({
       where: { projectId },
-      include: { assignee: { select: { id: true, name: true } } },
+      include: { assignee: { select: { id: true, name: true } }, backcharges: { select: { amount: true, status: true } } },
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],
     });
+    return claims.map((c) => this.withRecovery(c));
   }
 
   async get(companyId: string, id: string) {
     const claim = await this.prisma.warrantyClaim.findFirst({
       where: { id, companyId },
-      include: { assignee: { select: { id: true, name: true } } },
+      include: { assignee: { select: { id: true, name: true } }, backcharges: { select: { amount: true, status: true } } },
     });
     if (!claim) throw new NotFoundException("Warranty claim not found");
-    return claim;
+    return this.withRecovery(claim);
+  }
+
+  /** Attaches the computed recovery breakdown — see warranty-recovery.ts. */
+  private withRecovery<T extends { repairCost: unknown; backcharges: { amount: unknown; status: "pending" | "deducted" | "waived" }[] }>(claim: T) {
+    const recovery = calculateWarrantyRecovery(
+      claim.repairCost !== null ? Number(claim.repairCost) : null,
+      claim.backcharges.map((b) => ({ amount: Number(b.amount), status: b.status })),
+    );
+    return { ...claim, recovery };
   }
 
   async create(companyId: string, actor: AuditActor, input: CreateWarrantyClaimInput) {
@@ -55,14 +66,14 @@ export class WarrantyClaimsService {
     });
     this.audit.record(companyId, actor, "warranty_claim.created", "WarrantyClaim", claim.id, `Logged warranty claim "${claim.title}" on "${project.name}"`);
     this.webhooks.trigger(companyId, "warranty_claim.submitted", { warrantyClaimId: claim.id, title: claim.title, projectId: project.id });
-    return claim;
+    return this.withRecovery({ ...claim, backcharges: [] });
   }
 
   async update(companyId: string, id: string, input: UpdateWarrantyClaimInput) {
     const claim = await this.get(companyId, id);
     if (input.assigneeWorkerId) await this.assertWorker(companyId, input.assigneeWorkerId);
 
-    return this.prisma.warrantyClaim.update({
+    const updated = await this.prisma.warrantyClaim.update({
       where: { id: claim.id },
       data: {
         title: input.title,
@@ -70,8 +81,9 @@ export class WarrantyClaimsService {
         location: input.location,
         assigneeWorkerId: input.assigneeWorkerId,
       },
-      include: { assignee: { select: { id: true, name: true } } },
+      include: { assignee: { select: { id: true, name: true } }, backcharges: { select: { amount: true, status: true } } },
     });
+    return this.withRecovery(updated);
   }
 
   async start(companyId: string, actor: AuditActor, id: string) {
@@ -81,24 +93,33 @@ export class WarrantyClaimsService {
     const updated = await this.prisma.warrantyClaim.update({
       where: { id: claim.id },
       data: { status: "in_progress" },
-      include: { assignee: { select: { id: true, name: true } } },
+      include: { assignee: { select: { id: true, name: true } }, backcharges: { select: { amount: true, status: true } } },
     });
     this.audit.record(companyId, actor, "warranty_claim.started", "WarrantyClaim", claim.id, `Started work on "${claim.title}"`);
-    return updated;
+    return this.withRecovery(updated);
   }
 
+  /** repairCost is optional here — a claim can be resolved before the final repair cost is known,
+   * and edited later if there's ever an editRepairCost() need (there isn't yet). */
   async resolve(companyId: string, actor: AuditActor, id: string, input: ResolveWarrantyClaimInput) {
     const claim = await this.get(companyId, id);
     if (claim.status === "resolved" || claim.status === "denied") throw new BadRequestException(`Claim is already ${claim.status}`);
 
     const updated = await this.prisma.warrantyClaim.update({
       where: { id: claim.id },
-      data: { status: "resolved", resolvedAt: new Date(), resolvedByUserId: actor.userId, resolvedByName: actor.name, resolutionNotes: input.resolutionNotes },
-      include: { assignee: { select: { id: true, name: true } } },
+      data: {
+        status: "resolved",
+        resolvedAt: new Date(),
+        resolvedByUserId: actor.userId,
+        resolvedByName: actor.name,
+        resolutionNotes: input.resolutionNotes,
+        repairCost: input.repairCost,
+      },
+      include: { assignee: { select: { id: true, name: true } }, backcharges: { select: { amount: true, status: true } } },
     });
     this.audit.record(companyId, actor, "warranty_claim.resolved", "WarrantyClaim", claim.id, `Resolved warranty claim "${claim.title}"`);
     this.webhooks.trigger(companyId, "warranty_claim.resolved", { warrantyClaimId: claim.id, title: claim.title });
-    return updated;
+    return this.withRecovery(updated);
   }
 
   async deny(companyId: string, actor: AuditActor, id: string, input: DenyWarrantyClaimInput) {
@@ -108,11 +129,11 @@ export class WarrantyClaimsService {
     const updated = await this.prisma.warrantyClaim.update({
       where: { id: claim.id },
       data: { status: "denied", deniedAt: new Date(), deniedByUserId: actor.userId, deniedByName: actor.name, denialReason: input.denialReason },
-      include: { assignee: { select: { id: true, name: true } } },
+      include: { assignee: { select: { id: true, name: true } }, backcharges: { select: { amount: true, status: true } } },
     });
     this.audit.record(companyId, actor, "warranty_claim.denied", "WarrantyClaim", claim.id, `Denied warranty claim "${claim.title}": ${input.denialReason}`);
     this.webhooks.trigger(companyId, "warranty_claim.denied", { warrantyClaimId: claim.id, title: claim.title });
-    return updated;
+    return this.withRecovery(updated);
   }
 
   async reopen(companyId: string, actor: AuditActor, id: string) {
@@ -132,10 +153,10 @@ export class WarrantyClaimsService {
         deniedByName: null,
         denialReason: null,
       },
-      include: { assignee: { select: { id: true, name: true } } },
+      include: { assignee: { select: { id: true, name: true } }, backcharges: { select: { amount: true, status: true } } },
     });
     this.audit.record(companyId, actor, "warranty_claim.reopened", "WarrantyClaim", claim.id, `Reopened warranty claim "${claim.title}"`);
-    return updated;
+    return this.withRecovery(updated);
   }
 
   async bulkStart(companyId: string, actor: AuditActor, ids: string[]): Promise<BulkActionResult> {

@@ -22,6 +22,7 @@ export type UpdateWarrantyClaimInput = z.infer<typeof updateWarrantyClaimSchema>
 
 export const resolveWarrantyClaimSchema = z.object({
   resolutionNotes: z.string().max(2000).optional(),
+  repairCost: z.number().nonnegative().optional(),
 });
 export type ResolveWarrantyClaimInput = z.infer<typeof resolveWarrantyClaimSchema>;
 

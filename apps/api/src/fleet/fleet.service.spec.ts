@@ -11,6 +11,7 @@ describe("FleetService", () => {
   let prisma: {
     vehicle: { findFirst: jest.Mock; findMany: jest.Mock; create: jest.Mock; update: jest.Mock };
     vehicleInspection: { findMany: jest.Mock; create: jest.Mock };
+    vehicleFuelLog: { findMany: jest.Mock; create: jest.Mock };
     worker: { findFirst: jest.Mock; update: jest.Mock };
   };
 
@@ -18,6 +19,7 @@ describe("FleetService", () => {
     prisma = {
       vehicle: { findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn() },
       vehicleInspection: { findMany: jest.fn(), create: jest.fn() },
+      vehicleFuelLog: { findMany: jest.fn(), create: jest.fn() },
       worker: { findFirst: jest.fn(), update: jest.fn() },
     };
 
@@ -82,6 +84,43 @@ describe("FleetService", () => {
       const result = await service.logInspection(COMPANY_A, { name: "Owner" }, "v1", { result: "failed", notes: "Brake light out" });
 
       expect(result.result).toBe("failed");
+    });
+  });
+
+  describe("addFuelLog()", () => {
+    it("rejects logging fuel for a vehicle that doesn't exist", async () => {
+      prisma.vehicle.findFirst.mockResolvedValue(null);
+
+      await expect(service.addFuelLog(COMPANY_A, { name: "Owner" }, "v1", { quantity: 20 })).rejects.toThrow(NotFoundException);
+    });
+
+    it("logs a fuel fill-up", async () => {
+      prisma.vehicle.findFirst.mockResolvedValue({ id: "v1", name: "Truck 1" });
+      prisma.vehicleFuelLog.create.mockResolvedValue({ id: "fuel-1" });
+
+      await service.addFuelLog(COMPANY_A, { name: "Owner" }, "v1", { quantity: 20, odometerMiles: 1000 });
+
+      expect(prisma.vehicleFuelLog.create).toHaveBeenCalled();
+    });
+  });
+
+  describe("fuelEfficiencyReport()", () => {
+    it("rolls up fuel efficiency per vehicle", async () => {
+      prisma.vehicle.findMany.mockResolvedValue([
+        {
+          id: "v1",
+          name: "Truck 1",
+          fuelLogs: [
+            { quantity: "20", odometerMiles: "1000", idleHours: "1" },
+            { quantity: "20", odometerMiles: "1400", idleHours: "2" },
+          ],
+        },
+      ]);
+
+      const result = await service.fuelEfficiencyReport(COMPANY_A);
+
+      expect(result[0].milesPerUnit).toBe(10);
+      expect(result[0].totalIdleHours).toBe(3);
     });
   });
 });

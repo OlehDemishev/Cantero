@@ -5,11 +5,13 @@ import {
   addInstallmentSchema,
   generateProgressInvoiceSchema,
   recordPaymentSchema,
+  releaseRetainageSchema,
   updateInvoiceSchema,
   type AddInstallmentInput,
   type AuthUser,
   type GenerateProgressInvoiceInput,
   type RecordPaymentInput,
+  type ReleaseRetainageInput,
   type UpdateInvoiceInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
@@ -81,8 +83,12 @@ export class InvoicesController {
   }
 
   @Post("progress-billing/:estimateId/release-retainage")
-  releaseRetainage(@CurrentUser() user: AuthUser, @Param("estimateId") estimateId: string) {
-    return this.service.releaseRetainage(user.companyId, estimateId);
+  releaseRetainage(
+    @CurrentUser() user: AuthUser,
+    @Param("estimateId") estimateId: string,
+    @Body(new ZodValidationPipe(releaseRetainageSchema)) body: ReleaseRetainageInput,
+  ) {
+    return this.service.releaseRetainage(user.companyId, estimateId, body);
   }
 
   @Patch(":id")

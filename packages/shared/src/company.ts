@@ -17,6 +17,9 @@ export const companySettingsSchema = z.object({
 });
 export type CompanySettings = z.infer<typeof companySettingsSchema>;
 
+export const INVENTORY_COSTING_METHODS = ["fifo", "weighted_average"] as const;
+export type InventoryCostingMethod = (typeof INVENTORY_COSTING_METHODS)[number];
+
 export const PLAN_IDS = ["starter", "growth", "pro"] as const;
 export type PlanId = (typeof PLAN_IDS)[number];
 
@@ -34,6 +37,7 @@ export const updateCompanySchema = z.object({
   requiredApprovalCount: z.number().int().min(1).max(10).optional(),
   rfiSlaDays: z.number().int().min(1).max(365).nullable().optional(),
   punchListSlaDays: z.number().int().min(1).max(365).nullable().optional(),
+  submittalEscalationEnabled: z.boolean().optional(),
   invoiceRemindersEnabled: z.boolean().optional(),
   changeOrderApprovalThresholdAmount: z.number().nonnegative().nullable().optional(),
   changeOrderRequiredApprovalCount: z.number().int().min(1).max(10).optional(),
@@ -43,6 +47,12 @@ export const updateCompanySchema = z.object({
   enpsSurveysEnabled: z.boolean().optional(),
   budgetAlertThresholdPercent: z.number().int().min(1).max(100).optional(),
   lateFeePercentPerMonth: z.number().nonnegative().max(100).nullable().optional(),
+  payrollTaxBurdenPercent: z.number().nonnegative().max(100).nullable().optional(),
+  workersCompBurdenPercent: z.number().nonnegative().max(100).nullable().optional(),
+  benefitsBurdenPercent: z.number().nonnegative().max(100).nullable().optional(),
+  otherBurdenPercent: z.number().nonnegative().max(100).nullable().optional(),
+  requireSubcontractorPrequalification: z.boolean().optional(),
+  subcontractorEmrThreshold: z.number().nonnegative().max(99.99).nullable().optional(),
   defaultPaymentTermsDays: z.number().int().min(0).max(365).optional(),
   /// SMS to a worker's phone (in their preferredLocale) when assigned to a task, or when a
   /// safety briefing they're listed on is created — off by default, same "unsolicited message"
@@ -64,6 +74,9 @@ export const updateCompanySchema = z.object({
   postalCode: z.string().max(20).nullable().optional(),
   vatId: z.string().max(30).nullable().optional(),
   iban: z.string().max(34).nullable().optional(),
+  inventoryCostingMethod: z.enum(INVENTORY_COSTING_METHODS).optional(),
+  rateCatalogApprovalThresholdPercent: z.number().nonnegative().max(999.99).nullable().optional(),
+  npsDetractorFollowUpEnabled: z.boolean().optional(),
 });
 export type UpdateCompanyInput = z.infer<typeof updateCompanySchema>;
 

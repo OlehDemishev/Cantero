@@ -13,6 +13,10 @@ import { CatalogsController } from "./catalogs.controller";
 import { CatalogsService } from "./catalogs.service";
 import { TakeoffsController } from "./takeoffs.controller";
 import { TakeoffsService } from "./takeoffs.service";
+import { MarkupRulesController } from "./markup-rules.controller";
+import { MarkupRulesService } from "./markup-rules.service";
+import { EstimateAlternatesController } from "./estimate-alternates.controller";
+import { EstimateAlternatesService } from "./estimate-alternates.service";
 
 @Module({
   controllers: [
@@ -24,8 +28,19 @@ import { TakeoffsService } from "./takeoffs.service";
     AssembliesController,
     CatalogsController,
     TakeoffsController,
+    MarkupRulesController,
+    EstimateAlternatesController,
   ],
-  providers: [RateCatalogService, EstimatesService, ChangeOrdersService, AssembliesService, CatalogsService, TakeoffsService],
+  providers: [
+    RateCatalogService,
+    EstimatesService,
+    ChangeOrdersService,
+    AssembliesService,
+    CatalogsService,
+    TakeoffsService,
+    MarkupRulesService,
+    EstimateAlternatesService,
+  ],
   exports: [EstimatesService, ChangeOrdersService],
 })
 export class EstimatesModule {}

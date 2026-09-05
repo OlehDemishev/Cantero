@@ -1,12 +1,29 @@
 import { z } from "zod";
+import { SUPPORTED_CURRENCIES } from "./company";
 
 export const PAYMENT_METHODS = ["bank_transfer", "card", "cash", "other"] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
-export const recordPaymentSchema = z.object({
-  amount: z.number().positive(),
-  method: z.enum(PAYMENT_METHODS),
+/// Present only when the client actually settled in a currency other than the invoice's — the
+/// server computes the credited `amount` (in the invoice's currency) as foreignAmount * exchangeRate,
+/// so `amount` on the outer schema is ignored/optional when this is set.
+export const foreignPaymentSchema = z.object({
+  currency: z.enum(SUPPORTED_CURRENCIES),
+  foreignAmount: z.number().positive(),
+  exchangeRate: z.number().positive(),
 });
+export type ForeignPaymentInput = z.infer<typeof foreignPaymentSchema>;
+
+export const recordPaymentSchema = z
+  .object({
+    amount: z.number().positive().optional(),
+    method: z.enum(PAYMENT_METHODS),
+    foreignPayment: foreignPaymentSchema.optional(),
+  })
+  .refine((data) => data.amount !== undefined || data.foreignPayment !== undefined, {
+    message: "amount or foreignPayment is required",
+    path: ["amount"],
+  });
 export type RecordPaymentInput = z.infer<typeof recordPaymentSchema>;
 
 export const updateInvoiceSchema = z.object({
@@ -34,6 +51,14 @@ export const generateProgressInvoiceSchema = z.object({
   retainagePercent: z.number().min(0).max(100).default(0),
 });
 export type GenerateProgressInvoiceInput = z.infer<typeof generateProgressInvoiceSchema>;
+
+/** amount omitted releases everything still held — the pre-existing all-or-nothing behavior,
+ * kept as the default so a plain "release retainage" click still works as before. Given, it must
+ * be a partial release: the server still caps it at what's actually remaining. */
+export const releaseRetainageSchema = z.object({
+  amount: z.number().positive().optional(),
+});
+export type ReleaseRetainageInput = z.infer<typeof releaseRetainageSchema>;
 
 export const addInstallmentSchema = z.object({
   label: z.string().min(1).max(160),
@@ -70,6 +95,15 @@ export const setSubcontractorPublicListedSchema = z.object({
   publicListed: z.boolean(),
 });
 export type SetSubcontractorPublicListedInput = z.infer<typeof setSubcontractorPublicListedSchema>;
+
+export const SUBCONTRACTOR_DIVERSITY_CATEGORIES = ["mbe", "wbe", "dbe", "vbe", "sdvosb", "other"] as const;
+export type SubcontractorDiversityCategory = (typeof SUBCONTRACTOR_DIVERSITY_CATEGORIES)[number];
+
+export const setSubcontractorDiversityCertificationsSchema = z.object({
+  diversityCertifications: z.array(z.enum(SUBCONTRACTOR_DIVERSITY_CATEGORIES)),
+  diversityCertificationExpiresAt: z.string().datetime().nullable().optional(),
+});
+export type SetSubcontractorDiversityCertificationsInput = z.infer<typeof setSubcontractorDiversityCertificationsSchema>;
 
 export const assignSubcontractorSchema = z.object({
   projectId: z.string().uuid(),
@@ -176,9 +210,22 @@ export const createBidRequestSchema = z.object({
 });
 export type CreateBidRequestInput = z.infer<typeof createBidRequestSchema>;
 
+export const bidLineInputSchema = z.object({
+  description: z.string().min(1).max(300),
+  amount: z.number().nonnegative(),
+  included: z.boolean().default(true),
+});
+export type BidLineInput = z.infer<typeof bidLineInputSchema>;
+
 export const submitBidSchema = z.object({
   amount: z.number().positive(),
   notes: z.string().max(2000).optional(),
+  /// A scope-item breakdown for bid leveling — the description text is matched exactly
+  /// (case/whitespace-insensitively) across bids from different subs to line up common scope
+  /// items, so it's on the sub to name each line consistently with the GC's requested breakdown
+  /// rather than something Cantero infers. Omitting this keeps the bid as a lump sum, same as
+  /// before this field existed.
+  lines: z.array(bidLineInputSchema).max(100).optional(),
 });
 export type SubmitBidInput = z.infer<typeof submitBidSchema>;
 

@@ -34,6 +34,11 @@ export default function TeamPage() {
   const { data: me } = useMe();
 
   const [workers, setWorkers] = useState<Worker[] | null>(null);
+  const burdenPercent =
+    Number(me?.company.payrollTaxBurdenPercent ?? 0) +
+    Number(me?.company.workersCompBurdenPercent ?? 0) +
+    Number(me?.company.benefitsBurdenPercent ?? 0) +
+    Number(me?.company.otherBurdenPercent ?? 0);
   const [report, setReport] = useState<LaborCostReport | null>(null);
   const [showInactive, setShowInactive] = useState(false);
   const [form, setForm] = useState({ name: "", role: "", hourlyCost: "" });
@@ -121,6 +126,7 @@ export default function TeamPage() {
                   <th className="py-2">{tc("name")}</th>
                   <th>{t("role")}</th>
                   <th>{t("hourlyCost")}</th>
+                  {burdenPercent > 0 && <th>{t("loadedRate")}</th>}
                   <th>{tc("status")}</th>
                 </tr>
               </thead>
@@ -134,6 +140,11 @@ export default function TeamPage() {
                     </td>
                     <td>{w.role ?? "—"}</td>
                     <td>{w.hourlyCost ? `${w.hourlyCost} ${me?.company.currency}` : "—"}</td>
+                    {burdenPercent > 0 && (
+                      <td>
+                        {w.hourlyCost ? `${(Number(w.hourlyCost) * (1 + burdenPercent / 100)).toFixed(2)} ${me?.company.currency}` : "—"}
+                      </td>
+                    )}
                     <td>
                       {w.active ? (
                         <span className="text-xs text-success-700">{t("active")}</span>

@@ -42,6 +42,11 @@ export class ReportsController {
     return this.service.estimateAtCompletion(user.companyId);
   }
 
+  @Get("win-rate")
+  winRateReport(@CurrentUser() user: AuthUser) {
+    return this.service.winRateReport(user.companyId);
+  }
+
   @Get("revenue-trend")
   revenueTrend(@CurrentUser() user: AuthUser) {
     return this.service.revenueTrend(user.companyId);

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { SUPPORTED_CURRENCIES } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { DocumentsPanel } from "@/components/documents-panel";
 import { apiFetch, downloadBlob, ApiError } from "@/lib/api-client";
@@ -22,6 +23,10 @@ interface Payment {
   amount: string;
   method: string;
   paidAt: string;
+  currency: string | null;
+  foreignAmount: string | null;
+  exchangeRate: string | null;
+  fxGainLoss: string | null;
 }
 interface Installment {
   id: string;
@@ -53,6 +58,16 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   const { data: me } = useMe();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [paymentForm, setPaymentForm] = useState({ amount: "", method: "bank_transfer" as (typeof PAYMENT_METHODS)[number] });
+  const [foreignPayment, setForeignPayment] = useState(false);
+  const [foreignPaymentForm, setForeignPaymentForm] = useState<{
+    currency: (typeof SUPPORTED_CURRENCIES)[number];
+    foreignAmount: string;
+    exchangeRate: string;
+  }>({
+    currency: SUPPORTED_CURRENCIES[0],
+    foreignAmount: "",
+    exchangeRate: "",
+  });
   const [dueDateInput, setDueDateInput] = useState("");
   const [installmentForm, setInstallmentForm] = useState({ label: "", amount: "", dueDate: "" });
   const [busy, setBusy] = useState(false);
@@ -148,9 +163,32 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
     try {
       await apiFetch(`/invoices/${invoiceId}/payments`, {
         method: "POST",
-        body: JSON.stringify({ amount: Number(paymentForm.amount), method: paymentForm.method }),
+        body: JSON.stringify(
+          foreignPayment
+            ? {
+                method: paymentForm.method,
+                foreignPayment: {
+                  currency: foreignPaymentForm.currency,
+                  foreignAmount: Number(foreignPaymentForm.foreignAmount),
+                  exchangeRate: Number(foreignPaymentForm.exchangeRate),
+                },
+              }
+            : { amount: Number(paymentForm.amount), method: paymentForm.method },
+        ),
       });
       setPaymentForm({ amount: "", method: "bank_transfer" });
+      setForeignPaymentForm({ currency: SUPPORTED_CURRENCIES[0], foreignAmount: "", exchangeRate: "" });
+      setForeignPayment(false);
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function recalculateTax() {
+    setBusy(true);
+    try {
+      await apiFetch(`/invoices/${invoiceId}/recalculate-tax`, { method: "POST" });
       load();
     } finally {
       setBusy(false);
@@ -290,7 +328,20 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
                   <tr key={p.id} className="border-b border-gray-100">
                     <td className="py-1">{new Date(p.paidAt).toLocaleDateString()}</td>
                     <td>{t(p.method as (typeof PAYMENT_METHODS)[number])}</td>
-                    <td className="text-right">{money(p.amount)}</td>
+                    <td className="text-right">
+                      {money(p.amount)}
+                      {p.currency && (
+                        <span className="ml-1.5 text-xs text-gray-400">
+                          ({p.foreignAmount} {p.currency} @ {p.exchangeRate})
+                        </span>
+                      )}
+                    </td>
+                    {p.fxGainLoss !== null && (
+                      <td className={`pl-2 text-right text-xs font-medium ${Number(p.fxGainLoss) < 0 ? "text-error-600" : "text-success-700"}`}>
+                        {t("fxGainLoss")}: {Number(p.fxGainLoss) > 0 ? "+" : ""}
+                        {money(p.fxGainLoss)}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -298,40 +349,88 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
           )}
 
           {(invoice.status === "sent" || invoice.status === "paid") && balanceDue > 0 && (
-            <form onSubmit={recordPayment} className="mt-4 flex items-end gap-2">
-              <input
-                required
-                type="number"
-                step="0.01"
-                placeholder={t("amount")}
-                className="input w-32"
-                value={paymentForm.amount}
-                onChange={(e) => setPaymentForm((f) => ({ ...f, amount: e.target.value }))}
-              />
-              <select
-                className="input w-auto"
-                value={paymentForm.method}
-                onChange={(e) => setPaymentForm((f) => ({ ...f, method: e.target.value as (typeof PAYMENT_METHODS)[number] }))}
-              >
-                {PAYMENT_METHODS.map((m) => (
-                  <option key={m} value={m}>
-                    {t(m)}
-                  </option>
-                ))}
-              </select>
-              <button type="submit" disabled={busy} className="btn-secondary">
-                {t("recordPayment")}
-              </button>
+            <form onSubmit={recordPayment} className="mt-4 flex flex-col gap-2">
+              <div className="flex flex-wrap items-end gap-2">
+                {!foreignPayment && (
+                  <input
+                    required
+                    type="number"
+                    step="0.01"
+                    placeholder={t("amount")}
+                    className="input w-32"
+                    value={paymentForm.amount}
+                    onChange={(e) => setPaymentForm((f) => ({ ...f, amount: e.target.value }))}
+                  />
+                )}
+                <select
+                  className="input w-auto"
+                  value={paymentForm.method}
+                  onChange={(e) => setPaymentForm((f) => ({ ...f, method: e.target.value as (typeof PAYMENT_METHODS)[number] }))}
+                >
+                  {PAYMENT_METHODS.map((m) => (
+                    <option key={m} value={m}>
+                      {t(m)}
+                    </option>
+                  ))}
+                </select>
+                <button type="submit" disabled={busy} className="btn-secondary">
+                  {t("recordPayment")}
+                </button>
+              </div>
+              <label className="flex items-center gap-1.5 text-xs text-gray-500">
+                <input type="checkbox" checked={foreignPayment} onChange={(e) => setForeignPayment(e.target.checked)} />
+                {t("paidInForeignCurrency")}
+              </label>
+              {foreignPayment && (
+                <div className="flex flex-wrap items-end gap-2">
+                  <select
+                    className="input w-auto"
+                    value={foreignPaymentForm.currency}
+                    onChange={(e) => setForeignPaymentForm((f) => ({ ...f, currency: e.target.value as (typeof SUPPORTED_CURRENCIES)[number] }))}
+                  >
+                    {SUPPORTED_CURRENCIES.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    required
+                    type="number"
+                    step="0.01"
+                    placeholder={t("foreignAmount")}
+                    className="input w-32"
+                    value={foreignPaymentForm.foreignAmount}
+                    onChange={(e) => setForeignPaymentForm((f) => ({ ...f, foreignAmount: e.target.value }))}
+                  />
+                  <input
+                    required
+                    type="number"
+                    step="0.000001"
+                    placeholder={t("exchangeRateUsed")}
+                    className="input w-32"
+                    value={foreignPaymentForm.exchangeRate}
+                    onChange={(e) => setForeignPaymentForm((f) => ({ ...f, exchangeRate: e.target.value }))}
+                  />
+                </div>
+              )}
             </form>
           )}
         </div>
 
         <div className="card lg:col-span-1 h-fit">
           <dl className="flex flex-col gap-2 text-sm">
+            <Row label={t("taxAmount")} value={money(invoice.taxAmount)} />
             <Row label={t("total")} value={money(invoice.total)} />
             <Row label={t("paidTotal")} value={money(paidTotal)} />
             <Row label={t("balanceDue")} value={money(balanceDue)} emphasize />
           </dl>
+
+          {invoice.status === "draft" && (
+            <button onClick={recalculateTax} disabled={busy} className="btn-secondary mt-3 w-full">
+              {t("recalculateTax")}
+            </button>
+          )}
 
           {invoice.lateFeeAccrued > 0 && (
             <div className="mt-3 flex items-center justify-between rounded-lg border border-warning-200 bg-warning-50 px-3 py-2">

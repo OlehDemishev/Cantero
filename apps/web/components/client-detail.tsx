@@ -48,11 +48,22 @@ interface Client {
   preferredLocale: string | null;
   source: string | null;
   campaignId: string | null;
+  taxJurisdictionId: string | null;
 }
 interface MarketingCampaign {
   id: string;
   name: string;
   channel: string;
+}
+interface TaxJurisdiction {
+  id: string;
+  name: string;
+}
+interface TaxExemptionCertificate {
+  id: string;
+  certificateNumber: string;
+  reason: string | null;
+  expiresAt: string | null;
 }
 interface Activity {
   id: string;
@@ -69,6 +80,7 @@ interface Reminder {
 
 export function ClientDetail({ clientId }: { clientId: string }) {
   const t = useTranslations("clients");
+  const tt = useTranslations("tax");
   const tc = useTranslations("common");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
@@ -91,6 +103,11 @@ export function ClientDetail({ clientId }: { clientId: string }) {
   });
   const [dealSaved, setDealSaved] = useState(false);
   const [campaigns, setCampaigns] = useState<MarketingCampaign[]>([]);
+  const [taxJurisdictions, setTaxJurisdictions] = useState<TaxJurisdiction[]>([]);
+  const [taxJurisdictionId, setTaxJurisdictionId] = useState("");
+  const [exemptionCertificates, setExemptionCertificates] = useState<TaxExemptionCertificate[] | null>(null);
+  const [certForm, setCertForm] = useState({ certificateNumber: "", reason: "", expiresAt: "" });
+  const [taxBusy, setTaxBusy] = useState(false);
   const [billingForm, setBillingForm] = useState({
     street: "",
     city: "",
@@ -132,9 +149,11 @@ export function ClientDetail({ clientId }: { clientId: string }) {
         paymentTermsDays: c.paymentTermsDays?.toString() ?? "",
         preferredLocale: c.preferredLocale ?? "",
       });
+      setTaxJurisdictionId(c.taxJurisdictionId ?? "");
     });
     apiFetch<Activity[]>(`/clients/${clientId}/activities`).then(setActivities);
     apiFetch<Reminder[]>(`/clients/${clientId}/reminders`).then(setReminders);
+    apiFetch<TaxExemptionCertificate[]>(`/clients/${clientId}/tax-exemption-certificates`).then(setExemptionCertificates);
   }
 
   useEffect(() => {
@@ -142,6 +161,7 @@ export function ClientDetail({ clientId }: { clientId: string }) {
     apiFetch<Worker[]>("/workers").then(setWorkers);
     apiFetch<ReferralClient[]>("/clients").then((cs) => setAllClients(cs.filter((c) => c.id !== clientId)));
     apiFetch<MarketingCampaign[]>("/marketing/campaigns").then(setCampaigns);
+    apiFetch<TaxJurisdiction[]>("/tax/jurisdictions").then(setTaxJurisdictions);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientId]);
 
@@ -246,6 +266,40 @@ export function ClientDetail({ clientId }: { clientId: string }) {
       load();
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function saveTaxJurisdiction(e: React.FormEvent) {
+    e.preventDefault();
+    setTaxBusy(true);
+    try {
+      await apiFetch(`/clients/${clientId}/tax-jurisdiction`, {
+        method: "PATCH",
+        body: JSON.stringify({ taxJurisdictionId: taxJurisdictionId || null }),
+      });
+      load();
+    } finally {
+      setTaxBusy(false);
+    }
+  }
+
+  async function addExemptionCertificate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!certForm.certificateNumber.trim()) return;
+    setTaxBusy(true);
+    try {
+      await apiFetch(`/clients/${clientId}/tax-exemption-certificates`, {
+        method: "POST",
+        body: JSON.stringify({
+          certificateNumber: certForm.certificateNumber.trim(),
+          reason: certForm.reason || undefined,
+          expiresAt: certForm.expiresAt ? new Date(certForm.expiresAt).toISOString() : undefined,
+        }),
+      });
+      setCertForm({ certificateNumber: "", reason: "", expiresAt: "" });
+      load();
+    } finally {
+      setTaxBusy(false);
     }
   }
 
@@ -568,6 +622,51 @@ export function ClientDetail({ clientId }: { clientId: string }) {
             </button>
             {billingSaved && <span className="text-xs text-success-700">{tc("saved")}</span>}
           </div>
+        </form>
+      </div>
+
+      <div className="mt-6 card max-w-md">
+        <h2 className="mb-3 text-sm font-semibold text-gray-700">{tt("clientTaxTitle")}</h2>
+        <form onSubmit={saveTaxJurisdiction} className="flex items-center gap-2">
+          <select className="input flex-1" value={taxJurisdictionId} onChange={(e) => setTaxJurisdictionId(e.target.value)}>
+            <option value="">{tt("noJurisdictionAssigned")}</option>
+            {taxJurisdictions.map((j) => (
+              <option key={j.id} value={j.id}>
+                {j.name}
+              </option>
+            ))}
+          </select>
+          <button type="submit" disabled={taxBusy} className="btn-secondary shrink-0">
+            {tc("save")}
+          </button>
+        </form>
+
+        <h3 className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-gray-500">{tt("exemptionCertificates")}</h3>
+        {exemptionCertificates === null ? (
+          <p className="text-xs text-gray-400">{tc("loading")}</p>
+        ) : exemptionCertificates.length === 0 ? (
+          <p className="text-xs text-gray-400">{tt("noExemptionCertificates")}</p>
+        ) : (
+          <ul className="mb-2 flex flex-col gap-1">
+            {exemptionCertificates.map((cert) => (
+              <li key={cert.id} className="text-xs text-gray-600">
+                {cert.certificateNumber}
+                {cert.expiresAt && <span className="text-gray-400"> — {tt("expiresOn", { date: new Date(cert.expiresAt).toLocaleDateString() })}</span>}
+              </li>
+            ))}
+          </ul>
+        )}
+        <form onSubmit={addExemptionCertificate} className="flex flex-wrap items-end gap-2">
+          <input
+            placeholder={tt("certificateNumberPlaceholder")}
+            className="input w-auto"
+            value={certForm.certificateNumber}
+            onChange={(e) => setCertForm((f) => ({ ...f, certificateNumber: e.target.value }))}
+          />
+          <input type="date" className="input w-auto" value={certForm.expiresAt} onChange={(e) => setCertForm((f) => ({ ...f, expiresAt: e.target.value }))} />
+          <button type="submit" disabled={taxBusy} className="btn-secondary shrink-0 px-2.5 py-1 text-xs">
+            {tt("addCertificate")}
+          </button>
         </form>
       </div>
 

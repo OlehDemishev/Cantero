@@ -16,6 +16,10 @@ import { MaterialRfqsController } from "./material-rfqs.controller";
 import { MaterialRfqsService } from "./material-rfqs.service";
 import { VendorBillsController } from "./vendor-bills.controller";
 import { VendorBillsService } from "./vendor-bills.service";
+import { StockTransfersController } from "./stock-transfers.controller";
+import { StockTransfersService } from "./stock-transfers.service";
+import { LongLeadItemsController } from "./long-lead-items.controller";
+import { LongLeadItemsService } from "./long-lead-items.service";
 
 @Module({
   controllers: [
@@ -27,6 +31,8 @@ import { VendorBillsService } from "./vendor-bills.service";
     StockCountsController,
     MaterialRfqsController,
     VendorBillsController,
+    StockTransfersController,
+    LongLeadItemsController,
   ],
   providers: [
     MaterialCatalogService,
@@ -38,6 +44,8 @@ import { VendorBillsService } from "./vendor-bills.service";
     StockCountsService,
     MaterialRfqsService,
     VendorBillsService,
+    StockTransfersService,
+    LongLeadItemsService,
   ],
   exports: [MaterialCatalogService, StockService],
 })

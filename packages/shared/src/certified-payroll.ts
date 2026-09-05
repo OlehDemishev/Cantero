@@ -4,6 +4,7 @@ export const createWageClassificationSchema = z.object({
   trade: z.string().min(1).max(120),
   hourlyRate: z.number().positive(),
   fringeRate: z.number().min(0).default(0),
+  apprenticeRatio: z.string().max(20).optional(),
 });
 export type CreateWageClassificationInput = z.infer<typeof createWageClassificationSchema>;
 
@@ -11,9 +12,29 @@ export const updateWageClassificationSchema = z.object({
   trade: z.string().min(1).max(120).optional(),
   hourlyRate: z.number().positive().optional(),
   fringeRate: z.number().min(0).optional(),
+  apprenticeRatio: z.string().max(20).optional(),
   active: z.boolean().optional(),
 });
 export type UpdateWageClassificationInput = z.infer<typeof updateWageClassificationSchema>;
+
+export const FRINGE_FUND_TYPES = ["pension", "health", "training", "vacation", "other"] as const;
+export type FringeFundType = (typeof FRINGE_FUND_TYPES)[number];
+
+export const createFringeBenefitFundSchema = z.object({
+  fundType: z.enum(FRINGE_FUND_TYPES),
+  name: z.string().min(1).max(160),
+  ratePerHour: z.number().min(0),
+});
+export type CreateFringeBenefitFundInput = z.infer<typeof createFringeBenefitFundSchema>;
+
+export interface ApprenticeRatioViolation {
+  trade: string;
+  ratio: string;
+  journeymanCount: number;
+  apprenticeCount: number;
+  maxAllowedApprentices: number;
+  compliant: boolean;
+}
 
 export const generateCertifiedPayrollSchema = z.object({
   weekEndingDate: z.string().min(1),
@@ -25,14 +46,22 @@ export const signCertifiedPayrollSchema = z.object({
 });
 export type SignCertifiedPayrollInput = z.infer<typeof signCertifiedPayrollSchema>;
 
+export interface FringeFundBreakdownLine {
+  fundType: FringeFundType;
+  name: string;
+  amount: number;
+}
+
 export interface CertifiedPayrollLine {
   workerId: string;
   workerName: string;
   trade: string | null;
+  isApprentice: boolean;
   regularHours: number;
   overtimeHours: number;
   ratePerHour: number | null;
   fringeRate: number;
+  fringeBreakdown: FringeFundBreakdownLine[];
   grossPay: number | null;
   belowPrevailingRate: boolean;
 }

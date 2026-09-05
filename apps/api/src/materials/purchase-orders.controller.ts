@@ -1,5 +1,15 @@
-import { Body, Controller, Get, Param, Post } from "@nestjs/common";
-import { createPurchaseOrderSchema, receivePurchaseOrderSchema, type AuthUser, type CreatePurchaseOrderInput, type ReceivePurchaseOrderInput } from "@cantero/shared";
+import { Body, Controller, Get, Param, Post, Query } from "@nestjs/common";
+import {
+  createPurchaseOrderSchema,
+  receivePurchaseOrderSchema,
+  receiveShipmentSchema,
+  resolveReceivingDiscrepancySchema,
+  type AuthUser,
+  type CreatePurchaseOrderInput,
+  type ReceivePurchaseOrderInput,
+  type ReceiveShipmentInput,
+  type ResolveReceivingDiscrepancyInput,
+} from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { PurchaseOrdersService } from "./purchase-orders.service";
@@ -11,6 +21,11 @@ export class PurchaseOrdersController {
   @Get()
   list(@CurrentUser() user: AuthUser) {
     return this.service.list(user.companyId);
+  }
+
+  @Get("receiving-discrepancies")
+  listDiscrepancies(@CurrentUser() user: AuthUser, @Query("purchaseOrderId") purchaseOrderId?: string) {
+    return this.service.listDiscrepancies(user.companyId, purchaseOrderId);
   }
 
   @Get(":id")
@@ -33,5 +48,23 @@ export class PurchaseOrdersController {
     @Body(new ZodValidationPipe(receivePurchaseOrderSchema)) body: ReceivePurchaseOrderInput,
   ) {
     return this.service.receive(user.companyId, id, body.warehouseId);
+  }
+
+  @Post(":id/receive-shipment")
+  receiveShipment(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(receiveShipmentSchema)) body: ReceiveShipmentInput,
+  ) {
+    return this.service.receiveShipment(user.companyId, { userId: user.userId, name: user.name }, id, body);
+  }
+
+  @Post("receiving-discrepancies/:id/resolve")
+  resolveDiscrepancy(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(resolveReceivingDiscrepancySchema)) body: ResolveReceivingDiscrepancyInput,
+  ) {
+    return this.service.resolveDiscrepancy(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 }

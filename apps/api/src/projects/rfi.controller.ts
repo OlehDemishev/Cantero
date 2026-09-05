@@ -3,6 +3,7 @@ import {
   answerRfiSchema,
   bulkActionIdsSchema,
   createRfiSchema,
+  linkCostImpactChangeOrderSchema,
   setDrawingPinSchema,
   setRfiBallInCourtSchema,
   updateRfiSchema,
@@ -11,6 +12,7 @@ import {
   type BallInCourtParty,
   type BulkActionIdsInput,
   type CreateRfiInput,
+  type LinkCostImpactChangeOrderInput,
   type SetDrawingPinInput,
   type SetRfiBallInCourtInput,
   type UpdateRfiInput,
@@ -30,6 +32,16 @@ export class RfiController {
     @Query("ballInCourtParty") ballInCourtParty?: BallInCourtParty,
   ) {
     return this.service.listForProject(user.companyId, projectId, ballInCourtParty);
+  }
+
+  @Get("cost-impact-summary")
+  costImpactSummary(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string) {
+    return this.service.costImpactSummary(user.companyId, projectId);
+  }
+
+  @Get("analytics")
+  analytics(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string) {
+    return this.service.analytics(user.companyId, projectId);
   }
 
   @Get(":id")
@@ -59,6 +71,15 @@ export class RfiController {
   @Patch(":id/pin")
   setPin(@CurrentUser() user: AuthUser, @Param("id") id: string, @Body(new ZodValidationPipe(setDrawingPinSchema)) body: SetDrawingPinInput) {
     return this.service.setPin(user.companyId, id, body);
+  }
+
+  @Patch(":id/change-order")
+  linkChangeOrder(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(linkCostImpactChangeOrderSchema)) body: LinkCostImpactChangeOrderInput,
+  ) {
+    return this.service.linkChangeOrder(user.companyId, id, body);
   }
 
   @Post("bulk/close")

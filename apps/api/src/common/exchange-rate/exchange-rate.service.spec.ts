@@ -46,4 +46,24 @@ describe("ExchangeRateService", () => {
 
     expect(result).toBe(100);
   });
+
+  describe("getRate()", () => {
+    it("returns 1 for the same currency without a lookup", async () => {
+      const result = await service.getRate("EUR", "EUR");
+      expect(result).toBe(1);
+      expect(prisma.exchangeRate.findUnique).not.toHaveBeenCalled();
+    });
+
+    it("returns the raw stored rate for a known pair", async () => {
+      prisma.exchangeRate.findUnique.mockResolvedValue({ rate: "1.08" });
+      const result = await service.getRate("EUR", "USD");
+      expect(result).toBe(1.08);
+    });
+
+    it("returns null rather than a guessed rate when none is on file", async () => {
+      prisma.exchangeRate.findUnique.mockResolvedValue(null);
+      const result = await service.getRate("EUR", "GBP");
+      expect(result).toBeNull();
+    });
+  });
 });

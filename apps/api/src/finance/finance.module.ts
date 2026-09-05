@@ -15,8 +15,10 @@ import { PublicSubcontractorsController } from "./public-subcontractors.controll
 import { DrawRequestsController } from "./draw-requests.controller";
 import { DrawRequestsService } from "./draw-requests.service";
 import { ClientPaymentMethodsService } from "./client-payment-methods.service";
+import { SubcontractorPrequalificationModule } from "../subcontractor-prequalification/subcontractor-prequalification.module";
 
 @Module({
+  imports: [SubcontractorPrequalificationModule],
   controllers: [
     InvoicesController,
     BudgetController,

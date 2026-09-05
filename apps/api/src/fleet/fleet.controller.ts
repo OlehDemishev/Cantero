@@ -1,9 +1,11 @@
 import { Body, Controller, Get, Param, Patch, Post } from "@nestjs/common";
 import {
+  addVehicleFuelLogSchema,
   createVehicleSchema,
   logVehicleInspectionSchema,
   setDriverCdlExpirySchema,
   updateVehicleSchema,
+  type AddVehicleFuelLogInput,
   type AuthUser,
   type CreateVehicleInput,
   type LogVehicleInspectionInput,
@@ -21,6 +23,11 @@ export class FleetController {
   @Get("vehicles")
   list(@CurrentUser() user: AuthUser) {
     return this.service.list(user.companyId);
+  }
+
+  @Get("vehicles/fuel-efficiency-report")
+  fuelEfficiencyReport(@CurrentUser() user: AuthUser) {
+    return this.service.fuelEfficiencyReport(user.companyId);
   }
 
   @Get("vehicles/:id")
@@ -49,6 +56,20 @@ export class FleetController {
     @Body(new ZodValidationPipe(logVehicleInspectionSchema)) body: LogVehicleInspectionInput,
   ) {
     return this.service.logInspection(user.companyId, { userId: user.userId, name: user.name }, id, body);
+  }
+
+  @Get("vehicles/:id/fuel-logs")
+  listFuelLogs(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.listFuelLogs(user.companyId, id);
+  }
+
+  @Post("vehicles/:id/fuel-logs")
+  addFuelLog(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(addVehicleFuelLogSchema)) body: AddVehicleFuelLogInput,
+  ) {
+    return this.service.addFuelLog(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
   @Patch("workers/:workerId/cdl")

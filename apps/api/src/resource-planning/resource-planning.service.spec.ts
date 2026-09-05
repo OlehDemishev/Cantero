@@ -15,10 +15,13 @@ describe("ResourcePlanningService", () => {
     worker: { findMany: jest.Mock; findFirst: jest.Mock; count: jest.Mock };
     equipment: { findMany: jest.Mock; findFirst: jest.Mock };
     project: { findFirst: jest.Mock };
-    task: { findFirst: jest.Mock };
-    resourceAssignment: { create: jest.Mock; findMany: jest.Mock; findFirst: jest.Mock; delete: jest.Mock };
+    task: { findFirst: jest.Mock; findMany: jest.Mock };
+    resourceAssignment: { create: jest.Mock; findMany: jest.Mock; findFirst: jest.Mock; delete: jest.Mock; update: jest.Mock };
     crew: { findMany: jest.Mock; findFirst: jest.Mock; findFirstOrThrow: jest.Mock; create: jest.Mock; delete: jest.Mock };
     crewMember: { deleteMany: jest.Mock; createMany: jest.Mock };
+    scheduleScenario: { findMany: jest.Mock; findFirst: jest.Mock; create: jest.Mock; delete: jest.Mock };
+    scheduleScenarioTaskOverride: { upsert: jest.Mock };
+    taskDependency: { findMany: jest.Mock };
     $transaction: jest.Mock;
   };
   let audit: { record: jest.Mock };
@@ -29,10 +32,13 @@ describe("ResourcePlanningService", () => {
       worker: { findMany: jest.fn().mockResolvedValue([]), findFirst: jest.fn(), count: jest.fn() },
       equipment: { findMany: jest.fn().mockResolvedValue([]), findFirst: jest.fn() },
       project: { findFirst: jest.fn() },
-      task: { findFirst: jest.fn() },
-      resourceAssignment: { create: jest.fn(), findMany: jest.fn().mockResolvedValue([]), findFirst: jest.fn(), delete: jest.fn() },
+      task: { findFirst: jest.fn(), findMany: jest.fn().mockResolvedValue([]) },
+      resourceAssignment: { create: jest.fn(), findMany: jest.fn().mockResolvedValue([]), findFirst: jest.fn(), delete: jest.fn(), update: jest.fn() },
       crew: { findMany: jest.fn(), findFirst: jest.fn(), findFirstOrThrow: jest.fn(), create: jest.fn(), delete: jest.fn() },
       crewMember: { deleteMany: jest.fn(), createMany: jest.fn() },
+      scheduleScenario: { findMany: jest.fn(), findFirst: jest.fn(), create: jest.fn(), delete: jest.fn() },
+      scheduleScenarioTaskOverride: { upsert: jest.fn() },
+      taskDependency: { findMany: jest.fn().mockResolvedValue([]) },
       $transaction: jest.fn((arg) => (Array.isArray(arg) ? Promise.all(arg) : arg())),
     };
     audit = { record: jest.fn() };
@@ -452,6 +458,107 @@ describe("ResourcePlanningService", () => {
         "crew-1",
         expect.stringContaining("2 workers"),
       );
+    });
+  });
+
+  describe("levelResource()", () => {
+    it("throws when the resource has no assignments", async () => {
+      prisma.resourceAssignment.findMany.mockResolvedValue([]);
+      await expect(service.levelResource(COMPANY_A, ACTOR, { resourceType: "worker", resourceId: "w-1" })).rejects.toThrow(NotFoundException);
+    });
+
+    it("persists shifted dates for overlapping assignments and returns the moves", async () => {
+      prisma.resourceAssignment.findMany.mockResolvedValue([
+        { id: "a-1", startDate: new Date("2026-01-01"), endDate: new Date("2026-01-05"), project: { name: "Site A" } },
+        { id: "a-2", startDate: new Date("2026-01-03"), endDate: new Date("2026-01-06"), project: { name: "Site B" } },
+      ]);
+
+      const result = await service.levelResource(COMPANY_A, ACTOR, { resourceType: "worker", resourceId: "w-1" });
+
+      expect(result.moves).toHaveLength(1);
+      expect(result.moves[0].assignmentId).toBe("a-2");
+      expect(result.moves[0].shiftedByDays).toBe(2);
+      expect(prisma.resourceAssignment.update).toHaveBeenCalledWith({
+        where: { id: "a-2" },
+        data: { startDate: new Date("2026-01-05"), endDate: new Date("2026-01-08") },
+      });
+      expect(audit.record).toHaveBeenCalledWith(COMPANY_A, ACTOR, "resource_assignment.leveled", "Worker", "w-1", expect.any(String));
+    });
+
+    it("does not touch the database or record an audit entry when nothing overlaps", async () => {
+      prisma.resourceAssignment.findMany.mockResolvedValue([
+        { id: "a-1", startDate: new Date("2026-01-01"), endDate: new Date("2026-01-02"), project: { name: "Site A" } },
+      ]);
+
+      const result = await service.levelResource(COMPANY_A, ACTOR, { resourceType: "equipment", resourceId: "eq-1" });
+
+      expect(result.moves).toEqual([]);
+      expect(prisma.resourceAssignment.update).not.toHaveBeenCalled();
+      expect(audit.record).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("createScenario()", () => {
+    it("rejects when the project does not belong to this company", async () => {
+      prisma.project.findFirst.mockResolvedValue(null);
+      await expect(service.createScenario(COMPANY_A, ACTOR, "project-1", { name: "Compressed schedule" })).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe("setScenarioTaskOverride()", () => {
+    it("throws when the scenario does not belong to this company", async () => {
+      prisma.scheduleScenario.findFirst.mockResolvedValue(null);
+      await expect(
+        service.setScenarioTaskOverride(COMPANY_A, "scenario-1", {
+          taskId: "task-1",
+          startDate: "2026-01-01T00:00:00.000Z",
+          dueDate: "2026-01-05T00:00:00.000Z",
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it("throws when the task does not belong to the scenario's project", async () => {
+      prisma.scheduleScenario.findFirst.mockResolvedValue({ id: "scenario-1", projectId: "project-1" });
+      prisma.task.findFirst.mockResolvedValue(null);
+      await expect(
+        service.setScenarioTaskOverride(COMPANY_A, "scenario-1", {
+          taskId: "task-1",
+          startDate: "2026-01-01T00:00:00.000Z",
+          dueDate: "2026-01-05T00:00:00.000Z",
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe("compareScenario()", () => {
+    it("throws when the scenario does not belong to this company", async () => {
+      prisma.scheduleScenario.findFirst.mockResolvedValue(null);
+      await expect(service.compareScenario(COMPANY_A, "scenario-1")).rejects.toThrow(NotFoundException);
+    });
+
+    it("reports a positive finish delta when the scenario's override pushes the finish date out", async () => {
+      prisma.scheduleScenario.findFirst.mockResolvedValue({
+        id: "scenario-1",
+        projectId: "project-1",
+        overrides: [{ taskId: "task-1", startDate: new Date("2026-01-05"), dueDate: new Date("2026-01-10") }],
+      });
+      prisma.task.findMany.mockResolvedValue([{ id: "task-1", startDate: new Date("2026-01-01"), dueDate: new Date("2026-01-05") }]);
+      prisma.taskDependency.findMany.mockResolvedValue([]);
+
+      const result = await service.compareScenario(COMPANY_A, "scenario-1");
+
+      expect(result.finishDeltaDays).toBe(5);
+    });
+
+    it("reports a null finish delta when the project has no tasks with dates", async () => {
+      prisma.scheduleScenario.findFirst.mockResolvedValue({ id: "scenario-1", projectId: "project-1", overrides: [] });
+      prisma.task.findMany.mockResolvedValue([]);
+      prisma.taskDependency.findMany.mockResolvedValue([]);
+
+      const result = await service.compareScenario(COMPANY_A, "scenario-1");
+
+      expect(result.finishDeltaDays).toBeNull();
+      expect(result.baselineProjectFinish).toBeNull();
     });
   });
 });

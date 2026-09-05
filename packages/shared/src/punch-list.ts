@@ -11,6 +11,7 @@ export const createPunchListItemSchema = z.object({
   assigneeWorkerId: z.string().uuid().optional(),
   assigneeSubcontractorId: z.string().uuid().optional(),
   dueDate: z.string().datetime().optional(),
+  estimatedCostImpact: z.number().nonnegative().optional(),
 });
 export type CreatePunchListItemInput = z.infer<typeof createPunchListItemSchema>;
 
@@ -21,5 +22,11 @@ export const updatePunchListItemSchema = z.object({
   assigneeWorkerId: z.string().uuid().nullable().optional(),
   assigneeSubcontractorId: z.string().uuid().nullable().optional(),
   dueDate: z.string().datetime().nullable().optional(),
+  estimatedCostImpact: z.number().nonnegative().nullable().optional(),
 });
 export type UpdatePunchListItemInput = z.infer<typeof updatePunchListItemSchema>;
+
+export const linkPunchListChangeOrderSchema = z.object({
+  changeOrderId: z.string().uuid().nullable(),
+});
+export type LinkPunchListChangeOrderInput = z.infer<typeof linkPunchListChangeOrderSchema>;

@@ -37,10 +37,18 @@ function baseProject(overrides: Partial<Record<string, unknown>> = {}) {
 
 describe("ReportsService.portfolio", () => {
   let service: ReportsService;
-  let prisma: { project: { findMany: jest.Mock }; taskDependency: { findMany: jest.Mock } };
+  let prisma: {
+    project: { findMany: jest.Mock };
+    taskDependency: { findMany: jest.Mock };
+    company: { findUniqueOrThrow: jest.Mock };
+  };
 
   beforeEach(async () => {
-    prisma = { project: { findMany: jest.fn() }, taskDependency: { findMany: jest.fn().mockResolvedValue([]) } };
+    prisma = {
+      project: { findMany: jest.fn() },
+      taskDependency: { findMany: jest.fn().mockResolvedValue([]) },
+      company: { findUniqueOrThrow: jest.fn().mockResolvedValue({ currency: "EUR" }) },
+    };
 
     const module = await Test.createTestingModule({
       providers: [ReportsService, { provide: PrismaService, useValue: prisma }, ...PDF_PROVIDERS],
@@ -159,6 +167,30 @@ describe("ReportsService.portfolio", () => {
     expect(result.projects[0].fundedToDate).toBe(1000);
     expect(result.projects[0].openDrawCount).toBe(1);
     expect(result.summary.fundedToDateTotal).toBe(1000);
+  });
+
+  it("converts a project's totals from its own currency into the company's before rolling up the summary", async () => {
+    prisma.company.findUniqueOrThrow.mockResolvedValue({ currency: "EUR" });
+    prisma.project.findMany.mockResolvedValue([
+      baseProject({ id: "project-usd", currency: "USD", estimates: [{ grandTotal: "100" }] }),
+    ]);
+    const exchangeRates = { convert: jest.fn().mockResolvedValue(92) };
+    const module = await Test.createTestingModule({
+      providers: [
+        ReportsService,
+        { provide: PrismaService, useValue: prisma },
+        ...PDF_PROVIDERS.filter((p) => p.provide !== ExchangeRateService),
+        { provide: ExchangeRateService, useValue: exchangeRates },
+      ],
+    }).compile();
+    service = module.get(ReportsService);
+
+    const result = await service.portfolio(COMPANY_A);
+
+    expect(exchangeRates.convert).toHaveBeenCalledWith(100, "USD", "EUR");
+    expect(result.projects[0].budgetTotal).toBe(92);
+    expect(result.summary.budgetTotal).toBe(92);
+    expect(result.currency).toBe("EUR");
   });
 });
 
@@ -813,5 +845,56 @@ describe("ReportsService.equipmentUtilization", () => {
     const result = await service.equipmentUtilization("company-a", from, to);
 
     expect(result.map((r) => r.id)).toEqual(["idle", "busy"]);
+  });
+});
+
+describe("ReportsService.winRateReport", () => {
+  let service: ReportsService;
+  let prisma: { estimate: { findMany: jest.Mock } };
+
+  beforeEach(async () => {
+    prisma = { estimate: { findMany: jest.fn() } };
+
+    const module = await Test.createTestingModule({
+      providers: [ReportsService, { provide: PrismaService, useValue: prisma }, ...PDF_PROVIDERS],
+    }).compile();
+
+    service = module.get(ReportsService);
+  });
+
+  it("only queries non-template, non-variant, sent estimates", async () => {
+    prisma.estimate.findMany.mockResolvedValue([]);
+
+    await service.winRateReport(COMPANY_A);
+
+    expect(prisma.estimate.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { companyId: COMPANY_A, isTemplate: false, variantOfId: null, sentAt: { not: null } } }),
+    );
+  });
+
+  it("groups decisions by send month and by margin band", async () => {
+    prisma.estimate.findMany.mockResolvedValue([
+      {
+        clientDecision: "approved",
+        grandTotal: "10000",
+        markupPercent: "15",
+        sentAt: new Date("2026-08-01T00:00:00Z"),
+        decisionAt: new Date("2026-08-05T00:00:00Z"),
+      },
+      {
+        clientDecision: "rejected",
+        grandTotal: "5000",
+        markupPercent: "25",
+        sentAt: new Date("2026-09-01T00:00:00Z"),
+        decisionAt: new Date("2026-09-03T00:00:00Z"),
+      },
+    ]);
+
+    const result = await service.winRateReport(COMPANY_A);
+
+    expect(result.overall.decidedCount).toBe(2);
+    expect(result.overall.wonCount).toBe(1);
+    expect(result.byMonth.map((m) => m.month)).toEqual(["2026-08", "2026-09"]);
+    expect(result.byMarginBand.map((b) => b.band)).toEqual(["10-20%", "20%+"]);
   });
 });

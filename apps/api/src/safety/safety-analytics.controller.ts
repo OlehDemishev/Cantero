@@ -28,4 +28,9 @@ export class SafetyAnalyticsController {
   trainingCompliance(@CurrentUser() user: AuthUser, @Query("lookbackDays") lookbackDays?: string) {
     return this.service.trainingCompliance(user.companyId, lookbackDays ? Number(lookbackDays) : undefined);
   }
+
+  @Get("near-miss")
+  nearMissAnalytics(@CurrentUser() user: AuthUser, @Query("year") year?: string) {
+    return this.service.nearMissAnalytics(user.companyId, year ? Number(year) : new Date().getFullYear());
+  }
 }

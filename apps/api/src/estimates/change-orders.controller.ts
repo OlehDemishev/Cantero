@@ -2,9 +2,11 @@ import { Body, Controller, Delete, Get, Header, Param, Post, StreamableFile } fr
 import {
   addChangeOrderLineSchema,
   createChangeOrderSchema,
+  setChangeOrderScheduleImpactSchema,
   type AddChangeOrderLineInput,
   type AuthUser,
   type CreateChangeOrderInput,
+  type SetChangeOrderScheduleImpactInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
@@ -17,6 +19,11 @@ export class ChangeOrdersController {
   @Get()
   list(@CurrentUser() user: AuthUser, @Param("estimateId") estimateId: string) {
     return this.service.list(user.companyId, estimateId);
+  }
+
+  @Get("profitability")
+  profitability(@CurrentUser() user: AuthUser, @Param("estimateId") estimateId: string) {
+    return this.service.profitability(user.companyId, estimateId);
   }
 
   @Get(":id")
@@ -45,6 +52,15 @@ export class ChangeOrdersController {
   @Delete(":id/lines/:lineId")
   removeLine(@CurrentUser() user: AuthUser, @Param("id") id: string, @Param("lineId") lineId: string) {
     return this.service.removeLine(user.companyId, id, lineId);
+  }
+
+  @Post(":id/schedule-impact")
+  setScheduleImpact(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(setChangeOrderScheduleImpactSchema)) body: SetChangeOrderScheduleImpactInput,
+  ) {
+    return this.service.setScheduleImpact(user.companyId, id, body);
   }
 
   @Post(":id/approve")

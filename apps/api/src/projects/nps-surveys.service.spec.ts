@@ -17,6 +17,8 @@ describe("NpsSurveysService", () => {
     project: { findFirst: jest.Mock };
     npsSurvey: { findFirst: jest.Mock; findUnique: jest.Mock; create: jest.Mock; update: jest.Mock; findMany: jest.Mock };
     company: { findUniqueOrThrow: jest.Mock };
+    task: { aggregate: jest.Mock; create: jest.Mock };
+    membership: { findMany: jest.Mock };
   };
   let mail: { send: jest.Mock };
   let webhooks: { trigger: jest.Mock };
@@ -26,6 +28,8 @@ describe("NpsSurveysService", () => {
       project: { findFirst: jest.fn() },
       npsSurvey: { findFirst: jest.fn(), findUnique: jest.fn(), create: jest.fn(), update: jest.fn(), findMany: jest.fn() },
       company: { findUniqueOrThrow: jest.fn() },
+      task: { aggregate: jest.fn().mockResolvedValue({ _max: { sortOrder: 0 } }), create: jest.fn() },
+      membership: { findMany: jest.fn().mockResolvedValue([{ user: { email: "owner@example.com" } }]) },
     };
     mail = { send: jest.fn() };
     webhooks = { trigger: jest.fn() };
@@ -103,6 +107,58 @@ describe("NpsSurveysService", () => {
         expect.objectContaining({ data: expect.objectContaining({ score: 9, comment: "Great work" }) }),
       );
       expect(webhooks.trigger).toHaveBeenCalledWith(COMPANY_A, "nps_survey.responded", expect.objectContaining({ score: 9 }));
+    });
+
+    it("does nothing extra for a detractor score when npsDetractorFollowUpEnabled is off", async () => {
+      prisma.npsSurvey.findUnique.mockResolvedValue({
+        id: "s-1",
+        respondedAt: null,
+        companyId: COMPANY_A,
+        projectId: "proj-1",
+        project: { id: "proj-1", name: "Site A", client: { name: "Acme Client" } },
+      });
+      prisma.npsSurvey.update.mockResolvedValue({ id: "s-1", score: 3 });
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ npsDetractorFollowUpEnabled: false, name: "Acme Co" });
+
+      await service.submit("tok", { score: 3, comment: "Too slow" });
+
+      expect(prisma.task.create).not.toHaveBeenCalled();
+      expect(mail.send).not.toHaveBeenCalled();
+    });
+
+    it("creates a follow-up task and emails owners for a detractor score when enabled", async () => {
+      prisma.npsSurvey.findUnique.mockResolvedValue({
+        id: "s-1",
+        respondedAt: null,
+        companyId: COMPANY_A,
+        projectId: "proj-1",
+        project: { id: "proj-1", name: "Site A", client: { name: "Acme Client" } },
+      });
+      prisma.npsSurvey.update.mockResolvedValue({ id: "s-1", score: 3 });
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ npsDetractorFollowUpEnabled: true, name: "Acme Co" });
+
+      await service.submit("tok", { score: 3, comment: "Too slow" });
+
+      expect(prisma.task.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ projectId: "proj-1", name: expect.stringContaining("3/10") }) }),
+      );
+      expect(mail.send).toHaveBeenCalledWith(expect.objectContaining({ to: "owner@example.com" }));
+    });
+
+    it("does not create a follow-up for a passive/promoter score even when enabled", async () => {
+      prisma.npsSurvey.findUnique.mockResolvedValue({
+        id: "s-1",
+        respondedAt: null,
+        companyId: COMPANY_A,
+        projectId: "proj-1",
+        project: { id: "proj-1", name: "Site A", client: null },
+      });
+      prisma.npsSurvey.update.mockResolvedValue({ id: "s-1", score: 8 });
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ npsDetractorFollowUpEnabled: true, name: "Acme Co" });
+
+      await service.submit("tok", { score: 8 });
+
+      expect(prisma.task.create).not.toHaveBeenCalled();
     });
   });
 

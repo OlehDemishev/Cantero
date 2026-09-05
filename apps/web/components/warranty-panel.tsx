@@ -11,6 +11,11 @@ interface Worker {
   id: string;
   name: string;
 }
+interface WarrantyRecovery {
+  recoveredAmount: number;
+  pendingAmount: number;
+  recoveryPercent: number | null;
+}
 interface WarrantyClaim {
   id: string;
   title: string;
@@ -21,7 +26,9 @@ interface WarrantyClaim {
   submittedByClientId: string | null;
   assignee: Worker | null;
   resolutionNotes: string | null;
+  repairCost: string | null;
   denialReason: string | null;
+  recovery: WarrantyRecovery;
 }
 interface Project {
   handoverDate: string | null;
@@ -57,6 +64,7 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [denyReason, setDenyReason] = useState("");
   const [resolutionNotes, setResolutionNotes] = useState("");
+  const [repairCost, setRepairCost] = useState("");
   const [busy, setBusy] = useState(false);
 
   function load() {
@@ -123,8 +131,12 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
   async function resolve(id: string) {
     setBusy(true);
     try {
-      await apiFetch(`/warranty-claims/${id}/resolve`, { method: "POST", body: JSON.stringify({ resolutionNotes: resolutionNotes || undefined }) });
+      await apiFetch(`/warranty-claims/${id}/resolve`, {
+        method: "POST",
+        body: JSON.stringify({ resolutionNotes: resolutionNotes || undefined, repairCost: repairCost ? Number(repairCost) : undefined }),
+      });
       setResolutionNotes("");
+      setRepairCost("");
       load();
     } finally {
       setBusy(false);
@@ -341,6 +353,16 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
                         {claim.denialReason}
                       </p>
                     )}
+                    {claim.repairCost !== null && (
+                      <div className="rounded-md bg-gray-50 p-2 text-xs text-gray-600">
+                        <p>{t("repairCostLabel", { amount: claim.repairCost })}</p>
+                        <p>
+                          {t("recoveredLabel", { amount: claim.recovery.recoveredAmount })}
+                          {claim.recovery.pendingAmount > 0 && ` · ${t("pendingRecoveryLabel", { amount: claim.recovery.pendingAmount })}`}
+                          {claim.recovery.recoveryPercent !== null && ` (${claim.recovery.recoveryPercent}%)`}
+                        </p>
+                      </div>
+                    )}
 
                     <PhotoAttachments param="warrantyClaimId" entityId={claim.id} />
 
@@ -360,6 +382,15 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
                           placeholder={t("resolutionNotesPlaceholder")}
                           value={resolutionNotes}
                           onChange={(e) => setResolutionNotes(e.target.value)}
+                        />
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          className="input w-40"
+                          placeholder={t("repairCostPlaceholder")}
+                          value={repairCost}
+                          onChange={(e) => setRepairCost(e.target.value)}
                         />
                         <button onClick={() => resolve(claim.id)} disabled={busy} className="btn-primary w-fit px-3 py-1 text-xs">
                           {t("markResolved")}

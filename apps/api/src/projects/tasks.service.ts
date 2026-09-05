@@ -1,7 +1,8 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import type { CreateTaskDependencyInput, CreateTaskInput, UpdateTaskInput } from "@cantero/shared";
+import type { CreateTaskCommitmentInput, CreateTaskDependencyInput, CreateTaskInput, ResolveTaskCommitmentInput, UpdateTaskInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { computeCriticalPath, minSuccessorStart, type DependencyForCpm, type TaskForCpm } from "./critical-path";
+import { calculatePpc } from "./ppc";
 
 const INCLUDE_DEPENDENCIES = {
   estimateLine: { include: { rateCatalogItem: true } },
@@ -223,6 +224,64 @@ export class TasksService {
         blockedByTaskNames: blockedBy.map((link) => link.predecessor.name),
       };
     });
+  }
+
+  /** Commits a task to a specific lookahead week — the lean-construction "pull planning" unit
+   * that ppcReport() measures against. One commitment per task per week (see the unique
+   * constraint on TaskCommitment), so re-committing an already-committed week is rejected rather
+   * than silently duplicated. */
+  async commitTask(companyId: string, committedByName: string, taskId: string, input: CreateTaskCommitmentInput) {
+    const task = await this.prisma.task.findFirst({ where: { id: taskId, project: { companyId } } });
+    if (!task) throw new NotFoundException("Task not found");
+
+    const weekStarting = new Date(input.weekStarting);
+    const existing = await this.prisma.taskCommitment.findUnique({ where: { taskId_weekStarting: { taskId, weekStarting } } });
+    if (existing) throw new BadRequestException("This task is already committed for that week");
+
+    return this.prisma.taskCommitment.create({ data: { companyId, taskId, weekStarting, committedByName } });
+  }
+
+  async resolveCommitment(companyId: string, id: string, input: ResolveTaskCommitmentInput) {
+    const commitment = await this.prisma.taskCommitment.findFirst({ where: { id, companyId } });
+    if (!commitment) throw new NotFoundException("Commitment not found");
+    if (commitment.status !== "committed") throw new BadRequestException("Only an open commitment can be resolved");
+    if (input.status === "missed" && !input.varianceReason) {
+      throw new BadRequestException("A variance reason is required when marking a commitment as missed");
+    }
+
+    return this.prisma.taskCommitment.update({
+      where: { id },
+      data: { status: input.status, varianceReason: input.varianceReason, resolvedAt: new Date() },
+    });
+  }
+
+  listCommitmentsForProject(companyId: string, projectId: string) {
+    return this.prisma.taskCommitment.findMany({
+      where: { companyId, task: { projectId } },
+      include: { task: { select: { id: true, name: true } } },
+      orderBy: { weekStarting: "desc" },
+    });
+  }
+
+  /** PPC for a project (or company-wide when projectId is omitted), overall plus a per-week breakdown. */
+  async ppcReport(companyId: string, projectId?: string) {
+    const commitments = await this.prisma.taskCommitment.findMany({
+      where: { companyId, ...(projectId ? { task: { projectId } } : {}) },
+      select: { status: true, weekStarting: true },
+    });
+
+    const overall = calculatePpc(commitments);
+
+    const byWeekMap = new Map<string, { status: "committed" | "completed" | "missed" }[]>();
+    for (const c of commitments) {
+      const key = c.weekStarting.toISOString().slice(0, 10);
+      byWeekMap.set(key, [...(byWeekMap.get(key) ?? []), { status: c.status }]);
+    }
+    const byWeek = Array.from(byWeekMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([weekStarting, group]) => ({ weekStarting, ...calculatePpc(group) }));
+
+    return { ...overall, byWeek };
   }
 
   async addDependency(companyId: string, successorId: string, input: CreateTaskDependencyInput) {

@@ -366,3 +366,52 @@ describe("WorkersService kiosk PIN", () => {
     });
   });
 });
+
+describe("WorkersService.loadedRate()", () => {
+  let service: WorkersService;
+  let prisma: {
+    worker: { findFirst: jest.Mock };
+    company: { findUniqueOrThrow: jest.Mock };
+  };
+
+  beforeEach(async () => {
+    prisma = {
+      worker: { findFirst: jest.fn() },
+      company: { findUniqueOrThrow: jest.fn() },
+    };
+
+    const module = await Test.createTestingModule({
+      providers: [WorkersService, { provide: PrismaService, useValue: prisma }, { provide: AuditService, useValue: { record: jest.fn() } }],
+    }).compile();
+
+    service = module.get(WorkersService);
+  });
+
+  it("returns null when the worker has no base hourly cost set", async () => {
+    prisma.worker.findFirst.mockResolvedValue({ id: "w1", hourlyCost: null, clockInPinHash: null });
+    prisma.company.findUniqueOrThrow.mockResolvedValue({
+      payrollTaxBurdenPercent: "10",
+      workersCompBurdenPercent: null,
+      benefitsBurdenPercent: null,
+      otherBurdenPercent: null,
+    });
+
+    const result = await service.loadedRate(COMPANY_A, "w1");
+
+    expect(result).toBeNull();
+  });
+
+  it("computes the loaded rate from the worker's base cost and the company's burden settings", async () => {
+    prisma.worker.findFirst.mockResolvedValue({ id: "w1", hourlyCost: "30", clockInPinHash: null });
+    prisma.company.findUniqueOrThrow.mockResolvedValue({
+      payrollTaxBurdenPercent: "10",
+      workersCompBurdenPercent: "8",
+      benefitsBurdenPercent: "12",
+      otherBurdenPercent: null,
+    });
+
+    const result = await service.loadedRate(COMPANY_A, "w1");
+
+    expect(result?.loadedRate).toBe(39);
+  });
+});

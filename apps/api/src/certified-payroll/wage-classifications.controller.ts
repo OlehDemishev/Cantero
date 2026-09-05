@@ -1,8 +1,10 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post } from "@nestjs/common";
 import {
+  createFringeBenefitFundSchema,
   createWageClassificationSchema,
   updateWageClassificationSchema,
   type AuthUser,
+  type CreateFringeBenefitFundInput,
   type CreateWageClassificationInput,
   type UpdateWageClassificationInput,
 } from "@cantero/shared";
@@ -36,5 +38,19 @@ export class WageClassificationsController {
   @Delete(":id")
   delete(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.delete(user.companyId, id);
+  }
+
+  @Post(":id/fringe-funds")
+  addFringeFund(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(createFringeBenefitFundSchema)) body: CreateFringeBenefitFundInput,
+  ) {
+    return this.service.addFringeFund(user.companyId, { userId: user.userId, name: user.name }, id, body);
+  }
+
+  @Delete("fringe-funds/:id")
+  deleteFringeFund(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.deleteFringeFund(user.companyId, id);
   }
 }

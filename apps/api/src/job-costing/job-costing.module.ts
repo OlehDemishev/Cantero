@@ -5,5 +5,6 @@ import { JobCostingService } from "./job-costing.service";
 @Module({
   controllers: [JobCostingController],
   providers: [JobCostingService],
+  exports: [JobCostingService],
 })
 export class JobCostingModule {}

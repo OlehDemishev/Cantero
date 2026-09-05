@@ -2,6 +2,8 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { WeatherService } from "../weather/weather.service";
 import { BudgetService } from "../finance/budget.service";
+import { JobCostingService } from "../job-costing/job-costing.service";
+import { calculateCostCodeOverruns } from "../job-costing/cost-code-overrun";
 
 export type Severity = "warning" | "critical";
 
@@ -24,6 +26,7 @@ export interface NotificationItem {
     | "company_document_expiring"
     | "weather_risk"
     | "budget_overrun"
+    | "cost_code_overrun"
     | "material_price_changed";
   severity: Severity;
   title: string;
@@ -50,6 +53,7 @@ export class NotificationsService {
     private readonly prisma: PrismaService,
     private readonly weather: WeatherService,
     private readonly budget: BudgetService,
+    private readonly jobCosting: JobCostingService,
   ) {}
 
   async list(companyId: string, userId: string) {
@@ -70,6 +74,7 @@ export class NotificationsService {
       expiringCompanyDocuments,
       weatherRisks,
       budgetOverruns,
+      costCodeOverruns,
       materialPriceChanges,
       membership,
     ] = await Promise.all([
@@ -89,6 +94,7 @@ export class NotificationsService {
       this.expiringCompanyDocuments(companyId),
       this.weatherRiskTasks(companyId),
       this.budgetOverruns(companyId),
+      this.costCodeOverruns(companyId),
       this.materialPriceChanges(companyId),
       this.prisma.membership.findFirst({ where: { companyId, userId } }),
     ]);
@@ -111,6 +117,7 @@ export class NotificationsService {
       ...expiringCompanyDocuments,
       ...weatherRisks,
       ...budgetOverruns,
+      ...costCodeOverruns,
       ...materialPriceChanges,
     ]
       .filter((n) => !mutedTypes.has(n.type))
@@ -576,6 +583,36 @@ export class NotificationsService {
         link: `/projects/${project.id}`,
         occurredAt: new Date(),
       });
+    }
+    return items;
+  }
+
+  /** Same threshold as budgetOverruns() but applied per cost code, so one blown code (e.g.
+   * concrete running hot) surfaces even while the project total still looks fine. */
+  private async costCodeOverruns(companyId: string): Promise<NotificationItem[]> {
+    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId }, select: { budgetAlertThresholdPercent: true } });
+    const projects = await this.prisma.project.findMany({
+      where: { companyId },
+      select: { id: true, name: true, budgetAlertThresholdPercent: true },
+    });
+
+    const items: NotificationItem[] = [];
+    for (const project of projects) {
+      const threshold = project.budgetAlertThresholdPercent ?? company.budgetAlertThresholdPercent;
+      const { rows } = await this.jobCosting.report(companyId, project.id);
+      const overruns = calculateCostCodeOverruns(rows, threshold);
+
+      for (const overrun of overruns) {
+        items.push({
+          key: `cost_code_overrun:${project.id}:${overrun.costCodeId ?? "uncategorized"}`,
+          type: "cost_code_overrun" as const,
+          severity: overrun.severity,
+          title: `${overrun.code} ${overrun.name} is ${overrun.severity === "critical" ? "over budget" : "close to its budget"} on ${project.name}`,
+          body: `${Math.round(overrun.ratioPercent)}% of estimated spent (${overrun.spent.toFixed(2)} of ${overrun.estimated.toFixed(2)})`,
+          link: `/projects/${project.id}`,
+          occurredAt: new Date(),
+        });
+      }
     }
     return items;
   }

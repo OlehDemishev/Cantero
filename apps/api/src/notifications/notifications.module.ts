@@ -8,9 +8,10 @@ import { NotificationDigestService } from "./notification-digest.service";
 import { NotificationDigestProcessor } from "./notification-digest.processor";
 import { WeatherModule } from "../weather/weather.module";
 import { FinanceModule } from "../finance/finance.module";
+import { JobCostingModule } from "../job-costing/job-costing.module";
 
 @Module({
-  imports: [WeatherModule, FinanceModule],
+  imports: [WeatherModule, FinanceModule, JobCostingModule],
   controllers: [NotificationsController, PushController],
   providers: [NotificationsService, PushService, PushCheckProcessor, NotificationDigestService, NotificationDigestProcessor],
 })

@@ -9,6 +9,16 @@ import { CommentsThread } from "@/components/comments-thread";
 import { TemplatePicker } from "@/components/template-picker";
 import { PhotoAttachments } from "@/components/photo-attachments";
 
+interface RfiAnalytics {
+  openCount: number;
+  averageDaysToAnswer: number | null;
+  oldestOpenRfi: { id: string; number: string; daysOpen: number } | null;
+  ballInCourtBreakdown: { party: BallInCourtParty; count: number }[];
+  slaCompliancePercent: number | null;
+  answeredWithDueDateCount: number;
+  answeredOnTimeCount: number;
+}
+
 interface Rfi {
   id: string;
   number: string;
@@ -19,6 +29,8 @@ interface Rfi {
   ballInCourtParty: BallInCourtParty;
   dueDate: string | null;
   costImpact: boolean;
+  estimatedCostImpact: string | null;
+  changeOrderId: string | null;
   scheduleImpactDays: number | null;
   askedByName: string;
   answer: string | null;
@@ -44,7 +56,15 @@ const BALL_IN_COURT_STYLES: Record<BallInCourtParty, string> = {
 };
 const BALL_IN_COURT_PARTIES: BallInCourtParty[] = ["internal", "client", "subcontractor"];
 
-const EMPTY_FORM = { subject: "", question: "", priority: "medium" as RfiPriority, dueDate: "", costImpact: false, scheduleImpactDays: "" };
+const EMPTY_FORM = {
+  subject: "",
+  question: "",
+  priority: "medium" as RfiPriority,
+  dueDate: "",
+  costImpact: false,
+  estimatedCostImpact: "",
+  scheduleImpactDays: "",
+};
 
 export function RfiPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("rfi");
@@ -53,17 +73,20 @@ export function RfiPanel({ projectId }: { projectId: string }) {
   const bulk = useBulkSelection();
 
   const [items, setItems] = useState<Rfi[] | null>(null);
+  const [analytics, setAnalytics] = useState<RfiAnalytics | null>(null);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [answerDraft, setAnswerDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [myTurnOnly, setMyTurnOnly] = useState(false);
+  const [changeOrderIdDrafts, setChangeOrderIdDrafts] = useState<Record<string, string>>({});
 
   function load() {
     const query = new URLSearchParams({ projectId });
     if (myTurnOnly) query.set("ballInCourtParty", "internal");
     apiFetch<Rfi[]>(`/rfis?${query.toString()}`).then(setItems);
+    apiFetch<RfiAnalytics>(`/rfis/analytics?projectId=${projectId}`).then(setAnalytics);
   }
 
   useEffect(load, [projectId, myTurnOnly]);
@@ -86,11 +109,35 @@ export function RfiPanel({ projectId }: { projectId: string }) {
           priority: form.priority,
           dueDate: form.dueDate ? new Date(form.dueDate).toISOString() : undefined,
           costImpact: form.costImpact,
+          estimatedCostImpact: form.estimatedCostImpact ? Number(form.estimatedCostImpact) : undefined,
           scheduleImpactDays: form.scheduleImpactDays ? Number(form.scheduleImpactDays) : undefined,
         }),
       });
       setForm(EMPTY_FORM);
       setCreating(false);
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function linkChangeOrder(id: string) {
+    const changeOrderId = changeOrderIdDrafts[id];
+    if (!changeOrderId) return;
+    setBusy(true);
+    try {
+      await apiFetch(`/rfis/${id}/change-order`, { method: "PATCH", body: JSON.stringify({ changeOrderId }) });
+      setChangeOrderIdDrafts((f) => ({ ...f, [id]: "" }));
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function unlinkChangeOrder(id: string) {
+    setBusy(true);
+    try {
+      await apiFetch(`/rfis/${id}/change-order`, { method: "PATCH", body: JSON.stringify({ changeOrderId: null }) });
       load();
     } finally {
       setBusy(false);
@@ -194,14 +241,29 @@ export function RfiPanel({ projectId }: { projectId: string }) {
               />
             </label>
           </div>
-          <label className="flex items-center gap-2 text-sm text-gray-700">
-            <input
-              type="checkbox"
-              checked={form.costImpact}
-              onChange={(e) => setForm((f) => ({ ...f, costImpact: e.target.checked }))}
-            />
-            {t("costImpact")}
-          </label>
+          <div className="flex items-end gap-3">
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={form.costImpact}
+                onChange={(e) => setForm((f) => ({ ...f, costImpact: e.target.checked }))}
+              />
+              {t("costImpact")}
+            </label>
+            {form.costImpact && (
+              <label className="flex flex-col gap-1.5 text-sm">
+                <span className="font-medium text-gray-700">{t("estimatedCostImpact")}</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="input w-32"
+                  value={form.estimatedCostImpact}
+                  onChange={(e) => setForm((f) => ({ ...f, estimatedCostImpact: e.target.value }))}
+                />
+              </label>
+            )}
+          </div>
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className="btn-primary">
               {tc("save")}
@@ -211,6 +273,46 @@ export function RfiPanel({ projectId }: { projectId: string }) {
             </button>
           </div>
         </form>
+      )}
+
+      {analytics && analytics.openCount + analytics.answeredWithDueDateCount > 0 && (
+        <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="card py-2">
+            <div className="text-xs text-gray-500">{t("analyticsOpenCount")}</div>
+            <div className="text-lg font-semibold text-gray-900">{analytics.openCount}</div>
+          </div>
+          <div className="card py-2">
+            <div className="text-xs text-gray-500">{t("analyticsAvgDaysToAnswer")}</div>
+            <div className="text-lg font-semibold text-gray-900">
+              {analytics.averageDaysToAnswer !== null ? t("daysValue", { days: analytics.averageDaysToAnswer }) : "—"}
+            </div>
+          </div>
+          <div className="card py-2">
+            <div className="text-xs text-gray-500">{t("analyticsOldestOpen")}</div>
+            <div className="text-lg font-semibold text-gray-900">
+              {analytics.oldestOpenRfi ? t("daysValue", { days: analytics.oldestOpenRfi.daysOpen }) : "—"}
+            </div>
+            {analytics.oldestOpenRfi && <div className="text-xs text-gray-400">{analytics.oldestOpenRfi.number}</div>}
+          </div>
+          <div className="card py-2">
+            <div className="text-xs text-gray-500">{t("analyticsSlaCompliance")}</div>
+            <div className="text-lg font-semibold text-gray-900">
+              {analytics.slaCompliancePercent !== null ? `${analytics.slaCompliancePercent}%` : "—"}
+            </div>
+          </div>
+          {analytics.ballInCourtBreakdown.length > 0 && (
+            <div className="card col-span-2 py-2 sm:col-span-4">
+              <div className="mb-1 text-xs text-gray-500">{t("analyticsBallInCourtBreakdown")}</div>
+              <div className="flex flex-wrap gap-1.5">
+                {analytics.ballInCourtBreakdown.map((b) => (
+                  <span key={b.party} className={`rounded-full px-2 py-0.5 text-xs font-medium ${BALL_IN_COURT_STYLES[b.party]}`}>
+                    {t(`ballInCourtParty_${b.party}`)}: {b.count}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       {bulk.result && (
@@ -318,6 +420,39 @@ export function RfiPanel({ projectId }: { projectId: string }) {
                         <span className="font-medium text-gray-700">{t("scheduleImpactDays")}: </span>
                         {item.scheduleImpactDays}
                       </p>
+                    )}
+                    {(item.estimatedCostImpact !== null || item.changeOrderId) && (
+                      <div className="rounded-md bg-gray-50 p-2 text-xs">
+                        {item.changeOrderId ? (
+                          <p className="flex items-center justify-between text-success-700">
+                            <span>{t("costImpactConfirmed")}</span>
+                            <button onClick={() => unlinkChangeOrder(item.id)} className="text-gray-400 hover:text-error-600">
+                              {t("unlinkChangeOrder")}
+                            </button>
+                          </p>
+                        ) : (
+                          <>
+                            {item.estimatedCostImpact !== null && (
+                              <p className="text-gray-500">{t("estimatedCostImpactLabel", { amount: item.estimatedCostImpact })}</p>
+                            )}
+                            <div className="mt-1 flex items-center gap-1.5">
+                              <input
+                                placeholder={t("changeOrderIdPlaceholder")}
+                                className="input py-0.5 text-xs"
+                                value={changeOrderIdDrafts[item.id] ?? ""}
+                                onChange={(e) => setChangeOrderIdDrafts((f) => ({ ...f, [item.id]: e.target.value }))}
+                              />
+                              <button
+                                onClick={() => linkChangeOrder(item.id)}
+                                disabled={busy || !changeOrderIdDrafts[item.id]}
+                                className="btn-secondary px-2 py-0.5 text-xs"
+                              >
+                                {t("linkChangeOrder")}
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
                     )}
                     {item.answer && (
                       <p>

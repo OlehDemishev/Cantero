@@ -16,6 +16,7 @@ export const createRfiSchema = z.object({
   priority: z.enum(RFI_PRIORITIES).optional(),
   dueDate: z.string().datetime().optional(),
   costImpact: z.boolean().optional(),
+  estimatedCostImpact: z.number().nonnegative().optional(),
   scheduleImpactDays: z.number().int().min(0).max(3650).optional(),
 });
 export type CreateRfiInput = z.infer<typeof createRfiSchema>;
@@ -26,6 +27,7 @@ export const updateRfiSchema = z.object({
   priority: z.enum(RFI_PRIORITIES).optional(),
   dueDate: z.string().datetime().nullable().optional(),
   costImpact: z.boolean().optional(),
+  estimatedCostImpact: z.number().nonnegative().nullable().optional(),
   scheduleImpactDays: z.number().int().min(0).max(3650).nullable().optional(),
 });
 export type UpdateRfiInput = z.infer<typeof updateRfiSchema>;
@@ -39,3 +41,8 @@ export const answerRfiSchema = z.object({
   answer: z.string().min(1).max(4000),
 });
 export type AnswerRfiInput = z.infer<typeof answerRfiSchema>;
+
+export const linkCostImpactChangeOrderSchema = z.object({
+  changeOrderId: z.string().uuid().nullable(),
+});
+export type LinkCostImpactChangeOrderInput = z.infer<typeof linkCostImpactChangeOrderSchema>;

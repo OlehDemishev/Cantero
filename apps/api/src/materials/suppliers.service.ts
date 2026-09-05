@@ -3,6 +3,7 @@ import type { AddSupplierDocumentInput, CreateSupplierInput, CreateSupplierRevie
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { parseCsvRecords } from "../common/csv";
+import { calculatePriceVariance } from "./price-variance";
 
 @Injectable()
 export class SuppliersService {
@@ -30,12 +31,20 @@ export class SuppliersService {
    * received are excluded from the on-time rate but still counted in totalOrders/totalSpend.
    * averageRating/wouldReorderPercent are the one dimension PO data can't answer (a subjective
    * "would we order from them again"), rolled up at read time from SupplierReview — same
-   * reasoning as SubcontractorsService.performanceScorecard(): no cached/denormalized score. */
+   * reasoning as SubcontractorsService.performanceScorecard(): no cached/denormalized score.
+   * averagePriceVariancePercent compares every PO line's unitPrice against that material's
+   * *current* MaterialCatalogItem.defaultUnitPrice — the catalog price may have moved since the
+   * order was placed, so this reads as "how this supplier prices against today's benchmark," not
+   * a point-in-time-accurate variance — quantity-weighted so a handful of small orders can't
+   * swing it as much as the bulk of actual spend. See calculatePriceVariance. */
   async scorecard(companyId: string, id: string) {
     await this.get(companyId, id);
 
     const [orders, reviews] = await Promise.all([
-      this.prisma.purchaseOrder.findMany({ where: { companyId, supplierId: id }, include: { lines: true } }),
+      this.prisma.purchaseOrder.findMany({
+        where: { companyId, supplierId: id },
+        include: { lines: { include: { materialCatalogItem: { select: { defaultUnitPrice: true } } } } },
+      }),
       this.prisma.supplierReview.findMany({ where: { companyId, supplierId: id } }),
     ]);
 
@@ -47,6 +56,10 @@ export class SuppliersService {
     const totalSpend = orders.reduce(
       (sum, o) => sum + o.lines.reduce((lineSum, l) => lineSum + Number(l.quantity) * Number(l.unitPrice), 0),
       0,
+    );
+
+    const priceVarianceLines = orders.flatMap((o) =>
+      o.lines.map((l) => ({ unitPrice: Number(l.unitPrice), quantity: Number(l.quantity), catalogPrice: Number(l.materialCatalogItem.defaultUnitPrice) })),
     );
 
     const round1 = (n: number) => Math.round(n * 10) / 10;
@@ -62,6 +75,7 @@ export class SuppliersService {
       averageRating: reviews.length > 0 ? round1(reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length) : null,
       wouldReorderPercent:
         reorderAnswered.length > 0 ? round1((reorderAnswered.filter((r) => r.wouldReorder).length / reorderAnswered.length) * 100) : null,
+      averagePriceVariancePercent: calculatePriceVariance(priceVarianceLines),
     };
   }
 

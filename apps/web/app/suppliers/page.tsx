@@ -23,6 +23,7 @@ interface Scorecard {
   reviewCount: number;
   averageRating: number | null;
   wouldReorderPercent: number | null;
+  averagePriceVariancePercent: number | null;
 }
 interface SupplierDocument {
   id: string;
@@ -236,6 +237,14 @@ export default function SuppliersPage() {
                               <div>
                                 <div className="text-gray-400">{t("wouldReorderPercent")}</div>
                                 <div className="font-medium">{card.wouldReorderPercent !== null ? `${card.wouldReorderPercent}%` : "—"}</div>
+                              </div>
+                              <div>
+                                <div className="text-gray-400">{t("priceVariance")}</div>
+                                <div
+                                  className={`font-medium ${card.averagePriceVariancePercent !== null && card.averagePriceVariancePercent > 0 ? "text-error-600" : card.averagePriceVariancePercent !== null && card.averagePriceVariancePercent < 0 ? "text-success-700" : ""}`}
+                                >
+                                  {card.averagePriceVariancePercent !== null ? `${card.averagePriceVariancePercent > 0 ? "+" : ""}${card.averagePriceVariancePercent}%` : "—"}
+                                </div>
                               </div>
                             </>
                           )}

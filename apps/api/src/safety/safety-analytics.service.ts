@@ -3,6 +3,7 @@ import { OSHA_CASE_TYPES, type OshaCaseType } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { PdfService } from "../common/pdf/pdf.service";
 import { StorageService } from "../common/storage/storage.service";
+import { buildMonthlyNearMissTrend, calculateNearMissRatio } from "./near-miss-trend";
 
 const round2 = (n: number): number => Math.round((n + Number.EPSILON) * 100) / 100;
 /** Standard OSHA incidence-rate base: (recordable cases × 200,000 hours) / total hours worked —
@@ -168,6 +169,48 @@ export class SafetyAnalyticsService {
       recordableCount,
       projects,
       monthlyTrend,
+    };
+  }
+
+  /**
+   * The leading-indicator counterpart to safetyScorecard's lagging TRIR: near-misses reported
+   * against actual recordable cases, company-wide and per project. See near-miss-trend.ts for why
+   * a *higher* ratio is the healthy direction here (Heinrich's triangle) and why zero recordable
+   * cases yields a null ratio rather than a misleading number.
+   */
+  async nearMissAnalytics(companyId: string, year: number) {
+    const { start, end } = yearRange(year);
+    const incidents = await this.prisma.incidentReport.findMany({
+      where: { companyId, occurredAt: { gte: start, lt: end } },
+      include: { project: { select: { id: true, name: true } } },
+    });
+
+    const totalNearMiss = incidents.filter((i) => i.severity === "near_miss").length;
+    const totalRecordable = incidents.filter((i) => i.oshaRecordable).length;
+
+    const byProject = new Map<string, { projectName: string; nearMissCount: number; recordableCount: number }>();
+    for (const inc of incidents) {
+      const bucket = byProject.get(inc.projectId) ?? { projectName: inc.project.name, nearMissCount: 0, recordableCount: 0 };
+      if (inc.severity === "near_miss") bucket.nearMissCount++;
+      if (inc.oshaRecordable) bucket.recordableCount++;
+      byProject.set(inc.projectId, bucket);
+    }
+
+    return {
+      year,
+      totalNearMiss,
+      totalRecordable,
+      ratio: calculateNearMissRatio(totalNearMiss, totalRecordable),
+      monthlyTrend: buildMonthlyNearMissTrend(
+        incidents.map((i) => ({ occurredAt: i.occurredAt, isNearMiss: i.severity === "near_miss", oshaRecordable: i.oshaRecordable })),
+      ),
+      projects: Array.from(byProject.entries()).map(([projectId, b]) => ({
+        projectId,
+        projectName: b.projectName,
+        nearMissCount: b.nearMissCount,
+        recordableCount: b.recordableCount,
+        ratio: calculateNearMissRatio(b.nearMissCount, b.recordableCount),
+      })),
     };
   }
 

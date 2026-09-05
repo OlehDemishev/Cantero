@@ -1,9 +1,10 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import type { CertifiedPayrollLine, SignCertifiedPayrollInput } from "@cantero/shared";
+import type { ApprenticeRatioViolation, CertifiedPayrollLine, SignCertifiedPayrollInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { PdfService } from "../common/pdf/pdf.service";
 import { StorageService } from "../common/storage/storage.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
+import { checkApprenticeRatios } from "./apprentice-ratio";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 /** Federal FLSA/Davis-Bacon weekly overtime threshold — not the daily-8hr rule some states use. */
@@ -37,7 +38,7 @@ export class CertifiedPayrollService {
     const weekStart = new Date(weekEndingDate.getTime() - 6 * MS_PER_DAY);
     const entries = await this.prisma.timeEntry.findMany({
       where: { companyId, projectId, date: { gte: weekStart, lte: weekEndingDate } },
-      include: { worker: { include: { wageClassification: true } } },
+      include: { worker: { include: { wageClassification: { include: { fringeBenefitFunds: true } } } } },
     });
 
     const byWorker = new Map<string, { worker: (typeof entries)[number]["worker"]; totalHours: number }>();
@@ -55,14 +56,21 @@ export class CertifiedPayrollService {
         const fringeRate = worker.wageClassification ? Number(worker.wageClassification.fringeRate) : 0;
         const grossPay = ratePerHour !== null ? regularHours * ratePerHour + overtimeHours * ratePerHour * 1.5 + fringeRate * totalHours : null;
         const belowPrevailingRate = worker.wageClassification !== null && ratePerHour !== null && ratePerHour < Number(worker.wageClassification.hourlyRate);
+        const fringeBreakdown = (worker.wageClassification?.fringeBenefitFunds ?? []).map((fund) => ({
+          fundType: fund.fundType,
+          name: fund.name,
+          amount: Math.round(Number(fund.ratePerHour) * totalHours * 100) / 100,
+        }));
         return {
           workerId: worker.id,
           workerName: worker.name,
           trade: worker.wageClassification?.trade ?? null,
+          isApprentice: worker.isApprentice,
           regularHours,
           overtimeHours,
           ratePerHour,
           fringeRate,
+          fringeBreakdown,
           grossPay,
           belowPrevailingRate,
         };
@@ -70,14 +78,23 @@ export class CertifiedPayrollService {
       .sort((a, b) => a.workerName.localeCompare(b.workerName));
 
     const totalGrossPay = lines.reduce((sum, line) => sum + (line.grossPay ?? 0), 0);
-    return { project, weekStart, weekEndingDate, lines, totalGrossPay };
+    const apprenticeRatioViolations: ApprenticeRatioViolation[] = checkApprenticeRatios(
+      Array.from(byWorker.values())
+        .filter(({ worker }) => worker.wageClassification !== null)
+        .map(({ worker }) => ({
+          trade: worker.wageClassification!.trade,
+          apprenticeRatio: worker.wageClassification!.apprenticeRatio,
+          isApprentice: worker.isApprentice,
+        })),
+    );
+    return { project, weekStart, weekEndingDate, lines, totalGrossPay, apprenticeRatioViolations };
   }
 
   async generate(companyId: string, actor: AuditActor, projectId: string, weekEndingDateRaw: string) {
     const weekEndingDate = new Date(weekEndingDateRaw);
     if (Number.isNaN(weekEndingDate.getTime())) throw new BadRequestException("Invalid weekEndingDate");
 
-    const { lines, totalGrossPay } = await this.computeWeek(companyId, projectId, weekEndingDate);
+    const { lines, totalGrossPay, apprenticeRatioViolations } = await this.computeWeek(companyId, projectId, weekEndingDate);
 
     const existing = await this.prisma.certifiedPayrollReport.findUnique({
       where: { projectId_weekEndingDate: { projectId, weekEndingDate } },
@@ -93,10 +110,11 @@ export class CertifiedPayrollService {
         weekEndingDate,
         payrollNumber,
         lineItems: lines as unknown as object,
+        apprenticeRatioViolations: apprenticeRatioViolations as unknown as object,
         totalGrossPay,
         createdByUserId: actor.userId,
       },
-      update: { lineItems: lines as unknown as object, totalGrossPay },
+      update: { lineItems: lines as unknown as object, apprenticeRatioViolations: apprenticeRatioViolations as unknown as object, totalGrossPay },
     });
 
     this.audit.record(
@@ -182,7 +200,7 @@ export class CertifiedPayrollService {
         : lines.map((line) => ({
             cells: [
               line.workerName,
-              line.trade ?? "Unclassified",
+              (line.trade ?? "Unclassified") + (line.isApprentice ? " (Apprentice)" : ""),
               line.regularHours.toFixed(2),
               line.overtimeHours.toFixed(2),
               line.ratePerHour !== null ? line.ratePerHour.toFixed(2) : "—",

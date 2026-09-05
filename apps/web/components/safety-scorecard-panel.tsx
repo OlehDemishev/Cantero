@@ -34,6 +34,21 @@ interface TrainingCompliance {
   completionRate: number | null;
   overdueWorkers: OverdueWorker[];
 }
+interface NearMissProjectRow {
+  projectId: string;
+  projectName: string;
+  nearMissCount: number;
+  recordableCount: number;
+  ratio: number | null;
+}
+interface NearMissAnalytics {
+  year: number;
+  totalNearMiss: number;
+  totalRecordable: number;
+  ratio: number | null;
+  monthlyTrend: { month: number; nearMissCount: number; recordableCount: number }[];
+  projects: NearMissProjectRow[];
+}
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -44,10 +59,13 @@ export function SafetyScorecardPanel() {
   const [scorecard, setScorecard] = useState<SafetyScorecard | null>(null);
   const [exporting, setExporting] = useState(false);
   const [training, setTraining] = useState<TrainingCompliance | null>(null);
+  const [nearMiss, setNearMiss] = useState<NearMissAnalytics | null>(null);
 
   useEffect(() => {
     setScorecard(null);
     apiFetch<SafetyScorecard>(`/safety/analytics/scorecard?year=${year}`).then(setScorecard);
+    setNearMiss(null);
+    apiFetch<NearMissAnalytics>(`/safety/analytics/near-miss?year=${year}`).then(setNearMiss);
   }, [year]);
 
   useEffect(() => {
@@ -150,6 +168,50 @@ export function SafetyScorecardPanel() {
             </table>
           )}
         </>
+      )}
+
+      {nearMiss && (
+        <div className="mt-8">
+          <h3 className="mb-1 text-sm font-semibold text-gray-700">{t("nearMissAnalytics")}</h3>
+          <p className="mb-3 text-xs text-gray-500">{t("nearMissAnalyticsHint")}</p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div className="card">
+              <div className="text-xs text-gray-500">{t("totalNearMiss")}</div>
+              <div className="mt-1 text-lg font-semibold text-gray-900">{nearMiss.totalNearMiss}</div>
+            </div>
+            <div className="card">
+              <div className="text-xs text-gray-500">{t("recordableCases")}</div>
+              <div className="mt-1 text-lg font-semibold text-warning-700">{nearMiss.totalRecordable}</div>
+            </div>
+            <div className="card">
+              <div className="text-xs text-gray-500">{t("nearMissRatio")}</div>
+              <div className="mt-1 text-lg font-semibold text-gray-900">{nearMiss.ratio ?? "—"}</div>
+            </div>
+          </div>
+
+          {nearMiss.projects.length > 0 && (
+            <table className="mt-4 w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 text-left text-gray-500">
+                  <th className="py-2">{t("project")}</th>
+                  <th className="text-right">{t("totalNearMiss")}</th>
+                  <th className="text-right">{t("recordableCases")}</th>
+                  <th className="text-right">{t("nearMissRatio")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {nearMiss.projects.map((p) => (
+                  <tr key={p.projectId} className="border-b border-gray-100">
+                    <td className="py-2">{p.projectName}</td>
+                    <td className="text-right">{p.nearMissCount}</td>
+                    <td className="text-right">{p.recordableCount}</td>
+                    <td className="text-right font-medium">{p.ratio ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
       )}
 
       {training && (

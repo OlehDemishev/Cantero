@@ -10,11 +10,13 @@ const SLA_ESCALATION_CHECK_INTERVAL_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
- * Periodically flags open RFIs / punch list items that have sat unanswered/unresolved
- * past their company's configured SLA and emails the company's owner(s). Escalation is
- * a one-way flag (escalatedAt) — answering/closing the item is the only way to clear it,
- * there's no un-escalate. Null rfiSlaDays/punchListSlaDays disables escalation for that
- * company entirely, mirroring Company.approvalThresholdAmount's nullable-disables pattern.
+ * Periodically flags open RFIs / punch list items / submittals that have sat unanswered,
+ * unresolved, or unreviewed past their company's configured SLA and emails the company's
+ * owner(s). Escalation is a one-way flag (escalatedAt) — answering/closing/reviewing the item
+ * is the only way to clear it, there's no un-escalate. Null rfiSlaDays/punchListSlaDays disables
+ * escalation for that company entirely, mirroring Company.approvalThresholdAmount's
+ * nullable-disables pattern; submittals use submittalEscalationEnabled instead of a days count
+ * since a Submittal already carries its own per-item dueDate, so there's no days-count to configure.
  */
 @Injectable()
 export class SlaEscalationService implements OnModuleInit {
@@ -37,14 +39,17 @@ export class SlaEscalationService implements OnModuleInit {
 
   async runDuePass(): Promise<{ escalated: number }> {
     const companies = await this.prisma.company.findMany({
-      where: { OR: [{ rfiSlaDays: { not: null } }, { punchListSlaDays: { not: null } }] },
-      select: { id: true, name: true, rfiSlaDays: true, punchListSlaDays: true },
+      where: {
+        OR: [{ rfiSlaDays: { not: null } }, { punchListSlaDays: { not: null } }, { submittalEscalationEnabled: true }],
+      },
+      select: { id: true, name: true, rfiSlaDays: true, punchListSlaDays: true, submittalEscalationEnabled: true },
     });
 
     let escalated = 0;
     for (const company of companies) {
       escalated += await this.escalateOverdueRfis(company);
       escalated += await this.escalateOverduePunchListItems(company);
+      escalated += await this.escalateOverdueSubmittals(company);
     }
     return { escalated };
   }
@@ -86,6 +91,28 @@ export class SlaEscalationService implements OnModuleInit {
         item.title,
         `has been open for more than ${company.punchListSlaDays} day(s) without being resolved`,
         `/projects/${item.projectId}`,
+      );
+    }
+    return overdue.length;
+  }
+
+  /** Unlike RFI/punch-list, there's no days-count cutoff to compute — a submittal's own dueDate
+   * (set when it was created) is already the deadline, so this just checks it against now(). */
+  private async escalateOverdueSubmittals(company: { id: string; name: string; submittalEscalationEnabled: boolean }): Promise<number> {
+    if (!company.submittalEscalationEnabled) return 0;
+    const overdue = await this.prisma.submittal.findMany({
+      where: { companyId: company.id, status: "submitted", escalatedAt: null, dueDate: { not: null, lte: new Date() } },
+    });
+    if (overdue.length === 0) return 0;
+
+    await this.prisma.submittal.updateMany({ where: { id: { in: overdue.map((s) => s.id) } }, data: { escalatedAt: new Date() } });
+    for (const submittal of overdue) {
+      await this.notifyOwners(
+        company,
+        `Submittal overdue`,
+        `${submittal.number} — ${submittal.title}`,
+        `is past its due date without a review decision`,
+        `/projects/${submittal.projectId}`,
       );
     }
     return overdue.length;

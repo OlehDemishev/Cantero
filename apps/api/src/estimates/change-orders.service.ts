@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { ChangeOrder } from "@prisma/client";
-import type { AddChangeOrderLineInput, ClientDecisionInput, CreateChangeOrderInput } from "@cantero/shared";
+import type { AddChangeOrderLineInput, ClientDecisionInput, CreateChangeOrderInput, SetChangeOrderScheduleImpactInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { PdfService } from "../common/pdf/pdf.service";
 import { StorageService } from "../common/storage/storage.service";
@@ -11,6 +11,8 @@ import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
 import { WebhooksService } from "../common/webhooks/webhooks.service";
 import { calculateEstimate, type EstimateLineInput, type MaterialPrice, type RateItemForCalc } from "./estimate-calc";
+import { calculateTieredMarkup } from "./tiered-markup";
+import { calculateChangeOrderProfitability } from "./change-order-profitability";
 import { documentPdfLabels } from "../common/pdf/pdf-labels";
 import { changeOrderSentEmail } from "../common/mail/client-mail-templates";
 
@@ -47,6 +49,37 @@ export class ChangeOrdersService {
     });
     if (!changeOrder) throw new NotFoundException("Change order not found");
     return changeOrder;
+  }
+
+  /** Budgeted base-contract margin vs. its approved change orders' own margin — see change-order-profitability.ts. */
+  async profitability(companyId: string, estimateId: string) {
+    const estimate = await this.prisma.estimate.findFirst({
+      where: { id: estimateId, companyId },
+      select: { materialsCostTotal: true, laborCostTotal: true, grandTotal: true },
+    });
+    if (!estimate) throw new NotFoundException("Estimate not found");
+
+    const approvedChangeOrders = await this.prisma.changeOrder.findMany({
+      where: { companyId, estimateId, status: "approved" },
+      select: { id: true, number: true, title: true, materialsCostTotal: true, laborCostTotal: true, grandTotal: true },
+      orderBy: { number: "asc" },
+    });
+
+    return calculateChangeOrderProfitability(
+      {
+        materialsCostTotal: Number(estimate.materialsCostTotal),
+        laborCostTotal: Number(estimate.laborCostTotal),
+        grandTotal: Number(estimate.grandTotal),
+      },
+      approvedChangeOrders.map((co) => ({
+        id: co.id,
+        number: co.number,
+        title: co.title,
+        materialsCostTotal: Number(co.materialsCostTotal),
+        laborCostTotal: Number(co.laborCostTotal),
+        grandTotal: Number(co.grandTotal),
+      })),
+    );
   }
 
   async create(companyId: string, actor: AuditActor, estimateId: string, input: CreateChangeOrderInput) {
@@ -254,6 +287,7 @@ export class ChangeOrdersService {
       companyName: changeOrder.company.name,
       currency: changeOrder.estimate.currency,
       estimateName: changeOrder.estimate.name,
+      scheduleImpactDays: changeOrder.scheduleImpactDays,
       lines: changeOrder.lines.map((l) => ({
         id: l.id,
         description: l.rateCatalogItem.name,
@@ -434,6 +468,22 @@ export class ChangeOrdersService {
       taxPercent: Number(estimate.taxPercent),
     });
 
+    // A configured MarkupRule (per cost type) overrides the parent estimate's single flat
+    // markupPercent for that portion of the subtotal — see tiered-markup.ts. Tax still applies to
+    // the combined subtotal+markup either way, so only markupAmount/grandTotal need recomputing.
+    const markupRules = await this.prisma.markupRule.findMany({ where: { companyId, active: true } });
+    const markupAmount =
+      markupRules.length > 0
+        ? calculateTieredMarkup(
+            result.materialsCostTotal,
+            result.laborCostTotal,
+            Number(estimate.markupPercent),
+            markupRules.map((r) => ({ costType: r.costType, markupPercent: Number(r.markupPercent) })),
+          )
+        : result.markupAmount;
+    const taxAmount = Math.round((result.subtotal + markupAmount) * (Number(estimate.taxPercent) / 100) * 100) / 100;
+    const grandTotal = Math.round((result.subtotal + markupAmount + taxAmount) * 100) / 100;
+
     await this.prisma.$transaction([
       ...result.lines.map((line) =>
         this.prisma.changeOrderLine.update({
@@ -447,14 +497,23 @@ export class ChangeOrdersService {
           materialsCostTotal: result.materialsCostTotal,
           laborCostTotal: result.laborCostTotal,
           subtotal: result.subtotal,
-          markupAmount: result.markupAmount,
-          taxAmount: result.taxAmount,
-          grandTotal: result.grandTotal,
+          markupAmount,
+          taxAmount,
+          grandTotal,
         },
       }),
     ]);
 
     return this.findOrThrow(companyId, changeOrderId);
+  }
+
+  async setScheduleImpact(companyId: string, changeOrderId: string, input: SetChangeOrderScheduleImpactInput) {
+    const changeOrder = await this.findOrThrow(companyId, changeOrderId);
+    if (changeOrder.status !== "draft") throw new BadRequestException("Only a draft change order can be edited");
+    return this.prisma.changeOrder.update({
+      where: { id: changeOrderId },
+      data: { scheduleImpactDays: input.scheduleImpactDays },
+    });
   }
 
   private async findOrThrow(companyId: string, id: string) {

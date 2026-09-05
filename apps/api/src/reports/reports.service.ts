@@ -3,6 +3,7 @@ import { PrismaService } from "../common/prisma/prisma.service";
 import { computeCriticalPath, type DependencyForCpm, type TaskForCpm } from "../projects/critical-path";
 import { advanceDate, calculateRecurringInvoice } from "../finance/recurring-invoice-schedule";
 import { calculateEac } from "./estimate-at-completion";
+import { calculateWinRate, type WinRateEstimateInput } from "./win-rate";
 import { toCsv } from "../common/csv";
 import { PdfService } from "../common/pdf/pdf.service";
 import { StorageService } from "../common/storage/storage.service";
@@ -209,6 +210,53 @@ export class ReportsService {
         ...eac,
       };
     });
+  }
+
+  /**
+   * Bid outcome analytics from the estimate client-decision data that already exists (sent →
+   * approved/rejected/countered) — this report doesn't add a new outcome field, it just slices
+   * decisions that were already being recorded. Margin bands use the estimate's own markupPercent
+   * as a proxy for how aggressively it was priced; only non-template, non-variant estimates that
+   * were actually sent to a client are considered (variants share one sibling's decision via
+   * applyDecision(), and a draft estimate hasn't been offered to anyone to win or lose yet).
+   */
+  async winRateReport(companyId: string) {
+    const estimates = await this.prisma.estimate.findMany({
+      where: { companyId, isTemplate: false, variantOfId: null, sentAt: { not: null } },
+      select: { clientDecision: true, grandTotal: true, markupPercent: true, sentAt: true, decisionAt: true },
+    });
+
+    const toWinRateInput = (e: (typeof estimates)[number]): WinRateEstimateInput => ({
+      clientDecision: e.clientDecision,
+      grandTotal: Number(e.grandTotal),
+      sentAt: e.sentAt,
+      decisionAt: e.decisionAt,
+    });
+
+    const overall = calculateWinRate(estimates.map(toWinRateInput));
+
+    const monthKey = (d: Date) => `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+    const byMonthMap = new Map<string, (typeof estimates)[number][]>();
+    for (const e of estimates) {
+      if (!e.sentAt) continue;
+      const key = monthKey(e.sentAt);
+      byMonthMap.set(key, [...(byMonthMap.get(key) ?? []), e]);
+    }
+    const byMonth = Array.from(byMonthMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, group]) => ({ month, ...calculateWinRate(group.map(toWinRateInput)) }));
+
+    const marginBand = (markupPercent: number) => (markupPercent < 10 ? "<10%" : markupPercent < 20 ? "10-20%" : "20%+");
+    const byMarginBandMap = new Map<string, (typeof estimates)[number][]>();
+    for (const e of estimates) {
+      const band = marginBand(Number(e.markupPercent));
+      byMarginBandMap.set(band, [...(byMarginBandMap.get(band) ?? []), e]);
+    }
+    const byMarginBand = ["<10%", "10-20%", "20%+"]
+      .filter((band) => byMarginBandMap.has(band))
+      .map((band) => ({ band, ...calculateWinRate(byMarginBandMap.get(band)!.map(toWinRateInput)) }));
+
+    return { overall, byMonth, byMarginBand };
   }
 
   /**
@@ -556,6 +604,7 @@ export class ReportsService {
    */
   async portfolio(companyId: string) {
     const now = new Date();
+    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId }, select: { currency: true } });
     const projects = await this.prisma.project.findMany({
       where: { companyId },
       include: {
@@ -586,7 +635,14 @@ export class ReportsService {
       dependenciesByProject.set(edge.predecessor.projectId, list);
     }
 
-    const rows = projects.map((project) => {
+    const rows = await Promise.all(projects.map(async (project) => {
+      // Each project's own figures are computed in its own currency (Project.currency, falling
+      // back to the company's), then converted to the company's reporting currency here — the
+      // one place this rollup crosses project boundaries, so it's the one place a multi-currency
+      // company needs a real conversion instead of adding raw numbers across currencies.
+      const projectCurrency = project.currency ?? company.currency;
+      const convert = (amount: number) => this.exchangeRates.convert(amount, projectCurrency, company.currency);
+
       const budgetTotal = project.estimates.reduce((sum, e) => sum + Number(e.grandTotal), 0);
       const materialsCostActual = project.stockMovements.reduce(
         (sum, m) => sum + Number(m.quantity) * Number(m.materialCatalogItem.defaultUnitPrice),
@@ -639,13 +695,20 @@ export class ReportsService {
       const fundedToDate = project.invoices.filter((i) => fundedDrawIds.has(i.id)).reduce((sum, i) => sum + Number(i.total), 0);
       const openDrawCount = project.drawRequests.filter((d) => d.status !== "funded").length;
 
+      const [convertedBudgetTotal, convertedActualTotal, convertedBilledToDate, convertedFundedToDate] = await Promise.all([
+        convert(budgetTotal),
+        convert(actualTotal),
+        convert(billedToDate),
+        convert(fundedToDate),
+      ]);
+
       return {
         id: project.id,
         name: project.name,
         clientName: project.client?.name ?? null,
-        budgetTotal: round2(budgetTotal),
-        actualTotal: round2(actualTotal),
-        variance: round2(budgetTotal - actualTotal),
+        budgetTotal: round2(convertedBudgetTotal),
+        actualTotal: round2(convertedActualTotal),
+        variance: round2(convertedBudgetTotal - convertedActualTotal),
         openRfiCount,
         openPunchListCount,
         pendingSubmittalCount,
@@ -654,11 +717,11 @@ export class ReportsService {
         criticalTaskCount: criticalIds.size,
         overdueCriticalTaskCount,
         atRisk: overdueCriticalTaskCount > 0,
-        billedToDate: round2(billedToDate),
-        fundedToDate: round2(fundedToDate),
+        billedToDate: round2(convertedBilledToDate),
+        fundedToDate: round2(convertedFundedToDate),
         openDrawCount,
       };
-    });
+    }));
 
     const summary = rows.reduce(
       (acc, r) => ({
@@ -693,7 +756,7 @@ export class ReportsService {
       },
     );
 
-    return { projects: rows, summary };
+    return { projects: rows, summary, currency: company.currency };
   }
 
   /**

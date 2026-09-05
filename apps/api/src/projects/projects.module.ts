@@ -20,6 +20,10 @@ import { NpsSurveysController } from "./nps-surveys.controller";
 import { NpsSurveysService } from "./nps-surveys.service";
 import { SiteSignInsController } from "./site-sign-ins.controller";
 import { SiteSignInsService } from "./site-sign-ins.service";
+import { ScheduleBaselineController } from "./schedule-baseline.controller";
+import { ScheduleBaselineService } from "./schedule-baseline.service";
+import { MeetingsController } from "./meetings.controller";
+import { MeetingsService } from "./meetings.service";
 import { WeatherModule } from "../weather/weather.module";
 import { FinanceModule } from "../finance/finance.module";
 import { DocumentsModule } from "../documents/documents.module";
@@ -37,6 +41,8 @@ import { DocumentsModule } from "../documents/documents.module";
     WarrantyClaimsController,
     NpsSurveysController,
     SiteSignInsController,
+    ScheduleBaselineController,
+    MeetingsController,
   ],
   providers: [
     ProjectsService,
@@ -50,6 +56,8 @@ import { DocumentsModule } from "../documents/documents.module";
     ProjectCloseoutService,
     NpsSurveysService,
     SiteSignInsService,
+    ScheduleBaselineService,
+    MeetingsService,
   ],
   exports: [ProjectsService, PunchListService, TasksService],
 })

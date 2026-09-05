@@ -22,6 +22,7 @@ type NotificationType =
   | "company_document_expiring"
   | "weather_risk"
   | "budget_overrun"
+  | "cost_code_overrun"
   | "material_price_changed";
 type Severity = "warning" | "critical";
 

@@ -53,6 +53,10 @@ export const createDeficiencyFromItemSchema = z.object({
   severity: z.enum(DEFICIENCY_SEVERITIES),
   assigneeWorkerId: z.string().uuid().optional(),
   dueDate: z.string().datetime().optional(),
+  /// Free-text zone/floor/area (e.g. "3rd floor — east wing") — deliberately not a fixed
+  /// taxonomy, same "free text, not enumerated" choice as PunchListItem.location, since building
+  /// zone naming varies too much project to project for a shared enum to hold up.
+  location: z.string().max(160).optional(),
 });
 export type CreateDeficiencyFromItemInput = z.infer<typeof createDeficiencyFromItemSchema>;
 
@@ -61,5 +65,6 @@ export const updateDeficiencySchema = z.object({
   severity: z.enum(DEFICIENCY_SEVERITIES).optional(),
   assigneeWorkerId: z.string().uuid().nullable().optional(),
   dueDate: z.string().datetime().nullable().optional(),
+  location: z.string().max(160).nullable().optional(),
 });
 export type UpdateDeficiencyInput = z.infer<typeof updateDeficiencySchema>;

@@ -5,6 +5,7 @@ import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { SubcontractorsService } from "../finance/subcontractors.service";
 import type { PortalSubcontractorContext } from "../subcontractor-portal/subcontractor-portal-jwt.service";
 import { weightedBidScore } from "./bid-scoring";
+import { calculateBidLeveling } from "./bid-leveling";
 
 @Injectable()
 export class BidRequestsService {
@@ -33,7 +34,7 @@ export class BidRequestsService {
         project: { select: { name: true } },
         invites: { include: { subcontractor: { select: { id: true, name: true } } } },
         bids: {
-          include: { subcontractor: { select: { id: true, name: true } }, scores: true },
+          include: { subcontractor: { select: { id: true, name: true } }, scores: true, lines: { orderBy: { sortOrder: "asc" } } },
           orderBy: { amount: "asc" },
         },
         criteria: true,
@@ -199,10 +200,57 @@ export class BidRequestsService {
     if (!invite) throw new NotFoundException("Bid request not found");
     if (invite.bidRequest.status !== "open") throw new BadRequestException("This bid request is no longer accepting bids");
 
-    return this.prisma.bid.upsert({
+    const bid = await this.prisma.bid.upsert({
       where: { bidRequestId_subcontractorId: { bidRequestId, subcontractorId: subcontractor.subcontractorId } },
       create: { bidRequestId, subcontractorId: subcontractor.subcontractorId, amount: input.amount, notes: input.notes },
       update: { amount: input.amount, notes: input.notes, submittedAt: new Date() },
     });
+
+    // Lines are replaced wholesale on every (re-)submission — a sub revising their bid is
+    // expected to resend their full scope breakdown, not patch individual lines.
+    if (input.lines) {
+      await this.prisma.bidLine.deleteMany({ where: { bidId: bid.id } });
+      if (input.lines.length > 0) {
+        await this.prisma.bidLine.createMany({
+          data: input.lines.map((line, i) => ({
+            bidId: bid.id,
+            description: line.description,
+            amount: line.amount,
+            included: line.included,
+            sortOrder: i,
+          })),
+        });
+      }
+    }
+
+    return this.prisma.bid.findUniqueOrThrow({ where: { id: bid.id }, include: { lines: { orderBy: { sortOrder: "asc" } } } });
+  }
+
+  /** Side-by-side scope comparison across every bid on this request — see bid-leveling.ts. */
+  async leveling(companyId: string, bidRequestId: string) {
+    const bidRequest = await this.prisma.bidRequest.findFirst({
+      where: { id: bidRequestId, companyId },
+      include: {
+        bids: { include: { subcontractor: { select: { id: true, name: true } }, lines: { orderBy: { sortOrder: "asc" } } } },
+      },
+    });
+    if (!bidRequest) throw new NotFoundException("Bid request not found");
+
+    const scopeItems = calculateBidLeveling(
+      bidRequest.bids.map((bid) => ({
+        bidId: bid.id,
+        lines: bid.lines.map((l) => ({ description: l.description, amount: Number(l.amount), included: l.included })),
+      })),
+    );
+
+    return {
+      bids: bidRequest.bids.map((bid) => ({
+        id: bid.id,
+        subcontractorId: bid.subcontractor.id,
+        subcontractorName: bid.subcontractor.name,
+        amount: Number(bid.amount),
+      })),
+      scopeItems,
+    };
   }
 }

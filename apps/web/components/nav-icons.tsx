@@ -409,3 +409,31 @@ export function FleetIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function HazmatIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M8.7 3.5h2.6l1 3-1.7 2v3l3 4.5h-9l3-4.5v-3l-1.7-2z" />
+      <path d="M7.3 15.5h5.4" />
+    </Icon>
+  );
+}
+
+export function BenefitsIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M10 3.5c-1.5-1.6-4-1.6-5 .3-1 1.9.2 3.5 1.6 4.7L10 11.5l3.4-3c1.4-1.2 2.6-2.8 1.6-4.7-1-1.9-3.5-1.9-5 -.3z" />
+      <path d="M4.5 12.5h11v4h-11z" />
+      <path d="M9 12.5v4M11 12.5v4" />
+    </Icon>
+  );
+}
+
+export function ToolCribIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M11.5 3.5a3 3 0 0 0-4.1 3.9L3 12v2h2l4.6-4.4a3 3 0 0 0 3.9-4.1l-2 2-1.5-.5-.5-1.5z" />
+      <path d="M13 12.5l2.5 2.5-1 1-2.5-2.5" />
+    </Icon>
+  );
+}
+

@@ -1,7 +1,14 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import type { CreateVehicleInput, LogVehicleInspectionInput, SetDriverCdlExpiryInput, UpdateVehicleInput } from "@cantero/shared";
+import type {
+  AddVehicleFuelLogInput,
+  CreateVehicleInput,
+  LogVehicleInspectionInput,
+  SetDriverCdlExpiryInput,
+  UpdateVehicleInput,
+} from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
+import { calculateFuelEfficiency } from "./vehicle-fuel-efficiency";
 
 @Injectable()
 export class FleetService {
@@ -75,6 +82,49 @@ export class FleetService {
     });
     this.audit.record(companyId, actor, "vehicle.inspection_logged", "Vehicle", id, `Logged a ${input.result} inspection for "${vehicle.name}"`);
     return inspection;
+  }
+
+  listFuelLogs(companyId: string, id: string) {
+    return this.prisma.vehicleFuelLog.findMany({ where: { vehicleId: id, companyId }, orderBy: { filledAt: "desc" } });
+  }
+
+  async addFuelLog(companyId: string, actor: AuditActor, id: string, input: AddVehicleFuelLogInput) {
+    const vehicle = await this.findOrThrow(companyId, id);
+    const log = await this.prisma.vehicleFuelLog.create({
+      data: {
+        companyId,
+        vehicleId: id,
+        quantity: input.quantity,
+        cost: input.cost,
+        odometerMiles: input.odometerMiles,
+        idleHours: input.idleHours,
+        notes: input.notes,
+      },
+    });
+    this.audit.record(companyId, actor, "vehicle.fuel_logged", "Vehicle", id, `Logged fuel fill-up for "${vehicle.name}"`);
+    return log;
+  }
+
+  /** Fuel/idle-time efficiency rolled up per vehicle, from the same odometer-span approach as
+   * Equipment's cost-per-hour — computed at read time, nothing denormalized. */
+  async fuelEfficiencyReport(companyId: string) {
+    const vehicles = await this.prisma.vehicle.findMany({
+      where: { companyId },
+      include: { fuelLogs: { select: { quantity: true, odometerMiles: true, idleHours: true } } },
+      orderBy: { name: "asc" },
+    });
+
+    return vehicles.map((vehicle) => ({
+      vehicleId: vehicle.id,
+      vehicleName: vehicle.name,
+      ...calculateFuelEfficiency(
+        vehicle.fuelLogs.map((l) => ({
+          quantity: Number(l.quantity),
+          odometerMiles: l.odometerMiles !== null ? Number(l.odometerMiles) : null,
+          idleHours: l.idleHours !== null ? Number(l.idleHours) : null,
+        })),
+      ),
+    }));
   }
 
   async setDriverCdlExpiry(companyId: string, actor: AuditActor, workerId: string, input: SetDriverCdlExpiryInput) {

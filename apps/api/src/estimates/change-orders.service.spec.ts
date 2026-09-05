@@ -16,9 +16,11 @@ describe("ChangeOrdersService", () => {
   let prisma: {
     estimate: { findFirst: jest.Mock; findUniqueOrThrow: jest.Mock };
     changeOrder: { count: jest.Mock; create: jest.Mock; findFirst: jest.Mock; findMany: jest.Mock; update: jest.Mock };
-    changeOrderLine: { create: jest.Mock };
+    changeOrderLine: { create: jest.Mock; update: jest.Mock };
     changeOrderApproval: { findUnique: jest.Mock; create: jest.Mock; count: jest.Mock };
-    rateCatalogItem: { findFirst: jest.Mock };
+    rateCatalogItem: { findFirst: jest.Mock; findMany: jest.Mock };
+    materialCatalogItem: { findMany: jest.Mock };
+    markupRule: { findMany: jest.Mock };
     company: { findUniqueOrThrow: jest.Mock };
     $transaction: jest.Mock;
   };
@@ -27,9 +29,11 @@ describe("ChangeOrdersService", () => {
     prisma = {
       estimate: { findFirst: jest.fn(), findUniqueOrThrow: jest.fn() },
       changeOrder: { count: jest.fn(), create: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), update: jest.fn() },
-      changeOrderLine: { create: jest.fn() },
+      changeOrderLine: { create: jest.fn(), update: jest.fn() },
       changeOrderApproval: { findUnique: jest.fn(), create: jest.fn(), count: jest.fn() },
-      rateCatalogItem: { findFirst: jest.fn() },
+      rateCatalogItem: { findFirst: jest.fn(), findMany: jest.fn().mockResolvedValue([]) },
+      materialCatalogItem: { findMany: jest.fn().mockResolvedValue([]) },
+      markupRule: { findMany: jest.fn().mockResolvedValue([]) },
       company: { findUniqueOrThrow: jest.fn() },
       $transaction: jest.fn((ops) => Promise.all(ops)),
     };
@@ -316,6 +320,67 @@ describe("ChangeOrdersService", () => {
     });
   });
 
+  describe("recompute() with tiered markup rules", () => {
+    it("applies a labor-specific MarkupRule instead of the estimate's flat percent, falling back to flat for materials", async () => {
+      prisma.changeOrder.findFirst.mockResolvedValue({
+        id: "co-1",
+        companyId: COMPANY_A,
+        estimateId: "estimate-1",
+        status: "draft",
+        lines: [{ id: "line-1", rateCatalogItemId: "rate-1", quantity: 10 }],
+      });
+      prisma.rateCatalogItem.findFirst.mockResolvedValue({ id: "rate-1", companyId: COMPANY_A });
+      prisma.estimate.findUniqueOrThrow.mockResolvedValue({ id: "estimate-1", laborRatePerHour: 50, markupPercent: 10, taxPercent: 5 });
+      prisma.rateCatalogItem.findMany.mockResolvedValue([{ id: "rate-1", laborHoursPerUnit: 1, materials: [] }]);
+      prisma.markupRule.findMany.mockResolvedValue([{ costType: "labor", markupPercent: 30 }]);
+
+      await service.addLine(COMPANY_A, "co-1", { rateCatalogItemId: "rate-1", quantity: 10 });
+
+      // laborCost = 10 * 1 * 50 = 500, materialsCost = 0 → tiered markup = 0*10% (materials fallback) + 500*30% (labor rule) = 150
+      // tax = (500+150)*5% = 32.5, grandTotal = 682.5 — the flat-rate path would have given markup 50 / grandTotal 577.5.
+      expect(prisma.changeOrder.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ markupAmount: 150, taxAmount: 32.5, grandTotal: 682.5 }) }),
+      );
+    });
+
+    it("uses the estimate's flat markup percent when no MarkupRule is configured", async () => {
+      prisma.changeOrder.findFirst.mockResolvedValue({
+        id: "co-1",
+        companyId: COMPANY_A,
+        estimateId: "estimate-1",
+        status: "draft",
+        lines: [{ id: "line-1", rateCatalogItemId: "rate-1", quantity: 10 }],
+      });
+      prisma.rateCatalogItem.findFirst.mockResolvedValue({ id: "rate-1", companyId: COMPANY_A });
+      prisma.estimate.findUniqueOrThrow.mockResolvedValue({ id: "estimate-1", laborRatePerHour: 50, markupPercent: 10, taxPercent: 5 });
+      prisma.rateCatalogItem.findMany.mockResolvedValue([{ id: "rate-1", laborHoursPerUnit: 1, materials: [] }]);
+      prisma.markupRule.findMany.mockResolvedValue([]);
+
+      await service.addLine(COMPANY_A, "co-1", { rateCatalogItemId: "rate-1", quantity: 10 });
+
+      expect(prisma.changeOrder.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ markupAmount: 50 }) }));
+    });
+  });
+
+  describe("setScheduleImpact()", () => {
+    it("rejects setting schedule impact once the change order is no longer a draft", async () => {
+      prisma.changeOrder.findFirst.mockResolvedValue({ id: "co-1", companyId: COMPANY_A, status: "approved", lines: [] });
+
+      await expect(service.setScheduleImpact(COMPANY_A, "co-1", { scheduleImpactDays: 5 })).rejects.toThrow(BadRequestException);
+      expect(prisma.changeOrder.update).not.toHaveBeenCalled();
+    });
+
+    it("persists the schedule impact in days", async () => {
+      prisma.changeOrder.findFirst.mockResolvedValue({ id: "co-1", companyId: COMPANY_A, status: "draft", lines: [] });
+      prisma.changeOrder.update.mockResolvedValue({ id: "co-1", scheduleImpactDays: 7 });
+
+      const result = await service.setScheduleImpact(COMPANY_A, "co-1", { scheduleImpactDays: 7 });
+
+      expect(prisma.changeOrder.update).toHaveBeenCalledWith({ where: { id: "co-1" }, data: { scheduleImpactDays: 7 } });
+      expect(result.scheduleImpactDays).toBe(7);
+    });
+  });
+
   // Regression: the frontend's approval-chain progress display reads co.approvals.length
   // unconditionally (estimate-detail.tsx), so both read paths must always include it —
   // list() previously omitted it and crashed the estimate detail page with a pending change order.
@@ -338,6 +403,36 @@ describe("ChangeOrdersService", () => {
       expect(prisma.changeOrder.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({ include: expect.objectContaining({ approvals: true }) }),
       );
+    });
+  });
+
+  describe("profitability()", () => {
+    it("rejects an estimate that doesn't belong to this company", async () => {
+      prisma.estimate.findFirst.mockResolvedValue(null);
+      await expect(service.profitability(COMPANY_A, "estimate-1")).rejects.toThrow(NotFoundException);
+    });
+
+    it("only pulls approved change orders into the comparison", async () => {
+      prisma.estimate.findFirst.mockResolvedValue({ materialsCostTotal: "6000", laborCostTotal: "4000", grandTotal: "12000" });
+      prisma.changeOrder.findMany.mockResolvedValue([]);
+
+      await service.profitability(COMPANY_A, "estimate-1");
+
+      expect(prisma.changeOrder.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { companyId: COMPANY_A, estimateId: "estimate-1", status: "approved" } }),
+      );
+    });
+
+    it("compares the base contract's margin against its approved change orders", async () => {
+      prisma.estimate.findFirst.mockResolvedValue({ materialsCostTotal: "6000", laborCostTotal: "4000", grandTotal: "12000" });
+      prisma.changeOrder.findMany.mockResolvedValue([
+        { id: "co-1", number: 1, title: "Add deck", materialsCostTotal: "1000", laborCostTotal: "500", grandTotal: "2000" },
+      ]);
+
+      const result = await service.profitability(COMPANY_A, "estimate-1");
+
+      expect(result.baseContract).toMatchObject({ cost: 10000, revenue: 12000, margin: 2000 });
+      expect(result.changeOrders[0]).toMatchObject({ id: "co-1", title: "Add deck", cost: 1500, revenue: 2000, margin: 500 });
     });
   });
 });

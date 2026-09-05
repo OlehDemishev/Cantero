@@ -344,3 +344,92 @@ describe("TasksService.shiftProjectSchedule", () => {
     expect(result).toEqual({ shiftedTasks: 0, shiftedMilestones: 1 });
   });
 });
+
+describe("TasksService — commitments / PPC", () => {
+  let service: TasksService;
+  let prisma: {
+    task: { findFirst: jest.Mock };
+    taskCommitment: { findUnique: jest.Mock; findFirst: jest.Mock; findMany: jest.Mock; create: jest.Mock; update: jest.Mock };
+  };
+
+  beforeEach(async () => {
+    prisma = {
+      task: { findFirst: jest.fn() },
+      taskCommitment: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn() },
+    };
+
+    const module = await Test.createTestingModule({
+      providers: [TasksService, { provide: PrismaService, useValue: prisma }],
+    }).compile();
+
+    service = module.get(TasksService);
+  });
+
+  describe("commitTask()", () => {
+    it("rejects committing a task that doesn't belong to the company", async () => {
+      prisma.task.findFirst.mockResolvedValue(null);
+      await expect(service.commitTask(COMPANY_A, "PM", "task-1", { weekStarting: "2026-09-07T00:00:00.000Z" })).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it("rejects double-committing the same task for the same week", async () => {
+      prisma.task.findFirst.mockResolvedValue({ id: "task-1" });
+      prisma.taskCommitment.findUnique.mockResolvedValue({ id: "commit-1" });
+      await expect(service.commitTask(COMPANY_A, "PM", "task-1", { weekStarting: "2026-09-07T00:00:00.000Z" })).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it("creates a commitment", async () => {
+      prisma.task.findFirst.mockResolvedValue({ id: "task-1" });
+      prisma.taskCommitment.findUnique.mockResolvedValue(null);
+      prisma.taskCommitment.create.mockResolvedValue({ id: "commit-1" });
+
+      await service.commitTask(COMPANY_A, "PM", "task-1", { weekStarting: "2026-09-07T00:00:00.000Z" });
+
+      expect(prisma.taskCommitment.create).toHaveBeenCalled();
+    });
+  });
+
+  describe("resolveCommitment()", () => {
+    it("throws when the commitment doesn't belong to the company", async () => {
+      prisma.taskCommitment.findFirst.mockResolvedValue(null);
+      await expect(service.resolveCommitment(COMPANY_A, "commit-1", { status: "completed" })).rejects.toThrow(NotFoundException);
+    });
+
+    it("rejects resolving a commitment that's already resolved", async () => {
+      prisma.taskCommitment.findFirst.mockResolvedValue({ id: "commit-1", status: "completed" });
+      await expect(service.resolveCommitment(COMPANY_A, "commit-1", { status: "completed" })).rejects.toThrow(BadRequestException);
+    });
+
+    it("requires a variance reason when marking as missed", async () => {
+      prisma.taskCommitment.findFirst.mockResolvedValue({ id: "commit-1", status: "committed" });
+      await expect(service.resolveCommitment(COMPANY_A, "commit-1", { status: "missed" })).rejects.toThrow(BadRequestException);
+    });
+
+    it("resolves as completed", async () => {
+      prisma.taskCommitment.findFirst.mockResolvedValue({ id: "commit-1", status: "committed" });
+      prisma.taskCommitment.update.mockResolvedValue({ id: "commit-1", status: "completed" });
+
+      const result = await service.resolveCommitment(COMPANY_A, "commit-1", { status: "completed" });
+
+      expect(result.status).toBe("completed");
+    });
+  });
+
+  describe("ppcReport()", () => {
+    it("rolls up PPC overall and by week", async () => {
+      prisma.taskCommitment.findMany.mockResolvedValue([
+        { status: "completed", weekStarting: new Date("2026-09-07T00:00:00.000Z") },
+        { status: "missed", weekStarting: new Date("2026-09-07T00:00:00.000Z") },
+        { status: "completed", weekStarting: new Date("2026-09-14T00:00:00.000Z") },
+      ]);
+
+      const result = await service.ppcReport(COMPANY_A, "project-1");
+
+      expect(result.ppcPercent).toBeCloseTo(66.67, 1);
+      expect(result.byWeek).toHaveLength(2);
+    });
+  });
+});

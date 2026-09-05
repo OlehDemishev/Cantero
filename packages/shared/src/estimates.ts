@@ -10,8 +10,21 @@ export const createMaterialCatalogItemSchema = z.object({
   carbonFootprintKgCo2e: z.number().nonnegative().optional(),
   greenCertified: z.boolean().default(false),
   greenCertificationBody: z.string().max(120).optional(),
+  barcode: z.string().max(64).optional(),
 });
 export type CreateMaterialCatalogItemInput = z.infer<typeof createMaterialCatalogItemSchema>;
+
+export const updateMaterialBarcodeSchema = z.object({
+  barcode: z.string().max(64).nullable(),
+});
+export type UpdateMaterialBarcodeInput = z.infer<typeof updateMaterialBarcodeSchema>;
+
+export const setBinLocationSchema = z.object({
+  warehouseId: z.string().uuid(),
+  materialCatalogItemId: z.string().uuid(),
+  binLocation: z.string().max(60).nullable(),
+});
+export type SetBinLocationInput = z.infer<typeof setBinLocationSchema>;
 
 /** Reorder settings only — the low-stock processor auto-drafts a PO once both
  * reorderQuantity and preferredSupplierId are set alongside reorderThreshold. */
@@ -84,6 +97,14 @@ export const updateRateCatalogItemSchema = z.object({
   formulaParams: z.array(z.string().min(1).max(40)).optional(),
 });
 export type UpdateRateCatalogItemInput = z.infer<typeof updateRateCatalogItemSchema>;
+
+export const RATE_CATALOG_PENDING_CHANGE_STATUSES = ["pending", "approved", "rejected"] as const;
+export type RateCatalogPendingChangeStatus = (typeof RATE_CATALOG_PENDING_CHANGE_STATUSES)[number];
+
+export const decideRateCatalogPendingChangeSchema = z.object({
+  decisionNote: z.string().max(1000).optional(),
+});
+export type DecideRateCatalogPendingChangeInput = z.infer<typeof decideRateCatalogPendingChangeSchema>;
 
 export const evaluateFormulaSchema = z.object({
   variables: z.record(z.string(), z.number()),
@@ -319,3 +340,17 @@ export const addChangeOrderLineSchema = z.object({
   costCodeId: z.string().uuid().optional(),
 });
 export type AddChangeOrderLineInput = z.infer<typeof addChangeOrderLineSchema>;
+
+export const setChangeOrderScheduleImpactSchema = z.object({
+  scheduleImpactDays: z.number().int(),
+});
+export type SetChangeOrderScheduleImpactInput = z.infer<typeof setChangeOrderScheduleImpactSchema>;
+
+export const MARKUP_COST_TYPES = ["materials", "labor"] as const;
+export type MarkupCostType = (typeof MARKUP_COST_TYPES)[number];
+
+export const setMarkupRuleSchema = z.object({
+  costType: z.enum(MARKUP_COST_TYPES),
+  markupPercent: z.number().min(0),
+});
+export type SetMarkupRuleInput = z.infer<typeof setMarkupRuleSchema>;

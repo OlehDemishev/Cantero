@@ -19,7 +19,8 @@ interface ProgressBillingSummary {
   percentBilled: number;
   totalBilledGross: number;
   totalRetainageHeld: number;
-  retainageReleased: boolean;
+  retainageReleasedTotal: number;
+  retainageRemaining: number;
   invoices: ProgressDraw[];
 }
 
@@ -29,6 +30,8 @@ export function ProgressBillingPanel({ estimateId, currency }: { estimateId: str
 
   const [summary, setSummary] = useState<ProgressBillingSummary | null>(null);
   const [form, setForm] = useState({ percentComplete: "", retainagePercent: "10" });
+  const [releaseAmount, setReleaseAmount] = useState("");
+  const [releasingPartial, setReleasingPartial] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,11 +62,14 @@ export function ProgressBillingPanel({ estimateId, currency }: { estimateId: str
     }
   }
 
-  async function releaseRetainage() {
+  async function releaseRetainage(amount?: number) {
     setBusy(true);
     setError(null);
     try {
-      const invoice = await apiFetch<{ id: string }>(`/invoices/progress-billing/${estimateId}/release-retainage`, { method: "POST" });
+      const invoice = await apiFetch<{ id: string }>(`/invoices/progress-billing/${estimateId}/release-retainage`, {
+        method: "POST",
+        body: JSON.stringify(amount ? { amount } : {}),
+      });
       router.push(`/invoices/${invoice.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -155,12 +161,49 @@ export function ProgressBillingPanel({ estimateId, currency }: { estimateId: str
         </form>
       )}
 
-      {summary.totalRetainageHeld > 0 && !summary.retainageReleased && (
-        <button onClick={releaseRetainage} disabled={busy} className="btn-secondary mt-2">
-          {t("releaseRetainage", { amount: summary.totalRetainageHeld.toFixed(2), currency })}
-        </button>
+      {summary.retainageReleasedTotal > 0 && (
+        <p className="mt-2 text-xs text-success-700">
+          {t("retainageReleasedSoFar", { amount: summary.retainageReleasedTotal.toFixed(2), currency })}
+        </p>
       )}
-      {summary.retainageReleased && <p className="mt-2 text-xs text-success-700">{t("retainageAlreadyReleased")}</p>}
+
+      {summary.retainageRemaining > 0 && (
+        <div className="mt-2 flex flex-col gap-2">
+          <button onClick={() => releaseRetainage()} disabled={busy} className="btn-secondary self-start">
+            {t("releaseRetainage", { amount: summary.retainageRemaining.toFixed(2), currency })}
+          </button>
+          {!releasingPartial ? (
+            <button onClick={() => setReleasingPartial(true)} className="self-start text-xs text-brand-700 hover:underline">
+              {t("releasePartialInstead")}
+            </button>
+          ) : (
+            <div className="flex items-end gap-2">
+              <label className="flex w-32 flex-col gap-1 text-xs text-gray-500">
+                {t("partialAmount")}
+                <input
+                  type="number"
+                  min="0.01"
+                  max={summary.retainageRemaining}
+                  step="0.01"
+                  className="input"
+                  value={releaseAmount}
+                  onChange={(e) => setReleaseAmount(e.target.value)}
+                />
+              </label>
+              <button
+                onClick={() => releaseRetainage(Number(releaseAmount))}
+                disabled={busy || !releaseAmount}
+                className="btn-secondary"
+              >
+                {t("releasePartial")}
+              </button>
+              <button onClick={() => setReleasingPartial(false)} className="text-xs text-gray-500 hover:underline">
+                {t("cancel")}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

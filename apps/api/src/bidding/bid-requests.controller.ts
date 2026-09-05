@@ -26,6 +26,11 @@ export class BidRequestsController {
     return this.service.get(user.companyId, id);
   }
 
+  @Get(":id/leveling")
+  leveling(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.leveling(user.companyId, id);
+  }
+
   @Post()
   create(
     @CurrentUser() user: AuthUser,

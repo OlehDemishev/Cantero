@@ -66,6 +66,15 @@ interface TicketSummary {
   status: TicketStatus;
   createdAt: string;
 }
+type ChangeRequestStatus = "submitted" | "under_review" | "converted" | "declined";
+interface ChangeRequestSummary {
+  id: string;
+  title: string;
+  description: string;
+  status: ChangeRequestStatus;
+  reviewNote: string | null;
+  project: { id: string; name: string };
+}
 
 export default function PortalDashboardPage() {
   const t = useTranslations("portal");
@@ -86,6 +95,10 @@ export default function PortalDashboardPage() {
   const [tickets, setTickets] = useState<TicketSummary[] | null>(null);
   const [ticketForm, setTicketForm] = useState({ subject: "", content: "" });
   const [ticketBusy, setTicketBusy] = useState(false);
+  const [changeRequests, setChangeRequests] = useState<ChangeRequestSummary[] | null>(null);
+  const [changeRequestForm, setChangeRequestForm] = useState({ projectId: "", title: "", description: "" });
+  const [changeRequestBusy, setChangeRequestBusy] = useState(false);
+  const [changeRequestMessage, setChangeRequestMessage] = useState<string | null>(null);
 
   function loadMe() {
     portalApiFetch<Me>("/portal/me").then(setMe);
@@ -116,8 +129,37 @@ export default function PortalDashboardPage() {
       setProjects(list);
       const firstUnderWarranty = list.find((p) => p.isUnderWarranty);
       if (firstUnderWarranty) setClaimForm((f) => ({ ...f, projectId: f.projectId || firstUnderWarranty.id }));
+      if (list[0]) setChangeRequestForm((f) => ({ ...f, projectId: f.projectId || list[0].id }));
     });
     portalApiFetch<WarrantyClaimSummary[]>("/portal/warranty").then(setWarrantyClaims);
+  }
+
+  function loadChangeRequests() {
+    portalApiFetch<ChangeRequestSummary[]>("/portal/change-requests").then(setChangeRequests);
+  }
+
+  async function submitChangeRequest(e: React.FormEvent) {
+    e.preventDefault();
+    if (!changeRequestForm.projectId) return;
+    setChangeRequestBusy(true);
+    setChangeRequestMessage(null);
+    try {
+      await portalApiFetch("/portal/change-requests", {
+        method: "POST",
+        body: JSON.stringify({
+          projectId: changeRequestForm.projectId,
+          title: changeRequestForm.title,
+          description: changeRequestForm.description,
+        }),
+      });
+      setChangeRequestForm((f) => ({ ...f, title: "", description: "" }));
+      setChangeRequestMessage(t("changeRequestSubmitted"));
+      loadChangeRequests();
+    } catch (err) {
+      setChangeRequestMessage(err instanceof Error ? err.message : String(err));
+    } finally {
+      setChangeRequestBusy(false);
+    }
   }
 
   useEffect(() => {
@@ -131,6 +173,7 @@ export default function PortalDashboardPage() {
     portalApiFetch<InvoiceSummary[]>("/portal/invoices").then(setInvoices);
     loadWarranty();
     loadTickets();
+    loadChangeRequests();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -478,6 +521,82 @@ export default function PortalDashboardPage() {
                 {t("submitClaim")}
               </button>
               {claimMessage && <p className="text-xs text-gray-600">{claimMessage}</p>}
+            </form>
+          )}
+        </section>
+
+        <section className="card mt-6">
+          <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("changeRequests")}</h2>
+          {!changeRequests || changeRequests.length === 0 ? (
+            <p className="mb-4 text-sm text-gray-400">{t("noChangeRequests")}</p>
+          ) : (
+            <ul className="mb-4 flex flex-col gap-2">
+              {changeRequests.map((request) => (
+                <li key={request.id} className="rounded-md border border-gray-200 px-3 py-2 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span>
+                      {request.title}
+                      <span className="ml-2 text-xs text-gray-400">{request.project.name}</span>
+                    </span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                        request.status === "converted"
+                          ? "bg-success-50 text-success-700"
+                          : request.status === "declined"
+                            ? "bg-error-50 text-error-700"
+                            : request.status === "under_review"
+                              ? "bg-brand-50 text-brand-700"
+                              : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {t(`changeRequestStatus_${request.status}`)}
+                    </span>
+                  </div>
+                  {request.status === "declined" && request.reviewNote && (
+                    <p className="mt-1 text-xs text-gray-500">{t("declineReason", { note: request.reviewNote })}</p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {!projects || projects.length === 0 ? (
+            <p className="text-sm text-gray-400">{t("noProjects")}</p>
+          ) : (
+            <form onSubmit={submitChangeRequest} className="flex flex-col gap-2">
+              <label className="text-xs text-gray-500">
+                {t("project")}
+                <select
+                  className="input mt-1"
+                  value={changeRequestForm.projectId}
+                  onChange={(e) => setChangeRequestForm((f) => ({ ...f, projectId: e.target.value }))}
+                >
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <input
+                required
+                placeholder={t("changeRequestTitlePlaceholder")}
+                className="input"
+                value={changeRequestForm.title}
+                onChange={(e) => setChangeRequestForm((f) => ({ ...f, title: e.target.value }))}
+              />
+              <textarea
+                required
+                rows={2}
+                placeholder={t("descriptionPlaceholder")}
+                className="input"
+                value={changeRequestForm.description}
+                onChange={(e) => setChangeRequestForm((f) => ({ ...f, description: e.target.value }))}
+              />
+              <button type="submit" disabled={changeRequestBusy} className="btn-primary self-start">
+                {t("submitChangeRequest")}
+              </button>
+              {changeRequestMessage && <p className="text-xs text-gray-600">{changeRequestMessage}</p>}
             </form>
           )}
         </section>

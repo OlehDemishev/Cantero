@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { CommentsThread } from "@/components/comments-thread";
 import { SchedulingPanel } from "@/components/scheduling-panel";
+import { ScheduleBaselinePanel } from "@/components/schedule-baseline-panel";
 import { LookAheadPanel } from "@/components/look-ahead-panel";
 import { DailyLogsPanel } from "@/components/daily-logs-panel";
 import { CrewSmsBroadcastPanel } from "@/components/crew-sms-broadcast-panel";
@@ -17,6 +18,15 @@ import { CertifiedPayrollPanel } from "@/components/certified-payroll-panel";
 import { PermitsPanel } from "@/components/permits-panel";
 import { SuretyBondsPanel } from "@/components/surety-bonds-panel";
 import { ContractClaimsPanel } from "@/components/contract-claims-panel";
+import { WarrantyRegistrationsPanel } from "@/components/warranty-registrations-panel";
+import { HazmatInventoryPanel } from "@/components/hazmat-inventory-panel";
+import { LienCompliancePanel } from "@/components/lien-compliance-panel";
+import { EnvironmentalPanel } from "@/components/environmental-panel";
+import { ScheduleScenariosPanel } from "@/components/schedule-scenarios-panel";
+import { CommissioningPanel } from "@/components/commissioning-panel";
+import { ProgressTrackingPanel } from "@/components/progress-tracking-panel";
+import { TransmittalsPanel } from "@/components/transmittals-panel";
+import { ConcreteQcPanel } from "@/components/concrete-qc-panel";
 import { ProjectMembersPanel } from "@/components/project-members-panel";
 import { ContractsPanel } from "@/components/contracts-panel";
 import { DrawRequestsPanel } from "@/components/draw-requests-panel";
@@ -29,6 +39,9 @@ import { ProjectCashFlowPanel } from "@/components/project-cash-flow-panel";
 import { CustomFieldsValuesPanel } from "@/components/custom-fields-values-panel";
 import { PunchListPanel } from "@/components/punch-list-panel";
 import { RfiPanel } from "@/components/rfi-panel";
+import { CostImpactSummaryPanel } from "@/components/cost-impact-summary-panel";
+import { MeetingsPanel } from "@/components/meetings-panel";
+import { LongLeadItemsPanel } from "@/components/long-lead-items-panel";
 import { SafetyPanel } from "@/components/safety-panel";
 import { QualityPanel } from "@/components/quality-panel";
 import { SubmittalsPanel } from "@/components/submittals-panel";
@@ -42,6 +55,12 @@ import { SubcontractorAssignmentsPanel } from "@/components/subcontractor-assign
 import { BidRequestsPanel } from "@/components/bid-requests-panel";
 import { DocumentsPanel } from "@/components/documents-panel";
 import { GalleryPanel } from "@/components/gallery-panel";
+import { AllowancesPanel } from "@/components/allowances-panel";
+import { UnitPriceTmPanel } from "@/components/unit-price-tm-panel";
+import { ProductivityPanel } from "@/components/productivity-panel";
+import { SubcontractorClaimsPanel } from "@/components/subcontractor-claims-panel";
+import { ClientChangeRequestsPanel } from "@/components/client-change-requests-panel";
+import { SafetyObservationsPanel } from "@/components/safety-observations-panel";
 import { ProjectHealthBadge } from "@/components/project-health-badge";
 import { SUPPORTED_CURRENCIES } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
@@ -235,6 +254,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
       </div>
 
       <PortalMessagesPanel projectId={projectId} />
+      <ClientChangeRequestsPanel projectId={projectId} />
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="card lg:col-span-1">
@@ -329,6 +349,10 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
       <TakeoffPanel projectId={projectId} />
       <DrawingSheetsPanel projectId={projectId} />
       <SchedulingPanel projectId={projectId} />
+      <ScheduleBaselinePanel projectId={projectId} />
+      <ScheduleScenariosPanel projectId={projectId} />
+      <CommissioningPanel projectId={projectId} />
+      <ProgressTrackingPanel projectId={projectId} />
       <LookAheadPanel projectId={projectId} />
       <ContractsPanel projectId={projectId} />
       <WeatherForecastPanel projectId={projectId} />
@@ -337,6 +361,10 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
       <PermitsPanel projectId={projectId} />
       <SuretyBondsPanel projectId={projectId} />
       <ContractClaimsPanel projectId={projectId} />
+      <WarrantyRegistrationsPanel projectId={projectId} />
+      <HazmatInventoryPanel projectId={projectId} />
+      <LienCompliancePanel projectId={projectId} />
+      <EnvironmentalPanel projectId={projectId} />
       <ProjectMembersPanel projectId={projectId} />
       <CustomFieldsValuesPanel entityType="project" entityId={projectId} />
       <DailyLogsPanel projectId={projectId} />
@@ -344,16 +372,26 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
       <WeatherDelayReportPanel projectId={projectId} />
       <PunchListPanel projectId={projectId} />
       <RfiPanel projectId={projectId} />
+      <CostImpactSummaryPanel projectId={projectId} />
+      <MeetingsPanel projectId={projectId} />
+      <LongLeadItemsPanel projectId={projectId} />
       <SiteSignInsPanel projectId={projectId} />
       <SafetyPanel projectId={projectId} />
+      <SafetyObservationsPanel projectId={projectId} />
       <QualityPanel projectId={projectId} />
+      <ConcreteQcPanel projectId={projectId} />
       <SubmittalsPanel projectId={projectId} />
+      <TransmittalsPanel projectId={projectId} />
       <WarrantyPanel projectId={projectId} />
       <TimeTrackingPanel projectId={projectId} />
       <BidRequestsPanel projectId={projectId} />
       <SubcontractorAssignmentsPanel projectId={projectId} />
       <SubcontractorCostsPanel projectId={projectId} />
+      <SubcontractorClaimsPanel projectId={projectId} />
       <BudgetPanel projectId={projectId} />
+      <AllowancesPanel projectId={projectId} />
+      <UnitPriceTmPanel projectId={projectId} />
+      <ProductivityPanel projectId={projectId} />
       <JobCostingPanel projectId={projectId} />
       <DrawRequestsPanel projectId={projectId} />
       <ProjectCashFlowPanel projectId={projectId} />

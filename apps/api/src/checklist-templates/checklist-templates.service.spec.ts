@@ -59,16 +59,69 @@ describe("ChecklistTemplatesService", () => {
   });
 
   describe("update()", () => {
-    it("replaces existing items when new items are provided", async () => {
-      prisma.checklistTemplate.findFirst.mockResolvedValue({ id: "tpl-1", companyId: COMPANY_A, items: [] });
+    it("clones a new version with the given items rather than mutating in place", async () => {
+      prisma.checklistTemplate.findFirst.mockResolvedValue({
+        id: "tpl-1",
+        companyId: COMPANY_A,
+        type: "punch_list",
+        name: "Pre-drywall inspection",
+        version: 1,
+        items: [],
+      });
+      prisma.checklistTemplate.create.mockResolvedValue({ id: "tpl-2", version: 2, name: "Pre-drywall inspection" });
       prisma.checklistTemplate.update.mockResolvedValue({ id: "tpl-1" });
 
-      await service.update(COMPANY_A, "tpl-1", { items: [{ title: "New item" }] });
+      const result = await service.update(COMPANY_A, ACTOR, "tpl-1", { items: [{ title: "New item" }] });
 
-      expect(prisma.checklistTemplateItem.deleteMany).toHaveBeenCalledWith({ where: { templateId: "tpl-1" } });
-      expect(prisma.checklistTemplate.update).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ items: { create: [{ title: "New item", sortOrder: 0 }] } }) }),
+      expect(prisma.checklistTemplate.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            version: 2,
+            previousVersionId: "tpl-1",
+            items: { create: [{ title: "New item", sortOrder: 0 }] },
+          }),
+        }),
       );
+      expect(prisma.checklistTemplate.update).toHaveBeenCalledWith({ where: { id: "tpl-1" }, data: { archivedAt: expect.any(Date) } });
+      expect(result.id).toBe("tpl-2");
+      expect(audit.record).toHaveBeenCalledWith(COMPANY_A, ACTOR, "checklist_template.versioned", "ChecklistTemplate", "tpl-2", expect.any(String));
+    });
+
+    it("carries forward existing items when the update doesn't touch them", async () => {
+      prisma.checklistTemplate.findFirst.mockResolvedValue({
+        id: "tpl-1",
+        companyId: COMPANY_A,
+        type: "punch_list",
+        name: "Pre-drywall inspection",
+        version: 1,
+        items: [{ title: "Check outlets", description: null, location: null }],
+      });
+      prisma.checklistTemplate.create.mockResolvedValue({ id: "tpl-2", version: 2 });
+      prisma.checklistTemplate.update.mockResolvedValue({ id: "tpl-1" });
+
+      await service.update(COMPANY_A, ACTOR, "tpl-1", { name: "Renamed" });
+
+      expect(prisma.checklistTemplate.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            name: "Renamed",
+            items: { create: [{ title: "Check outlets", description: null, location: null, sortOrder: 0 }] },
+          }),
+        }),
+      );
+    });
+  });
+
+  describe("history()", () => {
+    it("walks the previousVersion chain from newest to oldest", async () => {
+      prisma.checklistTemplate.findFirst
+        .mockResolvedValueOnce({ id: "tpl-3", companyId: COMPANY_A, version: 3, previousVersionId: "tpl-2", items: [] })
+        .mockResolvedValueOnce({ id: "tpl-2", companyId: COMPANY_A, version: 2, previousVersionId: "tpl-1", items: [] })
+        .mockResolvedValueOnce({ id: "tpl-1", companyId: COMPANY_A, version: 1, previousVersionId: null, items: [] });
+
+      const versions = await service.history(COMPANY_A, "tpl-3");
+
+      expect(versions.map((v) => v.version)).toEqual([3, 2, 1]);
     });
   });
 

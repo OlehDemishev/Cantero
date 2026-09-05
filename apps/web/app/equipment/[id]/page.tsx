@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { DEPRECIATION_METHODS, type DepreciationMethod, type EquipmentStatus } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { EquipmentGpsPanel } from "@/components/equipment-gps-panel";
+import { CalibrationPanel } from "@/components/calibration-panel";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
@@ -82,6 +83,13 @@ interface CostPerHour {
   totalCost: number;
   costPerHour: number | null;
 }
+interface Tco {
+  totalCost: number;
+  costPerHour: number | null;
+  fuelSharePercent: number | null;
+  maintenanceSharePercent: number | null;
+  depreciationSharePercent: number | null;
+}
 interface Rental {
   id: string;
   renterName: string;
@@ -136,6 +144,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
   const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[] | null>(null);
   const [fuelLogs, setFuelLogs] = useState<FuelLog[] | null>(null);
   const [costPerHour, setCostPerHour] = useState<CostPerHour | null>(null);
+  const [tco, setTco] = useState<Tco | null>(null);
   const [rentals, setRentals] = useState<Rental[] | null>(null);
   const [checkOutForm, setCheckOutForm] = useState({ projectId: "", workerId: "" });
   const [maintenanceForm, setMaintenanceForm] = useState({ description: "", cost: "", supplierId: "", meterHours: "" });
@@ -166,6 +175,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
     apiFetch<MaintenanceRecord[]>(`/equipment/${id}/maintenance-records`).then(setMaintenanceRecords);
     apiFetch<FuelLog[]>(`/equipment/${id}/fuel-logs`).then(setFuelLogs);
     apiFetch<CostPerHour>(`/equipment/${id}/cost-per-hour`).then(setCostPerHour);
+    apiFetch<Tco>(`/equipment/${id}/tco`).then(setTco);
     apiFetch<Rental[]>(`/equipment/${id}/rentals`).then(setRentals);
   }
 
@@ -801,6 +811,8 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
           </form>
         </section>
 
+        <CalibrationPanel equipmentId={id} />
+
         <section className="card">
           <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("fuelLogs")}</h2>
           <p className="mb-3 text-xs text-gray-500">{t("fuelLogsHint")}</p>
@@ -811,6 +823,22 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
                 ({t("totalCost")}: {costPerHour.totalCost} {currency})
               </span>
             </p>
+          )}
+          {tco && (
+            <div className="mb-3 rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+              <span className="font-medium">
+                {t("tco")}: {tco.totalCost} {currency}
+              </span>
+              {tco.totalCost > 0 && (
+                <span className="ml-2 text-xs text-gray-400">
+                  ({t("tcoBreakdown", {
+                    fuel: tco.fuelSharePercent ?? 0,
+                    maintenance: tco.maintenanceSharePercent ?? 0,
+                    depreciation: tco.depreciationSharePercent ?? 0,
+                  })})
+                </span>
+              )}
+            </div>
           )}
           {!fuelLogs || fuelLogs.length === 0 ? (
             <p className="mb-3 text-sm text-gray-400">{t("noFuelLogs")}</p>

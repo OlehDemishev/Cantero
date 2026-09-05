@@ -122,4 +122,39 @@ describe("MaterialCatalogService — price changes", () => {
       expect(call.where.createdAt.gte).toBeInstanceOf(Date);
     });
   });
+
+  describe("updateBarcode()", () => {
+    it("throws when the item doesn't belong to the company", async () => {
+      prisma.materialCatalogItem.findFirst.mockResolvedValue(null);
+      await expect(service.updateBarcode(COMPANY_A, "mat-1", { barcode: "012345" })).rejects.toThrow();
+    });
+
+    it("updates the barcode field", async () => {
+      prisma.materialCatalogItem.findFirst.mockResolvedValue({ id: "mat-1" });
+      prisma.materialCatalogItem.update.mockResolvedValue({ id: "mat-1", barcode: "012345" });
+
+      await service.updateBarcode(COMPANY_A, "mat-1", { barcode: "012345" });
+
+      expect(prisma.materialCatalogItem.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: "mat-1" }, data: { barcode: "012345" } }),
+      );
+    });
+  });
+
+  describe("findByBarcode()", () => {
+    it("throws when no item matches the barcode for this company", async () => {
+      prisma.materialCatalogItem.findFirst.mockResolvedValue(null);
+      await expect(service.findByBarcode(COMPANY_A, "unknown")).rejects.toThrow();
+    });
+
+    it("scopes the lookup to the company and includes stock levels", async () => {
+      prisma.materialCatalogItem.findFirst.mockResolvedValue({ id: "mat-1", barcode: "012345" });
+
+      await service.findByBarcode(COMPANY_A, "012345");
+
+      expect(prisma.materialCatalogItem.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { companyId: COMPANY_A, barcode: "012345" } }),
+      );
+    });
+  });
 });

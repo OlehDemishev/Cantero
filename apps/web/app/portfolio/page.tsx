@@ -44,6 +44,7 @@ interface PortfolioSummary {
 interface Portfolio {
   projects: PortfolioProject[];
   summary: PortfolioSummary;
+  currency: string;
 }
 
 function SummaryCard({ label, value, tone }: { label: string; value: string | number; tone?: "error" | "success" }) {
@@ -76,6 +77,7 @@ export default function PortfolioPage() {
     <AuthenticatedShell>
       <h1 className="text-2xl font-semibold">{t("title")}</h1>
       <p className="mt-1 text-sm text-gray-500">{t("subtitle")}</p>
+      {data && <p className="mt-1 text-xs text-gray-400">{t("convertedToCurrency", { currency: data.currency })}</p>}
 
       {!data ? (
         <p className="mt-8 text-gray-500">{tc("loading")}</p>

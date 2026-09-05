@@ -14,7 +14,8 @@ describe("BidRequestsService", () => {
     project: { findFirst: jest.Mock };
     subcontractor: { findMany: jest.Mock };
     bidRequest: { create: jest.Mock; findFirst: jest.Mock; update: jest.Mock };
-    bid: { findFirst: jest.Mock; update: jest.Mock; upsert: jest.Mock };
+    bid: { findFirst: jest.Mock; update: jest.Mock; upsert: jest.Mock; findUniqueOrThrow: jest.Mock };
+    bidLine: { deleteMany: jest.Mock; createMany: jest.Mock };
     bidInvite: { findFirst: jest.Mock };
     bidScoreCriterion: { create: jest.Mock; findFirst: jest.Mock; delete: jest.Mock };
     bidScore: { upsert: jest.Mock };
@@ -28,7 +29,8 @@ describe("BidRequestsService", () => {
       project: { findFirst: jest.fn() },
       subcontractor: { findMany: jest.fn() },
       bidRequest: { create: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
-      bid: { findFirst: jest.fn(), update: jest.fn(), upsert: jest.fn() },
+      bid: { findFirst: jest.fn(), update: jest.fn(), upsert: jest.fn(), findUniqueOrThrow: jest.fn() },
+      bidLine: { deleteMany: jest.fn(), createMany: jest.fn() },
       bidInvite: { findFirst: jest.fn() },
       bidScoreCriterion: { create: jest.fn(), findFirst: jest.fn(), delete: jest.fn() },
       bidScore: { upsert: jest.fn() },
@@ -137,6 +139,66 @@ describe("BidRequestsService", () => {
         service.submitBid({ subcontractorId: "sub-1", companyId: COMPANY_A }, "br-1", { amount: 5000 }),
       ).rejects.toThrow(BadRequestException);
       expect(prisma.bid.upsert).not.toHaveBeenCalled();
+    });
+
+    it("replaces the bid's lines wholesale when lines are given", async () => {
+      prisma.bidInvite.findFirst.mockResolvedValue({ bidRequest: { status: "open" } });
+      prisma.bid.upsert.mockResolvedValue({ id: "bid-1" });
+      prisma.bid.findUniqueOrThrow.mockResolvedValue({ id: "bid-1", lines: [] });
+
+      await service.submitBid(
+        { subcontractorId: "sub-1", companyId: COMPANY_A },
+        "br-1",
+        { amount: 5000, lines: [{ description: "Demo", amount: 2000, included: true }] },
+      );
+
+      expect(prisma.bidLine.deleteMany).toHaveBeenCalledWith({ where: { bidId: "bid-1" } });
+      expect(prisma.bidLine.createMany).toHaveBeenCalledWith({
+        data: [{ bidId: "bid-1", description: "Demo", amount: 2000, included: true, sortOrder: 0 }],
+      });
+    });
+
+    it("leaves existing lines untouched when no lines are given at all", async () => {
+      prisma.bidInvite.findFirst.mockResolvedValue({ bidRequest: { status: "open" } });
+      prisma.bid.upsert.mockResolvedValue({ id: "bid-1" });
+      prisma.bid.findUniqueOrThrow.mockResolvedValue({ id: "bid-1", lines: [] });
+
+      await service.submitBid({ subcontractorId: "sub-1", companyId: COMPANY_A }, "br-1", { amount: 5000 });
+
+      expect(prisma.bidLine.deleteMany).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("leveling()", () => {
+    it("throws when the bid request doesn't belong to the company", async () => {
+      prisma.bidRequest.findFirst.mockResolvedValue(null);
+      await expect(service.leveling(COMPANY_A, "br-1")).rejects.toThrow(NotFoundException);
+    });
+
+    it("aligns bids' scope lines into shared rows", async () => {
+      prisma.bidRequest.findFirst.mockResolvedValue({
+        id: "br-1",
+        bids: [
+          {
+            id: "bid-1",
+            subcontractor: { id: "sub-1", name: "Acme Electric" },
+            amount: "5000",
+            lines: [{ description: "Demo", amount: "2000", included: true }],
+          },
+          {
+            id: "bid-2",
+            subcontractor: { id: "sub-2", name: "Beta Electric" },
+            amount: "4500",
+            lines: [],
+          },
+        ],
+      });
+
+      const result = await service.leveling(COMPANY_A, "br-1");
+
+      expect(result.bids).toHaveLength(2);
+      expect(result.scopeItems[0].byBid["bid-1"]).toEqual({ amount: 2000, included: true });
+      expect(result.scopeItems[0].byBid["bid-2"]).toBeNull();
     });
   });
 

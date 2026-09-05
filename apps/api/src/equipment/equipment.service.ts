@@ -18,6 +18,7 @@ import { checkGeofence } from "../team/geofence";
 import { calculateCostPerHour } from "./equipment-cost";
 import { calculateRentalRevenue } from "./equipment-rental";
 import { calculateDepreciation } from "./equipment-depreciation";
+import { calculateTotalCostOfOwnership } from "./equipment-tco";
 
 @Injectable()
 export class EquipmentService {
@@ -482,6 +483,32 @@ export class EquipmentService {
     return calculateCostPerHour({
       totalFuelCost: fuelLogs.reduce((sum, l) => sum + Number(l.cost ?? 0), 0),
       totalMaintenanceCost: maintenanceRecords.reduce((sum, r) => sum + Number(r.cost ?? 0), 0),
+      hoursElapsed,
+    });
+  }
+
+  /** Total cost of ownership to date: fuel + maintenance (same rollup as costPerHour()) plus the
+   * book-value loss from the depreciation schedule, if one is set — the figure that actually
+   * drives a buy/rent/replace decision, unlike either piece alone. */
+  async tco(companyId: string, id: string) {
+    const equipment = await this.findOrThrow(companyId, id);
+    const [fuelLogs, maintenanceRecords] = await Promise.all([
+      this.prisma.equipmentFuelLog.findMany({ where: { equipmentId: id }, select: { cost: true, meterHours: true } }),
+      this.prisma.equipmentMaintenanceRecord.findMany({ where: { equipmentId: id }, select: { cost: true, meterHours: true } }),
+    ]);
+
+    const readings = [...fuelLogs, ...maintenanceRecords]
+      .map((r) => r.meterHours)
+      .filter((h): h is NonNullable<typeof h> => h !== null)
+      .map(Number);
+    const hoursElapsed = readings.length >= 2 ? Math.max(...readings) - Math.min(...readings) : 0;
+
+    const dep = this.depreciation(equipment);
+
+    return calculateTotalCostOfOwnership({
+      fuelCost: fuelLogs.reduce((sum, l) => sum + Number(l.cost ?? 0), 0),
+      maintenanceCost: maintenanceRecords.reduce((sum, r) => sum + Number(r.cost ?? 0), 0),
+      accumulatedDepreciation: dep?.accumulatedDepreciation ?? 0,
       hoursElapsed,
     });
   }

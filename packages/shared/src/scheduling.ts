@@ -28,3 +28,8 @@ export const createMilestoneSchema = z.object({
   dueDate: z.string().datetime().optional(),
 });
 export type CreateMilestoneInput = z.infer<typeof createMilestoneSchema>;
+
+export const createScheduleBaselineSchema = z.object({
+  name: z.string().min(1).max(160),
+});
+export type CreateScheduleBaselineInput = z.infer<typeof createScheduleBaselineSchema>;

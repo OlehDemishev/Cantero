@@ -16,6 +16,7 @@ function worker(overrides: Partial<Record<string, unknown>> = {}) {
     name: "Jordan Smith",
     hourlyCost: "30.00",
     wageClassification: null,
+    isApprentice: false,
     ...overrides,
   };
 }
@@ -101,6 +102,63 @@ describe("CertifiedPayrollService.computeWeek", () => {
   it("throws when the project doesn't belong to the caller's company", async () => {
     prisma.project.findFirst.mockResolvedValue(null);
     await expect(service.computeWeek(COMPANY_A, PROJECT_A, new Date("2026-08-29"))).rejects.toThrow(NotFoundException);
+  });
+
+  it("itemizes the classification's fringe funds per total hour worked", async () => {
+    prisma.project.findFirst.mockResolvedValue({ id: PROJECT_A });
+    prisma.timeEntry.findMany.mockResolvedValue([
+      {
+        workerId: "worker-1",
+        hours: "10",
+        worker: worker({
+          wageClassification: {
+            trade: "Electrician",
+            hourlyRate: "35.00",
+            fringeRate: "5.00",
+            apprenticeRatio: null,
+            fringeBenefitFunds: [
+              { fundType: "pension", name: "IBEW Pension", ratePerHour: "3.00" },
+              { fundType: "health", name: "IBEW Health", ratePerHour: "2.00" },
+            ],
+          },
+        }),
+      },
+    ]);
+
+    const result = await service.computeWeek(COMPANY_A, PROJECT_A, new Date("2026-08-29"));
+
+    expect(result.lines[0].fringeBreakdown).toEqual([
+      { fundType: "pension", name: "IBEW Pension", amount: 30 },
+      { fundType: "health", name: "IBEW Health", amount: 20 },
+    ]);
+  });
+
+  it("flags a trade exceeding its configured apprentice-to-journeyman ratio", async () => {
+    prisma.project.findFirst.mockResolvedValue({ id: PROJECT_A });
+    const classification = { trade: "Electrician", hourlyRate: "35.00", fringeRate: "0", apprenticeRatio: "1:4", fringeBenefitFunds: [] };
+    prisma.timeEntry.findMany.mockResolvedValue([
+      { workerId: "worker-1", hours: "10", worker: worker({ id: "worker-1", name: "Journeyman A", wageClassification: classification }) },
+      { workerId: "worker-2", hours: "10", worker: worker({ id: "worker-2", name: "Apprentice A", isApprentice: true, wageClassification: classification }) },
+      { workerId: "worker-3", hours: "10", worker: worker({ id: "worker-3", name: "Apprentice B", isApprentice: true, wageClassification: classification }) },
+    ]);
+
+    const result = await service.computeWeek(COMPANY_A, PROJECT_A, new Date("2026-08-29"));
+
+    expect(result.apprenticeRatioViolations).toEqual([
+      { trade: "Electrician", ratio: "1:4", journeymanCount: 1, apprenticeCount: 2, maxAllowedApprentices: 0, compliant: false },
+    ]);
+  });
+
+  it("does not flag a trade with no apprenticeRatio configured", async () => {
+    prisma.project.findFirst.mockResolvedValue({ id: PROJECT_A });
+    const classification = { trade: "Laborer", hourlyRate: "20.00", fringeRate: "0", apprenticeRatio: null, fringeBenefitFunds: [] };
+    prisma.timeEntry.findMany.mockResolvedValue([
+      { workerId: "worker-1", hours: "10", worker: worker({ isApprentice: true, wageClassification: classification }) },
+    ]);
+
+    const result = await service.computeWeek(COMPANY_A, PROJECT_A, new Date("2026-08-29"));
+
+    expect(result.apprenticeRatioViolations).toEqual([]);
   });
 });
 

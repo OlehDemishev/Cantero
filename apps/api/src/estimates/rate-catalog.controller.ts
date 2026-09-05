@@ -4,10 +4,12 @@ import {
   createRateCatalogItemSchema,
   updateRateCatalogItemSchema,
   evaluateFormulaSchema,
+  decideRateCatalogPendingChangeSchema,
   type AuthUser,
   type CreateRateCatalogItemInput,
   type UpdateRateCatalogItemInput,
   type EvaluateFormulaInput,
+  type DecideRateCatalogPendingChangeInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
@@ -35,6 +37,29 @@ export class RateCatalogController {
   importCsv(@CurrentUser() user: AuthUser, @UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException("No file provided");
     return this.service.importCsv(user.companyId, { userId: user.userId, name: user.name }, file.buffer.toString("utf-8"));
+  }
+
+  @Get("pending-changes")
+  listPendingChanges(@CurrentUser() user: AuthUser) {
+    return this.service.listPendingChanges(user.companyId);
+  }
+
+  @Post("pending-changes/:id/approve")
+  approvePendingChange(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(decideRateCatalogPendingChangeSchema)) body: DecideRateCatalogPendingChangeInput,
+  ) {
+    return this.service.approvePendingChange(user.companyId, { userId: user.userId, name: user.name }, id, body);
+  }
+
+  @Post("pending-changes/:id/reject")
+  rejectPendingChange(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(decideRateCatalogPendingChangeSchema)) body: DecideRateCatalogPendingChangeInput,
+  ) {
+    return this.service.rejectPendingChange(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
   @Get(":id")

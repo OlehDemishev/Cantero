@@ -20,6 +20,7 @@ interface Worker {
   payrollEmployeeId: string | null;
   hasClockInPin: boolean;
   cdlExpiresAt: string | null;
+  isApprentice: boolean;
 }
 interface WageClassification {
   id: string;
@@ -91,12 +92,33 @@ interface HrCase {
 interface HrCaseDetail extends HrCase {
   actions: HrCaseAction[];
 }
+interface BenefitEnrollment {
+  id: string;
+  status: "active" | "waived" | "terminated";
+  effectiveDate: string;
+  plan: { id: string; name: string };
+  tier: { id: string; name: string };
+}
+interface ToolCheckout {
+  id: string;
+  quantity: number;
+  checkedOutAt: string;
+  returnedAt: string | null;
+  returnCondition: "good" | "damaged" | "lost" | null;
+  chargeAmount: string | null;
+  item: { id: string; name: string };
+}
+interface ToolLiability {
+  totalCharged: number;
+}
 
 export function WorkerDetail({ workerId }: { workerId: string }) {
   const t = useTranslations("team");
   const tc = useTranslations("common");
   const tp = useTranslations("performance");
   const th = useTranslations("hrCases");
+  const tb = useTranslations("benefits");
+  const tt = useTranslations("toolCrib");
   const { data: me } = useMe();
 
   const [summary, setSummary] = useState<Summary | null>(null);
@@ -110,6 +132,7 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
     phone: "",
     preferredLocale: "",
     payrollEmployeeId: "",
+    isApprentice: false,
   });
   const [wageClassifications, setWageClassifications] = useState<WageClassification[] | null>(null);
   const [busy, setBusy] = useState(false);
@@ -131,6 +154,10 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
   const [addingHrCase, setAddingHrCase] = useState(false);
   const [hrCaseBusy, setHrCaseBusy] = useState(false);
   const isManager = me?.user.role === "owner" || me?.user.role === "admin";
+  const [benefitEnrollments, setBenefitEnrollments] = useState<BenefitEnrollment[] | null>(null);
+  const [benefitsBusy, setBenefitsBusy] = useState(false);
+  const [toolCheckouts, setToolCheckouts] = useState<ToolCheckout[] | null>(null);
+  const [toolLiability, setToolLiability] = useState<ToolLiability | null>(null);
   const [ptoForm, setPtoForm] = useState({ deltaHours: "", reason: "" });
   const [ptoBusy, setPtoBusy] = useState(false);
 
@@ -151,6 +178,7 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
         phone: s.worker.phone ?? "",
         preferredLocale: s.worker.preferredLocale ?? "",
         payrollEmployeeId: s.worker.payrollEmployeeId ?? "",
+        isApprentice: s.worker.isApprentice,
       });
       setCdlExpiresAt(s.worker.cdlExpiresAt ? s.worker.cdlExpiresAt.slice(0, 10) : "");
     });
@@ -161,7 +189,10 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
     apiFetch<PerformanceGoal[]>(`/performance/workers/${workerId}/goals`).then(setPerformanceGoals);
     apiFetch<PerformanceReview[]>(`/performance/workers/${workerId}/reviews`).then(setPerformanceReviews);
     if (isManager) apiFetch<HrCase[]>(`/workers/${workerId}/hr-cases`).then(setHrCases);
+    apiFetch<BenefitEnrollment[]>(`/workers/${workerId}/benefit-enrollments`).then(setBenefitEnrollments);
     apiFetch<WageClassification[]>("/wage-classifications").then(setWageClassifications);
+    apiFetch<ToolCheckout[]>(`/workers/${workerId}/tool-checkouts`).then(setToolCheckouts);
+    apiFetch<ToolLiability>(`/workers/${workerId}/tool-liability`).then(setToolLiability);
   }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -289,6 +320,16 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
     }
   }
 
+  async function updateEnrollmentStatus(enrollmentId: string, status: "waived" | "terminated") {
+    setBenefitsBusy(true);
+    try {
+      await apiFetch(`/benefits/enrollments/${enrollmentId}/status`, { method: "POST", body: JSON.stringify({ status }) });
+      load();
+    } finally {
+      setBenefitsBusy(false);
+    }
+  }
+
   async function addCertification(e: React.FormEvent) {
     e.preventDefault();
     if (!certForm.name || !certForm.expiresAt) return;
@@ -325,6 +366,7 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
           phone: form.phone || null,
           preferredLocale: form.preferredLocale || null,
           payrollEmployeeId: form.payrollEmployeeId || null,
+          isApprentice: form.isApprentice,
         }),
       });
       setSaved(true);
@@ -481,6 +523,10 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
                   </option>
                 ))}
               </select>
+            </label>
+            <label className="flex items-center gap-2 text-xs text-gray-500">
+              <input type="checkbox" checked={form.isApprentice} onChange={(e) => setForm((f) => ({ ...f, isApprentice: e.target.checked }))} />
+              {t("isApprentice")}
             </label>
             <label className="text-xs text-gray-500">
               {t("phone")}
@@ -671,6 +717,76 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
                       >
                         {t("markComplete")}
                       </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+
+          {benefitEnrollments !== null && benefitEnrollments.length > 0 && (
+            <>
+              <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700">{tb("title")}</h2>
+              <ul className="flex flex-col gap-1.5">
+                {benefitEnrollments.map((en) => (
+                  <li key={en.id} className="card text-sm">
+                    <div className="flex items-center justify-between">
+                      <span>
+                        {en.plan.name} <span className="text-xs text-gray-400">({en.tier.name})</span>
+                      </span>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                          en.status === "active" ? "bg-success-50 text-success-700" : "bg-gray-100 text-gray-600"
+                        }`}
+                      >
+                        {tb(`enrollmentStatus_${en.status}`)}
+                      </span>
+                    </div>
+                    {en.status === "active" && (
+                      <div className="mt-1.5 flex gap-2">
+                        <button onClick={() => updateEnrollmentStatus(en.id, "waived")} disabled={benefitsBusy} className="text-xs text-gray-500 hover:underline">
+                          {tb("waive")}
+                        </button>
+                        <button onClick={() => updateEnrollmentStatus(en.id, "terminated")} disabled={benefitsBusy} className="text-xs text-error-700 hover:underline">
+                          {tb("terminate")}
+                        </button>
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+
+          {toolCheckouts !== null && toolCheckouts.length > 0 && (
+            <>
+              <div className="mb-3 mt-8 flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-gray-700">{tt("checkedOutTools")}</h2>
+                {toolLiability && toolLiability.totalCharged > 0 && (
+                  <span className="text-xs font-medium text-error-700">
+                    {tt("totalCharged", { amount: toolLiability.totalCharged, currency: me?.company.currency ?? "" })}
+                  </span>
+                )}
+              </div>
+              <ul className="flex flex-col gap-1.5">
+                {toolCheckouts.map((co) => (
+                  <li key={co.id} className="card text-sm">
+                    <div className="flex items-center justify-between">
+                      <span>
+                        {co.item.name} <span className="text-xs text-gray-400">× {co.quantity}</span>
+                      </span>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                          !co.returnedAt ? "bg-warning-50 text-warning-700" : "bg-gray-100 text-gray-600"
+                        }`}
+                      >
+                        {!co.returnedAt ? tt("stillOut") : tt(`condition_${co.returnCondition}`)}
+                      </span>
+                    </div>
+                    {co.chargeAmount && (
+                      <p className="mt-1 text-xs text-error-700">
+                        {tt("chargeAmountLabel", { amount: co.chargeAmount, currency: me?.company.currency ?? "" })}
+                      </p>
                     )}
                   </li>
                 ))}

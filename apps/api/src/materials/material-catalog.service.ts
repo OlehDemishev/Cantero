@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import type {
   CreateMaterialCatalogItemInput,
   ImportResult,
+  UpdateMaterialBarcodeInput,
   UpdateMaterialPriceInput,
   UpdateMaterialReorderInput,
   UpdateMaterialSustainabilityInput,
@@ -180,6 +181,26 @@ export class MaterialCatalogService {
       data: input,
       include: { preferredSupplier: true },
     });
+  }
+
+  async updateBarcode(companyId: string, id: string, input: UpdateMaterialBarcodeInput) {
+    await this.get(companyId, id);
+    return this.prisma.materialCatalogItem.update({
+      where: { id },
+      data: { barcode: input.barcode },
+      include: { preferredSupplier: true },
+    });
+  }
+
+  /** Scan-to-identify lookup for receiving/counting workflows — includes stock levels (with any
+   * per-warehouse bin location) so a scan answers both "what is this" and "where does it go." */
+  async findByBarcode(companyId: string, barcode: string) {
+    const item = await this.prisma.materialCatalogItem.findFirst({
+      where: { companyId, barcode },
+      include: { preferredSupplier: true, stockLevels: { include: { warehouse: true } } },
+    });
+    if (!item) throw new NotFoundException("No material found for this barcode");
+    return item;
   }
 
   /** Every price this material has been ordered at, oldest first, plus the current catalog price as the latest reference point. */

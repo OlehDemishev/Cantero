@@ -1,9 +1,12 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import type { CreateVendorBillInput } from "@cantero/shared";
+import type { CreateVendorBillInput, SchedulePaymentInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { matchVendorBill } from "./vendor-bill-match";
 import { calculateApAging } from "./ap-aging";
+import { calculateDisbursementCalendar } from "./disbursement-calendar";
+
+const DISBURSEMENT_CALENDAR_WEEKS = 8;
 
 const INCLUDE = {
   supplier: true,
@@ -83,6 +86,46 @@ export class VendorBillsService {
     });
     this.audit.record(companyId, actor, "vendor_bill.approved", "VendorBill", id, `Approved bill ${bill.billNumber}`);
     return this.withMatch(updated);
+  }
+
+  /** Sets when the office plans to actually pay an approved bill — independent of the vendor's own dueDate. */
+  async schedulePayment(companyId: string, actor: AuditActor, id: string, input: SchedulePaymentInput) {
+    const bill = await this.findOrThrow(companyId, id);
+    if (bill.status !== "approved") throw new BadRequestException("Only an approved bill can have its payment scheduled");
+
+    const updated = await this.prisma.vendorBill.update({
+      where: { id },
+      data: { scheduledPaymentDate: new Date(input.scheduledPaymentDate) },
+      include: INCLUDE,
+    });
+    this.audit.record(
+      companyId,
+      actor,
+      "vendor_bill.payment_scheduled",
+      "VendorBill",
+      id,
+      `Scheduled payment for bill ${bill.billNumber} on ${input.scheduledPaymentDate.slice(0, 10)}`,
+    );
+    return this.withMatch(updated);
+  }
+
+  /** Weekly cash-outflow view of approved-unpaid bills — see disbursement-calendar.ts. */
+  async disbursementCalendar(companyId: string) {
+    const bills = await this.prisma.vendorBill.findMany({
+      where: { companyId, status: "approved" },
+      include: { supplier: { select: { name: true } }, lines: true },
+    });
+    return calculateDisbursementCalendar(
+      bills.map((b) => ({
+        id: b.id,
+        billNumber: b.billNumber,
+        supplierName: b.supplier.name,
+        amount: Math.round(b.lines.reduce((sum, l) => sum + Number(l.quantity) * Number(l.unitPrice), 0) * 100) / 100,
+        paymentDate: b.scheduledPaymentDate ?? b.dueDate,
+      })),
+      DISBURSEMENT_CALENDAR_WEEKS,
+      new Date(),
+    );
   }
 
   async markPaid(companyId: string, actor: AuditActor, id: string) {

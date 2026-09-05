@@ -77,6 +77,7 @@ export default function SubcontractorPortalDashboardPage() {
   const [bidRequests, setBidRequests] = useState<BidRequest[] | null>(null);
   const [punchListItems, setPunchListItems] = useState<MyPunchListItem[] | null>(null);
   const [bidForms, setBidForms] = useState<Record<string, { amount: string; notes: string }>>({});
+  const [bidLinesText, setBidLinesText] = useState<Record<string, string>>({});
   const [bidBusyId, setBidBusyId] = useState<string | null>(null);
   const [form, setForm] = useState({ projectId: "", description: "", amount: "" });
   const [busy, setBusy] = useState(false);
@@ -170,6 +171,19 @@ export default function SubcontractorPortalDashboardPage() {
     }
   }
 
+  function parseBidLines(text: string) {
+    const lines = text
+      .split("\n")
+      .map((row) => row.trim())
+      .filter(Boolean)
+      .map((row) => {
+        const [description, amount, included] = row.split("|").map((part) => part.trim());
+        return { description, amount: Number(amount), included: included ? included.toLowerCase().startsWith("y") : true };
+      })
+      .filter((line) => line.description && Number.isFinite(line.amount));
+    return lines.length > 0 ? lines : undefined;
+  }
+
   async function submitBid(bidRequestId: string) {
     const form = bidForms[bidRequestId];
     if (!form || !form.amount) return;
@@ -178,7 +192,11 @@ export default function SubcontractorPortalDashboardPage() {
     try {
       await subcontractorPortalApiFetch(`/subcontractor-portal/bid-requests/${bidRequestId}/bid`, {
         method: "POST",
-        body: JSON.stringify({ amount: Number(form.amount), notes: form.notes || undefined }),
+        body: JSON.stringify({
+          amount: Number(form.amount),
+          notes: form.notes || undefined,
+          lines: parseBidLines(bidLinesText[bidRequestId] ?? ""),
+        }),
       });
       loadBidRequests();
     } catch (err) {
@@ -361,32 +379,44 @@ export default function SubcontractorPortalDashboardPage() {
                     {r.description && <p className="mt-1.5 text-xs text-gray-500">{r.description}</p>}
 
                     {r.status === "open" ? (
-                      <div className="mt-2 flex flex-wrap items-end gap-2">
+                      <div className="mt-2 flex flex-col gap-2">
+                        <div className="flex flex-wrap items-end gap-2">
+                          <label className="flex flex-col gap-1 text-xs text-gray-500">
+                            {t("yourBidAmount")}
+                            <input
+                              type="number"
+                              step="0.01"
+                              className="input w-28"
+                              value={form.amount}
+                              onChange={(e) => setBidForms((f) => ({ ...f, [r.id]: { ...form, amount: e.target.value } }))}
+                            />
+                          </label>
+                          <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500">
+                            {t("notes")}
+                            <input
+                              className="input"
+                              value={form.notes}
+                              onChange={(e) => setBidForms((f) => ({ ...f, [r.id]: { ...form, notes: e.target.value } }))}
+                            />
+                          </label>
+                          <button
+                            onClick={() => submitBid(r.id)}
+                            disabled={bidBusyId === r.id || !form.amount}
+                            className="btn-primary px-3 py-1.5 text-xs"
+                          >
+                            {myBid ? t("updateBid") : t("submitBid")}
+                          </button>
+                        </div>
                         <label className="flex flex-col gap-1 text-xs text-gray-500">
-                          {t("yourBidAmount")}
-                          <input
-                            type="number"
-                            step="0.01"
-                            className="input w-28"
-                            value={form.amount}
-                            onChange={(e) => setBidForms((f) => ({ ...f, [r.id]: { ...form, amount: e.target.value } }))}
+                          {t("scopeLinesLabel")}
+                          <textarea
+                            rows={2}
+                            className="input text-xs"
+                            placeholder={t("scopeLinesPlaceholder")}
+                            value={bidLinesText[r.id] ?? ""}
+                            onChange={(e) => setBidLinesText((f) => ({ ...f, [r.id]: e.target.value }))}
                           />
                         </label>
-                        <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500">
-                          {t("notes")}
-                          <input
-                            className="input"
-                            value={form.notes}
-                            onChange={(e) => setBidForms((f) => ({ ...f, [r.id]: { ...form, notes: e.target.value } }))}
-                          />
-                        </label>
-                        <button
-                          onClick={() => submitBid(r.id)}
-                          disabled={bidBusyId === r.id || !form.amount}
-                          className="btn-primary px-3 py-1.5 text-xs"
-                        >
-                          {myBid ? t("updateBid") : t("submitBid")}
-                        </button>
                       </div>
                     ) : (
                       myBid && (

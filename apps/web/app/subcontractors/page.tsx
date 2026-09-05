@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import type { SubcontractorDocumentType } from "@cantero/shared";
+import { SUBCONTRACTOR_DIVERSITY_CATEGORIES, type SubcontractorDiversityCategory, type SubcontractorDocumentType } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { CertificateAttachment } from "@/components/certificate-attachment";
+import { SubcontractorPrequalificationPanel } from "@/components/subcontractor-prequalification-panel";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
@@ -22,6 +23,8 @@ interface Subcontractor {
   licenseNumber: string | null;
   bondingCapacity: string | null;
   safetyProgramSummary: string | null;
+  diversityCertifications: SubcontractorDiversityCategory[];
+  diversityCertificationExpiresAt: string | null;
 }
 interface PerformanceReview {
   id: string;
@@ -93,6 +96,10 @@ export default function SubcontractorsPage() {
   const [newForm, setNewForm] = useState({ name: "", email: "", phone: "" });
   const [docForm, setDocForm] = useState({ type: "general_liability_insurance" as SubcontractorDocumentType, name: "", expiresAt: "" });
   const [profileForm, setProfileForm] = useState({ specialization: "", bio: "", licenseNumber: "", bondingCapacity: "", safetyProgramSummary: "" });
+  const [diversityForm, setDiversityForm] = useState<{ categories: SubcontractorDiversityCategory[]; expiresAt: string }>({
+    categories: [],
+    expiresAt: "",
+  });
   const [linkCopiedId, setLinkCopiedId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [scorecard, setScorecard] = useState<Scorecard | null>(null);
@@ -160,7 +167,34 @@ export default function SubcontractorsPage() {
       bondingCapacity: sub?.bondingCapacity ?? "",
       safetyProgramSummary: sub?.safetyProgramSummary ?? "",
     });
+    setDiversityForm({
+      categories: sub?.diversityCertifications ?? [],
+      expiresAt: sub?.diversityCertificationExpiresAt ? sub.diversityCertificationExpiresAt.slice(0, 10) : "",
+    });
     loadDetail(id);
+  }
+
+  function toggleDiversityCategory(category: SubcontractorDiversityCategory) {
+    setDiversityForm((f) => ({
+      ...f,
+      categories: f.categories.includes(category) ? f.categories.filter((c) => c !== category) : [...f.categories, category],
+    }));
+  }
+
+  async function saveDiversityCertifications(id: string) {
+    setBusy(true);
+    try {
+      await apiFetch(`/finance/subcontractors/${id}/diversity-certifications`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          diversityCertifications: diversityForm.categories,
+          diversityCertificationExpiresAt: diversityForm.expiresAt ? new Date(diversityForm.expiresAt).toISOString() : null,
+        }),
+      });
+      load();
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function saveTaxProfile(e: React.FormEvent, id: string) {
@@ -496,6 +530,39 @@ export default function SubcontractorsPage() {
                           )}
                         </div>
                       </div>
+
+                      <div className="border-t border-gray-100 pt-3">
+                        <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("diversityCertifications")}</h3>
+                        <p className="mb-2 text-xs text-gray-500">{t("diversityCertificationsHint")}</p>
+                        <div className="mb-2 flex flex-wrap gap-3">
+                          {SUBCONTRACTOR_DIVERSITY_CATEGORIES.map((category) => (
+                            <label key={category} className="flex items-center gap-1.5 text-xs text-gray-700">
+                              <input
+                                type="checkbox"
+                                checked={diversityForm.categories.includes(category)}
+                                onChange={() => toggleDiversityCategory(category)}
+                              />
+                              {t(`diversityCategory_${category}`)}
+                            </label>
+                          ))}
+                        </div>
+                        <div className="flex flex-wrap items-end gap-2">
+                          <label className="flex flex-col gap-1 text-xs text-gray-500">
+                            {t("diversityCertificationExpiresAt")}
+                            <input
+                              type="date"
+                              className="input"
+                              value={diversityForm.expiresAt}
+                              onChange={(e) => setDiversityForm((f) => ({ ...f, expiresAt: e.target.value }))}
+                            />
+                          </label>
+                          <button onClick={() => saveDiversityCertifications(s.id)} disabled={busy} className="btn-secondary px-2.5 py-1 text-xs">
+                            {tc("save")}
+                          </button>
+                        </div>
+                      </div>
+
+                      <SubcontractorPrequalificationPanel subcontractorId={s.id} />
 
                       <div className="border-t border-gray-100 pt-3">
                         <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("scorecard")}</h3>

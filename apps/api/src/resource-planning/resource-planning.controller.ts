@@ -3,11 +3,13 @@ import {
   assignCrewSchema,
   createCrewSchema,
   createResourceAssignmentSchema,
+  levelResourceSchema,
   updateCrewMembersSchema,
   type AssignCrewInput,
   type AuthUser,
   type CreateCrewInput,
   type CreateResourceAssignmentInput,
+  type LevelResourceInput,
   type UpdateCrewMembersInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
@@ -69,5 +71,10 @@ export class ResourcePlanningController {
   @Post("crews/assign")
   assignCrew(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(assignCrewSchema)) body: AssignCrewInput) {
     return this.service.assignCrew(user.companyId, { userId: user.userId, name: user.name }, body);
+  }
+
+  @Post("level")
+  levelResource(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(levelResourceSchema)) body: LevelResourceInput) {
+    return this.service.levelResource(user.companyId, { userId: user.userId, name: user.name }, body);
   }
 }

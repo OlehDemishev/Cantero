@@ -1,8 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
+
+interface CloseoutReadiness {
+  asBuiltCount: number;
+  omManualCount: number;
+  openPunchList: number;
+  openRfis: number;
+  openWarrantyClaims: number;
+  ready: boolean;
+  missing: string[];
+}
 
 export function ProjectCloseoutPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("closeout");
@@ -14,6 +24,11 @@ export function ProjectCloseoutPanel({ projectId }: { projectId: string }) {
   const [npsBusy, setNpsBusy] = useState(false);
   const [npsError, setNpsError] = useState<string | null>(null);
   const [npsSent, setNpsSent] = useState(false);
+  const [readiness, setReadiness] = useState<CloseoutReadiness | null>(null);
+
+  useEffect(() => {
+    apiFetch<CloseoutReadiness>(`/projects/${projectId}/closeout-readiness`).then(setReadiness);
+  }, [projectId]);
 
   async function download() {
     setBusy(true);
@@ -57,6 +72,34 @@ export function ProjectCloseoutPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("title")}</h2>
+
+      {readiness && (
+        <div className="card mb-3">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-sm font-medium text-gray-700">{t("readinessTitle")}</span>
+            <span
+              className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                readiness.ready ? "bg-success-50 text-success-700" : "bg-warning-50 text-warning-700"
+              }`}
+            >
+              {readiness.ready ? t("readinessReady") : t("readinessNotReady")}
+            </span>
+          </div>
+          {!readiness.ready && (
+            <ul className="mt-2 flex flex-wrap gap-1.5">
+              {readiness.missing.map((key) => (
+                <li key={key} className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                  {t(`missing_${key}`)}
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="mt-2 text-xs text-gray-500">
+            {t("readinessCounts", { asBuilt: readiness.asBuiltCount, omManual: readiness.omManualCount })}
+          </p>
+        </div>
+      )}
+
       <div className="card flex items-center justify-between gap-4">
         <p className="text-sm text-gray-500">{t("description")}</p>
         <button onClick={download} disabled={busy} className="btn-secondary shrink-0">

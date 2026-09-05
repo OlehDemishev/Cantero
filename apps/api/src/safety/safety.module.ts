@@ -9,9 +9,25 @@ import { JhaController } from "./jha.controller";
 import { JhaService } from "./jha.service";
 import { InsuranceClaimsController } from "./insurance-claims.controller";
 import { InsuranceClaimsService } from "./insurance-claims.service";
+import { SafetyObservationsController } from "./safety-observations.controller";
+import { SafetyObservationsService } from "./safety-observations.service";
 
 @Module({
-  controllers: [IncidentReportsController, SafetyBriefingsController, SafetyAnalyticsController, JhaController, InsuranceClaimsController],
-  providers: [IncidentReportsService, SafetyBriefingsService, SafetyAnalyticsService, JhaService, InsuranceClaimsService],
+  controllers: [
+    IncidentReportsController,
+    SafetyBriefingsController,
+    SafetyAnalyticsController,
+    JhaController,
+    InsuranceClaimsController,
+    SafetyObservationsController,
+  ],
+  providers: [
+    IncidentReportsService,
+    SafetyBriefingsService,
+    SafetyAnalyticsService,
+    JhaService,
+    InsuranceClaimsService,
+    SafetyObservationsService,
+  ],
 })
 export class SafetyModule {}

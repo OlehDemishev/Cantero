@@ -13,6 +13,11 @@ export class DeficienciesController {
     return this.service.listForProject(user.companyId, projectId);
   }
 
+  @Get("heat-map")
+  heatMap(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string) {
+    return this.service.heatMap(user.companyId, projectId);
+  }
+
   @Get(":id")
   get(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.get(user.companyId, id);

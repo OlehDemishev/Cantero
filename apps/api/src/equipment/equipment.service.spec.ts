@@ -339,6 +339,39 @@ describe("EquipmentService", () => {
     });
   });
 
+  describe("tco()", () => {
+    it("combines fuel, maintenance, and depreciation into a total cost of ownership", async () => {
+      prisma.equipment.findFirst.mockResolvedValue({
+        id: "eq-1",
+        companyId: COMPANY_A,
+        name: "Loader",
+        purchaseCost: "20000",
+        purchaseDate: new Date("2024-01-01T00:00:00Z"),
+        depreciationMethod: "straight_line",
+        usefulLifeMonths: 60,
+        salvageValue: "2000",
+      });
+      prisma.equipmentFuelLog.findMany.mockResolvedValue([{ cost: "100.00", meterHours: "100.0" }]);
+      prisma.equipmentMaintenanceRecord.findMany.mockResolvedValue([{ cost: "50.00", meterHours: "200.0" }]);
+
+      const result = await service.tco(COMPANY_A, "eq-1");
+
+      expect(result.totalCost).toBeGreaterThan(150);
+      expect(result.depreciationSharePercent).not.toBeNull();
+    });
+
+    it("treats a missing depreciation schedule as zero accumulated depreciation", async () => {
+      prisma.equipment.findFirst.mockResolvedValue({ id: "eq-1", companyId: COMPANY_A, name: "Loader", purchaseCost: null, purchaseDate: null, depreciationMethod: null, usefulLifeMonths: null, salvageValue: null });
+      prisma.equipmentFuelLog.findMany.mockResolvedValue([{ cost: "100.00", meterHours: "100.0" }]);
+      prisma.equipmentMaintenanceRecord.findMany.mockResolvedValue([{ cost: "50.00", meterHours: "200.0" }]);
+
+      const result = await service.tco(COMPANY_A, "eq-1");
+
+      expect(result.totalCost).toBe(150);
+      expect(result.depreciationSharePercent).toBe(0);
+    });
+  });
+
   describe("retire()", () => {
     it("rejects retiring equipment that's currently checked out", async () => {
       prisma.equipment.findFirst.mockResolvedValue({ id: "eq-1", companyId: COMPANY_A, name: "Drill", status: "in_use" });

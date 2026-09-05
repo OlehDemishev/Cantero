@@ -33,9 +33,12 @@ import { TrainingCatalogPanel } from "@/components/training-catalog-panel";
 import { BondingCapacityPanel } from "@/components/bonding-capacity-panel";
 import { MarketingCampaignsPanel } from "@/components/marketing-campaigns-panel";
 import { SlaPoliciesPanel } from "@/components/sla-policies-panel";
+import { TaxJurisdictionsPanel } from "@/components/tax-jurisdictions-panel";
+import { BenefitPlansPanel } from "@/components/benefit-plans-panel";
 import { InspectionTemplatesPanel } from "@/components/inspection-templates-panel";
 import { CostCodesPanel } from "@/components/cost-codes-panel";
 import { WageClassificationsPanel } from "@/components/wage-classifications-panel";
+import { MarkupRulesPanel } from "@/components/markup-rules-panel";
 import { SecuritySettingsPanel } from "@/components/security-settings-panel";
 import { ReferralProgramPanel } from "@/components/referral-program-panel";
 import { CompanyCoiPanel } from "@/components/company-coi-panel";
@@ -58,9 +61,19 @@ interface Company {
   changeOrderRequiredApprovalCount: number;
   budgetAlertThresholdPercent: number;
   lateFeePercentPerMonth: string | null;
+  payrollTaxBurdenPercent: string | null;
+  workersCompBurdenPercent: string | null;
+  benefitsBurdenPercent: string | null;
+  otherBurdenPercent: string | null;
+  requireSubcontractorPrequalification: boolean;
+  subcontractorEmrThreshold: string | null;
   defaultPaymentTermsDays: number;
   rfiSlaDays: number | null;
   punchListSlaDays: number | null;
+  submittalEscalationEnabled: boolean;
+  inventoryCostingMethod: "fifo" | "weighted_average";
+  rateCatalogApprovalThresholdPercent: string | null;
+  npsDetractorFollowUpEnabled: boolean;
   invoiceRemindersEnabled: boolean;
   leadFollowUpEnabled: boolean;
   estimateRemindersEnabled: boolean;
@@ -176,9 +189,19 @@ export default function SettingsPage() {
     changeOrderRequiredApprovalCount: string;
     budgetAlertThresholdPercent: string;
     lateFeePercentPerMonth: string;
+    payrollTaxBurdenPercent: string;
+    workersCompBurdenPercent: string;
+    benefitsBurdenPercent: string;
+    otherBurdenPercent: string;
+    requireSubcontractorPrequalification: boolean;
+    subcontractorEmrThreshold: string;
     defaultPaymentTermsDays: string;
     rfiSlaDays: string;
     punchListSlaDays: string;
+    submittalEscalationEnabled: boolean;
+    inventoryCostingMethod: "fifo" | "weighted_average";
+    rateCatalogApprovalThresholdPercent: string;
+    npsDetractorFollowUpEnabled: boolean;
     invoiceRemindersEnabled: boolean;
     leadFollowUpEnabled: boolean;
     estimateRemindersEnabled: boolean;
@@ -202,9 +225,19 @@ export default function SettingsPage() {
     changeOrderRequiredApprovalCount: "1",
     budgetAlertThresholdPercent: "90",
     lateFeePercentPerMonth: "",
+    payrollTaxBurdenPercent: "",
+    workersCompBurdenPercent: "",
+    benefitsBurdenPercent: "",
+    otherBurdenPercent: "",
+    requireSubcontractorPrequalification: false,
+    subcontractorEmrThreshold: "",
     defaultPaymentTermsDays: "30",
     rfiSlaDays: "",
     punchListSlaDays: "",
+    submittalEscalationEnabled: false,
+    inventoryCostingMethod: "weighted_average",
+    rateCatalogApprovalThresholdPercent: "",
+    npsDetractorFollowUpEnabled: false,
     invoiceRemindersEnabled: false,
     leadFollowUpEnabled: false,
     estimateRemindersEnabled: false,
@@ -299,9 +332,19 @@ export default function SettingsPage() {
         changeOrderRequiredApprovalCount: String(c.changeOrderRequiredApprovalCount),
         budgetAlertThresholdPercent: String(c.budgetAlertThresholdPercent),
         lateFeePercentPerMonth: c.lateFeePercentPerMonth ?? "",
+        payrollTaxBurdenPercent: c.payrollTaxBurdenPercent ?? "",
+        workersCompBurdenPercent: c.workersCompBurdenPercent ?? "",
+        benefitsBurdenPercent: c.benefitsBurdenPercent ?? "",
+        otherBurdenPercent: c.otherBurdenPercent ?? "",
+        requireSubcontractorPrequalification: c.requireSubcontractorPrequalification,
+        subcontractorEmrThreshold: c.subcontractorEmrThreshold ?? "",
         defaultPaymentTermsDays: String(c.defaultPaymentTermsDays),
         rfiSlaDays: c.rfiSlaDays !== null ? String(c.rfiSlaDays) : "",
         punchListSlaDays: c.punchListSlaDays !== null ? String(c.punchListSlaDays) : "",
+        submittalEscalationEnabled: c.submittalEscalationEnabled,
+        inventoryCostingMethod: c.inventoryCostingMethod,
+        rateCatalogApprovalThresholdPercent: c.rateCatalogApprovalThresholdPercent ?? "",
+        npsDetractorFollowUpEnabled: c.npsDetractorFollowUpEnabled,
         invoiceRemindersEnabled: c.invoiceRemindersEnabled,
         leadFollowUpEnabled: c.leadFollowUpEnabled,
         estimateRemindersEnabled: c.estimateRemindersEnabled,
@@ -449,9 +492,21 @@ export default function SettingsPage() {
           changeOrderRequiredApprovalCount: Number(companyForm.changeOrderRequiredApprovalCount) || 1,
           budgetAlertThresholdPercent: Number(companyForm.budgetAlertThresholdPercent) || 90,
           lateFeePercentPerMonth: companyForm.lateFeePercentPerMonth ? Number(companyForm.lateFeePercentPerMonth) : null,
+          payrollTaxBurdenPercent: companyForm.payrollTaxBurdenPercent ? Number(companyForm.payrollTaxBurdenPercent) : null,
+          workersCompBurdenPercent: companyForm.workersCompBurdenPercent ? Number(companyForm.workersCompBurdenPercent) : null,
+          benefitsBurdenPercent: companyForm.benefitsBurdenPercent ? Number(companyForm.benefitsBurdenPercent) : null,
+          otherBurdenPercent: companyForm.otherBurdenPercent ? Number(companyForm.otherBurdenPercent) : null,
+          requireSubcontractorPrequalification: companyForm.requireSubcontractorPrequalification,
+          subcontractorEmrThreshold: companyForm.subcontractorEmrThreshold ? Number(companyForm.subcontractorEmrThreshold) : null,
           defaultPaymentTermsDays: Number(companyForm.defaultPaymentTermsDays) || 30,
           rfiSlaDays: companyForm.rfiSlaDays ? Number(companyForm.rfiSlaDays) : null,
           punchListSlaDays: companyForm.punchListSlaDays ? Number(companyForm.punchListSlaDays) : null,
+          submittalEscalationEnabled: companyForm.submittalEscalationEnabled,
+          inventoryCostingMethod: companyForm.inventoryCostingMethod,
+          rateCatalogApprovalThresholdPercent: companyForm.rateCatalogApprovalThresholdPercent
+            ? Number(companyForm.rateCatalogApprovalThresholdPercent)
+            : null,
+          npsDetractorFollowUpEnabled: companyForm.npsDetractorFollowUpEnabled,
           invoiceRemindersEnabled: companyForm.invoiceRemindersEnabled,
           leadFollowUpEnabled: companyForm.leadFollowUpEnabled,
           estimateRemindersEnabled: companyForm.estimateRemindersEnabled,
@@ -967,6 +1022,91 @@ export default function SettingsPage() {
               </div>
               <p className="mt-1 text-xs text-gray-500">{t("lateFeeHint")}</p>
             </div>
+            <div className="border-t border-gray-100 pt-3">
+              <p className="mb-2 text-xs font-medium text-gray-700">{t("laborBurden")}</p>
+              <p className="mb-2 text-xs text-gray-500">{t("laborBurdenHint")}</p>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <label className="flex flex-col gap-1 text-xs text-gray-500">
+                  {t("payrollTaxBurdenPercent")}
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    className="input"
+                    value={companyForm.payrollTaxBurdenPercent}
+                    onChange={(e) => setCompanyForm((f) => ({ ...f, payrollTaxBurdenPercent: e.target.value }))}
+                    disabled={!isManager}
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-gray-500">
+                  {t("workersCompBurdenPercent")}
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    className="input"
+                    value={companyForm.workersCompBurdenPercent}
+                    onChange={(e) => setCompanyForm((f) => ({ ...f, workersCompBurdenPercent: e.target.value }))}
+                    disabled={!isManager}
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-gray-500">
+                  {t("benefitsBurdenPercent")}
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    className="input"
+                    value={companyForm.benefitsBurdenPercent}
+                    onChange={(e) => setCompanyForm((f) => ({ ...f, benefitsBurdenPercent: e.target.value }))}
+                    disabled={!isManager}
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-gray-500">
+                  {t("otherBurdenPercent")}
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    className="input"
+                    value={companyForm.otherBurdenPercent}
+                    onChange={(e) => setCompanyForm((f) => ({ ...f, otherBurdenPercent: e.target.value }))}
+                    disabled={!isManager}
+                  />
+                </label>
+              </div>
+            </div>
+            <div className="border-t border-gray-100 pt-3">
+              <p className="mb-2 text-xs font-medium text-gray-700">{t("subcontractorSafetyGate")}</p>
+              <p className="mb-2 text-xs text-gray-500">{t("subcontractorSafetyGateHint")}</p>
+              <label className="mb-2 flex items-center gap-2 text-xs text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={companyForm.requireSubcontractorPrequalification}
+                  onChange={(e) => setCompanyForm((f) => ({ ...f, requireSubcontractorPrequalification: e.target.checked }))}
+                  disabled={!isManager}
+                />
+                {t("requireSubcontractorPrequalification")}
+              </label>
+              <label className="flex w-48 flex-col gap-1 text-xs text-gray-500">
+                {t("subcontractorEmrThreshold")}
+                <input
+                  type="number"
+                  min="0"
+                  max="99.99"
+                  step="0.01"
+                  placeholder={t("emrThresholdDisabledPlaceholder")}
+                  className="input"
+                  value={companyForm.subcontractorEmrThreshold}
+                  onChange={(e) => setCompanyForm((f) => ({ ...f, subcontractorEmrThreshold: e.target.value }))}
+                  disabled={!isManager}
+                />
+              </label>
+            </div>
             <CompanyHolidaysPanel canManage={isManager} />
             <div className="border-t border-gray-100 pt-3">
               <p className="mb-2 text-xs font-medium text-gray-700">{t("slaEscalation")}</p>
@@ -999,6 +1139,65 @@ export default function SettingsPage() {
                   />
                 </label>
               </div>
+              <label className="mt-3 flex items-start gap-2 text-xs text-gray-700">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={companyForm.submittalEscalationEnabled}
+                  onChange={(e) => setCompanyForm((f) => ({ ...f, submittalEscalationEnabled: e.target.checked }))}
+                  disabled={!isManager}
+                />
+                <span>
+                  <span className="font-medium text-gray-700">{t("submittalEscalationEnabled")}</span>
+                  <span className="mt-0.5 block text-gray-500">{t("submittalEscalationEnabledHint")}</span>
+                </span>
+              </label>
+            </div>
+            <div className="border-t border-gray-100 pt-3">
+              <label className="flex flex-col gap-1 text-xs text-gray-500">
+                {t("inventoryCostingMethod")}
+                <select
+                  className="input w-auto"
+                  value={companyForm.inventoryCostingMethod}
+                  onChange={(e) => setCompanyForm((f) => ({ ...f, inventoryCostingMethod: e.target.value as "fifo" | "weighted_average" }))}
+                  disabled={!isManager}
+                >
+                  <option value="weighted_average">{t("costingMethod_weighted_average")}</option>
+                  <option value="fifo">{t("costingMethod_fifo")}</option>
+                </select>
+              </label>
+              <p className="mt-1 text-xs text-gray-500">{t("inventoryCostingMethodHint")}</p>
+            </div>
+            <div className="border-t border-gray-100 pt-3">
+              <label className="flex w-48 flex-col gap-1 text-xs text-gray-500">
+                {t("rateCatalogApprovalThresholdPercent")}
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder={t("noThresholdPlaceholder")}
+                  className="input"
+                  value={companyForm.rateCatalogApprovalThresholdPercent}
+                  onChange={(e) => setCompanyForm((f) => ({ ...f, rateCatalogApprovalThresholdPercent: e.target.value }))}
+                  disabled={!isManager}
+                />
+              </label>
+              <p className="mt-1 text-xs text-gray-500">{t("rateCatalogApprovalThresholdPercentHint")}</p>
+            </div>
+            <div className="border-t border-gray-100 pt-3">
+              <label className="flex items-start gap-2 text-xs text-gray-700">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={companyForm.npsDetractorFollowUpEnabled}
+                  onChange={(e) => setCompanyForm((f) => ({ ...f, npsDetractorFollowUpEnabled: e.target.checked }))}
+                  disabled={!isManager}
+                />
+                <span>
+                  <span className="font-medium text-gray-700">{t("npsDetractorFollowUpEnabled")}</span>
+                  <span className="mt-0.5 block text-gray-500">{t("npsDetractorFollowUpEnabledHint")}</span>
+                </span>
+              </label>
             </div>
             <div className="border-t border-gray-100 pt-3">
               <label className="flex items-start gap-2 text-xs text-gray-700">
@@ -1864,9 +2063,12 @@ export default function SettingsPage() {
         {isManager && <BondingCapacityPanel />}
         {isManager && <MarketingCampaignsPanel />}
         {isManager && <SlaPoliciesPanel />}
+        {isManager && <TaxJurisdictionsPanel />}
+        {isManager && <BenefitPlansPanel />}
         {isManager && <InspectionTemplatesPanel />}
         {isManager && <CostCodesPanel />}
         {isManager && <WageClassificationsPanel />}
+        {isManager && <MarkupRulesPanel />}
       </div>
     </AuthenticatedShell>
   );

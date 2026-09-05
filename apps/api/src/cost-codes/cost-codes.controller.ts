@@ -18,6 +18,11 @@ export class CostCodesController {
     return this.service.create(user.companyId, body);
   }
 
+  @Post("import-standard-library")
+  importStandardLibrary(@CurrentUser() user: AuthUser) {
+    return this.service.importStandardLibrary(user.companyId, { userId: user.userId, name: user.name });
+  }
+
   @Patch(":id")
   update(
     @CurrentUser() user: AuthUser,

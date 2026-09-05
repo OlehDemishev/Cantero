@@ -1,12 +1,16 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from "@nestjs/common";
 import {
+  createTaskCommitmentSchema,
   createTaskDependencySchema,
   createTaskSchema,
+  resolveTaskCommitmentSchema,
   shiftProjectScheduleSchema,
   updateTaskSchema,
   type AuthUser,
+  type CreateTaskCommitmentInput,
   type CreateTaskDependencyInput,
   type CreateTaskInput,
+  type ResolveTaskCommitmentInput,
   type ShiftProjectScheduleInput,
   type UpdateTaskInput,
 } from "@cantero/shared";
@@ -36,6 +40,16 @@ export class TasksController {
   @Get("portfolio-schedule")
   portfolioSchedule(@CurrentUser() user: AuthUser, @Query("projectIds") projectIds: string) {
     return this.service.portfolioSchedule(user.companyId, projectIds.split(",").filter(Boolean));
+  }
+
+  @Get("commitments")
+  listCommitments(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string) {
+    return this.service.listCommitmentsForProject(user.companyId, projectId);
+  }
+
+  @Get("ppc-report")
+  ppcReport(@CurrentUser() user: AuthUser, @Query("projectId") projectId?: string) {
+    return this.service.ppcReport(user.companyId, projectId);
   }
 
   @Post()
@@ -73,5 +87,23 @@ export class TasksController {
   @Delete("dependencies/:dependencyId")
   removeDependency(@CurrentUser() user: AuthUser, @Param("dependencyId") dependencyId: string) {
     return this.service.removeDependency(user.companyId, dependencyId);
+  }
+
+  @Post(":id/commitments")
+  commitTask(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(createTaskCommitmentSchema)) body: CreateTaskCommitmentInput,
+  ) {
+    return this.service.commitTask(user.companyId, user.name, id, body);
+  }
+
+  @Post("commitments/:id/resolve")
+  resolveCommitment(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(resolveTaskCommitmentSchema)) body: ResolveTaskCommitmentInput,
+  ) {
+    return this.service.resolveCommitment(user.companyId, id, body);
   }
 }

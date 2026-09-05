@@ -77,6 +77,24 @@ import { SupportTicketsModule } from "./support-tickets/support-tickets.module";
 import { HrCasesModule } from "./hr-cases/hr-cases.module";
 import { LoansModule } from "./loans/loans.module";
 import { FleetModule } from "./fleet/fleet.module";
+import { TaxModule } from "./tax/tax.module";
+import { BenefitsModule } from "./benefits/benefits.module";
+import { WarrantyRegistryModule } from "./warranty-registry/warranty-registry.module";
+import { HazmatModule } from "./hazmat/hazmat.module";
+import { LienComplianceModule } from "./lien-compliance/lien-compliance.module";
+import { ToolCribModule } from "./tool-crib/tool-crib.module";
+import { EnvironmentalModule } from "./environmental/environmental.module";
+import { CommissioningModule } from "./commissioning/commissioning.module";
+import { ProgressTrackingModule } from "./progress-tracking/progress-tracking.module";
+import { TransmittalsModule } from "./transmittals/transmittals.module";
+import { ConcreteQcModule } from "./concrete-qc/concrete-qc.module";
+import { CalibrationModule } from "./calibration/calibration.module";
+import { SubcontractorPrequalificationModule } from "./subcontractor-prequalification/subcontractor-prequalification.module";
+import { AllowancesModule } from "./allowances/allowances.module";
+import { UnitPriceTmModule } from "./unit-price-tm/unit-price-tm.module";
+import { ProductivityModule } from "./productivity/productivity.module";
+import { SubcontractorClaimsModule } from "./subcontractor-claims/subcontractor-claims.module";
+import { ClientChangeRequestsModule } from "./client-change-requests/client-change-requests.module";
 
 @Module({
   imports: [
@@ -153,6 +171,24 @@ import { FleetModule } from "./fleet/fleet.module";
     HrCasesModule,
     LoansModule,
     FleetModule,
+    TaxModule,
+    BenefitsModule,
+    WarrantyRegistryModule,
+    HazmatModule,
+    LienComplianceModule,
+    ToolCribModule,
+    EnvironmentalModule,
+    CommissioningModule,
+    ProgressTrackingModule,
+    TransmittalsModule,
+    ConcreteQcModule,
+    CalibrationModule,
+    SubcontractorPrequalificationModule,
+    AllowancesModule,
+    UnitPriceTmModule,
+    ProductivityModule,
+    SubcontractorClaimsModule,
+    ClientChangeRequestsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

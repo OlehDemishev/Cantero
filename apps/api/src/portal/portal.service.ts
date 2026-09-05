@@ -1,6 +1,11 @@
 import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { Injectable } from "@nestjs/common";
-import type { ClientDecisionInput, EstimateClientDecisionInput, PortalCreateWarrantyClaimInput } from "@cantero/shared";
+import type {
+  ClientDecisionInput,
+  CreateClientChangeRequestInput,
+  EstimateClientDecisionInput,
+  PortalCreateWarrantyClaimInput,
+} from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { EstimatesService } from "../estimates/estimates.service";
 import { ChangeOrdersService } from "../estimates/change-orders.service";
@@ -287,6 +292,39 @@ export class PortalService {
       projectId: project.id,
     });
     return claim;
+  }
+
+  listChangeRequests(client: PortalClientContext) {
+    return this.prisma.clientChangeRequest.findMany({
+      where: { companyId: client.companyId, submittedByClientId: client.clientId },
+      include: { project: { select: { id: true, name: true } } },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  async createChangeRequest(client: PortalClientContext, input: CreateClientChangeRequestInput) {
+    const project = await this.prisma.project.findFirst({
+      where: { id: input.projectId, companyId: client.companyId, clientId: client.clientId },
+    });
+    if (!project) throw new NotFoundException("Project not found");
+
+    const clientRecord = await this.prisma.client.findUniqueOrThrow({ where: { id: client.clientId } });
+    const request = await this.prisma.clientChangeRequest.create({
+      data: {
+        companyId: client.companyId,
+        projectId: input.projectId,
+        submittedByClientId: client.clientId,
+        submittedByName: clientRecord.name,
+        title: input.title,
+        description: input.description,
+      },
+    });
+    this.webhooks.trigger(client.companyId, "client_change_request.submitted", {
+      clientChangeRequestId: request.id,
+      title: request.title,
+      projectId: project.id,
+    });
+    return request;
   }
 
   private async findClientEstimate(client: PortalClientContext, id: string) {

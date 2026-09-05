@@ -31,7 +31,11 @@ describe("SuppliersService.scorecard", () => {
 
   it("returns nulls for on-time rate and delay when nothing has been received yet", async () => {
     prisma.purchaseOrder.findMany.mockResolvedValue([
-      { receivedAt: null, expectedDate: new Date("2026-06-10"), lines: [{ quantity: "10", unitPrice: "5" }] },
+      {
+        receivedAt: null,
+        expectedDate: new Date("2026-06-10"),
+        lines: [{ quantity: "10", unitPrice: "5", materialCatalogItem: { defaultUnitPrice: "5" } }],
+      },
     ]);
 
     const result = await service.scorecard(COMPANY_A, "sup-1");
@@ -48,12 +52,12 @@ describe("SuppliersService.scorecard", () => {
       {
         receivedAt: new Date("2026-06-10"),
         expectedDate: new Date("2026-06-10"),
-        lines: [{ quantity: "2", unitPrice: "100" }],
+        lines: [{ quantity: "2", unitPrice: "100", materialCatalogItem: { defaultUnitPrice: "100" } }],
       },
       {
         receivedAt: new Date("2026-06-15"),
         expectedDate: new Date("2026-06-10"),
-        lines: [{ quantity: "1", unitPrice: "50" }],
+        lines: [{ quantity: "1", unitPrice: "50", materialCatalogItem: { defaultUnitPrice: "50" } }],
       },
     ]);
 
@@ -64,6 +68,25 @@ describe("SuppliersService.scorecard", () => {
     expect(result.onTimeRate).toBe(0.5);
     expect(result.averageDelayDays).toBeCloseTo(2.5, 5); // (0 + 5) / 2
     expect(result.totalSpend).toBe(250);
+  });
+
+  it("computes a quantity-weighted price variance against each line's current catalog price", async () => {
+    prisma.purchaseOrder.findMany.mockResolvedValue([
+      {
+        receivedAt: null,
+        expectedDate: null,
+        lines: [{ quantity: "10", unitPrice: "11", materialCatalogItem: { defaultUnitPrice: "10" } }],
+      },
+    ]);
+
+    const result = await service.scorecard(COMPANY_A, "sup-1");
+    expect(result.averagePriceVariancePercent).toBe(10);
+  });
+
+  it("returns a null price variance when there are no orders at all", async () => {
+    prisma.purchaseOrder.findMany.mockResolvedValue([]);
+    const result = await service.scorecard(COMPANY_A, "sup-1");
+    expect(result.averagePriceVariancePercent).toBeNull();
   });
 
   it("returns nulls for rating/wouldReorder when no reviews exist, without affecting the PO-derived fields", async () => {

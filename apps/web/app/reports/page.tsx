@@ -17,6 +17,12 @@ import { CarbonSummaryPanel } from "@/components/carbon-summary-panel";
 import { ComplianceCalendarPanel } from "@/components/compliance-calendar-panel";
 import { FixedAssetRegisterPanel } from "@/components/fixed-asset-register-panel";
 import { MarketingRoiPanel } from "@/components/marketing-roi-panel";
+import { WarrantyExpiringPanel } from "@/components/warranty-expiring-panel";
+import { TaxLiabilityPanel } from "@/components/tax-liability-panel";
+import { BenefitsCostSummaryPanel } from "@/components/benefits-cost-summary-panel";
+import { WinRatePanel } from "@/components/win-rate-panel";
+import { ProductivityScorecardPanel } from "@/components/productivity-scorecard-panel";
+import { DiversitySpendPanel } from "@/components/diversity-spend-panel";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
@@ -874,6 +880,12 @@ export default function ReportsPage() {
       <EquipmentUtilizationPanel />
       <FixedAssetRegisterPanel />
       <MarketingRoiPanel />
+      <WarrantyExpiringPanel />
+      <TaxLiabilityPanel />
+      <BenefitsCostSummaryPanel />
+      <WinRatePanel />
+      <ProductivityScorecardPanel />
+      <DiversitySpendPanel />
       <CarbonSummaryPanel />
       <CustomReportsPanel />
     </AuthenticatedShell>

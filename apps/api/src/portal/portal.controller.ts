@@ -3,12 +3,14 @@ import type { Request } from "express";
 import {
   clientDecisionSchema,
   estimateClientDecisionSchema,
+  createClientChangeRequestSchema,
   createPortalMessageSchema,
   payInvoiceSchema,
   portalAddTicketMessageSchema,
   portalCreateTicketSchema,
   portalCreateWarrantyClaimSchema,
   type ClientDecisionInput,
+  type CreateClientChangeRequestInput,
   type EstimateClientDecisionInput,
   type CreatePortalMessageInput,
   type PayInvoiceInput,
@@ -175,6 +177,19 @@ export class PortalController {
     @Body(new ZodValidationPipe(portalCreateWarrantyClaimSchema)) body: PortalCreateWarrantyClaimInput,
   ) {
     return this.service.createWarrantyClaim(client, body);
+  }
+
+  @Get("change-requests")
+  listChangeRequests(@CurrentPortalClient() client: PortalClientContext) {
+    return this.service.listChangeRequests(client);
+  }
+
+  @Post("change-requests")
+  createChangeRequest(
+    @CurrentPortalClient() client: PortalClientContext,
+    @Body(new ZodValidationPipe(createClientChangeRequestSchema)) body: CreateClientChangeRequestInput,
+  ) {
+    return this.service.createChangeRequest(client, body);
   }
 
   @Get("tickets")

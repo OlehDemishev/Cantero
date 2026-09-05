@@ -36,6 +36,7 @@ export interface DocumentListFilter {
   companyDocumentId?: string;
   insuranceClaimId?: string;
   rfiId?: string;
+  safetyDataSheetId?: string;
   category?: string;
   search?: string;
   tag?: string;
@@ -56,6 +57,7 @@ export interface DocumentAttachmentMeta {
   companyDocumentId?: string;
   insuranceClaimId?: string;
   rfiId?: string;
+  safetyDataSheetId?: string;
   /** Only meaningful alongside safetyBriefingId today — which language this file's content is in. */
   locale?: Locale;
   category?: string;
@@ -92,6 +94,7 @@ export class DocumentsService {
         ...(filter.companyDocumentId ? { companyDocumentId: filter.companyDocumentId } : {}),
         ...(filter.insuranceClaimId ? { insuranceClaimId: filter.insuranceClaimId } : {}),
         ...(filter.rfiId ? { rfiId: filter.rfiId } : {}),
+        ...(filter.safetyDataSheetId ? { safetyDataSheetId: filter.safetyDataSheetId } : {}),
         ...(category ? { category } : {}),
         ...(filter.tag ? { tags: { has: filter.tag } } : {}),
         ...(filter.search ? { name: { contains: filter.search, mode: "insensitive" as const } } : {}),
@@ -173,6 +176,10 @@ export class DocumentsService {
       const rfi = await this.prisma.rfi.findFirst({ where: { id: meta.rfiId, companyId } });
       if (!rfi) throw new NotFoundException("RFI not found");
     }
+    if (meta.safetyDataSheetId) {
+      const sds = await this.prisma.safetyDataSheet.findFirst({ where: { id: meta.safetyDataSheetId, companyId } });
+      if (!sds) throw new NotFoundException("Safety data sheet not found");
+    }
     const category: DocumentCategory = meta.category ? documentCategorySchema.parse(meta.category) : "other";
 
     const stored = await this.storage.save(companyId, file.originalname, file.buffer);
@@ -194,6 +201,7 @@ export class DocumentsService {
         companyDocumentId: meta.companyDocumentId,
         insuranceClaimId: meta.insuranceClaimId,
         rfiId: meta.rfiId,
+        safetyDataSheetId: meta.safetyDataSheetId,
         locale: meta.locale,
         name: file.originalname,
         storageKey: stored.storageKey,

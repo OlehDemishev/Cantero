@@ -78,14 +78,18 @@ describe("RateCatalogService.update", () => {
   let prisma: {
     rateCatalogItem: { findFirst: jest.Mock; update: jest.Mock };
     rateCatalogItemRevision: { create: jest.Mock };
+    rateCatalogItemPendingChange: { create: jest.Mock };
     catalog: { findFirst: jest.Mock };
+    company: { findUniqueOrThrow: jest.Mock };
   };
 
   beforeEach(async () => {
     prisma = {
       rateCatalogItem: { findFirst: jest.fn(), update: jest.fn() },
       rateCatalogItemRevision: { create: jest.fn() },
+      rateCatalogItemPendingChange: { create: jest.fn() },
       catalog: { findFirst: jest.fn() },
+      company: { findUniqueOrThrow: jest.fn().mockResolvedValue({ rateCatalogApprovalThresholdPercent: null }) },
     };
     const module = await Test.createTestingModule({
       providers: [RateCatalogService, { provide: PrismaService, useValue: prisma }, { provide: AuditService, useValue: { record: jest.fn() } }],
@@ -146,6 +150,120 @@ describe("RateCatalogService.update", () => {
 
     await expect(service.update(COMPANY_A, ACTOR, "item-1", { catalogId: "foreign-catalog" })).rejects.toThrow(NotFoundException);
     expect(prisma.rateCatalogItem.update).not.toHaveBeenCalled();
+  });
+
+  it("applies immediately when the company has no approval threshold configured, even for a big labor-hours swing", async () => {
+    prisma.rateCatalogItem.findFirst.mockResolvedValue({
+      id: "item-1", code: "TILE-01", name: "Lay tile", unit: "m2", laborHoursPerUnit: 1, formula: null, formulaParams: [],
+    });
+    prisma.rateCatalogItem.update.mockResolvedValue({ id: "item-1", laborHoursPerUnit: 5 });
+
+    const result = await service.update(COMPANY_A, ACTOR, "item-1", { laborHoursPerUnit: 5 });
+
+    expect(result.pendingApproval).toBe(false);
+    expect(prisma.rateCatalogItem.update).toHaveBeenCalled();
+    expect(prisma.rateCatalogItemPendingChange.create).not.toHaveBeenCalled();
+  });
+
+  it("holds a labor-hours swing beyond the configured threshold as a pending change instead of applying it", async () => {
+    prisma.company.findUniqueOrThrow.mockResolvedValue({ rateCatalogApprovalThresholdPercent: "10" });
+    prisma.rateCatalogItem.findFirst.mockResolvedValue({
+      id: "item-1", code: "TILE-01", name: "Lay tile", unit: "m2", laborHoursPerUnit: 1, formula: null, formulaParams: [],
+    });
+    prisma.rateCatalogItemPendingChange.create.mockResolvedValue({ id: "pending-1", status: "pending" });
+
+    const result = await service.update(COMPANY_A, ACTOR, "item-1", { laborHoursPerUnit: 5 });
+
+    expect(result.pendingApproval).toBe(true);
+    expect(prisma.rateCatalogItem.update).not.toHaveBeenCalled();
+    expect(prisma.rateCatalogItemPendingChange.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ rateCatalogItemId: "item-1", laborHoursPerUnit: 5, proposedByName: "Estimator" }) }),
+    );
+  });
+
+  it("applies immediately when the swing is within the configured threshold", async () => {
+    prisma.company.findUniqueOrThrow.mockResolvedValue({ rateCatalogApprovalThresholdPercent: "10" });
+    prisma.rateCatalogItem.findFirst.mockResolvedValue({
+      id: "item-1", code: "TILE-01", name: "Lay tile", unit: "m2", laborHoursPerUnit: 1, formula: null, formulaParams: [],
+    });
+    prisma.rateCatalogItem.update.mockResolvedValue({ id: "item-1", laborHoursPerUnit: 1.05 });
+
+    const result = await service.update(COMPANY_A, ACTOR, "item-1", { laborHoursPerUnit: 1.05 });
+
+    expect(result.pendingApproval).toBe(false);
+    expect(prisma.rateCatalogItemPendingChange.create).not.toHaveBeenCalled();
+  });
+});
+
+describe("RateCatalogService — pending change decisions", () => {
+  let service: RateCatalogService;
+  let prisma: {
+    rateCatalogItem: { findFirst: jest.Mock; update: jest.Mock };
+    rateCatalogItemRevision: { create: jest.Mock };
+    rateCatalogItemPendingChange: { findFirst: jest.Mock; update: jest.Mock };
+  };
+
+  beforeEach(async () => {
+    prisma = {
+      rateCatalogItem: { findFirst: jest.fn(), update: jest.fn() },
+      rateCatalogItemRevision: { create: jest.fn() },
+      rateCatalogItemPendingChange: { findFirst: jest.fn(), update: jest.fn() },
+    };
+    const module = await Test.createTestingModule({
+      providers: [RateCatalogService, { provide: PrismaService, useValue: prisma }, { provide: AuditService, useValue: { record: jest.fn() } }],
+    }).compile();
+    service = module.get(RateCatalogService);
+  });
+
+  describe("approvePendingChange()", () => {
+    it("throws when the pending change doesn't belong to this company", async () => {
+      prisma.rateCatalogItemPendingChange.findFirst.mockResolvedValue(null);
+      await expect(service.approvePendingChange(COMPANY_A, ACTOR, "pending-1", {})).rejects.toThrow(NotFoundException);
+    });
+
+    it("rejects deciding a change that was already decided", async () => {
+      prisma.rateCatalogItemPendingChange.findFirst.mockResolvedValue({ id: "pending-1", status: "approved" });
+      await expect(service.approvePendingChange(COMPANY_A, ACTOR, "pending-1", {})).rejects.toThrow(BadRequestException);
+    });
+
+    it("applies the proposed laborHoursPerUnit and marks the change approved", async () => {
+      prisma.rateCatalogItemPendingChange.findFirst.mockResolvedValue({
+        id: "pending-1",
+        status: "pending",
+        rateCatalogItemId: "item-1",
+        name: null,
+        unit: null,
+        laborHoursPerUnit: "5",
+        catalogId: null,
+        formula: null,
+        formulaParams: [],
+      });
+      prisma.rateCatalogItem.findFirst.mockResolvedValue({
+        id: "item-1", code: "TILE-01", name: "Lay tile", unit: "m2", laborHoursPerUnit: 1, formula: null, formulaParams: [],
+      });
+      prisma.rateCatalogItem.update.mockResolvedValue({ id: "item-1", laborHoursPerUnit: 5 });
+
+      await service.approvePendingChange(COMPANY_A, ACTOR, "pending-1", { decisionNote: "Confirmed with foreman" });
+
+      expect(prisma.rateCatalogItem.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ laborHoursPerUnit: 5 }) }));
+      expect(prisma.rateCatalogItemPendingChange.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: "pending-1" }, data: expect.objectContaining({ status: "approved", decisionNote: "Confirmed with foreman" }) }),
+      );
+    });
+  });
+
+  describe("rejectPendingChange()", () => {
+    it("marks the change rejected without touching the rate catalog item", async () => {
+      prisma.rateCatalogItemPendingChange.findFirst.mockResolvedValue({ id: "pending-1", status: "pending", rateCatalogItemId: "item-1" });
+      prisma.rateCatalogItemPendingChange.update.mockResolvedValue({ id: "pending-1", status: "rejected" });
+
+      await service.rejectPendingChange(COMPANY_A, ACTOR, "pending-1", { decisionNote: "Not justified" });
+
+      expect(prisma.rateCatalogItem.update).not.toHaveBeenCalled();
+      expect(prisma.rateCatalogItemPendingChange.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ status: "rejected", decisionNote: "Not justified" }) }),
+      );
+    });
   });
 });
 

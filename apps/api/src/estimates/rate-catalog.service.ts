@@ -1,10 +1,17 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import type { CreateRateCatalogItemInput, EvaluateFormulaInput, ImportResult, UpdateRateCatalogItemInput } from "@cantero/shared";
+import type {
+  CreateRateCatalogItemInput,
+  DecideRateCatalogPendingChangeInput,
+  EvaluateFormulaInput,
+  ImportResult,
+  UpdateRateCatalogItemInput,
+} from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { parseCsvRecords } from "../common/csv";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { metricMaterials, metricRateItems, imperialMaterials, imperialRateItems } from "./starter-catalog-data";
 import { FormulaError, assertValidParamName, evaluateFormula } from "./formula";
+import { rateChangeRequiresApproval } from "./rate-catalog-approval";
 
 @Injectable()
 export class RateCatalogService {
@@ -61,9 +68,11 @@ export class RateCatalogService {
     });
   }
 
-  /** Every edit snapshots the item's prior state into RateCatalogItemRevision first — there was
-   * no update() at all before this phase (items could only be created), so this both adds the
-   * missing edit capability and makes every edit auditable via history(). */
+  /** Every applied edit snapshots the item's prior state into RateCatalogItemRevision first —
+   * there was no update() at all before this phase (items could only be created), so this both
+   * added the missing edit capability and made every edit auditable via history(). A
+   * laborHoursPerUnit swing beyond Company.rateCatalogApprovalThresholdPercent is held as a
+   * RateCatalogItemPendingChange instead — see applyPendingChange()/rejectPendingChange(). */
   async update(companyId: string, actor: AuditActor, id: string, input: UpdateRateCatalogItemInput) {
     const item = await this.get(companyId, id);
     if (input.catalogId) await this.assertCatalogOwned(companyId, input.catalogId);
@@ -71,13 +80,55 @@ export class RateCatalogService {
     const formulaParams = input.formulaParams ?? item.formulaParams;
     if (formula) this.validateFormula(formula, formulaParams);
 
+    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId }, select: { rateCatalogApprovalThresholdPercent: true } });
+    const requiresApproval = rateChangeRequiresApproval({
+      currentLaborHoursPerUnit: Number(item.laborHoursPerUnit),
+      newLaborHoursPerUnit: input.laborHoursPerUnit,
+      thresholdPercent: company.rateCatalogApprovalThresholdPercent !== null ? Number(company.rateCatalogApprovalThresholdPercent) : null,
+    });
+
+    if (requiresApproval) {
+      const pending = await this.prisma.rateCatalogItemPendingChange.create({
+        data: {
+          companyId,
+          rateCatalogItemId: item.id,
+          name: input.name,
+          unit: input.unit,
+          laborHoursPerUnit: input.laborHoursPerUnit,
+          catalogId: input.catalogId,
+          formula: input.formula,
+          formulaParams: input.formulaParams,
+          proposedByUserId: actor.userId,
+          proposedByName: actor.name,
+        },
+      });
+      this.audit.record(
+        companyId,
+        actor,
+        "rate_catalog_item.change_proposed",
+        "RateCatalogItem",
+        item.id,
+        `Proposed a labor-hours change on "${item.name}" pending approval (${item.laborHoursPerUnit} → ${input.laborHoursPerUnit})`,
+      );
+      return { pendingApproval: true as const, pendingChange: pending };
+    }
+
+    return { pendingApproval: false as const, item: await this.applyUpdate(companyId, actor, item, input) };
+  }
+
+  private async applyUpdate(
+    companyId: string,
+    actor: AuditActor,
+    item: { id: string; code: string; name: string; unit: string; laborHoursPerUnit: unknown },
+    input: UpdateRateCatalogItemInput,
+  ) {
     await this.prisma.rateCatalogItemRevision.create({
       data: {
         rateCatalogItemId: item.id,
         code: item.code,
         name: item.name,
         unit: item.unit,
-        laborHoursPerUnit: item.laborHoursPerUnit,
+        laborHoursPerUnit: item.laborHoursPerUnit as never,
         changedByUserId: actor.userId,
         changedByName: actor.name,
       },
@@ -95,6 +146,55 @@ export class RateCatalogService {
       },
       include: { materials: { include: { materialCatalogItem: true } } },
     });
+  }
+
+  listPendingChanges(companyId: string) {
+    return this.prisma.rateCatalogItemPendingChange.findMany({
+      where: { companyId, status: "pending" },
+      include: { rateCatalogItem: { select: { id: true, code: true, name: true, laborHoursPerUnit: true } } },
+      orderBy: { proposedAt: "asc" },
+    });
+  }
+
+  async approvePendingChange(companyId: string, actor: AuditActor, id: string, input: DecideRateCatalogPendingChangeInput) {
+    const pending = await this.findPendingChangeOrThrow(companyId, id);
+    const item = await this.get(companyId, pending.rateCatalogItemId);
+
+    const updated = await this.applyUpdate(companyId, actor, item, {
+      name: pending.name ?? undefined,
+      unit: pending.unit ?? undefined,
+      laborHoursPerUnit: pending.laborHoursPerUnit !== null ? Number(pending.laborHoursPerUnit) : undefined,
+      catalogId: pending.catalogId,
+      formula: pending.formula,
+      formulaParams: pending.formulaParams,
+    });
+
+    await this.prisma.rateCatalogItemPendingChange.update({
+      where: { id: pending.id },
+      data: { status: "approved", decidedByUserId: actor.userId, decidedByName: actor.name, decidedAt: new Date(), decisionNote: input.decisionNote },
+    });
+
+    this.audit.record(companyId, actor, "rate_catalog_item.change_approved", "RateCatalogItem", item.id, `Approved a proposed labor-hours change on "${item.name}"`);
+    return updated;
+  }
+
+  async rejectPendingChange(companyId: string, actor: AuditActor, id: string, input: DecideRateCatalogPendingChangeInput) {
+    const pending = await this.findPendingChangeOrThrow(companyId, id);
+
+    const updated = await this.prisma.rateCatalogItemPendingChange.update({
+      where: { id: pending.id },
+      data: { status: "rejected", decidedByUserId: actor.userId, decidedByName: actor.name, decidedAt: new Date(), decisionNote: input.decisionNote },
+    });
+
+    this.audit.record(companyId, actor, "rate_catalog_item.change_rejected", "RateCatalogItem", pending.rateCatalogItemId, `Rejected a proposed labor-hours change`);
+    return updated;
+  }
+
+  private async findPendingChangeOrThrow(companyId: string, id: string) {
+    const pending = await this.prisma.rateCatalogItemPendingChange.findFirst({ where: { id, companyId } });
+    if (!pending) throw new NotFoundException("Pending change not found");
+    if (pending.status !== "pending") throw new BadRequestException(`This change was already ${pending.status}`);
+    return pending;
   }
 
   history(companyId: string, id: string) {

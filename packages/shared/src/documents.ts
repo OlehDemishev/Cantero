@@ -8,6 +8,8 @@ export const DOCUMENT_CATEGORIES = [
   "insurance_certificate",
   "gallery_before",
   "gallery_after",
+  "as_built",
+  "om_manual",
   "other",
 ] as const;
 export const documentCategorySchema = z.enum(DOCUMENT_CATEGORIES);

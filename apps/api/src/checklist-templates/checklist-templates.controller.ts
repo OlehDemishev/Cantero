@@ -41,7 +41,12 @@ export class ChecklistTemplatesController {
     @Param("id") id: string,
     @Body(new ZodValidationPipe(updateChecklistTemplateSchema)) body: UpdateChecklistTemplateInput,
   ) {
-    return this.service.update(user.companyId, id, body);
+    return this.service.update(user.companyId, { userId: user.userId, name: user.name }, id, body);
+  }
+
+  @Get(":id/history")
+  history(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.history(user.companyId, id);
   }
 
   @Delete(":id")

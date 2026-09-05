@@ -29,6 +29,7 @@ interface PublicChangeOrder {
   markupAmount: string;
   taxAmount: string;
   grandTotal: string;
+  scheduleImpactDays: number | null;
 }
 
 export default function PublicChangeOrderPage({ params }: { params: Promise<{ token: string }> }) {
@@ -159,6 +160,13 @@ export default function PublicChangeOrderPage({ params }: { params: Promise<{ to
               </dd>
             </div>
           </dl>
+
+          {changeOrder.scheduleImpactDays !== null && (
+            <p className="mt-3 text-sm text-gray-600">
+              {t("scheduleImpact")}: {changeOrder.scheduleImpactDays >= 0 ? "+" : ""}
+              {changeOrder.scheduleImpactDays} {t("days")}
+            </p>
+          )}
 
           {changeOrder.clientDecision === "pending" ? (
             <div className="mt-6 border-t border-gray-100 pt-4">

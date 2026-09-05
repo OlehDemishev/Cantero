@@ -18,6 +18,10 @@ export interface MeResponse {
     changeOrderApprovalThresholdAmount: string | null;
     changeOrderRequiredApprovalCount: number;
     budgetAlertThresholdPercent: number;
+    payrollTaxBurdenPercent: string | null;
+    workersCompBurdenPercent: string | null;
+    benefitsBurdenPercent: string | null;
+    otherBurdenPercent: string | null;
   };
   subscriptionStatus: "incomplete" | "active" | "past_due" | "canceled";
   emailDigestFrequency: "off" | "daily" | "weekly";

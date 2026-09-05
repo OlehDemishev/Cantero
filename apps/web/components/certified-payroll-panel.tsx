@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import type { CertifiedPayrollLine } from "@cantero/shared";
+import type { ApprenticeRatioViolation, CertifiedPayrollLine } from "@cantero/shared";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 
 interface Project {
@@ -23,6 +23,7 @@ interface CertifiedPayrollReport {
 interface PreviewResult {
   lines: CertifiedPayrollLine[];
   totalGrossPay: number;
+  apprenticeRatioViolations: ApprenticeRatioViolation[];
 }
 
 function todayIso() {
@@ -199,6 +200,17 @@ export function CertifiedPayrollPanel({ projectId }: { projectId: string }) {
 
           {preview && (
             <div className="mb-4 overflow-x-auto">
+              {preview.apprenticeRatioViolations.filter((v) => !v.compliant).length > 0 && (
+                <ul className="mb-3 flex flex-col gap-1">
+                  {preview.apprenticeRatioViolations
+                    .filter((v) => !v.compliant)
+                    .map((v) => (
+                      <li key={v.trade} className="rounded-md bg-error-50 px-2.5 py-1.5 text-xs text-error-700">
+                        {t("apprenticeRatioViolation", { trade: v.trade, apprenticeCount: v.apprenticeCount, maxAllowed: v.maxAllowedApprentices, ratio: v.ratio })}
+                      </li>
+                    ))}
+                </ul>
+              )}
               {preview.lines.length === 0 ? (
                 <p className="text-sm text-gray-400">{t("noHoursThisWeek")}</p>
               ) : (
@@ -210,6 +222,7 @@ export function CertifiedPayrollPanel({ projectId }: { projectId: string }) {
                       <th className="pb-1 pr-3">{t("regularHours")}</th>
                       <th className="pb-1 pr-3">{t("overtimeHours")}</th>
                       <th className="pb-1 pr-3">{t("rate")}</th>
+                      <th className="pb-1 pr-3">{t("fringe")}</th>
                       <th className="pb-1 pr-3">{t("grossPay")}</th>
                     </tr>
                   </thead>
@@ -217,10 +230,21 @@ export function CertifiedPayrollPanel({ projectId }: { projectId: string }) {
                     {preview.lines.map((line) => (
                       <tr key={line.workerId} className="border-t border-gray-100 dark:border-gray-800">
                         <td className="py-1 pr-3">{line.workerName}</td>
-                        <td className="py-1 pr-3 text-gray-500">{line.trade ?? t("unclassified")}</td>
+                        <td className="py-1 pr-3 text-gray-500">
+                          {line.trade ?? t("unclassified")}
+                          {line.isApprentice && <span className="ml-1 rounded-full bg-brand-50 px-1.5 py-0.5 text-xs text-brand-700">{t("apprentice")}</span>}
+                        </td>
                         <td className="py-1 pr-3">{line.regularHours.toFixed(2)}</td>
                         <td className="py-1 pr-3">{line.overtimeHours.toFixed(2)}</td>
                         <td className="py-1 pr-3">{line.ratePerHour !== null ? line.ratePerHour.toFixed(2) : "—"}</td>
+                        <td className="py-1 pr-3 text-gray-500">
+                          {line.fringeRate.toFixed(2)}
+                          {line.fringeBreakdown.length > 0 && (
+                            <span className="ml-1 text-xs text-gray-400" title={line.fringeBreakdown.map((f) => `${f.name}: ${f.amount.toFixed(2)}`).join(", ")}>
+                              ({line.fringeBreakdown.length})
+                            </span>
+                          )}
+                        </td>
                         <td className="py-1 pr-3">
                           {line.grossPay !== null ? line.grossPay.toFixed(2) : "—"}
                           {line.belowPrevailingRate && <span className="ml-1 text-error-600" title={t("belowPrevailingRate")}>⚠</span>}

@@ -10,6 +10,8 @@ import { MessageTemplatesService } from "../message-templates/message-templates.
 
 const PROMOTER_MIN_SCORE = 9;
 const DETRACTOR_MAX_SCORE = 6;
+const DAY_MS = 24 * 60 * 60 * 1000;
+const DETRACTOR_FOLLOWUP_DUE_DAYS = 3;
 
 @Injectable()
 export class NpsSurveysService {
@@ -61,7 +63,7 @@ export class NpsSurveysService {
   }
 
   async submit(token: string, input: SubmitNpsSurveyInput) {
-    const survey = await this.prisma.npsSurvey.findUnique({ where: { token }, include: { project: true } });
+    const survey = await this.prisma.npsSurvey.findUnique({ where: { token }, include: { project: { include: { client: true } } } });
     if (!survey) throw new NotFoundException("Survey link not found");
     if (survey.respondedAt) throw new BadRequestException("This survey has already been submitted");
 
@@ -69,6 +71,10 @@ export class NpsSurveysService {
       where: { id: survey.id },
       data: { score: input.score, comment: input.comment, respondedAt: new Date() },
     });
+
+    if (input.score <= DETRACTOR_MAX_SCORE) {
+      await this.createDetractorFollowUp(survey.companyId, survey.project, updated);
+    }
 
     this.webhooks.trigger(survey.companyId, "nps_survey.responded", {
       projectId: survey.projectId,
@@ -78,6 +84,57 @@ export class NpsSurveysService {
     });
 
     return updated;
+  }
+
+  /** Off by default — see Company.npsDetractorFollowUpEnabled. Adds a Task to the project so the
+   * detractor doesn't just sit in a trend report unnoticed, and emails the owner(s) the same way
+   * SlaEscalationService flags an overdue item. */
+  private async createDetractorFollowUp(
+    companyId: string,
+    project: { id: string; name: string; client: { name: string } | null },
+    survey: { score: number | null; comment: string | null },
+  ) {
+    const company = await this.prisma.company.findUniqueOrThrow({
+      where: { id: companyId },
+      select: { npsDetractorFollowUpEnabled: true, name: true },
+    });
+    if (!company.npsDetractorFollowUpEnabled) return;
+
+    const maxSort = await this.prisma.task.aggregate({ where: { projectId: project.id }, _max: { sortOrder: true } });
+    await this.prisma.task.create({
+      data: {
+        projectId: project.id,
+        name: `Follow up on low NPS score (${survey.score}/10)${project.client ? ` from ${project.client.name}` : ""}`,
+        dueDate: new Date(Date.now() + DETRACTOR_FOLLOWUP_DUE_DAYS * DAY_MS),
+        sortOrder: (maxSort._max.sortOrder ?? 0) + 1,
+      },
+    });
+
+    await this.notifyOwnersOfDetractor(companyId, company.name, project, survey);
+  }
+
+  private async notifyOwnersOfDetractor(
+    companyId: string,
+    companyName: string,
+    project: { id: string; name: string; client: { name: string } | null },
+    survey: { score: number | null; comment: string | null },
+  ) {
+    const owners = await this.prisma.membership.findMany({ where: { companyId, role: "owner" }, include: { user: { select: { email: true } } } });
+    if (owners.length === 0) return;
+
+    const webOrigin = this.config.get<string>("WEB_ORIGIN") ?? "http://localhost:3000";
+    const link = `${webOrigin}/projects/${project.id}`;
+    const subject = `Low NPS score (${survey.score}/10) on "${project.name}"`;
+    const body = `${project.client?.name ?? "The client"} scored ${survey.score}/10${survey.comment ? `: "${survey.comment}"` : "."} A follow-up task was added to the project.`;
+
+    for (const owner of owners) {
+      await this.mail.send({
+        to: owner.user.email,
+        subject: `[${companyName}] ${subject}`,
+        html: `<div style="font-family:sans-serif;max-width:480px;"><h2 style="margin-bottom:4px;">${subject}</h2><p>${body}</p><p style="margin-top:16px;"><a href="${link}">Open in Cantero →</a></p></div>`,
+        text: `${subject}\n\n${body}\n\nOpen: ${link}`,
+      });
+    }
   }
 
   /** Standard NPS formula: %promoters (9-10) minus %detractors (0-6), on a -100..100 scale. */

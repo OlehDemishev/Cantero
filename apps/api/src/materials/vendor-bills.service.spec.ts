@@ -152,4 +152,42 @@ describe("VendorBillsService", () => {
       expect(result.match.status).toBe("matched");
     });
   });
+
+  describe("schedulePayment()", () => {
+    it("rejects scheduling a payment for a bill that isn't approved", async () => {
+      prisma.vendorBill.findFirst.mockResolvedValue(bill({ status: "draft" }));
+      await expect(
+        service.schedulePayment(COMPANY_A, { userId: "u1", name: "Accountant" }, "bill-1", { scheduledPaymentDate: "2026-09-15T00:00:00.000Z" }),
+      ).rejects.toThrow(BadRequestException);
+      expect(prisma.vendorBill.update).not.toHaveBeenCalled();
+    });
+
+    it("sets the scheduled payment date on an approved bill", async () => {
+      prisma.vendorBill.findFirst.mockResolvedValue(bill({ status: "approved" }));
+      prisma.vendorBill.update.mockResolvedValue(bill({ status: "approved", scheduledPaymentDate: new Date("2026-09-15T00:00:00.000Z") }));
+
+      await service.schedulePayment(COMPANY_A, { userId: "u1", name: "Accountant" }, "bill-1", { scheduledPaymentDate: "2026-09-15T00:00:00.000Z" });
+
+      expect(prisma.vendorBill.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { scheduledPaymentDate: new Date("2026-09-15T00:00:00.000Z") } }),
+      );
+    });
+  });
+
+  describe("disbursementCalendar()", () => {
+    it("buckets approved bills by scheduledPaymentDate, falling back to dueDate", async () => {
+      const inOneWeek = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
+      prisma.vendorBill.findMany.mockResolvedValue([
+        bill({ status: "approved", scheduledPaymentDate: new Date(inOneWeek), dueDate: null, lines: [{ quantity: 2, unitPrice: 100 }] }),
+        bill({ status: "approved", scheduledPaymentDate: null, dueDate: new Date(inOneWeek), lines: [{ quantity: 1, unitPrice: 50 }] }),
+      ]);
+
+      const result = await service.disbursementCalendar(COMPANY_A);
+
+      expect(prisma.vendorBill.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { companyId: COMPANY_A, status: "approved" } }));
+      const totalScheduled = result.buckets.reduce((sum, b) => sum + b.total, 0);
+      expect(totalScheduled).toBe(250);
+      expect(result.unscheduledTotal).toBe(0);
+    });
+  });
 });

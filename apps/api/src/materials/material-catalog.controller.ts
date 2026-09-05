@@ -2,11 +2,13 @@ import { BadRequestException, Body, Controller, Get, Param, Patch, Post, Query, 
 import { FileInterceptor } from "@nestjs/platform-express";
 import {
   createMaterialCatalogItemSchema,
+  updateMaterialBarcodeSchema,
   updateMaterialPriceSchema,
   updateMaterialReorderSchema,
   updateMaterialSustainabilitySchema,
   type AuthUser,
   type CreateMaterialCatalogItemInput,
+  type UpdateMaterialBarcodeInput,
   type UpdateMaterialPriceInput,
   type UpdateMaterialReorderInput,
   type UpdateMaterialSustainabilityInput,
@@ -24,10 +26,15 @@ export class MaterialCatalogController {
     return this.service.list(user.companyId);
   }
 
-  // Declared before ":id" so "price-changes" isn't swallowed as a material id.
+  // Declared before ":id" so "price-changes"/"by-barcode" aren't swallowed as a material id.
   @Get("price-changes")
   priceChanges(@CurrentUser() user: AuthUser, @Query("sinceDays") sinceDays?: string) {
     return this.service.priceChanges(user.companyId, sinceDays ? Number(sinceDays) : undefined);
+  }
+
+  @Get("by-barcode/:barcode")
+  findByBarcode(@CurrentUser() user: AuthUser, @Param("barcode") barcode: string) {
+    return this.service.findByBarcode(user.companyId, barcode);
   }
 
   @Get(":id")
@@ -90,5 +97,14 @@ export class MaterialCatalogController {
     @Body(new ZodValidationPipe(updateMaterialSustainabilitySchema)) body: UpdateMaterialSustainabilityInput,
   ) {
     return this.service.updateSustainability(user.companyId, id, body);
+  }
+
+  @Patch(":id/barcode")
+  updateBarcode(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(updateMaterialBarcodeSchema)) body: UpdateMaterialBarcodeInput,
+  ) {
+    return this.service.updateBarcode(user.companyId, id, body);
   }
 }

@@ -1,5 +1,11 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import type { BulkActionResult, CreatePunchListItemInput, SetDrawingPinInput, UpdatePunchListItemInput } from "@cantero/shared";
+import type {
+  BulkActionResult,
+  CreatePunchListItemInput,
+  LinkPunchListChangeOrderInput,
+  SetDrawingPinInput,
+  UpdatePunchListItemInput,
+} from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { WebhooksService } from "../common/webhooks/webhooks.service";
@@ -45,6 +51,7 @@ export class PunchListService {
         assigneeWorkerId: input.assigneeWorkerId,
         assigneeSubcontractorId: input.assigneeSubcontractorId,
         dueDate: input.dueDate ? new Date(input.dueDate) : undefined,
+        estimatedCostImpact: input.estimatedCostImpact,
         createdByUserId: actor.userId,
         createdByName: actor.name,
       },
@@ -52,6 +59,20 @@ export class PunchListService {
     });
     this.audit.record(companyId, actor, "punch_list.created", "PunchListItem", item.id, `Logged punch list item "${item.title}"`);
     return item;
+  }
+
+  /** Same estimate-then-confirm-via-CO pattern as RfiService.linkChangeOrder(). */
+  async linkChangeOrder(companyId: string, id: string, input: LinkPunchListChangeOrderInput) {
+    const item = await this.get(companyId, id);
+    if (input.changeOrderId) {
+      const changeOrder = await this.prisma.changeOrder.findFirst({ where: { id: input.changeOrderId, companyId } });
+      if (!changeOrder) throw new NotFoundException("Change order not found");
+    }
+    return this.prisma.punchListItem.update({
+      where: { id: item.id },
+      data: { changeOrderId: input.changeOrderId },
+      include: { assignee: { select: { id: true, name: true } }, assigneeSubcontractor: { select: { id: true, name: true } } },
+    });
   }
 
   async setPin(companyId: string, id: string, input: SetDrawingPinInput) {
@@ -80,6 +101,7 @@ export class PunchListService {
         assigneeWorkerId: input.assigneeWorkerId,
         assigneeSubcontractorId: input.assigneeSubcontractorId,
         dueDate: input.dueDate === null ? null : input.dueDate ? new Date(input.dueDate) : undefined,
+        estimatedCostImpact: input.estimatedCostImpact,
       },
       include: { assignee: { select: { id: true, name: true } }, assigneeSubcontractor: { select: { id: true, name: true } } },
     });

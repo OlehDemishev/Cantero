@@ -1,13 +1,21 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import type { CreateWageClassificationInput, UpdateWageClassificationInput } from "@cantero/shared";
+import type { CreateFringeBenefitFundInput, CreateWageClassificationInput, UpdateWageClassificationInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { AuditService, type AuditActor } from "../common/audit/audit.service";
 
 @Injectable()
 export class WageClassificationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   list(companyId: string) {
-    return this.prisma.wageClassification.findMany({ where: { companyId }, orderBy: { trade: "asc" } });
+    return this.prisma.wageClassification.findMany({
+      where: { companyId },
+      include: { fringeBenefitFunds: true },
+      orderBy: { trade: "asc" },
+    });
   }
 
   create(companyId: string, input: CreateWageClassificationInput) {
@@ -23,6 +31,29 @@ export class WageClassificationsService {
     await this.findOrThrow(companyId, id);
     // Workers tagged with this classification fall back to unclassified (onDelete: SetNull) rather than blocking deletion.
     await this.prisma.wageClassification.delete({ where: { id } });
+    return { ok: true };
+  }
+
+  async addFringeFund(companyId: string, actor: AuditActor, wageClassificationId: string, input: CreateFringeBenefitFundInput) {
+    const classification = await this.findOrThrow(companyId, wageClassificationId);
+    const fund = await this.prisma.fringeBenefitFund.create({
+      data: { companyId, wageClassificationId, fundType: input.fundType, name: input.name, ratePerHour: input.ratePerHour },
+    });
+    this.audit.record(
+      companyId,
+      actor,
+      "fringe_benefit_fund.created",
+      "FringeBenefitFund",
+      fund.id,
+      `Added "${input.name}" fringe fund to ${classification.trade}`,
+    );
+    return fund;
+  }
+
+  async deleteFringeFund(companyId: string, id: string) {
+    const fund = await this.prisma.fringeBenefitFund.findFirst({ where: { id, companyId } });
+    if (!fund) throw new NotFoundException("Fringe benefit fund not found");
+    await this.prisma.fringeBenefitFund.delete({ where: { id } });
     return { ok: true };
   }
 

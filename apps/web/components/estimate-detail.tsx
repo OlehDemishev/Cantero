@@ -8,6 +8,8 @@ import { ProgressBillingPanel } from "@/components/progress-billing-panel";
 import { EstimateSuggestionsPanel } from "@/components/estimate-suggestions-panel";
 import { AssemblyQuickAddPanel } from "@/components/assembly-quick-add-panel";
 import { RevisionDiffPanel } from "@/components/revision-diff-panel";
+import { EstimateAlternatesPanel } from "@/components/estimate-alternates-panel";
+import { ChangeOrderProfitabilityPanel } from "@/components/change-order-profitability-panel";
 import type { CostCode } from "@/components/cost-codes-panel";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
@@ -124,6 +126,7 @@ interface ChangeOrder {
   signerName: string | null;
   decisionAt: string | null;
   approvals: ChangeOrderApproval[];
+  scheduleImpactDays: number | null;
 }
 interface RevisionSummary {
   id: string;
@@ -223,6 +226,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
   const [changeOrders, setChangeOrders] = useState<ChangeOrder[] | null>(null);
   const [coForm, setCoForm] = useState({ title: "", description: "" });
   const [coLineForm, setCoLineForm] = useState<Record<string, { rateCatalogItemId: string; quantity: string }>>({});
+  const [coScheduleImpactForm, setCoScheduleImpactForm] = useState<Record<string, string>>({});
   const [coEmailSentTo, setCoEmailSentTo] = useState<Record<string, string | null>>({});
   const [coLinkCopiedId, setCoLinkCopiedId] = useState<string | null>(null);
 
@@ -412,6 +416,21 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
       await apiFetch(`/estimates/${estimateId}/change-orders/${coId}/lines`, {
         method: "POST",
         body: JSON.stringify({ rateCatalogItemId: line.rateCatalogItemId, quantity: Number(line.quantity) }),
+      });
+      loadChangeOrders();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveScheduleImpact(coId: string) {
+    const raw = coScheduleImpactForm[coId];
+    if (raw === undefined || raw === "") return;
+    setBusy(true);
+    try {
+      await apiFetch(`/estimates/${estimateId}/change-orders/${coId}/schedule-impact`, {
+        method: "POST",
+        body: JSON.stringify({ scheduleImpactDays: Number(raw) }),
       });
       loadChangeOrders();
     } finally {
@@ -950,6 +969,8 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
             </form>
           </div>
 
+          <EstimateAlternatesPanel estimateId={estimateId} currency={currency} />
+
           {estimate.status === "approved" && (
             <div className="mt-10">
               <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("changeOrders")}</h2>
@@ -1001,6 +1022,12 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
                         <p className="mt-2 text-right text-xs font-medium">
                           {t("grandTotal")}: {co.grandTotal} {currency}
                         </p>
+                        {co.scheduleImpactDays !== null && (
+                          <p className="mt-1 text-right text-xs text-gray-500">
+                            {t("scheduleImpact")}: {co.scheduleImpactDays >= 0 ? "+" : ""}
+                            {co.scheduleImpactDays} {t("days")}
+                          </p>
+                        )}
 
                         {co.status === "draft" && (
                           <div className="mt-3 flex items-end gap-2 border-t border-gray-100 pt-3">
@@ -1032,11 +1059,31 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
                             >
                               {t("addLine")}
                             </button>
+                          </div>
+                        )}
+
+                        {co.status === "draft" && (
+                          <div className="mt-2 flex items-end gap-2">
+                            <input
+                              type="number"
+                              placeholder={t("scheduleImpactPlaceholder")}
+                              className="input w-40"
+                              value={coScheduleImpactForm[co.id] ?? (co.scheduleImpactDays ?? "")}
+                              onChange={(e) => setCoScheduleImpactForm((m) => ({ ...m, [co.id]: e.target.value }))}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => saveScheduleImpact(co.id)}
+                              disabled={busy}
+                              className="btn-secondary shrink-0 px-3 py-1.5 text-xs"
+                            >
+                              {tc("save")}
+                            </button>
                             <button
                               type="button"
                               onClick={() => approveChangeOrder(co.id)}
                               disabled={busy || co.lines.length === 0}
-                              className="btn-primary shrink-0 px-3 py-1.5 text-xs"
+                              className="btn-primary ml-auto shrink-0 px-3 py-1.5 text-xs"
                             >
                               {t("approve")}
                             </button>
@@ -1120,6 +1167,8 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
                   })}
                 </div>
               )}
+
+              <ChangeOrderProfitabilityPanel estimateId={estimateId} currency={currency} />
 
               <form onSubmit={createChangeOrder} className="flex flex-col gap-2 sm:flex-row sm:items-end">
                 <input

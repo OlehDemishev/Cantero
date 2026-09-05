@@ -15,6 +15,7 @@ describe("PunchListService", () => {
     worker: { findFirst: jest.Mock };
     subcontractor: { findFirst: jest.Mock };
     punchListItem: { findFirst: jest.Mock; create: jest.Mock; update: jest.Mock; findMany: jest.Mock };
+    changeOrder: { findFirst: jest.Mock };
   };
   let audit: { record: jest.Mock };
   let webhooks: { trigger: jest.Mock };
@@ -25,6 +26,7 @@ describe("PunchListService", () => {
       worker: { findFirst: jest.fn() },
       subcontractor: { findFirst: jest.fn() },
       punchListItem: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn(), findMany: jest.fn() },
+      changeOrder: { findFirst: jest.fn() },
     };
     audit = { record: jest.fn() };
     webhooks = { trigger: jest.fn() };
@@ -155,6 +157,27 @@ describe("PunchListService", () => {
       expect(result.failed).toHaveLength(2);
       expect(result.failed.map((f) => f.id).sort()).toEqual(["item-2", "missing"]);
       expect(prisma.punchListItem.update).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe("linkChangeOrder()", () => {
+    it("rejects a change order that doesn't belong to this company", async () => {
+      prisma.punchListItem.findFirst.mockResolvedValue({ id: "item-1", companyId: COMPANY_A });
+      prisma.changeOrder.findFirst.mockResolvedValue(null);
+
+      await expect(service.linkChangeOrder(COMPANY_A, "item-1", { changeOrderId: "co-1" })).rejects.toThrow(NotFoundException);
+      expect(prisma.punchListItem.update).not.toHaveBeenCalled();
+    });
+
+    it("links a valid change order", async () => {
+      prisma.punchListItem.findFirst.mockResolvedValue({ id: "item-1", companyId: COMPANY_A });
+      prisma.changeOrder.findFirst.mockResolvedValue({ id: "co-1", companyId: COMPANY_A });
+
+      await service.linkChangeOrder(COMPANY_A, "item-1", { changeOrderId: "co-1" });
+
+      expect(prisma.punchListItem.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: "item-1" }, data: { changeOrderId: "co-1" } }),
+      );
     });
   });
 });

@@ -23,6 +23,7 @@ interface Submittal {
   submittedByName: string | null;
   reviewedByName: string | null;
   reviewComments: string | null;
+  escalatedAt: string | null;
 }
 
 const STATUS_STYLES: Record<SubmittalStatus, string> = {
@@ -230,6 +231,9 @@ export function SubmittalsPanel({ projectId }: { projectId: string }) {
                         </span>
                         {item.specSection && <span className="text-xs text-gray-500">{item.specSection}</span>}
                         {item.dueDate && <span className="text-xs text-gray-500">{new Date(item.dueDate).toLocaleDateString()}</span>}
+                        {item.escalatedAt && (
+                          <span className="rounded-full bg-error-50 px-2 py-0.5 text-xs font-medium text-error-700">{t("escalated")}</span>
+                        )}
                       </div>
                     </div>
                   </button>

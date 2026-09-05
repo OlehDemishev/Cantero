@@ -155,6 +155,11 @@ export class ProjectsController {
     return this.service.updatePublicWork(user.companyId, id, body);
   }
 
+  @Get(":id/closeout-readiness")
+  closeoutReadiness(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.closeout.readiness(user.companyId, id);
+  }
+
   @Get(":id/closeout-package")
   @Header("Content-Type", "application/zip")
   async closeoutPackage(@CurrentUser() user: AuthUser, @Param("id") id: string) {

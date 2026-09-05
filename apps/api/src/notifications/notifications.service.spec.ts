@@ -3,6 +3,7 @@ import { NotificationsService } from "./notifications.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { WeatherService } from "../weather/weather.service";
 import { BudgetService } from "../finance/budget.service";
+import { JobCostingService } from "../job-costing/job-costing.service";
 
 const COMPANY_A = "company-a";
 const USER_A = "user-a";
@@ -33,6 +34,7 @@ describe("NotificationsService.list", () => {
   };
   let weather: { geocode: jest.Mock; forecast: jest.Mock };
   let budget: { getForProject: jest.Mock };
+  let jobCosting: { report: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -59,6 +61,7 @@ describe("NotificationsService.list", () => {
     };
     weather = { geocode: jest.fn(), forecast: jest.fn() };
     budget = { getForProject: jest.fn() };
+    jobCosting = { report: jest.fn().mockResolvedValue({ rows: [], totals: {} }) };
 
     const module = await Test.createTestingModule({
       providers: [
@@ -66,6 +69,7 @@ describe("NotificationsService.list", () => {
         { provide: PrismaService, useValue: prisma },
         { provide: WeatherService, useValue: weather },
         { provide: BudgetService, useValue: budget },
+        { provide: JobCostingService, useValue: jobCosting },
       ],
     }).compile();
 
@@ -363,6 +367,25 @@ describe("NotificationsService.list", () => {
     expect(notifications.some((n) => n.key === "budget_overrun:project-tight")).toBe(true);
   });
 
+  it("flags a cost code that's crossed the threshold even when the whole project looks fine", async () => {
+    prisma.project.findMany.mockResolvedValue([{ id: "project-1", name: "Site A" }]);
+    budget.getForProject.mockResolvedValue({ grandTotalBudget: 0, materialsCostActual: 0, laborCostActual: 0, subcontractorCostActual: 0 });
+    jobCosting.report.mockResolvedValue({
+      rows: [
+        { costCodeId: "cc-1", code: "03 30 00", name: "Concrete", estimated: 10000, committed: 0, actual: 9800 },
+        { costCodeId: "cc-2", code: "06 10 00", name: "Framing", estimated: 10000, committed: 0, actual: 2000 },
+      ],
+      totals: {},
+    });
+
+    const { notifications } = await service.list(COMPANY_A, USER_A);
+
+    const item = notifications.find((n) => n.key === "cost_code_overrun:project-1:cc-1");
+    expect(item).toBeDefined();
+    expect(item?.severity).toBe("warning");
+    expect(notifications.some((n) => n.key === "cost_code_overrun:project-1:cc-2")).toBe(false);
+  });
+
   it("excludes a notification type the member has muted", async () => {
     prisma.rfi.findMany.mockResolvedValue([
       { id: "rfi-1", number: "RFI-001", subject: "Roof detail", dueDate: null, createdAt: new Date(), project: { id: "p1", name: "Site" } },
@@ -441,6 +464,7 @@ describe("NotificationsService — read tracking", () => {
         { provide: PrismaService, useValue: prisma },
         { provide: WeatherService, useValue: { geocode: jest.fn(), forecast: jest.fn() } },
         { provide: BudgetService, useValue: { getForProject: jest.fn() } },
+        { provide: JobCostingService, useValue: { report: jest.fn().mockResolvedValue({ rows: [], totals: {} }) } },
       ],
     }).compile();
 

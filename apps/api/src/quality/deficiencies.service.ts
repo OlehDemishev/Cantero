@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import type { CreateDeficiencyFromItemInput, UpdateDeficiencyInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
+import { calculateDeficiencyHeatmap } from "./deficiency-heatmap";
 
 @Injectable()
 export class DeficienciesService {
@@ -50,6 +51,7 @@ export class DeficienciesService {
         severity: input.severity,
         assigneeWorkerId: input.assigneeWorkerId,
         dueDate: input.dueDate ? new Date(input.dueDate) : undefined,
+        location: input.location,
       },
       include: { assignee: { select: { id: true, name: true } } },
     });
@@ -68,9 +70,20 @@ export class DeficienciesService {
         severity: input.severity,
         assigneeWorkerId: input.assigneeWorkerId,
         dueDate: input.dueDate === null ? null : input.dueDate ? new Date(input.dueDate) : undefined,
+        location: input.location,
       },
       include: { assignee: { select: { id: true, name: true } } },
     });
+  }
+
+  /** Where defects keep happening on a project, most-affected zone first — see deficiency-heatmap.ts. */
+  async heatMap(companyId: string, projectId: string) {
+    await this.assertProject(companyId, projectId);
+    const deficiencies = await this.prisma.deficiency.findMany({
+      where: { companyId, projectId },
+      select: { location: true, severity: true },
+    });
+    return calculateDeficiencyHeatmap(deficiencies);
   }
 
   async resolve(companyId: string, actor: AuditActor, id: string) {

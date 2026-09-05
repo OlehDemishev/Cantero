@@ -19,7 +19,7 @@ export class ChecklistTemplatesService {
 
   list(companyId: string, type?: ChecklistTemplateType) {
     return this.prisma.checklistTemplate.findMany({
-      where: { companyId, ...(type ? { type } : {}) },
+      where: { companyId, archivedAt: null, ...(type ? { type } : {}) },
       include: { items: { orderBy: { sortOrder: "asc" } } },
       orderBy: { name: "asc" },
     });
@@ -53,24 +53,55 @@ export class ChecklistTemplatesService {
     return template;
   }
 
-  async update(companyId: string, id: string, input: UpdateChecklistTemplateInput) {
+  /** Never mutates the template in place — clones a new version so a past inspection's audit
+   * trail keeps pointing at the exact configuration used, then archives the old row. */
+  async update(companyId: string, actor: AuditActor, id: string, input: UpdateChecklistTemplateInput) {
     const template = await this.get(companyId, id);
-    if (input.items) {
-      await this.prisma.checklistTemplateItem.deleteMany({ where: { templateId: template.id } });
-    }
-    return this.prisma.checklistTemplate.update({
-      where: { id: template.id },
+
+    const nextVersion = await this.prisma.checklistTemplate.create({
       data: {
-        name: input.name,
-        defaultSubject: input.defaultSubject,
-        defaultBody: input.defaultBody,
-        defaultHazards: input.defaultHazards,
-        defaultControlMeasures: input.defaultControlMeasures,
-        defaultPpe: input.defaultPpe,
-        items: input.items ? { create: input.items.map((item, i) => ({ ...item, sortOrder: i })) } : undefined,
+        companyId,
+        type: template.type,
+        name: input.name ?? template.name,
+        defaultSubject: input.defaultSubject ?? template.defaultSubject,
+        defaultBody: input.defaultBody ?? template.defaultBody,
+        defaultHazards: input.defaultHazards ?? template.defaultHazards,
+        defaultControlMeasures: input.defaultControlMeasures ?? template.defaultControlMeasures,
+        defaultPpe: input.defaultPpe ?? template.defaultPpe,
+        version: template.version + 1,
+        previousVersionId: template.id,
+        items: {
+          create: (input.items ?? template.items.map((item) => ({ title: item.title, description: item.description, location: item.location }))).map(
+            (item, i) => ({ ...item, sortOrder: i }),
+          ),
+        },
       },
       include: { items: { orderBy: { sortOrder: "asc" } } },
     });
+
+    await this.prisma.checklistTemplate.update({ where: { id: template.id }, data: { archivedAt: new Date() } });
+
+    this.audit.record(
+      companyId,
+      actor,
+      "checklist_template.versioned",
+      "ChecklistTemplate",
+      nextVersion.id,
+      `Created v${nextVersion.version} of "${nextVersion.name}", superseding v${template.version}`,
+    );
+    return nextVersion;
+  }
+
+  /** Walks the previousVersion chain, newest first, so the UI can show what a template looked like at any point. */
+  async history(companyId: string, id: string) {
+    const versions = [];
+    let current = await this.get(companyId, id);
+    versions.push(current);
+    while (current.previousVersionId) {
+      current = await this.get(companyId, current.previousVersionId);
+      versions.push(current);
+    }
+    return versions;
   }
 
   async delete(companyId: string, id: string) {

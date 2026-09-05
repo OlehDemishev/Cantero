@@ -3,6 +3,7 @@ import { Test } from "@nestjs/testing";
 import { SubcontractorsService } from "./subcontractors.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService } from "../common/audit/audit.service";
+import { SubcontractorPrequalificationService } from "../subcontractor-prequalification/subcontractor-prequalification.service";
 
 const COMPANY_A = "company-a";
 const ACTOR = { userId: "user-1", name: "PM" };
@@ -18,11 +19,13 @@ describe("SubcontractorsService", () => {
     project: { findFirst: jest.Mock };
     subcontractorAssignment: { upsert: jest.Mock; findFirst: jest.Mock; delete: jest.Mock; count: jest.Mock; update: jest.Mock };
     subcontractorDocument: { findFirst: jest.Mock; findMany: jest.Mock; create: jest.Mock; delete: jest.Mock };
-    subcontractorCost: { aggregate: jest.Mock; findFirst: jest.Mock };
+    subcontractorCost: { aggregate: jest.Mock; findFirst: jest.Mock; findMany: jest.Mock };
     subcontractorPerformanceReview: { create: jest.Mock; findMany: jest.Mock };
     subcontractorPayment: { create: jest.Mock; findMany: jest.Mock; groupBy: jest.Mock };
+    company: { findUniqueOrThrow: jest.Mock };
   };
   let audit: { record: jest.Mock };
+  let prequalification: { getCurrentValid: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -30,14 +33,23 @@ describe("SubcontractorsService", () => {
       project: { findFirst: jest.fn() },
       subcontractorAssignment: { upsert: jest.fn(), findFirst: jest.fn(), delete: jest.fn(), count: jest.fn(), update: jest.fn() },
       subcontractorDocument: { findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), delete: jest.fn() },
-      subcontractorCost: { aggregate: jest.fn(), findFirst: jest.fn() },
+      subcontractorCost: { aggregate: jest.fn(), findFirst: jest.fn(), findMany: jest.fn() },
       subcontractorPerformanceReview: { create: jest.fn(), findMany: jest.fn() },
       subcontractorPayment: { create: jest.fn(), findMany: jest.fn(), groupBy: jest.fn() },
+      company: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue({ requireSubcontractorPrequalification: false, subcontractorEmrThreshold: null }),
+      },
     };
     audit = { record: jest.fn() };
+    prequalification = { getCurrentValid: jest.fn() };
 
     const module = await Test.createTestingModule({
-      providers: [SubcontractorsService, { provide: PrismaService, useValue: prisma }, { provide: AuditService, useValue: audit }],
+      providers: [
+        SubcontractorsService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: AuditService, useValue: audit },
+        { provide: SubcontractorPrequalificationService, useValue: prequalification },
+      ],
     }).compile();
 
     service = module.get(SubcontractorsService);
@@ -109,6 +121,73 @@ describe("SubcontractorsService", () => {
           update: { startDate: new Date("2026-09-01T00:00:00.000Z"), endDate: new Date("2026-09-15T00:00:00.000Z") },
         }),
       );
+    });
+
+    describe("subcontractor safety gate", () => {
+      function mockCompliantDocs() {
+        prisma.subcontractor.findFirst.mockResolvedValue({ id: "sub-1", companyId: COMPANY_A, name: "Acme Electric" });
+        prisma.project.findFirst.mockResolvedValue({ id: "project-1", companyId: COMPANY_A });
+        prisma.subcontractorDocument.findMany.mockResolvedValue([
+          { id: "doc-1", type: "general_liability_insurance", expiresAt: daysFromNow(60) },
+          { id: "doc-2", type: "workers_comp_insurance", expiresAt: daysFromNow(90) },
+        ]);
+        prisma.subcontractorAssignment.upsert.mockResolvedValue({ id: "assign-1" });
+      }
+
+      it("skips the gate entirely when neither requirement nor EMR threshold is configured", async () => {
+        mockCompliantDocs();
+
+        await service.assign(COMPANY_A, "sub-1", "project-1");
+
+        expect(prequalification.getCurrentValid).not.toHaveBeenCalled();
+      });
+
+      it("blocks assignment when prequalification is required but none is on file", async () => {
+        mockCompliantDocs();
+        prisma.company.findUniqueOrThrow.mockResolvedValue({ requireSubcontractorPrequalification: true, subcontractorEmrThreshold: null });
+        prequalification.getCurrentValid.mockResolvedValue(null);
+
+        await expect(service.assign(COMPANY_A, "sub-1", "project-1")).rejects.toThrow(BadRequestException);
+        expect(prisma.subcontractorAssignment.upsert).not.toHaveBeenCalled();
+      });
+
+      it("allows assignment when prequalification is required and a current one is on file", async () => {
+        mockCompliantDocs();
+        prisma.company.findUniqueOrThrow.mockResolvedValue({ requireSubcontractorPrequalification: true, subcontractorEmrThreshold: null });
+        prequalification.getCurrentValid.mockResolvedValue({ id: "pq-1", safetyEmrRating: null });
+
+        await service.assign(COMPANY_A, "sub-1", "project-1");
+
+        expect(prisma.subcontractorAssignment.upsert).toHaveBeenCalled();
+      });
+
+      it("blocks assignment when the current EMR exceeds the company threshold", async () => {
+        mockCompliantDocs();
+        prisma.company.findUniqueOrThrow.mockResolvedValue({ requireSubcontractorPrequalification: false, subcontractorEmrThreshold: "1.0" });
+        prequalification.getCurrentValid.mockResolvedValue({ id: "pq-1", safetyEmrRating: "1.5" });
+
+        await expect(service.assign(COMPANY_A, "sub-1", "project-1")).rejects.toThrow(BadRequestException);
+      });
+
+      it("allows assignment when the current EMR is at or under the company threshold", async () => {
+        mockCompliantDocs();
+        prisma.company.findUniqueOrThrow.mockResolvedValue({ requireSubcontractorPrequalification: false, subcontractorEmrThreshold: "1.0" });
+        prequalification.getCurrentValid.mockResolvedValue({ id: "pq-1", safetyEmrRating: "1.0" });
+
+        await service.assign(COMPANY_A, "sub-1", "project-1");
+
+        expect(prisma.subcontractorAssignment.upsert).toHaveBeenCalled();
+      });
+
+      it("does not block on EMR when a threshold is set but no prequalification exists and none is required", async () => {
+        mockCompliantDocs();
+        prisma.company.findUniqueOrThrow.mockResolvedValue({ requireSubcontractorPrequalification: false, subcontractorEmrThreshold: "1.0" });
+        prequalification.getCurrentValid.mockResolvedValue(null);
+
+        await service.assign(COMPANY_A, "sub-1", "project-1");
+
+        expect(prisma.subcontractorAssignment.upsert).toHaveBeenCalled();
+      });
     });
   });
 
@@ -451,6 +530,59 @@ describe("SubcontractorsService", () => {
       const call = prisma.subcontractorPayment.groupBy.mock.calls[0][0];
       expect(call.where.paidAt.gte).toEqual(new Date(Date.UTC(2026, 0, 1)));
       expect(call.where.paidAt.lt).toEqual(new Date(Date.UTC(2027, 0, 1)));
+    });
+  });
+
+  describe("setDiversityCertifications()", () => {
+    it("rejects a subcontractor that doesn't belong to this company", async () => {
+      prisma.subcontractor.findFirst.mockResolvedValue(null);
+      await expect(service.setDiversityCertifications(COMPANY_A, ACTOR, "sub-1", { diversityCertifications: ["mbe"] })).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it("updates certifications and audits it", async () => {
+      prisma.subcontractor.findFirst.mockResolvedValue({ id: "sub-1", companyId: COMPANY_A, name: "Acme Electric" });
+      prisma.subcontractor.update.mockResolvedValue({ id: "sub-1", diversityCertifications: ["mbe", "dbe"] });
+
+      await service.setDiversityCertifications(COMPANY_A, ACTOR, "sub-1", { diversityCertifications: ["mbe", "dbe"] });
+
+      expect(prisma.subcontractor.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ diversityCertifications: ["mbe", "dbe"] }) }),
+      );
+      expect(audit.record).toHaveBeenCalledWith(
+        COMPANY_A,
+        ACTOR,
+        "subcontractor.diversity_certifications_updated",
+        "Subcontractor",
+        "sub-1",
+        expect.any(String),
+      );
+    });
+  });
+
+  describe("diversitySpendReport()", () => {
+    it("rolls up paid spend by certification category", async () => {
+      prisma.subcontractorCost.findMany.mockResolvedValue([
+        { amount: "10000", subcontractor: { diversityCertifications: ["mbe"] } },
+        { amount: "5000", subcontractor: { diversityCertifications: [] } },
+      ]);
+
+      const result = await service.diversitySpendReport(COMPANY_A);
+
+      expect(result.totalSpend).toBe(15000);
+      expect(result.certifiedSpend).toBe(10000);
+      expect(prisma.subcontractorCost.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { companyId: COMPANY_A, paid: true } }));
+    });
+
+    it("scopes to a single project when given", async () => {
+      prisma.subcontractorCost.findMany.mockResolvedValue([]);
+
+      await service.diversitySpendReport(COMPANY_A, "project-1");
+
+      expect(prisma.subcontractorCost.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { companyId: COMPANY_A, paid: true, projectId: "project-1" } }),
+      );
     });
   });
 });
