@@ -18,6 +18,11 @@ export class JobCostingController {
     return this.service.forecastReport(user.companyId, projectId);
   }
 
+  @Get("history")
+  history(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string, @Query("months") months?: string) {
+    return this.service.history(user.companyId, projectId, months ? Number(months) : undefined);
+  }
+
   @Post("budget-transfers")
   addBudgetTransfer(
     @CurrentUser() user: AuthUser,

@@ -1,6 +1,9 @@
 {
   "common": {
     "appName": "Cantero",
+    "copyLink": "Copy link",
+    "linkCopied": "Copied",
+    "print": "Print",
     "save": "Save",
     "cancel": "Cancel",
     "create": "Create",
@@ -51,6 +54,7 @@
     "help": "Help & FAQ",
     "reports": "Reports",
     "portfolio": "Portfolio",
+    "openItems": "Open items",
     "resourcePlanning": "Resource planning",
     "templates": "Templates",
     "subcontractors": "Subcontractors",
@@ -249,6 +253,15 @@
     "auditLog": "Audit log",
     "auditLogHint": "Who changed what, and when.",
     "noAuditLog": "No activity recorded yet.",
+    "tab_account": "Account & Notifications",
+    "tab_company": "Company & Branding",
+    "tab_billing": "Billing & Franchise",
+    "tab_team": "Team & Access",
+    "tab_security": "Security & Compliance",
+    "tab_integrations": "Integrations & API",
+    "tab_templates": "Templates & Content",
+    "tab_operations": "Operations",
+    "tab_marketing": "Marketing",
     "pushNotifications": "Push notifications",
     "pushNotificationsHint": "Get browser alerts for low stock, due reminders, and overdue invoices — even when Cantero isn't open.",
     "enablePush": "Enable push notifications",
@@ -426,7 +439,15 @@
     "billingCurrencyDefault": "Company default ({currency})",
     "budgetAlertThreshold": "Budget alert threshold override",
     "contingencyAmount": "Contingency reserve",
-    "contingencyAmountPlaceholder": "None set"
+    "contingencyAmountPlaceholder": "None set",
+    "tab_overview": "Overview",
+    "tab_schedule": "Schedule",
+    "tab_financials": "Financials",
+    "tab_field": "Field & Safety",
+    "tab_quality": "Quality & Field Records",
+    "tab_compliance": "Compliance & Contracts",
+    "tab_subcontractors": "Subcontractors",
+    "tab_documents": "Documents & Closeout"
   },
   "clients": {
     "title": "Clients",
@@ -1159,6 +1180,7 @@
   },
   "scheduling": {
     "board": "Task board",
+    "dragToMove": "Drag to move between columns",
     "gantt": "Timeline",
     "newTask": "New task",
     "taskName": "Task name",
@@ -1689,6 +1711,9 @@
   "portfolio": {
     "title": "Portfolio",
     "subtitle": "Budget health and open risk items across every project, in one view.",
+    "tab_overview": "Overview",
+    "tab_map": "Map",
+    "noProjectCoordinates": "No project has a geofence location set yet — add one from a project's Field & Safety tab to see it here.",
     "noProjects": "No projects yet.",
     "projectsAtRisk": "Projects at risk",
     "varianceTotal": "Budget variance",
@@ -2473,7 +2498,8 @@
     "transferAmountPlaceholder": "Amount",
     "transferReasonPlaceholder": "Reason for this transfer",
     "noTransfers": "No budget has been moved between cost codes yet.",
-    "transferLogEntry": "Moved {amount} from {from} to {to}"
+    "transferLogEntry": "Moved {amount} from {from} to {to}",
+    "burnDown": "Cost burn-down"
   },
   "security": {
     "title": "Security",
@@ -3893,5 +3919,22 @@
     "risk_critical": "Critical",
     "risk_unscheduled": "Unscheduled",
     "noItems": "No long-lead items tracked yet."
+  },
+  "openItems": {
+    "title": "Open items",
+    "subtitle": "Open RFIs, punch-list items, and pending submittals across every project, in one place.",
+    "tab_rfis": "RFIs",
+    "tab_punchList": "Punch list",
+    "tab_submittals": "Submittals",
+    "project": "Project",
+    "number": "Number",
+    "subject": "Subject",
+    "itemTitle": "Title",
+    "status": "Status",
+    "priority": "Priority",
+    "dueDate": "Due date",
+    "noOpenRfis": "No open RFIs across any project.",
+    "noOpenPunchList": "No open punch-list items across any project.",
+    "noPendingSubmittals": "No submittals pending review across any project."
   }
 }

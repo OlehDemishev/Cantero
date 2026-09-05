@@ -8,6 +8,15 @@ interface FeedEvent {
   description: string;
 }
 
+export interface CalendarEvent {
+  id: string;
+  type: "task" | "milestone" | "service_visit";
+  date: Date;
+  title: string;
+  projectId: string | null;
+  projectName: string | null;
+}
+
 const foldIcsLine = (line: string) => line.replace(/[\r\n]/g, " ");
 const toIcsDate = (d: Date) => d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
 
@@ -80,5 +89,48 @@ export class CalendarFeedService {
     }
     lines.push("END:VCALENDAR");
     return lines.join("\r\n");
+  }
+
+  /** Same three sources as buildFeed() (task/milestone due dates, service visit dates), as structured JSON for the in-app calendar view rather than an ICS text feed. */
+  async listEvents(companyId: string, monthsAhead = 3): Promise<CalendarEvent[]> {
+    const windowEnd = new Date();
+    windowEnd.setMonth(windowEnd.getMonth() + monthsAhead);
+    const windowStart = new Date();
+    windowStart.setMonth(windowStart.getMonth() - 1);
+
+    const [tasks, milestones, serviceVisits] = await Promise.all([
+      this.prisma.task.findMany({
+        where: { project: { companyId }, dueDate: { not: null, gte: windowStart, lte: windowEnd } },
+        include: { project: { select: { id: true, name: true } } },
+      }),
+      this.prisma.milestone.findMany({
+        where: { project: { companyId }, dueDate: { not: null, gte: windowStart, lte: windowEnd } },
+        include: { project: { select: { id: true, name: true } } },
+      }),
+      this.prisma.serviceVisit.findMany({
+        where: { companyId, scheduledDate: { gte: windowStart, lte: windowEnd } },
+        include: { serviceContract: { select: { title: true } } },
+      }),
+    ]);
+
+    return [
+      ...tasks.map((t) => ({ id: t.id, type: "task" as const, date: t.dueDate!, title: t.name, projectId: t.project.id, projectName: t.project.name })),
+      ...milestones.map((m) => ({
+        id: m.id,
+        type: "milestone" as const,
+        date: m.dueDate!,
+        title: m.name,
+        projectId: m.project.id,
+        projectName: m.project.name,
+      })),
+      ...serviceVisits.map((v) => ({
+        id: v.id,
+        type: "service_visit" as const,
+        date: v.scheduledDate,
+        title: v.serviceContract.title,
+        projectId: null,
+        projectName: null,
+      })),
+    ].sort((a, b) => a.date.getTime() - b.date.getTime());
   }
 }

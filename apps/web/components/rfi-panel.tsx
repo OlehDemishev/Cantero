@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { BallInCourtParty, BulkActionResult, RfiPriority, RfiStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
@@ -8,6 +8,8 @@ import { useBulkSelection } from "@/components/bulk-select";
 import { CommentsThread } from "@/components/comments-thread";
 import { TemplatePicker } from "@/components/template-picker";
 import { PhotoAttachments } from "@/components/photo-attachments";
+import { useDeepLinkedRow, buildItemDeepLink } from "@/lib/use-deep-linked-row";
+import { CopyLinkButton } from "@/components/ui/copy-link-button";
 
 interface RfiAnalytics {
   openCount: number;
@@ -72,11 +74,14 @@ export function RfiPanel({ projectId }: { projectId: string }) {
   const tb = useTranslations("bulk");
   const bulk = useBulkSelection();
 
+  const deepLinkedId = useDeepLinkedRow("rfi");
+  const rowRefs = useRef<Record<string, HTMLLIElement | null>>({});
+
   const [items, setItems] = useState<Rfi[] | null>(null);
   const [analytics, setAnalytics] = useState<RfiAnalytics | null>(null);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(deepLinkedId);
   const [answerDraft, setAnswerDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [myTurnOnly, setMyTurnOnly] = useState(false);
@@ -88,6 +93,12 @@ export function RfiPanel({ projectId }: { projectId: string }) {
     apiFetch<Rfi[]>(`/rfis?${query.toString()}`).then(setItems);
     apiFetch<RfiAnalytics>(`/rfis/analytics?projectId=${projectId}`).then(setAnalytics);
   }
+
+  useEffect(() => {
+    if (!deepLinkedId || !items) return;
+    rowRefs.current[deepLinkedId]?.scrollIntoView({ behavior: "smooth", block: "center" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, deepLinkedId]);
 
   useEffect(load, [projectId, myTurnOnly]);
 
@@ -352,9 +363,10 @@ export function RfiPanel({ projectId }: { projectId: string }) {
           {items.map((item) => {
             const expanded = expandedId === item.id;
             return (
-              <li key={item.id} className="card">
+              <li key={item.id} ref={(el) => { rowRefs.current[item.id] = el; }} className={`card ${deepLinkedId === item.id ? "ring-2 ring-brand-300" : ""}`}>
                 <div className="flex w-full items-start gap-3">
                   <input type="checkbox" className="mt-1" checked={bulk.selected.has(item.id)} onChange={() => bulk.toggle(item.id)} />
+                  <CopyLinkButton url={buildItemDeepLink(projectId, "quality", "rfi", item.id)} />
                   <button
                     onClick={() => {
                       setExpandedId(expanded ? null : item.id);

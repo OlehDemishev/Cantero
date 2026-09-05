@@ -33,6 +33,7 @@ import {
   HazmatIcon,
   LoansIcon,
   MoonIcon,
+  OpenItemsIcon,
   PerformanceIcon,
   PortfolioIcon,
   ProjectsIcon,
@@ -58,6 +59,7 @@ import {
 const NAV_ITEMS = [
   { href: "/dashboard", key: "dashboard", icon: DashboardIcon },
   { href: "/portfolio", key: "portfolio", icon: PortfolioIcon },
+  { href: "/open-items", key: "openItems", icon: OpenItemsIcon },
   { href: "/projects", key: "projects", icon: ProjectsIcon },
   { href: "/clients", key: "clients", icon: ClientsIcon },
   { href: "/rate-catalog", key: "rateCatalog", icon: RateCatalogIcon },
@@ -114,9 +116,9 @@ export function AuthenticatedShell({ children }: { children: React.ReactNode }) 
     <div className="min-h-screen xl:flex">
       <AppSidebar />
       <SidebarBackdrop />
-      <div className={`flex-1 transition-all duration-300 ease-in-out ${mainMargin}`}>
+      <div className={`flex-1 transition-all duration-300 ease-in-out print:ml-0 ${mainMargin}`}>
         <AppHeader me={data} />
-        <div className="mx-auto max-w-(--breakpoint-2xl) p-4 md:p-6">{children}</div>
+        <div className="mx-auto max-w-(--breakpoint-2xl) p-4 md:p-6 print:max-w-none print:p-0">{children}</div>
       </div>
       <CommandPalette navItems={NAV_ITEMS} />
       <KeyboardShortcutsHelp />
@@ -132,7 +134,7 @@ function AppSidebar() {
 
   return (
     <aside
-      className={`fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-gray-200 bg-white px-4 transition-all duration-300 ease-in-out dark:border-gray-800 dark:bg-gray-900 ${
+      className={`fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-gray-200 bg-white px-4 transition-all duration-300 ease-in-out print:hidden dark:border-gray-800 dark:bg-gray-900 ${
         expanded ? "w-[270px]" : "w-[90px]"
       } ${isMobileOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}
       onMouseEnter={() => !isExpanded && setIsHovered(true)}
@@ -212,7 +214,7 @@ function AppHeader({ me }: { me: NonNullable<ReturnType<typeof useMe>["data"]> }
   const initial = me.user.name?.[0]?.toUpperCase() ?? "?";
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4 dark:border-gray-800 dark:bg-gray-900 md:px-6">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4 print:hidden dark:border-gray-800 dark:bg-gray-900 md:px-6">
       <div className="flex items-center gap-3">
         <button
           onClick={handleToggle}

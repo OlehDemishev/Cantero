@@ -1,11 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
+import { TabNav, type TabNavItem } from "@/components/ui/tab-nav";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
+
+// Leaflet touches `window` at module load time, so it must never be part of the server render.
+const ProjectMapPanel = dynamic(() => import("@/components/project-map-panel").then((m) => m.ProjectMapPanel), { ssr: false });
 
 interface PortfolioProject {
   id: string;
@@ -60,12 +66,22 @@ function SummaryCard({ label, value, tone }: { label: string; value: string | nu
   );
 }
 
+const PORTFOLIO_TAB_KEYS = ["overview", "map"] as const;
+
 export default function PortfolioPage() {
   const t = useTranslations("portfolio");
   const tc = useTranslations("common");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
   const money = (amount: number | string | null | undefined) => formatCurrency(amount, currency, me?.company.locale);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabFromParam = searchParams.get("tab");
+  const activeTab = (tabFromParam && (PORTFOLIO_TAB_KEYS as readonly string[]).includes(tabFromParam) ? tabFromParam : "overview") as (typeof PORTFOLIO_TAB_KEYS)[number];
+  const TABS: TabNavItem[] = PORTFOLIO_TAB_KEYS.map((key) => ({ key, label: t(`tab_${key}`) }));
+  function setTab(key: string) {
+    router.replace(`/portfolio?tab=${key}`, { scroll: false });
+  }
 
   const [data, setData] = useState<Portfolio | null>(null);
 
@@ -79,7 +95,11 @@ export default function PortfolioPage() {
       <p className="mt-1 text-sm text-gray-500">{t("subtitle")}</p>
       {data && <p className="mt-1 text-xs text-gray-400">{t("convertedToCurrency", { currency: data.currency })}</p>}
 
-      {!data ? (
+      <TabNav tabs={TABS} active={activeTab} onChange={setTab} />
+
+      {activeTab === "map" && <ProjectMapPanel />}
+
+      {activeTab === "overview" && (!data ? (
         <p className="mt-8 text-gray-500">{tc("loading")}</p>
       ) : data.projects.length === 0 ? (
         <p className="mt-8 text-sm text-gray-400">{t("noProjects")}</p>
@@ -158,7 +178,7 @@ export default function PortfolioPage() {
             </table>
           </div>
         </>
-      )}
+      ))}
     </AuthenticatedShell>
   );
 }

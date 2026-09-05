@@ -34,6 +34,25 @@ export class SubmittalsService {
     return Array.from(latestByChain.values()).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
+  /** Every submittal pending review (latest revision per chain) across every project the company has — see RfiService.listOpenForCompany for the same cross-project pattern. */
+  async listPendingForCompany(companyId: string) {
+    const all = await this.prisma.submittal.findMany({
+      where: { companyId },
+      include: { project: { select: { id: true, name: true } } },
+      orderBy: { createdAt: "asc" },
+    });
+
+    const latestByChain = new Map<string, (typeof all)[number]>();
+    for (const s of all) {
+      const chainKey = s.rootSubmittalId ?? s.id;
+      const existing = latestByChain.get(chainKey);
+      if (!existing || s.revision > existing.revision) latestByChain.set(chainKey, s);
+    }
+    return Array.from(latestByChain.values())
+      .filter((s) => s.status === "submitted")
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
   async get(companyId: string, id: string) {
     const submittal = await this.findOrThrow(companyId, id);
     const chainRootId = submittal.rootSubmittalId ?? submittal.id;

@@ -31,6 +31,15 @@ export class RfiService {
     });
   }
 
+  /** Every open RFI across every project the company has — the cross-project counterpart to listForProject, for a company-wide "open items" view. */
+  async listOpenForCompany(companyId: string) {
+    return this.prisma.rfi.findMany({
+      where: { companyId, status: { not: "closed" } },
+      include: { project: { select: { id: true, name: true } } },
+      orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+    });
+  }
+
   async get(companyId: string, id: string) {
     const rfi = await this.prisma.rfi.findFirst({ where: { id, companyId } });
     if (!rfi) throw new NotFoundException("RFI not found");

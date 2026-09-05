@@ -30,7 +30,10 @@
     "close": "Закрити",
     "add": "Додати",
     "send": "Надіслати",
-    "all": "Усі"
+    "all": "Усі",
+    "copyLink": "Копіювати посилання",
+    "linkCopied": "Скопійовано",
+    "print": "Друк"
   },
   "nav": {
     "menu": "Меню",
@@ -68,7 +71,8 @@
     "supportTickets": "Тікети підтримки",
     "hazmat": "Паспорти безпеки",
     "benefits": "Пільги",
-    "toolCrib": "Видача інструменту"
+    "toolCrib": "Видача інструменту",
+    "openItems": "Відкриті позиції"
   },
   "auth": {
     "signupTitle": "Створіть обліковий запис Cantero",
@@ -405,7 +409,16 @@
     "rateCatalogApprovalThresholdPercentHint": "Зміна трудогодин більш ніж на цей відсоток затримується для погодження замість негайного застосування. Залиште порожнім, щоб кожна зміна застосовувалась одразу.",
     "noThresholdPlaceholder": "Без порогу",
     "npsDetractorFollowUpEnabled": "Автозадача за низьким NPS",
-    "npsDetractorFollowUpEnabledHint": "Відповідь клієнта на рівні 6/10 або нижче додає задачу-нагадування до проєкту і надсилає лист власнику(ам) компанії."
+    "npsDetractorFollowUpEnabledHint": "Відповідь клієнта на рівні 6/10 або нижче додає задачу-нагадування до проєкту і надсилає лист власнику(ам) компанії.",
+    "tab_account": "Обліковий запис і сповіщення",
+    "tab_company": "Компанія і бренд",
+    "tab_billing": "Оплата і франшиза",
+    "tab_team": "Команда і доступ",
+    "tab_security": "Безпека і комплаєнс",
+    "tab_integrations": "Інтеграції та API",
+    "tab_templates": "Шаблони і контент",
+    "tab_operations": "Операції",
+    "tab_marketing": "Маркетинг"
   },
   "projects": {
     "title": "Проєкти",
@@ -426,7 +439,15 @@
     "billingCurrencyDefault": "За замовчуванням компанії ({currency})",
     "budgetAlertThreshold": "Перевизначити поріг сповіщення про бюджет",
     "contingencyAmount": "Резерв на непередбачені витрати",
-    "contingencyAmountPlaceholder": "Не встановлено"
+    "contingencyAmountPlaceholder": "Не встановлено",
+    "tab_overview": "Огляд",
+    "tab_schedule": "Графік",
+    "tab_financials": "Фінанси",
+    "tab_field": "Майданчик і безпека",
+    "tab_quality": "Якість і польові записи",
+    "tab_compliance": "Комплаєнс і контракти",
+    "tab_subcontractors": "Субпідрядники",
+    "tab_documents": "Документи і закриття"
   },
   "clients": {
     "title": "Клієнти",
@@ -1196,7 +1217,8 @@
     "markMissed": "Позначити невиконаним",
     "completed": "Виконано",
     "missedWithReason": "Не виконано — {reason}",
-    "varianceReasonPlaceholder": "Чому не виконано?"
+    "varianceReasonPlaceholder": "Чому не виконано?",
+    "dragToMove": "Перетягніть, щоб перемістити між колонками"
   },
   "purchaseOrders": {
     "title": "Замовлення на закупівлю",
@@ -1718,7 +1740,10 @@
     "billedToDate": "Виставлено",
     "fundedToDate": "Профінансовано",
     "openDraws": "Транші",
-    "convertedToCurrency": "Усі суми перераховано у звітну валюту компанії ({currency})."
+    "convertedToCurrency": "Усі суми перераховано у звітну валюту компанії ({currency}).",
+    "tab_overview": "Огляд",
+    "tab_map": "Карта",
+    "noProjectCoordinates": "Жоден проєкт ще не має встановленого геозонного розташування — додайте його на вкладці «Майданчик і безпека» проєкту, щоб побачити тут."
   },
   "warranty": {
     "title": "Гарантія",
@@ -2473,7 +2498,8 @@
     "transferAmountPlaceholder": "Сума",
     "transferReasonPlaceholder": "Причина цього переказу",
     "noTransfers": "Бюджет між кодами витрат ще не переносився.",
-    "transferLogEntry": "Переміщено {amount} з {from} до {to}"
+    "transferLogEntry": "Переміщено {amount} з {from} до {to}",
+    "burnDown": "Динаміка витрат"
   },
   "security": {
     "title": "Безпека",
@@ -3893,5 +3919,22 @@
     "risk_critical": "Критично",
     "risk_unscheduled": "Не заплановано",
     "noItems": "Позиції з тривалим постачанням ще не відстежуються."
+  },
+  "openItems": {
+    "title": "Відкриті позиції",
+    "subtitle": "Відкриті RFI, пункти переліку недоробок і подання на розгляді з усіх проєктів в одному місці.",
+    "tab_rfis": "RFI",
+    "tab_punchList": "Перелік недоробок",
+    "tab_submittals": "Подання",
+    "project": "Проєкт",
+    "number": "Номер",
+    "subject": "Тема",
+    "itemTitle": "Назва",
+    "status": "Статус",
+    "priority": "Пріоритет",
+    "dueDate": "Термін",
+    "noOpenRfis": "Немає відкритих RFI в жодному проєкті.",
+    "noOpenPunchList": "Немає відкритих пунктів переліку недоробок в жодному проєкті.",
+    "noPendingSubmittals": "Немає подань на розгляді в жодному проєкті."
   }
 }

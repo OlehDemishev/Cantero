@@ -4,6 +4,8 @@ import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { WebhooksService } from "../common/webhooks/webhooks.service";
 import { toCsv } from "../common/csv";
+import { PdfService } from "../common/pdf/pdf.service";
+import { StorageService } from "../common/storage/storage.service";
 
 @Injectable()
 export class IncidentReportsService {
@@ -11,6 +13,8 @@ export class IncidentReportsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly webhooks: WebhooksService,
+    private readonly pdf: PdfService,
+    private readonly storage: StorageService,
   ) {}
 
   async listForProject(companyId: string, projectId: string) {
@@ -124,5 +128,32 @@ export class IncidentReportsService {
     const project = await this.prisma.project.findFirst({ where: { id: projectId, companyId } });
     if (!project) throw new NotFoundException("Project not found");
     return project;
+  }
+
+  /** A narrative-style incident report handout — free-form body rather than a line-item table, since a single incident's description/corrective-actions read better as prose than as table cells. */
+  async generatePdf(companyId: string, id: string): Promise<Buffer> {
+    const report = await this.prisma.incidentReport.findFirst({ where: { id, companyId }, include: { project: { select: { name: true } } } });
+    if (!report) throw new NotFoundException("Incident report not found");
+    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    const logoBuffer = company.logoStorageKey ? await this.storage.read(company.logoStorageKey).catch(() => undefined) : undefined;
+
+    const bodyParts = [
+      `Description:\n${report.description}`,
+      report.location ? `Location: ${report.location}` : null,
+      report.involvedPersons ? `Involved persons:\n${report.involvedPersons}` : null,
+      report.correctiveActions ? `Corrective actions:\n${report.correctiveActions}` : null,
+    ].filter((p): p is string => p !== null);
+
+    return this.pdf.renderTextDocument({
+      title: `Incident report — ${report.project.name}`,
+      subtitle: report.severity.replace(/_/g, " "),
+      meta: [
+        { label: "Date", value: report.occurredAt.toISOString().slice(0, 10) },
+        { label: "OSHA recordable", value: report.oshaRecordable ? "Yes" : "No" },
+        { label: "Reported by", value: report.reportedByName },
+      ],
+      body: bodyParts.join("\n\n"),
+      branding: { logoBuffer, accentColor: company.brandColor ?? undefined },
+    });
   }
 }

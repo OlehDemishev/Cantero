@@ -124,6 +124,13 @@ body {
   @apply text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-300;
 }
 
+@utility tab-item {
+  @apply whitespace-nowrap border-b-2 border-transparent px-3 py-2 text-theme-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300;
+}
+@utility tab-item-active {
+  @apply border-brand-500 text-brand-500 dark:text-brand-400;
+}
+
 @utility no-scrollbar {
   &::-webkit-scrollbar {
     display: none;
@@ -163,5 +170,21 @@ body {
   }
   .btn-secondary {
     @apply inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-theme-xs transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+}
+
+/* Printing a page (Ctrl/Cmd+P or a panel's own "Print" button): drop shadows/borders that only
+   make sense on screen, and force light colors regardless of the viewer's dark-mode setting —
+   app chrome (sidebar/header) is hidden via `print:hidden` at each element instead of here. */
+@media print {
+  body {
+    background: white;
+  }
+  .card {
+    box-shadow: none;
+    border-color: #e5e7eb;
+  }
+  .no-print {
+    display: none !important;
   }
 }

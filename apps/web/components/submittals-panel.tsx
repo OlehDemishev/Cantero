@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { SUBMITTAL_REVIEW_DECISIONS, type BulkActionResult, type SubmittalReviewDecision, type SubmittalStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useBulkSelection } from "@/components/bulk-select";
+import { useDeepLinkedRow, buildItemDeepLink } from "@/lib/use-deep-linked-row";
+import { CopyLinkButton } from "@/components/ui/copy-link-button";
 
 interface SubmittalHistoryEntry {
   id: string;
@@ -43,10 +45,13 @@ export function SubmittalsPanel({ projectId }: { projectId: string }) {
   const tb = useTranslations("bulk");
   const bulk = useBulkSelection();
 
+  const deepLinkedId = useDeepLinkedRow("submittal");
+  const rowRefs = useRef<Record<string, HTMLLIElement | null>>({});
+
   const [items, setItems] = useState<Submittal[] | null>(null);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(deepLinkedId);
   const [historyById, setHistoryById] = useState<Record<string, SubmittalHistoryEntry[]>>({});
   const [reviewDecision, setReviewDecision] = useState<SubmittalReviewDecision>("approved");
   const [reviewComments, setReviewComments] = useState("");
@@ -57,6 +62,12 @@ export function SubmittalsPanel({ projectId }: { projectId: string }) {
   }
 
   useEffect(load, [projectId]);
+
+  useEffect(() => {
+    if (!deepLinkedId || !items) return;
+    rowRefs.current[deepLinkedId]?.scrollIntoView({ behavior: "smooth", block: "center" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, deepLinkedId]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -202,9 +213,14 @@ export function SubmittalsPanel({ projectId }: { projectId: string }) {
           {items.map((item) => {
             const expanded = expandedId === item.id;
             return (
-              <li key={item.id} className="card">
+              <li
+                key={item.id}
+                ref={(el) => { rowRefs.current[item.id] = el; }}
+                className={`card ${deepLinkedId === item.id ? "ring-2 ring-brand-300" : ""}`}
+              >
                 <div className="flex w-full items-start gap-3">
                   <input type="checkbox" className="mt-1" checked={bulk.selected.has(item.id)} onChange={() => bulk.toggle(item.id)} />
+                  <CopyLinkButton url={buildItemDeepLink(projectId, "quality", "submittal", item.id)} />
                   <button
                     onClick={() => {
                       setExpandedId(expanded ? null : item.id);

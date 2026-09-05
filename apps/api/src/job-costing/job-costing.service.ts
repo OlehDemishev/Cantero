@@ -3,6 +3,7 @@ import type { CreateCostCodeBudgetTransferInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { calculateCostCodeEac } from "./cost-code-eac";
+import { bucketCostHistoryByMonth } from "./cost-history-bucket";
 
 interface CostCodeBucket {
   costCodeId: string | null;
@@ -190,5 +191,21 @@ export class JobCostingService {
     const forecastTotals = { ...totals, ...calculateCostCodeEac({ ...totals, percentComplete }) };
 
     return { percentComplete, rows: forecastRows, totals: forecastTotals, transfers };
+  }
+
+  /** Month-bucketed subcontractor-cost history for a burn-down chart — see cost-history-bucket.ts. Same data source as report()'s committed/actual columns. */
+  async history(companyId: string, projectId: string, months = 12) {
+    const project = await this.prisma.project.findFirst({ where: { id: projectId, companyId } });
+    if (!project) throw new NotFoundException("Project not found");
+
+    const costs = await this.prisma.subcontractorCost.findMany({
+      where: { companyId, projectId },
+      select: { amount: true, incurredDate: true, paid: true },
+    });
+    return bucketCostHistoryByMonth(
+      costs.map((c) => ({ amount: Number(c.amount), incurredDate: c.incurredDate, paid: c.paid })),
+      months,
+      new Date(),
+    );
   }
 }

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { ObservationCategory } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { PrintButton } from "@/components/ui/print-button";
 
 interface Observation {
   id: string;
@@ -57,11 +58,14 @@ export function SafetyObservationsPanel({ projectId }: { projectId: string }) {
     <div className="mt-10">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-gray-700">{t("title")}</h2>
-        {!creating && (
-          <button onClick={() => setCreating(true)} className="btn-secondary px-3 py-1 text-xs">
-            {t("newObservation")}
-          </button>
-        )}
+        <div className="flex items-center gap-1.5">
+          {!creating && (
+            <button onClick={() => setCreating(true)} className="btn-secondary px-3 py-1 text-xs">
+              {t("newObservation")}
+            </button>
+          )}
+          <PrintButton />
+        </div>
       </div>
 
       {creating && (

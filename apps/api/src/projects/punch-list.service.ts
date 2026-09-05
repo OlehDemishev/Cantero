@@ -9,6 +9,8 @@ import type {
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { PdfService } from "../common/pdf/pdf.service";
+import { StorageService } from "../common/storage/storage.service";
 
 @Injectable()
 export class PunchListService {
@@ -16,6 +18,8 @@ export class PunchListService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly webhooks: WebhooksService,
+    private readonly pdf: PdfService,
+    private readonly storage: StorageService,
   ) {}
 
   async listForProject(companyId: string, projectId: string) {
@@ -24,6 +28,15 @@ export class PunchListService {
       where: { projectId },
       include: { assignee: { select: { id: true, name: true } }, assigneeSubcontractor: { select: { id: true, name: true } } },
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+    });
+  }
+
+  /** Every open punch-list item across every project the company has — see RfiService.listOpenForCompany for the same cross-project pattern. */
+  async listOpenForCompany(companyId: string) {
+    return this.prisma.punchListItem.findMany({
+      where: { companyId, status: "open" },
+      include: { project: { select: { id: true, name: true } } },
+      orderBy: { createdAt: "desc" },
     });
   }
 
@@ -203,6 +216,36 @@ export class PunchListService {
       where: { companyId, assigneeSubcontractorId: subcontractorId },
       include: { project: { select: { id: true, name: true } } },
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+    });
+  }
+
+  /** A printable log of a project's punch list — for handing to a client or subcontractor who doesn't have an account, same PdfService table shape as invoices/estimates. */
+  async generatePdf(companyId: string, projectId: string): Promise<Buffer> {
+    const project = await this.assertProject(companyId, projectId);
+    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    const logoBuffer = company.logoStorageKey ? await this.storage.read(company.logoStorageKey).catch(() => undefined) : undefined;
+    const items = await this.prisma.punchListItem.findMany({
+      where: { projectId },
+      include: { assignee: { select: { name: true } }, assigneeSubcontractor: { select: { name: true } } },
+      orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+    });
+
+    return this.pdf.render({
+      title: `Punch List — ${project.name}`,
+      subtitle: `${items.length} item(s)`,
+      meta: [{ label: "Generated", value: new Date().toISOString().slice(0, 10) }],
+      tableHeader: ["Item", "Location", "Status", "Assignee", "Due date"],
+      tableRows: items.map((item) => ({
+        cells: [
+          item.title,
+          item.location ?? "—",
+          item.status,
+          item.assignee?.name ?? item.assigneeSubcontractor?.name ?? "—",
+          item.dueDate ? item.dueDate.toISOString().slice(0, 10) : "—",
+        ],
+      })),
+      totals: [],
+      branding: { logoBuffer, accentColor: company.brandColor ?? undefined },
     });
   }
 }

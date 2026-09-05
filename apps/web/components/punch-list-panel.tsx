@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { BulkActionResult, PunchListItemStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { PhotoAttachments } from "@/components/photo-attachments";
 import { CommentsThread } from "@/components/comments-thread";
 import { useBulkSelection } from "@/components/bulk-select";
+import { useDeepLinkedRow, buildItemDeepLink } from "@/lib/use-deep-linked-row";
+import { CopyLinkButton } from "@/components/ui/copy-link-button";
+import { PrintButton } from "@/components/ui/print-button";
 
 interface Worker {
   id: string;
@@ -58,10 +61,18 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
   const [busy, setBusy] = useState(false);
   const [changeOrderIdDrafts, setChangeOrderIdDrafts] = useState<Record<string, string>>({});
   const bulk = useBulkSelection();
+  const deepLinkedId = useDeepLinkedRow("punch_list");
+  const rowRefs = useRef<Record<string, HTMLLIElement | null>>({});
 
   function load() {
     apiFetch<PunchListItem[]>(`/punch-list?projectId=${projectId}`).then(setItems);
   }
+
+  useEffect(() => {
+    if (!deepLinkedId || !items) return;
+    rowRefs.current[deepLinkedId]?.scrollIntoView({ behavior: "smooth", block: "center" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, deepLinkedId]);
 
   useEffect(() => {
     load();
@@ -180,6 +191,7 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
               {t("newItem")}
             </button>
           )}
+          <PrintButton />
         </div>
       </div>
 
@@ -303,10 +315,11 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
           </div>
           <ul className="flex flex-col gap-2">
           {items.map((item) => (
-            <li key={item.id} className="card">
+            <li key={item.id} ref={(el) => { rowRefs.current[item.id] = el; }} className={`card ${deepLinkedId === item.id ? "ring-2 ring-brand-300" : ""}`}>
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-2">
-                  <input type="checkbox" className="mt-1" checked={bulk.selected.has(item.id)} onChange={() => bulk.toggle(item.id)} />
+                  <input type="checkbox" className="no-print mt-1" checked={bulk.selected.has(item.id)} onChange={() => bulk.toggle(item.id)} />
+                  <span className="no-print"><CopyLinkButton url={buildItemDeepLink(projectId, "quality", "punch_list", item.id)} /></span>
                   <div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-gray-900">{item.title}</span>

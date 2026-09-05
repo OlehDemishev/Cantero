@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query } from "@nestjs/common";
+import { Body, Controller, Get, Header, Param, Post, Query, StreamableFile } from "@nestjs/common";
 import {
   addMeetingActionItemSchema,
   createMeetingSchema,
@@ -29,6 +29,13 @@ export class MeetingsController {
   @Get(":id")
   get(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.get(user.companyId, id);
+  }
+
+  @Get(":id/pdf")
+  @Header("Content-Type", "application/pdf")
+  async pdf(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    const buffer = await this.service.generatePdf(user.companyId, id);
+    return new StreamableFile(buffer, { disposition: `attachment; filename="meeting-minutes.pdf"` });
   }
 
   @Post()

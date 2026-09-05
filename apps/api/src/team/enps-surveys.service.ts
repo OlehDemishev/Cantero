@@ -9,6 +9,7 @@ import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { SmsService } from "../common/sms/sms.service";
 import { WebhooksService } from "../common/webhooks/webhooks.service";
 import { ENPS_SURVEYS_QUEUE } from "../common/queue/queue.module";
+import { bucketEnpsTrendByMonth } from "./enps-trend-bucket";
 
 const PROMOTER_MIN_SCORE = 9;
 const DETRACTOR_MAX_SCORE = 6;
@@ -132,5 +133,15 @@ export class EnpsSurveysService implements OnModuleInit {
       detractors,
       comments: responded.filter((r) => r.comment).map((r) => ({ comment: r.comment, score: r.score, respondedAt: r.respondedAt })),
     };
+  }
+
+  /** Month-bucketed eNPS score history for a trend chart — see bucketEnpsTrendByMonth for why this never exposes a raw per-respondent row. */
+  async trendByPeriod(companyId: string, months = 12) {
+    const responded = await this.prisma.enpsSurvey.findMany({
+      where: { companyId, respondedAt: { not: null } },
+      select: { score: true, respondedAt: true },
+    });
+    const rows = responded.map((r) => ({ score: r.score!, respondedAt: r.respondedAt! }));
+    return bucketEnpsTrendByMonth(rows, months, new Date());
   }
 }

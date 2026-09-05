@@ -1,4 +1,4 @@
-import { Controller, Get, Header, Body, Param, Patch, Post, Query } from "@nestjs/common";
+import { Controller, Get, Header, Body, Param, Patch, Post, Query, StreamableFile } from "@nestjs/common";
 import {
   createIncidentReportSchema,
   updateIncidentReportSchema,
@@ -29,6 +29,13 @@ export class IncidentReportsController {
   @Get(":id")
   get(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.get(user.companyId, id);
+  }
+
+  @Get(":id/pdf")
+  @Header("Content-Type", "application/pdf")
+  async pdf(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    const buffer = await this.service.generatePdf(user.companyId, id);
+    return new StreamableFile(buffer, { disposition: `attachment; filename="incident-report.pdf"` });
   }
 
   @Post()

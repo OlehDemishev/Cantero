@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { TabNav, type TabNavItem } from "@/components/ui/tab-nav";
 import {
   SUPPORTED_LOCALES,
   SUPPORTED_CURRENCIES,
@@ -167,12 +169,35 @@ interface WebhookDelivery {
   createdAt: string;
 }
 
+const SETTINGS_TAB_KEYS = [
+  "account",
+  "company",
+  "billing",
+  "team",
+  "security",
+  "integrations",
+  "templates",
+  "operations",
+  "marketing",
+] as const;
+type SettingsTabKey = (typeof SETTINGS_TAB_KEYS)[number];
+
 export default function SettingsPage() {
   const t = useTranslations("settings");
   const tc = useTranslations("common");
   const { data: me } = useMe();
   const isManager = me?.user.role === "owner" || me?.user.role === "admin";
   const canManageAccounting = isManager || me?.user.role === "accountant";
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabFromParam = searchParams.get("tab");
+  const activeTab: SettingsTabKey =
+    tabFromParam && (SETTINGS_TAB_KEYS as readonly string[]).includes(tabFromParam) ? (tabFromParam as SettingsTabKey) : "account";
+  function setTab(key: string) {
+    router.replace(`/settings?tab=${key}`, { scroll: false });
+  }
+  const visibleTabKeys = SETTINGS_TAB_KEYS.filter((key) => key !== "operations" || isManager);
+  const TABS: TabNavItem[] = visibleTabKeys.map((key) => ({ key, label: t(`tab_${key}`) }));
 
   const [companyForm, setCompanyForm] = useState<{
     name: string;
@@ -775,7 +800,9 @@ export default function SettingsPage() {
       <h1 className="text-2xl font-semibold">{t("title")}</h1>
       {error && <p className="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
-      {pushStatus !== "unsupported" && (
+      <TabNav tabs={TABS} active={activeTab} onChange={setTab} />
+
+      {activeTab === "account" && pushStatus !== "unsupported" && (
         <section className="card mt-6">
           <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("pushNotifications")}</h2>
           <p className="mb-4 text-xs text-gray-500">{t("pushNotificationsHint")}</p>
@@ -797,6 +824,7 @@ export default function SettingsPage() {
         </section>
       )}
 
+      {activeTab === "account" && (
       <section className="card mt-6">
         <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("emailDigest")}</h2>
         <p className="mb-4 text-xs text-gray-500">{t("emailDigestHint")}</p>
@@ -814,7 +842,9 @@ export default function SettingsPage() {
           {digestSaved && <span className="text-sm text-green-700">{tc("saved")}</span>}
         </div>
       </section>
+      )}
 
+      {activeTab === "account" && (
       <section className="card mt-6">
         <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("mutedNotificationTypes")}</h2>
         <p className="mb-4 text-xs text-gray-500">{t("mutedNotificationTypesHint")}</p>
@@ -833,8 +863,10 @@ export default function SettingsPage() {
         </div>
         {mutedTypesSaved && <span className="mt-2 inline-block text-sm text-green-700">{tc("saved")}</span>}
       </section>
+      )}
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {activeTab === "company" && (
         <section className="card">
           <h2 className="mb-4 text-sm font-semibold text-gray-700">{t("company")}</h2>
           <form onSubmit={saveCompany} className="flex flex-col gap-3">
@@ -1376,7 +1408,9 @@ export default function SettingsPage() {
             </div>
           </div>
         </section>
+        )}
 
+        {activeTab === "billing" && (
         <section id="billing" className="card">
           <h2 className="mb-4 text-sm font-semibold text-gray-700">{t("plan")}</h2>
           <div className="flex flex-col gap-2">
@@ -1435,8 +1469,9 @@ export default function SettingsPage() {
             </button>
           )}
         </section>
+        )}
 
-        {isManager && (
+        {activeTab === "billing" && isManager && (
           <section className="card lg:col-span-2">
             <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("franchise")}</h2>
             <p className="mb-4 text-xs text-gray-500">{t("franchiseHint")}</p>
@@ -1527,6 +1562,7 @@ export default function SettingsPage() {
           </section>
         )}
 
+        {activeTab === "team" && (
         <section className="card lg:col-span-2">
           <h2 className="mb-4 text-sm font-semibold text-gray-700">{t("members")}</h2>
           {!members ? (
@@ -1597,7 +1633,9 @@ export default function SettingsPage() {
             </table>
           )}
         </section>
+        )}
 
+        {activeTab === "team" && (
         <section className="card lg:col-span-2">
           <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("customRoles")}</h2>
           <p className="mb-4 text-xs text-gray-500">{t("customRolesHint")}</p>
@@ -1667,8 +1705,9 @@ export default function SettingsPage() {
             </>
           )}
         </section>
+        )}
 
-        {isManager && (
+        {activeTab === "team" && isManager && (
           <section className="card lg:col-span-2">
             <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("invites")}</h2>
             <p className="mb-4 text-xs text-gray-500">{t("inviteEmailHint")}</p>
@@ -1716,7 +1755,7 @@ export default function SettingsPage() {
           </section>
         )}
 
-        {isManager && (
+        {activeTab === "integrations" && isManager && (
           <section id="api-keys" className="card lg:col-span-2">
             <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("apiKeys")}</h2>
             <p className="mb-4 text-xs text-gray-500">{t("apiKeysHint")}</p>
@@ -1821,7 +1860,7 @@ export default function SettingsPage() {
           </section>
         )}
 
-        {isManager && (
+        {activeTab === "integrations" && isManager && (
           <section id="webhooks" className="card lg:col-span-2">
             <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("webhooks")}</h2>
             <p className="mb-4 text-xs text-gray-500">{t("webhooksHint")}</p>
@@ -1957,33 +1996,33 @@ export default function SettingsPage() {
           </section>
         )}
 
-        <MessageTemplatesPanel />
+        {activeTab === "templates" && <MessageTemplatesPanel />}
 
-        <CustomFieldsSettingsPanel canManage={isManager} />
+        {activeTab === "templates" && <CustomFieldsSettingsPanel canManage={isManager} />}
 
-        <LeadFormSettingsPanel token={leadFormToken} canManage={isManager} onChange={loadLeadFormToken} />
+        {activeTab === "templates" && <LeadFormSettingsPanel token={leadFormToken} canManage={isManager} onChange={loadLeadFormToken} />}
 
-        <CustomPortalDomainPanel canManage={isManager} />
+        {activeTab === "marketing" && <CustomPortalDomainPanel canManage={isManager} />}
 
-        <SsoSettingsPanel canManage={isManager} />
+        {activeTab === "team" && <SsoSettingsPanel canManage={isManager} />}
 
-        <AccountingSyncPanel canManage={canManageAccounting} />
+        {activeTab === "integrations" && <AccountingSyncPanel canManage={canManageAccounting} />}
 
-        <TwoFactorSettingsPanel />
+        {activeTab === "team" && <TwoFactorSettingsPanel />}
 
-        <SessionsPanel />
+        {activeTab === "team" && <SessionsPanel />}
 
-        <SecuritySettingsPanel canManage={isManager} />
+        {activeTab === "security" && <SecuritySettingsPanel canManage={isManager} />}
 
-        <IntegrationsPanel canManage={isManager} />
+        {activeTab === "integrations" && <IntegrationsPanel canManage={isManager} />}
 
-        <DataPrivacyPanel canManage={isManager} />
+        {activeTab === "security" && <DataPrivacyPanel canManage={isManager} />}
 
-        <ReferralProgramPanel />
+        {activeTab === "marketing" && <ReferralProgramPanel />}
 
-        <CompanyCoiPanel canManage={isManager} />
+        {activeTab === "marketing" && <CompanyCoiPanel canManage={isManager} />}
 
-        {isManager && (
+        {activeTab === "security" && isManager && (
           <section className="card lg:col-span-2">
             <div className="mb-1 flex items-center justify-between gap-3">
               <h2 className="text-sm font-semibold text-gray-700">{t("auditLog")}</h2>
@@ -2057,18 +2096,18 @@ export default function SettingsPage() {
           </section>
         )}
 
-        {isManager && <OnboardingTemplatePanel />}
-        {isManager && <OffboardingTemplatePanel />}
-        {isManager && <TrainingCatalogPanel />}
-        {isManager && <BondingCapacityPanel />}
-        {isManager && <MarketingCampaignsPanel />}
-        {isManager && <SlaPoliciesPanel />}
-        {isManager && <TaxJurisdictionsPanel />}
-        {isManager && <BenefitPlansPanel />}
-        {isManager && <InspectionTemplatesPanel />}
-        {isManager && <CostCodesPanel />}
-        {isManager && <WageClassificationsPanel />}
-        {isManager && <MarkupRulesPanel />}
+        {activeTab === "templates" && isManager && <OnboardingTemplatePanel />}
+        {activeTab === "templates" && isManager && <OffboardingTemplatePanel />}
+        {activeTab === "templates" && isManager && <TrainingCatalogPanel />}
+        {activeTab === "operations" && isManager && <BondingCapacityPanel />}
+        {activeTab === "marketing" && isManager && <MarketingCampaignsPanel />}
+        {activeTab === "operations" && isManager && <SlaPoliciesPanel />}
+        {activeTab === "operations" && isManager && <TaxJurisdictionsPanel />}
+        {activeTab === "operations" && isManager && <BenefitPlansPanel />}
+        {activeTab === "operations" && isManager && <InspectionTemplatesPanel />}
+        {activeTab === "operations" && isManager && <CostCodesPanel />}
+        {activeTab === "operations" && isManager && <WageClassificationsPanel />}
+        {activeTab === "operations" && isManager && <MarkupRulesPanel />}
       </div>
     </AuthenticatedShell>
   );

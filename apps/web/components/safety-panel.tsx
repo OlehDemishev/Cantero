@@ -6,6 +6,7 @@ import { INCIDENT_SEVERITIES, OSHA_CASE_TYPES, type IncidentSeverity, type OshaC
 import { apiFetch } from "@/lib/api-client";
 import { PhotoAttachments } from "@/components/photo-attachments";
 import { TemplatePicker } from "@/components/template-picker";
+import { PrintButton } from "@/components/ui/print-button";
 
 interface Worker {
   id: string;
@@ -209,7 +210,10 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("title")}</h2>
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-gray-700">{t("title")}</h2>
+        <PrintButton />
+      </div>
 
       <div className="mb-2 flex items-center justify-between">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">{t("incidents")}</h3>

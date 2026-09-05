@@ -4,6 +4,8 @@ import { PunchListService } from "./punch-list.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService } from "../common/audit/audit.service";
 import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { PdfService } from "../common/pdf/pdf.service";
+import { StorageService } from "../common/storage/storage.service";
 
 const COMPANY_A = "company-a";
 const ACTOR = { userId: "user-1", name: "Foreman" };
@@ -37,6 +39,8 @@ describe("PunchListService", () => {
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: audit },
         { provide: WebhooksService, useValue: webhooks },
+        { provide: PdfService, useValue: { render: jest.fn(), renderTextDocument: jest.fn() } },
+        { provide: StorageService, useValue: { read: jest.fn() } },
       ],
     }).compile();
 

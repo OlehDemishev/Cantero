@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useDeepLinkedRow, buildItemDeepLink } from "@/lib/use-deep-linked-row";
+import { CopyLinkButton } from "@/components/ui/copy-link-button";
+import { PrintButton } from "@/components/ui/print-button";
 
 interface MeetingActionItem {
   id: string;
@@ -38,11 +41,14 @@ export function MeetingsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("meetings");
   const tc = useTranslations("common");
 
+  const deepLinkedId = useDeepLinkedRow("meeting");
+  const rowRefs = useRef<Record<string, HTMLLIElement | null>>({});
+
   const [items, setItems] = useState<Meeting[] | null>(null);
   const [openItems, setOpenItems] = useState<OpenActionItem[]>([]);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(deepLinkedId);
   const [busy, setBusy] = useState(false);
   const [actionItemDrafts, setActionItemDrafts] = useState<Record<string, { description: string; ownerName: string }>>({});
 
@@ -52,6 +58,12 @@ export function MeetingsPanel({ projectId }: { projectId: string }) {
   }
 
   useEffect(load, [projectId]);
+
+  useEffect(() => {
+    if (!deepLinkedId || !items) return;
+    rowRefs.current[deepLinkedId]?.scrollIntoView({ behavior: "smooth", block: "center" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, deepLinkedId]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -107,11 +119,14 @@ export function MeetingsPanel({ projectId }: { projectId: string }) {
     <div className="mt-10">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-gray-700">{t("title")}</h2>
-        {!creating && (
-          <button onClick={() => setCreating(true)} className="btn-secondary px-3 py-1 text-xs">
-            {t("newMeeting")}
-          </button>
-        )}
+        <div className="flex items-center gap-1.5">
+          {!creating && (
+            <button onClick={() => setCreating(true)} className="btn-secondary px-3 py-1 text-xs">
+              {t("newMeeting")}
+            </button>
+          )}
+          <PrintButton />
+        </div>
       </div>
 
       {creating && (
@@ -181,21 +196,28 @@ export function MeetingsPanel({ projectId }: { projectId: string }) {
             const expanded = expandedId === meeting.id;
             const draft = actionItemDrafts[meeting.id] ?? { description: "", ownerName: "" };
             return (
-              <li key={meeting.id} className="card">
-                <button onClick={() => setExpandedId(expanded ? null : meeting.id)} className="flex w-full items-start justify-between gap-3 text-left">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-mono text-gray-400">#{meeting.number}</span>
-                      <span className="text-sm font-medium text-gray-900">{meeting.title}</span>
+              <li
+                key={meeting.id}
+                ref={(el) => { rowRefs.current[meeting.id] = el; }}
+                className={`card ${deepLinkedId === meeting.id ? "ring-2 ring-brand-300" : ""}`}
+              >
+                <div className="flex items-start gap-2">
+                  <CopyLinkButton url={buildItemDeepLink(projectId, "quality", "meeting", meeting.id)} />
+                  <button onClick={() => setExpandedId(expanded ? null : meeting.id)} className="flex w-full items-start justify-between gap-3 text-left">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono text-gray-400">#{meeting.number}</span>
+                        <span className="text-sm font-medium text-gray-900">{meeting.title}</span>
+                      </div>
+                      <div className="mt-1 text-xs text-gray-500">{new Date(meeting.meetingDate).toLocaleDateString()}</div>
                     </div>
-                    <div className="mt-1 text-xs text-gray-500">{new Date(meeting.meetingDate).toLocaleDateString()}</div>
-                  </div>
                   {meeting.actionItems.filter((a) => a.status === "open").length > 0 && (
                     <span className="rounded-full bg-warning-50 px-2 py-0.5 text-xs font-medium text-warning-700">
                       {t("openCount", { count: meeting.actionItems.filter((a) => a.status === "open").length })}
                     </span>
                   )}
-                </button>
+                  </button>
+                </div>
 
                 {expanded && (
                   <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 pt-3 text-sm">

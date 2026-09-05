@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 
 interface ProjectSafetyRow {
@@ -82,8 +83,6 @@ export function SafetyScorecardPanel() {
     }
   }
 
-  const maxTrend = scorecard ? Math.max(...scorecard.monthlyTrend.map((m) => m.totalIncidents), 1) : 1;
-
   return (
     <div className="mt-10">
       <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
@@ -126,21 +125,17 @@ export function SafetyScorecardPanel() {
             </div>
           </div>
 
-          <div className="mt-4 overflow-x-auto rounded-lg border border-gray-200 bg-white p-4">
-            <div className="flex items-end gap-2" style={{ minWidth: scorecard.monthlyTrend.length * 32 }}>
-              {scorecard.monthlyTrend.map((m) => (
-                <div key={m.month} className="flex flex-1 flex-col items-center gap-1">
-                  <div className="flex h-20 items-end">
-                    <div
-                      className="w-4 rounded-t bg-warning-500"
-                      style={{ height: `${(m.totalIncidents / maxTrend) * 100}%` }}
-                      title={`${t("totalIncidents")}: ${m.totalIncidents}`}
-                    />
-                  </div>
-                  <span className="text-[10px] text-gray-400">{m.month}</span>
-                </div>
-              ))}
-            </div>
+          <div className="card mt-4 h-56 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={scorecard.monthlyTrend}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-gray-200, #e5e7eb)" />
+                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Bar dataKey="totalIncidents" name={t("totalIncidents")} fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="recordableCount" name={t("recordableCases")} fill="#e7000b" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
 
           {scorecard.projects.length > 0 && (

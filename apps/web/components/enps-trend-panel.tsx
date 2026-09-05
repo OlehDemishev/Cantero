@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { apiFetch } from "@/lib/api-client";
 
 interface EnpsComment {
@@ -18,18 +19,26 @@ interface EnpsTrend {
   detractors: number;
   comments: EnpsComment[];
 }
+interface EnpsMonthBucket {
+  month: string;
+  enpsScore: number | null;
+  responseCount: number;
+}
 
 export function EnpsTrendPanel() {
   const t = useTranslations("enpsTrend");
   const [data, setData] = useState<EnpsTrend | null>(null);
+  const [history, setHistory] = useState<EnpsMonthBucket[] | null>(null);
 
   useEffect(() => {
     apiFetch<EnpsTrend>("/enps-surveys/trend").then(setData);
+    apiFetch<EnpsMonthBucket[]>("/enps-surveys/trend-by-period").then(setHistory);
   }, []);
 
   if (!data || data.totalResponses === 0) return null;
 
   const scoreColor = data.enpsScore! >= 50 ? "text-success-700" : data.enpsScore! >= 0 ? "text-amber-600" : "text-error-700";
+  const monthsWithData = history?.filter((m) => m.responseCount > 0) ?? [];
 
   return (
     <div className="mt-8">
@@ -53,6 +62,20 @@ export function EnpsTrendPanel() {
           <span>{t("detractors")}: {data.detractors}</span>
         </div>
       </div>
+
+      {monthsWithData.length > 1 && (
+        <div className="card mt-3 h-56 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={history!}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-gray-200, #e5e7eb)" />
+              <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+              <YAxis domain={[-100, 100]} tick={{ fontSize: 11 }} />
+              <Tooltip />
+              <Bar dataKey="enpsScore" fill="#465fff" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
 
       {data.comments.length > 0 && (
         <div className="card mt-3">

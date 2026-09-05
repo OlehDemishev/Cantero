@@ -3,6 +3,8 @@ import { Test } from "@nestjs/testing";
 import { MeetingsService } from "./meetings.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService } from "../common/audit/audit.service";
+import { PdfService } from "../common/pdf/pdf.service";
+import { StorageService } from "../common/storage/storage.service";
 
 const COMPANY_A = "company-a";
 const PROJECT_A = "project-a";
@@ -26,7 +28,13 @@ describe("MeetingsService", () => {
     audit = { record: jest.fn() };
 
     const module = await Test.createTestingModule({
-      providers: [MeetingsService, { provide: PrismaService, useValue: prisma }, { provide: AuditService, useValue: audit }],
+      providers: [
+        MeetingsService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: AuditService, useValue: audit },
+        { provide: PdfService, useValue: { render: jest.fn(), renderTextDocument: jest.fn() } },
+        { provide: StorageService, useValue: { read: jest.fn() } },
+      ],
     }).compile();
 
     service = module.get(MeetingsService);

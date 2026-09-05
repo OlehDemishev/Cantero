@@ -437,3 +437,12 @@ export function ToolCribIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function OpenItemsIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <circle cx="10" cy="10" r="7" />
+      <path d="M10 6.5v3.5l2.5 1.5" />
+    </Icon>
+  );
+}
+

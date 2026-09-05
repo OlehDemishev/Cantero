@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { DndContext, KeyboardSensor, PointerSensor, useDraggable, useDroppable, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { TASK_DEPENDENCY_TYPES, type TaskDependencyType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { CommentsThread } from "@/components/comments-thread";
@@ -86,6 +87,16 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
     load();
   }
 
+  const dndSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }), useSensor(KeyboardSensor));
+
+  function handleDragEnd(event: DragEndEvent) {
+    const taskId = String(event.active.id);
+    const newStatus = event.over?.id as TaskStatus | undefined;
+    if (!newStatus || !STATUSES.includes(newStatus)) return;
+    const task = (tasks ?? []).find((t) => t.id === taskId);
+    if (task && task.status !== newStatus) moveTask(taskId, newStatus);
+  }
+
   async function changeTaskDates(taskId: string, startDate: Date, dueDate: Date) {
     await apiFetch(`/tasks/${taskId}`, {
       method: "PATCH",
@@ -142,13 +153,14 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("board")}</h2>
+      <DndContext sensors={dndSensors} onDragEnd={handleDragEnd}>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {STATUSES.map((status) => (
-          <div key={status} className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+          <DroppableColumn key={status} id={status}>
             <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{t(status)}</div>
             <div className="flex flex-col gap-2">
               {(tasks ?? []).filter((task) => task.status === status).map((task) => (
-                <div key={task.id} className="card">
+                <DraggableTaskCard key={task.id} id={task.id}>
                   <div className="flex items-center gap-1.5">
                     <span className="text-sm font-medium">{task.name}</span>
                     {criticalTaskIds.has(task.id) && (
@@ -246,12 +258,13 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
                       <CommentsThread param="taskId" entityId={task.id} />
                     </div>
                   )}
-                </div>
+                </DraggableTaskCard>
               ))}
             </div>
-          </div>
+          </DroppableColumn>
         ))}
       </div>
+      </DndContext>
 
       <form onSubmit={createTask} className="mt-4 flex flex-wrap items-end gap-2">
         <input
@@ -514,6 +527,45 @@ function GanttChart({
           );
         })}
       </div>
+    </div>
+  );
+}
+
+function DroppableColumn({ id, children }: { id: string; children: React.ReactNode }) {
+  const { setNodeRef, isOver } = useDroppable({ id });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`rounded-lg border p-3 transition-colors ${isOver ? "border-brand-400 bg-brand-50/40" : "border-gray-200 bg-gray-50"}`}
+    >
+      {children}
+    </div>
+  );
+}
+
+function DraggableTaskCard({ id, children }: { id: string; children: React.ReactNode }) {
+  const t = useTranslations("scheduling");
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id });
+  const style = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : undefined;
+  return (
+    <div ref={setNodeRef} style={style} className={`card relative ${isDragging ? "z-10 opacity-80 shadow-theme-md" : ""}`}>
+      <button
+        {...listeners}
+        {...attributes}
+        type="button"
+        title={t("dragToMove")}
+        className="absolute right-2 top-2 cursor-grab touch-none text-gray-300 hover:text-gray-500 active:cursor-grabbing"
+      >
+        <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+          <circle cx="6" cy="5" r="1.3" />
+          <circle cx="6" cy="10" r="1.3" />
+          <circle cx="6" cy="15" r="1.3" />
+          <circle cx="12" cy="5" r="1.3" />
+          <circle cx="12" cy="10" r="1.3" />
+          <circle cx="12" cy="15" r="1.3" />
+        </svg>
+      </button>
+      {children}
     </div>
   );
 }

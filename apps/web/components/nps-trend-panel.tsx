@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { apiFetch } from "@/lib/api-client";
 
 interface NpsResponse {
@@ -55,6 +56,20 @@ export function NpsTrendPanel() {
           <span>{t("detractors")}: {data.detractors}</span>
         </div>
       </div>
+
+      {data.responses.length > 1 && (
+        <div className="card mt-3 h-56 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={data.responses.map((r) => ({ date: new Date(r.respondedAt).toLocaleDateString(), score: r.score }))}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-gray-200, #e5e7eb)" />
+              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+              <YAxis domain={[0, 10]} tick={{ fontSize: 11 }} />
+              <Tooltip />
+              <Line type="monotone" dataKey="score" stroke="#465fff" strokeWidth={2} dot={{ r: 3 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
 
       {data.responses.some((r) => r.comment) && (
         <div className="card mt-3">

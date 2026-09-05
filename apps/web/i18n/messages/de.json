@@ -30,7 +30,10 @@
     "close": "Schließen",
     "add": "Hinzufügen",
     "send": "Senden",
-    "all": "Alle"
+    "all": "Alle",
+    "copyLink": "Link kopieren",
+    "linkCopied": "Kopiert",
+    "print": "Drucken"
   },
   "nav": {
     "menu": "Menü",
@@ -68,7 +71,8 @@
     "supportTickets": "Support-Tickets",
     "hazmat": "Sicherheitsdatenblätter",
     "benefits": "Sozialleistungen",
-    "toolCrib": "Werkzeugausgabe"
+    "toolCrib": "Werkzeugausgabe",
+    "openItems": "Offene Vorgänge"
   },
   "auth": {
     "signupTitle": "Cantero-Konto erstellen",
@@ -405,7 +409,16 @@
     "rateCatalogApprovalThresholdPercentHint": "Eine Änderung der Arbeitsstunden um mehr als diesen Prozentsatz wird zur Genehmigung zurückgestellt, statt sofort übernommen zu werden. Leer lassen, um jede Änderung sofort zu übernehmen.",
     "noThresholdPlaceholder": "Kein Schwellenwert",
     "npsDetractorFollowUpEnabled": "NPS-Detraktor-Nachverfolgung",
-    "npsDetractorFollowUpEnabledHint": "Eine Kundenbewertung von 6/10 oder darunter fügt dem Projekt eine Folgeaufgabe hinzu und benachrichtigt den/die Firmeninhaber per E-Mail."
+    "npsDetractorFollowUpEnabledHint": "Eine Kundenbewertung von 6/10 oder darunter fügt dem Projekt eine Folgeaufgabe hinzu und benachrichtigt den/die Firmeninhaber per E-Mail.",
+    "tab_account": "Konto & Benachrichtigungen",
+    "tab_company": "Unternehmen & Branding",
+    "tab_billing": "Abrechnung & Franchise",
+    "tab_team": "Team & Zugriff",
+    "tab_security": "Sicherheit & Compliance",
+    "tab_integrations": "Integrationen & API",
+    "tab_templates": "Vorlagen & Inhalte",
+    "tab_operations": "Betrieb",
+    "tab_marketing": "Marketing"
   },
   "projects": {
     "title": "Projekte",
@@ -426,7 +439,15 @@
     "billingCurrencyDefault": "Unternehmensstandard ({currency})",
     "budgetAlertThreshold": "Budget-Warnschwelle überschreiben",
     "contingencyAmount": "Sicherheitsreserve",
-    "contingencyAmountPlaceholder": "Nicht festgelegt"
+    "contingencyAmountPlaceholder": "Nicht festgelegt",
+    "tab_overview": "Übersicht",
+    "tab_schedule": "Zeitplan",
+    "tab_financials": "Finanzen",
+    "tab_field": "Baustelle & Sicherheit",
+    "tab_quality": "Qualität & Feldprotokolle",
+    "tab_compliance": "Compliance & Verträge",
+    "tab_subcontractors": "Nachunternehmer",
+    "tab_documents": "Dokumente & Abschluss"
   },
   "clients": {
     "title": "Kunden",
@@ -1196,7 +1217,8 @@
     "markMissed": "Als verfehlt markieren",
     "completed": "Erledigt",
     "missedWithReason": "Verfehlt — {reason}",
-    "varianceReasonPlaceholder": "Warum wurde es verfehlt?"
+    "varianceReasonPlaceholder": "Warum wurde es verfehlt?",
+    "dragToMove": "Zum Verschieben zwischen Spalten ziehen"
   },
   "purchaseOrders": {
     "title": "Bestellungen",
@@ -1718,7 +1740,10 @@
     "billedToDate": "Abgerechnet",
     "fundedToDate": "Finanziert",
     "openDraws": "Auszahlungen",
-    "convertedToCurrency": "Alle Werte in die Berichtswährung des Unternehmens ({currency}) umgerechnet."
+    "convertedToCurrency": "Alle Werte in die Berichtswährung des Unternehmens ({currency}) umgerechnet.",
+    "tab_overview": "Übersicht",
+    "tab_map": "Karte",
+    "noProjectCoordinates": "Für noch kein Projekt ist ein Geofence-Standort festgelegt — fügen Sie einen im Reiter ‘Baustelle & Sicherheit’ eines Projekts hinzu, um ihn hier zu sehen."
   },
   "warranty": {
     "title": "Gewährleistung",
@@ -2473,7 +2498,8 @@
     "transferAmountPlaceholder": "Betrag",
     "transferReasonPlaceholder": "Grund für diese Umbuchung",
     "noTransfers": "Es wurde noch kein Budget zwischen Kostencodes verschoben.",
-    "transferLogEntry": "{amount} von {from} nach {to} umgebucht"
+    "transferLogEntry": "{amount} von {from} nach {to} umgebucht",
+    "burnDown": "Kostenverlauf"
   },
   "security": {
     "title": "Sicherheit",
@@ -3893,5 +3919,22 @@
     "risk_critical": "Kritisch",
     "risk_unscheduled": "Nicht terminiert",
     "noItems": "Noch keine langfristigen Beschaffungsposten erfasst."
+  },
+  "openItems": {
+    "title": "Offene Vorgänge",
+    "subtitle": "Offene RFIs, Mängelliste-Einträge und ausstehende Einreichungen über alle Projekte hinweg, an einem Ort.",
+    "tab_rfis": "RFIs",
+    "tab_punchList": "Mängelliste",
+    "tab_submittals": "Einreichungen",
+    "project": "Projekt",
+    "number": "Nummer",
+    "subject": "Betreff",
+    "itemTitle": "Titel",
+    "status": "Status",
+    "priority": "Priorität",
+    "dueDate": "Fälligkeitsdatum",
+    "noOpenRfis": "Keine offenen RFIs in allen Projekten.",
+    "noOpenPunchList": "Keine offenen Mängelliste-Einträge in allen Projekten.",
+    "noPendingSubmittals": "Keine zur Prüfung ausstehenden Einreichungen in allen Projekten."
   }
 }

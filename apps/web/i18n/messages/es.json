@@ -30,7 +30,10 @@
     "close": "Cerrar",
     "add": "Añadir",
     "send": "Enviar",
-    "all": "Todos"
+    "all": "Todos",
+    "copyLink": "Copiar enlace",
+    "linkCopied": "Copiado",
+    "print": "Imprimir"
   },
   "nav": {
     "menu": "Menú",
@@ -68,7 +71,8 @@
     "supportTickets": "Tickets de soporte",
     "hazmat": "Fichas de seguridad",
     "benefits": "Beneficios",
-    "toolCrib": "Pañol de herramientas"
+    "toolCrib": "Pañol de herramientas",
+    "openItems": "Elementos abiertos"
   },
   "auth": {
     "signupTitle": "Crea tu cuenta de Cantero",
@@ -405,7 +409,16 @@
     "rateCatalogApprovalThresholdPercentHint": "Una edición de horas de mano de obra que cambie una partida en más de este porcentaje se retiene para aprobación en lugar de aplicarse de inmediato. Déjalo en blanco para aplicar cada cambio al instante.",
     "noThresholdPlaceholder": "Sin umbral",
     "npsDetractorFollowUpEnabled": "Seguimiento de detractores NPS",
-    "npsDetractorFollowUpEnabledHint": "Una respuesta del cliente de 6/10 o menos agrega una tarea de seguimiento al proyecto y notifica por correo al propietario(s) de la empresa."
+    "npsDetractorFollowUpEnabledHint": "Una respuesta del cliente de 6/10 o menos agrega una tarea de seguimiento al proyecto y notifica por correo al propietario(s) de la empresa.",
+    "tab_account": "Cuenta y notificaciones",
+    "tab_company": "Empresa y marca",
+    "tab_billing": "Facturación y franquicia",
+    "tab_team": "Equipo y acceso",
+    "tab_security": "Seguridad y cumplimiento",
+    "tab_integrations": "Integraciones y API",
+    "tab_templates": "Plantillas y contenido",
+    "tab_operations": "Operaciones",
+    "tab_marketing": "Marketing"
   },
   "projects": {
     "title": "Proyectos",
@@ -426,7 +439,15 @@
     "billingCurrencyDefault": "Predeterminada de la empresa ({currency})",
     "budgetAlertThreshold": "Anular umbral de alerta de presupuesto",
     "contingencyAmount": "Reserva de contingencia",
-    "contingencyAmountPlaceholder": "No establecida"
+    "contingencyAmountPlaceholder": "No establecida",
+    "tab_overview": "Resumen",
+    "tab_schedule": "Cronograma",
+    "tab_financials": "Finanzas",
+    "tab_field": "Campo y seguridad",
+    "tab_quality": "Calidad y registros de campo",
+    "tab_compliance": "Cumplimiento y contratos",
+    "tab_subcontractors": "Subcontratistas",
+    "tab_documents": "Documentos y cierre"
   },
   "clients": {
     "title": "Clientes",
@@ -1196,7 +1217,8 @@
     "markMissed": "Marcar como incumplida",
     "completed": "Completada",
     "missedWithReason": "Incumplida — {reason}",
-    "varianceReasonPlaceholder": "¿Por qué no se cumplió?"
+    "varianceReasonPlaceholder": "¿Por qué no se cumplió?",
+    "dragToMove": "Arrastra para mover entre columnas"
   },
   "purchaseOrders": {
     "title": "Pedidos de compra",
@@ -1718,7 +1740,10 @@
     "billedToDate": "Facturado",
     "fundedToDate": "Financiado",
     "openDraws": "Desembolsos",
-    "convertedToCurrency": "Todas las cifras convertidas a la moneda de referencia de la empresa ({currency})."
+    "convertedToCurrency": "Todas las cifras convertidas a la moneda de referencia de la empresa ({currency}).",
+    "tab_overview": "Resumen",
+    "tab_map": "Mapa",
+    "noProjectCoordinates": "Ningún proyecto tiene una ubicación de geocerca configurada todavía — agréguela desde la pestaña de Campo y seguridad de un proyecto para verla aquí."
   },
   "warranty": {
     "title": "Garantía",
@@ -2473,7 +2498,8 @@
     "transferAmountPlaceholder": "Importe",
     "transferReasonPlaceholder": "Motivo de esta transferencia",
     "noTransfers": "Aún no se ha movido presupuesto entre códigos de costo.",
-    "transferLogEntry": "Se transfirió {amount} de {from} a {to}"
+    "transferLogEntry": "Se transfirió {amount} de {from} a {to}",
+    "burnDown": "Evolución de costos"
   },
   "security": {
     "title": "Seguridad",
@@ -3893,5 +3919,22 @@
     "risk_critical": "Crítico",
     "risk_unscheduled": "Sin programar",
     "noItems": "Aún no se han registrado artículos de plazo largo."
+  },
+  "openItems": {
+    "title": "Elementos abiertos",
+    "subtitle": "RFI abiertas, elementos de la lista de pendientes y presentaciones pendientes de todos los proyectos, en un solo lugar.",
+    "tab_rfis": "RFI",
+    "tab_punchList": "Lista de pendientes",
+    "tab_submittals": "Presentaciones",
+    "project": "Proyecto",
+    "number": "Número",
+    "subject": "Asunto",
+    "itemTitle": "Título",
+    "status": "Estado",
+    "priority": "Prioridad",
+    "dueDate": "Fecha de vencimiento",
+    "noOpenRfis": "No hay RFI abiertas en ningún proyecto.",
+    "noOpenPunchList": "No hay elementos abiertos de la lista de pendientes en ningún proyecto.",
+    "noPendingSubmittals": "No hay presentaciones pendientes de revisión en ningún proyecto."
   }
 }

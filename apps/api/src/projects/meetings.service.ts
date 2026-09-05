@@ -2,12 +2,16 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import type { AddMeetingActionItemInput, CreateMeetingInput, ResolveMeetingActionItemInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
+import { PdfService } from "../common/pdf/pdf.service";
+import { StorageService } from "../common/storage/storage.service";
 
 @Injectable()
 export class MeetingsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly pdf: PdfService,
+    private readonly storage: StorageService,
   ) {}
 
   listForProject(companyId: string, projectId: string) {
@@ -79,6 +83,36 @@ export class MeetingsService {
     });
     this.audit.record(companyId, actor, "meeting.action_item_resolved", "MeetingActionItem", itemId, `${input.resolvedByName} resolved an action item from meeting #${item.meeting.number}: ${item.description}`);
     return updated;
+  }
+
+  /** Printable minutes for one meeting — attendees/location/notes as meta lines, action items as the table, same PdfService shape as invoices/estimates. */
+  async generatePdf(companyId: string, id: string): Promise<Buffer> {
+    const meeting = await this.prisma.meeting.findFirst({
+      where: { id, companyId },
+      include: { actionItems: { orderBy: { createdAt: "asc" } }, project: { select: { name: true } } },
+    });
+    if (!meeting) throw new NotFoundException("Meeting not found");
+    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    const logoBuffer = company.logoStorageKey ? await this.storage.read(company.logoStorageKey).catch(() => undefined) : undefined;
+
+    const meta = [
+      { label: "Date", value: meeting.meetingDate.toISOString().slice(0, 10) },
+      ...(meeting.location ? [{ label: "Location", value: meeting.location }] : []),
+      ...(meeting.attendees.length > 0 ? [{ label: "Attendees", value: meeting.attendees.join(", ") }] : []),
+      ...(meeting.notes ? [{ label: "Notes", value: meeting.notes }] : []),
+    ];
+
+    return this.pdf.render({
+      title: `Meeting #${meeting.number} — ${meeting.title}`,
+      subtitle: meeting.project.name,
+      meta,
+      tableHeader: ["Action item", "Owner", "Due date", "Status"],
+      tableRows: meeting.actionItems.map((item) => ({
+        cells: [item.description, item.ownerName, item.dueDate ? item.dueDate.toISOString().slice(0, 10) : "—", item.status],
+      })),
+      totals: [],
+      branding: { logoBuffer, accentColor: company.brandColor ?? undefined },
+    });
   }
 
   private async findOrThrow(companyId: string, id: string) {

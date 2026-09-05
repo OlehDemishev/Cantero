@@ -30,7 +30,10 @@
     "close": "Zamknij",
     "add": "Dodaj",
     "send": "Wyślij",
-    "all": "Wszystkie"
+    "all": "Wszystkie",
+    "copyLink": "Kopiuj link",
+    "linkCopied": "Skopiowano",
+    "print": "Drukuj"
   },
   "nav": {
     "menu": "Menu",
@@ -68,7 +71,8 @@
     "supportTickets": "Zgłoszenia wsparcia",
     "hazmat": "Karty charakterystyki",
     "benefits": "Świadczenia",
-    "toolCrib": "Magazyn narzędzi"
+    "toolCrib": "Magazyn narzędzi",
+    "openItems": "Otwarte pozycje"
   },
   "auth": {
     "signupTitle": "Utwórz konto Cantero",
@@ -405,7 +409,16 @@
     "rateCatalogApprovalThresholdPercentHint": "Zmiana godzin roboczych o więcej niż ten procent jest wstrzymywana do zatwierdzenia zamiast zastosowana od razu. Pozostaw puste, aby każda zmiana obowiązywała natychmiast.",
     "noThresholdPlaceholder": "Brak progu",
     "npsDetractorFollowUpEnabled": "Działania następcze przy niskim NPS",
-    "npsDetractorFollowUpEnabledHint": "Odpowiedź klienta na poziomie 6/10 lub niższym dodaje zadanie następcze do projektu i wysyła e-mail do właściciela(i) firmy."
+    "npsDetractorFollowUpEnabledHint": "Odpowiedź klienta na poziomie 6/10 lub niższym dodaje zadanie następcze do projektu i wysyła e-mail do właściciela(i) firmy.",
+    "tab_account": "Konto i powiadomienia",
+    "tab_company": "Firma i marka",
+    "tab_billing": "Rozliczenia i franczyza",
+    "tab_team": "Zespół i dostęp",
+    "tab_security": "Bezpieczeństwo i zgodność",
+    "tab_integrations": "Integracje i API",
+    "tab_templates": "Szablony i treści",
+    "tab_operations": "Operacje",
+    "tab_marketing": "Marketing"
   },
   "projects": {
     "title": "Projekty",
@@ -426,7 +439,15 @@
     "billingCurrencyDefault": "Domyślna firmy ({currency})",
     "budgetAlertThreshold": "Nadpisz próg alertu budżetowego",
     "contingencyAmount": "Rezerwa na nieprzewidziane wydatki",
-    "contingencyAmountPlaceholder": "Nie ustawiono"
+    "contingencyAmountPlaceholder": "Nie ustawiono",
+    "tab_overview": "Przegląd",
+    "tab_schedule": "Harmonogram",
+    "tab_financials": "Finanse",
+    "tab_field": "Budowa i BHP",
+    "tab_quality": "Jakość i zapisy terenowe",
+    "tab_compliance": "Zgodność i umowy",
+    "tab_subcontractors": "Podwykonawcy",
+    "tab_documents": "Dokumenty i zamknięcie"
   },
   "clients": {
     "title": "Klienci",
@@ -1196,7 +1217,8 @@
     "markMissed": "Oznacz jako niewykonane",
     "completed": "Wykonano",
     "missedWithReason": "Niewykonano — {reason}",
-    "varianceReasonPlaceholder": "Dlaczego nie wykonano?"
+    "varianceReasonPlaceholder": "Dlaczego nie wykonano?",
+    "dragToMove": "Przeciągnij, aby przenieść między kolumnami"
   },
   "purchaseOrders": {
     "title": "Zamówienia zakupu",
@@ -1718,7 +1740,10 @@
     "billedToDate": "Zafakturowano",
     "fundedToDate": "Sfinansowano",
     "openDraws": "Transze",
-    "convertedToCurrency": "Wszystkie kwoty przeliczone na walutę sprawozdawczą firmy ({currency})."
+    "convertedToCurrency": "Wszystkie kwoty przeliczone na walutę sprawozdawczą firmy ({currency}).",
+    "tab_overview": "Przegląd",
+    "tab_map": "Mapa",
+    "noProjectCoordinates": "Żaden projekt nie ma jeszcze ustawionej lokalizacji geofencingu — dodaj ją w zakładce Budowa i BHP projektu, aby zobaczyć ją tutaj."
   },
   "warranty": {
     "title": "Gwarancja",
@@ -2473,7 +2498,8 @@
     "transferAmountPlaceholder": "Kwota",
     "transferReasonPlaceholder": "Powód tego transferu",
     "noTransfers": "Nie przeniesiono jeszcze budżetu między kodami kosztowymi.",
-    "transferLogEntry": "Przeniesiono {amount} z {from} do {to}"
+    "transferLogEntry": "Przeniesiono {amount} z {from} do {to}",
+    "burnDown": "Wykres wydatkowania budżetu"
   },
   "security": {
     "title": "Bezpieczeństwo",
@@ -3893,5 +3919,22 @@
     "risk_critical": "Krytyczne",
     "risk_unscheduled": "Nie zaplanowano",
     "noItems": "Nie śledzono jeszcze żadnych pozycji o długim czasie realizacji."
+  },
+  "openItems": {
+    "title": "Otwarte pozycje",
+    "subtitle": "Otwarte RFI, pozycje listy usterek i oczekujące zgłoszenia ze wszystkich projektów w jednym miejscu.",
+    "tab_rfis": "RFI",
+    "tab_punchList": "Lista usterek",
+    "tab_submittals": "Zgłoszenia",
+    "project": "Projekt",
+    "number": "Numer",
+    "subject": "Temat",
+    "itemTitle": "Tytuł",
+    "status": "Status",
+    "priority": "Priorytet",
+    "dueDate": "Termin",
+    "noOpenRfis": "Brak otwartych RFI we wszystkich projektach.",
+    "noOpenPunchList": "Brak otwartych pozycji listy usterek we wszystkich projektach.",
+    "noPendingSubmittals": "Brak zgłoszeń oczekujących na przegląd we wszystkich projektach."
   }
 }

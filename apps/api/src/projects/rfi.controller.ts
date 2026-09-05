@@ -34,6 +34,11 @@ export class RfiController {
     return this.service.listForProject(user.companyId, projectId, ballInCourtParty);
   }
 
+  @Get("company-open")
+  listOpenForCompany(@CurrentUser() user: AuthUser) {
+    return this.service.listOpenForCompany(user.companyId);
+  }
+
   @Get("cost-impact-summary")
   costImpactSummary(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string) {
     return this.service.costImpactSummary(user.companyId, projectId);

@@ -19,6 +19,11 @@ export class EnpsSurveysController {
     return this.service.trend(user.companyId);
   }
 
+  @Get("trend-by-period")
+  trendByPeriod(@CurrentUser() user: AuthUser) {
+    return this.service.trendByPeriod(user.companyId);
+  }
+
   @Public()
   @Post(":token")
   submit(@Param("token") token: string, @Body(new ZodValidationPipe(submitEnpsSurveySchema)) body: SubmitEnpsSurveyInput) {

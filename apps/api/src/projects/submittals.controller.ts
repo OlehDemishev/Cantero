@@ -23,6 +23,11 @@ export class SubmittalsController {
     return this.service.listForProject(user.companyId, projectId);
   }
 
+  @Get("company-pending")
+  listPendingForCompany(@CurrentUser() user: AuthUser) {
+    return this.service.listPendingForCompany(user.companyId);
+  }
+
   @Get(":id")
   get(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.get(user.companyId, id);

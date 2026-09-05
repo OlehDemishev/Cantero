@@ -2,9 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import type { CostCode } from "@/components/cost-codes-panel";
+
+interface CostHistoryMonth {
+  month: string;
+  committed: number;
+  actual: number;
+  cumulativeActual: number;
+}
 
 interface JobCostRow {
   costCodeId: string | null;
@@ -48,6 +56,7 @@ export function JobCostingPanel({ projectId }: { projectId: string }) {
   const currency = me?.company.currency ?? "";
 
   const [report, setReport] = useState<JobCostForecast | null>(null);
+  const [history, setHistory] = useState<CostHistoryMonth[] | null>(null);
   const [costCodes, setCostCodes] = useState<CostCode[]>([]);
   const [transferring, setTransferring] = useState(false);
   const [transferForm, setTransferForm] = useState({ fromCostCodeId: "", toCostCodeId: "", amount: "", reason: "" });
@@ -56,6 +65,7 @@ export function JobCostingPanel({ projectId }: { projectId: string }) {
 
   function load() {
     apiFetch<JobCostForecast>(`/job-costing/forecast?projectId=${projectId}`).then(setReport);
+    apiFetch<CostHistoryMonth[]>(`/job-costing/history?projectId=${projectId}`).then(setHistory);
   }
 
   useEffect(load, [projectId]);
@@ -162,6 +172,23 @@ export function JobCostingPanel({ projectId }: { projectId: string }) {
           </tfoot>
         </table>
       </div>
+
+      {history && history.some((m) => m.actual > 0 || m.committed > 0) && (
+        <div className="mt-4">
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("burnDown")}</h3>
+          <div className="card h-56 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={history}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-gray-200, #e5e7eb)" />
+                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip formatter={(value) => `${Number(value).toFixed(2)} ${currency}`} />
+                <Line type="monotone" dataKey="cumulativeActual" name={t("actual")} stroke="#465fff" strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       {costCodes.length >= 2 && (
         <div className="mt-4">
