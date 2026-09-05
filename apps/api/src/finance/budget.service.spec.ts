@@ -1,4 +1,5 @@
 import { BadRequestException, NotFoundException } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
 import { Test } from "@nestjs/testing";
 import { BudgetService } from "./budget.service";
 import { PrismaService } from "../common/prisma/prisma.service";
@@ -19,6 +20,7 @@ describe("BudgetService", () => {
     timeEntry: { findMany: jest.Mock };
     invoice: { findMany: jest.Mock };
     subcontractorCost: { findMany: jest.Mock };
+    $transaction: jest.Mock;
   };
   let audit: { record: jest.Mock };
 
@@ -32,6 +34,10 @@ describe("BudgetService", () => {
       timeEntry: { findMany: jest.fn().mockResolvedValue([]) },
       invoice: { findMany: jest.fn().mockResolvedValue([]) },
       subcontractorCost: { findMany: jest.fn().mockResolvedValue([]) },
+      // addContingencyDraw wraps its read-check-write in a serializable transaction (see
+      // budget.service.ts) — the mock just runs the callback against this same prisma double,
+      // since these unit tests aren't exercising real transactional isolation.
+      $transaction: jest.fn((callback: (tx: unknown) => unknown) => callback(prisma)),
     };
     audit = { record: jest.fn() };
 
@@ -134,6 +140,29 @@ describe("BudgetService", () => {
         },
       });
       expect(audit.record).toHaveBeenCalled();
+    });
+
+    it("retries once on a serializable-transaction write conflict, then succeeds", async () => {
+      prisma.project.findFirst.mockResolvedValue({ id: PROJECT_A, name: "Hotel Renovation", contingencyAmount: "1000" });
+      prisma.contingencyDraw.findMany.mockResolvedValue([{ amount: "300" }]);
+      prisma.contingencyDraw.create.mockResolvedValue({ id: "draw-1" });
+      const conflict = new Prisma.PrismaClientKnownRequestError("Transaction write conflict", { code: "P2034", clientVersion: "test" });
+      prisma.$transaction.mockImplementationOnce(() => Promise.reject(conflict)).mockImplementationOnce((cb: (tx: unknown) => unknown) => cb(prisma));
+
+      await service.addContingencyDraw(COMPANY_A, ACTOR, { projectId: PROJECT_A, amount: 500, reason: "Weather delay" });
+
+      expect(prisma.$transaction).toHaveBeenCalledTimes(2);
+      expect(prisma.contingencyDraw.create).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not retry and rethrows a non-conflict error", async () => {
+      const boom = new Error("boom");
+      prisma.$transaction.mockRejectedValue(boom);
+
+      await expect(
+        service.addContingencyDraw(COMPANY_A, ACTOR, { projectId: PROJECT_A, amount: 500, reason: "Weather delay" }),
+      ).rejects.toBe(boom);
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     });
   });
 

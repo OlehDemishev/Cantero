@@ -91,6 +91,7 @@ export class InvoicesController {
     return this.service.releaseRetainage(user.companyId, estimateId, body);
   }
 
+  @Roles("owner", "admin", "accountant")
   @Patch(":id")
   update(
     @CurrentUser() user: AuthUser,

@@ -44,6 +44,7 @@ export class RateCatalogController {
     return this.service.listPendingChanges(user.companyId);
   }
 
+  @Roles("owner", "admin")
   @Post("pending-changes/:id/approve")
   approvePendingChange(
     @CurrentUser() user: AuthUser,
@@ -53,6 +54,7 @@ export class RateCatalogController {
     return this.service.approvePendingChange(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
+  @Roles("owner", "admin")
   @Post("pending-changes/:id/reject")
   rejectPendingChange(
     @CurrentUser() user: AuthUser,

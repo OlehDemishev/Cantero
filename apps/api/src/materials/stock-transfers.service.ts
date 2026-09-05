@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import type { InitiateStockTransferInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { runSerializable } from "../common/prisma/serializable-transaction";
 import { StockService } from "./stock.service";
 
 /**
@@ -43,17 +44,18 @@ export class StockTransfersService {
     if (!toWarehouse) throw new NotFoundException("Destination warehouse not found");
     if (!material) throw new NotFoundException("Material not found");
 
-    const costing = await this.stockService.computeSingleWarehouseCosting(
-      companyId,
-      input.fromWarehouseId,
-      input.materialCatalogItemId,
-      "issue",
-      input.quantity,
-      undefined,
-    );
+    const transfer = await runSerializable(this.prisma, async (tx) => {
+      const costing = await this.stockService.computeSingleWarehouseCosting(
+        tx,
+        companyId,
+        input.fromWarehouseId,
+        input.materialCatalogItemId,
+        "issue",
+        input.quantity,
+        undefined,
+      );
 
-    const [transfer] = await this.prisma.$transaction([
-      this.prisma.stockTransfer.create({
+      const transfer = await tx.stockTransfer.create({
         data: {
           companyId,
           fromWarehouseId: input.fromWarehouseId,
@@ -68,33 +70,38 @@ export class StockTransfersService {
           toWarehouse: { select: { id: true, name: true } },
           materialCatalogItem: { select: { id: true, name: true, unit: true } },
         },
-      }),
-      this.prisma.stockLevel.upsert({
+      });
+      await tx.stockLevel.upsert({
         where: { warehouseId_materialCatalogItemId: { warehouseId: input.fromWarehouseId, materialCatalogItemId: input.materialCatalogItemId } },
         create: { warehouseId: input.fromWarehouseId, materialCatalogItemId: input.materialCatalogItemId, quantityOnHand: -input.quantity },
         update: { quantityOnHand: { decrement: input.quantity } },
-      }),
-      ...costing.layerOps,
-    ]);
+      });
+      return transfer;
+    });
 
     return transfer;
   }
 
   async receive(companyId: string, receivedByName: string, id: string) {
-    const transfer = await this.findOrThrow(companyId, id);
-    if (transfer.status !== "in_transit") throw new BadRequestException(`Transfer is already ${transfer.status}`);
+    // The status check (and the transfer read it's based on) is inside the transaction too, not
+    // just the costing/writes — otherwise two concurrent receive() calls on the same transfer
+    // could both read "in_transit" before either commits, and both credit the destination.
+    const updated = await runSerializable(this.prisma, async (tx) => {
+      const transfer = await tx.stockTransfer.findFirst({ where: { id, companyId } });
+      if (!transfer) throw new NotFoundException("Stock transfer not found");
+      if (transfer.status !== "in_transit") throw new BadRequestException(`Transfer is already ${transfer.status}`);
 
-    const costing = await this.stockService.computeSingleWarehouseCosting(
-      companyId,
-      transfer.toWarehouseId,
-      transfer.materialCatalogItemId,
-      "receipt",
-      Number(transfer.quantity),
-      transfer.unitCost != null ? Number(transfer.unitCost) : undefined,
-    );
+      const costing = await this.stockService.computeSingleWarehouseCosting(
+        tx,
+        companyId,
+        transfer.toWarehouseId,
+        transfer.materialCatalogItemId,
+        "receipt",
+        Number(transfer.quantity),
+        transfer.unitCost != null ? Number(transfer.unitCost) : undefined,
+      );
 
-    const [updated] = await this.prisma.$transaction([
-      this.prisma.stockTransfer.update({
+      const updated = await tx.stockTransfer.update({
         where: { id: transfer.id },
         data: { status: "received", receivedByName, receivedAt: new Date() },
         include: {
@@ -102,8 +109,8 @@ export class StockTransfersService {
           toWarehouse: { select: { id: true, name: true } },
           materialCatalogItem: { select: { id: true, name: true, unit: true } },
         },
-      }),
-      this.prisma.stockLevel.upsert({
+      });
+      await tx.stockLevel.upsert({
         where: { warehouseId_materialCatalogItemId: { warehouseId: transfer.toWarehouseId, materialCatalogItemId: transfer.materialCatalogItemId } },
         create: {
           warehouseId: transfer.toWarehouseId,
@@ -115,9 +122,9 @@ export class StockTransfersService {
           quantityOnHand: { increment: transfer.quantity },
           ...(costing.averageCostUpdate !== null ? { averageCost: costing.averageCostUpdate } : {}),
         },
-      }),
-      ...costing.layerOps,
-    ]);
+      });
+      return updated;
+    });
 
     return updated;
   }
@@ -130,20 +137,24 @@ export class StockTransfersService {
    * approximation that keeps the total value right without reconstructing consumption order.
    */
   async cancel(companyId: string, id: string) {
-    const transfer = await this.findOrThrow(companyId, id);
-    if (transfer.status !== "in_transit") throw new BadRequestException(`Transfer is already ${transfer.status}`);
+    // Same reasoning as receive(): the transfer read and status check happen inside the
+    // transaction so two concurrent cancel() calls can't both credit the source warehouse back.
+    return runSerializable(this.prisma, async (tx) => {
+      const transfer = await tx.stockTransfer.findFirst({ where: { id, companyId } });
+      if (!transfer) throw new NotFoundException("Stock transfer not found");
+      if (transfer.status !== "in_transit") throw new BadRequestException(`Transfer is already ${transfer.status}`);
 
-    const costing = await this.stockService.computeSingleWarehouseCosting(
-      companyId,
-      transfer.fromWarehouseId,
-      transfer.materialCatalogItemId,
-      "receipt",
-      Number(transfer.quantity),
-      transfer.unitCost != null ? Number(transfer.unitCost) : undefined,
-    );
+      const costing = await this.stockService.computeSingleWarehouseCosting(
+        tx,
+        companyId,
+        transfer.fromWarehouseId,
+        transfer.materialCatalogItemId,
+        "receipt",
+        Number(transfer.quantity),
+        transfer.unitCost != null ? Number(transfer.unitCost) : undefined,
+      );
 
-    const [updated] = await this.prisma.$transaction([
-      this.prisma.stockTransfer.update({
+      const updated = await tx.stockTransfer.update({
         where: { id: transfer.id },
         data: { status: "cancelled", cancelledAt: new Date() },
         include: {
@@ -151,8 +162,8 @@ export class StockTransfersService {
           toWarehouse: { select: { id: true, name: true } },
           materialCatalogItem: { select: { id: true, name: true, unit: true } },
         },
-      }),
-      this.prisma.stockLevel.upsert({
+      });
+      await tx.stockLevel.upsert({
         where: { warehouseId_materialCatalogItemId: { warehouseId: transfer.fromWarehouseId, materialCatalogItemId: transfer.materialCatalogItemId } },
         create: {
           warehouseId: transfer.fromWarehouseId,
@@ -164,16 +175,8 @@ export class StockTransfersService {
           quantityOnHand: { increment: transfer.quantity },
           ...(costing.averageCostUpdate !== null ? { averageCost: costing.averageCostUpdate } : {}),
         },
-      }),
-      ...costing.layerOps,
-    ]);
-
-    return updated;
-  }
-
-  private async findOrThrow(companyId: string, id: string) {
-    const transfer = await this.prisma.stockTransfer.findFirst({ where: { id, companyId } });
-    if (!transfer) throw new NotFoundException("Stock transfer not found");
-    return transfer;
+      });
+      return updated;
+    });
   }
 }

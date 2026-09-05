@@ -23,7 +23,10 @@ describe("StockTransfersService", () => {
       materialCatalogItem: { findFirst: jest.fn() },
       stockTransfer: { create: jest.fn((args) => args), findFirst: jest.fn(), update: jest.fn((args) => args) },
       stockLevel: { upsert: jest.fn((args) => args) },
-      $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
+      // initiate/receive/cancel now run inside runSerializable(this.prisma, async (tx) => {...}) —
+      // the mock just invokes the callback against this same prisma double, since these unit
+      // tests aren't exercising real transactional isolation.
+      $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
     };
     stockService = { computeSingleWarehouseCosting: jest.fn() };
 
@@ -49,11 +52,11 @@ describe("StockTransfersService", () => {
     it("debits the source warehouse immediately and costs it as an issue", async () => {
       prisma.warehouse.findFirst.mockResolvedValueOnce({ id: "wh-1" }).mockResolvedValueOnce({ id: "wh-2" });
       prisma.materialCatalogItem.findFirst.mockResolvedValue({ id: "mat-1" });
-      stockService.computeSingleWarehouseCosting.mockResolvedValue({ movementUnitCost: 6, averageCostUpdate: null, layerOps: [] });
+      stockService.computeSingleWarehouseCosting.mockResolvedValue({ movementUnitCost: 6, averageCostUpdate: null });
 
       await service.initiate(COMPANY_A, "Jordan", { fromWarehouseId: "wh-1", toWarehouseId: "wh-2", materialCatalogItemId: "mat-1", quantity: 5 });
 
-      expect(stockService.computeSingleWarehouseCosting).toHaveBeenCalledWith(COMPANY_A, "wh-1", "mat-1", "issue", 5, undefined);
+      expect(stockService.computeSingleWarehouseCosting).toHaveBeenCalledWith(expect.anything(), COMPANY_A, "wh-1", "mat-1", "issue", 5, undefined);
       expect(prisma.stockTransfer.create).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ fromWarehouseId: "wh-1", toWarehouseId: "wh-2", quantity: 5, unitCost: 6, initiatedByName: "Jordan" }) }),
       );
@@ -82,11 +85,11 @@ describe("StockTransfersService", () => {
         quantity: "5",
         unitCost: "6",
       });
-      stockService.computeSingleWarehouseCosting.mockResolvedValue({ movementUnitCost: 6, averageCostUpdate: 6, layerOps: [] });
+      stockService.computeSingleWarehouseCosting.mockResolvedValue({ movementUnitCost: 6, averageCostUpdate: 6 });
 
       await service.receive(COMPANY_A, "Alex", "t-1");
 
-      expect(stockService.computeSingleWarehouseCosting).toHaveBeenCalledWith(COMPANY_A, "wh-2", "mat-1", "receipt", 5, 6);
+      expect(stockService.computeSingleWarehouseCosting).toHaveBeenCalledWith(expect.anything(), COMPANY_A, "wh-2", "mat-1", "receipt", 5, 6);
       expect(prisma.stockTransfer.update).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ status: "received", receivedByName: "Alex" }) }),
       );
@@ -115,11 +118,11 @@ describe("StockTransfersService", () => {
         quantity: "5",
         unitCost: "6",
       });
-      stockService.computeSingleWarehouseCosting.mockResolvedValue({ movementUnitCost: 6, averageCostUpdate: 6, layerOps: [] });
+      stockService.computeSingleWarehouseCosting.mockResolvedValue({ movementUnitCost: 6, averageCostUpdate: 6 });
 
       await service.cancel(COMPANY_A, "t-1");
 
-      expect(stockService.computeSingleWarehouseCosting).toHaveBeenCalledWith(COMPANY_A, "wh-1", "mat-1", "receipt", 5, 6);
+      expect(stockService.computeSingleWarehouseCosting).toHaveBeenCalledWith(expect.anything(), COMPANY_A, "wh-1", "mat-1", "receipt", 5, 6);
       expect(prisma.stockTransfer.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: "cancelled" }) }));
       expect(prisma.stockLevel.upsert).toHaveBeenCalledWith(
         expect.objectContaining({

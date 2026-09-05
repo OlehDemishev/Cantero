@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import type { CreateBudgetRevisionInput, CreateContingencyDrawInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
+import { runSerializable } from "../common/prisma/serializable-transaction";
 
 /**
  * Budget-vs-actual per project. Materials are compared at the catalog's
@@ -122,29 +123,39 @@ export class BudgetService {
     };
   }
 
+  /** The over-the-limit check reads every existing draw and sums them before inserting the new
+   * one — two concurrent draws on the same project could otherwise both read the same "drawn so
+   * far" snapshot, both pass the check, and together exceed the reserve. Serializable isolation
+   * makes Postgres abort one of the two with a write-conflict error (P2034) instead of letting
+   * both commit; this retries that specific error with a fresh read rather than surfacing it to
+   * the caller as a spurious failure. */
   async addContingencyDraw(companyId: string, actor: AuditActor, input: CreateContingencyDrawInput) {
-    const project = await this.prisma.project.findFirst({ where: { id: input.projectId, companyId } });
-    if (!project) throw new NotFoundException("Project not found");
-    if (project.contingencyAmount === null) {
-      throw new BadRequestException("This project has no contingency reserve set — set one first");
-    }
+    const { draw, projectName } = await runSerializable(this.prisma, async (tx) => {
+      const project = await tx.project.findFirst({ where: { id: input.projectId, companyId } });
+      if (!project) throw new NotFoundException("Project not found");
+      if (project.contingencyAmount === null) {
+        throw new BadRequestException("This project has no contingency reserve set — set one first");
+      }
 
-    const draws = await this.prisma.contingencyDraw.findMany({ where: { companyId, projectId: input.projectId } });
-    const drawnSoFar = draws.reduce((sum, d) => sum + Number(d.amount), 0);
-    if (drawnSoFar + input.amount > Number(project.contingencyAmount)) {
-      throw new BadRequestException("This draw would exceed the remaining contingency reserve");
-    }
+      const draws = await tx.contingencyDraw.findMany({ where: { companyId, projectId: input.projectId } });
+      const drawnSoFar = draws.reduce((sum, d) => sum + Number(d.amount), 0);
+      if (drawnSoFar + input.amount > Number(project.contingencyAmount)) {
+        throw new BadRequestException("This draw would exceed the remaining contingency reserve");
+      }
 
-    const draw = await this.prisma.contingencyDraw.create({
-      data: { companyId, projectId: input.projectId, amount: input.amount, reason: input.reason, createdByUserId: actor.userId, createdByName: actor.name },
+      const draw = await tx.contingencyDraw.create({
+        data: { companyId, projectId: input.projectId, amount: input.amount, reason: input.reason, createdByUserId: actor.userId, createdByName: actor.name },
+      });
+      return { draw, projectName: project.name };
     });
+
     this.audit.record(
       companyId,
       actor,
       "contingency_draw.created",
       "ContingencyDraw",
       draw.id,
-      `Drew ${input.amount} from the contingency reserve on "${project.name}": ${input.reason}`,
+      `Drew ${input.amount} from the contingency reserve on "${projectName}": ${input.reason}`,
     );
     return draw;
   }

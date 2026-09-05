@@ -55,6 +55,7 @@ export class WorkersController {
     return this.service.loadedRate(user.companyId, id);
   }
 
+  @Roles("owner", "admin")
   @Post()
   create(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(createWorkerSchema)) body: CreateWorkerInput) {
     return this.service.create(user.companyId, body);

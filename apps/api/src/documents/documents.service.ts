@@ -113,6 +113,24 @@ export class DocumentsService {
     return Array.from(latestByChain.values()).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
+  /** Soft-deleted documents, most recently deleted first — lets an owner/admin undo a delete
+   * instead of it being silent and (from the UI's point of view) permanent. */
+  async listDeleted(companyId: string) {
+    return this.prisma.document.findMany({
+      where: { companyId, deletedAt: { not: null } },
+      include: { uploadedBy: { select: { id: true, name: true } }, project: true },
+      orderBy: { deletedAt: "desc" },
+    });
+  }
+
+  async restore(companyId: string, actor: AuditActor, id: string) {
+    const doc = await this.prisma.document.findFirst({ where: { id, companyId, deletedAt: { not: null } } });
+    if (!doc) throw new NotFoundException("Deleted document not found");
+    await this.prisma.document.update({ where: { id }, data: { deletedAt: null } });
+    this.audit.record(companyId, actor, "document.restored", "Document", id, `Restored document "${doc.name}"`);
+    return { ok: true };
+  }
+
   async upload(
     companyId: string,
     uploadedByUserId: string,

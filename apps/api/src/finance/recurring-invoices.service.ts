@@ -9,6 +9,7 @@ import { WebhooksService } from "../common/webhooks/webhooks.service";
 import { RECURRING_INVOICES_QUEUE } from "../common/queue/queue.module";
 import { advanceDate, calculateRecurringInvoice } from "./recurring-invoice-schedule";
 import { InvoicesService } from "./invoices.service";
+import { createInvoiceWithNumber } from "./invoice-numbering";
 import { ClientPaymentMethodsService } from "./client-payment-methods.service";
 
 const RECURRING_INVOICES_CHECK_INTERVAL_MS = 60 * 60 * 1000;
@@ -205,36 +206,35 @@ export class RecurringInvoicesService implements OnModuleInit {
   }
 
   private async generateInvoice(recurring: RecurringInvoiceWithLines) {
-    const invoiceCount = await this.prisma.invoice.count({ where: { companyId: recurring.companyId } });
-    const number = `INV-${String(invoiceCount + 1).padStart(4, "0")}`;
-
     const calc = calculateRecurringInvoice(
       recurring.lines.map((l) => ({ description: l.description, quantity: Number(l.quantity), unitPrice: Number(l.unitPrice) })),
       Number(recurring.taxPercent),
     );
 
-    const invoice = await this.prisma.invoice.create({
-      data: {
-        companyId: recurring.companyId,
-        projectId: recurring.projectId,
-        clientId: recurring.clientId,
-        recurringInvoiceId: recurring.id,
-        number,
-        status: "draft",
-        subtotal: calc.subtotal,
-        taxAmount: calc.taxAmount,
-        total: calc.total,
-        lines: {
-          create: calc.lines.map((l) => ({
-            description: l.description,
-            quantity: l.quantity,
-            unitPrice: l.unitPrice,
-            lineTotal: l.lineTotal,
-          })),
+    const invoice = await createInvoiceWithNumber(this.prisma, recurring.companyId, (number) =>
+      this.prisma.invoice.create({
+        data: {
+          companyId: recurring.companyId,
+          projectId: recurring.projectId,
+          clientId: recurring.clientId,
+          recurringInvoiceId: recurring.id,
+          number,
+          status: "draft",
+          subtotal: calc.subtotal,
+          taxAmount: calc.taxAmount,
+          total: calc.total,
+          lines: {
+            create: calc.lines.map((l) => ({
+              description: l.description,
+              quantity: l.quantity,
+              unitPrice: l.unitPrice,
+              lineTotal: l.lineTotal,
+            })),
+          },
         },
-      },
-      include: { lines: true, client: true, project: true },
-    });
+        include: { lines: true, client: true, project: true },
+      }),
+    );
 
     await this.prisma.recurringInvoice.update({
       where: { id: recurring.id },

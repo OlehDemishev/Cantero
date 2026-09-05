@@ -7,6 +7,7 @@ import { PrismaService } from "../common/prisma/prisma.service";
 import { STOCK_ALERTS_QUEUE } from "../common/queue/queue.module";
 import type { LowStockCheckJob } from "./low-stock.processor";
 import { calculateFifoConsumption, calculateWeightedAverageCost } from "./inventory-costing";
+import { runSerializable } from "../common/prisma/serializable-transaction";
 
 const DECREASING_TYPES = new Set(["issue", "write_off"]);
 
@@ -50,17 +51,19 @@ export class StockService {
     }
 
     const delta = DECREASING_TYPES.has(input.type) ? -input.quantity : input.quantity;
-    const costing = await this.computeSingleWarehouseCosting(
-      companyId,
-      input.warehouseId,
-      input.materialCatalogItemId,
-      input.type,
-      input.quantity,
-      input.unitCost,
-    );
 
-    const [movement] = await this.prisma.$transaction([
-      this.prisma.stockMovement.create({
+    const movement = await runSerializable(this.prisma, async (tx) => {
+      const costing = await this.computeSingleWarehouseCosting(
+        tx,
+        companyId,
+        input.warehouseId,
+        input.materialCatalogItemId,
+        input.type,
+        input.quantity,
+        input.unitCost,
+      );
+
+      const movement = await tx.stockMovement.create({
         data: {
           companyId,
           warehouseId: input.warehouseId,
@@ -70,8 +73,8 @@ export class StockService {
           projectId: input.projectId,
           unitCost: costing.movementUnitCost ?? undefined,
         },
-      }),
-      this.prisma.stockLevel.upsert({
+      });
+      await tx.stockLevel.upsert({
         where: {
           warehouseId_materialCatalogItemId: {
             warehouseId: input.warehouseId,
@@ -88,9 +91,9 @@ export class StockService {
           quantityOnHand: { increment: delta },
           ...(costing.averageCostUpdate !== null ? { averageCost: costing.averageCostUpdate } : {}),
         },
-      }),
-      ...costing.layerOps,
-    ]);
+      });
+      return movement;
+    });
 
     if (delta < 0) {
       await this.queueLowStockCheck(companyId, input.materialCatalogItemId);
@@ -104,19 +107,29 @@ export class StockService {
    * inventory-costing.ts. A receipt with no unitCost given produces no cost data at all (the
    * pre-costing behavior, unchanged); an issue/write_off against a material with no cost history
    * yet (never received with a cost) likewise produces none rather than guessing.
+   *
+   * Takes a transaction client (`tx`) and does its cost-layer reads AND writes through it, rather
+   * than taking `companyId` and using `this.prisma` directly the way this used to work — reading
+   * "remaining quantity" outside a transaction and then writing an absolute new value back inside
+   * one is a classic TOCTOU race: two concurrent issues can both read the same layer snapshot,
+   * both compute their own "remaining after my consumption", and the second write silently
+   * clobbers the first, over-issuing stock the layer never actually had. Every caller now runs
+   * this inside `runSerializable`, so a conflicting concurrent transaction aborts and retries
+   * instead of corrupting the layer.
    */
   async computeSingleWarehouseCosting(
+    tx: Prisma.TransactionClient,
     companyId: string,
     warehouseId: string,
     materialCatalogItemId: string,
     type: "receipt" | "issue" | "write_off",
     quantity: number,
     unitCost: number | undefined,
-  ): Promise<{ movementUnitCost: number | null; averageCostUpdate: number | null; layerOps: Prisma.PrismaPromise<unknown>[] }> {
+  ): Promise<{ movementUnitCost: number | null; averageCostUpdate: number | null }> {
     if (type === "receipt") {
-      if (unitCost === undefined) return { movementUnitCost: null, averageCostUpdate: null, layerOps: [] };
+      if (unitCost === undefined) return { movementUnitCost: null, averageCostUpdate: null };
 
-      const stockLevel = await this.prisma.stockLevel.findUnique({
+      const stockLevel = await tx.stockLevel.findUnique({
         where: { warehouseId_materialCatalogItemId: { warehouseId, materialCatalogItemId } },
       });
       const averageCostUpdate = calculateWeightedAverageCost(
@@ -126,45 +139,50 @@ export class StockService {
         unitCost,
       );
 
-      const method = await this.getCostingMethod(companyId);
-      const layerOps =
-        method === "fifo"
-          ? [this.prisma.inventoryCostLayer.create({ data: { companyId, warehouseId, materialCatalogItemId, remainingQuantity: quantity, unitCost } })]
-          : [];
-      return { movementUnitCost: unitCost, averageCostUpdate, layerOps };
+      const method = await this.getCostingMethodTx(tx, companyId);
+      if (method === "fifo") {
+        await tx.inventoryCostLayer.create({ data: { companyId, warehouseId, materialCatalogItemId, remainingQuantity: quantity, unitCost } });
+      }
+      return { movementUnitCost: unitCost, averageCostUpdate };
     }
 
     // issue / write_off
-    const method = await this.getCostingMethod(companyId);
+    const method = await this.getCostingMethodTx(tx, companyId);
     if (method === "weighted_average") {
-      const stockLevel = await this.prisma.stockLevel.findUnique({
+      const stockLevel = await tx.stockLevel.findUnique({
         where: { warehouseId_materialCatalogItemId: { warehouseId, materialCatalogItemId } },
       });
       const averageCost = stockLevel?.averageCost != null ? Number(stockLevel.averageCost) : null;
-      return { movementUnitCost: averageCost, averageCostUpdate: null, layerOps: [] };
+      return { movementUnitCost: averageCost, averageCostUpdate: null };
     }
 
-    const layers = await this.prisma.inventoryCostLayer.findMany({
+    const layers = await tx.inventoryCostLayer.findMany({
       where: { warehouseId, materialCatalogItemId, remainingQuantity: { gt: 0 } },
       orderBy: { receivedAt: "asc" },
     });
-    if (layers.length === 0) return { movementUnitCost: null, averageCostUpdate: null, layerOps: [] };
+    if (layers.length === 0) return { movementUnitCost: null, averageCostUpdate: null };
 
     const result = calculateFifoConsumption(
       layers.map((l) => ({ id: l.id, remainingQuantity: Number(l.remainingQuantity), unitCost: Number(l.unitCost) })),
       quantity,
     );
-    const layerOps = result.updatedLayers.map((l) =>
-      l.remainingQuantity <= 0
-        ? this.prisma.inventoryCostLayer.delete({ where: { id: l.id } })
-        : this.prisma.inventoryCostLayer.update({ where: { id: l.id }, data: { remainingQuantity: l.remainingQuantity } }),
-    );
+    for (const l of result.updatedLayers) {
+      if (l.remainingQuantity <= 0) {
+        await tx.inventoryCostLayer.delete({ where: { id: l.id } });
+      } else {
+        await tx.inventoryCostLayer.update({ where: { id: l.id }, data: { remainingQuantity: l.remainingQuantity } });
+      }
+    }
     const movementUnitCost = result.consumedQuantity > 0 ? result.totalCost / result.consumedQuantity : null;
-    return { movementUnitCost, averageCostUpdate: null, layerOps };
+    return { movementUnitCost, averageCostUpdate: null };
   }
 
   async getCostingMethod(companyId: string): Promise<"fifo" | "weighted_average"> {
-    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId }, select: { inventoryCostingMethod: true } });
+    return this.getCostingMethodTx(this.prisma, companyId);
+  }
+
+  private async getCostingMethodTx(tx: Prisma.TransactionClient | PrismaService, companyId: string): Promise<"fifo" | "weighted_average"> {
+    const company = await tx.company.findUniqueOrThrow({ where: { id: companyId }, select: { inventoryCostingMethod: true } });
     return company.inventoryCostingMethod;
   }
 
@@ -185,10 +203,10 @@ export class StockService {
     if (!toWarehouse) throw new NotFoundException("Destination warehouse not found");
     if (!material) throw new NotFoundException("Material not found");
 
-    const costing = await this.computeTransferCosting(companyId, input.fromWarehouseId, input.toWarehouseId, input.materialCatalogItemId, input.quantity);
+    const movement = await runSerializable(this.prisma, async (tx) => {
+      const costing = await this.computeTransferCosting(tx, companyId, input.fromWarehouseId, input.toWarehouseId, input.materialCatalogItemId, input.quantity);
 
-    const [movement] = await this.prisma.$transaction([
-      this.prisma.stockMovement.create({
+      const movement = await tx.stockMovement.create({
         data: {
           companyId,
           warehouseId: input.fromWarehouseId,
@@ -198,8 +216,8 @@ export class StockService {
           quantity: input.quantity,
           unitCost: costing.movementUnitCost ?? undefined,
         },
-      }),
-      this.prisma.stockLevel.upsert({
+      });
+      await tx.stockLevel.upsert({
         where: {
           warehouseId_materialCatalogItemId: {
             warehouseId: input.fromWarehouseId,
@@ -208,8 +226,8 @@ export class StockService {
         },
         create: { warehouseId: input.fromWarehouseId, materialCatalogItemId: input.materialCatalogItemId, quantityOnHand: -input.quantity },
         update: { quantityOnHand: { decrement: input.quantity } },
-      }),
-      this.prisma.stockLevel.upsert({
+      });
+      await tx.stockLevel.upsert({
         where: {
           warehouseId_materialCatalogItemId: {
             warehouseId: input.toWarehouseId,
@@ -226,10 +244,9 @@ export class StockService {
           quantityOnHand: { increment: input.quantity },
           ...(costing.destAverageCostUpdate !== null ? { averageCost: costing.destAverageCostUpdate } : {}),
         },
-      }),
-      ...costing.sourceLayerOps,
-      ...costing.destLayerOps,
-    ]);
+      });
+      return movement;
+    });
 
     await this.queueLowStockCheck(companyId, input.materialCatalogItemId);
 
@@ -245,7 +262,10 @@ export class StockService {
    * opens ONE new destination layer at the blended cost of what was consumed, rather than trying
    * to carry over each individual source layer's own age.
    */
+  /** Same TOCTOU concern as computeSingleWarehouseCosting above — takes `tx` and does every read
+   * and write (source layer consumption, destination layer creation) through it. */
   private async computeTransferCosting(
+    tx: Prisma.TransactionClient,
     companyId: string,
     fromWarehouseId: string,
     toWarehouseId: string,
@@ -253,21 +273,19 @@ export class StockService {
     quantity: number,
   ): Promise<{
     movementUnitCost: number | null;
-    sourceLayerOps: Prisma.PrismaPromise<unknown>[];
-    destLayerOps: Prisma.PrismaPromise<unknown>[];
     destAverageCostUpdate: number | null;
   }> {
-    const none = { movementUnitCost: null, sourceLayerOps: [], destLayerOps: [], destAverageCostUpdate: null };
-    const method = await this.getCostingMethod(companyId);
+    const none = { movementUnitCost: null, destAverageCostUpdate: null };
+    const method = await this.getCostingMethodTx(tx, companyId);
 
     if (method === "weighted_average") {
-      const sourceLevel = await this.prisma.stockLevel.findUnique({
+      const sourceLevel = await tx.stockLevel.findUnique({
         where: { warehouseId_materialCatalogItemId: { warehouseId: fromWarehouseId, materialCatalogItemId } },
       });
       const unitCost = sourceLevel?.averageCost != null ? Number(sourceLevel.averageCost) : null;
       if (unitCost === null) return none;
 
-      const destLevel = await this.prisma.stockLevel.findUnique({
+      const destLevel = await tx.stockLevel.findUnique({
         where: { warehouseId_materialCatalogItemId: { warehouseId: toWarehouseId, materialCatalogItemId } },
       });
       const destAverageCostUpdate = calculateWeightedAverageCost(
@@ -276,10 +294,10 @@ export class StockService {
         quantity,
         unitCost,
       );
-      return { movementUnitCost: unitCost, sourceLayerOps: [], destLayerOps: [], destAverageCostUpdate };
+      return { movementUnitCost: unitCost, destAverageCostUpdate };
     }
 
-    const layers = await this.prisma.inventoryCostLayer.findMany({
+    const layers = await tx.inventoryCostLayer.findMany({
       where: { warehouseId: fromWarehouseId, materialCatalogItemId, remainingQuantity: { gt: 0 } },
       orderBy: { receivedAt: "asc" },
     });
@@ -292,18 +310,18 @@ export class StockService {
     if (result.consumedQuantity <= 0) return none;
 
     const blendedUnitCost = result.totalCost / result.consumedQuantity;
-    const sourceLayerOps = result.updatedLayers.map((l) =>
-      l.remainingQuantity <= 0
-        ? this.prisma.inventoryCostLayer.delete({ where: { id: l.id } })
-        : this.prisma.inventoryCostLayer.update({ where: { id: l.id }, data: { remainingQuantity: l.remainingQuantity } }),
-    );
-    const destLayerOps = [
-      this.prisma.inventoryCostLayer.create({
-        data: { companyId, warehouseId: toWarehouseId, materialCatalogItemId, remainingQuantity: result.consumedQuantity, unitCost: blendedUnitCost },
-      }),
-    ];
+    for (const l of result.updatedLayers) {
+      if (l.remainingQuantity <= 0) {
+        await tx.inventoryCostLayer.delete({ where: { id: l.id } });
+      } else {
+        await tx.inventoryCostLayer.update({ where: { id: l.id }, data: { remainingQuantity: l.remainingQuantity } });
+      }
+    }
+    await tx.inventoryCostLayer.create({
+      data: { companyId, warehouseId: toWarehouseId, materialCatalogItemId, remainingQuantity: result.consumedQuantity, unitCost: blendedUnitCost },
+    });
 
-    const destLevel = await this.prisma.stockLevel.findUnique({
+    const destLevel = await tx.stockLevel.findUnique({
       where: { warehouseId_materialCatalogItemId: { warehouseId: toWarehouseId, materialCatalogItemId } },
     });
     const destAverageCostUpdate = calculateWeightedAverageCost(
@@ -313,7 +331,7 @@ export class StockService {
       blendedUnitCost,
     );
 
-    return { movementUnitCost: blendedUnitCost, sourceLayerOps, destLayerOps, destAverageCostUpdate };
+    return { movementUnitCost: blendedUnitCost, destAverageCostUpdate };
   }
 
   /**

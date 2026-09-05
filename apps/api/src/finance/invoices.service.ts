@@ -15,6 +15,7 @@ import { documentPdfLabels } from "../common/pdf/pdf-labels";
 import { invoiceSentEmail } from "../common/mail/client-mail-templates";
 import { ExchangeRateService } from "../common/exchange-rate/exchange-rate.service";
 import { calculateFxSettlement } from "./fx-settlement";
+import { createInvoiceWithNumber } from "./invoice-numbering";
 
 @Injectable()
 export class InvoicesService {
@@ -95,37 +96,36 @@ export class InvoicesService {
       throw new NotFoundException("Estimate must be approved before it can be invoiced");
     }
 
-    const invoiceCount = await this.prisma.invoice.count({ where: { companyId } });
-    const number = `INV-${String(invoiceCount + 1).padStart(4, "0")}`;
-
     const rateItems = await this.prisma.rateCatalogItem.findMany({
       where: { id: { in: estimate.lines.map((l) => l.rateCatalogItemId) }, companyId },
     });
     const rateItemsById = Object.fromEntries(rateItems.map((ri) => [ri.id, ri]));
 
-    const invoice = await this.prisma.invoice.create({
-      data: {
-        companyId,
-        projectId: estimate.project.id,
-        clientId: estimate.project.clientId,
-        estimateId: estimate.id,
-        number,
-        status: "draft",
-        currency: estimate.currency,
-        subtotal: estimate.subtotal.add(estimate.markupAmount),
-        taxAmount: estimate.taxAmount,
-        total: estimate.grandTotal,
-        lines: {
-          create: estimate.lines.map((line) => ({
-            description: rateItemsById[line.rateCatalogItemId]?.name ?? line.rateCatalogItemId,
-            quantity: line.quantity,
-            unitPrice: line.quantity.isZero() ? 0 : line.lineTotal.div(line.quantity),
-            lineTotal: line.lineTotal,
-          })),
+    const invoice = await createInvoiceWithNumber(this.prisma, companyId, (number) =>
+      this.prisma.invoice.create({
+        data: {
+          companyId,
+          projectId: estimate.project!.id,
+          clientId: estimate.project!.clientId!,
+          estimateId: estimate.id,
+          number,
+          status: "draft",
+          currency: estimate.currency,
+          subtotal: estimate.subtotal.add(estimate.markupAmount),
+          taxAmount: estimate.taxAmount,
+          total: estimate.grandTotal,
+          lines: {
+            create: estimate.lines.map((line) => ({
+              description: rateItemsById[line.rateCatalogItemId]?.name ?? line.rateCatalogItemId,
+              quantity: line.quantity,
+              unitPrice: line.quantity.isZero() ? 0 : line.lineTotal.div(line.quantity),
+              lineTotal: line.lineTotal,
+            })),
+          },
         },
-      },
-      include: { lines: true, client: true, project: true },
-    });
+        include: { lines: true, client: true, project: true },
+      }),
+    );
 
     return invoice;
   }
@@ -144,36 +144,37 @@ export class InvoicesService {
     }
 
     const calc = calculateProgressDraw(Number(estimate.grandTotal), previousPercent, input.percentComplete, input.retainagePercent);
-    const number = await this.nextInvoiceNumber(companyId);
 
-    return this.prisma.invoice.create({
-      data: {
-        companyId,
-        projectId: estimate.project!.id,
-        clientId: estimate.project!.clientId!,
-        estimateId: estimate.id,
-        number,
-        status: "draft",
-        currency: estimate.currency,
-        subtotal: calc.grossAmount,
-        taxAmount: 0,
-        total: calc.netAmount,
-        percentComplete: input.percentComplete,
-        retainagePercent: input.retainagePercent,
-        retainageAmount: calc.retainageAmount,
-        lines: {
-          create: [
-            {
-              description: `Progress billing — ${previousPercent}% → ${input.percentComplete}% complete`,
-              quantity: 1,
-              unitPrice: calc.grossAmount,
-              lineTotal: calc.grossAmount,
-            },
-          ],
+    return createInvoiceWithNumber(this.prisma, companyId, (number) =>
+      this.prisma.invoice.create({
+        data: {
+          companyId,
+          projectId: estimate.project!.id,
+          clientId: estimate.project!.clientId!,
+          estimateId: estimate.id,
+          number,
+          status: "draft",
+          currency: estimate.currency,
+          subtotal: calc.grossAmount,
+          taxAmount: 0,
+          total: calc.netAmount,
+          percentComplete: input.percentComplete,
+          retainagePercent: input.retainagePercent,
+          retainageAmount: calc.retainageAmount,
+          lines: {
+            create: [
+              {
+                description: `Progress billing — ${previousPercent}% → ${input.percentComplete}% complete`,
+                quantity: 1,
+                unitPrice: calc.grossAmount,
+                lineTotal: calc.grossAmount,
+              },
+            ],
+          },
         },
-      },
-      include: { lines: true, client: true, project: true },
-    });
+        include: { lines: true, client: true, project: true },
+      }),
+    );
   }
 
   /** Pays out all retainage withheld across an estimate's progress draws in one final invoice. Can only be done once per estimate. */
@@ -185,8 +186,8 @@ export class InvoicesService {
     const estimate = await this.assertInvoiceableEstimate(companyId, estimateId);
 
     const [progressDraws, releaseInvoices] = await Promise.all([
-      this.prisma.invoice.findMany({ where: { companyId, estimateId, isRetainageRelease: false } }),
-      this.prisma.invoice.findMany({ where: { companyId, estimateId, isRetainageRelease: true } }),
+      this.prisma.invoice.findMany({ where: { companyId, estimateId, isRetainageRelease: false, status: { not: "void" } } }),
+      this.prisma.invoice.findMany({ where: { companyId, estimateId, isRetainageRelease: true, status: { not: "void" } } }),
     ]);
     const totalHeld = round2(progressDraws.reduce((sum, inv) => sum + Number(inv.retainageAmount), 0));
     const alreadyReleased = round2(releaseInvoices.reduce((sum, inv) => sum + Number(inv.total), 0));
@@ -196,24 +197,25 @@ export class InvoicesService {
     const amount = input.amount ?? remaining;
     if (amount > remaining) throw new BadRequestException(`Only ${remaining} of retainage remains to release`);
 
-    const number = await this.nextInvoiceNumber(companyId);
-    return this.prisma.invoice.create({
-      data: {
-        companyId,
-        projectId: estimate.project!.id,
-        clientId: estimate.project!.clientId!,
-        estimateId: estimate.id,
-        number,
-        status: "draft",
-        currency: estimate.currency,
-        subtotal: amount,
-        taxAmount: 0,
-        total: amount,
-        isRetainageRelease: true,
-        lines: { create: [{ description: "Retainage release", quantity: 1, unitPrice: amount, lineTotal: amount }] },
-      },
-      include: { lines: true, client: true, project: true },
-    });
+    return createInvoiceWithNumber(this.prisma, companyId, (number) =>
+      this.prisma.invoice.create({
+        data: {
+          companyId,
+          projectId: estimate.project!.id,
+          clientId: estimate.project!.clientId!,
+          estimateId: estimate.id,
+          number,
+          status: "draft",
+          currency: estimate.currency,
+          subtotal: amount,
+          taxAmount: 0,
+          total: amount,
+          isRetainageRelease: true,
+          lines: { create: [{ description: "Retainage release", quantity: 1, unitPrice: amount, lineTotal: amount }] },
+        },
+        include: { lines: true, client: true, project: true },
+      }),
+    );
   }
 
   async progressBillingSummary(companyId: string, estimateId: string) {
@@ -224,8 +226,11 @@ export class InvoicesService {
       where: { companyId, estimateId, OR: [{ percentComplete: { not: null } }, { isRetainageRelease: true }] },
       orderBy: { createdAt: "asc" },
     });
-    const progressDraws = invoices.filter((i) => !i.isRetainageRelease);
-    const releaseInvoices = invoices.filter((i) => i.isRetainageRelease);
+    // Voided draws/releases stay in the returned `invoices` list (so the UI can still show what
+    // happened to them) but are excluded from every aggregate below — a voided invoice was never
+    // actually billed or paid, so it shouldn't count as retainage held or released.
+    const progressDraws = invoices.filter((i) => !i.isRetainageRelease && i.status !== "void");
+    const releaseInvoices = invoices.filter((i) => i.isRetainageRelease && i.status !== "void");
     const percentBilled = progressDraws.length ? Math.max(...progressDraws.map((i) => Number(i.percentComplete))) : 0;
     const totalRetainageHeld = round2(progressDraws.reduce((sum, i) => sum + Number(i.retainageAmount), 0));
     const retainageReleasedTotal = round2(releaseInvoices.reduce((sum, i) => sum + Number(i.total), 0));
@@ -519,7 +524,7 @@ export class InvoicesService {
    */
   async exportQuickBooksCsv(companyId: string): Promise<string> {
     const invoices = await this.prisma.invoice.findMany({
-      where: { companyId, status: { not: "draft" } },
+      where: { companyId, status: { in: ["sent", "paid"] } },
       include: { client: true, lines: true },
       orderBy: { number: "asc" },
     });
@@ -549,7 +554,7 @@ export class InvoicesService {
    */
   async exportXeroCsv(companyId: string): Promise<string> {
     const invoices = await this.prisma.invoice.findMany({
-      where: { companyId, status: { not: "draft" } },
+      where: { companyId, status: { in: ["sent", "paid"] } },
       include: { client: true, lines: true },
       orderBy: { number: "asc" },
     });
@@ -590,11 +595,6 @@ export class InvoicesService {
     if (!estimate.project.clientId) throw new NotFoundException("Project has no client — add a client before invoicing");
     if (estimate.status !== "approved") throw new NotFoundException("Estimate must be approved before it can be invoiced");
     return estimate;
-  }
-
-  private async nextInvoiceNumber(companyId: string): Promise<string> {
-    const invoiceCount = await this.prisma.invoice.count({ where: { companyId } });
-    return `INV-${String(invoiceCount + 1).padStart(4, "0")}`;
   }
 
   private async findOrThrow(companyId: string, id: string) {

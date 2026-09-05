@@ -68,6 +68,18 @@ export class DocumentsController {
     });
   }
 
+  @Roles("owner", "admin")
+  @Get("deleted")
+  listDeleted(@CurrentUser() user: AuthUser) {
+    return this.service.listDeleted(user.companyId);
+  }
+
+  @Roles("owner", "admin")
+  @Patch(":id/restore")
+  restore(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.restore(user.companyId, { userId: user.userId, name: user.name }, id);
+  }
+
   @Post()
   @UseInterceptors(FileInterceptor("file"))
   async upload(
