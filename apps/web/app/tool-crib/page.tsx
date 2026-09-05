@@ -7,6 +7,7 @@ import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { CalibrationPanel } from "@/components/calibration-panel";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatDate } from "@/lib/format-date";
 
 interface Worker {
   id: string;
@@ -205,7 +206,7 @@ export default function ToolCribPage() {
                       <li key={co.id} className="flex items-center justify-between text-xs text-gray-500">
                         <span>
                           {t("checkedOutTo", { worker: co.worker.name, quantity: co.quantity })} ·{" "}
-                          {new Date(co.checkedOutAt).toLocaleDateString()}
+                          {formatDate(new Date(co.checkedOutAt))}
                         </span>
                         {checkInId === co.id ? (
                           <div className="flex items-center gap-1.5">

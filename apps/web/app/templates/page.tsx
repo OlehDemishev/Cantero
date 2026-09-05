@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import type { ChecklistTemplateType } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 const TYPES: ChecklistTemplateType[] = ["punch_list", "rfi", "safety_briefing", "jha"];
 
@@ -296,7 +297,7 @@ export default function TemplatesPage() {
                           history.map((v) => (
                             <li key={v.id} className="flex items-center justify-between text-xs text-gray-500">
                               <span>{t("versionBadge", { version: v.version })}</span>
-                              <span>{new Date(v.createdAt).toLocaleDateString()}</span>
+                              <span>{formatDate(new Date(v.createdAt))}</span>
                             </li>
                           ))
                         )}

@@ -6,6 +6,7 @@ import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { CsvImportButton } from "@/components/csv-import-button";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatDate } from "@/lib/format-date";
 
 interface Warehouse {
   id: string;
@@ -514,6 +515,7 @@ function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: string; 
       {!levels ? (
         <p className="text-gray-500">{tc("loading")}</p>
       ) : (
+        <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -560,12 +562,14 @@ function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: string; 
             ))}
           </tbody>
         </table>
+        </div>
       )}
 
       {valuation && valuation.rows.length > 0 && (
         <div className="mt-8">
           <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("inventoryValuation")}</h2>
           <p className="mb-3 text-xs text-gray-500">{t("inventoryValuationHint", { method: t(`costingMethod_${valuation.method}`) })}</p>
+          <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -598,6 +602,7 @@ function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: string; 
               </tr>
             </tfoot>
           </table>
+          </div>
         </div>
       )}
 
@@ -716,6 +721,7 @@ function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: string; 
 
       {stockTransfers && stockTransfers.length > 0 && (
         <div className="mt-4">
+          <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -765,6 +771,7 @@ function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: string; 
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 
@@ -785,7 +792,7 @@ function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: string; 
                   onClick={() => viewCount(c.id)}
                   className="card flex w-full items-center justify-between text-left hover:border-gray-400"
                 >
-                  <span className="text-sm">{new Date(c.createdAt).toLocaleDateString()}</span>
+                  <span className="text-sm">{formatDate(new Date(c.createdAt))}</span>
                   <span className="flex items-center gap-2 text-xs">
                     {varianceCount > 0 && (
                       <span className="text-warning-700">
@@ -812,6 +819,7 @@ function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: string; 
           <button onClick={() => setActiveCount(null)} className="mb-2 text-xs text-gray-500 hover:underline">
             ← {tc("back")}
           </button>
+          <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -857,6 +865,7 @@ function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: string; 
               })}
             </tbody>
           </table>
+          </div>
           {activeCount.status === "draft" && (
             <button onClick={finalizeCount} disabled={busy} className="btn-primary mt-3">
               {t("finalizeCount")}
@@ -960,6 +969,7 @@ function ReorderSettings() {
     <div className="mt-10">
       <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("reorderSettings")}</h2>
       <p className="mb-3 text-xs text-gray-500">{t("reorderSettingsHint")}</p>
+      <div className="overflow-x-auto">
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -1046,12 +1056,13 @@ function ReorderSettings() {
                         ) : priceHistory.length <= 1 ? (
                           <p className="text-xs text-gray-400">{t("noPriceHistory")}</p>
                         ) : (
+                          <div className="overflow-x-auto">
                           <table className="w-full text-xs">
                             <tbody>
                               {priceHistory.map((p, i) => (
                                 <tr key={i} className="border-b border-gray-200">
                                   <td className="py-1 text-gray-500">
-                                    {p.source === "catalog" ? t("currentPrice") : new Date(p.date).toLocaleDateString()}
+                                    {p.source === "catalog" ? t("currentPrice") : formatDate(new Date(p.date))}
                                   </td>
                                   <td className="text-gray-500">{p.supplierName}</td>
                                   <td className="text-right font-medium">{p.unitPrice}</td>
@@ -1059,6 +1070,7 @@ function ReorderSettings() {
                               ))}
                             </tbody>
                           </table>
+                          </div>
                         )}
                       </div>
                       <div>
@@ -1068,6 +1080,7 @@ function ReorderSettings() {
                         ) : supplierPrices.length === 0 ? (
                           <p className="text-xs text-gray-400">{t("noSupplierPrices")}</p>
                         ) : (
+                          <div className="overflow-x-auto">
                           <table className="w-full text-xs">
                             <thead>
                               <tr className="text-left text-gray-400">
@@ -1090,6 +1103,7 @@ function ReorderSettings() {
                               ))}
                             </tbody>
                           </table>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -1101,6 +1115,7 @@ function ReorderSettings() {
           })}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
@@ -1163,6 +1178,7 @@ function SustainabilitySettings() {
     <div className="mt-10">
       <h2 className="mb-3 text-sm font-semibold text-gray-700">{ts("materialSettings")}</h2>
       <p className="mb-3 text-xs text-gray-500">{ts("materialSettingsHint")}</p>
+      <div className="overflow-x-auto">
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -1217,6 +1233,7 @@ function SustainabilitySettings() {
           })}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

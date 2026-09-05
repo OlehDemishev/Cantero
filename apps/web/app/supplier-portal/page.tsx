@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { getSupplierPortalToken, supplierPortalApiFetch, clearSupplierPortalToken } from "@/lib/supplier-portal-api-client";
+import { formatDate } from "@/lib/format-date";
 
 interface Me {
   name: string;
@@ -136,15 +137,15 @@ export default function SupplierPortalDashboardPage() {
                     </ul>
                     {po.expectedDate && (
                       <p className="mt-1 text-xs text-gray-400">
-                        {t("expectedDate", { date: new Date(po.expectedDate).toLocaleDateString() })}
+                        {t("expectedDate", { date: formatDate(new Date(po.expectedDate)) })}
                       </p>
                     )}
 
                     {po.acknowledgedAt ? (
                       <p className="mt-2 text-xs text-success-700">
-                        {t("acknowledged", { date: new Date(po.acknowledgedAt).toLocaleDateString() })}
+                        {t("acknowledged", { date: formatDate(new Date(po.acknowledgedAt)) })}
                         {po.supplierEta && (
-                          <span className="block">{t("yourEta", { date: new Date(po.supplierEta).toLocaleDateString() })}</span>
+                          <span className="block">{t("yourEta", { date: formatDate(new Date(po.supplierEta)) })}</span>
                         )}
                         {po.supplierNote && <span className="block text-gray-500">{po.supplierNote}</span>}
                       </p>

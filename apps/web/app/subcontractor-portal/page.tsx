@@ -9,6 +9,7 @@ import {
   clearSubcontractorPortalToken,
 } from "@/lib/subcontractor-portal-api-client";
 import { SignaturePad } from "@/components/signature-pad";
+import { formatDate } from "@/lib/format-date";
 
 interface Me {
   name: string;
@@ -274,7 +275,7 @@ export default function SubcontractorPortalDashboardPage() {
                   <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-gray-400">
                     <span>{item.project.name}</span>
                     {item.location && <span>{item.location}</span>}
-                    {item.dueDate && <span>{new Date(item.dueDate).toLocaleDateString()}</span>}
+                    {item.dueDate && <span>{formatDate(new Date(item.dueDate))}</span>}
                   </div>
                   {item.description && <p className="mt-1 text-xs text-gray-500">{item.description}</p>}
                 </li>
@@ -288,6 +289,7 @@ export default function SubcontractorPortalDashboardPage() {
           {!costs || costs.length === 0 ? (
             <p className="mb-4 text-sm text-gray-400">{t("noCosts")}</p>
           ) : (
+            <div className="overflow-x-auto">
             <table className="mb-4 w-full border-collapse text-sm">
               <tbody>
                 {costs.map((c) => (
@@ -310,6 +312,7 @@ export default function SubcontractorPortalDashboardPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
 
           {assignments && assignments.length > 0 && (

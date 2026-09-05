@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 interface Company {
   deletionRequestedAt: string | null;
@@ -63,7 +64,7 @@ export function DataPrivacyPanel({ canManage }: { canManage: boolean }) {
     }
   }
 
-  if (!company) return null;
+  if (!company || !canManage) return null;
 
   return (
     <section className="card lg:col-span-2">
@@ -87,13 +88,12 @@ export function DataPrivacyPanel({ canManage }: { canManage: boolean }) {
           </button>
         </div>
 
-        {canManage && (
-          <div className="border-t border-gray-100 pt-4">
-            <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("deletionTitle")}</h3>
-            {company.deletionRequestedAt ? (
+        <div className="border-t border-gray-100 pt-4">
+          <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("deletionTitle")}</h3>
+          {company.deletionRequestedAt ? (
               <>
                 <p className="mb-2 text-sm text-error-700">
-                  {t("deletionPending", { date: new Date(company.deletionRequestedAt).toLocaleDateString() })}
+                  {t("deletionPending", { date: formatDate(new Date(company.deletionRequestedAt)) })}
                 </p>
                 <button onClick={cancelRequest} disabled={busy} className="btn-secondary px-3 py-1 text-xs">
                   {t("cancelRequest")}
@@ -108,7 +108,6 @@ export function DataPrivacyPanel({ canManage }: { canManage: boolean }) {
               </>
             )}
           </div>
-        )}
       </div>
     </section>
   );

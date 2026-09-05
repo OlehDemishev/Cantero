@@ -10,6 +10,7 @@ import { TemplatePicker } from "@/components/template-picker";
 import { PhotoAttachments } from "@/components/photo-attachments";
 import { useDeepLinkedRow, buildItemDeepLink } from "@/lib/use-deep-linked-row";
 import { CopyLinkButton } from "@/components/ui/copy-link-button";
+import { formatDate } from "@/lib/format-date";
 
 interface RfiAnalytics {
   openCount: number;
@@ -399,7 +400,7 @@ export function RfiPanel({ projectId }: { projectId: string }) {
                             {t("escalated")}
                           </span>
                         )}
-                        {item.dueDate && <span className="text-xs text-gray-500">{new Date(item.dueDate).toLocaleDateString()}</span>}
+                        {item.dueDate && <span className="text-xs text-gray-500">{formatDate(new Date(item.dueDate))}</span>}
                       </div>
                     </div>
                   </button>

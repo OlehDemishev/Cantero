@@ -7,6 +7,7 @@ import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { TabNav, type TabNavItem } from "@/components/ui/tab-nav";
 import { apiFetch } from "@/lib/api-client";
 import { buildItemDeepLink } from "@/lib/use-deep-linked-row";
+import { formatDate } from "@/lib/format-date";
 
 interface WithProject {
   id: string;
@@ -44,15 +45,26 @@ export default function OpenItemsPage() {
     return fromParam && (TAB_KEYS as readonly string[]).includes(fromParam) ? (fromParam as TabKey) : "rfis";
   })();
 
-  const [rfis, setRfis] = useState<RfiRow[] | null>(null);
-  const [punchList, setPunchList] = useState<PunchListRow[] | null>(null);
-  const [submittals, setSubmittals] = useState<SubmittalRow[] | null>(null);
+  const [rfisAll, setRfisAll] = useState<RfiRow[] | null>(null);
+  const [punchListAll, setPunchListAll] = useState<PunchListRow[] | null>(null);
+  const [submittalsAll, setSubmittalsAll] = useState<SubmittalRow[] | null>(null);
 
   useEffect(() => {
-    apiFetch<RfiRow[]>("/rfis/company-open").then(setRfis);
-    apiFetch<PunchListRow[]>("/punch-list/company-open").then(setPunchList);
-    apiFetch<SubmittalRow[]>("/submittals/company-pending").then(setSubmittals);
+    apiFetch<RfiRow[]>("/rfis/company-open").then(setRfisAll);
+    apiFetch<PunchListRow[]>("/punch-list/company-open").then(setPunchListAll);
+    apiFetch<SubmittalRow[]>("/submittals/company-pending").then(setSubmittalsAll);
   }, []);
+
+  // Portfolio links here with ?projectId= so its per-project RFI/punch-list/submittal counts
+  // aren't just a dead-end number — clicking one drills into the matching open items.
+  const projectIdFilter = searchParams.get("projectId");
+  const projectNameFilter = rfisAll?.find((r) => r.project.id === projectIdFilter)?.project.name
+    ?? punchListAll?.find((p) => p.project.id === projectIdFilter)?.project.name
+    ?? submittalsAll?.find((s) => s.project.id === projectIdFilter)?.project.name
+    ?? null;
+  const rfis = projectIdFilter ? rfisAll?.filter((r) => r.project.id === projectIdFilter) ?? null : rfisAll;
+  const punchList = projectIdFilter ? punchListAll?.filter((p) => p.project.id === projectIdFilter) ?? null : punchListAll;
+  const submittals = projectIdFilter ? submittalsAll?.filter((s) => s.project.id === projectIdFilter) ?? null : submittalsAll;
 
   const counts: Record<TabKey, number | null> = {
     rfis: rfis?.length ?? null,
@@ -76,6 +88,14 @@ export default function OpenItemsPage() {
     <AuthenticatedShell>
       <h1 className="text-2xl font-semibold">{t("title")}</h1>
       <p className="mt-1 text-sm text-gray-500">{t("subtitle")}</p>
+      {projectIdFilter && (
+        <p className="mt-1 text-xs text-gray-400">
+          {t("filteredByProject", { project: projectNameFilter ?? projectIdFilter })}{" "}
+          <button onClick={() => router.replace(`/open-items?tab=${activeTab}`)} className="text-brand-700 hover:underline">
+            {t("clearFilter")}
+          </button>
+        </p>
+      )}
 
       <TabNav tabs={TABS} active={activeTab} onChange={setTab} />
 
@@ -86,6 +106,7 @@ export default function OpenItemsPage() {
           ) : rfis.length === 0 ? (
             <p className="text-sm text-gray-400">{t("noOpenRfis")}</p>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -109,11 +130,12 @@ export default function OpenItemsPage() {
                     <td>{r.subject}</td>
                     <td>{r.status}</td>
                     <td>{r.priority}</td>
-                    <td>{r.dueDate ? new Date(r.dueDate).toLocaleDateString() : "—"}</td>
+                    <td>{r.dueDate ? formatDate(new Date(r.dueDate)) : "—"}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       )}
@@ -125,6 +147,7 @@ export default function OpenItemsPage() {
           ) : punchList.length === 0 ? (
             <p className="text-sm text-gray-400">{t("noOpenPunchList")}</p>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -144,11 +167,12 @@ export default function OpenItemsPage() {
                     </td>
                     <td>{p.title}</td>
                     <td>{p.status}</td>
-                    <td>{p.dueDate ? new Date(p.dueDate).toLocaleDateString() : "—"}</td>
+                    <td>{p.dueDate ? formatDate(new Date(p.dueDate)) : "—"}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       )}
@@ -160,6 +184,7 @@ export default function OpenItemsPage() {
           ) : submittals.length === 0 ? (
             <p className="text-sm text-gray-400">{t("noPendingSubmittals")}</p>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -179,11 +204,12 @@ export default function OpenItemsPage() {
                     </td>
                     <td className="font-mono text-xs text-gray-400">{s.number}</td>
                     <td>{s.title}</td>
-                    <td>{s.dueDate ? new Date(s.dueDate).toLocaleDateString() : "—"}</td>
+                    <td>{s.dueDate ? formatDate(new Date(s.dueDate)) : "—"}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       )}

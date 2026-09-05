@@ -11,6 +11,7 @@ import {
 } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatDate } from "@/lib/format-date";
 
 interface LienNotice {
   id: string;
@@ -200,7 +201,7 @@ export function LienCompliancePanel({ projectId }: { projectId: string }) {
                 </span>
               </div>
               <p className="mt-1 text-xs text-gray-400">
-                {n.deadlineDate && `${t("deadlineDate")}: ${new Date(n.deadlineDate).toLocaleDateString()}`}
+                {n.deadlineDate && `${t("deadlineDate")}: ${formatDate(new Date(n.deadlineDate))}`}
                 {n.methodOfService && ` · ${n.methodOfService}`}
               </p>
               {n.direction === "sent" && !n.sentAt && (
@@ -268,7 +269,7 @@ export function LienCompliancePanel({ projectId }: { projectId: string }) {
                 </span>
                 <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${FILING_STATUS_STYLES[f.status]}`}>{t(`status_${f.status}`)}</span>
               </div>
-              <p className="mt-1 text-xs text-gray-400">{t("filedAt")}: {new Date(f.filedAt).toLocaleDateString()}</p>
+              <p className="mt-1 text-xs text-gray-400">{t("filedAt")}: {formatDate(new Date(f.filedAt))}</p>
               {f.status === "filed" && (
                 <div className="mt-2 flex gap-2">
                   <button onClick={() => updateFilingStatus(f.id, "released")} disabled={busy} className="btn-secondary px-2 py-1 text-xs">

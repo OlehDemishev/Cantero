@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import type { CostCode } from "@/components/cost-codes-panel";
+import { formatDate } from "@/lib/format-date";
 
 const NEW_SUBCONTRACTOR = "__new__";
 
@@ -122,13 +123,14 @@ export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
       ) : costs.length === 0 ? (
         <p className="text-sm text-gray-400">{t("noCosts")}</p>
       ) : (
+        <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <tbody>
             {costs.map((c) => (
               <tr key={c.id} className="border-b border-gray-100">
                 <td className="py-1.5">{c.description}</td>
                 <td className="text-gray-500">{c.subcontractor.name}</td>
-                <td className="text-gray-500">{c.dueDate ? new Date(c.dueDate).toLocaleDateString() : "—"}</td>
+                <td className="text-gray-500">{c.dueDate ? formatDate(new Date(c.dueDate)) : "—"}</td>
                 <td>
                   <span
                     className={`rounded-full px-2 py-0.5 text-xs font-medium ${
@@ -177,6 +179,7 @@ export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
             ))}
           </tbody>
         </table>
+        </div>
       )}
 
       <form onSubmit={handleSubmit} className="mt-4 flex flex-wrap items-end gap-2">

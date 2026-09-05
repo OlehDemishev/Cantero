@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { getPortalToken, portalApiFetch, clearPortalToken } from "@/lib/portal-api-client";
+import { formatDate } from "@/lib/format-date";
 
 interface Me {
   name: string;
@@ -615,7 +616,7 @@ export default function PortalDashboardPage() {
                   >
                     <span>
                       {ticket.subject}
-                      <span className="ml-2 text-xs text-gray-400">{new Date(ticket.createdAt).toLocaleDateString()}</span>
+                      <span className="ml-2 text-xs text-gray-400">{formatDate(new Date(ticket.createdAt))}</span>
                     </span>
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs font-medium ${

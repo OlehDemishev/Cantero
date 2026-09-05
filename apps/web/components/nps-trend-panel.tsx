@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { apiFetch } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 interface NpsResponse {
   projectId: string;
@@ -60,7 +61,7 @@ export function NpsTrendPanel() {
       {data.responses.length > 1 && (
         <div className="card mt-3 h-56 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data.responses.map((r) => ({ date: new Date(r.respondedAt).toLocaleDateString(), score: r.score }))}>
+            <LineChart data={data.responses.map((r) => ({ date: formatDate(new Date(r.respondedAt)), score: r.score }))}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--color-gray-200, #e5e7eb)" />
               <XAxis dataKey="date" tick={{ fontSize: 11 }} />
               <YAxis domain={[0, 10]} tick={{ fontSize: 11 }} />

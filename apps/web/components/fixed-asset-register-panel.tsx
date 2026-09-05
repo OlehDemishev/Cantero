@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatDate } from "@/lib/format-date";
 
 interface Depreciation {
   monthsElapsed: number;
@@ -68,7 +69,7 @@ export function FixedAssetRegisterPanel() {
                 <td>
                   {e.disposal ? (
                     <span className="rounded-full bg-error-50 px-2 py-0.5 text-xs font-medium text-error-700">
-                      {t("disposed", { date: new Date(e.disposal.disposedAt).toLocaleDateString() })}
+                      {t("disposed", { date: formatDate(new Date(e.disposal.disposedAt)) })}
                     </span>
                   ) : e.depreciation ? (
                     <span className="rounded-full bg-success-50 px-2 py-0.5 text-xs font-medium text-success-700">{t("tracked")}</span>

@@ -7,6 +7,7 @@ import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { CertificateAttachment } from "@/components/certificate-attachment";
 import { MaterialRfqsPanel } from "@/components/material-rfqs-panel";
 import { apiFetch, apiUpload } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 interface Supplier {
   id: string;
@@ -266,7 +267,7 @@ export default function SuppliersPage() {
                                       <span className="text-gray-500">{t(doc.type)}</span> — {doc.name}
                                       {" · "}
                                       <span className={expired ? "text-error-700" : "text-gray-500"}>
-                                        {new Date(doc.expiresAt).toLocaleDateString()}
+                                        {formatDate(new Date(doc.expiresAt))}
                                       </span>
                                     </span>
                                     <span className="flex items-center gap-2">
@@ -319,7 +320,7 @@ export default function SuppliersPage() {
                               {reviews.map((r) => (
                                 <li key={r.id} className="text-xs text-gray-600">
                                   <span className="font-medium">{"★".repeat(r.rating)}</span> — {r.reviewedByName},{" "}
-                                  {new Date(r.createdAt).toLocaleDateString()}
+                                  {formatDate(new Date(r.createdAt))}
                                   {r.comments && <span className="text-gray-500"> · {r.comments}</span>}
                                 </li>
                               ))}

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 interface ContractTemplate {
   id: string;
@@ -79,7 +80,7 @@ export default function ContractsPage() {
                     <div>
                       <div className="font-medium text-gray-900 dark:text-white/90">{c.title}</div>
                       <div className="mt-0.5 text-xs text-gray-500">
-                        {c.client?.name ?? c.subcontractor?.name ?? "—"} · {new Date(c.createdAt).toLocaleDateString()}
+                        {c.client?.name ?? c.subcontractor?.name ?? "—"} · {formatDate(new Date(c.createdAt))}
                       </div>
                     </div>
                     <span className={`rounded-full px-3 py-1 text-xs font-medium ${STATUS_STYLES[c.status]}`}>{t(c.status)}</span>

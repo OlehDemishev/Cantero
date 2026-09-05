@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { InspectionResult, PermitStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 interface Permit {
   id: string;
@@ -166,7 +167,7 @@ export function PermitsPanel({ projectId }: { projectId: string }) {
                   <div className="mt-3 flex flex-col gap-3 border-t border-gray-100 pt-3">
                     <div className="text-xs text-gray-500">
                       {p.authorityName && <div>{t("authority")}: {p.authorityName}</div>}
-                      {p.expiresAt && <div>{t("expires")}: {new Date(p.expiresAt).toLocaleDateString()}</div>}
+                      {p.expiresAt && <div>{t("expires")}: {formatDate(new Date(p.expiresAt))}</div>}
                     </div>
 
                     <div className="flex flex-wrap gap-1.5">
@@ -197,7 +198,7 @@ export function PermitsPanel({ projectId }: { projectId: string }) {
                             <li key={i.id} className="flex items-center justify-between text-xs">
                               <span>
                                 {i.inspectionType}
-                                {i.scheduledDate && <span className="text-gray-400"> · {new Date(i.scheduledDate).toLocaleDateString()}</span>}
+                                {i.scheduledDate && <span className="text-gray-400"> · {formatDate(new Date(i.scheduledDate))}</span>}
                                 {i.inspectorName && <span className="text-gray-400"> · {i.inspectorName}</span>}
                               </span>
                               <span className="flex items-center gap-1.5">

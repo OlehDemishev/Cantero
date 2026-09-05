@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { formatDateTime } from "@/lib/format-date";
 
 interface PortalMessage {
   id: string;
@@ -71,7 +72,7 @@ export function PortalMessagesPanel({ projectId }: { projectId: string }) {
                   {m.content}
                 </div>
                 <div className="mt-1 text-[11px] text-gray-400">
-                  {m.authorName} · {new Date(m.createdAt).toLocaleString()}
+                  {m.authorName} · {formatDateTime(new Date(m.createdAt))}
                 </div>
               </div>
             ))

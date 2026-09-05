@@ -6,6 +6,7 @@ import { EXPENSE_CATEGORIES, EXPENSE_STATUSES, type ExpenseStatus } from "@cante
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatDate } from "@/lib/format-date";
 
 interface Expense {
   id: string;
@@ -153,7 +154,7 @@ export default function ExpensesPage() {
                       )}
                     </div>
                     <div className="mt-1 text-xs text-gray-500">
-                      {e.worker.name} · {e.project.name} · {new Date(e.incurredAt).toLocaleDateString()}
+                      {e.worker.name} · {e.project.name} · {formatDate(new Date(e.incurredAt))}
                     </div>
                     {e.description && <div className="mt-1 text-xs text-gray-600">{e.description}</div>}
                     {e.rejectedReason && (

@@ -8,6 +8,7 @@ import { DocumentsPanel } from "@/components/documents-panel";
 import { apiFetch, downloadBlob, ApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
+import { formatDate } from "@/lib/format-date";
 
 const PAYMENT_METHODS = ["bank_transfer", "card", "cash", "other"] as const;
 
@@ -240,6 +241,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2">
+          <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -256,18 +258,20 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
               ))}
             </tbody>
           </table>
+          </div>
 
           <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700">{t("paymentPlan")}</h2>
           {installmentRows.length === 0 ? (
             <p className="text-sm text-gray-400">{t("noInstallments")}</p>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <tbody>
                 {installmentRows.map((inst) => (
                   <tr key={inst.id} className="border-b border-gray-100">
                     <td className="py-1.5">{inst.label}</td>
                     <td className="text-gray-500">
-                      {inst.dueDate ? new Date(inst.dueDate).toLocaleDateString() : "—"}
+                      {inst.dueDate ? formatDate(new Date(inst.dueDate)) : "—"}
                     </td>
                     <td>
                       <span
@@ -287,6 +291,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
           {invoice.status !== "void" && (
             <form onSubmit={addInstallment} className="mt-3 flex flex-wrap items-end gap-2">
@@ -322,11 +327,12 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
           {invoice.payments.length === 0 ? (
             <p className="text-sm text-gray-400">{t("noPayments")}</p>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <tbody>
                 {invoice.payments.map((p) => (
                   <tr key={p.id} className="border-b border-gray-100">
-                    <td className="py-1">{new Date(p.paidAt).toLocaleDateString()}</td>
+                    <td className="py-1">{formatDate(new Date(p.paidAt))}</td>
                     <td>{t(p.method as (typeof PAYMENT_METHODS)[number])}</td>
                     <td className="text-right">
                       {money(p.amount)}
@@ -346,6 +352,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
 
           {(invoice.status === "sent" || invoice.status === "paid") && balanceDue > 0 && (

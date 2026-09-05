@@ -201,6 +201,7 @@ export default function InvoicesPage() {
         ) : invoices.length === 0 ? (
           <p className="text-gray-500">—</p>
         ) : (
+          <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -229,6 +230,7 @@ export default function InvoicesPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

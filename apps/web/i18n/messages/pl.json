@@ -55,14 +55,14 @@
     "reports": "Raporty",
     "portfolio": "Portfolio",
     "resourcePlanning": "Planowanie zasobów",
-    "templates": "Szablony",
+    "templates": "Szablony list kontrolnych",
     "subcontractors": "Podwykonawcy",
     "expenses": "Wydatki",
     "serviceContracts": "Umowy serwisowe",
     "bankReconciliation": "Uzgodnienie bankowe",
     "contracts": "Umowy",
     "schedule": "Harmonogram",
-    "integrations": "Integracje",
+    "integrations": "Stan integracji",
     "insuranceClaims": "Roszczenia ubezpieczeniowe",
     "recruiting": "Rekrutacja",
     "performance": "Ocena pracy",
@@ -418,7 +418,9 @@
     "tab_integrations": "Integracje i API",
     "tab_templates": "Szablony i treści",
     "tab_operations": "Operacje",
-    "tab_marketing": "Marketing"
+    "tab_marketing": "Marketing",
+    "confirmRevokeInvite": "Odwołać to oczekujące zaproszenie? Link w e-mailu z zaproszeniem przestanie działać.",
+    "confirmRevokeApiKey": "Odwołać ten klucz API? Każda integracja, która go używa, natychmiast przestanie działać."
   },
   "projects": {
     "title": "Projekty",
@@ -594,7 +596,9 @@
     "trainingHistory": "Szkolenia",
     "cdlExpiry": "Termin ważności CDL",
     "isApprentice": "Praktykant (nie czeladnik)",
-    "loadedRate": "Stawka obciążona"
+    "loadedRate": "Stawka obciążona",
+    "managerOnlyHint": "Tylko właściciele i administratorzy mogą edytować profil pracownika, saldo urlopu lub PIN kiosku.",
+    "confirmTerminateEnrollment": "Zakończyć zapis pracownika do programu świadczeń? Jego ochrona w ramach tego planu zostanie zakończona."
   },
   "documents": {
     "title": "Dokumenty",
@@ -629,7 +633,12 @@
     "compareVersions": "Porównaj wersje",
     "noPreview": "Brak podglądu dla tego typu pliku",
     "category_as_built": "Dokumentacja powykonawcza",
-    "category_om_manual": "Instrukcja eksploatacji (O&M)"
+    "category_om_manual": "Instrukcja eksploatacji (O&M)",
+    "deletedDocuments": "Usunięte dokumenty",
+    "deletedDocumentsHint": "Usunięcie dokumentu nie kasuje go od razu na stałe — przywróć go tutaj, jeśli został usunięty przez pomyłkę.",
+    "noDeletedDocuments": "Nic nie usunięto.",
+    "deletedAt": "Usunięto {date}",
+    "restore": "Przywróć"
   },
   "rateCatalog": {
     "title": "Cennik",
@@ -1837,7 +1846,7 @@
     "leveledMoves": "Przesunięto {count} przydział(y), aby rozwiązać nakładanie się."
   },
   "checklistTemplates": {
-    "title": "Szablony",
+    "title": "Szablony list kontrolnych",
     "subtitle": "Wielokrotnego użytku listy kontrolne i teksty startowe dla listy usterek, RFI i odpraw BHP.",
     "newTemplate": "Nowy szablon",
     "templateType": "Typ szablonu",
@@ -2001,7 +2010,8 @@
     "noLevelingData": "Żadna oferta nie zawiera jeszcze podziału zakresu.",
     "scopeItem": "Pozycja zakresu",
     "notMentioned": "Nie wymieniono",
-    "totalBid": "Suma oferty"
+    "totalBid": "Suma oferty",
+    "confirmCancel": "Anulować to zapytanie ofertowe? Podwykonawcy już zaproszeni do składania ofert nie będą już mogli ich składać ani go zobaczyć."
   },
   "customFields": {
     "title": "Pola niestandardowe",
@@ -2018,7 +2028,8 @@
     "fieldType_select": "Lista rozwijana",
     "optionsCommaSeparated": "Opcje (oddzielone przecinkami)",
     "optionsPlaceholder": "np. Niski, Średni, Wysoki",
-    "addField": "Dodaj pole"
+    "addField": "Dodaj pole",
+    "confirmDelete": "Usunąć to pole niestandardowe? Jego wartości zostaną trwale usunięte z każdego rekordu projektu lub klienta, który je ma."
   },
   "savedViews": {
     "nameThisView": "Nazwij ten widok",
@@ -2245,7 +2256,7 @@
     "regenerateCalendarFeed": "Wygeneruj ponownie URL kanału"
   },
   "integrationsMarketplace": {
-    "title": "Integracje",
+    "title": "Stan integracji",
     "hint": "Zobacz, co jest połączone, i przejdź od razu do ustawień.",
     "connected": "Połączono",
     "notConnected": "Niepołączono",
@@ -2392,7 +2403,8 @@
     "restrictToggle": "Ogranicz do wybranych członków zespołu",
     "restrictToggleHint": "Właściciele i administratorzy zawsze mają dostęp. Domyślnie wyłączone — każdy projekt jest widoczny dla całego zespołu.",
     "noMembers": "Nikomu jeszcze nie nadano dostępu.",
-    "selectMember": "Wybierz członka zespołu"
+    "selectMember": "Wybierz członka zespołu",
+    "confirmRemove": "Usunąć tę osobę z projektu? Natychmiast straci do niego dostęp."
   },
   "contracts": {
     "title": "Umowy",
@@ -2431,7 +2443,8 @@
     "codePlaceholder": "Kod, np. 03 00 00",
     "namePlaceholder": "Nazwa, np. Beton",
     "importStandardLibrary": "Importuj CSI MasterFormat",
-    "importResult": "Zaimportowano {created} dział(y), {skipped} już istniało."
+    "importResult": "Zaimportowano {created} dział(y), {skipped} już istniało.",
+    "confirmDelete": "Usunąć ten kod kosztowy? Pozycje kosztorysu, zlecenia zmiany i kosztów, które go używały, zostaną oznaczone jako „Nieskategoryzowane” zamiast zostać usunięte."
   },
   "wageClassifications": {
     "title": "Klasyfikacje płacowe",
@@ -3242,7 +3255,7 @@
     "internalNote": "Notatka wewnętrzna",
     "replyPlaceholder": "Napisz odpowiedź",
     "sendReply": "Wyślij",
-    "slaPoliciesTitle": "Polityki SLA",
+    "slaPoliciesTitle": "Zasady SLA zgłoszeń wsparcia",
     "slaPoliciesHint": "Cele odpowiedzi i rozwiązania przypisywane zgłoszeniu w momencie utworzenia, według priorytetu.",
     "responseMinutes": "Odpowiedź (min)",
     "resolutionMinutes": "Rozwiązanie (min)"
@@ -3764,7 +3777,8 @@
     "markCured": "Oznacz jako naprawione",
     "markTerminated": "Oznacz jako rozwiązane",
     "linkedWarrantyClaim": "Reklamacja gwarancyjna (opcjonalnie)",
-    "recoveryFor": "Odzysk za: {title}"
+    "recoveryFor": "Odzysk za: {title}",
+    "confirmTerminate": "Rozwiązać umowę z tym podwykonawcą z powodu niewywiązania się z umowy? To formalna czynność umowna, której nie można cofnąć z tego miejsca."
   },
   "winRate": {
     "title": "Skuteczność ofertowania",
@@ -3923,6 +3937,8 @@
   "openItems": {
     "title": "Otwarte pozycje",
     "subtitle": "Otwarte RFI, pozycje listy usterek i oczekujące zgłoszenia ze wszystkich projektów w jednym miejscu.",
+    "filteredByProject": "Filtrowane wg {project}.",
+    "clearFilter": "Wyczyść filtr",
     "tab_rfis": "RFI",
     "tab_punchList": "Lista usterek",
     "tab_submittals": "Zgłoszenia",

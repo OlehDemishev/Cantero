@@ -11,6 +11,7 @@ import { fetchCached, updateCache } from "@/lib/offline-cache";
 import { DashboardIcon, LogoutIcon } from "@/components/nav-icons";
 import { OfflineConflictsBanner } from "@/components/offline-conflicts-banner";
 import { VoiceInputButton } from "@/components/voice-input-button";
+import { formatDate } from "@/lib/format-date";
 
 /** Best-effort current position — resolves null (never rejects) on denial, timeout, or an unsupported browser, so logging time never blocks on location. */
 function getCurrentPositionSafe(): Promise<{ lat: number; lng: number } | null> {
@@ -753,7 +754,7 @@ function LogsTab({ projectId }: { projectId: string }) {
   return (
     <form onSubmit={submit} className="card flex flex-col gap-3">
       <CachedNote cachedAt={cachedAt} />
-      <p className="text-xs text-gray-500">{new Date().toLocaleDateString()}</p>
+      <p className="text-xs text-gray-500">{formatDate(new Date())}</p>
       <label className="flex flex-col gap-1.5 text-sm">
         <span className="font-medium text-gray-700">{td("weather")}</span>
         <select

@@ -13,6 +13,7 @@ import { ChangeOrderProfitabilityPanel } from "@/components/change-order-profita
 import type { CostCode } from "@/components/cost-codes-panel";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatDate, formatDateTime } from "@/lib/format-date";
 
 interface RateCatalogItem {
   id: string;
@@ -641,7 +642,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
           )}
           <span>
             {t("signedBy", { name: estimate.signerName })}
-            {estimate.decisionAt && ` · ${new Date(estimate.decisionAt).toLocaleString()}`}
+            {estimate.decisionAt && ` · ${formatDateTime(new Date(estimate.decisionAt))}`}
           </span>
         </div>
       )}
@@ -657,6 +658,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2">
+          <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -708,6 +710,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
               ))}
             </tbody>
           </table>
+          </div>
 
           {estimate.status === "draft" && (
             <form onSubmit={addLine} className="mt-4 flex flex-col gap-2">
@@ -792,6 +795,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
           {estimate.status === "approved" && (
             <div className="mt-8">
               <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("materialRequirements")}</h2>
+              <div className="overflow-x-auto">
               <table className="w-full border-collapse text-sm">
                 <tbody>
                   {estimate.requirements.map((r) => (
@@ -804,6 +808,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
                   ))}
                 </tbody>
               </table>
+              </div>
 
               {warehouses.length > 0 && (
                 <div className="mt-4 flex items-end gap-2">
@@ -823,6 +828,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
               {issueReport && (
                 <div className="mt-4">
                   <h3 className="mb-2 text-xs font-semibold text-gray-500">{t("issueReport")}</h3>
+                  <div className="overflow-x-auto">
                   <table className="w-full border-collapse text-sm">
                     <thead>
                       <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -841,6 +847,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
                       ))}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               )}
             </div>
@@ -862,7 +869,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
                         {t("version")} {rev.versionNumber}
                       </span>
                       <span className="text-xs text-gray-500">
-                        {new Date(rev.createdAt).toLocaleDateString()} · {rev.grandTotal} {currency}
+                        {formatDate(new Date(rev.createdAt))} · {rev.grandTotal} {currency}
                       </span>
                     </button>
                   </li>
@@ -876,6 +883,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
                   <h3 className="mb-2 text-xs font-semibold text-gray-500">
                     {t("compareToCurrent", { version: selectedRevision.versionNumber })}
                   </h3>
+                  <div className="overflow-x-auto">
                   <table className="w-full border-collapse text-sm">
                     <thead>
                       <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -914,6 +922,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
                       ))}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               )}
 
@@ -924,6 +933,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
           <div className="mt-10">
             <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("variants")}</h2>
             {variants && variants.length > 1 && (
+              <div className="overflow-x-auto">
               <table className="mb-4 w-full border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -954,6 +964,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
             <form onSubmit={createVariant} className="flex items-end gap-2">
               <input
@@ -1003,6 +1014,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
                         )}
 
                         {co.lines.length > 0 && (
+                          <div className="overflow-x-auto">
                           <table className="mt-3 w-full border-collapse text-xs">
                             <tbody>
                               {co.lines.map((l) => (
@@ -1018,6 +1030,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
                               ))}
                             </tbody>
                           </table>
+                          </div>
                         )}
                         <p className="mt-2 text-right text-xs font-medium">
                           {t("grandTotal")}: {co.grandTotal} {currency}
@@ -1151,7 +1164,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
                             )}
                             <span>
                               {t("signedBy", { name: co.signerName })}
-                              {co.decisionAt && ` · ${new Date(co.decisionAt).toLocaleString()}`}
+                              {co.decisionAt && ` · ${formatDateTime(new Date(co.decisionAt))}`}
                             </span>
                             <button
                               type="button"

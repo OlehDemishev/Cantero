@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, ApiError } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 interface CompanyHoliday {
   id: string;
@@ -66,7 +67,7 @@ export function CompanyHolidaysPanel({ canManage }: { canManage: boolean }) {
           {holidays.map((h) => (
             <li key={h.id} className="flex items-center justify-between rounded-md border border-gray-200 px-2.5 py-1.5 text-xs">
               <span>
-                <span className="font-medium text-gray-800">{new Date(h.date).toLocaleDateString()}</span>
+                <span className="font-medium text-gray-800">{formatDate(new Date(h.date))}</span>
                 <span className="ml-2 text-gray-500">{h.label}</span>
               </span>
               {canManage && (

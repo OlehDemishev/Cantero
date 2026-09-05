@@ -69,6 +69,7 @@ export function ProjectMembersPanel({ projectId }: { projectId: string }) {
   }
 
   async function removeMember(userId: string) {
+    if (!window.confirm(t("confirmRemove"))) return;
     setBusy(true);
     try {
       await apiFetch(`/projects/${projectId}/members/${userId}`, { method: "DELETE" });

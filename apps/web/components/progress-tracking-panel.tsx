@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { formatDate, formatDateTime } from "@/lib/format-date";
 
 interface ProgressEstimate {
   id: string;
@@ -65,7 +66,7 @@ export function ProgressTrackingPanel({ projectId }: { projectId: string }) {
             {t("basedOnPhotos", { count: latest.photoCount })}
             {latest.matchedKeywords.length > 0 && ` — ${latest.matchedKeywords.join(", ")}`}
           </p>
-          <p className="mt-1 text-xs text-gray-400">{new Date(latest.computedAt).toLocaleString()}</p>
+          <p className="mt-1 text-xs text-gray-400">{formatDateTime(new Date(latest.computedAt))}</p>
 
           {history.length > 1 && (
             <div className="mt-3 border-t border-gray-100 pt-3">
@@ -73,7 +74,7 @@ export function ProgressTrackingPanel({ projectId }: { projectId: string }) {
               <ul className="flex flex-col gap-1 text-xs text-gray-500">
                 {history.slice(1).map((h) => (
                   <li key={h.id}>
-                    {new Date(h.computedAt).toLocaleDateString()} — {h.estimatedPercentComplete}%
+                    {formatDate(new Date(h.computedAt))} — {h.estimatedPercentComplete}%
                     {h.billedPercentComplete !== null && ` (${t("billedPercent", { percent: Number(h.billedPercentComplete).toFixed(0) })})`}
                   </li>
                 ))}

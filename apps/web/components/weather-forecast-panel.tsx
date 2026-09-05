@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { WeatherCondition } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { formatDateWithOptions } from "@/lib/format-date";
 
 interface ForecastDay {
   date: string;
@@ -57,7 +58,7 @@ export function WeatherForecastPanel({ projectId }: { projectId: string }) {
             className={`card flex min-w-[100px] flex-col items-center gap-1 px-3 py-2.5 ${day.risky ? "border-warning-200 bg-warning-50" : ""}`}
           >
             <span className="text-xs text-gray-500">
-              {new Date(day.date).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })}
+              {formatDateWithOptions(day.date, { weekday: "short", day: "numeric", month: "short" })}
             </span>
             <span className="text-xl">{CONDITION_ICON[day.condition]}</span>
             <span className="text-xs text-gray-600">{td(`weather_${day.condition}`)}</span>

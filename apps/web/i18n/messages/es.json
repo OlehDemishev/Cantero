@@ -55,14 +55,14 @@
     "reports": "Informes",
     "portfolio": "Portafolio",
     "resourcePlanning": "Planificación de recursos",
-    "templates": "Plantillas",
+    "templates": "Plantillas de listas de verificación",
     "subcontractors": "Subcontratistas",
     "expenses": "Gastos",
-    "serviceContracts": "Contratos de servicio",
+    "serviceContracts": "Contratos de mantenimiento",
     "bankReconciliation": "Conciliación bancaria",
     "contracts": "Contratos",
     "schedule": "Cronograma",
-    "integrations": "Integraciones",
+    "integrations": "Estado de integraciones",
     "insuranceClaims": "Reclamaciones de seguro",
     "recruiting": "Contratación",
     "performance": "Desempeño",
@@ -418,7 +418,9 @@
     "tab_integrations": "Integraciones y API",
     "tab_templates": "Plantillas y contenido",
     "tab_operations": "Operaciones",
-    "tab_marketing": "Marketing"
+    "tab_marketing": "Marketing",
+    "confirmRevokeInvite": "¿Revocar esta invitación pendiente? El enlace en el correo de invitación dejará de funcionar.",
+    "confirmRevokeApiKey": "¿Revocar esta clave de API? Cualquier integración que la use dejará de funcionar de inmediato."
   },
   "projects": {
     "title": "Proyectos",
@@ -594,7 +596,9 @@
     "trainingHistory": "Formación",
     "cdlExpiry": "Vencimiento del CDL",
     "isApprentice": "Aprendiz (no oficial)",
-    "loadedRate": "Tasa cargada"
+    "loadedRate": "Tasa cargada",
+    "managerOnlyHint": "Solo los propietarios y administradores pueden editar el perfil, el saldo de PTO o el PIN del quiosco de un trabajador.",
+    "confirmTerminateEnrollment": "¿Terminar la inscripción de beneficios de este trabajador? Su cobertura bajo este plan finalizará."
   },
   "documents": {
     "title": "Documentos",
@@ -629,7 +633,12 @@
     "compareVersions": "Comparar versiones",
     "noPreview": "No hay vista previa disponible para este tipo de archivo",
     "category_as_built": "Plano as-built",
-    "category_om_manual": "Manual de O&M"
+    "category_om_manual": "Manual de O&M",
+    "deletedDocuments": "Documentos eliminados",
+    "deletedDocumentsHint": "Eliminar un documento no lo borra de inmediato: restáurelo aquí si se eliminó por error.",
+    "noDeletedDocuments": "Nada eliminado.",
+    "deletedAt": "Eliminado el {date}",
+    "restore": "Restaurar"
   },
   "rateCatalog": {
     "title": "Catálogo de precios",
@@ -1837,7 +1846,7 @@
     "leveledMoves": "Se movieron {count} asignación(es) para resolver el solapamiento."
   },
   "checklistTemplates": {
-    "title": "Plantillas",
+    "title": "Plantillas de listas de verificación",
     "subtitle": "Listas de verificación y textos iniciales reutilizables para la lista de defectos, RFI e instrucciones de seguridad.",
     "newTemplate": "Nueva plantilla",
     "templateType": "Tipo de plantilla",
@@ -2001,7 +2010,8 @@
     "noLevelingData": "Ninguna oferta incluye aún un desglose de alcance.",
     "scopeItem": "Partida de alcance",
     "notMentioned": "No mencionado",
-    "totalBid": "Oferta total"
+    "totalBid": "Oferta total",
+    "confirmCancel": "¿Cancelar esta solicitud de oferta? Los subcontratistas ya invitados a ofertar ya no podrán enviar ofertas ni verla."
   },
   "customFields": {
     "title": "Campos personalizados",
@@ -2018,7 +2028,8 @@
     "fieldType_select": "Lista desplegable",
     "optionsCommaSeparated": "Opciones (separadas por comas)",
     "optionsPlaceholder": "p. ej. Baja, Media, Alta",
-    "addField": "Añadir campo"
+    "addField": "Añadir campo",
+    "confirmDelete": "¿Eliminar este campo personalizado? Sus valores se eliminarán permanentemente de todo registro de proyecto o cliente que lo tenga."
   },
   "savedViews": {
     "nameThisView": "Nombrar esta vista",
@@ -2245,7 +2256,7 @@
     "regenerateCalendarFeed": "Regenerar URL del feed"
   },
   "integrationsMarketplace": {
-    "title": "Integraciones",
+    "title": "Estado de integraciones",
     "hint": "Vea qué está conectado y acceda directamente a su configuración.",
     "connected": "Conectado",
     "notConnected": "No conectado",
@@ -2277,7 +2288,7 @@
     "submit": "Enviar opinión"
   },
   "serviceContracts": {
-    "title": "Contratos de servicio",
+    "title": "Contratos de mantenimiento",
     "newContract": "Nuevo contrato",
     "selectProject": "Seleccionar un proyecto",
     "selectClient": "Seleccionar un cliente",
@@ -2392,7 +2403,8 @@
     "restrictToggle": "Restringir a miembros específicos del equipo",
     "restrictToggleHint": "Los propietarios y administradores siempre tienen acceso. Desactivado por defecto — cada proyecto es visible para todo el equipo.",
     "noMembers": "Aún no se ha dado acceso a nadie.",
-    "selectMember": "Seleccionar un miembro del equipo"
+    "selectMember": "Seleccionar un miembro del equipo",
+    "confirmRemove": "¿Quitar a esta persona del proyecto? Perderá el acceso de inmediato."
   },
   "contracts": {
     "title": "Contratos",
@@ -2431,7 +2443,8 @@
     "codePlaceholder": "Código, p. ej. 03 00 00",
     "namePlaceholder": "Nombre, p. ej. Hormigón",
     "importStandardLibrary": "Importar CSI MasterFormat",
-    "importResult": "Se importaron {created} división(es), {skipped} ya existían."
+    "importResult": "Se importaron {created} división(es), {skipped} ya existían.",
+    "confirmDelete": "¿Eliminar este código de costo? Las líneas de presupuesto, cambio de orden y costo que lo usaban pasarán a \"Sin categorizar\" en lugar de eliminarse."
   },
   "wageClassifications": {
     "title": "Clasificaciones salariales",
@@ -3242,7 +3255,7 @@
     "internalNote": "Nota interna",
     "replyPlaceholder": "Escribe una respuesta",
     "sendReply": "Enviar",
-    "slaPoliciesTitle": "Políticas de SLA",
+    "slaPoliciesTitle": "Políticas de SLA de tickets de soporte",
     "slaPoliciesHint": "Objetivos de respuesta y resolución aplicados a un ticket en el momento de su creación, según prioridad.",
     "responseMinutes": "Respuesta (min)",
     "resolutionMinutes": "Resolución (min)"
@@ -3764,7 +3777,8 @@
     "markCured": "Marcar como subsanado",
     "markTerminated": "Marcar como rescindido",
     "linkedWarrantyClaim": "Reclamo de garantía (opcional)",
-    "recoveryFor": "Recuperación por: {title}"
+    "recoveryFor": "Recuperación por: {title}",
+    "confirmTerminate": "¿Rescindir el contrato de este subcontratista por incumplimiento? Esta es una acción contractual formal y no se puede deshacer desde aquí."
   },
   "winRate": {
     "title": "Tasa de éxito en ofertas",
@@ -3923,6 +3937,8 @@
   "openItems": {
     "title": "Elementos abiertos",
     "subtitle": "RFI abiertas, elementos de la lista de pendientes y presentaciones pendientes de todos los proyectos, en un solo lugar.",
+    "filteredByProject": "Filtrado por {project}.",
+    "clearFilter": "Quitar filtro",
     "tab_rfis": "RFI",
     "tab_punchList": "Lista de pendientes",
     "tab_submittals": "Presentaciones",

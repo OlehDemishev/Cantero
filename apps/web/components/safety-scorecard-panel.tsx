@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 interface ProjectSafetyRow {
   projectId: string;
@@ -139,6 +140,7 @@ export function SafetyScorecardPanel() {
           </div>
 
           {scorecard.projects.length > 0 && (
+            <div className="overflow-x-auto">
             <table className="mt-4 w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -161,6 +163,7 @@ export function SafetyScorecardPanel() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </>
       )}
@@ -185,6 +188,7 @@ export function SafetyScorecardPanel() {
           </div>
 
           {nearMiss.projects.length > 0 && (
+            <div className="overflow-x-auto">
             <table className="mt-4 w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -205,6 +209,7 @@ export function SafetyScorecardPanel() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       )}
@@ -233,6 +238,7 @@ export function SafetyScorecardPanel() {
           </div>
 
           {training.overdueWorkers.length > 0 && (
+            <div className="overflow-x-auto">
             <table className="mt-4 w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -245,12 +251,13 @@ export function SafetyScorecardPanel() {
                   <tr key={w.workerId} className="border-b border-gray-100">
                     <td className="py-2">{w.workerName}</td>
                     <td className="text-right text-warning-700">
-                      {w.lastTrainingAt ? new Date(w.lastTrainingAt).toLocaleDateString() : t("neverTrained")}
+                      {w.lastTrainingAt ? formatDate(new Date(w.lastTrainingAt)) : t("neverTrained")}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       )}

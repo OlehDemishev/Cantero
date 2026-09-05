@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { CONTRACT_CLAIM_TYPES, type ContractClaimStatus, type ContractClaimType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatDate } from "@/lib/format-date";
 
 interface ContractClaim {
   id: string;
@@ -229,7 +230,7 @@ export function ContractClaimsPanel({ projectId }: { projectId: string }) {
                   <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[claim.status]}`}>{t(`status_${claim.status}`)}</span>
                 </button>
                 <p className="mt-1 text-xs text-gray-400">
-                  {t("noticeDate")}: {new Date(claim.noticeDate).toLocaleDateString()}
+                  {t("noticeDate")}: {formatDate(new Date(claim.noticeDate))}
                   {claim.requestedAmount && ` · ${claim.requestedAmount} ${currency}`}
                   {claim.requestedDays && ` · ${t("requestedDaysAbbr", { days: claim.requestedDays })}`}
                 </p>
@@ -284,7 +285,7 @@ export function ContractClaimsPanel({ projectId }: { projectId: string }) {
                       <ul className="mb-2 flex flex-col gap-1.5">
                         {detail.events.map((ev) => (
                           <li key={ev.id} className="text-xs">
-                            <span className="text-gray-400">{new Date(ev.occurredAt).toLocaleDateString()}</span> — {ev.description}
+                            <span className="text-gray-400">{formatDate(new Date(ev.occurredAt))}</span> — {ev.description}
                             <span className="text-gray-400"> ({ev.createdByName})</span>
                           </li>
                         ))}

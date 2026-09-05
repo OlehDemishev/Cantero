@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
+import { formatDate } from "@/lib/format-date";
 
 interface BudgetRevision {
   id: string;
@@ -239,7 +240,7 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
                     {Number(r.amount) >= 0 ? "+" : ""}
                     {money(r.amount)}
                   </span>
-                  <span className="text-xs text-gray-400">{new Date(r.createdAt).toLocaleDateString()}</span>
+                  <span className="text-xs text-gray-400">{formatDate(new Date(r.createdAt))}</span>
                 </div>
                 <p className="mt-0.5 text-xs text-gray-500">{r.reason}</p>
                 <p className="mt-0.5 text-xs text-gray-400">{r.createdByName}</p>
@@ -300,7 +301,7 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
                 <li key={d.id} className="rounded-md border border-gray-200 px-3 py-2 text-sm">
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-error-700">-{money(d.amount)}</span>
-                    <span className="text-xs text-gray-400">{new Date(d.createdAt).toLocaleDateString()}</span>
+                    <span className="text-xs text-gray-400">{formatDate(new Date(d.createdAt))}</span>
                   </div>
                   <p className="mt-0.5 text-xs text-gray-500">{d.reason}</p>
                   <p className="mt-0.5 text-xs text-gray-400">{d.createdByName}</p>

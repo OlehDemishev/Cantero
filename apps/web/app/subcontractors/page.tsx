@@ -8,6 +8,7 @@ import { CertificateAttachment } from "@/components/certificate-attachment";
 import { SubcontractorPrequalificationPanel } from "@/components/subcontractor-prequalification-panel";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatDate } from "@/lib/format-date";
 
 const DOCUMENT_TYPES: SubcontractorDocumentType[] = ["general_liability_insurance", "workers_comp_insurance", "license", "bonding", "other"];
 
@@ -395,9 +396,9 @@ export default function SubcontractorsPage() {
                                 }
                               >
                                 {r.status === "valid" && r.expiresAt
-                                  ? t("validUntil", { date: new Date(r.expiresAt).toLocaleDateString() })
+                                  ? t("validUntil", { date: formatDate(new Date(r.expiresAt)) })
                                   : r.status === "expired" && r.expiresAt
-                                    ? t("expiredOn", { date: new Date(r.expiresAt).toLocaleDateString() })
+                                    ? t("expiredOn", { date: formatDate(new Date(r.expiresAt)) })
                                     : t("missing")}
                               </span>
                             </li>
@@ -421,7 +422,7 @@ export default function SubcontractorsPage() {
                                     <span className="text-gray-500">{t(doc.type)}</span> — {doc.name}
                                     {" · "}
                                     <span className={expired ? "text-error-700" : "text-gray-500"}>
-                                      {new Date(doc.expiresAt).toLocaleDateString()}
+                                      {formatDate(new Date(doc.expiresAt))}
                                     </span>
                                   </span>
                                   <span className="flex items-center gap-2">
@@ -592,7 +593,7 @@ export default function SubcontractorsPage() {
                             {reviews.map((r) => (
                               <li key={r.id} className="text-xs text-gray-600">
                                 <span className="font-medium">{"★".repeat(r.rating)}</span> — {r.reviewedByName},{" "}
-                                {new Date(r.createdAt).toLocaleDateString()}
+                                {formatDate(new Date(r.createdAt))}
                                 {r.comments && <span className="text-gray-500"> · {r.comments}</span>}
                               </li>
                             ))}
@@ -705,7 +706,7 @@ export default function SubcontractorsPage() {
                               {payments.map((p) => (
                                 <li key={p.id} className="flex items-center justify-between text-xs">
                                   <span className="text-gray-500">
-                                    {new Date(p.paidAt).toLocaleDateString()}
+                                    {formatDate(new Date(p.paidAt))}
                                     {p.note && ` · ${p.note}`}
                                   </span>
                                   <span className="font-medium">{p.amount}</span>
@@ -775,6 +776,7 @@ export default function SubcontractorsPage() {
           ) : taxSummary.length === 0 ? (
             <p className="text-sm text-gray-400">{t("noTaxSummary")}</p>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-100 text-left text-xs text-gray-500">
@@ -803,6 +805,7 @@ export default function SubcontractorsPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       )}

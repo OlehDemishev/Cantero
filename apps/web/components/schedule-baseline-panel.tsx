@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 interface Baseline {
   id: string;
@@ -27,7 +28,7 @@ interface CompareResult {
   tasks: TaskSlippage[];
 }
 
-const fmt = (d: string | null) => (d ? new Date(d).toLocaleDateString() : "—");
+const fmt = (d: string | null) => (d ? formatDate(new Date(d)) : "—");
 
 export function ScheduleBaselinePanel({ projectId }: { projectId: string }) {
   const t = useTranslations("scheduleBaseline");

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 interface Worker {
   id: string;
@@ -103,11 +104,12 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
       ) : entries.length === 0 ? (
         <p className="text-sm text-gray-400">{t("noTimeEntries")}</p>
       ) : (
+        <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <tbody>
             {entries.map((entry) => (
               <tr key={entry.id} className="border-b border-gray-100">
-                <td className="py-1">{new Date(entry.date).toLocaleDateString()}</td>
+                <td className="py-1">{formatDate(new Date(entry.date))}</td>
                 <td>{entry.worker.name}</td>
                 <td>{entry.task?.name ?? "—"}</td>
                 <td>
@@ -154,6 +156,7 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
             ))}
           </tbody>
         </table>
+        </div>
       )}
 
       {workers.length > 0 && (

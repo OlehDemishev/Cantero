@@ -8,6 +8,7 @@ import { SavedViewsBar } from "@/components/saved-views-bar";
 import { CrmPipelinePanel } from "@/components/crm-pipeline-panel";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatDate } from "@/lib/format-date";
 
 type ClientStage = "lead" | "contacted" | "qualified" | "won" | "lost";
 const STAGES: ClientStage[] = ["lead", "contacted", "qualified", "won", "lost"];
@@ -175,7 +176,7 @@ export default function ClientsPage() {
                     <span className="text-gray-500"> · {r.client.name}</span>
                   </a>
                   <span className={`text-xs font-medium ${overdue ? "text-error-600" : "text-gray-500"}`}>
-                    {new Date(r.dueDate).toLocaleDateString()}
+                    {formatDate(new Date(r.dueDate))}
                   </span>
                 </li>
               );

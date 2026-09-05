@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { SURETY_BOND_TYPES, type SuretyBondStatus, type SuretyBondType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatDate } from "@/lib/format-date";
 
 interface SuretyBond {
   id: string;
@@ -162,8 +163,8 @@ export function SuretyBondsPanel({ projectId }: { projectId: string }) {
                 <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[bond.status]}`}>{t(`status_${bond.status}`)}</span>
               </div>
               <p className="mt-1 text-xs text-gray-500">
-                {t("penalSum")}: {bond.penalSum} {currency} · {t("issueDate")}: {new Date(bond.issueDate).toLocaleDateString()}
-                {bond.expiryDate && ` · ${t("expiryDate")}: ${new Date(bond.expiryDate).toLocaleDateString()}`}
+                {t("penalSum")}: {bond.penalSum} {currency} · {t("issueDate")}: {formatDate(new Date(bond.issueDate))}
+                {bond.expiryDate && ` · ${t("expiryDate")}: ${formatDate(new Date(bond.expiryDate))}`}
               </p>
               {bond.status === "active" && (
                 <button onClick={() => release(bond.id)} disabled={busy} className="btn-secondary mt-2 px-2 py-1 text-xs">

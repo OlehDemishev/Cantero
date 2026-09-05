@@ -4,6 +4,7 @@ import { use, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { SignaturePad } from "@/components/signature-pad";
+import { formatDateTime } from "@/lib/format-date";
 
 type ContractStatus = "draft" | "sent" | "signed" | "void";
 interface PublicContract {
@@ -102,7 +103,7 @@ export default function PublicContractPage({ params }: { params: Promise<{ token
           ) : contract.status === "signed" ? (
             <div className="mt-6 rounded-lg border-t border-success-200 bg-success-50 px-4 py-3 text-sm text-success-700">
               {t("signedThanks")}
-              {contract.signedAt && <span className="block text-xs opacity-75">{new Date(contract.signedAt).toLocaleString()}</span>}
+              {contract.signedAt && <span className="block text-xs opacity-75">{formatDateTime(new Date(contract.signedAt))}</span>}
             </div>
           ) : (
             <div className="mt-6 rounded-lg border-t border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">{t("notAwaitingSignature")}</div>

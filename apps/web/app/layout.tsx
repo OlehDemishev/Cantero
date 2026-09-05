@@ -5,6 +5,7 @@ import { getLocale, getMessages } from "next-intl/server";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { SidebarProvider } from "@/context/SidebarContext";
 import { PwaRegister } from "@/components/pwa-register";
+import { ToastProvider } from "@/components/ui/toast-provider";
 import "./globals.css";
 
 const outfit = Outfit({
@@ -32,8 +33,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <NextIntlClientProvider locale={locale} messages={messages}>
           <ThemeProvider>
             <SidebarProvider>
-              {children}
-              <PwaRegister />
+              <ToastProvider>
+                {children}
+                <PwaRegister />
+              </ToastProvider>
             </SidebarProvider>
           </ThemeProvider>
         </NextIntlClientProvider>

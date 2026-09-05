@@ -4,6 +4,7 @@ import { use, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { SignaturePad } from "@/components/signature-pad";
+import { formatDate } from "@/lib/format-date";
 
 type SignatureRequestStatus = "draft" | "sent" | "completed" | "voided";
 interface PublicSignatureRequest {
@@ -98,7 +99,7 @@ export default function PublicSignPage({ params }: { params: Promise<{ token: st
                   <span>{s.order}.</span>
                   <span>{s.name}</span>
                   {s.signedAt ? (
-                    <span className="text-success-700">{t("signedOn", { date: new Date(s.signedAt).toLocaleDateString() })}</span>
+                    <span className="text-success-700">{t("signedOn", { date: formatDate(new Date(s.signedAt)) })}</span>
                   ) : (
                     <span className="text-gray-400">{t("notSigned")}</span>
                   )}

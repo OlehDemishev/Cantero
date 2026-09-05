@@ -55,6 +55,7 @@ export function CarbonSummaryPanel() {
       </div>
 
       {topMaterials.length > 0 && (
+        <div className="overflow-x-auto">
         <table className="mt-4 w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -78,6 +79,7 @@ export function CarbonSummaryPanel() {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   );

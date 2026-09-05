@@ -6,6 +6,7 @@ import { WEATHER_CONDITIONS, type WeatherCondition } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { PhotoAttachments } from "@/components/photo-attachments";
 import { VoiceInputButton } from "@/components/voice-input-button";
+import { formatDate } from "@/lib/format-date";
 
 interface DailyLog {
   id: string;
@@ -262,7 +263,7 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-sm font-medium text-gray-900">
-                      {new Date(log.date).toLocaleDateString()}
+                      {formatDate(new Date(log.date))}
                     </span>
                     {log.weatherCondition && (
                       <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">

@@ -4,6 +4,7 @@ import { use, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { SignaturePad } from "@/components/signature-pad";
+import { formatDateTime } from "@/lib/format-date";
 
 interface PublicLine {
   id: string;
@@ -111,6 +112,7 @@ export default function PublicChangeOrderPage({ params }: { params: Promise<{ to
           </h1>
           {changeOrder.description && <p className="mt-1 text-sm text-gray-500">{changeOrder.description}</p>}
 
+          <div className="overflow-x-auto">
           <table className="mt-6 w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -133,6 +135,7 @@ export default function PublicChangeOrderPage({ params }: { params: Promise<{ to
               ))}
             </tbody>
           </table>
+          </div>
 
           <dl className="mt-4 flex flex-col gap-1.5 text-sm">
             <div className="flex justify-between">
@@ -209,7 +212,7 @@ export default function PublicChangeOrderPage({ params }: { params: Promise<{ to
             >
               {changeOrder.clientDecision === "approved" ? t("clientDecisionThanksApproved") : t("clientDecisionThanksRejected")}
               {changeOrder.decisionAt && (
-                <span className="block text-xs opacity-75">{new Date(changeOrder.decisionAt).toLocaleString()}</span>
+                <span className="block text-xs opacity-75">{formatDateTime(new Date(changeOrder.decisionAt))}</span>
               )}
             </div>
           )}

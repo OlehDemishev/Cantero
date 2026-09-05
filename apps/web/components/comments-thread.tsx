@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { formatDateTime } from "@/lib/format-date";
 
 type CommentParam = "taskId" | "rfiId" | "punchListItemId" | "projectId";
 
@@ -90,7 +91,7 @@ export function CommentsThread({ param, entityId }: { param: CommentParam; entit
             <li key={c.id} className="rounded-md bg-gray-50 px-3 py-2 text-xs">
               <div className="flex items-center justify-between">
                 <span className="font-medium text-gray-900">{c.authorName}</span>
-                <span className="text-gray-400">{new Date(c.createdAt).toLocaleString()}</span>
+                <span className="text-gray-400">{formatDateTime(new Date(c.createdAt))}</span>
               </div>
               <p className="mt-1 whitespace-pre-wrap text-gray-700">{c.content}</p>
             </li>

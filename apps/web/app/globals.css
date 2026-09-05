@@ -173,6 +173,23 @@ body {
   }
 }
 
+/* Visual "required" marker for form fields. The native `required` attribute already gives
+   assistive tech the accessible required state (no separate aria-required needed) — what's
+   missing is a sighted-user cue, and adding it per-component would mean touching ~100 files that
+   set `required` directly on the input. This targets the common `<label><span>Text</span>
+   <input required /></label>` structure used throughout the app instead: a real, visible label
+   gets a red asterisk next to its text. It intentionally does NOT touch the input's own border —
+   this app also has compact "quick add" rows (e.g. cost-codes-panel) that label fields only via
+   placeholder text with no visible label element, and a colored input border would risk reading
+   as a validation error rather than a required-field hint; those rows are a labeling gap of their
+   own, not something this rule can safely paper over. */
+label:has(> input:required) > span:first-child::after,
+label:has(> select:required) > span:first-child::after,
+label:has(> textarea:required) > span:first-child::after {
+  content: " *";
+  color: var(--color-error-600);
+}
+
 /* Printing a page (Ctrl/Cmd+P or a panel's own "Print" button): drop shadows/borders that only
    make sense on screen, and force light colors regardless of the viewer's dark-mode setting —
    app chrome (sidebar/header) is hidden via `print:hidden` at each element instead of here. */

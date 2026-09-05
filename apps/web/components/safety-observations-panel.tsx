@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import type { ObservationCategory } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { PrintButton } from "@/components/ui/print-button";
+import { formatDate } from "@/lib/format-date";
 
 interface Observation {
   id: string;
@@ -130,7 +131,7 @@ export function SafetyObservationsPanel({ projectId }: { projectId: string }) {
                 >
                   {t(o.category)}
                 </span>
-                <span className="text-xs text-gray-500">{new Date(o.observedAt).toLocaleDateString()}</span>
+                <span className="text-xs text-gray-500">{formatDate(new Date(o.observedAt))}</span>
                 <span className="text-xs text-gray-500">{o.observerName}</span>
               </div>
               <p className="mt-1.5 text-sm text-gray-700">{o.behaviorObserved}</p>

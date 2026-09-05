@@ -62,7 +62,7 @@ export function CustomPortalDomainPanel({ canManage }: { canManage: boolean }) {
   if (!canManage) return null;
 
   return (
-    <section id="custom-portal-domain" className="card lg:col-span-2">
+    <section className="card lg:col-span-2">
       <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("title")}</h2>
       <p className="mb-4 text-xs text-gray-500">{t("hint")}</p>
 

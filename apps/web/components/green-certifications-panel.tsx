@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { GREEN_CERTIFICATION_TYPES, type GreenCertificationType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 interface GreenCertification {
   id: string;
@@ -129,7 +130,7 @@ export function GreenCertificationsPanel({ projectId }: { projectId: string }) {
               <div>
                 <span className="rounded-full bg-success-50 px-2 py-0.5 text-xs font-medium text-success-700">{t(`certType_${item.type}`)}</span>
                 <span className="ml-2 text-sm font-medium text-gray-800 dark:text-white/90">{item.name}</span>
-                {item.expiresAt && <span className="ml-2 text-xs text-gray-400">{t("expires", { date: new Date(item.expiresAt).toLocaleDateString() })}</span>}
+                {item.expiresAt && <span className="ml-2 text-xs text-gray-400">{t("expires", { date: formatDate(new Date(item.expiresAt)) })}</span>}
               </div>
               <button onClick={() => remove(item.id)} className="text-xs text-error-600 hover:underline">
                 {tc("delete")}

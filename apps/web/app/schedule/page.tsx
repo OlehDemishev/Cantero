@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 interface Project {
   id: string;
@@ -165,7 +166,7 @@ function ProjectScheduleSection({ schedule }: { schedule: ProjectSchedule }) {
                   <div
                     className={`absolute h-6 rounded ${STATUS_STYLES[task.status]} ${task.isCritical ? "ring-2 ring-error-600" : ""}`}
                     style={{ left: `${left}%`, width: `${Math.max(right - left, 2)}%` }}
-                    title={`${task.name}: ${new Date(task.startDate!).toLocaleDateString()} – ${new Date(task.dueDate!).toLocaleDateString()}`}
+                    title={`${task.name}: ${formatDate(new Date(task.startDate!))} – ${formatDate(new Date(task.dueDate!))}`}
                   />
                 </div>
               </div>

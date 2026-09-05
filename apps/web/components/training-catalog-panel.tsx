@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 interface TrainingCourse {
   id: string;
@@ -210,7 +211,7 @@ export function TrainingCatalogPanel() {
                             <span>{en.worker.name}</span>
                             {en.status === "completed" ? (
                               <span className="rounded-full bg-success-50 px-2 py-0.5 font-medium text-success-700">
-                                {t("completedOn", { date: en.completedAt ? new Date(en.completedAt).toLocaleDateString() : "" })}
+                                {t("completedOn", { date: en.completedAt ? formatDate(new Date(en.completedAt)) : "" })}
                               </span>
                             ) : (
                               <button onClick={() => complete(en.id, course.id)} disabled={busy} className="text-brand-600 hover:underline">

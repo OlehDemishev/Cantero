@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 interface CalibrationRecord {
   id: string;
@@ -68,13 +69,13 @@ export function CalibrationPanel(props: Props) {
       ) : (
         <>
           <p className={`mb-2 text-xs font-medium ${overdue ? "text-error-700" : "text-success-700"}`}>
-            {t("nextDue")}: {new Date(latest!.nextDueAt).toLocaleDateString()}
+            {t("nextDue")}: {formatDate(new Date(latest!.nextDueAt))}
             {overdue && ` — ${t("overdue")}`}
           </p>
           <ul className="mb-3 flex flex-col gap-1 text-xs text-gray-500">
             {records.map((r) => (
               <li key={r.id}>
-                {new Date(r.calibratedAt).toLocaleDateString()} → {t("dueOn")} {new Date(r.nextDueAt).toLocaleDateString()}
+                {formatDate(new Date(r.calibratedAt))} → {t("dueOn")} {formatDate(new Date(r.nextDueAt))}
                 {r.certificateNumber && ` · ${r.certificateNumber}`}
                 {r.performedBy && ` · ${r.performedBy}`}
               </li>

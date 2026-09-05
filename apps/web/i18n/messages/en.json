@@ -56,14 +56,14 @@
     "portfolio": "Portfolio",
     "openItems": "Open items",
     "resourcePlanning": "Resource planning",
-    "templates": "Templates",
+    "templates": "Checklist templates",
     "subcontractors": "Subcontractors",
     "expenses": "Expenses",
-    "serviceContracts": "Service Contracts",
+    "serviceContracts": "Maintenance contracts",
     "bankReconciliation": "Bank reconciliation",
     "contracts": "Contracts",
     "schedule": "Schedule",
-    "integrations": "Integrations",
+    "integrations": "Integration status",
     "insuranceClaims": "Insurance claims",
     "recruiting": "Recruiting",
     "performance": "Performance",
@@ -252,6 +252,8 @@
     "webhookEvent_material_low_stock": "Material below reorder threshold",
     "auditLog": "Audit log",
     "auditLogHint": "Who changed what, and when.",
+    "confirmRevokeInvite": "Revoke this pending invite? The link in the invite email will stop working.",
+    "confirmRevokeApiKey": "Revoke this API key? Any integration using it will immediately stop working.",
     "noAuditLog": "No activity recorded yet.",
     "tab_account": "Account & Notifications",
     "tab_company": "Company & Branding",
@@ -520,6 +522,8 @@
   },
   "team": {
     "title": "Team",
+    "managerOnlyHint": "Only owners and admins can edit a worker's profile, PTO balance, or kiosk PIN.",
+    "confirmTerminateEnrollment": "Terminate this worker's benefits enrollment? Their coverage under this plan will end.",
     "workers": "Workers",
     "newWorker": "New worker",
     "role": "Role",
@@ -629,7 +633,12 @@
     "compareVersions": "Compare versions",
     "noPreview": "No preview available for this file type",
     "category_as_built": "As-built",
-    "category_om_manual": "O&M manual"
+    "category_om_manual": "O&M manual",
+    "deletedDocuments": "Deleted documents",
+    "deletedDocumentsHint": "Deleting a document doesn't erase it right away — restore one here if it was removed by mistake.",
+    "noDeletedDocuments": "Nothing deleted.",
+    "deletedAt": "Deleted {date}",
+    "restore": "Restore"
   },
   "rateCatalog": {
     "title": "Rate catalog",
@@ -1837,7 +1846,7 @@
     "leveledMoves": "Shifted {count} assignment(s) to resolve the overlap."
   },
   "checklistTemplates": {
-    "title": "Templates",
+    "title": "Checklist templates",
     "subtitle": "Reusable checklists and starting text for punch list items, RFIs, and safety briefings.",
     "newTemplate": "New template",
     "templateType": "Template type",
@@ -1976,6 +1985,7 @@
   },
   "bidding": {
     "title": "Bid requests",
+    "confirmCancel": "Cancel this bid request? Subcontractors already invited to bid will no longer be able to submit or see it.",
     "newBidRequest": "New bid request",
     "scopeTitle": "Scope title",
     "dueDate": "Due date",
@@ -2005,6 +2015,7 @@
   },
   "customFields": {
     "title": "Custom fields",
+    "confirmDelete": "Delete this custom field? Its values will be permanently removed from every project or client record that has one.",
     "hint": "Add your own fields to projects and clients — they'll show up on every record of that type.",
     "noFields": "No custom fields defined yet.",
     "entityType": "Applies to",
@@ -2245,7 +2256,7 @@
     "regenerateCalendarFeed": "Regenerate feed URL"
   },
   "integrationsMarketplace": {
-    "title": "Integrations",
+    "title": "Integration status",
     "hint": "See what's connected and jump straight to its settings.",
     "connected": "Connected",
     "notConnected": "Not connected",
@@ -2277,7 +2288,7 @@
     "submit": "Submit feedback"
   },
   "serviceContracts": {
-    "title": "Service Contracts",
+    "title": "Maintenance contracts",
     "newContract": "New contract",
     "selectProject": "Select a project",
     "selectClient": "Select a client",
@@ -2388,6 +2399,7 @@
   },
   "projectMembers": {
     "title": "Project access",
+    "confirmRemove": "Remove this person from the project? They will immediately lose access to it.",
     "tooltip": "Restrict who on your team can see this project — useful for sensitive or high-security sites.",
     "restrictToggle": "Restrict to specific team members",
     "restrictToggleHint": "Owners and admins always have access. Off by default — every project is visible to the whole team.",
@@ -2426,6 +2438,7 @@
   },
   "costCodes": {
     "title": "Cost codes",
+    "confirmDelete": "Delete this cost code? Estimate, change order, and cost lines that used it will fall back to \"Uncategorized\" rather than being deleted.",
     "hint": "CSI-style cost codes for classifying estimate, change order, and subcontractor cost lines — used by job costing and schedule-of-values reports.",
     "noCostCodes": "No cost codes yet.",
     "codePlaceholder": "Code, e.g. 03 00 00",
@@ -3242,7 +3255,7 @@
     "internalNote": "Internal note",
     "replyPlaceholder": "Write a reply",
     "sendReply": "Send",
-    "slaPoliciesTitle": "SLA policies",
+    "slaPoliciesTitle": "Support ticket SLA policies",
     "slaPoliciesHint": "Response and resolution targets applied to a ticket at the moment it's created, by priority.",
     "responseMinutes": "Response (min)",
     "resolutionMinutes": "Resolution (min)"
@@ -3741,6 +3754,7 @@
     "hoursPerUnit": "{rate} h/{unit}"
   },
   "subcontractorClaims": {
+    "confirmTerminate": "Terminate this subcontractor for default? This is a formal contract action and cannot be undone from here.",
     "backchargesTitle": "Subcontractor backcharges",
     "newBackcharge": "New backcharge",
     "subcontractor": "Subcontractor",
@@ -3922,7 +3936,9 @@
   },
   "openItems": {
     "title": "Open items",
-    "subtitle": "Open RFIs, punch-list items, and pending submittals across every project, in one place.",
+    "subtitle": "Open RFIs, punch list items, and pending submittals across every project, in one place.",
+    "filteredByProject": "Filtered to {project}.",
+    "clearFilter": "Clear filter",
     "tab_rfis": "RFIs",
     "tab_punchList": "Punch list",
     "tab_submittals": "Submittals",
@@ -3934,7 +3950,7 @@
     "priority": "Priority",
     "dueDate": "Due date",
     "noOpenRfis": "No open RFIs across any project.",
-    "noOpenPunchList": "No open punch-list items across any project.",
+    "noOpenPunchList": "No open punch list items across any project.",
     "noPendingSubmittals": "No submittals pending review across any project."
   }
 }

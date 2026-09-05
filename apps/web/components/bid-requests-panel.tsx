@@ -170,6 +170,7 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
   }
 
   async function cancel(bidRequestId: string) {
+    if (!window.confirm(t("confirmCancel"))) return;
     setBusy(true);
     try {
       await apiFetch(`/bid-requests/${bidRequestId}/cancel`, { method: "POST" });
@@ -336,6 +337,7 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                       </form>
                     </div>
 
+                    <div className="overflow-x-auto">
                     <table className="w-full border-collapse text-sm">
                       <thead>
                         <tr className="border-b border-gray-200 text-left text-xs text-gray-500">
@@ -403,6 +405,7 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                         })}
                       </tbody>
                     </table>
+                    </div>
                     <div className="flex items-center gap-2">
                       {r.bids.length > 1 && (
                         <button onClick={() => toggleLeveling(r.id)} className="btn-secondary w-fit px-3 py-1 text-xs">

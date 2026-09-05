@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { WeatherCondition } from "@cantero/shared";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 interface WeatherDelayEntry {
   id: string;
@@ -65,6 +66,7 @@ export function WeatherDelayReportPanel({ projectId }: { projectId: string }) {
         <p className="text-sm text-gray-700">
           {t("weatherDelayTotal", { hours: report.totalHours, days: report.suggestedShiftDays })}
         </p>
+        <div className="overflow-x-auto">
         <table className="mt-3 w-full border-collapse text-xs">
           <thead>
             <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -77,7 +79,7 @@ export function WeatherDelayReportPanel({ projectId }: { projectId: string }) {
           <tbody>
             {report.entries.map((e) => (
               <tr key={e.id} className="border-b border-gray-100">
-                <td className="py-1.5">{new Date(e.date).toLocaleDateString()}</td>
+                <td className="py-1.5">{formatDate(new Date(e.date))}</td>
                 <td>{e.weatherCondition ? t(`weather_${e.weatherCondition}`) : "—"}</td>
                 <td>{e.weatherDelayHours}</td>
                 <td className="text-gray-500">{e.weatherNotes ?? ""}</td>
@@ -85,6 +87,7 @@ export function WeatherDelayReportPanel({ projectId }: { projectId: string }) {
             ))}
           </tbody>
         </table>
+        </div>
 
         <div className="mt-3 flex items-center gap-2">
           <button onClick={exportCsv} className="btn-secondary px-3 py-1 text-xs">

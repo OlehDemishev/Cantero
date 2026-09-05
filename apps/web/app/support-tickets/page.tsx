@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { TICKET_PRIORITIES, TICKET_STATUSES, type TicketPriority, type TicketStatus } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch } from "@/lib/api-client";
+import { formatDateTime } from "@/lib/format-date";
 
 interface Member {
   id: string;
@@ -298,7 +299,7 @@ export default function SupportTicketsPage() {
                                 {m.authorName}
                                 {m.isInternal && <span className="ml-1.5 font-medium text-warning-700">{t("internalNote")}</span>}
                               </span>
-                              <span>{new Date(m.createdAt).toLocaleString()}</span>
+                              <span>{formatDateTime(new Date(m.createdAt))}</span>
                             </div>
                             <p className="mt-1 text-gray-700">{m.content}</p>
                           </li>

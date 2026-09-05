@@ -25,6 +25,7 @@ import { LeadFormSettingsPanel } from "@/components/lead-form-settings-panel";
 import { CustomPortalDomainPanel } from "@/components/custom-portal-domain-panel";
 import { SsoSettingsPanel } from "@/components/sso-settings-panel";
 import { DataPrivacyPanel } from "@/components/data-privacy-panel";
+import { DeletedDocumentsPanel } from "@/components/deleted-documents-panel";
 import { AccountingSyncPanel } from "@/components/accounting-sync-panel";
 import { TwoFactorSettingsPanel } from "@/components/two-factor-settings-panel";
 import { SessionsPanel } from "@/components/sessions-panel";
@@ -47,6 +48,7 @@ import { CompanyCoiPanel } from "@/components/company-coi-panel";
 import { MessageTemplatesPanel } from "@/components/message-templates-panel";
 import { CompanyHolidaysPanel } from "@/components/company-holidays-panel";
 import { HelpTooltip } from "@/components/help-tooltip";
+import { formatDate, formatDateTime } from "@/lib/format-date";
 
 interface Company {
   name: string;
@@ -696,6 +698,7 @@ export default function SettingsPage() {
   }
 
   async function revokeInvite(id: string) {
+    if (!window.confirm(t("confirmRevokeInvite"))) return;
     await apiFetch(`/company/invites/${id}`, { method: "DELETE" });
     loadAll();
   }
@@ -730,6 +733,7 @@ export default function SettingsPage() {
   }
 
   async function revokeApiKey(id: string) {
+    if (!window.confirm(t("confirmRevokeApiKey"))) return;
     await apiFetch(`/company/api-keys/${id}`, { method: "DELETE" });
     loadAll();
   }
@@ -1481,6 +1485,7 @@ export default function SettingsPage() {
             {franchiseOverview && franchiseOverview.branches.length > 0 ? (
               <>
                 <p className="mb-2 text-xs text-gray-500">{t("reportingIn", { currency: franchiseOverview.reportingCurrency ?? "" })}</p>
+                <div className="overflow-x-auto">
                 <table className="w-full border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -1532,6 +1537,7 @@ export default function SettingsPage() {
                     )}
                   </tbody>
                 </table>
+                </div>
               </>
             ) : (
               <div className="flex flex-col gap-4">
@@ -1568,6 +1574,7 @@ export default function SettingsPage() {
           {!members ? (
             <p className="text-gray-500">{tc("loading")}</p>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -1631,6 +1638,7 @@ export default function SettingsPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </section>
         )}
@@ -1775,6 +1783,7 @@ export default function SettingsPage() {
             {!apiKeys || apiKeys.length === 0 ? (
               <p className="text-sm text-gray-400">{t("noApiKeys")}</p>
             ) : (
+              <div className="overflow-x-auto">
               <table className="w-full border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -1792,12 +1801,12 @@ export default function SettingsPage() {
                       <td className="py-2">{k.name}</td>
                       <td className="font-mono text-xs text-gray-500">{k.keyPrefix}…</td>
                       <td className="text-xs text-gray-500">{k.scopes.length > 0 ? k.scopes.join(", ") : t("apiKeyUnrestricted")}</td>
-                      <td className="text-xs text-gray-500">{k.expiresAt ? new Date(k.expiresAt).toLocaleDateString() : "—"}</td>
+                      <td className="text-xs text-gray-500">{k.expiresAt ? formatDate(new Date(k.expiresAt)) : "—"}</td>
                       <td className="text-xs text-gray-500">
                         {k.revokedAt
                           ? t("apiKeyRevoked")
                           : k.lastUsedAt
-                            ? new Date(k.lastUsedAt).toLocaleDateString()
+                            ? formatDate(new Date(k.lastUsedAt))
                             : t("apiKeyNeverUsed")}
                       </td>
                       <td>
@@ -1811,6 +1820,7 @@ export default function SettingsPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
 
             <form onSubmit={createApiKey} className="mt-4 flex flex-col gap-2">
@@ -1897,7 +1907,7 @@ export default function SettingsPage() {
                           {w.lastDeliveryAt ? (
                             <span className={w.lastDeliveryStatus === "success" ? "text-success-600" : "text-error-600"}>
                               {t("lastDelivery")}: {t(w.lastDeliveryStatus === "success" ? "webhookSuccess" : "webhookFailed")} ·{" "}
-                              {new Date(w.lastDeliveryAt).toLocaleString()}
+                              {formatDateTime(new Date(w.lastDeliveryAt))}
                             </span>
                           ) : (
                             <span>{t("lastDelivery")}: {t("never")}</span>
@@ -1938,7 +1948,7 @@ export default function SettingsPage() {
                                 <span className={d.success ? "text-success-600" : "text-error-600"}>
                                   {d.event} {d.statusCode ? `· HTTP ${d.statusCode}` : d.error ? `· ${d.error}` : ""}
                                 </span>
-                                <span className="text-gray-400">{new Date(d.createdAt).toLocaleString()}</span>
+                                <span className="text-gray-400">{formatDateTime(new Date(d.createdAt))}</span>
                               </li>
                             ))}
                           </ul>
@@ -2018,9 +2028,11 @@ export default function SettingsPage() {
 
         {activeTab === "security" && <DataPrivacyPanel canManage={isManager} />}
 
+        {activeTab === "security" && isManager && <DeletedDocumentsPanel />}
+
         {activeTab === "marketing" && <ReferralProgramPanel />}
 
-        {activeTab === "marketing" && <CompanyCoiPanel canManage={isManager} />}
+        {activeTab === "security" && <CompanyCoiPanel canManage={isManager} />}
 
         {activeTab === "security" && isManager && (
           <section className="card lg:col-span-2">
@@ -2087,7 +2099,7 @@ export default function SettingsPage() {
                       <span className="text-gray-600">{entry.summary}</span>
                     </div>
                     <span className="shrink-0 pl-3 text-xs text-gray-400">
-                      {new Date(entry.createdAt).toLocaleString()}
+                      {formatDateTime(new Date(entry.createdAt))}
                     </span>
                   </li>
                 ))}
@@ -2099,11 +2111,11 @@ export default function SettingsPage() {
         {activeTab === "templates" && isManager && <OnboardingTemplatePanel />}
         {activeTab === "templates" && isManager && <OffboardingTemplatePanel />}
         {activeTab === "templates" && isManager && <TrainingCatalogPanel />}
-        {activeTab === "operations" && isManager && <BondingCapacityPanel />}
+        {activeTab === "billing" && isManager && <BondingCapacityPanel />}
         {activeTab === "marketing" && isManager && <MarketingCampaignsPanel />}
         {activeTab === "operations" && isManager && <SlaPoliciesPanel />}
-        {activeTab === "operations" && isManager && <TaxJurisdictionsPanel />}
-        {activeTab === "operations" && isManager && <BenefitPlansPanel />}
+        {activeTab === "billing" && isManager && <TaxJurisdictionsPanel />}
+        {activeTab === "team" && isManager && <BenefitPlansPanel />}
         {activeTab === "operations" && isManager && <InspectionTemplatesPanel />}
         {activeTab === "operations" && isManager && <CostCodesPanel />}
         {activeTab === "operations" && isManager && <WageClassificationsPanel />}

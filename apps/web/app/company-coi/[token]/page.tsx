@@ -4,6 +4,7 @@ import { use, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { CompanyDocumentType } from "@cantero/shared";
 import { apiFetch, ApiError, downloadBlob } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 interface PublicCoiDocument {
   id: string;
@@ -71,7 +72,7 @@ export default function CompanyCoiPublicPage({ params }: { params: Promise<{ tok
                     <span className="font-medium text-gray-900">{t(doc.type)}</span>
                     <span className="text-gray-500"> — {doc.name}</span>
                     <br />
-                    <span className="text-xs text-gray-400">{t("validUntil", { date: new Date(doc.expiresAt).toLocaleDateString() })}</span>
+                    <span className="text-xs text-gray-400">{t("validUntil", { date: formatDate(new Date(doc.expiresAt)) })}</span>
                   </span>
                   {doc.fileDocumentId && (
                     <button onClick={() => download(doc)} className="btn-secondary shrink-0 px-3 py-1.5 text-xs">

@@ -8,6 +8,7 @@ import { EquipmentGpsPanel } from "@/components/equipment-gps-panel";
 import { CalibrationPanel } from "@/components/calibration-panel";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatDate, formatDateTime } from "@/lib/format-date";
 
 function getCurrentPositionSafe(): Promise<{ lat: number; lng: number } | null> {
   return new Promise((resolve) => {
@@ -558,7 +559,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
                 new Date(equipment.nextMaintenanceDueAt) < new Date() ? "font-medium text-error-600" : "text-gray-700"
               }`}
             >
-              {t("nextDue", { date: new Date(equipment.nextMaintenanceDueAt).toLocaleDateString() })}
+              {t("nextDue", { date: formatDate(new Date(equipment.nextMaintenanceDueAt)) })}
             </p>
           )}
           <form onSubmit={saveSchedule} className="flex flex-wrap items-end gap-2">
@@ -646,7 +647,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
 
           {equipment.disposal ? (
             <p className="text-sm text-gray-600">
-              {t("disposedOn", { date: new Date(equipment.disposal.disposedAt).toLocaleDateString() })}
+              {t("disposedOn", { date: formatDate(new Date(equipment.disposal.disposedAt)) })}
               {equipment.disposal.saleAmount !== null && (
                 <span className="block text-xs text-gray-400">
                   {t("saleAmount")}: {equipment.disposal.saleAmount} {currency}
@@ -759,7 +760,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
                     )}
                   </div>
                   <span className="text-xs text-gray-400">
-                    {new Date(r.performedAt).toLocaleDateString()}
+                    {formatDate(new Date(r.performedAt))}
                     {r.supplier && ` · ${r.supplier.name}`}
                     {r.meterHours && ` · ${r.meterHours}${t("hoursAbbr")}`}
                   </span>
@@ -855,7 +856,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
                     )}
                   </div>
                   <span className="text-xs text-gray-400">
-                    {new Date(f.filledAt).toLocaleDateString()}
+                    {formatDate(new Date(f.filledAt))}
                     {f.supplier && ` · ${f.supplier.name}`}
                     {f.meterHours && ` · ${f.meterHours}${t("hoursAbbr")}`}
                   </span>
@@ -909,6 +910,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
           {!rentals || rentals.length === 0 ? (
             <p className="text-sm text-gray-400">{t("noRentals")}</p>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -933,8 +935,8 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
                     <td>
                       {r.dailyRate} {currency}
                     </td>
-                    <td>{new Date(r.startDate).toLocaleDateString()}</td>
-                    <td>{r.actualReturnDate ? new Date(r.actualReturnDate).toLocaleDateString() : t("stillOut")}</td>
+                    <td>{formatDate(new Date(r.startDate))}</td>
+                    <td>{r.actualReturnDate ? formatDate(new Date(r.actualReturnDate)) : t("stillOut")}</td>
                     <td className="text-right font-medium">
                       {r.revenue} {currency}
                     </td>
@@ -942,6 +944,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </section>
 
@@ -952,6 +955,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
           {!assignments || assignments.length === 0 ? (
             <p className="text-sm text-gray-400">{t("noAssignments")}</p>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -965,7 +969,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
                   <tr key={a.id} className="border-b border-gray-100">
                     <td className="py-2">{a.worker?.name ?? a.project?.name ?? "—"}</td>
                     <td>
-                      {new Date(a.checkedOutAt).toLocaleString()}
+                      {formatDateTime(new Date(a.checkedOutAt))}
                       {a.checkOutWithinGeofence === false && (
                         <span className="ml-1 rounded-full bg-warning-50 px-1.5 py-0.5 text-[10px] font-medium text-warning-700">
                           {t("offSite")}
@@ -973,7 +977,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
                       )}
                     </td>
                     <td>
-                      {a.checkedInAt ? new Date(a.checkedInAt).toLocaleString() : t("stillOut")}
+                      {a.checkedInAt ? formatDateTime(new Date(a.checkedInAt)) : t("stillOut")}
                       {a.checkInWithinGeofence === false && (
                         <span className="ml-1 rounded-full bg-warning-50 px-1.5 py-0.5 text-[10px] font-medium text-warning-700">
                           {t("offSite")}
@@ -984,6 +988,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </section>
       </div>

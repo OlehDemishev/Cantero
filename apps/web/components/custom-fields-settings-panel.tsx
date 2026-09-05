@@ -58,6 +58,7 @@ export function CustomFieldsSettingsPanel({ canManage }: { canManage: boolean })
   }
 
   async function remove(id: string) {
+    if (!window.confirm(t("confirmDelete"))) return;
     await apiFetch(`/custom-fields/definitions/${id}`, { method: "DELETE" });
     load();
   }
@@ -72,6 +73,7 @@ export function CustomFieldsSettingsPanel({ canManage }: { canManage: boolean })
       ) : fields.length === 0 ? (
         <p className="mb-4 text-sm text-gray-400">{t("noFields")}</p>
       ) : (
+        <div className="overflow-x-auto">
         <table className="mb-4 w-full border-collapse text-sm">
           <tbody>
             {fields.map((f) => (
@@ -91,6 +93,7 @@ export function CustomFieldsSettingsPanel({ canManage }: { canManage: boolean })
             ))}
           </tbody>
         </table>
+        </div>
       )}
 
       {canManage && (

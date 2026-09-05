@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { DOCUMENT_CATEGORIES, type DocumentCategory } from "@cantero/shared";
 import { apiFetch, apiUpload, downloadBlob } from "@/lib/api-client";
+import { formatDateTime } from "@/lib/format-date";
 
 interface Document {
   id: string;
@@ -271,7 +272,7 @@ export function DocumentsPanel({
                           onChange={() => toggleCompareId(v.id)}
                         />
                         <span className="flex-1">
-                          {t("version", { n: v.version })} — {new Date(v.createdAt).toLocaleString()}
+                          {t("version", { n: v.version })} — {formatDateTime(new Date(v.createdAt))}
                           {v.uploadedBy ? ` — ${v.uploadedBy.name}` : ""}
                         </span>
                         <button onClick={() => download(v)} className="text-brand-700 hover:underline">
@@ -329,7 +330,7 @@ export function DocumentsPanel({
               {[comparing.a, comparing.b].map((v) => (
                 <div key={v.id}>
                   <div className="mb-2 text-xs font-medium text-gray-600">
-                    {t("version", { n: v.version })} — {new Date(v.createdAt).toLocaleString()}
+                    {t("version", { n: v.version })} — {formatDateTime(new Date(v.createdAt))}
                   </div>
                   {comparePreviews[v.id] ? (
                     // eslint-disable-next-line @next/next/no-img-element

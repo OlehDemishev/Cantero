@@ -4,6 +4,7 @@ import { use, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { SignaturePad } from "@/components/signature-pad";
+import { formatDateTime } from "@/lib/format-date";
 
 interface PublicLine {
   id: string;
@@ -131,6 +132,7 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
           </div>
           {estimate.projectName && <p className="mt-1 text-sm text-gray-500">{estimate.projectName}</p>}
 
+          <div className="overflow-x-auto">
           <table className="mt-6 w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -153,6 +155,7 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
               ))}
             </tbody>
           </table>
+          </div>
 
           <dl className="mt-4 flex flex-col gap-1.5 text-sm">
             <div className="flex justify-between">
@@ -264,7 +267,7 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
                   ? t("clientDecisionThanksCountered", { amount: estimate.counterOfferAmount ?? "", currency: estimate.currency })
                   : t("clientDecisionThanksRejected")}
               {estimate.decisionAt && (
-                <span className="block text-xs opacity-75">{new Date(estimate.decisionAt).toLocaleString()}</span>
+                <span className="block text-xs opacity-75">{formatDateTime(new Date(estimate.decisionAt))}</span>
               )}
             </div>
           )}

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 type CertStatus = "expired" | "expiring_soon" | "valid";
 
@@ -47,6 +48,7 @@ export function CertificationsDashboardPanel() {
             <span>{t("certExpiringSoon", { count: dashboard.summary.expiringSoon })}</span>
             <span>{t("certValid", { count: dashboard.summary.valid })}</span>
           </div>
+          <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -65,7 +67,7 @@ export function CertificationsDashboardPanel() {
                     </a>
                   </td>
                   <td>{c.name}</td>
-                  <td>{new Date(c.expiresAt).toLocaleDateString()}</td>
+                  <td>{formatDate(new Date(c.expiresAt))}</td>
                   <td>
                     <span className={`rounded-full px-2 py-0.5 text-xs ${badgeClass[c.status]}`}>{t(`certStatus_${c.status}`)}</span>
                   </td>
@@ -73,6 +75,7 @@ export function CertificationsDashboardPanel() {
               ))}
             </tbody>
           </table>
+          </div>
         </>
       )}
     </div>

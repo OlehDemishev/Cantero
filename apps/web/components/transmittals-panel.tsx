@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { TRANSMITTAL_METHODS, type TransmittalMethod } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 interface TransmittalItem {
   id: string;
@@ -183,7 +184,7 @@ export function TransmittalsPanel({ projectId }: { projectId: string }) {
                 </span>
               </div>
               <p className="mt-1 text-xs text-gray-400">
-                {t(`method_${tr.method}`)} · {new Date(tr.sentAt).toLocaleDateString()}
+                {t(`method_${tr.method}`)} · {formatDate(new Date(tr.sentAt))}
                 {tr.purpose && ` · ${tr.purpose}`}
               </p>
               <ul className="mt-2 flex flex-col gap-0.5 text-xs text-gray-600">

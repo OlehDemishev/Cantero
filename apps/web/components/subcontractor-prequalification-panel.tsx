@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { PrequalificationStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 interface Prequalification {
   id: string;
@@ -157,7 +158,7 @@ export function SubcontractorPrequalificationPanel({ subcontractorId }: { subcon
             <li key={c.id} className="text-xs">
               <div className="flex items-center justify-between">
                 <span>
-                  {new Date(c.createdAt).toLocaleDateString()}
+                  {formatDate(new Date(c.createdAt))}
                   {c.yearsInBusiness !== null && ` · ${t("yearsInBusinessAbbr", { years: c.yearsInBusiness })}`}
                   {c.score !== null && ` · ${t("scoreAbbr", { score: c.score })}`}
                 </span>
@@ -165,7 +166,7 @@ export function SubcontractorPrequalificationPanel({ subcontractorId }: { subcon
               </div>
               {c.status === "approved" && c.expiresAt && (
                 <p className="mt-0.5 text-gray-400">
-                  {t("expiresOn", { date: new Date(c.expiresAt).toLocaleDateString() })}
+                  {t("expiresOn", { date: formatDate(new Date(c.expiresAt)) })}
                 </p>
               )}
               {c.status === "pending" &&

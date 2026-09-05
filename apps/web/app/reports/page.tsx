@@ -25,6 +25,7 @@ import { ProductivityScorecardPanel } from "@/components/productivity-scorecard-
 import { DiversitySpendPanel } from "@/components/diversity-spend-panel";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatDate } from "@/lib/format-date";
 
 interface ProjectMargin {
   projectId: string;
@@ -153,6 +154,7 @@ export default function ReportsPage() {
   const tt = useTranslations("team");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
+  const canExportPayroll = me?.user.role === "owner" || me?.user.role === "admin" || me?.user.role === "accountant";
 
   const [margins, setMargins] = useState<ProjectMargin[] | null>(null);
   const [eac, setEac] = useState<EacRow[] | null>(null);
@@ -670,7 +672,7 @@ export default function ReportsPage() {
               <tbody>
                 {cashFlow.weeks.map((w) => (
                   <tr key={w.weekStart} className="border-b border-gray-100">
-                    <td className="py-2">{new Date(w.weekStart).toLocaleDateString()}</td>
+                    <td className="py-2">{formatDate(new Date(w.weekStart))}</td>
                     <td className="text-right text-success-700">
                       {w.inflow} {currency}
                     </td>
@@ -725,15 +727,19 @@ export default function ReportsPage() {
           <input type="date" className="input w-auto" value={workloadFrom} onChange={(e) => setWorkloadFrom(e.target.value)} />
           <span>–</span>
           <input type="date" className="input w-auto" value={workloadTo} onChange={(e) => setWorkloadTo(e.target.value)} />
-          <button onClick={downloadPayrollExport} className="btn-secondary px-3 py-1 text-xs">
-            {t("downloadPayrollExport")}
-          </button>
-          <button onClick={downloadPayrollExportAdp} className="btn-secondary px-3 py-1 text-xs">
-            {t("downloadPayrollExportAdp")}
-          </button>
-          <button onClick={downloadPayrollExportGusto} className="btn-secondary px-3 py-1 text-xs">
-            {t("downloadPayrollExportGusto")}
-          </button>
+          {canExportPayroll && (
+            <>
+              <button onClick={downloadPayrollExport} className="btn-secondary px-3 py-1 text-xs">
+                {t("downloadPayrollExport")}
+              </button>
+              <button onClick={downloadPayrollExportAdp} className="btn-secondary px-3 py-1 text-xs">
+                {t("downloadPayrollExportAdp")}
+              </button>
+              <button onClick={downloadPayrollExportGusto} className="btn-secondary px-3 py-1 text-xs">
+                {t("downloadPayrollExportGusto")}
+              </button>
+            </>
+          )}
           <button onClick={downloadSafetyExport} className="btn-secondary px-3 py-1 text-xs">
             {t("downloadSafetyExport")}
           </button>
@@ -852,8 +858,8 @@ export default function ReportsPage() {
                     {t(`reportType_${report.reportType}`)} · {t(`frequency_${report.frequency}`)} · {report.recipientEmails.join(", ")}
                   </div>
                   <div className="mt-1 text-xs text-gray-400">
-                    {t("nextRun", { date: new Date(report.nextRunAt).toLocaleDateString() })}
-                    {report.lastSentAt && ` · ${t("lastSent", { date: new Date(report.lastSentAt).toLocaleDateString() })}`}
+                    {t("nextRun", { date: formatDate(new Date(report.nextRunAt)) })}
+                    {report.lastSentAt && ` · ${t("lastSent", { date: formatDate(new Date(report.lastSentAt)) })}`}
                   </div>
                   {sentNowId === report.id && <p className="mt-1 text-xs text-success-700">{t("sentNowConfirmation")}</p>}
                 </div>

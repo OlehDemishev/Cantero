@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { SignatureRequestStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 interface DocumentOption {
   id: string;
@@ -192,7 +193,7 @@ export function SignatureRequestsPanel({ documents }: { documents: DocumentOptio
                       <span>{s.order}.</span>
                       <span>{s.name}</span>
                       {s.signedAt ? (
-                        <span className="text-success-700">{t("signedOn", { date: new Date(s.signedAt).toLocaleDateString() })}</span>
+                        <span className="text-success-700">{t("signedOn", { date: formatDate(new Date(s.signedAt)) })}</span>
                       ) : (
                         <span className="text-gray-400">{t("notSigned")}</span>
                       )}

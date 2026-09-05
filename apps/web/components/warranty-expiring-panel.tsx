@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 interface ExpiringRegistration {
   id: string;
@@ -43,7 +44,7 @@ export function WarrantyExpiringPanel() {
                   {r.manufacturer && <span className="ml-1.5 text-xs text-gray-400">({r.manufacturer})</span>}
                 </td>
                 <td>{r.project.name}</td>
-                <td className="text-right">{new Date(r.expirationDate).toLocaleDateString()}</td>
+                <td className="text-right">{formatDate(new Date(r.expirationDate))}</td>
               </tr>
             ))}
           </tbody>

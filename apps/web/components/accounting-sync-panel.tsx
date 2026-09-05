@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { AccountingProviderType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { formatDate, formatDateTime } from "@/lib/format-date";
 
 interface Status {
   connected: boolean;
@@ -124,7 +125,7 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
   if (!status) return null;
 
   return (
-    <section id="accounting-sync" className="card lg:col-span-2">
+    <section className="card lg:col-span-2">
       <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("title")}</h2>
       <p className="mb-4 text-xs text-gray-500">{t("hint")}</p>
 
@@ -135,7 +136,7 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
           <p className="text-sm text-success-700">
             {t("connectedSummary", {
               provider: PROVIDER_LABELS[status.provider!],
-              date: status.connectedAt ? new Date(status.connectedAt).toLocaleDateString() : "",
+              date: status.connectedAt ? formatDate(new Date(status.connectedAt)) : "",
             })}
           </p>
           {canManage && (
@@ -172,7 +173,7 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
                 <ul className="mt-2 flex flex-col gap-1">
                   {integrity.recentFailures.slice(0, 5).map((f) => (
                     <li key={f.id} className="text-error-600">
-                      {f.invoiceNumber ?? f.subcontractorCostReference} — {f.errorMessage} ({new Date(f.attemptedAt).toLocaleDateString()})
+                      {f.invoiceNumber ?? f.subcontractorCostReference} — {f.errorMessage} ({formatDate(new Date(f.attemptedAt))})
                     </li>
                   ))}
                 </ul>
@@ -189,7 +190,7 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
                   ) : (
                     history.map((h) => (
                       <li key={h.id} className={h.status === "failed" ? "text-error-600" : "text-success-700"}>
-                        {new Date(h.attemptedAt).toLocaleString()} — {h.invoiceNumber ?? h.subcontractorCostReference} — {h.status}
+                        {formatDateTime(new Date(h.attemptedAt))} — {h.invoiceNumber ?? h.subcontractorCostReference} — {h.status}
                         {h.errorMessage ? `: ${h.errorMessage}` : ""}
                       </li>
                     ))

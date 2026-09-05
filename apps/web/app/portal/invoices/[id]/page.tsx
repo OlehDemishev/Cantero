@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { getPortalToken, portalApiFetch } from "@/lib/portal-api-client";
 import { ApiError, downloadBlob } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 interface PortalInvoiceLine {
   id: string;
@@ -169,7 +170,7 @@ export default function PortalInvoicePage({ params }: { params: Promise<{ id: st
                   {installmentRows.map((inst) => (
                     <tr key={inst.id} className="border-b border-gray-100">
                       <td className="py-1.5">{inst.label}</td>
-                      <td className="text-gray-500">{inst.dueDate ? new Date(inst.dueDate).toLocaleDateString() : "—"}</td>
+                      <td className="text-gray-500">{inst.dueDate ? formatDate(new Date(inst.dueDate)) : "—"}</td>
                       <td>
                         <span
                           className={`rounded-full px-2 py-0.5 text-xs font-medium ${

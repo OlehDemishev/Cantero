@@ -6,6 +6,7 @@ import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YA
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import type { CostCode } from "@/components/cost-codes-panel";
+import { formatDate } from "@/lib/format-date";
 
 interface CostHistoryMonth {
   month: string;
@@ -279,7 +280,7 @@ export function JobCostingPanel({ projectId }: { projectId: string }) {
                     <span className="font-medium text-gray-900">
                       {t("transferLogEntry", { amount: `${tr.amount.toFixed(2)} ${currency}`, from: tr.fromCode, to: tr.toCode })}
                     </span>
-                    <span className="text-xs text-gray-400">{new Date(tr.createdAt).toLocaleDateString()}</span>
+                    <span className="text-xs text-gray-400">{formatDate(new Date(tr.createdAt))}</span>
                   </div>
                   <p className="mt-0.5 text-xs text-gray-500">{tr.reason}</p>
                   <p className="mt-0.5 text-xs text-gray-400">{tr.createdByName}</p>

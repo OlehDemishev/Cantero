@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 interface CostCode {
   id: string;
@@ -180,7 +181,7 @@ export function ProductivityPanel({ projectId }: { projectId: string }) {
                       {log.costCode && <span className="text-xs text-gray-500">{log.costCode.code}</span>}
                     </div>
                     <p className="mt-1 text-xs text-gray-500">
-                      {t("logSummary", { hours: log.laborHours, date: new Date(log.workDate).toLocaleDateString() })}
+                      {t("logSummary", { hours: log.laborHours, date: formatDate(new Date(log.workDate)) })}
                       {log.crewName ? ` — ${log.crewName}` : ""}
                     </p>
                     {log.notes && <p className="mt-1 text-xs text-gray-500">{log.notes}</p>}

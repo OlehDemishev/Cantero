@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { DEFICIENCY_SEVERITIES, INSPECTION_ITEM_RESULTS, type DeficiencySeverity, type InspectionItemResult } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { PhotoAttachments } from "@/components/photo-attachments";
+import { formatDate } from "@/lib/format-date";
 
 interface Worker {
   id: string;
@@ -412,7 +413,7 @@ export function QualityPanel({ projectId }: { projectId: string }) {
               <div className="flex items-center gap-2">
                 <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${SEVERITY_STYLES[d.severity]}`}>{t(`severity_${d.severity}`)}</span>
                 <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${DEFICIENCY_STATUS_STYLES[d.status]}`}>{t(`deficiencyStatus_${d.status}`)}</span>
-                {d.dueDate && <span className="text-xs text-gray-500">{new Date(d.dueDate).toLocaleDateString()}</span>}
+                {d.dueDate && <span className="text-xs text-gray-500">{formatDate(new Date(d.dueDate))}</span>}
                 {d.location && <span className="text-xs text-gray-500">{d.location}</span>}
               </div>
               <p className="mt-1.5 text-sm text-gray-900">{d.description}</p>

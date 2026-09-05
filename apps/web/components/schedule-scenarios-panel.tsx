@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 interface Task {
   id: string;
@@ -140,7 +141,7 @@ export function ScheduleScenariosPanel({ projectId }: { projectId: string }) {
                           const task = tasks.find((tk) => tk.id === o.taskId);
                           return (
                             <li key={o.taskId}>
-                              {task?.name ?? o.taskId}: {new Date(o.startDate).toLocaleDateString()} – {new Date(o.dueDate).toLocaleDateString()}
+                              {task?.name ?? o.taskId}: {formatDate(new Date(o.startDate))} – {formatDate(new Date(o.dueDate))}
                             </li>
                           );
                         })}

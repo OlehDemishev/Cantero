@@ -120,6 +120,7 @@ export default function TeamPage() {
           {!visibleWorkers ? (
             <p className="text-gray-500">{tc("loading")}</p>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -156,6 +157,7 @@ export default function TeamPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
 
           <h2 className="mb-3 mt-10 text-sm font-semibold text-gray-700">{t("laborCostReport")}</h2>
@@ -164,6 +166,7 @@ export default function TeamPage() {
           ) : report.byWorker.length === 0 ? (
             <p className="text-sm text-gray-400">{t("noLaborCost")}</p>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -201,6 +204,7 @@ export default function TeamPage() {
                 </tr>
               </tfoot>
             </table>
+            </div>
           )}
         </div>
       </div>

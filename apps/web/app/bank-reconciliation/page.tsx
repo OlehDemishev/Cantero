@@ -7,6 +7,7 @@ import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { CsvImportButton } from "@/components/csv-import-button";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatDate } from "@/lib/format-date";
 
 interface BankTransaction {
   id: string;
@@ -270,7 +271,7 @@ export default function BankReconciliationPage() {
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <div className="text-sm font-medium text-gray-900">{tx.description}</div>
-                    <div className="text-xs text-gray-500">{new Date(tx.date).toLocaleDateString()}</div>
+                    <div className="text-xs text-gray-500">{formatDate(new Date(tx.date))}</div>
                   </div>
                   <div className={`text-sm font-semibold ${Number(tx.amount) < 0 ? "text-error-700" : "text-success-700"}`}>
                     {tx.amount} {currency}

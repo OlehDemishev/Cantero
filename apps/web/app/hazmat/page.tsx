@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 interface SdsSheet {
   id: string;
@@ -102,7 +103,7 @@ export default function HazmatPage() {
                 {s.name}
                 {s.manufacturer && <span className="text-gray-400"> · {s.manufacturer}</span>}
                 <span className="ml-1.5 text-xs text-warning-700">
-                  {s.latestRevisionDate ? t("lastRevised", { date: new Date(s.latestRevisionDate).toLocaleDateString() }) : t("noSdsOnFile")}
+                  {s.latestRevisionDate ? t("lastRevised", { date: formatDate(new Date(s.latestRevisionDate)) }) : t("noSdsOnFile")}
                 </span>
               </li>
             ))}
@@ -169,7 +170,7 @@ export default function HazmatPage() {
                       {m.manufacturer && <span className="ml-1.5 text-xs text-gray-400">({m.manufacturer})</span>}
                     </span>
                     {latest?.revisionDate && (
-                      <span className="text-xs text-gray-400">{t("lastRevised", { date: new Date(latest.revisionDate).toLocaleDateString() })}</span>
+                      <span className="text-xs text-gray-400">{t("lastRevised", { date: formatDate(new Date(latest.revisionDate)) })}</span>
                     )}
                   </button>
                   {m.casNumber && <p className="mt-0.5 text-xs text-gray-400">CAS {m.casNumber}</p>}

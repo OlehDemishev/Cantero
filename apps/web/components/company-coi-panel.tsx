@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { COMPANY_DOCUMENT_TYPES, type CompanyDocumentType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { CertificateAttachment } from "@/components/certificate-attachment";
+import { formatDate } from "@/lib/format-date";
 
 interface CompanyDocument {
   id: string;
@@ -94,7 +95,7 @@ export function CompanyCoiPanel({ canManage }: { canManage: boolean }) {
                 <span>
                   <span className="text-gray-500">{t(doc.type)}</span> — {doc.name}
                   {" · "}
-                  <span className={expired ? "text-error-700" : "text-gray-500"}>{new Date(doc.expiresAt).toLocaleDateString()}</span>
+                  <span className={expired ? "text-error-700" : "text-gray-500"}>{formatDate(new Date(doc.expiresAt))}</span>
                 </span>
                 {canManage && (
                   <span className="flex items-center gap-2">

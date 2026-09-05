@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { AGGREGATE_REPORT_DATASETS, REPORT_DATASETS, type ReportDataset } from "@cantero/shared";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 interface ReportField {
   key: string;
@@ -37,7 +38,7 @@ const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
 
 function formatCell(value: unknown): string {
   if (value === null || value === undefined) return "—";
-  if (typeof value === "string" && ISO_DATE_RE.test(value)) return new Date(value).toLocaleDateString();
+  if (typeof value === "string" && ISO_DATE_RE.test(value)) return formatDate(new Date(value));
   return String(value);
 }
 

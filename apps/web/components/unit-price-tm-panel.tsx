@@ -6,6 +6,7 @@ import type { TMTicketStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
+import { formatDate } from "@/lib/format-date";
 
 interface UnitPriceMeasurement {
   id: string;
@@ -272,7 +273,7 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
                         <span>
                           {m.measuredQuantity} {item.unit} — {m.measuredByName}
                         </span>
-                        <span>{new Date(m.measuredAt).toLocaleDateString()}</span>
+                        <span>{formatDate(new Date(m.measuredAt))}</span>
                       </li>
                     ))}
                   </ul>
@@ -416,11 +417,11 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
                         {t(ticket.status)}
                       </span>
                     </div>
-                    <p className="mt-1 text-xs text-gray-500">{new Date(ticket.workDate).toLocaleDateString()}</p>
+                    <p className="mt-1 text-xs text-gray-500">{formatDate(new Date(ticket.workDate))}</p>
                     <p className="mt-1 text-xs text-gray-500">{ticket.description}</p>
                     {ticket.ownerSignerName && ticket.signedAt && (
                       <p className="mt-1.5 text-xs text-gray-500">
-                        {t("signedBy", { name: ticket.ownerSignerName, date: new Date(ticket.signedAt).toLocaleDateString() })}
+                        {t("signedBy", { name: ticket.ownerSignerName, date: formatDate(new Date(ticket.signedAt)) })}
                       </p>
                     )}
                     {ticket.status === "disputed" && ticket.disputeReason && (

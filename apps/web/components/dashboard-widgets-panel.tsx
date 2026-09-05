@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { DASHBOARD_WIDGET_TYPES, type DashboardWidgetType } from "@cantero/shared";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatDate } from "@/lib/format-date";
 
 interface CustomReportOption {
   id: string;
@@ -269,7 +270,7 @@ function WidgetBody({
                   {item.holderName && <span className="text-gray-400"> — {item.holderName}</span>}
                 </span>
                 <span className={item.status === "expired" ? "text-error-700" : "text-gray-500"}>
-                  {new Date(item.expiresAt).toLocaleDateString()}
+                  {formatDate(new Date(item.expiresAt))}
                 </span>
               </li>
             ))}

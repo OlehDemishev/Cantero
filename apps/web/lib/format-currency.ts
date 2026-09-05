@@ -1,13 +1,4 @@
-/** Maps our 5 launch locale codes to a full BCP-47 tag Intl.NumberFormat expects — same
- * locale set as SUPPORTED_LOCALES in @cantero/shared, kept here rather than imported since this
- * mapping is purely a frontend display concern. */
-const LOCALE_TAGS: Record<string, string> = {
-  en: "en-US",
-  de: "de-DE",
-  es: "es-ES",
-  pl: "pl-PL",
-  uk: "uk-UA",
-};
+import { LOCALE_TAGS } from "./locale-tags";
 
 /** Locale-aware money formatting (thousands separators, decimal marks, currency symbol
  * placement) via Intl.NumberFormat — replaces the raw `{amount} {currency}` interpolation used

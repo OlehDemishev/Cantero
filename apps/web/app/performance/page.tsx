@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { PERFORMANCE_RATINGS, type PerformanceRating, type PerformanceReviewCycleStatus } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 interface Cycle {
   id: string;
@@ -253,7 +254,7 @@ export default function PerformancePage() {
                       {r.strengths && <p className="mt-1 text-xs text-gray-500">{t("strengths")}: {r.strengths}</p>}
                       {r.improvementAreas && <p className="mt-0.5 text-xs text-gray-500">{t("improvementAreas")}: {r.improvementAreas}</p>}
                       <p className="mt-1 text-xs text-gray-400">
-                        {r.submittedAt ? t("submittedOn", { date: new Date(r.submittedAt).toLocaleDateString() }) : t("draft")}
+                        {r.submittedAt ? t("submittedOn", { date: formatDate(new Date(r.submittedAt)) }) : t("draft")}
                       </p>
                     </li>
                   ))}

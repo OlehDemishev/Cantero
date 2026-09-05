@@ -1,6 +1,17 @@
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
 const TOKEN_KEY = "cantero_token";
 
+/**
+ * A plain function (not a hook) needs a way to reach the toast UI, which lives inside React —
+ * ToastProvider registers itself here on mount. Without this, a failed request whose caller
+ * doesn't have its own error-handling code fails completely silently (the historical default
+ * across most of this codebase's ~150 components) rather than telling the user anything at all.
+ */
+let notifyError: ((message: string) => void) | null = null;
+export function setApiErrorListener(listener: ((message: string) => void) | null): void {
+  notifyError = listener;
+}
+
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem(TOKEN_KEY);
@@ -42,6 +53,11 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
     } catch {
       // response wasn't JSON; keep statusText
     }
+    // Only user-initiated writes get an automatic toast — several GET call sites deliberately
+    // treat a 404 as a normal "not found yet" outcome (e.g. no company logo uploaded) via their
+    // own .catch(), and toasting those would turn an expected empty state into a false alarm.
+    const method = (options.method ?? "GET").toUpperCase();
+    if (method !== "GET") notifyError?.(message);
     throw new ApiError(res.status, message);
   }
 
@@ -77,6 +93,7 @@ export async function apiUpload<T>(path: string, file: File): Promise<T> {
     } catch {
       // ignore
     }
+    notifyError?.(message);
     throw new ApiError(res.status, message);
   }
   return res.json() as Promise<T>;

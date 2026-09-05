@@ -6,6 +6,7 @@ import { apiFetch } from "@/lib/api-client";
 import { useDeepLinkedRow, buildItemDeepLink } from "@/lib/use-deep-linked-row";
 import { CopyLinkButton } from "@/components/ui/copy-link-button";
 import { PrintButton } from "@/components/ui/print-button";
+import { formatDate } from "@/lib/format-date";
 
 interface MeetingActionItem {
   id: string;
@@ -209,7 +210,7 @@ export function MeetingsPanel({ projectId }: { projectId: string }) {
                         <span className="text-xs font-mono text-gray-400">#{meeting.number}</span>
                         <span className="text-sm font-medium text-gray-900">{meeting.title}</span>
                       </div>
-                      <div className="mt-1 text-xs text-gray-500">{new Date(meeting.meetingDate).toLocaleDateString()}</div>
+                      <div className="mt-1 text-xs text-gray-500">{formatDate(new Date(meeting.meetingDate))}</div>
                     </div>
                   {meeting.actionItems.filter((a) => a.status === "open").length > 0 && (
                     <span className="rounded-full bg-warning-50 px-2 py-0.5 text-xs font-medium text-warning-700">

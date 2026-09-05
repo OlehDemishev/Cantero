@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 type TaskStatus = "planned" | "in_progress" | "done";
 type CommitmentStatus = "committed" | "completed" | "missed";
@@ -143,8 +144,8 @@ export function LookAheadPanel({ projectId }: { projectId: string }) {
                           </div>
                           {task.startDate && (
                             <p className="mt-0.5 text-xs text-gray-400">
-                              {new Date(task.startDate).toLocaleDateString()}
-                              {task.dueDate && ` – ${new Date(task.dueDate).toLocaleDateString()}`}
+                              {formatDate(new Date(task.startDate))}
+                              {task.dueDate && ` – ${formatDate(new Date(task.dueDate))}`}
                             </p>
                           )}
                           {!task.ready && task.blockedByTaskNames.length > 0 && (

@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { getPortalToken, portalApiFetch } from "@/lib/portal-api-client";
 import { ApiError, downloadBlob } from "@/lib/api-client";
 import { SignaturePad } from "@/components/signature-pad";
+import { formatDateTime } from "@/lib/format-date";
 
 interface PortalLine {
   id: string;
@@ -220,7 +221,7 @@ export default function PortalChangeOrderPage({ params }: { params: Promise<{ id
               }`}
             >
               {co.clientDecision === "approved" ? te("clientDecisionThanksApproved") : te("clientDecisionThanksRejected")}
-              {co.decisionAt && <span className="block text-xs opacity-75">{new Date(co.decisionAt).toLocaleString()}</span>}
+              {co.decisionAt && <span className="block text-xs opacity-75">{formatDateTime(new Date(co.decisionAt))}</span>}
               {co.signerName && (
                 <div className="mt-2 flex items-center gap-2">
                   {signatureUrl && <img src={signatureUrl} alt={te("signature")} className="h-8 rounded border border-white/50 bg-white px-1" />}

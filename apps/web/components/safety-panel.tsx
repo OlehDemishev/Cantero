@@ -7,6 +7,7 @@ import { apiFetch } from "@/lib/api-client";
 import { PhotoAttachments } from "@/components/photo-attachments";
 import { TemplatePicker } from "@/components/template-picker";
 import { PrintButton } from "@/components/ui/print-button";
+import { formatDate } from "@/lib/format-date";
 
 interface Worker {
   id: string;
@@ -384,7 +385,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
                 <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${SEVERITY_STYLES[item.severity]}`}>
                   {t(`severity_${item.severity}`)}
                 </span>
-                <span className="text-xs text-gray-500">{new Date(item.occurredAt).toLocaleDateString()}</span>
+                <span className="text-xs text-gray-500">{formatDate(new Date(item.occurredAt))}</span>
                 {item.location && <span className="text-xs text-gray-500">· {item.location}</span>}
                 {item.oshaRecordable && (
                   <span className="rounded-full bg-error-50 px-2 py-0.5 text-xs font-medium text-error-700">
@@ -514,7 +515,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
             <li key={item.id} className="card">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-gray-900">{item.topic}</span>
-                <span className="text-xs text-gray-500">{new Date(item.date).toLocaleDateString()}</span>
+                <span className="text-xs text-gray-500">{formatDate(new Date(item.date))}</span>
               </div>
               {item.notes && <p className="mt-1 text-xs text-gray-500">{item.notes}</p>}
               <p className="mt-1.5 text-xs text-gray-500">
@@ -644,7 +645,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
               <li key={item.id} className="card">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-gray-900">{item.taskDescription}</span>
-                  <span className="text-xs text-gray-500">{new Date(item.date).toLocaleDateString()}</span>
+                  <span className="text-xs text-gray-500">{formatDate(new Date(item.date))}</span>
                 </div>
                 <p className="mt-1.5 text-xs text-gray-500">
                   <span className="font-medium text-gray-700">{t("hazards")}:</span> {item.hazards}

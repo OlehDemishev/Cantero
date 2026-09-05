@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { getPortalToken, portalApiFetch } from "@/lib/portal-api-client";
 import { ApiError, downloadBlob } from "@/lib/api-client";
 import { SignaturePad } from "@/components/signature-pad";
+import { formatDateTime } from "@/lib/format-date";
 
 interface PortalLine {
   id: string;
@@ -222,7 +223,7 @@ export default function PortalEstimatePage({ params }: { params: Promise<{ id: s
             >
               {estimate.clientDecision === "approved" ? te("clientDecisionThanksApproved") : te("clientDecisionThanksRejected")}
               {estimate.decisionAt && (
-                <span className="block text-xs opacity-75">{new Date(estimate.decisionAt).toLocaleString()}</span>
+                <span className="block text-xs opacity-75">{formatDateTime(new Date(estimate.decisionAt))}</span>
               )}
               {estimate.signerName && (
                 <div className="mt-2 flex items-center gap-2">

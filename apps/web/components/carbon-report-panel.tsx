@@ -51,6 +51,7 @@ export function CarbonReportPanel({ projectId }: { projectId: string }) {
         </div>
       </div>
 
+      <div className="overflow-x-auto">
       <table className="mt-4 w-full border-collapse text-sm">
         <thead>
           <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -74,6 +75,7 @@ export function CarbonReportPanel({ projectId }: { projectId: string }) {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

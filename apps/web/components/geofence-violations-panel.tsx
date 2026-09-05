@@ -68,6 +68,7 @@ export function GeofenceViolationsPanel() {
         {violations.length === 0 ? (
           <p className="text-sm text-gray-400">{t("empty")}</p>
         ) : (
+          <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -90,6 +91,7 @@ export function GeofenceViolationsPanel() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { getPortalToken, portalApiFetch } from "@/lib/portal-api-client";
 import { ApiError } from "@/lib/api-client";
+import { formatDateTime } from "@/lib/format-date";
 
 type TicketStatus = "open" | "in_progress" | "waiting_on_customer" | "resolved" | "closed";
 interface TicketMessage {
@@ -99,7 +100,7 @@ export default function PortalTicketDetailPage({ params }: { params: Promise<{ i
                       {m.content}
                     </div>
                     <div className="mt-1 text-[11px] text-gray-400">
-                      {m.authorName} · {new Date(m.createdAt).toLocaleString()}
+                      {m.authorName} · {formatDateTime(new Date(m.createdAt))}
                     </div>
                   </div>
                 ))

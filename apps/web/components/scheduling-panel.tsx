@@ -6,6 +6,7 @@ import { DndContext, KeyboardSensor, PointerSensor, useDraggable, useDroppable, 
 import { TASK_DEPENDENCY_TYPES, type TaskDependencyType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { CommentsThread } from "@/components/comments-thread";
+import { formatDate, formatDateWithOptions } from "@/lib/format-date";
 
 type TaskStatus = "planned" | "in_progress" | "done";
 const STATUSES: TaskStatus[] = ["planned", "in_progress", "done"];
@@ -176,9 +177,9 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
                   </div>
                   {(task.startDate || task.dueDate) && (
                     <div className="mt-1 text-xs text-gray-500">
-                      {task.startDate ? new Date(task.startDate).toLocaleDateString() : "…"}
+                      {task.startDate ? formatDate(new Date(task.startDate)) : "…"}
                       {" → "}
-                      {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "…"}
+                      {task.dueDate ? formatDate(new Date(task.dueDate)) : "…"}
                     </div>
                   )}
                   {task.predecessorLinks.length > 0 && (
@@ -320,7 +321,7 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
         {(milestones ?? []).map((m) => (
           <li key={m.id} className="card flex items-center justify-between">
             <span className="text-sm font-medium">{m.name}</span>
-            <span className="text-xs text-gray-500">{m.dueDate ? new Date(m.dueDate).toLocaleDateString() : "—"}</span>
+            <span className="text-xs text-gray-500">{m.dueDate ? formatDate(new Date(m.dueDate)) : "—"}</span>
           </li>
         ))}
       </ul>
@@ -472,7 +473,7 @@ function GanttChart({
         <div className="relative h-5 flex-1 text-[10px] text-gray-400">
           {weekTicks.map((tick) => (
             <div key={tick} className="absolute -translate-x-1/2 border-l border-gray-100 pl-1" style={{ left: `${pct(tick)}%`, height: "100%" }}>
-              {new Date(tick).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+              {formatDateWithOptions(tick, { month: "short", day: "numeric" })}
             </div>
           ))}
         </div>

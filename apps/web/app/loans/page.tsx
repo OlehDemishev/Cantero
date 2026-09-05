@@ -6,6 +6,7 @@ import type { LoanStatus } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatDate } from "@/lib/format-date";
 
 interface Equipment {
   id: string;
@@ -252,7 +253,7 @@ export default function LoansPage() {
                         <tbody>
                           {detail.payments.map((p) => (
                             <tr key={p.id} className="border-b border-gray-100">
-                              <td className="py-1.5">{new Date(p.dueDate).toLocaleDateString()}</td>
+                              <td className="py-1.5">{formatDate(new Date(p.dueDate))}</td>
                               <td>
                                 {p.principalPortion} {currency}
                               </td>
@@ -261,7 +262,7 @@ export default function LoansPage() {
                               </td>
                               <td>
                                 {p.paidAt ? (
-                                  <span className="text-success-700">{t("paidOn", { date: new Date(p.paidAt).toLocaleDateString() })}</span>
+                                  <span className="text-success-700">{t("paidOn", { date: formatDate(new Date(p.paidAt)) })}</span>
                                 ) : (
                                   <button
                                     onClick={() => recordPayment(loan.id, p.id, p.principalPortion, p.interestPortion)}

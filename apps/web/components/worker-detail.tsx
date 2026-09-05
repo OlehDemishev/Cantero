@@ -6,6 +6,7 @@ import { HR_CASE_ACTION_TYPES, HR_CASE_CATEGORIES, SUPPORTED_LOCALES, type HrCas
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatDate } from "@/lib/format-date";
 
 interface Worker {
   id: string;
@@ -321,6 +322,7 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
   }
 
   async function updateEnrollmentStatus(enrollmentId: string, status: "waived" | "terminated") {
+    if (status === "terminated" && !window.confirm(t("confirmTerminateEnrollment"))) return;
     setBenefitsBusy(true);
     try {
       await apiFetch(`/benefits/enrollments/${enrollmentId}/status`, { method: "POST", body: JSON.stringify({ status }) });
@@ -476,6 +478,23 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="lg:col-span-1">
           <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("profile")}</h2>
+          {!isManager && (
+            <div className="card flex flex-col gap-1.5 text-sm">
+              <div>
+                <span className="text-gray-500">{tc("name")}: </span>
+                {summary.worker.name}
+              </div>
+              {summary.worker.role && (
+                <div>
+                  <span className="text-gray-500">{t("role")}: </span>
+                  {summary.worker.role}
+                </div>
+              )}
+              <p className="mt-1 text-xs text-gray-400">{t("managerOnlyHint")}</p>
+            </div>
+          )}
+          {isManager && (
+          <>
           <form onSubmit={saveProfile} className="card flex flex-col gap-3">
             <input
               required
@@ -590,6 +609,8 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
             </form>
           )}
           {pinError && <p className="mt-1 text-xs text-error-700">{pinError}</p>}
+          </>
+          )}
 
           <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700">{t("cdlExpiry")}</h2>
           <form onSubmit={saveCdlExpiry} className="flex items-center gap-2">
@@ -614,7 +635,7 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
                       {cert.name}
                       {" — "}
                       <span className={expired ? "text-error-700" : "text-gray-500"}>
-                        {new Date(cert.expiresAt).toLocaleDateString()}
+                        {formatDate(new Date(cert.expiresAt))}
                       </span>
                     </span>
                     <button onClick={() => removeCertification(cert.id)} className="text-gray-400 hover:text-error-600">
@@ -645,28 +666,32 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
             </button>
           </form>
 
-          <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700">{t("ptoBalance")}</h2>
-          <form onSubmit={adjustPto} className="card flex flex-col gap-2">
-            <input
-              required
-              type="number"
-              step="0.5"
-              placeholder={t("ptoDeltaHoursPlaceholder")}
-              className="input"
-              value={ptoForm.deltaHours}
-              onChange={(e) => setPtoForm((f) => ({ ...f, deltaHours: e.target.value }))}
-            />
-            <input
-              required
-              placeholder={t("ptoReasonPlaceholder")}
-              className="input"
-              value={ptoForm.reason}
-              onChange={(e) => setPtoForm((f) => ({ ...f, reason: e.target.value }))}
-            />
-            <button type="submit" disabled={ptoBusy} className="btn-secondary self-start">
-              {t("adjustPtoBalance")}
-            </button>
-          </form>
+          {isManager && (
+            <>
+              <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700">{t("ptoBalance")}</h2>
+              <form onSubmit={adjustPto} className="card flex flex-col gap-2">
+                <input
+                  required
+                  type="number"
+                  step="0.5"
+                  placeholder={t("ptoDeltaHoursPlaceholder")}
+                  className="input"
+                  value={ptoForm.deltaHours}
+                  onChange={(e) => setPtoForm((f) => ({ ...f, deltaHours: e.target.value }))}
+                />
+                <input
+                  required
+                  placeholder={t("ptoReasonPlaceholder")}
+                  className="input"
+                  value={ptoForm.reason}
+                  onChange={(e) => setPtoForm((f) => ({ ...f, reason: e.target.value }))}
+                />
+                <button type="submit" disabled={ptoBusy} className="btn-secondary self-start">
+                  {t("adjustPtoBalance")}
+                </button>
+              </form>
+            </>
+          )}
 
           <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700">{t("onboardingChecklist")}</h2>
           {onboardingTasks === null ? (
@@ -707,7 +732,7 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
                     <span>{en.course.title}</span>
                     {en.status === "completed" ? (
                       <span className="rounded-full bg-success-50 px-2 py-0.5 text-xs font-medium text-success-700">
-                        {en.completedAt ? new Date(en.completedAt).toLocaleDateString() : t("markComplete")}
+                        {en.completedAt ? formatDate(new Date(en.completedAt)) : t("markComplete")}
                       </span>
                     ) : (
                       <button
@@ -936,7 +961,7 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
                               {hrCaseDetail.actions.map((a) => (
                                 <li key={a.id} className="text-xs">
                                   <span className="font-medium text-gray-700">{th(`actionType_${a.type}`)}</span> — {a.description}
-                                  <span className="text-gray-400"> ({a.createdByName}, {new Date(a.actionDate).toLocaleDateString()})</span>
+                                  <span className="text-gray-400"> ({a.createdByName}, {formatDate(new Date(a.actionDate))})</span>
                                 </li>
                               ))}
                             </ul>
@@ -978,6 +1003,7 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
           {summary.byProject.length === 0 ? (
             <p className="text-sm text-gray-400">{t("noProjectHistory")}</p>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -998,6 +1024,7 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       </div>

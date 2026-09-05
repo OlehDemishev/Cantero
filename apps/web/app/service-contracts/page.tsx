@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 interface Project {
   id: string;
@@ -150,7 +151,7 @@ export default function ServiceContractsPage() {
                       </span>
                     </div>
                     <span className="text-sm text-gray-500">
-                      {t("nextVisit")}: {new Date(c.nextVisitDate).toLocaleDateString()}
+                      {t("nextVisit")}: {formatDate(new Date(c.nextVisitDate))}
                     </span>
                   </a>
                 </li>

@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { goBack } from "@/lib/back-navigation";
+import { formatDateTime } from "@/lib/format-date";
 
 interface Contract {
   id: string;
@@ -27,11 +30,13 @@ const STATUS_STYLES: Record<Contract["status"], string> = {
 export function ContractDetail({ contractId }: { contractId: string }) {
   const t = useTranslations("contracts");
   const tc = useTranslations("common");
+  const router = useRouter();
 
   const [contract, setContract] = useState<Contract | null>(null);
   const [bodyDraft, setBodyDraft] = useState("");
   const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   function load() {
     apiFetch<Contract>(`/contracts/${contractId}`).then((c) => {
@@ -82,6 +87,12 @@ export function ContractDetail({ contractId }: { contractId: string }) {
     downloadBlob(blob, `${contract?.title ?? "contract"}.pdf`);
   }
 
+  async function copyLink() {
+    if (!contract?.clientAccessToken) return;
+    await navigator.clipboard.writeText(`${window.location.origin}/contract/${contract.clientAccessToken}`);
+    setLinkCopied(true);
+  }
+
   if (!contract) {
     return (
       <AuthenticatedShell>
@@ -92,9 +103,9 @@ export function ContractDetail({ contractId }: { contractId: string }) {
 
   return (
     <AuthenticatedShell>
-      <a href="/contracts" className="text-sm text-gray-500 hover:underline">
+      <button onClick={() => goBack(router, "/contracts")} className="text-sm text-gray-500 hover:underline">
         ← {tc("back")}
-      </a>
+      </button>
       <div className="mt-2 flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{contract.title}</h1>
         <span className={`rounded-full px-3 py-1 text-xs font-medium ${STATUS_STYLES[contract.status]}`}>{t(contract.status)}</span>
@@ -125,7 +136,7 @@ export function ContractDetail({ contractId }: { contractId: string }) {
             <div className="card mt-4">
               <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{t("signedBy")}</p>
               <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">
-                {contract.signerName} · {contract.signedAt && new Date(contract.signedAt).toLocaleString()}
+                {contract.signerName} · {contract.signedAt && formatDateTime(new Date(contract.signedAt))}
               </p>
               {signatureUrl && (
                 <img src={signatureUrl} alt={t("signedBy")} className="mt-2 h-20 rounded border border-gray-200 bg-white dark:border-gray-800" />
@@ -149,6 +160,11 @@ export function ContractDetail({ contractId }: { contractId: string }) {
             <button onClick={downloadPdf} className="btn-secondary">
               {t("downloadPdf")}
             </button>
+            {contract.clientAccessToken && (
+              <button onClick={copyLink} className="btn-secondary">
+                {linkCopied ? tc("linkCopied") : tc("copyLink")}
+              </button>
+            )}
           </div>
         </div>
       </div>

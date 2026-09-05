@@ -9,6 +9,7 @@ import { EstimateAccuracyPanel } from "@/components/estimate-accuracy-panel";
 import { MaterialPricesPanel } from "@/components/material-prices-panel";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatDate, formatDateTime } from "@/lib/format-date";
 
 interface MaterialCatalogItem {
   id: string;
@@ -239,7 +240,7 @@ export default function RateCatalogPage() {
                       {t("laborHoursChange", { from: pc.rateCatalogItem.laborHoursPerUnit, to: pc.laborHoursPerUnit })}
                     </span>
                   )}
-                  <p className="text-xs text-gray-400">{t("proposedBy", { name: pc.proposedByName, date: new Date(pc.proposedAt).toLocaleDateString() })}</p>
+                  <p className="text-xs text-gray-400">{t("proposedBy", { name: pc.proposedByName, date: formatDate(new Date(pc.proposedAt)) })}</p>
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => approvePendingChange(pc.id)} className="btn-primary px-2.5 py-1 text-xs">
@@ -406,6 +407,7 @@ export default function RateCatalogPage() {
           {!visibleItems ? (
             <p className="text-gray-500">{tc("loading")}</p>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -493,7 +495,7 @@ export default function RateCatalogPage() {
                               <ul className="flex flex-col gap-1">
                                 {history.map((rev) => (
                                   <li key={rev.id} className="text-xs text-gray-500">
-                                    {new Date(rev.createdAt).toLocaleString()} — {rev.name} ({rev.laborHoursPerUnit} {t("laborHours").toLowerCase()}) —{" "}
+                                    {formatDateTime(new Date(rev.createdAt))} — {rev.name} ({rev.laborHoursPerUnit} {t("laborHours").toLowerCase()}) —{" "}
                                     {rev.changedByName}
                                   </li>
                                 ))}
@@ -507,6 +509,7 @@ export default function RateCatalogPage() {
                 )}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       </div>

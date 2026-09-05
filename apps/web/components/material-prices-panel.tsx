@@ -130,6 +130,7 @@ export function MaterialPricesPanel() {
       )}
 
       <div className="card">
+        <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -182,6 +183,7 @@ export function MaterialPricesPanel() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

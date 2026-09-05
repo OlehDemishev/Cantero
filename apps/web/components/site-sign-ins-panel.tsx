@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { formatDateTime } from "@/lib/format-date";
 
 interface SignIn {
   id: string;
@@ -106,8 +107,8 @@ export function SiteSignInsPanel({ projectId }: { projectId: string }) {
               {departed.slice(0, 10).map((s) => (
                 <li key={s.id}>
                   {s.name}
-                  {s.visitorCompany && ` — ${s.visitorCompany}`}: {new Date(s.signedInAt).toLocaleString()} →{" "}
-                  {s.signedOutAt && new Date(s.signedOutAt).toLocaleString()}
+                  {s.visitorCompany && ` — ${s.visitorCompany}`}: {formatDateTime(new Date(s.signedInAt))} →{" "}
+                  {s.signedOutAt && formatDateTime(new Date(s.signedOutAt))}
                 </li>
               ))}
             </ul>

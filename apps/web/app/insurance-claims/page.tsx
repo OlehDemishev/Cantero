@@ -8,6 +8,7 @@ import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { DocumentsPanel } from "@/components/documents-panel";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatDate } from "@/lib/format-date";
 
 interface Claim {
   id: string;
@@ -328,7 +329,7 @@ export default function InsuranceClaimsPage() {
                 </button>
               </div>
               <p className="mt-1 text-xs text-gray-500">
-                {claim.project?.name ?? t("noProject")} · {new Date(claim.dateFiled).toLocaleDateString()}
+                {claim.project?.name ?? t("noProject")} · {formatDate(new Date(claim.dateFiled))}
                 {claim.claimAmount && ` · ${claim.claimAmount} ${currency}`}
               </p>
               <p className="mt-1 text-sm text-gray-700">{claim.description}</p>
@@ -341,7 +342,7 @@ export default function InsuranceClaimsPage() {
                     {claim.adjusterName && <Row label={t("adjusterName")} value={claim.adjusterName} />}
                     {claim.adjusterContact && <Row label={t("adjusterContact")} value={claim.adjusterContact} />}
                     {claim.settledAmount && <Row label={t("settledAmount")} value={`${claim.settledAmount} ${currency}`} />}
-                    {claim.settledAt && <Row label={t("settledAt")} value={new Date(claim.settledAt).toLocaleDateString()} />}
+                    {claim.settledAt && <Row label={t("settledAt")} value={formatDate(new Date(claim.settledAt))} />}
                   </dl>
 
                   <div className="mt-3 flex flex-wrap gap-1">

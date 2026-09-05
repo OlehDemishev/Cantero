@@ -55,14 +55,14 @@
     "reports": "Berichte",
     "portfolio": "Portfolio",
     "resourcePlanning": "Ressourcenplanung",
-    "templates": "Vorlagen",
+    "templates": "Checklisten-Vorlagen",
     "subcontractors": "Subunternehmer",
     "expenses": "Spesen",
-    "serviceContracts": "Serviceverträge",
+    "serviceContracts": "Wartungsverträge",
     "bankReconciliation": "Kontoabgleich",
     "contracts": "Verträge",
     "schedule": "Zeitplan",
-    "integrations": "Integrationen",
+    "integrations": "Integrationsstatus",
     "insuranceClaims": "Versicherungsschäden",
     "recruiting": "Recruiting",
     "performance": "Leistung",
@@ -418,7 +418,9 @@
     "tab_integrations": "Integrationen & API",
     "tab_templates": "Vorlagen & Inhalte",
     "tab_operations": "Betrieb",
-    "tab_marketing": "Marketing"
+    "tab_marketing": "Marketing",
+    "confirmRevokeInvite": "Diese ausstehende Einladung widerrufen? Der Link in der Einladungs-E-Mail funktioniert dann nicht mehr.",
+    "confirmRevokeApiKey": "Diesen API-Schlüssel widerrufen? Jede Integration, die ihn verwendet, funktioniert sofort nicht mehr."
   },
   "projects": {
     "title": "Projekte",
@@ -594,7 +596,9 @@
     "trainingHistory": "Schulungen",
     "cdlExpiry": "CDL-Ablauf",
     "isApprentice": "Lehrling (kein Geselle)",
-    "loadedRate": "Belasteter Satz"
+    "loadedRate": "Belasteter Satz",
+    "managerOnlyHint": "Nur Eigentümer und Administratoren können das Profil, das Urlaubskontingent oder die Kiosk-PIN eines Mitarbeiters bearbeiten.",
+    "confirmTerminateEnrollment": "Die Leistungsanmeldung dieses Mitarbeiters kündigen? Sein Versicherungsschutz im Rahmen dieses Plans endet."
   },
   "documents": {
     "title": "Dokumente",
@@ -629,7 +633,12 @@
     "compareVersions": "Versionen vergleichen",
     "noPreview": "Keine Vorschau für diesen Dateityp verfügbar",
     "category_as_built": "Bestandsplan",
-    "category_om_manual": "Betriebshandbuch"
+    "category_om_manual": "Betriebshandbuch",
+    "deletedDocuments": "Gelöschte Dokumente",
+    "deletedDocumentsHint": "Das Löschen eines Dokuments entfernt es nicht sofort endgültig — stellen Sie es hier wieder her, wenn es versehentlich gelöscht wurde.",
+    "noDeletedDocuments": "Nichts gelöscht.",
+    "deletedAt": "Gelöscht am {date}",
+    "restore": "Wiederherstellen"
   },
   "rateCatalog": {
     "title": "Leistungskatalog",
@@ -1837,7 +1846,7 @@
     "leveledMoves": "{count} Einsatz/Einsätze verschoben, um die Überschneidung zu lösen."
   },
   "checklistTemplates": {
-    "title": "Vorlagen",
+    "title": "Checklisten-Vorlagen",
     "subtitle": "Wiederverwendbare Checklisten und Starttexte für Mängelliste, RFIs und Sicherheitsunterweisungen.",
     "newTemplate": "Neue Vorlage",
     "templateType": "Vorlagentyp",
@@ -2001,7 +2010,8 @@
     "noLevelingData": "Noch keine Angebote mit Leistungsaufschlüsselung.",
     "scopeItem": "Leistungsposition",
     "notMentioned": "Nicht erwähnt",
-    "totalBid": "Angebotssumme"
+    "totalBid": "Angebotssumme",
+    "confirmCancel": "Diese Ausschreibung stornieren? Bereits eingeladene Nachunternehmer können nicht mehr bieten oder sie einsehen."
   },
   "customFields": {
     "title": "Benutzerdefinierte Felder",
@@ -2018,7 +2028,8 @@
     "fieldType_select": "Auswahlliste",
     "optionsCommaSeparated": "Optionen (kommagetrennt)",
     "optionsPlaceholder": "z. B. Niedrig, Mittel, Hoch",
-    "addField": "Feld hinzufügen"
+    "addField": "Feld hinzufügen",
+    "confirmDelete": "Dieses benutzerdefinierte Feld löschen? Seine Werte werden dauerhaft aus jedem Projekt- oder Kundendatensatz entfernt, der eines hat."
   },
   "savedViews": {
     "nameThisView": "Ansicht benennen",
@@ -2245,7 +2256,7 @@
     "regenerateCalendarFeed": "Feed-URL neu erzeugen"
   },
   "integrationsMarketplace": {
-    "title": "Integrationen",
+    "title": "Integrationsstatus",
     "hint": "Sehen Sie, was verbunden ist, und springen Sie direkt zu den Einstellungen.",
     "connected": "Verbunden",
     "notConnected": "Nicht verbunden",
@@ -2277,7 +2288,7 @@
     "submit": "Feedback senden"
   },
   "serviceContracts": {
-    "title": "Servicevertäge",
+    "title": "Wartungsverträge",
     "newContract": "Neuer Vertrag",
     "selectProject": "Projekt auswählen",
     "selectClient": "Kunden auswählen",
@@ -2392,7 +2403,8 @@
     "restrictToggle": "Auf bestimmte Teammitglieder beschränken",
     "restrictToggleHint": "Inhaber und Admins haben immer Zugriff. Standardmäßig deaktiviert — jedes Projekt ist für das gesamte Team sichtbar.",
     "noMembers": "Noch niemandem wurde Zugriff gewährt.",
-    "selectMember": "Teammitglied auswählen"
+    "selectMember": "Teammitglied auswählen",
+    "confirmRemove": "Diese Person aus dem Projekt entfernen? Sie verliert sofort den Zugriff darauf."
   },
   "contracts": {
     "title": "Verträge",
@@ -2431,7 +2443,8 @@
     "codePlaceholder": "Code, z. B. 03 00 00",
     "namePlaceholder": "Name, z. B. Beton",
     "importStandardLibrary": "CSI MasterFormat importieren",
-    "importResult": "{created} Abteilung(en) importiert, {skipped} bereits vorhanden."
+    "importResult": "{created} Abteilung(en) importiert, {skipped} bereits vorhanden.",
+    "confirmDelete": "Diesen Kostencode löschen? Kalkulations-, Nachtrags- und Kostenzeilen, die ihn verwendet haben, werden auf „Nicht kategorisiert“ zurückgesetzt, statt gelöscht zu werden."
   },
   "wageClassifications": {
     "title": "Lohnklassifizierungen",
@@ -3242,7 +3255,7 @@
     "internalNote": "Interne Notiz",
     "replyPlaceholder": "Antwort schreiben",
     "sendReply": "Senden",
-    "slaPoliciesTitle": "SLA-Richtlinien",
+    "slaPoliciesTitle": "SLA-Richtlinien für Support-Tickets",
     "slaPoliciesHint": "Antwort- und Lösungsziele, die einem Ticket bei Erstellung je nach Priorität zugewiesen werden.",
     "responseMinutes": "Antwort (Min.)",
     "resolutionMinutes": "Lösung (Min.)"
@@ -3764,7 +3777,8 @@
     "markCured": "Als behoben markieren",
     "markTerminated": "Als gekündigt markieren",
     "linkedWarrantyClaim": "Gewährleistungsfall (optional)",
-    "recoveryFor": "Erstattung für: {title}"
+    "recoveryFor": "Erstattung für: {title}",
+    "confirmTerminate": "Diesen Nachunternehmer wegen Vertragsverletzung kündigen? Dies ist eine formelle Vertragsmaßnahme und kann von hier aus nicht rückgängig gemacht werden."
   },
   "winRate": {
     "title": "Angebots-Erfolgsquote",
@@ -3923,6 +3937,8 @@
   "openItems": {
     "title": "Offene Vorgänge",
     "subtitle": "Offene RFIs, Mängelliste-Einträge und ausstehende Einreichungen über alle Projekte hinweg, an einem Ort.",
+    "filteredByProject": "Gefiltert nach {project}.",
+    "clearFilter": "Filter entfernen",
     "tab_rfis": "RFIs",
     "tab_punchList": "Mängelliste",
     "tab_submittals": "Einreichungen",

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { formatDateTime } from "@/lib/format-date";
 
 interface Session {
   id: string;
@@ -50,7 +51,7 @@ export function SessionsPanel() {
               <div>
                 <div className="text-gray-700">{s.userAgent ?? t("unknownDevice")}</div>
                 <div className="text-xs text-gray-400">
-                  {s.ipAddress ?? "—"} · {t("lastSeen", { date: new Date(s.lastSeenAt).toLocaleString() })}
+                  {s.ipAddress ?? "—"} · {t("lastSeen", { date: formatDateTime(new Date(s.lastSeenAt)) })}
                 </div>
               </div>
               <button onClick={() => revoke(s.id)} disabled={busy} className="text-xs text-error-700 hover:underline">

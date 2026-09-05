@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { VEHICLE_TYPES, type VehicleInspectionResult, type VehicleType } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 interface Worker {
   id: string;
@@ -310,8 +311,8 @@ export default function FleetPage() {
                   {expanded && detail && detail.id === v.id && (
                     <div className="mt-3 flex flex-col gap-3 border-t border-gray-100 pt-3">
                       <div className="text-xs text-gray-500">
-                        {v.registrationExpiresAt && <div>{t("registrationExpiresAt")}: {new Date(v.registrationExpiresAt).toLocaleDateString()}</div>}
-                        {v.insuranceExpiresAt && <div>{t("insuranceExpiresAt")}: {new Date(v.insuranceExpiresAt).toLocaleDateString()}</div>}
+                        {v.registrationExpiresAt && <div>{t("registrationExpiresAt")}: {formatDate(new Date(v.registrationExpiresAt))}</div>}
+                        {v.insuranceExpiresAt && <div>{t("insuranceExpiresAt")}: {formatDate(new Date(v.insuranceExpiresAt))}</div>}
                       </div>
 
                       <div>
@@ -323,7 +324,7 @@ export default function FleetPage() {
                             {detail.inspections.map((i) => (
                               <li key={i.id} className="text-xs">
                                 <span className={i.result === "passed" ? "text-success-700" : "text-error-700"}>{t(`result_${i.result}`)}</span>
-                                <span className="text-gray-400"> · {new Date(i.inspectedAt).toLocaleDateString()}</span>
+                                <span className="text-gray-400"> · {formatDate(new Date(i.inspectedAt))}</span>
                                 {i.inspectorName && <span className="text-gray-400"> · {i.inspectorName}</span>}
                               </li>
                             ))}
@@ -358,7 +359,7 @@ export default function FleetPage() {
                           <ul className="mb-2 flex flex-col gap-1">
                             {fuelLogs.map((f) => (
                               <li key={f.id} className="text-xs text-gray-600">
-                                {f.quantity} · {new Date(f.filledAt).toLocaleDateString()}
+                                {f.quantity} · {formatDate(new Date(f.filledAt))}
                                 {f.odometerMiles && <span className="text-gray-400"> · {f.odometerMiles} mi</span>}
                                 {f.idleHours && <span className="text-gray-400"> · {t("idleHoursShort", { hours: f.idleHours })}</span>}
                               </li>

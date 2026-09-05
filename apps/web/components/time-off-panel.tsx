@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatDate } from "@/lib/format-date";
 
 type TimeOffType = "vacation" | "sick" | "unpaid";
 type TimeOffStatus = "pending" | "approved" | "denied";
@@ -134,6 +135,7 @@ export function TimeOffPanel() {
           ) : requests.length === 0 ? (
             <p className="text-sm text-gray-400">—</p>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -150,7 +152,7 @@ export function TimeOffPanel() {
                     <td className="py-2">{r.worker.name}</td>
                     <td>{t(r.type)}</td>
                     <td>
-                      {new Date(r.startDate).toLocaleDateString()} – {new Date(r.endDate).toLocaleDateString()}
+                      {formatDate(new Date(r.startDate))} – {formatDate(new Date(r.endDate))}
                     </td>
                     <td>
                       <span
@@ -183,6 +185,7 @@ export function TimeOffPanel() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       </div>

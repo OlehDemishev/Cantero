@@ -6,6 +6,7 @@ import type { SubcontractorBackchargeStatus, SubcontractorDefaultNoticeStatus } 
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
+import { formatDate } from "@/lib/format-date";
 
 interface Subcontractor {
   id: string;
@@ -128,6 +129,7 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
   }
 
   async function resolveNotice(id: string, action: "cure" | "terminate") {
+    if (action === "terminate" && !window.confirm(t("confirmTerminate"))) return;
     await apiFetch(`/subcontractor-default-notices/${id}/${action}`, { method: "POST" });
     load();
   }
@@ -324,7 +326,7 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
                   <p className="mt-1 text-xs text-gray-500">{n.subcontractor.name}</p>
                   <p className="mt-1 text-xs text-gray-500">{n.description}</p>
                   {n.cureDeadline && (
-                    <p className="mt-1.5 text-xs text-gray-500">{t("cureDeadline", { date: new Date(n.cureDeadline).toLocaleDateString() })}</p>
+                    <p className="mt-1.5 text-xs text-gray-500">{t("cureDeadline", { date: formatDate(new Date(n.cureDeadline)) })}</p>
                   )}
                 </div>
                 {n.status === "issued" && (

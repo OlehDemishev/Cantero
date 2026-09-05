@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { WARRANTY_COVERAGE_TYPES, type WarrantyCoverageType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 interface WarrantyRegistration {
   id: string;
@@ -131,7 +132,7 @@ export function WarrantyRegistrationsPanel({ projectId }: { projectId: string })
                   </span>
                 </div>
                 <p className="mt-1 text-xs text-gray-500">
-                  {t(`coverage_${r.coverageType}`)} · {t("expiresOn", { date: new Date(r.expirationDate).toLocaleDateString() })}
+                  {t(`coverage_${r.coverageType}`)} · {t("expiresOn", { date: formatDate(new Date(r.expirationDate)) })}
                 </p>
               </li>
             );

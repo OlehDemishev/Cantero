@@ -159,9 +159,33 @@ export default function PortfolioPage() {
                     <td className="text-right">{money(p.billedToDate)}</td>
                     <td className="text-right">{money(p.fundedToDate)}</td>
                     <td className="text-right">{p.openDrawCount || "—"}</td>
-                    <td className="text-right">{p.openRfiCount || "—"}</td>
-                    <td className="text-right">{p.openPunchListCount || "—"}</td>
-                    <td className="text-right">{p.pendingSubmittalCount || "—"}</td>
+                    <td className="text-right">
+                      {p.openRfiCount ? (
+                        <a href={`/open-items?tab=rfis&projectId=${p.id}`} className="text-brand-700 hover:underline">
+                          {p.openRfiCount}
+                        </a>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td className="text-right">
+                      {p.openPunchListCount ? (
+                        <a href={`/open-items?tab=punchList&projectId=${p.id}`} className="text-brand-700 hover:underline">
+                          {p.openPunchListCount}
+                        </a>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td className="text-right">
+                      {p.pendingSubmittalCount ? (
+                        <a href={`/open-items?tab=submittals&projectId=${p.id}`} className="text-brand-700 hover:underline">
+                          {p.pendingSubmittalCount}
+                        </a>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
                     <td className="text-right">{p.incidentCount || "—"}</td>
                     <td className="text-right">{p.overdueTaskCount || "—"}</td>
                     <td className="text-right">{p.criticalTaskCount || "—"}</td>

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { DRAW_REQUEST_STATUSES, type DrawRequestStatus } from "@cantero/shared";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatDate } from "@/lib/format-date";
 
 interface Invoice {
   id: string;
@@ -203,7 +204,7 @@ export function DrawRequestsPanel({ projectId }: { projectId: string }) {
                 </span>
               </div>
               <p className="mt-1 text-xs text-gray-500">
-                {new Date(draw.periodStart).toLocaleDateString()} – {new Date(draw.periodEnd).toLocaleDateString()}
+                {formatDate(new Date(draw.periodStart))} – {formatDate(new Date(draw.periodEnd))}
                 {draw.lenderName ? ` · ${draw.lenderName}` : ""}
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-2">

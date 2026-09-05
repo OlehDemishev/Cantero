@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { CommissioningSystemStatus, FunctionalTestResult } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 interface ChecklistItem {
   id: string;
@@ -226,7 +227,7 @@ export function CommissioningPanel({ projectId }: { projectId: string }) {
                           {sys.functionalTests.map((test) => (
                             <li key={test.id}>
                               <span className={test.result === "fail" ? "font-medium text-error-700" : "text-success-700"}>{t(`result_${test.result}`)}</span> —{" "}
-                              {test.procedure} ({test.testedByName}, {new Date(test.testedAt).toLocaleDateString()})
+                              {test.procedure} ({test.testedByName}, {formatDate(new Date(test.testedAt))})
                             </li>
                           ))}
                         </ul>
@@ -262,7 +263,7 @@ export function CommissioningPanel({ projectId }: { projectId: string }) {
                             <li key={session.id}>
                               <div className="flex items-center justify-between">
                                 <span>
-                                  {session.trainerName} — {new Date(session.trainingDate).toLocaleDateString()}
+                                  {session.trainerName} — {formatDate(new Date(session.trainingDate))}
                                   {session.attendeeNames && <span className="text-gray-400"> · {session.attendeeNames}</span>}
                                 </span>
                                 {session.ownerSignedOffAt ? (

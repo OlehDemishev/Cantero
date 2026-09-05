@@ -7,6 +7,7 @@ import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { CustomFieldsValuesPanel } from "@/components/custom-fields-values-panel";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatDate, formatDateTime } from "@/lib/format-date";
 
 type ClientStage = "lead" | "contacted" | "qualified" | "won" | "lost";
 const STAGES: ClientStage[] = ["lead", "contacted", "qualified", "won", "lost"];
@@ -651,7 +652,7 @@ export function ClientDetail({ clientId }: { clientId: string }) {
             {exemptionCertificates.map((cert) => (
               <li key={cert.id} className="text-xs text-gray-600">
                 {cert.certificateNumber}
-                {cert.expiresAt && <span className="text-gray-400"> — {tt("expiresOn", { date: new Date(cert.expiresAt).toLocaleDateString() })}</span>}
+                {cert.expiresAt && <span className="text-gray-400"> — {tt("expiresOn", { date: formatDate(new Date(cert.expiresAt)) })}</span>}
               </li>
             ))}
           </ul>
@@ -688,7 +689,7 @@ export function ClientDetail({ clientId }: { clientId: string }) {
                       {t(a.type)}
                     </span>
                     <span className="text-xs text-gray-400">
-                      {new Date(a.createdAt).toLocaleString()}
+                      {formatDateTime(new Date(a.createdAt))}
                     </span>
                   </div>
                   <p className="mt-2 text-sm text-gray-800">{a.content}</p>
@@ -758,7 +759,7 @@ export function ClientDetail({ clientId }: { clientId: string }) {
                     <div className={`text-sm font-medium ${r.done ? "text-gray-400 line-through" : "text-gray-900"}`}>
                       {r.title}
                     </div>
-                    <div className="text-xs text-gray-500">{new Date(r.dueDate).toLocaleDateString()}</div>
+                    <div className="text-xs text-gray-500">{formatDate(new Date(r.dueDate))}</div>
                   </div>
                   {!r.done && (
                     <button onClick={() => completeReminder(r.id)} className="btn-secondary px-2 py-1 text-xs">

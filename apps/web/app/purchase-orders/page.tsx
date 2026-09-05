@@ -6,6 +6,7 @@ import { RECEIVING_DISCREPANCY_RESOLUTIONS, type ReceivingDiscrepancyResolution,
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatDate } from "@/lib/format-date";
 
 interface Supplier {
   id: string;
@@ -434,8 +435,8 @@ export default function PurchaseOrdersPage() {
                   {po.acknowledgedAt ? (
                     <p className="mt-2 text-xs text-success-700">
                       {t("acknowledgedBy", {
-                        date: new Date(po.acknowledgedAt).toLocaleDateString(),
-                        eta: po.supplierEta ? new Date(po.supplierEta).toLocaleDateString() : "—",
+                        date: formatDate(new Date(po.acknowledgedAt)),
+                        eta: po.supplierEta ? formatDate(new Date(po.supplierEta)) : "—",
                       })}
                       {po.supplierNote && <span className="block text-gray-500">{po.supplierNote}</span>}
                     </p>
@@ -727,9 +728,9 @@ export default function PurchaseOrdersPage() {
                         </li>
                       ))}
                     </ul>
-                    {bill.dueDate && <p className="mt-1 text-xs text-gray-400">{t("dueDate")}: {new Date(bill.dueDate).toLocaleDateString()}</p>}
+                    {bill.dueDate && <p className="mt-1 text-xs text-gray-400">{t("dueDate")}: {formatDate(new Date(bill.dueDate))}</p>}
                     {bill.scheduledPaymentDate && (
-                      <p className="mt-1 text-xs text-gray-400">{t("scheduledPaymentDate")}: {new Date(bill.scheduledPaymentDate).toLocaleDateString()}</p>
+                      <p className="mt-1 text-xs text-gray-400">{t("scheduledPaymentDate")}: {formatDate(new Date(bill.scheduledPaymentDate))}</p>
                     )}
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       {bill.status === "draft" && (
@@ -779,7 +780,7 @@ export default function PurchaseOrdersPage() {
                   <tbody>
                     {disbursementCalendar.buckets.map((b) => (
                       <tr key={b.weekStart} className="border-b border-gray-100">
-                        <td className="py-1">{new Date(b.weekStart).toLocaleDateString()}</td>
+                        <td className="py-1">{formatDate(new Date(b.weekStart))}</td>
                         <td className="text-right tabular-nums">
                           {b.total.toFixed(2)} {me?.company.currency}
                         </td>

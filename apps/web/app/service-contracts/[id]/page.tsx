@@ -1,9 +1,12 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
+import { goBack } from "@/lib/back-navigation";
 
 interface Worker {
   id: string;
@@ -33,6 +36,7 @@ export default function ServiceContractDetailPage({ params }: { params: Promise<
   const { id } = use(params);
   const t = useTranslations("serviceContracts");
   const tc = useTranslations("common");
+  const router = useRouter();
 
   const [contract, setContract] = useState<ServiceContract | null>(null);
   const [workers, setWorkers] = useState<Worker[]>([]);
@@ -87,9 +91,9 @@ export default function ServiceContractDetailPage({ params }: { params: Promise<
 
   return (
     <AuthenticatedShell>
-      <a href="/service-contracts" className="text-sm text-gray-500 hover:underline">
+      <button onClick={() => goBack(router, "/service-contracts")} className="text-sm text-gray-500 hover:underline">
         ← {tc("back")}
-      </a>
+      </button>
       <h1 className="mt-2 text-2xl font-semibold">{contract.title}</h1>
       <p className="text-sm text-gray-500">
         {contract.project.name} · {contract.client.name}
@@ -136,7 +140,7 @@ export default function ServiceContractDetailPage({ params }: { params: Promise<
               {contract.visits.map((v) => (
                 <li key={v.id} className="card flex items-center justify-between">
                   <div>
-                    <span className="font-medium">{new Date(v.scheduledDate).toLocaleDateString()}</span>
+                    <span className="font-medium">{formatDate(new Date(v.scheduledDate))}</span>
                     {v.technician && <span className="ml-2 text-sm text-gray-500">{v.technician.name}</span>}
                     {v.satisfactionRating && (
                       <span className="ml-2 text-sm text-amber-500">{"★".repeat(v.satisfactionRating)}</span>

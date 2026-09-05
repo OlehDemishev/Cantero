@@ -7,6 +7,7 @@ import { apiFetch } from "@/lib/api-client";
 import { useBulkSelection } from "@/components/bulk-select";
 import { useDeepLinkedRow, buildItemDeepLink } from "@/lib/use-deep-linked-row";
 import { CopyLinkButton } from "@/components/ui/copy-link-button";
+import { formatDate } from "@/lib/format-date";
 
 interface SubmittalHistoryEntry {
   id: string;
@@ -246,7 +247,7 @@ export function SubmittalsPanel({ projectId }: { projectId: string }) {
                           {t(item.status)}
                         </span>
                         {item.specSection && <span className="text-xs text-gray-500">{item.specSection}</span>}
-                        {item.dueDate && <span className="text-xs text-gray-500">{new Date(item.dueDate).toLocaleDateString()}</span>}
+                        {item.dueDate && <span className="text-xs text-gray-500">{formatDate(new Date(item.dueDate))}</span>}
                         {item.escalatedAt && (
                           <span className="rounded-full bg-error-50 px-2 py-0.5 text-xs font-medium text-error-700">{t("escalated")}</span>
                         )}

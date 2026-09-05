@@ -10,6 +10,7 @@ import { useBulkSelection } from "@/components/bulk-select";
 import { useDeepLinkedRow, buildItemDeepLink } from "@/lib/use-deep-linked-row";
 import { CopyLinkButton } from "@/components/ui/copy-link-button";
 import { PrintButton } from "@/components/ui/print-button";
+import { formatDate } from "@/lib/format-date";
 
 interface Worker {
   id: string;
@@ -336,7 +337,7 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
                     {item.location && <span>{item.location}</span>}
                     {item.assignee && <span>{t("assignedTo", { name: item.assignee.name })}</span>}
                     {item.assigneeSubcontractor && <span>{t("assignedTo", { name: item.assigneeSubcontractor.name })}</span>}
-                    {item.dueDate && <span>{new Date(item.dueDate).toLocaleDateString()}</span>}
+                    {item.dueDate && <span>{formatDate(new Date(item.dueDate))}</span>}
                   </div>
                   {item.description && <p className="mt-1.5 text-xs text-gray-500">{item.description}</p>}
                   {(item.estimatedCostImpact !== null || item.changeOrderId) && (

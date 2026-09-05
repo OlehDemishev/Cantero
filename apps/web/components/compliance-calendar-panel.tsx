@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 type ComplianceItemType = "subcontractor_document" | "supplier_document" | "worker_certification" | "permit" | "company_document";
 type ComplianceStatus = "expired" | "expiring";
@@ -65,6 +66,7 @@ export function ComplianceCalendarPanel() {
         {data.items.length === 0 ? (
           <p className="text-sm text-gray-400">{t("empty")}</p>
         ) : (
+          <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -81,7 +83,7 @@ export function ComplianceCalendarPanel() {
                   <td className="py-1.5">{item.label}</td>
                   <td className="text-xs text-gray-500">{t(`type_${item.type}`)}</td>
                   <td className="text-xs text-gray-500">{item.holderName ?? "—"}</td>
-                  <td className="text-xs text-gray-500">{new Date(item.expiresAt).toLocaleDateString()}</td>
+                  <td className="text-xs text-gray-500">{formatDate(new Date(item.expiresAt))}</td>
                   <td>
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs font-medium ${
@@ -95,6 +97,7 @@ export function ComplianceCalendarPanel() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

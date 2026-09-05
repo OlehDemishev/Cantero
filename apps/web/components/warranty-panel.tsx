@@ -6,6 +6,7 @@ import type { BulkActionResult, WarrantyClaimStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { PhotoAttachments } from "@/components/photo-attachments";
 import { useBulkSelection } from "@/components/bulk-select";
+import { formatDate } from "@/lib/format-date";
 
 interface Worker {
   id: string;
@@ -201,7 +202,7 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
         </button>
         {expiresAt && (
           <span className={`text-xs font-medium ${isUnderWarranty ? "text-success-700" : "text-gray-400"}`}>
-            {isUnderWarranty ? t("underWarrantyUntil", { date: expiresAt.toLocaleDateString() }) : t("warrantyExpiredOn", { date: expiresAt.toLocaleDateString() })}
+            {isUnderWarranty ? t("underWarrantyUntil", { date: formatDate(expiresAt) }) : t("warrantyExpiredOn", { date: formatDate(expiresAt) })}
           </span>
         )}
       </form>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 interface SlumpTest {
   id: string;
@@ -217,7 +218,7 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
               <li key={pour.id} className="card">
                 <button onClick={() => setExpandedId(expanded ? null : pour.id)} className="flex w-full items-center justify-between text-left">
                   <span className="text-sm font-medium text-gray-900">
-                    {pour.location} — {new Date(pour.pourDate).toLocaleDateString()}
+                    {pour.location} — {formatDate(new Date(pour.pourDate))}
                     {pour.mixDesign && <span className="ml-1.5 text-xs text-gray-400">({pour.mixDesign})</span>}
                   </span>
                   {anyFail && <span className="rounded-full bg-error-50 px-2 py-0.5 text-xs font-medium text-error-700">{t("hasFailure")}</span>}
@@ -239,7 +240,7 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
                               <span className={st.withinSpec ? "text-success-700" : "font-medium text-error-700"}>
                                 {st.slumpValue} — {st.withinSpec ? t("withinSpec") : t("outOfSpec")}
                               </span>{" "}
-                              ({st.testedByName}, {new Date(st.testedAt).toLocaleDateString()})
+                              ({st.testedByName}, {formatDate(new Date(st.testedAt))})
                             </li>
                           ))}
                         </ul>
@@ -277,7 +278,7 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
                             <li key={cb.id}>
                               <div className="flex items-center justify-between">
                                 <span>
-                                  {cb.cylinderLabel} — {cb.breakAgeDays}{t("daysAbbr")} — {new Date(cb.breakDate).toLocaleDateString()}
+                                  {cb.cylinderLabel} — {cb.breakAgeDays}{t("daysAbbr")} — {formatDate(new Date(cb.breakDate))}
                                   {cb.breakStrength !== null && ` — ${cb.breakStrength}`}
                                 </span>
                                 {cb.result ? (

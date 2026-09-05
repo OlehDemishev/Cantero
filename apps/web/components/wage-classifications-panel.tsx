@@ -83,7 +83,7 @@ export function WageClassificationsPanel() {
   }
 
   return (
-    <section id="wage-classifications" className="card">
+    <section className="card">
       <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("title")}</h2>
       <p className="mb-4 text-xs text-gray-500">{t("hint")}</p>
 

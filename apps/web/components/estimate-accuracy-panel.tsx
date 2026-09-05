@@ -54,6 +54,7 @@ export function EstimateAccuracyPanel() {
       {!rows ? (
         <p className="text-sm text-gray-400">…</p>
       ) : (
+        <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -88,6 +89,7 @@ export function EstimateAccuracyPanel() {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   );

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { CrewsPanel } from "@/components/crews-panel";
 import { apiFetch } from "@/lib/api-client";
+import { formatDate, formatDateWithOptions } from "@/lib/format-date";
 
 type ResourceType = "worker" | "equipment";
 
@@ -286,7 +287,7 @@ export default function ResourcePlanningPage() {
             <ul className="mt-1 flex flex-col gap-0.5">
               {newAssignmentConflicts.map((c) => (
                 <li key={c.assignmentId}>
-                  {c.projectName}: {new Date(c.startDate).toLocaleDateString()} – {new Date(c.endDate).toLocaleDateString()}
+                  {c.projectName}: {formatDate(new Date(c.startDate))} – {formatDate(new Date(c.endDate))}
                 </li>
               ))}
             </ul>
@@ -305,7 +306,7 @@ export default function ResourcePlanningPage() {
                 {calendar.conflicts.map((c, i) => (
                   <li key={i} className="rounded-md border border-error-200 bg-error-25 px-3 py-2 text-sm text-error-700">
                     <span className="font-medium">{c.resourceName}</span> — {c.projectAName} × {c.projectBName}:{" "}
-                    {new Date(c.overlapStart).toLocaleDateString()} – {new Date(c.overlapEnd).toLocaleDateString()}
+                    {formatDate(new Date(c.overlapStart))} – {formatDate(new Date(c.overlapEnd))}
                   </li>
                 ))}
               </ul>
@@ -348,7 +349,7 @@ export default function ResourcePlanningPage() {
                           <span>
                             {a.projectName}
                             {a.taskName && <span className="text-gray-400"> / {a.taskName}</span>} —{" "}
-                            {new Date(a.startDate).toLocaleDateString()} – {new Date(a.endDate).toLocaleDateString()}
+                            {formatDate(new Date(a.startDate))} – {formatDate(new Date(a.endDate))}
                             {a.note && <span className="text-gray-400"> · {a.note}</span>}
                           </span>
                           <button onClick={() => removeAssignment(a.id)} className="text-gray-400 hover:text-error-600">
@@ -402,7 +403,7 @@ function WorkloadHeatmap({ rows }: { rows: HeatmapRow[] }) {
             <th className="sticky left-0 bg-white pr-3 text-left font-medium text-gray-500">{t("worker")}</th>
             {allDates.map((date) => (
               <th key={date} className="px-1 py-1 text-center font-normal text-gray-400">
-                {new Date(date).toLocaleDateString(undefined, { day: "numeric", month: "numeric" })}
+                {formatDateWithOptions(date, { day: "numeric", month: "numeric" })}
               </th>
             ))}
           </tr>
@@ -460,7 +461,7 @@ function Timeline({ calendar }: { calendar: Calendar }) {
                         conflicted ? "bg-error-500 ring-2 ring-error-700" : "bg-brand-500"
                       }`}
                       style={{ left: `${left}%`, width: `${Math.max(right - left, 2)}%` }}
-                      title={`${a.projectName}: ${new Date(a.startDate).toLocaleDateString()} – ${new Date(a.endDate).toLocaleDateString()}`}
+                      title={`${a.projectName}: ${formatDate(new Date(a.startDate))} – ${formatDate(new Date(a.endDate))}`}
                     >
                       {a.projectName}
                     </div>

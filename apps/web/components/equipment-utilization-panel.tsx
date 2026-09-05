@@ -28,6 +28,7 @@ export function EquipmentUtilizationPanel() {
       <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("title")}</h2>
       <p className="mb-3 text-xs text-gray-500">{t("description")}</p>
       <div className="card">
+        <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -60,6 +61,7 @@ export function EquipmentUtilizationPanel() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

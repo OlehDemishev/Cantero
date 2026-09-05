@@ -9,6 +9,7 @@ import {
   type EnvironmentalIncidentStatus,
 } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 interface BmpInspection {
   id: string;
@@ -193,13 +194,13 @@ export function EnvironmentalPanel({ projectId }: { projectId: string }) {
                   {p.active ? t("active") : t("inactive")}
                 </span>
               </div>
-              {p.noiFiledAt && <p className="mt-1 text-xs text-gray-400">{t("noiFiledAt")}: {new Date(p.noiFiledAt).toLocaleDateString()}</p>}
+              {p.noiFiledAt && <p className="mt-1 text-xs text-gray-400">{t("noiFiledAt")}: {formatDate(new Date(p.noiFiledAt))}</p>}
 
               {p.inspections.length > 0 && (
                 <ul className="mt-2 flex flex-col gap-1">
                   {p.inspections.map((insp) => (
                     <li key={insp.id} className="text-xs text-gray-500">
-                      <span className="text-gray-400">{new Date(insp.inspectedAt).toLocaleDateString()}</span> —{" "}
+                      <span className="text-gray-400">{formatDate(new Date(insp.inspectedAt))}</span> —{" "}
                       <span className={insp.result === "deficient" ? "font-medium text-error-700" : ""}>{t(`result_${insp.result}`)}</span>
                       {insp.inspectorName && ` (${insp.inspectorName})`}
                     </li>
@@ -319,7 +320,7 @@ export function EnvironmentalPanel({ projectId }: { projectId: string }) {
                 <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${SEVERITY_STYLES[inc.severity]}`}>{t(`severity_${inc.severity}`)}</span>
               </div>
               <p className="mt-1 text-xs text-gray-400">
-                {new Date(inc.occurredAt).toLocaleDateString()} · {t(`status_${inc.status}`)}
+                {formatDate(new Date(inc.occurredAt))} · {t(`status_${inc.status}`)}
                 {inc.regulatorNotified && ` · ${t("regulatorNotifiedLabel")}`}
               </p>
               {OPEN_INCIDENT_STATUSES.includes(inc.status) && (

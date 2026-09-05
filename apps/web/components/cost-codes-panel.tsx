@@ -42,6 +42,7 @@ export function CostCodesPanel() {
   }
 
   async function remove(id: string) {
+    if (!window.confirm(t("confirmDelete"))) return;
     await apiFetch(`/cost-codes/${id}`, { method: "DELETE" });
     load();
   }

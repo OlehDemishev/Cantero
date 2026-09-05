@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, apiUpload } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 interface DrawingSheetVersion {
   id: string;
@@ -69,7 +70,7 @@ export function DrawingRevisionsPanel({ sheetId, onSuperseded }: { sheetId: stri
               )}
               <span>{t("revisionLabel", { n: v.version })}</span>
               {v.revision && <span>· {v.revision}</span>}
-              <span>· {new Date(v.createdAt).toLocaleDateString()}</span>
+              <span>· {formatDate(new Date(v.createdAt))}</span>
             </li>
           ))}
         </ul>

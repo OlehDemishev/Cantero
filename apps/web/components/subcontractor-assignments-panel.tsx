@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { formatDate } from "@/lib/format-date";
 
 const NEW_SUBCONTRACTOR = "__new__";
 
@@ -117,7 +118,7 @@ export function SubcontractorAssignmentsPanel({ projectId }: { projectId: string
                 {subcontractor.email && <span className="ml-2 text-xs text-gray-400">{subcontractor.email}</span>}
                 {assignment.startDate && assignment.endDate && (
                   <span className="ml-2 text-xs text-gray-400">
-                    {new Date(assignment.startDate).toLocaleDateString()} – {new Date(assignment.endDate).toLocaleDateString()}
+                    {formatDate(new Date(assignment.startDate))} – {formatDate(new Date(assignment.endDate))}
                   </span>
                 )}
               </span>
