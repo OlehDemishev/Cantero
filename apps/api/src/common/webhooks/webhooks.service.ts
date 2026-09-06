@@ -1,5 +1,6 @@
 import { createHmac, randomBytes } from "node:crypto";
 import { Injectable, Logger, NotFoundException } from "@nestjs/common";
+import * as Sentry from "@sentry/node";
 import { WEBHOOK_EVENTS, type CreateWebhookEndpointInput, type UpdateWebhookEndpointInput, type WebhookEvent } from "@cantero/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuditService, type AuditActor } from "../audit/audit.service";
@@ -90,19 +91,24 @@ export class WebhooksService {
 
   /**
    * Fire-and-forget, same contract as AuditService.record(): a delivery failing (or every
-   * endpoint being unreachable) must never break the business action that triggered it.
+   * endpoint being unreachable) must never break the business action that triggered it. These
+   * outer catches only ever see OUR OWN bugs/infra failures (a DB read/write breaking, or
+   * something throwing before an HTTP attempt is even made) — an actual delivery attempt to a
+   * customer's endpoint or chat webhook failing is a normal, expected outcome (their endpoint can
+   * be down/misconfigured) already handled inside deliver()/notifyChat() via a DB status record
+   * or a warn log, not something worth an alert. So report here, not there.
    */
   trigger(companyId: string, event: WebhookEvent, payload: Record<string, unknown>): void {
     this.prisma.webhookEndpoint
       .findMany({ where: { companyId, active: true, events: { has: event } } })
       .then((endpoints) => {
         for (const endpoint of endpoints) {
-          this.deliver(endpoint.id, endpoint.url, endpoint.secret, event, payload).catch(() => {});
+          this.deliver(endpoint.id, endpoint.url, endpoint.secret, event, payload).catch((err) => Sentry.captureException(err));
         }
       })
-      .catch(() => {});
+      .catch((err) => Sentry.captureException(err));
 
-    this.notifyChat(companyId, event, payload).catch(() => {});
+    this.notifyChat(companyId, event, payload).catch((err) => Sentry.captureException(err));
   }
 
   /** Posts the same event that just fired to whichever chat webhooks the company has
@@ -164,7 +170,9 @@ export class WebhooksService {
 
     await this.prisma.webhookEndpoint
       .update({ where: { id: endpointId }, data: { lastDeliveryAt: new Date(), lastDeliveryStatus: success ? "success" : "failed" } })
-      .catch(() => {});
-    await this.prisma.webhookDelivery.create({ data: { webhookEndpointId: endpointId, event, success, statusCode, error } }).catch(() => {});
+      .catch((err) => Sentry.captureException(err));
+    await this.prisma.webhookDelivery
+      .create({ data: { webhookEndpointId: endpointId, event, success, statusCode, error } })
+      .catch((err) => Sentry.captureException(err));
   }
 }
