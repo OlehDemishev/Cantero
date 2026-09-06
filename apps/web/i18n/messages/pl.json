@@ -772,7 +772,9 @@
     "margin": "Marża",
     "marginPercent": "Marża %",
     "baseContract": "Umowa podstawowa",
-    "changeOrdersTotal": "Suma zleceń zmian"
+    "changeOrdersTotal": "Suma zleceń zmian",
+    "declineOnBehalfOfClient": "Odrzuć w imieniu klienta",
+    "declineOnBehalfNotePrompt": "W jaki sposób klient odmówił? (np. \"Odmówił telefonicznie, powołał się na budżet\") Ta notatka jest wymagana i trafia do dziennika audytu."
   },
   "invoices": {
     "title": "Faktury",

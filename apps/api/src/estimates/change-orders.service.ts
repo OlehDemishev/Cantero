@@ -2,7 +2,13 @@ import { randomBytes } from "node:crypto";
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { ChangeOrder } from "@prisma/client";
-import type { AddChangeOrderLineInput, ClientDecisionInput, CreateChangeOrderInput, SetChangeOrderScheduleImpactInput } from "@cantero/shared";
+import type {
+  AddChangeOrderLineInput,
+  ClientDecisionInput,
+  CreateChangeOrderInput,
+  DeclineOnBehalfOfClientInput,
+  SetChangeOrderScheduleImpactInput,
+} from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { PdfService } from "../common/pdf/pdf.service";
 import { StorageService } from "../common/storage/storage.service";
@@ -317,7 +323,16 @@ export class ChangeOrdersService {
     return this.applyDecision(changeOrder, input, signerIp);
   }
 
-  private async applyDecision(changeOrder: ChangeOrder, input: ClientDecisionInput, signerIp?: string) {
+  /** Lets internal staff record that the client declined outside the portal — a phone call, an
+   * email, a conversation on site. Same reasoning as EstimatesService.declineOnBehalfOfClient:
+   * rejected only, and the audit trail attributes it to the staff member, not to "Client". */
+  async declineOnBehalfOfClient(companyId: string, actor: AuditActor, changeOrderId: string, input: DeclineOnBehalfOfClientInput) {
+    const changeOrder = await this.findOrThrow(companyId, changeOrderId);
+    if (!changeOrder.sentAt) throw new BadRequestException("This change order hasn't been sent to the client yet");
+    return this.applyDecision(changeOrder, { decision: "rejected", note: input.note }, undefined, actor);
+  }
+
+  private async applyDecision(changeOrder: ChangeOrder, input: ClientDecisionInput, signerIp?: string, recordedBy?: AuditActor) {
     if (changeOrder.clientDecision !== "pending") {
       throw new BadRequestException("This change order has already been decided");
     }
@@ -346,11 +361,13 @@ export class ChangeOrdersService {
 
     this.audit.record(
       changeOrder.companyId,
-      { name: "Client" },
+      recordedBy ?? { name: "Client" },
       input.decision === "approved" ? "change_order.client_approved" : "change_order.client_rejected",
       "ChangeOrder",
       changeOrder.id,
-      `Client ${input.decision} change order CO-${changeOrder.number} "${changeOrder.title}"${input.note ? ` — "${input.note}"` : ""}`,
+      recordedBy
+        ? `${recordedBy.name} recorded that the client ${input.decision} change order CO-${changeOrder.number} "${changeOrder.title}" outside the portal — "${input.note}"`
+        : `Client ${input.decision} change order CO-${changeOrder.number} "${changeOrder.title}"${input.note ? ` — "${input.note}"` : ""}`,
     );
     this.webhooks.trigger(
       changeOrder.companyId,

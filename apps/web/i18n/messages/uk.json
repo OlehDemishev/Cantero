@@ -772,7 +772,9 @@
     "margin": "Маржа",
     "marginPercent": "Маржа %",
     "baseContract": "Базовий контракт",
-    "changeOrdersTotal": "Разом зміни замовлення"
+    "changeOrdersTotal": "Разом зміни замовлення",
+    "declineOnBehalfOfClient": "Відхилити від імені клієнта",
+    "declineOnBehalfNotePrompt": "Як клієнт відмовився? (наприклад, \"Відмовився телефоном, посилався на бюджет\") Цей коментар обов'язковий і потрапляє в журнал аудиту."
   },
   "invoices": {
     "title": "Рахунки",

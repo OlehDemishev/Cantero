@@ -469,6 +469,18 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
     setCoLinkCopiedId(co.id);
   }
 
+  async function declineChangeOrderOnBehalfOfClient(co: ChangeOrder) {
+    const note = window.prompt(t("declineOnBehalfNotePrompt"));
+    if (!note || !note.trim()) return;
+    setBusy(true);
+    try {
+      await apiFetch(`/estimates/${estimateId}/change-orders/${co.id}/decline`, { method: "POST", body: JSON.stringify({ note: note.trim() }) });
+      loadChangeOrders();
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function createVariant(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -479,6 +491,18 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
       });
       setVariantLabel("");
       router.push(`/estimates/${created.id}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function declineOnBehalfOfClient() {
+    const note = window.prompt(t("declineOnBehalfNotePrompt"));
+    if (!note || !note.trim()) return;
+    setBusy(true);
+    try {
+      await apiFetch(`/estimates/${estimateId}/decline`, { method: "POST", body: JSON.stringify({ note: note.trim() }) });
+      load();
     } finally {
       setBusy(false);
     }
@@ -607,6 +631,11 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
           >
             {estimate.status === "approved" ? t("approved") : estimate.status === "pending_approval" ? t("pendingApproval") : t("draft")}
           </span>
+          {estimate.sentAt && estimate.clientDecision === "pending" && (
+            <button onClick={declineOnBehalfOfClient} disabled={busy} className="btn-secondary px-3 py-1 text-xs">
+              {t("declineOnBehalfOfClient")}
+            </button>
+          )}
         </div>
       </div>
       {estimate.status === "pending_approval" && me?.company.requiredApprovalCount && (
@@ -1151,6 +1180,16 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
                               </p>
                             )}
                           </div>
+                        )}
+
+                        {co.sentAt && co.clientDecision === "pending" && (
+                          <button
+                            onClick={() => declineChangeOrderOnBehalfOfClient(co)}
+                            disabled={busy}
+                            className="btn-secondary mt-3 px-3 py-1 text-xs"
+                          >
+                            {t("declineOnBehalfOfClient")}
+                          </button>
                         )}
 
                         {co.clientDecision === "approved" && co.signerName && (

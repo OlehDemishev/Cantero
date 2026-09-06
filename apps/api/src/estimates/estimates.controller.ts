@@ -5,6 +5,7 @@ import {
   createEstimateSchema,
   createFromTemplateSchema,
   createVariantSchema,
+  declineOnBehalfOfClientSchema,
   saveAsTemplateSchema,
   updateEstimateCoverLetterSchema,
   type AddAssemblyToEstimateInput,
@@ -13,6 +14,7 @@ import {
   type CreateEstimateLineInput,
   type CreateFromTemplateInput,
   type CreateVariantInput,
+  type DeclineOnBehalfOfClientInput,
   type SaveAsTemplateInput,
   type UpdateEstimateCoverLetterInput,
 } from "@cantero/shared";
@@ -136,6 +138,17 @@ export class EstimatesController {
   @Post(":id/send")
   send(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.send(user.companyId, { userId: user.userId, name: user.name }, id);
+  }
+
+  /** Records that the client declined outside the portal (a phone call, an email, ...) — see
+   * EstimatesService.declineOnBehalfOfClient. */
+  @Post(":id/decline")
+  declineOnBehalfOfClient(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(declineOnBehalfOfClientSchema)) body: DeclineOnBehalfOfClientInput,
+  ) {
+    return this.service.declineOnBehalfOfClient(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
   @Post(":id/create-variant")

@@ -9,6 +9,7 @@ import type {
   CreateEstimateLineInput,
   CreateFromTemplateInput,
   CreateVariantInput,
+  DeclineOnBehalfOfClientInput,
   UpdateEstimateCoverLetterInput,
 } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
@@ -516,7 +517,18 @@ export class EstimatesService {
     return this.applyDecision(estimate, input, signerIp);
   }
 
-  private async applyDecision(estimate: Estimate, input: EstimateClientDecisionInput, signerIp?: string) {
+  /** Lets internal staff record that the client declined outside the portal — a phone call, an
+   * email, a conversation on site. Rejected only (see declineOnBehalfOfClientSchema for why an
+   * internal "approval" isn't offered) — reuses applyDecision so the resulting state is identical
+   * to a real client rejection, but the audit trail clearly attributes it to the staff member who
+   * recorded it, not to "Client", so nobody later mistakes it for the client's own action. */
+  async declineOnBehalfOfClient(companyId: string, actor: AuditActor, estimateId: string, input: DeclineOnBehalfOfClientInput) {
+    const estimate = await this.findOrThrow(companyId, estimateId);
+    if (!estimate.sentAt) throw new BadRequestException("This estimate hasn't been sent to the client yet");
+    return this.applyDecision(estimate, { decision: "rejected", note: input.note }, undefined, actor);
+  }
+
+  private async applyDecision(estimate: Estimate, input: EstimateClientDecisionInput, signerIp?: string, recordedBy?: AuditActor) {
     if (estimate.clientDecision !== "pending") {
       throw new BadRequestException("This estimate has already been decided");
     }
@@ -566,11 +578,13 @@ export class EstimatesService {
 
     this.audit.record(
       estimate.companyId,
-      { name: "Client" },
+      recordedBy ?? { name: "Client" },
       webhookEvent,
       "Estimate",
       estimate.id,
-      `Client ${input.decision} estimate "${estimate.name}"${input.note ? ` — "${input.note}"` : ""}`,
+      recordedBy
+        ? `${recordedBy.name} recorded that the client ${input.decision} estimate "${estimate.name}" outside the portal — "${input.note}"`
+        : `Client ${input.decision} estimate "${estimate.name}"${input.note ? ` — "${input.note}"` : ""}`,
     );
     this.webhooks.trigger(estimate.companyId, webhookEvent, {
       estimateId: estimate.id,

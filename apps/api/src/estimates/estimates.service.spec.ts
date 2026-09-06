@@ -591,3 +591,93 @@ describe("EstimatesService.diffRevisions", () => {
     expect(result.grandTotalDelta).toBe(200);
   });
 });
+
+describe("EstimatesService.declineOnBehalfOfClient", () => {
+  let service: EstimatesService;
+  let prisma: {
+    estimate: { findFirst: jest.Mock; update: jest.Mock; updateMany: jest.Mock };
+  };
+  let audit: { record: jest.Mock };
+  const ACTOR = { userId: "user-1", name: "Jordan Reyes" };
+
+  beforeEach(async () => {
+    prisma = {
+      estimate: { findFirst: jest.fn(), update: jest.fn(), updateMany: jest.fn() },
+    };
+    audit = { record: jest.fn() };
+
+    const module = await Test.createTestingModule({
+      providers: [
+        EstimatesService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: PdfService, useValue: { render: jest.fn() } },
+        { provide: StorageService, useValue: { save: jest.fn(), read: jest.fn() } },
+        { provide: AuditService, useValue: audit },
+        { provide: ConfigService, useValue: { get: jest.fn(), getOrThrow: jest.fn() } },
+        { provide: MailService, useValue: { send: jest.fn() } },
+        { provide: WebhooksService, useValue: { trigger: jest.fn() } },
+      ],
+    }).compile();
+
+    service = module.get(EstimatesService);
+  });
+
+  it("rejects an estimate that was never sent to the client", async () => {
+    prisma.estimate.findFirst.mockResolvedValue({
+      id: "estimate-1",
+      companyId: COMPANY_A,
+      name: "Test",
+      clientDecision: "pending",
+      sentAt: null,
+      variantOfId: null,
+    });
+
+    await expect(
+      service.declineOnBehalfOfClient(COMPANY_A, ACTOR, "estimate-1", { note: "Client called to decline" }),
+    ).rejects.toThrow(BadRequestException);
+    expect(prisma.estimate.update).not.toHaveBeenCalled();
+  });
+
+  it("rejects an estimate that already has a client decision recorded", async () => {
+    prisma.estimate.findFirst.mockResolvedValue({
+      id: "estimate-1",
+      companyId: COMPANY_A,
+      name: "Test",
+      clientDecision: "approved",
+      sentAt: new Date(),
+      variantOfId: null,
+    });
+
+    await expect(
+      service.declineOnBehalfOfClient(COMPANY_A, ACTOR, "estimate-1", { note: "Client called to decline" }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it("records the rejection and attributes it to the staff member, not the client", async () => {
+    prisma.estimate.findFirst.mockResolvedValue({
+      id: "estimate-1",
+      companyId: COMPANY_A,
+      name: "Kitchen remodel",
+      clientDecision: "pending",
+      sentAt: new Date(),
+      variantOfId: null,
+    });
+    prisma.estimate.update.mockResolvedValue({ clientDecision: "rejected" });
+    prisma.estimate.updateMany.mockResolvedValue({ count: 0 });
+
+    const result = await service.declineOnBehalfOfClient(COMPANY_A, ACTOR, "estimate-1", { note: "Client called to decline" });
+
+    expect(result).toEqual({ clientDecision: "rejected" });
+    expect(prisma.estimate.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ clientDecision: "rejected", clientDecisionNote: "Client called to decline" }) }),
+    );
+    expect(audit.record).toHaveBeenCalledWith(
+      COMPANY_A,
+      ACTOR,
+      "estimate.client_rejected",
+      "Estimate",
+      "estimate-1",
+      expect.stringContaining("Jordan Reyes recorded that the client rejected"),
+    );
+  });
+});

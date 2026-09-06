@@ -2,10 +2,12 @@ import { Body, Controller, Delete, Get, Header, Param, Post, StreamableFile } fr
 import {
   addChangeOrderLineSchema,
   createChangeOrderSchema,
+  declineOnBehalfOfClientSchema,
   setChangeOrderScheduleImpactSchema,
   type AddChangeOrderLineInput,
   type AuthUser,
   type CreateChangeOrderInput,
+  type DeclineOnBehalfOfClientInput,
   type SetChangeOrderScheduleImpactInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
@@ -71,6 +73,17 @@ export class ChangeOrdersController {
   @Post(":id/send")
   send(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.send(user.companyId, { userId: user.userId, name: user.name }, id);
+  }
+
+  /** Records that the client declined outside the portal — see
+   * ChangeOrdersService.declineOnBehalfOfClient. */
+  @Post(":id/decline")
+  declineOnBehalfOfClient(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(declineOnBehalfOfClientSchema)) body: DeclineOnBehalfOfClientInput,
+  ) {
+    return this.service.declineOnBehalfOfClient(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
   @Get(":id/pdf")

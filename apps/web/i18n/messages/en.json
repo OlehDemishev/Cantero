@@ -772,7 +772,9 @@
     "margin": "Margin",
     "marginPercent": "Margin %",
     "baseContract": "Base contract",
-    "changeOrdersTotal": "Change orders total"
+    "changeOrdersTotal": "Change orders total",
+    "declineOnBehalfOfClient": "Decline on client's behalf",
+    "declineOnBehalfNotePrompt": "How did the client decline? (e.g. \"Declined by phone, cited budget\") This note is required and goes on the audit trail."
   },
   "invoices": {
     "title": "Invoices",

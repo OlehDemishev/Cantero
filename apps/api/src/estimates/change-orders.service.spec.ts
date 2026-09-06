@@ -320,6 +320,69 @@ describe("ChangeOrdersService", () => {
     });
   });
 
+  describe("declineOnBehalfOfClient()", () => {
+    const ACTOR = { userId: "user-1", name: "Jordan Reyes" };
+
+    it("rejects a change order that was never sent to the client", async () => {
+      prisma.changeOrder.findFirst.mockResolvedValue({
+        id: "co-1",
+        companyId: COMPANY_A,
+        number: 1,
+        title: "Extra work",
+        clientDecision: "pending",
+        sentAt: null,
+      });
+
+      await expect(
+        service.declineOnBehalfOfClient(COMPANY_A, ACTOR, "co-1", { note: "Client called to decline" }),
+      ).rejects.toThrow(BadRequestException);
+      expect(prisma.changeOrder.update).not.toHaveBeenCalled();
+    });
+
+    it("rejects a change order that already has a client decision recorded", async () => {
+      prisma.changeOrder.findFirst.mockResolvedValue({
+        id: "co-1",
+        companyId: COMPANY_A,
+        number: 1,
+        title: "Extra work",
+        clientDecision: "approved",
+        sentAt: new Date(),
+      });
+
+      await expect(
+        service.declineOnBehalfOfClient(COMPANY_A, ACTOR, "co-1", { note: "Client called to decline" }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("records the rejection and attributes it to the staff member, not the client", async () => {
+      prisma.changeOrder.findFirst.mockResolvedValue({
+        id: "co-1",
+        companyId: COMPANY_A,
+        number: 1,
+        title: "Extra work",
+        clientDecision: "pending",
+        sentAt: new Date(),
+      });
+      prisma.changeOrder.update.mockResolvedValue({ clientDecision: "rejected" });
+      const audit: { record: jest.Mock } = (service as any).audit;
+
+      const result = await service.declineOnBehalfOfClient(COMPANY_A, ACTOR, "co-1", { note: "Client called to decline" });
+
+      expect(result).toEqual({ clientDecision: "rejected" });
+      expect(prisma.changeOrder.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ clientDecision: "rejected", clientDecisionNote: "Client called to decline" }) }),
+      );
+      expect(audit.record).toHaveBeenCalledWith(
+        COMPANY_A,
+        ACTOR,
+        "change_order.client_rejected",
+        "ChangeOrder",
+        "co-1",
+        expect.stringContaining("Jordan Reyes recorded that the client rejected"),
+      );
+    });
+  });
+
   describe("recompute() with tiered markup rules", () => {
     it("applies a labor-specific MarkupRule instead of the estimate's flat percent, falling back to flat for materials", async () => {
       prisma.changeOrder.findFirst.mockResolvedValue({

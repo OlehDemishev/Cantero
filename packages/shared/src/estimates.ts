@@ -328,6 +328,16 @@ export const estimateClientDecisionSchema = z.discriminatedUnion("decision", [
 ]);
 export type EstimateClientDecisionInput = z.infer<typeof estimateClientDecisionSchema>;
 
+/// Records that the client declined outside the portal (a phone call, an email, a conversation on
+/// site) — an internal staff action, not a client one, so it's always "rejected" only: recording
+/// an "approval" here would mean claiming a signature the client never actually gave, a much
+/// riskier claim than "they told us no." The note is required (not optional, unlike the client's
+/// own rejection note) since it's the only record of how the company knows this happened.
+export const declineOnBehalfOfClientSchema = z.object({
+  note: z.string().min(1).max(2000),
+});
+export type DeclineOnBehalfOfClientInput = z.infer<typeof declineOnBehalfOfClientSchema>;
+
 export const createChangeOrderSchema = z.object({
   title: z.string().min(1).max(160),
   description: z.string().max(2000).optional(),

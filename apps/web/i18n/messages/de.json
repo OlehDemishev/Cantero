@@ -772,7 +772,9 @@
     "margin": "Marge",
     "marginPercent": "Marge %",
     "baseContract": "Ursprungsvertrag",
-    "changeOrdersTotal": "Nachträge gesamt"
+    "changeOrdersTotal": "Nachträge gesamt",
+    "declineOnBehalfOfClient": "Im Namen des Kunden ablehnen",
+    "declineOnBehalfNotePrompt": "Wie hat der Kunde abgelehnt? (z. B. \"Telefonisch abgelehnt, Budget genannt\") Dieser Hinweis ist erforderlich und wird im Prüfprotokoll vermerkt."
   },
   "invoices": {
     "title": "Rechnungen",

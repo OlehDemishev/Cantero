@@ -772,7 +772,9 @@
     "margin": "Margen",
     "marginPercent": "Margen %",
     "baseContract": "Contrato base",
-    "changeOrdersTotal": "Total de órdenes de cambio"
+    "changeOrdersTotal": "Total de órdenes de cambio",
+    "declineOnBehalfOfClient": "Rechazar en nombre del cliente",
+    "declineOnBehalfNotePrompt": "¿Cómo rechazó el cliente? (p. ej. \"Rechazado por teléfono, mencionó el presupuesto\") Esta nota es obligatoria y queda registrada en el historial de auditoría."
   },
   "invoices": {
     "title": "Facturas",
