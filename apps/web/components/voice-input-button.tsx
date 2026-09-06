@@ -32,13 +32,9 @@ function getSpeechRecognitionCtor(): SpeechRecognitionCtor | null {
  */
 export function VoiceInputButton({ onTranscript, locale }: { onTranscript: (text: string) => void; locale?: string }) {
   const t = useTranslations("field");
-  const [supported, setSupported] = useState(false);
+  const [supported] = useState(() => getSpeechRecognitionCtor() !== null);
   const [listening, setListening] = useState(false);
   const recognitionRef = useRef<MinimalSpeechRecognition | null>(null);
-
-  useEffect(() => {
-    setSupported(getSpeechRecognitionCtor() !== null);
-  }, []);
 
   useEffect(() => {
     return () => {

@@ -14,16 +14,13 @@ export default function PortalVerifyPage() {
 
   useEffect(() => {
     const token = searchParams.get("token");
-    if (!token) {
-      setError(t("verifyError"));
-      return;
-    }
-    portalApiFetch<{ accessToken: string }>("/portal/auth/verify", { method: "POST", body: JSON.stringify({ token }) })
-      .then((res) => {
-        setPortalToken(res.accessToken);
-        router.replace("/portal");
-      })
-      .catch((err) => setError(err instanceof ApiError ? err.message : t("verifyError")));
+    const verified = token
+      ? portalApiFetch<{ accessToken: string }>("/portal/auth/verify", { method: "POST", body: JSON.stringify({ token }) }).then((res) => {
+          setPortalToken(res.accessToken);
+          router.replace("/portal");
+        })
+      : Promise.reject(null);
+    verified.catch((err) => setError(err instanceof ApiError ? err.message : t("verifyError")));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

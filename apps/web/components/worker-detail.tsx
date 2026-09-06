@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { HR_CASE_ACTION_TYPES, HR_CASE_CATEGORIES, SUPPORTED_LOCALES, type HrCaseActionType, type HrCaseCategory, type HrCaseStatus } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
+import { goBack } from "@/lib/back-navigation";
 
 interface Worker {
   id: string;
@@ -116,6 +118,7 @@ interface ToolLiability {
 export function WorkerDetail({ workerId }: { workerId: string }) {
   const t = useTranslations("team");
   const tc = useTranslations("common");
+  const router = useRouter();
   const tp = useTranslations("performance");
   const th = useTranslations("hrCases");
   const tb = useTranslations("benefits");
@@ -196,7 +199,6 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
     apiFetch<ToolLiability>(`/workers/${workerId}/tool-liability`).then(setToolLiability);
   }
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(load, [workerId, isManager]);
 
   async function adjustPto(e: React.FormEvent) {
@@ -443,9 +445,9 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
 
   return (
     <AuthenticatedShell>
-      <a href="/team" className="text-sm text-gray-500 hover:underline">
+      <button onClick={() => goBack(router, "/team")} className="text-sm text-gray-500 hover:underline">
         ← {t("title")}
-      </a>
+      </button>
       <div className="mt-2 flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{summary.worker.name}</h1>
         <span

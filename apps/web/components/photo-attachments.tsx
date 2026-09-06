@@ -70,7 +70,7 @@ export function PhotoAttachments({
       cancelled = true;
       objectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [docs]);
 
   function triggerUpload(category: "gallery_before" | "gallery_after" | "photo") {

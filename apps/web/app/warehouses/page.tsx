@@ -7,6 +7,7 @@ import { CsvImportButton } from "@/components/csv-import-button";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
+import { resetStateInEffect } from "@/lib/effect-reset";
 
 interface Warehouse {
   id: string;
@@ -228,7 +229,7 @@ function MaterialPicker({
   const selectedMaterial = materials.find((m) => m.id === value);
 
   useEffect(() => {
-    if (selectedMaterial) setQuery(selectedMaterial.code);
+    if (selectedMaterial) resetStateInEffect(() => setQuery(selectedMaterial.code));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedMaterial?.id]);
 
@@ -288,7 +289,7 @@ function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: string; 
 
   useEffect(() => {
     if (activeCount) {
-      setLineInputs(Object.fromEntries(activeCount.lines.map((l) => [l.id, l.countedQuantity])));
+      resetStateInEffect(() => setLineInputs(Object.fromEntries(activeCount.lines.map((l) => [l.id, l.countedQuantity]))));
     }
   }, [activeCount?.id]);
 
@@ -307,7 +308,7 @@ function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: string; 
   useEffect(() => {
     load();
     loadCounts();
-    setActiveCount(null);
+    resetStateInEffect(() => setActiveCount(null));
     apiFetch<MaterialCatalogItem[]>("/materials/catalog").then((items) => {
       setMaterials(items);
       if (items[0]) {
@@ -363,7 +364,7 @@ function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: string; 
 
   useEffect(() => {
     if (!transfer.toWarehouseId && otherWarehouses[0]) {
-      setTransfer((tr) => ({ ...tr, toWarehouseId: otherWarehouses[0].id }));
+      resetStateInEffect(() => setTransfer((tr) => ({ ...tr, toWarehouseId: otherWarehouses[0].id })));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [otherWarehouses[0]?.id]);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { SUPPORTED_LOCALES } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
@@ -8,6 +9,7 @@ import { CustomFieldsValuesPanel } from "@/components/custom-fields-values-panel
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate, formatDateTime } from "@/lib/format-date";
+import { goBack } from "@/lib/back-navigation";
 
 type ClientStage = "lead" | "contacted" | "qualified" | "won" | "lost";
 const STAGES: ClientStage[] = ["lead", "contacted", "qualified", "won", "lost"];
@@ -83,6 +85,7 @@ export function ClientDetail({ clientId }: { clientId: string }) {
   const t = useTranslations("clients");
   const tt = useTranslations("tax");
   const tc = useTranslations("common");
+  const router = useRouter();
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
   const isManager = me?.user.role === "owner" || me?.user.role === "admin";
@@ -207,7 +210,7 @@ export function ClientDetail({ clientId }: { clientId: string }) {
       method: "POST",
       body: JSON.stringify({ name: convertForm.name, address: convertForm.address || undefined }),
     });
-    window.location.href = `/projects/${project.id}`;
+    router.push(`/projects/${project.id}`);
   }
 
   async function saveNotes(e: React.FormEvent) {
@@ -356,9 +359,9 @@ export function ClientDetail({ clientId }: { clientId: string }) {
 
   return (
     <AuthenticatedShell>
-      <a href="/clients" className="text-sm text-gray-500 hover:underline">
+      <button onClick={() => goBack(router, "/clients")} className="text-sm text-gray-500 hover:underline">
         ← {t("title")}
-      </a>
+      </button>
       <div className="mt-2 flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{client.name}</h1>
         <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-medium text-brand-700">{t(client.stage)}</span>

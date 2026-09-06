@@ -36,7 +36,7 @@ export default function HelpPage() {
           )
         : items;
       return { id: cat.id, title: t(`category_${cat.id}`), items: filtered };
-      // eslint-disable-next-line react-hooks/exhaustive-deps
+       
     }).filter((section) => section.items.length > 0);
   }, [normalizedQuery]);
 

@@ -14,19 +14,16 @@ export default function SupplierPortalVerifyPage() {
 
   useEffect(() => {
     const token = searchParams.get("token");
-    if (!token) {
-      setError(t("verifyError"));
-      return;
-    }
-    supplierPortalApiFetch<{ accessToken: string }>("/supplier-portal/auth/verify", {
-      method: "POST",
-      body: JSON.stringify({ token }),
-    })
-      .then((res) => {
-        setSupplierPortalToken(res.accessToken);
-        router.replace("/supplier-portal");
-      })
-      .catch((err) => setError(err instanceof ApiError ? err.message : t("verifyError")));
+    const verified = token
+      ? supplierPortalApiFetch<{ accessToken: string }>("/supplier-portal/auth/verify", {
+          method: "POST",
+          body: JSON.stringify({ token }),
+        }).then((res) => {
+          setSupplierPortalToken(res.accessToken);
+          router.replace("/supplier-portal");
+        })
+      : Promise.reject(null);
+    verified.catch((err) => setError(err instanceof ApiError ? err.message : t("verifyError")));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

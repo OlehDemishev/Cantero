@@ -6,6 +6,7 @@ import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { CrewsPanel } from "@/components/crews-panel";
 import { apiFetch } from "@/lib/api-client";
 import { formatDate, formatDateWithOptions } from "@/lib/format-date";
+import { resetStateInEffect } from "@/lib/effect-reset";
 
 type ResourceType = "worker" | "equipment";
 
@@ -131,11 +132,10 @@ export default function ResourcePlanningPage() {
 
   useEffect(() => {
     if (!form.projectId) {
-      setProjectTasks([]);
+      resetStateInEffect(() => setProjectTasks([]));
       return;
     }
     apiFetch<TaskOption[]>(`/tasks?projectId=${form.projectId}`).then(setProjectTasks);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.projectId]);
 
   function switchResourceType(resourceType: ResourceType) {

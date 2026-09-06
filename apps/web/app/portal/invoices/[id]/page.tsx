@@ -99,14 +99,16 @@ export default function PortalInvoicePage({ params }: { params: Promise<{ id: st
   const paidTotal = invoice.payments.reduce((sum, p) => sum + Number(p.amount), 0);
   const balanceDue = Number(invoice.total) - paidTotal;
 
-  let cumulative = 0;
-  const installmentRows = invoice.installments.map((inst) => {
-    const from = cumulative;
-    cumulative += Number(inst.amount);
-    const fulfilled = paidTotal >= cumulative;
-    const partial = !fulfilled && paidTotal > from;
-    return { ...inst, fulfilled, partial };
-  });
+  const installmentRows = invoice.installments.reduce(
+    (acc, inst) => {
+      const from = acc.cumulative;
+      const cumulative = from + Number(inst.amount);
+      const fulfilled = paidTotal >= cumulative;
+      const partial = !fulfilled && paidTotal > from;
+      return { rows: [...acc.rows, { ...inst, fulfilled, partial }], cumulative };
+    },
+    { rows: [] as ((typeof invoice.installments)[number] & { fulfilled: boolean; partial: boolean })[], cumulative: 0 },
+  ).rows;
 
   return (
     <main className="flex min-h-screen justify-center bg-gray-50 px-6 py-12">

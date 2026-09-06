@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { fetchCached } from "./offline-cache";
+import { resetStateInEffect } from "./effect-reset";
 
 export interface MeResponse {
   user: { id: string; email: string; name: string; role: string; totpEnabled: boolean };
@@ -42,7 +43,7 @@ export function useMe() {
   }, []);
 
   useEffect(() => {
-    reload();
+    resetStateInEffect(reload);
   }, [reload]);
 
   return { data, loading, error, reload };

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { CsvImportButton } from "@/components/csv-import-button";
@@ -48,6 +49,7 @@ export default function ClientsPage() {
   const t = useTranslations("clients");
   const tc = useTranslations("common");
   const ti = useTranslations("import");
+  const router = useRouter();
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
@@ -129,7 +131,7 @@ export default function ClientsPage() {
       method: "POST",
       body: JSON.stringify({ name: convertForm.name, address: convertForm.address || undefined }),
     });
-    window.location.href = `/projects/${project.id}`;
+    router.push(`/projects/${project.id}`);
   }
 
   const filteredClients = (clients ?? []).filter((c) => {

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { resetStateInEffect } from "@/lib/effect-reset";
 
 export function TwoFactorSettingsPanel() {
   const t = useTranslations("twoFactor");
@@ -18,7 +19,7 @@ export function TwoFactorSettingsPanel() {
   const [enabled, setEnabled] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (me) setEnabled(me.user.totpEnabled);
+    if (me) resetStateInEffect(() => setEnabled(me.user.totpEnabled));
   }, [me]);
 
   async function startSetup() {

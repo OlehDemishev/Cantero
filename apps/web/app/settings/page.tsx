@@ -49,6 +49,7 @@ import { MessageTemplatesPanel } from "@/components/message-templates-panel";
 import { CompanyHolidaysPanel } from "@/components/company-holidays-panel";
 import { HelpTooltip } from "@/components/help-tooltip";
 import { formatDate, formatDateTime } from "@/lib/format-date";
+import { resetStateInEffect } from "@/lib/effect-reset";
 
 interface Company {
   name: string;
@@ -301,7 +302,9 @@ export default function SettingsPage() {
   const [webhookSecretCopied, setWebhookSecretCopied] = useState(false);
   const [expandedWebhookId, setExpandedWebhookId] = useState<string | null>(null);
   const [webhookDeliveries, setWebhookDeliveries] = useState<WebhookDelivery[] | null>(null);
-  const [pushStatus, setPushStatus] = useState<"checking" | "unsupported" | "enabled" | "disabled">("checking");
+  const [pushStatus, setPushStatus] = useState<"checking" | "unsupported" | "enabled" | "disabled">(() =>
+    isPushSupported() ? "checking" : "unsupported",
+  );
   const [pushBusy, setPushBusy] = useState(false);
   const [pushError, setPushError] = useState<string | null>(null);
   const [digestFrequency, setDigestFrequency] = useState<"off" | "daily" | "weekly">("off");
@@ -430,17 +433,16 @@ export default function SettingsPage() {
   }, [isManager]);
 
   useEffect(() => {
-    if (!isPushSupported()) {
-      setPushStatus("unsupported");
-      return;
-    }
+    if (!isPushSupported()) return;
     getExistingSubscription().then((sub) => setPushStatus(sub ? "enabled" : "disabled"));
   }, []);
 
   useEffect(() => {
     if (me) {
-      setDigestFrequency(me.emailDigestFrequency);
-      setMutedTypes(me.mutedNotificationTypes as NotificationType[]);
+      resetStateInEffect(() => {
+        setDigestFrequency(me.emailDigestFrequency);
+        setMutedTypes(me.mutedNotificationTypes as NotificationType[]);
+      });
     }
   }, [me]);
 
@@ -1604,7 +1606,7 @@ export default function SettingsPage() {
                           ))}
                         </select>
                       ) : (
-                        t(m.role as any)
+                        t(m.role)
                       )}
                     </td>
                     <td>
@@ -1656,7 +1658,7 @@ export default function SettingsPage() {
                 <li key={cr.id} className="flex items-center justify-between rounded-md border border-gray-200 px-3 py-2">
                   <span className="text-sm">
                     <span className="font-medium text-gray-800">{cr.name}</span>{" "}
-                    <span className="text-xs text-gray-500">({cr.basePermissions.map((p) => t(p as any)).join(" + ")})</span>
+                    <span className="text-xs text-gray-500">({cr.basePermissions.map((p) => t(p)).join(" + ")})</span>
                     {cr._count.memberships > 0 && (
                       <span className="ml-1.5 text-xs text-gray-400">
                         {t("assignedToCount", { count: cr._count.memberships })}
@@ -1726,7 +1728,7 @@ export default function SettingsPage() {
                 {invites.map((inv) => (
                   <li key={inv.id} className="flex items-center justify-between rounded-md border border-gray-200 px-3 py-2">
                     <span className="text-sm">
-                      {inv.email} · {t(inv.role as any)}
+                      {inv.email} · {t(inv.role)}
                     </span>
                     <button onClick={() => revokeInvite(inv.id)} className="btn-secondary px-2 py-1 text-xs">
                       {t("revoke")}
@@ -1899,7 +1901,7 @@ export default function SettingsPage() {
                         <p className="mt-0.5 flex flex-wrap gap-1">
                           {w.events.map((ev) => (
                             <span key={ev} className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
-                              {t(`webhookEvent_${ev.replace(".", "_")}` as any)}
+                              {t(`webhookEvent_${ev.replace(".", "_")}`)}
                             </span>
                           ))}
                         </p>
@@ -1995,7 +1997,7 @@ export default function SettingsPage() {
                       checked={webhookForm.events.includes(ev)}
                       onChange={() => toggleWebhookEvent(ev)}
                     />
-                    {t(`webhookEvent_${ev.replace(".", "_")}` as any)}
+                    {t(`webhookEvent_${ev.replace(".", "_")}`)}
                   </label>
                 ))}
               </div>

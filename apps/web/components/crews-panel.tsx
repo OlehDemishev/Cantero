@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { resetStateInEffect } from "@/lib/effect-reset";
 
 interface Worker {
   id: string;
@@ -58,15 +59,15 @@ export function CrewsPanel({ workers, projects }: { workers: Worker[]; projects:
 
   useEffect(() => {
     if (!assignForm.projectId) {
-      setAssignTasks([]);
+      resetStateInEffect(() => setAssignTasks([]));
       return;
     }
     apiFetch<TaskOption[]>(`/tasks?projectId=${assignForm.projectId}`).then(setAssignTasks);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [assignForm.projectId]);
 
   useEffect(() => {
-    setAssignForm((f) => ({ ...f, projectId: f.projectId || (projects[0]?.id ?? "") }));
+    resetStateInEffect(() => setAssignForm((f) => ({ ...f, projectId: f.projectId || (projects[0]?.id ?? "") })));
   }, [projects]);
 
   function toggleNewCrewWorker(workerId: string) {

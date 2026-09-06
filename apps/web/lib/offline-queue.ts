@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch, apiUpload, ApiError } from "./api-client";
 import { withStore, MUTATIONS_STORE } from "./offline-db";
+import { resetStateInEffect } from "./effect-reset";
 
 export interface QueuedMutation {
   id: number;
@@ -209,7 +210,7 @@ export function useOfflineQueue() {
 
   useEffect(() => {
     refresh();
-    if (navigator.onLine) flush();
+    if (navigator.onLine) resetStateInEffect(flush);
     window.addEventListener("online", flush);
     window.addEventListener(QUEUE_CHANGED_EVENT, refresh);
     return () => {

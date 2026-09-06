@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useHotkey } from "@/lib/use-hotkey";
 import { SearchIcon } from "@/components/nav-icons";
+import { resetStateInEffect } from "@/lib/effect-reset";
 
 const DEBOUNCE_MS = 200;
 
@@ -43,9 +44,11 @@ export function CommandPalette({ navItems }: { navItems: readonly NavAction[] })
 
   useEffect(() => {
     if (!open) return;
-    setQuery("");
-    setResults(null);
-    setActiveIndex(0);
+    resetStateInEffect(() => {
+      setQuery("");
+      setResults(null);
+      setActiveIndex(0);
+    });
     const id = setTimeout(() => inputRef.current?.focus(), 0);
     return () => clearTimeout(id);
   }, [open]);
@@ -53,7 +56,7 @@ export function CommandPalette({ navItems }: { navItems: readonly NavAction[] })
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (query.trim().length < 2) {
-      setResults(null);
+      resetStateInEffect(() => setResults(null));
       return;
     }
     debounceRef.current = setTimeout(() => {

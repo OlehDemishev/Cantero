@@ -139,6 +139,10 @@ export default function PortalDashboardPage() {
     portalApiFetch<ChangeRequestSummary[]>("/portal/change-requests").then(setChangeRequests);
   }
 
+  function loadTickets() {
+    portalApiFetch<TicketSummary[]>("/portal/tickets").then(setTickets);
+  }
+
   async function submitChangeRequest(e: React.FormEvent) {
     e.preventDefault();
     if (!changeRequestForm.projectId) return;
@@ -177,10 +181,6 @@ export default function PortalDashboardPage() {
     loadChangeRequests();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  function loadTickets() {
-    portalApiFetch<TicketSummary[]>("/portal/tickets").then(setTickets);
-  }
 
   async function submitTicket(e: React.FormEvent) {
     e.preventDefault();

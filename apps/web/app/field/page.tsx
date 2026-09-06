@@ -12,6 +12,7 @@ import { DashboardIcon, LogoutIcon } from "@/components/nav-icons";
 import { OfflineConflictsBanner } from "@/components/offline-conflicts-banner";
 import { VoiceInputButton } from "@/components/voice-input-button";
 import { formatDate } from "@/lib/format-date";
+import { resetStateInEffect } from "@/lib/effect-reset";
 
 /** Best-effort current position — resolves null (never rejects) on denial, timeout, or an unsupported browser, so logging time never blocks on location. */
 function getCurrentPositionSafe(): Promise<{ lat: number; lng: number } | null> {
@@ -64,7 +65,7 @@ export default function FieldPage() {
   const router = useRouter();
   const { data: me, loading: meLoading } = useMe();
   const { pendingCount, failedItems, refresh: refreshQueue } = useOfflineQueue();
-  const [online, setOnline] = useState(true);
+  const [online, setOnline] = useState(() => (typeof navigator === "undefined" ? true : navigator.onLine));
 
   const [projects, setProjects] = useState<Project[] | null>(null);
   const [projectsError, setProjectsError] = useState(false);
@@ -76,7 +77,6 @@ export default function FieldPage() {
   }, [router]);
 
   useEffect(() => {
-    setOnline(navigator.onLine);
     const on = () => setOnline(true);
     const off = () => setOnline(false);
     window.addEventListener("online", on);
@@ -210,9 +210,11 @@ function TasksTab({ projectId }: { projectId: string }) {
   const cacheKey = `field:tasks:${projectId}`;
 
   useEffect(() => {
-    setTasks(null);
-    setError(false);
-    setCachedAt(null);
+    resetStateInEffect(() => {
+      setTasks(null);
+      setError(false);
+      setCachedAt(null);
+    });
     fetchCached<Task[]>(cacheKey, `/tasks?projectId=${projectId}`)
       .then(({ data, stale, cachedAt: at }) => {
         setTasks(data);
@@ -288,14 +290,14 @@ function TimeTab({ projectId, meUserId }: { projectId: string; meUserId: string 
         setForm((f) => ({ ...f, workerId: (mine ?? list[0])?.id ?? "" }));
       })
       .catch(() => setError(true));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [meUserId]);
 
   useEffect(() => {
     fetchCached<Task[]>(`field:tasks:${projectId}`, `/tasks?projectId=${projectId}`)
       .then(({ data }) => setTasks(data))
       .catch(() => setError(true));
-    setForm((f) => ({ ...f, taskId: "" }));
+    resetStateInEffect(() => setForm((f) => ({ ...f, taskId: "" })));
   }, [projectId]);
 
   async function submit(e: React.FormEvent) {
@@ -444,7 +446,7 @@ function ExpensesTab({ projectId, meUserId }: { projectId: string; meUserId: str
         setForm((f) => ({ ...f, workerId: (mine ?? list[0])?.id ?? "" }));
       })
       .catch(() => setError(true));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [meUserId]);
 
   async function submit(e: React.FormEvent) {
@@ -707,10 +709,12 @@ function LogsTab({ projectId }: { projectId: string }) {
   const [cachedAt, setCachedAt] = useState<number | null>(null);
 
   useEffect(() => {
-    setLoaded(false);
-    setExistingId(null);
-    setCachedAt(null);
-    setForm({ weatherCondition: "", crewCount: "", workPerformed: "", delays: "" });
+    resetStateInEffect(() => {
+      setLoaded(false);
+      setExistingId(null);
+      setCachedAt(null);
+      setForm({ weatherCondition: "", crewCount: "", workPerformed: "", delays: "" });
+    });
     fetchCached<DailyLog[]>(`field:daily-logs:${projectId}`, `/daily-logs?projectId=${projectId}`)
       .then(({ data: list, stale, cachedAt: at }) => {
         setCachedAt(stale ? at : null);

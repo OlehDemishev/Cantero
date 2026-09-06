@@ -14,19 +14,16 @@ export default function SubcontractorPortalVerifyPage() {
 
   useEffect(() => {
     const token = searchParams.get("token");
-    if (!token) {
-      setError(t("verifyError"));
-      return;
-    }
-    subcontractorPortalApiFetch<{ accessToken: string }>("/subcontractor-portal/auth/verify", {
-      method: "POST",
-      body: JSON.stringify({ token }),
-    })
-      .then((res) => {
-        setSubcontractorPortalToken(res.accessToken);
-        router.replace("/subcontractor-portal");
-      })
-      .catch((err) => setError(err instanceof ApiError ? err.message : t("verifyError")));
+    const verified = token
+      ? subcontractorPortalApiFetch<{ accessToken: string }>("/subcontractor-portal/auth/verify", {
+          method: "POST",
+          body: JSON.stringify({ token }),
+        }).then((res) => {
+          setSubcontractorPortalToken(res.accessToken);
+          router.replace("/subcontractor-portal");
+        })
+      : Promise.reject(null);
+    verified.catch((err) => setError(err instanceof ApiError ? err.message : t("verifyError")));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

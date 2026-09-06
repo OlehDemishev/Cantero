@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import type { AccountingProviderType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { formatDate, formatDateTime } from "@/lib/format-date";
+import { resetStateInEffect } from "@/lib/effect-reset";
 
 interface Status {
   connected: boolean;
@@ -69,7 +70,7 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
     const params = new URLSearchParams(window.location.search);
     if (params.get("accounting_connected")) load();
     const err = params.get("accounting_error");
-    if (err) setError(err);
+    if (err) resetStateInEffect(() => setError(err));
     if (params.has("accounting_connected") || params.has("accounting_error")) {
       window.history.replaceState({}, "", window.location.pathname);
     }

@@ -65,7 +65,7 @@ export function AcceptInvite({ token }: { token: string }) {
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-6 py-12">
       <h1 className="text-2xl font-semibold">{t("acceptInviteTitle", { company: invite.company.name })}</h1>
-      <p className="mt-1 text-sm text-gray-500">{t("acceptInviteSubtitle", { role: t(invite.role as any) })}</p>
+      <p className="mt-1 text-sm text-gray-500">{t("acceptInviteSubtitle", { role: t(invite.role) })}</p>
 
       {error && <p className="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 

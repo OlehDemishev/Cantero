@@ -2,6 +2,7 @@
 
 import type React from "react";
 import { createContext, useState, useContext, useEffect } from "react";
+import { resetStateInEffect } from "@/lib/effect-reset";
 
 type Theme = "light" | "dark";
 
@@ -18,8 +19,10 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme") as Theme | null;
-    setTheme(savedTheme || "light");
-    setIsInitialized(true);
+    resetStateInEffect(() => {
+      setTheme(savedTheme || "light");
+      setIsInitialized(true);
+    });
   }, []);
 
   useEffect(() => {

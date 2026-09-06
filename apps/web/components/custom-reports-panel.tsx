@@ -6,6 +6,7 @@ import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Too
 import { AGGREGATE_REPORT_DATASETS, REPORT_DATASETS, type ReportDataset } from "@cantero/shared";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
+import { resetStateInEffect } from "@/lib/effect-reset";
 
 interface ReportField {
   key: string;
@@ -69,8 +70,10 @@ export function CustomReportsPanel() {
       setFields(f);
       setColumns(f.map((field) => field.key));
     });
-    setStatusEquals("");
-    setResult(null);
+    resetStateInEffect(() => {
+      setStatusEquals("");
+      setResult(null);
+    });
   }, [dataset]);
 
   function toggleColumn(key: string) {

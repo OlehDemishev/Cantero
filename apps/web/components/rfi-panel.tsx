@@ -98,7 +98,7 @@ export function RfiPanel({ projectId }: { projectId: string }) {
   useEffect(() => {
     if (!deepLinkedId || !items) return;
     rowRefs.current[deepLinkedId]?.scrollIntoView({ behavior: "smooth", block: "center" });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [items, deepLinkedId]);
 
   useEffect(load, [projectId, myTurnOnly]);

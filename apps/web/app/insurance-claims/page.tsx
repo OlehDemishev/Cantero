@@ -9,6 +9,7 @@ import { DocumentsPanel } from "@/components/documents-panel";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
+import { resetStateInEffect } from "@/lib/effect-reset";
 
 interface Claim {
   id: string;
@@ -92,8 +93,10 @@ export default function InsuranceClaimsPage() {
     const projectId = searchParams.get("projectId");
     const incidentReportId = searchParams.get("incidentReportId");
     if (projectId || incidentReportId) {
-      setForm((f) => ({ ...f, projectId: projectId ?? f.projectId, incidentReportId: incidentReportId ?? f.incidentReportId, claimType: "workers_comp" }));
-      setCreating(true);
+      resetStateInEffect(() => {
+        setForm((f) => ({ ...f, projectId: projectId ?? f.projectId, incidentReportId: incidentReportId ?? f.incidentReportId, claimType: "workers_comp" }));
+        setCreating(true);
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

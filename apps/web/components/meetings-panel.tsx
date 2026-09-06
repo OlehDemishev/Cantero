@@ -63,7 +63,7 @@ export function MeetingsPanel({ projectId }: { projectId: string }) {
   useEffect(() => {
     if (!deepLinkedId || !items) return;
     rowRefs.current[deepLinkedId]?.scrollIntoView({ behavior: "smooth", block: "center" });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [items, deepLinkedId]);
 
   async function submit(e: React.FormEvent) {

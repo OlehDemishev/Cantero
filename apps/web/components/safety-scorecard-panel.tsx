@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
+import { resetStateInEffect } from "@/lib/effect-reset";
 
 interface ProjectSafetyRow {
   projectId: string;
@@ -64,9 +65,11 @@ export function SafetyScorecardPanel() {
   const [nearMiss, setNearMiss] = useState<NearMissAnalytics | null>(null);
 
   useEffect(() => {
-    setScorecard(null);
+    resetStateInEffect(() => {
+      setScorecard(null);
+      setNearMiss(null);
+    });
     apiFetch<SafetyScorecard>(`/safety/analytics/scorecard?year=${year}`).then(setScorecard);
-    setNearMiss(null);
     apiFetch<NearMissAnalytics>(`/safety/analytics/near-miss?year=${year}`).then(setNearMiss);
   }, [year]);
 
