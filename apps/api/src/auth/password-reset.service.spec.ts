@@ -5,6 +5,7 @@ import { ConfigService } from "@nestjs/config";
 import { PasswordResetService } from "./password-reset.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { MailService } from "../common/mail/mail.service";
+import { RateLimiterService } from "../common/rate-limiter/rate-limiter.service";
 
 describe("PasswordResetService", () => {
   let service: PasswordResetService;
@@ -16,6 +17,7 @@ describe("PasswordResetService", () => {
     $transaction: jest.Mock;
   };
   let mail: { send: jest.Mock };
+  let rateLimiter: RateLimiterService;
 
   beforeEach(async () => {
     prisma = {
@@ -26,6 +28,7 @@ describe("PasswordResetService", () => {
       $transaction: jest.fn((ops) => Promise.all(ops)),
     };
     mail = { send: jest.fn() };
+    rateLimiter = new RateLimiterService();
 
     const module = await Test.createTestingModule({
       providers: [
@@ -33,10 +36,15 @@ describe("PasswordResetService", () => {
         { provide: PrismaService, useValue: prisma },
         { provide: MailService, useValue: mail },
         { provide: ConfigService, useValue: { get: jest.fn().mockReturnValue("http://localhost:3000") } },
+        { provide: RateLimiterService, useValue: rateLimiter },
       ],
     }).compile();
 
     service = module.get(PasswordResetService);
+  });
+
+  afterEach(() => {
+    rateLimiter.onModuleDestroy();
   });
 
   describe("forgotPassword", () => {
@@ -59,6 +67,24 @@ describe("PasswordResetService", () => {
       expect(mail.send).toHaveBeenCalledWith(
         expect.objectContaining({ to: "jane@example.com", text: expect.stringContaining("/reset-password?token=") }),
       );
+    });
+
+    it("throws 429 after too many requests for the same email, to stop inbox-bombing a victim", async () => {
+      prisma.user.findUnique.mockResolvedValue({ id: "user-1", email: "jane@example.com" });
+      for (let i = 0; i < 5; i++) {
+        await service.forgotPassword({ email: "jane@example.com" });
+      }
+
+      await expect(service.forgotPassword({ email: "jane@example.com" })).rejects.toMatchObject({ status: 429 });
+    });
+
+    it("does not rate-limit a different email address", async () => {
+      prisma.user.findUnique.mockResolvedValue({ id: "user-1", email: "jane@example.com" });
+      for (let i = 0; i < 5; i++) {
+        await service.forgotPassword({ email: "jane@example.com" });
+      }
+
+      await expect(service.forgotPassword({ email: "someone-else@example.com" })).resolves.toEqual({ ok: true });
     });
   });
 

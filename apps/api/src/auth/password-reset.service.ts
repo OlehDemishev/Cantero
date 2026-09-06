@@ -6,9 +6,14 @@ import type { ForgotPasswordInput, ResetPasswordInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { MailService } from "../common/mail/mail.service";
 import { assertPasswordPolicy } from "../common/password-policy";
+import { RateLimiterService } from "../common/rate-limiter/rate-limiter.service";
 
 const TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 const BCRYPT_ROUNDS = 12;
+// The reset token itself (randomBytes(32)) is infeasible to brute-force — this limit exists to
+// stop someone from email-bombing a victim's inbox with reset requests, not to protect the token.
+const FORGOT_PASSWORD_LIMIT = 5;
+const FORGOT_PASSWORD_WINDOW_MS = 15 * 60 * 1000;
 
 const hashToken = (raw: string) => createHash("sha256").update(raw).digest("hex");
 
@@ -20,11 +25,14 @@ export class PasswordResetService {
     private readonly prisma: PrismaService,
     private readonly mail: MailService,
     private readonly config: ConfigService,
+    private readonly rateLimiter: RateLimiterService,
   ) {}
 
   /** Always succeeds from the caller's point of view, whether or not the email exists — an
    * account-enumeration-safe response, same reasoning as most password-reset flows. */
   async forgotPassword(input: ForgotPasswordInput): Promise<{ ok: true }> {
+    this.rateLimiter.consume(`forgot-password:${input.email.toLowerCase()}`, FORGOT_PASSWORD_LIMIT, FORGOT_PASSWORD_WINDOW_MS);
+
     const user = await this.prisma.user.findUnique({ where: { email: input.email } });
     if (!user) {
       this.logger.debug(`Password reset requested for unknown email ${input.email}`);

@@ -3,6 +3,7 @@ import { Test } from "@nestjs/testing";
 import { WorkersService } from "./workers.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService } from "../common/audit/audit.service";
+import { RateLimiterService } from "../common/rate-limiter/rate-limiter.service";
 
 const COMPANY_A = "company-a";
 const ACTOR = { userId: "user-1", name: "PM" };
@@ -23,7 +24,7 @@ describe("WorkersService certifications", () => {
     audit = { record: jest.fn() };
 
     const module = await Test.createTestingModule({
-      providers: [WorkersService, { provide: PrismaService, useValue: prisma }, { provide: AuditService, useValue: audit }],
+      providers: [WorkersService, { provide: PrismaService, useValue: prisma }, { provide: AuditService, useValue: audit }, { provide: RateLimiterService, useValue: new RateLimiterService() }],
     }).compile();
 
     service = module.get(WorkersService);
@@ -113,7 +114,7 @@ describe("WorkersService — PTO and onboarding", () => {
     audit = { record: jest.fn() };
 
     const module = await Test.createTestingModule({
-      providers: [WorkersService, { provide: PrismaService, useValue: prisma }, { provide: AuditService, useValue: audit }],
+      providers: [WorkersService, { provide: PrismaService, useValue: prisma }, { provide: AuditService, useValue: audit }, { provide: RateLimiterService, useValue: new RateLimiterService() }],
     }).compile();
 
     service = module.get(WorkersService);
@@ -275,7 +276,7 @@ describe("WorkersService kiosk PIN", () => {
     audit = { record: jest.fn() };
 
     const module = await Test.createTestingModule({
-      providers: [WorkersService, { provide: PrismaService, useValue: prisma }, { provide: AuditService, useValue: audit }],
+      providers: [WorkersService, { provide: PrismaService, useValue: prisma }, { provide: AuditService, useValue: audit }, { provide: RateLimiterService, useValue: new RateLimiterService() }],
     }).compile();
 
     service = module.get(WorkersService);
@@ -318,6 +319,25 @@ describe("WorkersService kiosk PIN", () => {
       prisma.worker.findFirst.mockResolvedValue({ id: "worker-1", companyId: COMPANY_A, clockInPinHash: null });
       const result = await service.verifyClockInPin(COMPANY_A, "worker-1", "1234");
       expect(result).toEqual({ valid: false });
+    });
+
+    it("throws 429 after too many PIN attempts for the same worker, so a coworker can't brute-force a 4-digit PIN", async () => {
+      prisma.worker.findFirst.mockResolvedValue({ id: "worker-1", companyId: COMPANY_A, clockInPinHash: "$2b$10$hashvalue" });
+
+      for (let i = 0; i < 10; i++) {
+        await service.verifyClockInPin(COMPANY_A, "worker-1", "0000");
+      }
+
+      await expect(service.verifyClockInPin(COMPANY_A, "worker-1", "0000")).rejects.toMatchObject({ status: 429 });
+    });
+
+    it("does not rate-limit a different worker's PIN", async () => {
+      prisma.worker.findFirst.mockResolvedValue({ id: "worker-1", companyId: COMPANY_A, clockInPinHash: "$2b$10$hashvalue" });
+      for (let i = 0; i < 10; i++) {
+        await service.verifyClockInPin(COMPANY_A, "worker-1", "0000");
+      }
+
+      await expect(service.verifyClockInPin(COMPANY_A, "worker-2", "0000")).resolves.toEqual({ valid: false });
     });
   });
 
@@ -381,7 +401,7 @@ describe("WorkersService.loadedRate()", () => {
     };
 
     const module = await Test.createTestingModule({
-      providers: [WorkersService, { provide: PrismaService, useValue: prisma }, { provide: AuditService, useValue: { record: jest.fn() } }],
+      providers: [WorkersService, { provide: PrismaService, useValue: prisma }, { provide: AuditService, useValue: { record: jest.fn() } }, { provide: RateLimiterService, useValue: new RateLimiterService() }],
     }).compile();
 
     service = module.get(WorkersService);

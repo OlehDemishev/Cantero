@@ -5,8 +5,17 @@ import * as bcrypt from "bcryptjs";
 import type { AuthUser, LoginInput, LoginResult, SignupInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { SessionsService, type SessionMeta } from "../common/sessions/sessions.service";
+import { RateLimiterService } from "../common/rate-limiter/rate-limiter.service";
 
 const BCRYPT_ROUNDS = 12;
+
+// Two independent dimensions: per-IP catches a single source hammering many accounts
+// (credential stuffing / password spraying), per-email catches many sources hammering one
+// account (a distributed/botnet attack, or just credential stuffing that got lucky on the IP
+// spread). Neither limit alone covers both attack shapes.
+const LOGIN_IP_LIMIT = 20;
+const LOGIN_EMAIL_LIMIT = 8;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 
 @Injectable()
 export class AuthService {
@@ -14,6 +23,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly sessions: SessionsService,
+    private readonly rateLimiter: RateLimiterService,
   ) {}
 
   async signup(input: SignupInput, meta: SessionMeta): Promise<{ accessToken: string; companyId: string }> {
@@ -69,6 +79,11 @@ export class AuthService {
   }
 
   async login(input: LoginInput, meta: SessionMeta): Promise<LoginResult> {
+    const emailKey = `login-email:${input.email.toLowerCase()}`;
+    const ipKey = `login-ip:${meta.ipAddress ?? "unknown"}`;
+    this.rateLimiter.consume(ipKey, LOGIN_IP_LIMIT, LOGIN_WINDOW_MS);
+    this.rateLimiter.consume(emailKey, LOGIN_EMAIL_LIMIT, LOGIN_WINDOW_MS);
+
     const user = await this.prisma.user.findUnique({
       where: { email: input.email },
       include: { memberships: { include: { customRole: true } } },
@@ -77,6 +92,11 @@ export class AuthService {
 
     const passwordOk = await bcrypt.compare(input.password, user.passwordHash);
     if (!passwordOk) throw new UnauthorizedException("Invalid email or password");
+
+    // The password itself is what's being brute-forced here — once it's confirmed correct,
+    // further failures (if any) happen in the 2FA step, which has its own separate limiter.
+    this.rateLimiter.reset(ipKey);
+    this.rateLimiter.reset(emailKey);
 
     // MVP simplification: a user belongs to exactly one company (the one they signed up with).
     // Multi-company membership switching is out of scope for the investor-demo slice.

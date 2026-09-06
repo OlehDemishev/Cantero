@@ -1,4 +1,4 @@
-import { BadRequestException, UnauthorizedException } from "@nestjs/common";
+import { BadRequestException, HttpException, UnauthorizedException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcryptjs";
@@ -6,6 +6,7 @@ import { authenticator } from "otplib";
 import { TwoFactorService } from "./two-factor.service";
 import { AuthService } from "./auth.service";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { RateLimiterService } from "../common/rate-limiter/rate-limiter.service";
 
 describe("TwoFactorService", () => {
   let service: TwoFactorService;
@@ -14,6 +15,7 @@ describe("TwoFactorService", () => {
   };
   let jwt: JwtService;
   let authService: { issueAccessToken: jest.Mock };
+  let rateLimiter: RateLimiterService;
 
   beforeEach(async () => {
     prisma = {
@@ -21,6 +23,7 @@ describe("TwoFactorService", () => {
     };
     jwt = new JwtService({ secret: "test-secret" });
     authService = { issueAccessToken: jest.fn().mockResolvedValue("real-access-token") };
+    rateLimiter = new RateLimiterService();
 
     const module = await Test.createTestingModule({
       providers: [
@@ -28,10 +31,15 @@ describe("TwoFactorService", () => {
         { provide: PrismaService, useValue: prisma },
         { provide: JwtService, useValue: jwt },
         { provide: AuthService, useValue: authService },
+        { provide: RateLimiterService, useValue: rateLimiter },
       ],
     }).compile();
 
     service = module.get(TwoFactorService);
+  });
+
+  afterEach(() => {
+    rateLimiter.onModuleDestroy();
   });
 
   describe("setup", () => {
@@ -158,6 +166,47 @@ describe("TwoFactorService", () => {
       });
 
       await expect(service.verifyChallenge(challengeToken, "000000", {})).rejects.toThrow(UnauthorizedException);
+    });
+
+    it("throws 429 after too many wrong codes for the same challenge, even with fresh tokens", async () => {
+      const secret = authenticator.generateSecret();
+      prisma.user.findUnique.mockResolvedValue({
+        id: "user-1",
+        email: "jane@example.com",
+        name: "Jane",
+        totpSecret: secret,
+        totpEnabledAt: new Date(),
+        totpBackupCodes: [],
+        memberships: [{ companyId: "company-a", role: "worker", customRole: null }],
+      });
+
+      for (let i = 0; i < 8; i++) {
+        const challengeToken = jwt.sign({ userId: "user-1", kind: "2fa_challenge" }, { expiresIn: "10m" });
+        await expect(service.verifyChallenge(challengeToken, "000000", {})).rejects.toThrow(UnauthorizedException);
+      }
+
+      const oneMoreToken = jwt.sign({ userId: "user-1", kind: "2fa_challenge" }, { expiresIn: "10m" });
+      await expect(service.verifyChallenge(oneMoreToken, "000000", {})).rejects.toThrow(HttpException);
+    });
+
+    it("does not rate-limit a different account's challenge", async () => {
+      const secret = authenticator.generateSecret();
+      prisma.user.findUnique.mockResolvedValue({
+        id: "user-1",
+        email: "jane@example.com",
+        name: "Jane",
+        totpSecret: secret,
+        totpEnabledAt: new Date(),
+        totpBackupCodes: [],
+        memberships: [{ companyId: "company-a", role: "worker", customRole: null }],
+      });
+      for (let i = 0; i < 8; i++) {
+        const challengeToken = jwt.sign({ userId: "user-1", kind: "2fa_challenge" }, { expiresIn: "10m" });
+        await expect(service.verifyChallenge(challengeToken, "000000", {})).rejects.toThrow(UnauthorizedException);
+      }
+
+      const otherUserToken = jwt.sign({ userId: "user-2", kind: "2fa_challenge" }, { expiresIn: "10m" });
+      await expect(service.verifyChallenge(otherUserToken, "000000", {})).rejects.toThrow(UnauthorizedException);
     });
   });
 });

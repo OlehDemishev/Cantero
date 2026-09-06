@@ -6,11 +6,13 @@ import { PdfModule } from "./common/pdf/pdf.module";
 import { QueueModule } from "./common/queue/queue.module";
 import { StorageModule } from "./common/storage/storage.module";
 import { AuditModule } from "./common/audit/audit.module";
+import { RateLimiterModule } from "./common/rate-limiter/rate-limiter.module";
 import { MailModule } from "./common/mail/mail.module";
 import { SmsModule } from "./common/sms/sms.module";
 import { WebhooksModule } from "./common/webhooks/webhooks.module";
 import { SessionsModule } from "./common/sessions/sessions.module";
 import { ExchangeRateModule } from "./common/exchange-rate/exchange-rate.module";
+import { HealthModule } from "./health/health.module";
 import { JwtAuthGuard } from "./common/guards/jwt-auth.guard";
 import { IpAllowlistGuard } from "./common/guards/ip-allowlist.guard";
 import { SubscriptionGuard } from "./common/guards/subscription.guard";
@@ -104,6 +106,8 @@ import { ClientChangeRequestsModule } from "./client-change-requests/client-chan
     QueueModule,
     StorageModule,
     AuditModule,
+    RateLimiterModule,
+    HealthModule,
     MailModule,
     SmsModule,
     WebhooksModule,

@@ -3,15 +3,19 @@ import * as bcrypt from "bcryptjs";
 import type { AddWorkerCertificationInput, AdjustPtoBalanceInput, CreateWorkerInput, UpdateWorkerInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
+import { RateLimiterService } from "../common/rate-limiter/rate-limiter.service";
 import { calculateLoadedLaborRate } from "./labor-burden";
 
 const PIN_BCRYPT_ROUNDS = 10;
+const PIN_VERIFY_LIMIT = 10;
+const PIN_VERIFY_WINDOW_MS = 15 * 60 * 1000;
 
 @Injectable()
 export class WorkersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly rateLimiter: RateLimiterService,
   ) {}
 
   async list(companyId: string) {
@@ -301,11 +305,15 @@ export class WorkersService {
 
   /** Company-scoped, not a general-purpose auth check — the kiosk device is already inside an
    * authenticated session (someone logged in), so a false PIN here just means "try again", not
-   * "attacker detected"; nothing rate-limits it beyond the normal API. */
+   * "attacker detected". Still rate-limited per worker: a typical PIN is only 4-6 digits, cheap
+   * to brute-force by a coworker at the same kiosk without some limit. */
   async verifyClockInPin(companyId: string, workerId: string, pin: string): Promise<{ valid: boolean }> {
+    this.rateLimiter.consume(`clock-in-pin:${companyId}:${workerId}`, PIN_VERIFY_LIMIT, PIN_VERIFY_WINDOW_MS);
     const worker = await this.getRaw(companyId, workerId);
     if (!worker.clockInPinHash) return { valid: false };
-    return { valid: await bcrypt.compare(pin, worker.clockInPinHash) };
+    const valid = await bcrypt.compare(pin, worker.clockInPinHash);
+    if (valid) this.rateLimiter.reset(`clock-in-pin:${companyId}:${workerId}`);
+    return { valid };
   }
 
   /** Every active worker with a kiosk PIN set — the roster a kiosk device shows to pick from,

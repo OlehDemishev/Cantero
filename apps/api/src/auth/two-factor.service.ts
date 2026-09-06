@@ -5,10 +5,17 @@ import * as bcrypt from "bcryptjs";
 import type { LoginResult } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import type { SessionMeta } from "../common/sessions/sessions.service";
+import { RateLimiterService } from "../common/rate-limiter/rate-limiter.service";
 import { AuthService } from "./auth.service";
 
 const BACKUP_CODE_COUNT = 8;
 const BCRYPT_ROUNDS = 10;
+
+// A correct password is needed to even get a challenge token, so this is defense-in-depth rather
+// than the primary defense — but a 6-digit TOTP is only ~1e6 possibilities, cheap to brute-force
+// within the 10-minute challenge window without some limit here.
+const VERIFY_LIMIT = 8;
+const VERIFY_WINDOW_MS = 15 * 60 * 1000;
 
 function randomBackupCode(): string {
   return Array.from({ length: 10 }, () => Math.floor(Math.random() * 36).toString(36)).join("").toUpperCase();
@@ -20,6 +27,7 @@ export class TwoFactorService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly authService: AuthService,
+    private readonly rateLimiter: RateLimiterService,
   ) {}
 
   /** Generates a fresh secret and stashes it on the user, unconfirmed — 2FA only actually turns
@@ -72,6 +80,9 @@ export class TwoFactorService {
       throw new UnauthorizedException("Invalid or expired challenge");
     }
 
+    const rateLimitKey = `2fa-verify:${userId}`;
+    this.rateLimiter.consume(rateLimitKey, VERIFY_LIMIT, VERIFY_WINDOW_MS);
+
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { memberships: { include: { customRole: true } } },
@@ -86,6 +97,8 @@ export class TwoFactorService {
       remaining.splice(matchIndex, 1);
       await this.prisma.user.update({ where: { id: userId }, data: { totpBackupCodes: remaining } });
     }
+
+    this.rateLimiter.reset(rateLimitKey);
 
     const membership = user.memberships[0];
     if (!membership) throw new UnauthorizedException("This account has no company membership");

@@ -7,6 +7,7 @@ import { StorageService } from "../common/storage/storage.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
 import { ExchangeRateService } from "../common/exchange-rate/exchange-rate.service";
+import { assertPublicWebhookUrl } from "../common/webhooks/webhook-url";
 
 const MAX_LOGO_SIZE_BYTES = 1 * 1024 * 1024; // 1MB — a logo, not a photo
 // pdfkit only rasterizes JPEG/PNG, so SVG (however common for logos) isn't accepted here.
@@ -45,6 +46,13 @@ export class CompanyService {
   }
 
   async update(companyId: string, actor: AuditActor, input: UpdateCompanyInput) {
+    // These two get fetched server-side on every webhook event (see WebhooksService.notifyChat)
+    // — unlike the generic WebhookEndpoint feature, they weren't validated at all, letting a
+    // company point them at an internal/cloud-metadata address (SSRF). Same check, same place in
+    // the lifecycle (write time, not on every delivery) as the generic webhooks feature already uses.
+    if (input.slackWebhookUrl) await assertPublicWebhookUrl(input.slackWebhookUrl);
+    if (input.teamsWebhookUrl) await assertPublicWebhookUrl(input.teamsWebhookUrl);
+
     const updated = await this.prisma.company.update({ where: { id: companyId }, data: input });
     this.audit.record(companyId, actor, "company.settings_updated", "Company", companyId, "Updated company settings", input);
     return updated;

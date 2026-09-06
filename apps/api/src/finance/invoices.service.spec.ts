@@ -208,7 +208,7 @@ describe("InvoicesService — late fees & payment terms", () => {
         client: { email: "client@example.com", name: "Acme", paymentTermsDays: null, preferredLocale: "uk" },
         project: { name: "Project" },
       });
-      prisma.company.findUniqueOrThrow.mockResolvedValue({ locale: "en", logoStorageKey: null, brandColor: null });
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ name: "Acme Construction", locale: "en", logoStorageKey: null, brandColor: null });
       prisma.invoice.update.mockResolvedValue({
         id: "inv-1",
         number: "INV-0001",
@@ -236,7 +236,7 @@ describe("InvoicesService — late fees & payment terms", () => {
         client: { email: "client@example.com", name: "Acme", paymentTermsDays: null, preferredLocale: null },
         project: { name: "Project" },
       });
-      prisma.company.findUniqueOrThrow.mockResolvedValue({ locale: "de", logoStorageKey: null, brandColor: null });
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ name: "Acme Construction", locale: "de", logoStorageKey: null, brandColor: null });
       prisma.invoice.update.mockResolvedValue({
         id: "inv-1",
         number: "INV-0001",

@@ -11,6 +11,11 @@ import { ExchangeRateService } from "../common/exchange-rate/exchange-rate.servi
 jest.mock("node:dns", () => ({ promises: { resolveCname: jest.fn() } }));
 const dns = dnsPromises as unknown as { resolveCname: jest.Mock };
 
+// assertPublicWebhookUrl (called from update() for slackWebhookUrl/teamsWebhookUrl) resolves the
+// hostname via node:dns/promises's lookup() — a separate module specifier from node:dns above.
+jest.mock("node:dns/promises", () => ({ lookup: jest.fn() }));
+const dnsLookup = jest.requireMock("node:dns/promises").lookup as jest.Mock;
+
 const COMPANY_A = "company-a";
 const ACTOR = { userId: "user-1", name: "Owner" };
 
@@ -182,6 +187,48 @@ describe("CompanyService — custom portal domain", () => {
       expect(prisma.company.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({ where: { customPortalDomain: "portal.acme.com", customPortalDomainVerifiedAt: { not: null } } }),
       );
+    });
+  });
+
+  describe("update() — webhook URL SSRF guard", () => {
+    beforeEach(() => {
+      dnsLookup.mockReset();
+    });
+
+    it("rejects a slackWebhookUrl pointing at a private/internal address (SSRF)", async () => {
+      dnsLookup.mockResolvedValue({ address: "169.254.169.254", family: 4 });
+
+      await expect(
+        service.update(COMPANY_A, ACTOR, { slackWebhookUrl: "http://169.254.169.254/latest/meta-data/" }),
+      ).rejects.toThrow(BadRequestException);
+      expect(prisma.company.update).not.toHaveBeenCalled();
+    });
+
+    it("rejects a teamsWebhookUrl pointing at a private/internal address (SSRF)", async () => {
+      dnsLookup.mockResolvedValue({ address: "10.0.0.5", family: 4 });
+
+      await expect(service.update(COMPANY_A, ACTOR, { teamsWebhookUrl: "http://10.0.0.5/hook" })).rejects.toThrow(BadRequestException);
+      expect(prisma.company.update).not.toHaveBeenCalled();
+    });
+
+    it("accepts a slackWebhookUrl pointing at a public address", async () => {
+      dnsLookup.mockResolvedValue({ address: "203.0.113.42", family: 4 });
+      prisma.company.update.mockResolvedValue({ id: COMPANY_A, slackWebhookUrl: "https://hooks.slack.com/services/x" });
+
+      await service.update(COMPANY_A, ACTOR, { slackWebhookUrl: "https://hooks.slack.com/services/x" });
+
+      expect(prisma.company.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: COMPANY_A }, data: { slackWebhookUrl: "https://hooks.slack.com/services/x" } }),
+      );
+    });
+
+    it("does not perform a DNS lookup when neither webhook field is being updated", async () => {
+      prisma.company.update.mockResolvedValue({ id: COMPANY_A, name: "New Name" });
+
+      await service.update(COMPANY_A, ACTOR, { name: "New Name" });
+
+      expect(dnsLookup).not.toHaveBeenCalled();
+      expect(prisma.company.update).toHaveBeenCalled();
     });
   });
 });

@@ -1,9 +1,10 @@
 import { JwtService } from "@nestjs/jwt";
-import { UnauthorizedException } from "@nestjs/common";
+import { HttpException, UnauthorizedException } from "@nestjs/common";
 import * as bcrypt from "bcryptjs";
 import { AuthService } from "./auth.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { SessionsService } from "../common/sessions/sessions.service";
+import { RateLimiterService } from "../common/rate-limiter/rate-limiter.service";
 
 const NO_META = {};
 
@@ -12,12 +13,18 @@ describe("AuthService.login", () => {
   let prisma: { user: { findUnique: jest.Mock } };
   let jwt: JwtService;
   let sessions: { create: jest.Mock };
+  let rateLimiter: RateLimiterService;
 
   beforeEach(() => {
     prisma = { user: { findUnique: jest.fn() } };
     jwt = new JwtService({ secret: "test-secret" });
     sessions = { create: jest.fn().mockResolvedValue("session-1") };
-    service = new AuthService(prisma as never, jwt, sessions as unknown as SessionsService);
+    rateLimiter = new RateLimiterService();
+    service = new AuthService(prisma as never, jwt, sessions as unknown as SessionsService, rateLimiter);
+  });
+
+  afterEach(() => {
+    rateLimiter.onModuleDestroy();
   });
 
   it("throws on an unknown email", async () => {
@@ -82,6 +89,56 @@ describe("AuthService.login", () => {
     expect("requires2fa" in result && result.requires2fa).toBe(true);
     expect(sessions.create).not.toHaveBeenCalled();
   });
+
+  it("throws 429 after too many attempts for the same email, even from different IPs", async () => {
+    prisma.user.findUnique.mockResolvedValue(null);
+    for (let i = 0; i < 8; i++) {
+      await expect(service.login({ email: "target@example.com", password: "wrong" }, { ipAddress: `10.0.0.${i}` })).rejects.toThrow(
+        UnauthorizedException,
+      );
+    }
+
+    await expect(service.login({ email: "target@example.com", password: "wrong" }, { ipAddress: "10.0.0.99" })).rejects.toThrow(HttpException);
+  });
+
+  it("throws 429 after too many attempts from the same IP, even across different emails", async () => {
+    prisma.user.findUnique.mockResolvedValue(null);
+    for (let i = 0; i < 20; i++) {
+      await expect(service.login({ email: `user${i}@example.com`, password: "wrong" }, { ipAddress: "10.0.0.1" })).rejects.toThrow(
+        UnauthorizedException,
+      );
+    }
+
+    await expect(service.login({ email: "yet-another@example.com", password: "wrong" }, { ipAddress: "10.0.0.1" })).rejects.toThrow(HttpException);
+  });
+
+  it("does not rate-limit a legitimate user who logs in successfully after a couple of mistakes", async () => {
+    // A low bcrypt cost here: this test does 11 sequential compares to exercise the rate
+    // limiter, and a realistic cost-12 hash makes that slow enough to flirt with Jest's default
+    // timeout — the bcrypt cost itself isn't what's under test.
+    const passwordHash = await bcrypt.hash("correct-horse", 4);
+    prisma.user.findUnique.mockResolvedValue({
+      id: "user-1",
+      email: "jane@example.com",
+      name: "Jane",
+      passwordHash,
+      totpEnabledAt: null,
+      memberships: [{ companyId: "company-a", role: "worker", customRole: null }],
+    });
+    const meta = { ipAddress: "10.0.0.1" };
+
+    for (let i = 0; i < 5; i++) {
+      await expect(service.login({ email: "jane@example.com", password: "wrong" }, meta)).rejects.toThrow(UnauthorizedException);
+    }
+    const result = await service.login({ email: "jane@example.com", password: "correct-horse" }, meta);
+    if ("requires2fa" in result) throw new Error("expected a direct login result");
+    expect(result.accessToken).toBeDefined();
+
+    // A fresh run of mistaken attempts afterwards should count from zero again, not from 5.
+    for (let i = 0; i < 5; i++) {
+      await expect(service.login({ email: "jane@example.com", password: "wrong" }, meta)).rejects.toThrow(UnauthorizedException);
+    }
+  });
 });
 
 describe("AuthService.signup — referral wiring", () => {
@@ -120,7 +177,7 @@ describe("AuthService.signup — referral wiring", () => {
     };
     jwt = new JwtService({ secret: "test-secret" });
     sessions = { create: jest.fn().mockResolvedValue("session-1") };
-    service = new AuthService(prisma as never, jwt, sessions as unknown as SessionsService);
+    service = new AuthService(prisma as never, jwt, sessions as unknown as SessionsService, new RateLimiterService());
   });
 
   it("generates its own referralCode and leaves referredByCompanyId unset without a referral code", async () => {
