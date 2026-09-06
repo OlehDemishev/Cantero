@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Every service test mocks PrismaService directly (grep confirms zero `new PrismaClient()` in any
+# *.spec.ts) and no *.spec.ts imports main.ts (which would try to actually boot the app) — so
+# neither job needs a real Postgres/Redis to run. DATABASE_URL still has to be a syntactically
+# valid connection string for `prisma generate` (it reads the schema, never connects).
+env:
+  DATABASE_URL: "postgresql://user:pass@localhost:5432/db"
+  JWT_SECRET: "ci-only-placeholder"
+
+jobs:
+  api:
+    name: API — typecheck & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build:shared
+
+      - name: Generate Prisma client
+        run: pnpm --filter api prisma:generate
+
+      - name: Type-check
+        run: pnpm --filter api exec tsc --noEmit -p tsconfig.json
+
+      - name: Test
+        run: pnpm --filter api test
+
+  web:
+    name: Web — typecheck & lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build:shared
+
+      - name: Type-check
+        run: pnpm --filter web exec tsc --noEmit -p tsconfig.json
+
+      # Non-blocking: the codebase currently has ~40 pre-existing lint errors (mostly
+      # react-hooks/set-state-in-effect) that predate this workflow. Surfacing lint output here
+      # without failing the build lets it show up in review without gating merges on a backlog
+      # unrelated to any given PR — flip continue-on-error off once that backlog is cleared.
+      - name: Lint
+        run: pnpm --filter web lint
+        continue-on-error: true
