@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type SVGProps } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -8,6 +8,7 @@ import { clearToken, getToken } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { useSidebar } from "@/context/SidebarContext";
 import { useTheme } from "@/context/ThemeContext";
+import { resetStateInEffect } from "@/lib/effect-reset";
 import { NotificationBell } from "@/components/notification-bell";
 import { GlobalSearch } from "@/components/global-search";
 import { CommandPalette } from "@/components/command-palette";
@@ -56,41 +57,98 @@ import {
   WarehousesIcon,
 } from "@/components/nav-icons";
 
-const NAV_ITEMS = [
-  { href: "/dashboard", key: "dashboard", icon: DashboardIcon },
-  { href: "/portfolio", key: "portfolio", icon: PortfolioIcon },
-  { href: "/open-items", key: "openItems", icon: OpenItemsIcon },
-  { href: "/projects", key: "projects", icon: ProjectsIcon },
-  { href: "/clients", key: "clients", icon: ClientsIcon },
-  { href: "/rate-catalog", key: "rateCatalog", icon: RateCatalogIcon },
-  { href: "/warehouses", key: "warehouses", icon: WarehousesIcon },
-  { href: "/equipment", key: "equipment", icon: EquipmentIcon },
-  { href: "/fleet", key: "fleet", icon: FleetIcon },
-  { href: "/tool-crib", key: "toolCrib", icon: ToolCribIcon },
-  { href: "/resource-planning", key: "resourcePlanning", icon: ResourcePlanningIcon },
-  { href: "/schedule", key: "schedule", icon: ScheduleIcon },
-  { href: "/suppliers", key: "suppliers", icon: SuppliersIcon },
-  { href: "/subcontractors", key: "subcontractors", icon: SubcontractorsIcon },
-  { href: "/purchase-orders", key: "purchaseOrders", icon: PurchaseOrdersIcon },
-  { href: "/invoices", key: "invoices", icon: InvoicesIcon },
-  { href: "/expenses", key: "expenses", icon: ExpensesIcon },
-  { href: "/bank-reconciliation", key: "bankReconciliation", icon: BankReconciliationIcon },
-  { href: "/service-contracts", key: "serviceContracts", icon: ServiceContractsIcon },
-  { href: "/insurance-claims", key: "insuranceClaims", icon: InsuranceClaimsIcon },
-  { href: "/loans", key: "loans", icon: LoansIcon },
-  { href: "/contracts", key: "contracts", icon: ContractsIcon },
-  { href: "/support-tickets", key: "supportTickets", icon: SupportTicketsIcon },
-  { href: "/team", key: "team", icon: TeamIcon },
-  { href: "/benefits", key: "benefits", icon: BenefitsIcon },
-  { href: "/hazmat", key: "hazmat", icon: HazmatIcon },
-  { href: "/recruiting", key: "recruiting", icon: RecruitingIcon },
-  { href: "/performance", key: "performance", icon: PerformanceIcon },
-  { href: "/documents", key: "documents", icon: DocumentsIcon },
-  { href: "/templates", key: "templates", icon: TemplatesIcon },
-  { href: "/reports", key: "reports", icon: ReportsIcon },
-  { href: "/integrations", key: "integrations", icon: IntegrationsIcon },
-  { href: "/settings", key: "settings", icon: SettingsIcon },
-] as const;
+interface NavItem {
+  href: string;
+  key: string;
+  icon: (props: SVGProps<SVGSVGElement>) => React.JSX.Element;
+}
+
+/** Grouped instead of one flat 33-item list: a menu a user can't scan at a glance is a navigation
+ * problem, not a cosmetic one. Each group can be collapsed independently (state persisted per
+ * browser in localStorage) — see AppSidebar. Order and membership here is what actually renders;
+ * NAV_ITEMS below is just this flattened, for the command palette and active-route matching. */
+/** Exported so NavItemsSettingsPanel (Settings → Company) can render the exact same grouping to
+ * let an admin hide items — one source of truth for "what nav sections/items exist" instead of a
+ * second hand-maintained list that could drift out of sync with the sidebar itself. */
+export const NAV_GROUPS: { key: string; items: NavItem[] }[] = [
+  {
+    key: "overview",
+    items: [
+      { href: "/dashboard", key: "dashboard", icon: DashboardIcon },
+      { href: "/portfolio", key: "portfolio", icon: PortfolioIcon },
+      { href: "/open-items", key: "openItems", icon: OpenItemsIcon },
+    ],
+  },
+  {
+    key: "projects",
+    items: [
+      { href: "/projects", key: "projects", icon: ProjectsIcon },
+      { href: "/schedule", key: "schedule", icon: ScheduleIcon },
+      { href: "/resource-planning", key: "resourcePlanning", icon: ResourcePlanningIcon },
+    ],
+  },
+  {
+    key: "clients",
+    items: [
+      { href: "/clients", key: "clients", icon: ClientsIcon },
+      { href: "/rate-catalog", key: "rateCatalog", icon: RateCatalogIcon },
+      { href: "/contracts", key: "contracts", icon: ContractsIcon },
+      { href: "/service-contracts", key: "serviceContracts", icon: ServiceContractsIcon },
+    ],
+  },
+  {
+    key: "finance",
+    items: [
+      { href: "/invoices", key: "invoices", icon: InvoicesIcon },
+      { href: "/expenses", key: "expenses", icon: ExpensesIcon },
+      { href: "/bank-reconciliation", key: "bankReconciliation", icon: BankReconciliationIcon },
+      { href: "/insurance-claims", key: "insuranceClaims", icon: InsuranceClaimsIcon },
+      { href: "/loans", key: "loans", icon: LoansIcon },
+    ],
+  },
+  {
+    key: "procurement",
+    items: [
+      { href: "/warehouses", key: "warehouses", icon: WarehousesIcon },
+      { href: "/equipment", key: "equipment", icon: EquipmentIcon },
+      { href: "/fleet", key: "fleet", icon: FleetIcon },
+      { href: "/tool-crib", key: "toolCrib", icon: ToolCribIcon },
+      { href: "/suppliers", key: "suppliers", icon: SuppliersIcon },
+      { href: "/subcontractors", key: "subcontractors", icon: SubcontractorsIcon },
+      { href: "/purchase-orders", key: "purchaseOrders", icon: PurchaseOrdersIcon },
+    ],
+  },
+  {
+    key: "people",
+    items: [
+      { href: "/team", key: "team", icon: TeamIcon },
+      { href: "/benefits", key: "benefits", icon: BenefitsIcon },
+      { href: "/recruiting", key: "recruiting", icon: RecruitingIcon },
+      { href: "/performance", key: "performance", icon: PerformanceIcon },
+      { href: "/hazmat", key: "hazmat", icon: HazmatIcon },
+    ],
+  },
+  {
+    key: "documents",
+    items: [
+      { href: "/documents", key: "documents", icon: DocumentsIcon },
+      { href: "/templates", key: "templates", icon: TemplatesIcon },
+      { href: "/reports", key: "reports", icon: ReportsIcon },
+      { href: "/support-tickets", key: "supportTickets", icon: SupportTicketsIcon },
+    ],
+  },
+  {
+    key: "system",
+    items: [
+      { href: "/integrations", key: "integrations", icon: IntegrationsIcon },
+      { href: "/settings", key: "settings", icon: SettingsIcon },
+    ],
+  },
+];
+
+const NAV_ITEMS = NAV_GROUPS.flatMap((group) => group.items);
+
+const COLLAPSED_NAV_GROUPS_STORAGE_KEY = "cantero:collapsedNavGroups";
 
 export function AuthenticatedShell({ children }: { children: React.ReactNode }) {
   const tc = useTranslations("common");
@@ -124,7 +182,7 @@ export function AuthenticatedShell({ children }: { children: React.ReactNode }) 
 
   return (
     <div className="min-h-screen xl:flex">
-      <AppSidebar />
+      <AppSidebar hiddenNavItems={data.company.hiddenNavItems} />
       <SidebarBackdrop />
       <div className={`flex-1 transition-all duration-300 ease-in-out print:ml-0 ${mainMargin}`}>
         <AppHeader me={data} />
@@ -136,11 +194,49 @@ export function AuthenticatedShell({ children }: { children: React.ReactNode }) 
   );
 }
 
-function AppSidebar() {
+function AppSidebar({ hiddenNavItems }: { hiddenNavItems: string[] }) {
   const tn = useTranslations("nav");
   const pathname = usePathname();
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const expanded = isExpanded || isHovered || isMobileOpen;
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+
+  // A group that ends up with nothing left to show (every item in it hidden) doesn't render at
+  // all — an empty section header would just be dead weight, not a useful "nothing here" signal.
+  const hiddenSet = new Set(hiddenNavItems);
+  const visibleGroups = NAV_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => !hiddenSet.has(item.key)),
+  })).filter((group) => group.items.length > 0);
+
+  // Read after mount, not in initial state — localStorage isn't available during SSR, and every
+  // group renders expanded on the first paint either way, so there's nothing to flash.
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(COLLAPSED_NAV_GROUPS_STORAGE_KEY);
+      if (stored) resetStateInEffect(() => setCollapsedGroups(new Set(JSON.parse(stored))));
+    } catch {
+      // Private browsing / storage disabled — every group just stays expanded.
+    }
+  }, []);
+
+  function toggleGroup(key: string) {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      try {
+        localStorage.setItem(COLLAPSED_NAV_GROUPS_STORAGE_KEY, JSON.stringify([...next]));
+      } catch {
+        // Ignore — the toggle still works for this page view, just won't persist.
+      }
+      return next;
+    });
+  }
+
+  // A group the user collapsed still opens back up automatically once they're actually on one of
+  // its pages — collapsing a section you don't use shouldn't also hide where you currently are.
+  const activeGroupKey = visibleGroups.find((g) => g.items.some((item) => pathname.startsWith(item.href)))?.key;
 
   return (
     <aside
@@ -160,28 +256,46 @@ function AppSidebar() {
         )}
       </div>
       <nav className="flex flex-1 flex-col overflow-y-auto no-scrollbar">
-        <span className={`mb-3 text-xs font-medium uppercase text-gray-400 dark:text-gray-500 ${expanded ? "" : "text-center"}`}>
-          {expanded ? tn("menu") : "···"}
-        </span>
-        <ul className="flex flex-col gap-1">
-          {NAV_ITEMS.map((item) => {
-            const active = pathname.startsWith(item.href);
-            const Icon = item.icon;
+        {!expanded && <span className="mb-3 text-center text-xs font-medium uppercase text-gray-400 dark:text-gray-500">···</span>}
+        <div className="flex flex-col gap-1">
+          {visibleGroups.map((group, i) => {
+            const isCollapsed = collapsedGroups.has(group.key) && group.key !== activeGroupKey;
             return (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className={`group menu-item ${active ? "menu-item-active" : "menu-item-inactive"} ${
-                    expanded ? "" : "justify-center"
-                  }`}
-                >
-                  <Icon className={active ? "menu-item-icon-active" : "menu-item-icon-inactive"} />
-                  {expanded && <span>{tn(item.key)}</span>}
-                </Link>
-              </li>
+              <div key={group.key} className={i > 0 ? (expanded ? "mt-4" : "mt-2 border-t border-gray-100 pt-2 dark:border-gray-800") : ""}>
+                {expanded && (
+                  <button
+                    onClick={() => toggleGroup(group.key)}
+                    className="mb-1 flex w-full items-center justify-between rounded px-1 py-1 text-xs font-medium uppercase tracking-wide text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                  >
+                    {tn(`group_${group.key}`)}
+                    <ChevronDownIcon className={`transition-transform ${isCollapsed ? "-rotate-90" : ""}`} />
+                  </button>
+                )}
+                {!isCollapsed && (
+                  <ul className="flex flex-col gap-1">
+                    {group.items.map((item) => {
+                      const active = pathname.startsWith(item.href);
+                      const Icon = item.icon;
+                      return (
+                        <li key={item.href}>
+                          <Link
+                            href={item.href}
+                            className={`group menu-item ${active ? "menu-item-active" : "menu-item-inactive"} ${
+                              expanded ? "" : "justify-center"
+                            }`}
+                          >
+                            <Icon className={active ? "menu-item-icon-active" : "menu-item-icon-inactive"} />
+                            {expanded && <span>{tn(item.key)}</span>}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
             );
           })}
-        </ul>
+        </div>
       </nav>
     </aside>
   );

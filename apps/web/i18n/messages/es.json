@@ -38,6 +38,14 @@
   },
   "nav": {
     "menu": "Menú",
+    "group_overview": "Resumen",
+    "group_projects": "Proyectos",
+    "group_clients": "Clientes",
+    "group_finance": "Finanzas",
+    "group_procurement": "Compras y activos",
+    "group_people": "Personal",
+    "group_documents": "Documentos",
+    "group_system": "Sistema",
     "dashboard": "Panel",
     "projects": "Proyectos",
     "clients": "Clientes",
@@ -434,7 +442,8 @@
     "address": "Dirección",
     "client": "Cliente",
     "noClient": "Sin cliente",
-    "empty": "Aún no hay proyectos — crea el primero.",
+    "emptyTitle": "Aún no hay proyectos",
+    "empty": "Los proyectos hacen seguimiento del presupuesto, el calendario y el progreso una vez que gana el trabajo.",
     "viewEstimates": "Presupuestos de este proyecto",
     "searchPlaceholder": "Buscar por nombre o dirección…",
     "allClients": "Todos los clientes",
@@ -460,7 +469,8 @@
   "clients": {
     "title": "Clientes",
     "newClient": "Nuevo cliente",
-    "empty": "Aún no hay clientes — crea el primero.",
+    "emptyTitle": "Aún no hay clientes",
+    "empty": "Siga a los clientes potenciales en su embudo, desde el primer contacto hasta el contrato firmado.",
     "lead": "Prospecto",
     "contacted": "Contactado",
     "qualified": "Calificado",
@@ -1526,6 +1536,15 @@
     "skipSetup": "Omitir configuración",
     "back": "Atrás",
     "continueButton": "Continuar",
+    "profileTitle": "¿A qué tipo de trabajo se dedica?",
+    "profileHint": "Configuraremos su menú acorde a esto — siempre podrá mostrar u ocultar secciones más tarde en Ajustes.",
+    "profile": {
+      "generalContractor": { "label": "Contratista general", "hint": "Gestión completa de proyectos y subcontratistas, todas las secciones visibles." },
+      "specialtyTrade": { "label": "Oficio especializado", "hint": "Un menú enfocado para trabajos de oficio — sin flota, RR. HH. ni contratos de servicio." },
+      "remodeling": { "label": "Remodelación y renovación", "hint": "Un menú más simple para trabajos de remodelación residencial." },
+      "everything": { "label": "Mostrar todo", "hint": "Todas las secciones visibles — decida más tarde qué ocultar." }
+    },
+    "profileAdjustableHint": "Puede cambiar esto en cualquier momento desde Ajustes → Empresa.",
     "catalogTitle": "Cargar catálogo de precios",
     "catalogHint": "Empiece con un conjunto ya preparado de partidas de trabajo y materiales acorde a sus unidades, o sáltelo y cree el suyo desde cero.",
     "loadCatalogButton": "Cargar catálogo inicial",
@@ -2561,6 +2580,10 @@
     "noTransfers": "Aún no se ha movido presupuesto entre códigos de costo.",
     "transferLogEntry": "Se transfirió {amount} de {from} a {to}",
     "burnDown": "Evolución de costos"
+  },
+  "navSettings": {
+    "title": "Menú lateral",
+    "hint": "Oculte las secciones que su empresa no usa — todo el equipo verá el menú reducido."
   },
   "security": {
     "title": "Seguridad",

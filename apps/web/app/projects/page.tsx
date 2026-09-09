@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { SavedViewsBar } from "@/components/saved-views-bar";
 import { CsvImportButton } from "@/components/csv-import-button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { CloseIcon, ProjectsIcon } from "@/components/nav-icons";
 import { apiFetch } from "@/lib/api-client";
 
 interface Client {
@@ -33,6 +35,7 @@ export default function ProjectsPage() {
   const [form, setForm] = useState({ name: "", address: "", clientId: "" });
   const [submitting, setSubmitting] = useState(false);
   const [filters, setFilters] = useState<ProjectFilters>(EMPTY_FILTERS);
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
   function load() {
     apiFetch<Project[]>("/projects").then(setProjects);
@@ -56,6 +59,7 @@ export default function ProjectsPage() {
         }),
       });
       setForm({ name: "", address: "", clientId: "" });
+      setShowCreateForm(false);
       load();
     } finally {
       setSubmitting(false);
@@ -71,17 +75,35 @@ export default function ProjectsPage() {
 
   return (
     <AuthenticatedShell>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <h1 className="text-2xl font-semibold">{t("title")}</h1>
-        <CsvImportButton endpoint="/projects/import" label={ti("importProjects")} onDone={load} />
+        <div className="flex items-center gap-2">
+          <CsvImportButton endpoint="/projects/import" label={ti("importProjects")} onDone={load} />
+          {!showCreateForm && (
+            <button type="button" onClick={() => setShowCreateForm(true)} className="btn-primary">
+              {t("newProject")}
+            </button>
+          )}
+        </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
-        <div className="card lg:col-span-1">
-          <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("newProject")}</h2>
+      {showCreateForm && (
+        <div className="mt-6 card max-w-md">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("newProject")}</h2>
+            <button
+              type="button"
+              onClick={() => setShowCreateForm(false)}
+              aria-label={tc("cancel")}
+              className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+            >
+              <CloseIcon className="size-4" />
+            </button>
+          </div>
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             <input
               required
+              autoFocus
               placeholder={tc("name")}
               className="input"
               value={form.name}
@@ -110,8 +132,10 @@ export default function ProjectsPage() {
             </button>
           </form>
         </div>
+      )}
 
-        <div className="lg:col-span-2">
+      <div className="mt-6">
+        {projects && projects.length > 0 && (
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <input
               className="input w-auto flex-1"
@@ -132,31 +156,40 @@ export default function ProjectsPage() {
               ))}
             </select>
           </div>
+        )}
+        {projects && projects.length > 0 && (
           <div className="mb-4">
             <SavedViewsBar viewType="projects" currentFilters={filters} onApply={(f) => setFilters({ ...EMPTY_FILTERS, ...f })} />
           </div>
+        )}
 
-          {!projects ? (
-            <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
-          ) : projects.length === 0 ? (
-            <p className="text-gray-500 dark:text-gray-400">{t("empty")}</p>
-          ) : filtered.length === 0 ? (
-            <p className="text-gray-500 dark:text-gray-400">{t("noMatches")}</p>
-          ) : (
-            <ul className="flex flex-col gap-2">
-              {filtered.map((p) => (
-                <li key={p.id}>
-                  <a href={`/projects/${p.id}`} className="card block hover:border-gray-400">
-                    <div className="font-medium">{p.name}</div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                      {p.client?.name ?? t("noClient")} {p.address ? `· ${p.address}` : ""}
-                    </div>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        {!projects ? (
+          <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        ) : projects.length === 0 ? (
+          <div className="card">
+            <EmptyState
+              icon={ProjectsIcon}
+              title={t("emptyTitle")}
+              message={t("empty")}
+              cta={{ label: t("newProject"), onClick: () => setShowCreateForm(true) }}
+            />
+          </div>
+        ) : filtered.length === 0 ? (
+          <p className="text-gray-500 dark:text-gray-400">{t("noMatches")}</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {filtered.map((p) => (
+              <li key={p.id}>
+                <a href={`/projects/${p.id}`} className="card block hover:border-gray-400">
+                  <div className="font-medium">{p.name}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                    {p.client?.name ?? t("noClient")} {p.address ? `· ${p.address}` : ""}
+                  </div>
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </AuthenticatedShell>
   );

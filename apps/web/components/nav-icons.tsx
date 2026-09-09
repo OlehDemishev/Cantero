@@ -446,3 +446,38 @@ export function OpenItemsIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function ChevronRightIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M7.5 4.5l5.5 5.5-5.5 5.5" />
+    </Icon>
+  );
+}
+
+export function TrendUpIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M3 13.5l5-5 3 3 6-6.5" />
+      <path d="M12 4.5h5v5" />
+    </Icon>
+  );
+}
+
+export function TrendDownIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M3 6.5l5 5 3-3 6 6.5" />
+      <path d="M12 15.5h5v-5" />
+    </Icon>
+  );
+}
+
+export function FieldModeIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M10 17.5s5.5-4.8 5.5-9A5.5 5.5 0 0 0 4.5 8.5c0 4.2 5.5 9 5.5 9Z" />
+      <circle cx="10" cy="8.5" r="2" />
+    </Icon>
+  );
+}
+

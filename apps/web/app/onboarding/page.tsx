@@ -6,8 +6,49 @@ import { useTranslations } from "next-intl";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { MEMBERSHIP_ROLES_MANAGEABLE } from "@cantero/shared";
 
-type StepKey = "catalog" | "invite" | "project" | "done";
-const STEPS: StepKey[] = ["catalog", "invite", "project", "done"];
+type StepKey = "profile" | "catalog" | "invite" | "project" | "done";
+const STEPS: StepKey[] = ["profile", "catalog", "invite", "project", "done"];
+
+type ProfileKey = "generalContractor" | "specialtyTrade" | "remodeling" | "everything";
+
+/** Each preset hides a starting subset of the sidebar's ~33 items (keys match
+ * authenticated-shell.tsx's NAV_ITEMS[].key) — a reasonable default for that kind of business,
+ * not a permanent commitment: Settings → Unternehmen has the same list with every item toggle-able
+ * afterward. "everything" hides nothing, for anyone unsure which profile fits. */
+const NAV_PRESETS: Record<ProfileKey, string[]> = {
+  generalContractor: [],
+  specialtyTrade: [
+    "fleet",
+    "warehouses",
+    "toolCrib",
+    "subcontractors",
+    "purchaseOrders",
+    "insuranceClaims",
+    "loans",
+    "recruiting",
+    "performance",
+    "benefits",
+    "hazmat",
+    "serviceContracts",
+    "templates",
+    "supportTickets",
+    "bankReconciliation",
+  ],
+  remodeling: [
+    "fleet",
+    "warehouses",
+    "toolCrib",
+    "insuranceClaims",
+    "loans",
+    "recruiting",
+    "performance",
+    "benefits",
+    "hazmat",
+    "bankReconciliation",
+    "purchaseOrders",
+  ],
+  everything: [],
+};
 
 export default function OnboardingPage() {
   const t = useTranslations("onboarding");
@@ -16,6 +57,9 @@ export default function OnboardingPage() {
   const [stepIndex, setStepIndex] = useState(0);
   const [finishing, setFinishing] = useState(false);
   const [finishError, setFinishError] = useState<string | null>(null);
+
+  const [profileChoice, setProfileChoice] = useState<ProfileKey | null>(null);
+  const [profileBusy, setProfileBusy] = useState(false);
 
   const [catalogState, setCatalogState] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [catalogResult, setCatalogResult] = useState<{ materialsCreated: number; rateItemsCreated: number } | null>(null);
@@ -32,6 +76,17 @@ export default function OnboardingPage() {
   const [projectError, setProjectError] = useState<string | null>(null);
 
   const step = STEPS[stepIndex];
+
+  async function chooseProfile(profile: ProfileKey) {
+    setProfileChoice(profile);
+    setProfileBusy(true);
+    try {
+      await apiFetch("/company", { method: "PATCH", body: JSON.stringify({ hiddenNavItems: NAV_PRESETS[profile] }) });
+      setStepIndex(1);
+    } finally {
+      setProfileBusy(false);
+    }
+  }
 
   async function loadStarterCatalog() {
     setCatalogState("loading");
@@ -121,6 +176,35 @@ export default function OnboardingPage() {
       {finishError && <p className="mb-4 text-sm text-error-700 dark:text-error-500">{finishError}</p>}
 
       <div className="card">
+        {step === "profile" && (
+          <>
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">{t("profileTitle")}</h1>
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{t("profileHint")}</p>
+
+            <div className="mt-5 flex flex-col gap-2">
+              {(Object.keys(NAV_PRESETS) as ProfileKey[]).map((profile) => (
+                <button
+                  key={profile}
+                  type="button"
+                  disabled={profileBusy}
+                  onClick={() => chooseProfile(profile)}
+                  className={`flex flex-col items-start gap-0.5 rounded-lg border px-4 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                    profileChoice === profile
+                      ? "border-brand-300 bg-brand-50 dark:border-brand-700 dark:bg-brand-500/10"
+                      : "border-gray-200 hover:border-brand-300 hover:bg-brand-50 dark:border-gray-700 dark:hover:border-brand-700 dark:hover:bg-brand-500/10"
+                  }`}
+                >
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{t(`profile.${profile}.label`)}</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {profileChoice === profile && profileBusy ? tc("loading") : t(`profile.${profile}.hint`)}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <p className="mt-4 text-xs text-gray-400 dark:text-gray-500">{t("profileAdjustableHint")}</p>
+          </>
+        )}
+
         {step === "catalog" && (
           <>
             <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">{t("catalogTitle")}</h1>
@@ -143,7 +227,7 @@ export default function OnboardingPage() {
                   {catalogState === "loading" ? tc("loading") : t("loadCatalogButton")}
                 </button>
               )}
-              <button onClick={() => setStepIndex(1)} className="btn-primary">
+              <button onClick={() => setStepIndex(2)} className="btn-primary">
                 {t("continueButton")}
               </button>
             </div>
@@ -192,10 +276,10 @@ export default function OnboardingPage() {
             </form>
 
             <div className="mt-6 flex justify-between">
-              <button onClick={() => setStepIndex(0)} className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700">
+              <button onClick={() => setStepIndex(1)} className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700">
                 {t("back")}
               </button>
-              <button onClick={() => setStepIndex(2)} className="btn-primary">
+              <button onClick={() => setStepIndex(3)} className="btn-primary">
                 {t("continueButton")}
               </button>
             </div>
@@ -230,7 +314,7 @@ export default function OnboardingPage() {
               </div>
 
               <div className="flex justify-between pt-2">
-                <button type="button" onClick={() => setStepIndex(1)} className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700">
+                <button type="button" onClick={() => setStepIndex(2)} className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700">
                   {t("back")}
                 </button>
                 <button type="submit" disabled={projectBusy} className="btn-primary">

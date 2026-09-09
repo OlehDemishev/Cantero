@@ -64,6 +64,10 @@ export const updateCompanySchema = z.object({
   passwordMinLength: z.number().int().min(8).max(64).optional(),
   passwordRequireSymbol: z.boolean().optional(),
   hideCostDataFromRoles: z.array(z.enum(MEMBERSHIP_ROLES_MANAGEABLE)).optional(),
+  /// Sidebar nav item keys this company has opted to hide — validated loosely (any short string,
+  /// not a strict enum) since the canonical key list lives in the web app's nav config; a stale
+  /// or unrecognized key here is a harmless no-op rather than a validation failure.
+  hiddenNavItems: z.array(z.string().min(1).max(64)).optional(),
   slackWebhookUrl: z.string().url().nullable().optional(),
   teamsWebhookUrl: z.string().url().nullable().optional(),
   ptoAccrualHoursPerMonth: z.number().nonnegative().nullable().optional(),

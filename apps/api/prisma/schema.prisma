@@ -329,6 +329,12 @@ model Company {
   /// (materialsCost, laborCost, markupAmount, markupPercent, laborRatePerHour) — enforced in
   /// EstimatesService. Empty means everyone with estimate access sees the full breakdown.
   hideCostDataFromRoles                MembershipRole[]       @default([])
+  /// Sidebar nav item keys (matching authenticated-shell.tsx's NAV_ITEMS[].key, e.g. "fleet",
+  /// "hazmat") this company has chosen to hide — an admin's business doesn't need every module
+  /// this app ships, and a 33-item menu with nothing hidden is harder to scan than one trimmed to
+  /// what's actually used. Empty (the default) shows everything, so existing companies and any
+  /// nav item added later are unaffected until someone opts to hide it.
+  hiddenNavItems                       String[]               @default([])
   /// This company's own shareable code for Cantero's platform referral program — generated once
   /// at signup, never changes. Distinct from the CRM's client-to-client referral tracking.
   referralCode                         String?                @unique

@@ -121,7 +121,7 @@ export function CommentsThread({ param, entityId }: { param: CommentParam; entit
             ))}
           </ul>
         )}
-        <button type="submit" disabled={busy || !content.trim()} className="btn-secondary self-start px-2.5 py-1 text-xs">
+        <button type="submit" disabled={busy || !content.trim()} className="btn-primary self-start px-2.5 py-1 text-xs">
           {t("post")}
         </button>
       </form>

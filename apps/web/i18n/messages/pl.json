@@ -38,6 +38,14 @@
   },
   "nav": {
     "menu": "Menu",
+    "group_overview": "Przegląd",
+    "group_projects": "Projekty",
+    "group_clients": "Klienci",
+    "group_finance": "Finanse",
+    "group_procurement": "Zaopatrzenie i sprzęt",
+    "group_people": "Zespół",
+    "group_documents": "Dokumenty",
+    "group_system": "System",
     "dashboard": "Pulpit",
     "projects": "Projekty",
     "clients": "Klienci",
@@ -434,7 +442,8 @@
     "address": "Adres",
     "client": "Klient",
     "noClient": "Brak klienta",
-    "empty": "Brak projektów — utwórz pierwszy.",
+    "emptyTitle": "Brak projektów",
+    "empty": "Projekty śledzą budżet, harmonogram i postęp po wygraniu zlecenia.",
     "viewEstimates": "Kosztorysy dla tego projektu",
     "searchPlaceholder": "Szukaj po nazwie lub adresie…",
     "allClients": "Wszyscy klienci",
@@ -460,7 +469,8 @@
   "clients": {
     "title": "Klienci",
     "newClient": "Nowy klient",
-    "empty": "Brak klientów — dodaj pierwszego.",
+    "emptyTitle": "Brak klientów",
+    "empty": "Śledź potencjalnych klientów w lejku sprzedaży — od pierwszego kontaktu po podpisaną umowę.",
     "lead": "Potencjalny",
     "contacted": "Skontaktowano",
     "qualified": "Zakwalifikowany",
@@ -1526,6 +1536,15 @@
     "skipSetup": "Pomiń konfigurację",
     "back": "Wstecz",
     "continueButton": "Dalej",
+    "profileTitle": "Jakim rodzajem pracy się zajmujesz?",
+    "profileHint": "Dopasujemy Twoje menu — sekcje możesz zawsze pokazać lub ukryć później w Ustawieniach.",
+    "profile": {
+      "generalContractor": { "label": "Generalny wykonawca", "hint": "Pełne zarządzanie projektami i podwykonawcami, wszystkie sekcje widoczne." },
+      "specialtyTrade": { "label": "Wykonawca specjalistyczny", "hint": "Menu skupione na pracach branżowych — bez floty, HR i umów serwisowych." },
+      "remodeling": { "label": "Remonty i modernizacje", "hint": "Prostsze menu do prac remontowych w budownictwie mieszkaniowym." },
+      "everything": { "label": "Pokaż wszystko", "hint": "Wszystkie sekcje widoczne — zdecydujesz później, co ukryć." }
+    },
+    "profileAdjustableHint": "Możesz to zmienić w dowolnym momencie w Ustawienia → Firma.",
     "catalogTitle": "Wczytaj cennik",
     "catalogHint": "Zacznij od gotowego zestawu pozycji robocizny i materiałów dopasowanego do Twoich jednostek, albo pomiń ten krok i zbuduj własny katalog od zera.",
     "loadCatalogButton": "Wczytaj katalog startowy",
@@ -2561,6 +2580,10 @@
     "noTransfers": "Nie przeniesiono jeszcze budżetu między kodami kosztowymi.",
     "transferLogEntry": "Przeniesiono {amount} z {from} do {to}",
     "burnDown": "Wykres wydatkowania budżetu"
+  },
+  "navSettings": {
+    "title": "Menu boczne",
+    "hint": "Ukryj sekcje, których Twoja firma nie używa — cały zespół zobaczy uproszczone menu."
   },
   "security": {
     "title": "Bezpieczeństwo",

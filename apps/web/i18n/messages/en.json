@@ -38,6 +38,14 @@
   },
   "nav": {
     "menu": "Menu",
+    "group_overview": "Overview",
+    "group_projects": "Projects",
+    "group_clients": "Clients",
+    "group_finance": "Finance",
+    "group_procurement": "Procurement & Assets",
+    "group_people": "People",
+    "group_documents": "Documents",
+    "group_system": "System",
     "dashboard": "Dashboard",
     "projects": "Projects",
     "clients": "Clients",
@@ -434,7 +442,8 @@
     "address": "Address",
     "client": "Client",
     "noClient": "No client",
-    "empty": "No projects yet — create your first one.",
+    "emptyTitle": "No projects yet",
+    "empty": "Projects track budget, schedule, and progress once you win the work.",
     "viewEstimates": "Estimates for this project",
     "searchPlaceholder": "Search by name or address…",
     "allClients": "All clients",
@@ -460,7 +469,8 @@
   "clients": {
     "title": "Clients",
     "newClient": "New client",
-    "empty": "No clients yet — create your first one.",
+    "emptyTitle": "No clients yet",
+    "empty": "Track leads through your pipeline from first contact to a signed contract.",
     "lead": "Lead",
     "contacted": "Contacted",
     "qualified": "Qualified",
@@ -1526,6 +1536,15 @@
     "skipSetup": "Skip setup",
     "back": "Back",
     "continueButton": "Continue",
+    "profileTitle": "What kind of work do you do?",
+    "profileHint": "We'll set up your menu to match — you can always show or hide sections later in Settings.",
+    "profile": {
+      "generalContractor": { "label": "General contractor", "hint": "Full project and subcontractor management, all sections shown." },
+      "specialtyTrade": { "label": "Specialty trade", "hint": "A focused menu for trade work — skips fleet, HR, and service contracts." },
+      "remodeling": { "label": "Remodeling & renovation", "hint": "A leaner menu for residential remodeling work." },
+      "everything": { "label": "Show me everything", "hint": "All sections visible — decide later what to hide." }
+    },
+    "profileAdjustableHint": "You can change this anytime from Settings → Company.",
     "catalogTitle": "Load your price catalog",
     "catalogHint": "Start with a ready-made set of work items and materials matched to your units, or skip and build your own from scratch.",
     "loadCatalogButton": "Load starter catalog",
@@ -2561,6 +2580,10 @@
     "noTransfers": "No budget has been moved between cost codes yet.",
     "transferLogEntry": "Moved {amount} from {from} to {to}",
     "burnDown": "Cost burn-down"
+  },
+  "navSettings": {
+    "title": "Sidebar menu",
+    "hint": "Hide the sections your company doesn't use — everyone on the team sees the trimmed menu."
   },
   "security": {
     "title": "Security",

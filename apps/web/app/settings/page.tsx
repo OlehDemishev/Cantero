@@ -9,6 +9,7 @@ import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { NotificationPreferencesPanel } from "@/components/notification-preferences-panel";
 import { CompanySettingsPanel } from "@/components/company-settings-panel";
+import { NavItemsSettingsPanel } from "@/components/nav-items-settings-panel";
 import { BillingPlanPanel } from "@/components/billing-plan-panel";
 import { FranchisePanel } from "@/components/franchise-panel";
 import { TeamMembersPanel } from "@/components/team-members-panel";
@@ -89,6 +90,8 @@ export default function SettingsPage() {
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         {activeTab === "company" && <CompanySettingsPanel isManager={!!isManager} />}
+
+        {activeTab === "company" && <NavItemsSettingsPanel canManage={!!isManager} />}
 
         {activeTab === "billing" && <BillingPlanPanel isManager={!!isManager} />}
 

@@ -7,6 +7,8 @@ import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { CsvImportButton } from "@/components/csv-import-button";
 import { SavedViewsBar } from "@/components/saved-views-bar";
 import { CrmPipelinePanel } from "@/components/crm-pipeline-panel";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ClientsIcon, CloseIcon } from "@/components/nav-icons";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
@@ -59,6 +61,7 @@ export default function ClientsPage() {
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [form, setForm] = useState({ name: "", email: "", phone: "", estimatedValue: "", ownerWorkerId: "" });
   const [submitting, setSubmitting] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
   const [pendingLostId, setPendingLostId] = useState<string | null>(null);
   const [lostReasonDraft, setLostReasonDraft] = useState("");
@@ -96,6 +99,7 @@ export default function ClientsPage() {
         }),
       });
       setForm({ name: "", email: "", phone: "", estimatedValue: "", ownerWorkerId: "" });
+      setShowCreateForm(false);
       load();
     } finally {
       setSubmitting(false);
@@ -154,9 +158,16 @@ export default function ClientsPage() {
 
   return (
     <AuthenticatedShell>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <h1 className="text-2xl font-semibold">{t("title")}</h1>
-        <CsvImportButton endpoint="/clients/import" label={ti("importClients")} onDone={load} />
+        <div className="flex items-center gap-2">
+          <CsvImportButton endpoint="/clients/import" label={ti("importClients")} onDone={load} />
+          {!showCreateForm && (
+            <button type="button" onClick={() => setShowCreateForm(true)} className="btn-primary">
+              {t("newClient")}
+            </button>
+          )}
+        </div>
       </div>
 
       {summary && (
@@ -198,54 +209,67 @@ export default function ClientsPage() {
         </div>
       )}
 
-      <div className="mt-6 card max-w-md">
-        <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("newClient")}</h2>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-          <input
-            required
-            placeholder={tc("name")}
-            className="input"
-            value={form.name}
-            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-          />
-          <input
-            placeholder={tc("email")}
-            type="email"
-            className="input"
-            value={form.email}
-            onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-          />
-          <input
-            placeholder={tc("phone")}
-            className="input"
-            value={form.phone}
-            onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-          />
-          <input
-            type="number"
-            min="0"
-            placeholder={t("estimatedValue")}
-            className="input"
-            value={form.estimatedValue}
-            onChange={(e) => setForm((f) => ({ ...f, estimatedValue: e.target.value }))}
-          />
-          <select
-            className="input"
-            value={form.ownerWorkerId}
-            onChange={(e) => setForm((f) => ({ ...f, ownerWorkerId: e.target.value }))}
-          >
-            <option value="">{t("owner")}</option>
-            {workers.map((w) => (
-              <option key={w.id} value={w.id}>
-                {w.name}
-              </option>
-            ))}
-          </select>
-          <button type="submit" disabled={submitting} className="btn-primary">
-            {tc("create")}
-          </button>
-        </form>
-      </div>
+      {showCreateForm && (
+        <div className="mt-6 card max-w-md">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("newClient")}</h2>
+            <button
+              type="button"
+              onClick={() => setShowCreateForm(false)}
+              aria-label={tc("cancel")}
+              className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+            >
+              <CloseIcon className="size-4" />
+            </button>
+          </div>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+            <input
+              required
+              autoFocus
+              placeholder={tc("name")}
+              className="input"
+              value={form.name}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+            />
+            <input
+              placeholder={tc("email")}
+              type="email"
+              className="input"
+              value={form.email}
+              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+            />
+            <input
+              placeholder={tc("phone")}
+              className="input"
+              value={form.phone}
+              onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+            />
+            <input
+              type="number"
+              min="0"
+              placeholder={t("estimatedValue")}
+              className="input"
+              value={form.estimatedValue}
+              onChange={(e) => setForm((f) => ({ ...f, estimatedValue: e.target.value }))}
+            />
+            <select
+              className="input"
+              value={form.ownerWorkerId}
+              onChange={(e) => setForm((f) => ({ ...f, ownerWorkerId: e.target.value }))}
+            >
+              <option value="">{t("owner")}</option>
+              {workers.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name}
+                </option>
+              ))}
+            </select>
+            <button type="submit" disabled={submitting} className="btn-primary">
+              {tc("create")}
+            </button>
+          </form>
+        </div>
+      )}
 
       <div className="mt-8">
         {clients && clients.length > 0 && (
@@ -275,7 +299,14 @@ export default function ClientsPage() {
         {!clients ? (
           <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
         ) : clients.length === 0 ? (
-          <p className="text-gray-500 dark:text-gray-400">{t("empty")}</p>
+          <div className="card">
+            <EmptyState
+              icon={ClientsIcon}
+              title={t("emptyTitle")}
+              message={t("empty")}
+              cta={{ label: t("newClient"), onClick: () => setShowCreateForm(true) }}
+            />
+          </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
             {STAGES.map((stage) => (

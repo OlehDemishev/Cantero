@@ -98,6 +98,11 @@
   [role="button"]:not(:disabled) {
     cursor: pointer;
   }
+  /* Fixed-width digits everywhere amounts, quantities, and dates line up in columns — a table's
+     numeric cells shouldn't visually drift because "1" is narrower than "8". */
+  table {
+    font-variant-numeric: tabular-nums;
+  }
 }
 
 body {
@@ -157,6 +162,16 @@ body {
   }
   .input {
     @apply w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 focus:outline-hidden disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-brand-700 dark:disabled:bg-gray-900 dark:disabled:text-gray-500;
+  }
+  /* Native <select appearance varies wildly across browsers and looks out of place next to the
+     app's own icon set — swap in a matching chevron and drop the browser's own arrow/inset. */
+  select.input {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%2398a2b3' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6.5 8 10.5 12 6.5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 16px 16px;
+    padding-right: 2.25rem;
   }
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:bg-brand-300;

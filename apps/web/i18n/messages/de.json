@@ -38,6 +38,14 @@
   },
   "nav": {
     "menu": "Menü",
+    "group_overview": "Start",
+    "group_projects": "Projekte",
+    "group_clients": "Kunden",
+    "group_finance": "Finanzen",
+    "group_procurement": "Beschaffung & Ausrüstung",
+    "group_people": "Personal",
+    "group_documents": "Dokumente",
+    "group_system": "System",
     "dashboard": "Übersicht",
     "projects": "Projekte",
     "clients": "Kunden",
@@ -434,7 +442,8 @@
     "address": "Adresse",
     "client": "Kunde",
     "noClient": "Kein Kunde",
-    "empty": "Noch keine Projekte — erstellen Sie Ihr erstes.",
+    "emptyTitle": "Noch keine Projekte",
+    "empty": "Projekte verfolgen Budget, Zeitplan und Fortschritt, sobald Sie den Auftrag gewonnen haben.",
     "viewEstimates": "Kostenvoranschläge für dieses Projekt",
     "searchPlaceholder": "Suche nach Name oder Adresse…",
     "allClients": "Alle Kunden",
@@ -460,7 +469,8 @@
   "clients": {
     "title": "Kunden",
     "newClient": "Neuer Kunde",
-    "empty": "Noch keine Kunden — erstellen Sie Ihren ersten.",
+    "emptyTitle": "Noch keine Kunden",
+    "empty": "Verfolgen Sie Interessenten in Ihrer Pipeline vom ersten Kontakt bis zum unterschriebenen Vertrag.",
     "lead": "Interessent",
     "contacted": "Kontaktiert",
     "qualified": "Qualifiziert",
@@ -1526,6 +1536,15 @@
     "skipSetup": "Einrichtung überspringen",
     "back": "Zurück",
     "continueButton": "Weiter",
+    "profileTitle": "Welche Art von Arbeit machen Sie?",
+    "profileHint": "Wir richten Ihr Menü passend dazu ein — Sie können Bereiche später jederzeit in den Einstellungen ein- oder ausblenden.",
+    "profile": {
+      "generalContractor": { "label": "Generalunternehmer", "hint": "Vollständiges Projekt- und Subunternehmer-Management, alle Bereiche sichtbar." },
+      "specialtyTrade": { "label": "Fachgewerk", "hint": "Ein fokussiertes Menü für Gewerkearbeit — ohne Fuhrpark, Personal und Servicevertäge." },
+      "remodeling": { "label": "Renovierung & Umbau", "hint": "Ein schlankeres Menü für Renovierungsarbeiten im Wohnbereich." },
+      "everything": { "label": "Alles anzeigen", "hint": "Alle Bereiche sichtbar — entscheiden Sie später, was Sie ausblenden." }
+    },
+    "profileAdjustableHint": "Sie können dies jederzeit unter Einstellungen → Unternehmen ändern.",
     "catalogTitle": "Preiskatalog laden",
     "catalogHint": "Starten Sie mit einem fertigen Set an Leistungspositionen und Materialien passend zu Ihren Einheiten, oder überspringen Sie diesen Schritt und bauen Sie Ihren eigenen Katalog auf.",
     "loadCatalogButton": "Startkatalog laden",
@@ -2561,6 +2580,10 @@
     "noTransfers": "Es wurde noch kein Budget zwischen Kostencodes verschoben.",
     "transferLogEntry": "{amount} von {from} nach {to} umgebucht",
     "burnDown": "Kostenverlauf"
+  },
+  "navSettings": {
+    "title": "Seitenmenü",
+    "hint": "Blenden Sie Bereiche aus, die Sie nicht nutzen — das gesamte Team sieht das reduzierte Menü."
   },
   "security": {
     "title": "Sicherheit",
