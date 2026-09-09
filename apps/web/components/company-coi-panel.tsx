@@ -52,6 +52,7 @@ export function CompanyCoiPanel({ canManage }: { canManage: boolean }) {
   }
 
   async function removeDocument(id: string) {
+    if (!window.confirm(t("confirmDeleteDocument"))) return;
     await apiFetch(`/company/coi-documents/${id}`, { method: "DELETE" });
     load();
   }

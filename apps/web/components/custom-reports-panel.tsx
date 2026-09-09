@@ -134,6 +134,7 @@ export function CustomReportsPanel() {
   }
 
   async function deleteSaved(id: string) {
+    if (!window.confirm(t("confirmDeleteSavedReport"))) return;
     await apiFetch(`/custom-reports/${id}`, { method: "DELETE" });
     if (savedResult?.id === id) setSavedResult(null);
     load();

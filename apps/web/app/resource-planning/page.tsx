@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { CrewsPanel } from "@/components/crews-panel";
 import { apiFetch } from "@/lib/api-client";
@@ -170,6 +171,7 @@ export default function ResourcePlanningPage() {
   }
 
   async function removeAssignment(id: string) {
+    if (!window.confirm(t("confirmRemoveAssignment"))) return;
     await apiFetch(`/resource-planning/assignments/${id}`, { method: "DELETE" });
     load();
   }
@@ -331,7 +333,10 @@ export default function ResourcePlanningPage() {
                   <div key={resourceKey} className="card">
                     <div className="flex items-center justify-between">
                       <div className="text-sm font-medium text-gray-900">
-                        {r.resourceName} <span className="text-xs text-gray-400">({t(r.resourceType)})</span>
+                        <Link href={`/${r.resourceType === "worker" ? "team" : "equipment"}/${r.resourceId}`} className="text-brand-700 hover:underline">
+                          {r.resourceName}
+                        </Link>{" "}
+                        <span className="text-xs text-gray-400">({t(r.resourceType)})</span>
                       </div>
                       {hasConflict && (
                         <button
@@ -347,7 +352,9 @@ export default function ResourcePlanningPage() {
                       {r.assignments.map((a) => (
                         <li key={a.id} className="flex items-center justify-between text-xs text-gray-600">
                           <span>
-                            {a.projectName}
+                            <Link href={`/projects/${a.projectId}`} className="text-brand-700 hover:underline">
+                              {a.projectName}
+                            </Link>
                             {a.taskName && <span className="text-gray-400"> / {a.taskName}</span>} —{" "}
                             {formatDate(new Date(a.startDate))} – {formatDate(new Date(a.endDate))}
                             {a.note && <span className="text-gray-400"> · {a.note}</span>}
@@ -448,23 +455,29 @@ function Timeline({ calendar }: { calendar: Calendar }) {
           .filter((r) => r.assignments.length > 0)
           .map((r) => (
             <div key={`${r.resourceType}-${r.resourceId}`} className="flex items-center gap-3">
-              <div className="w-36 flex-none truncate text-xs text-gray-600">{r.resourceName}</div>
+              <Link
+                href={`/${r.resourceType === "worker" ? "team" : "equipment"}/${r.resourceId}`}
+                className="w-36 flex-none truncate text-xs text-brand-700 hover:underline"
+              >
+                {r.resourceName}
+              </Link>
               <div className="relative h-6 min-w-[420px] flex-1 rounded bg-gray-100">
                 {r.assignments.map((a) => {
                   const left = pct(new Date(a.startDate).getTime());
                   const right = pct(new Date(a.endDate).getTime());
                   const conflicted = conflictedIds.has(a.id);
                   return (
-                    <div
+                    <Link
                       key={a.id}
-                      className={`absolute h-6 overflow-hidden whitespace-nowrap rounded px-1 text-[10px] leading-6 text-white ${
+                      href={`/projects/${a.projectId}`}
+                      className={`absolute block h-6 overflow-hidden whitespace-nowrap rounded px-1 text-[10px] leading-6 text-white ${
                         conflicted ? "bg-error-500 ring-2 ring-error-700" : "bg-brand-500"
                       }`}
                       style={{ left: `${left}%`, width: `${Math.max(right - left, 2)}%` }}
                       title={`${a.projectName}: ${formatDate(new Date(a.startDate))} – ${formatDate(new Date(a.endDate))}`}
                     >
                       {a.projectName}
-                    </div>
+                    </Link>
                   );
                 })}
               </div>

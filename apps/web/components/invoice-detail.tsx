@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { SUPPORTED_CURRENCIES } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { DocumentsPanel } from "@/components/documents-panel";
@@ -49,7 +50,7 @@ interface Invoice {
   lines: InvoiceLine[];
   payments: Payment[];
   installments: Installment[];
-  client: { name: string };
+  client: { id: string; name: string };
   project: { id: string; name: string };
 }
 
@@ -239,7 +240,11 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
         <h1 className="text-2xl font-semibold">{invoice.number}</h1>
         <span className={`rounded-full px-3 py-1 text-xs font-medium ${statusColor}`}>{t(invoice.status)}</span>
       </div>
-      <p className="text-sm text-gray-500">{invoice.client.name}</p>
+      <p className="text-sm text-gray-500">
+        <Link href={`/clients/${invoice.client.id}`} className="hover:underline">
+          {invoice.client.name}
+        </Link>
+      </p>
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2">

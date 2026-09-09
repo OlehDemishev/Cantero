@@ -57,6 +57,7 @@ export function AssemblyQuickAddPanel({ estimateId, onAdded }: { estimateId: str
       <input
         type="number"
         step="0.01"
+        min="0.01"
         className="input w-28"
         value={quantity}
         onChange={(e) => setQuantity(e.target.value)}

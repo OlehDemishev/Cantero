@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { EXPENSE_CATEGORIES, EXPENSE_STATUSES, type ExpenseStatus } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
@@ -154,7 +155,14 @@ export default function ExpensesPage() {
                       )}
                     </div>
                     <div className="mt-1 text-xs text-gray-500">
-                      {e.worker.name} · {e.project.name} · {formatDate(new Date(e.incurredAt))}
+                      <Link href={`/team/${e.worker.id}`} className="text-brand-700 hover:underline">
+                        {e.worker.name}
+                      </Link>{" "}
+                      ·{" "}
+                      <Link href={`/projects/${e.project.id}`} className="text-brand-700 hover:underline">
+                        {e.project.name}
+                      </Link>{" "}
+                      · {formatDate(new Date(e.incurredAt))}
                     </div>
                     {e.description && <div className="mt-1 text-xs text-gray-600">{e.description}</div>}
                     {e.rejectedReason && (

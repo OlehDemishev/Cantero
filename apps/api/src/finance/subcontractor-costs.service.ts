@@ -21,10 +21,10 @@ export class SubcontractorCostsService {
     private readonly audit: AuditService,
   ) {}
 
-  list(companyId: string, projectId?: string) {
+  list(companyId: string, projectId?: string, subcontractorId?: string) {
     return this.prisma.subcontractorCost.findMany({
-      where: { companyId, ...(projectId ? { projectId } : {}) },
-      include: { subcontractor: true, lienWaiver: true },
+      where: { companyId, ...(projectId ? { projectId } : {}), ...(subcontractorId ? { subcontractorId } : {}) },
+      include: { subcontractor: true, lienWaiver: true, project: { select: { id: true, name: true } } },
       orderBy: { incurredDate: "desc" },
     });
   }

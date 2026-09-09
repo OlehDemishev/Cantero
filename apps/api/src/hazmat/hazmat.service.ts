@@ -15,7 +15,10 @@ export class HazmatService {
   listMaterials(companyId: string) {
     return this.prisma.hazardousMaterial.findMany({
       where: { companyId },
-      include: { sdsSheets: { orderBy: { createdAt: "desc" }, take: 1 } },
+      include: {
+        sdsSheets: { orderBy: { createdAt: "desc" }, take: 1 },
+        projectInventory: { include: { project: { select: { id: true, name: true } } } },
+      },
       orderBy: { name: "asc" },
     });
   }

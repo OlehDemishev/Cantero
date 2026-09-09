@@ -420,7 +420,12 @@
     "tab_operations": "Operacje",
     "tab_marketing": "Marketing",
     "confirmRevokeInvite": "Odwołać to oczekujące zaproszenie? Link w e-mailu z zaproszeniem przestanie działać.",
-    "confirmRevokeApiKey": "Odwołać ten klucz API? Każda integracja, która go używa, natychmiast przestanie działać."
+    "confirmRemoveMember": "Usunąć tę osobę z firmy? Natychmiast straci dostęp.",
+    "confirmRevokeApiKey": "Odwołać ten klucz API? Każda integracja, która go używa, natychmiast przestanie działać.",
+    "confirmDeleteCustomRole": "Usunąć tę niestandardową rolę? Osoby, którym jest jeszcze przypisana, stracą te uprawnienia.",
+    "confirmDeleteWebhook": "Usunąć ten webhook? Natychmiast przestanie otrzymywać zdarzenia.",
+    "auditLoadMore": "Wczytaj więcej",
+    "companySettingsManagerOnlyHint": "Tylko właściciele i administratorzy mogą edytować ustawienia firmy."
   },
   "projects": {
     "title": "Projekty",
@@ -598,7 +603,14 @@
     "isApprentice": "Praktykant (nie czeladnik)",
     "loadedRate": "Stawka obciążona",
     "managerOnlyHint": "Tylko właściciele i administratorzy mogą edytować profil pracownika, saldo urlopu lub PIN kiosku.",
-    "confirmTerminateEnrollment": "Zakończyć zapis pracownika do programu świadczeń? Jego ochrona w ramach tego planu zostanie zakończona."
+    "confirmTerminateEnrollment": "Zakończyć zapis pracownika do programu świadczeń? Jego ochrona w ramach tego planu zostanie zakończona.",
+    "noBenefitEnrollments": "Brak zapisów do świadczeń.",
+    "enrollInBenefits": "Zapisz do planu świadczeń",
+    "noTrainingEnrollments": "Brak zapisów na szkolenia.",
+    "enrollInTraining": "Zarządzaj zapisami na szkolenia",
+    "noToolCheckouts": "Brak wydanych narzędzi.",
+    "checkOutTool": "Wydaj narzędzie",
+    "confirmDeleteCertification": "Usunąć ten wpis certyfikacji?"
   },
   "documents": {
     "title": "Dokumenty",
@@ -845,7 +857,8 @@
     "fxGainLoss": "Zysk/strata kursowa",
     "paidInForeignCurrency": "Zapłacono w innej walucie",
     "foreignAmount": "Otrzymana kwota",
-    "exchangeRateUsed": "Zastosowany kurs wymiany"
+    "exchangeRateUsed": "Zastosowany kurs wymiany",
+    "confirmDeleteRecurring": "Usunąć tę cykliczną fakturę? Przyszłe automatyczne fakturowanie tego klienta zostanie zatrzymane."
   },
   "portal": {
     "signInTitle": "Portal klienta",
@@ -915,7 +928,8 @@
     "noProjects": "Brak projektów.",
     "changeRequestTitlePlaceholder": "Co chcieliby Państwo zmienić?",
     "submitChangeRequest": "Wyślij wniosek",
-    "changeRequestSubmitted": "Wniosek wysłany — rozpatrzymy go i się odezwiemy."
+    "changeRequestSubmitted": "Wniosek wysłany — rozpatrzymy go i się odezwiemy.",
+    "confirmRemoveCard": "Usunąć tę zapisaną kartę? Aby automatyczne płatności nadal działały, trzeba będzie dodać nową."
   },
   "equipment": {
     "title": "Sprzęt",
@@ -1109,6 +1123,11 @@
     "stockLevels": "Stany magazynowe",
     "quantity": "Ilość na stanie",
     "recordMovement": "Zarejestruj ruch",
+    "movementHistory": "Historia ruchów",
+    "movementType": "Typ",
+    "movementQuantity": "Ilość",
+    "movementProject": "Projekt",
+    "movementDate": "Data",
     "material": "Materiał",
     "type": "Typ",
     "receipt": "Przyjęcie",
@@ -1160,7 +1179,8 @@
     "transferStatus_in_transit": "W drodze",
     "transferStatus_received": "Odebrano",
     "transferStatus_cancelled": "Anulowano",
-    "receiveTransfer": "Odbierz"
+    "receiveTransfer": "Odbierz",
+    "loadMoreMovements": "Wczytaj więcej"
   },
   "suppliers": {
     "title": "Dostawcy",
@@ -1175,6 +1195,13 @@
     "catalogSyncResult": "Zaktualizowano {updated} cen(y), pominięto {skipped}",
     "averageRating": "Śr. ocena",
     "wouldReorderPercent": "Ponowne zamówienie",
+    "purchaseOrders": "Zamówienia zakupu",
+    "viewAllPurchaseOrders": "Zobacz wszystkie zamówienia zakupu",
+    "noPurchaseOrdersYet": "Brak zamówień u tego dostawcy.",
+    "draft": "Szkic",
+    "ordered": "Zamówione",
+    "received": "Przyjęte",
+    "partially_received": "Częściowo przyjęte",
     "coiDocuments": "Certyfikaty ubezpieczenia (COI)",
     "noCoiDocuments": "Brak certyfikatów w kartotece.",
     "general_liability_insurance": "Ubezpieczenie OC działalności",
@@ -1187,7 +1214,8 @@
     "wouldReorder": "Ponowne zamówienie?",
     "reviewCommentsPlaceholder": "Krótka notatka o tym zamówieniu...",
     "addReview": "Dodaj ocenę",
-    "priceVariance": "Odchylenie ceny od katalogu"
+    "priceVariance": "Odchylenie ceny od katalogu",
+    "confirmDeleteDocument": "Usunąć ten dokument?"
   },
   "scheduling": {
     "board": "Tablica zadań",
@@ -1323,6 +1351,7 @@
     "expenses": "Wydatki",
     "queuedOfflineNoReceipt": "Zapisano offline — zdjęcie paragonu trzeba będzie dodać po powrocie do sieci",
     "receiptQueuedOffline": "Zapisano — zdjęcie paragonu zostanie przesłane po powrocie do sieci",
+    "receiptUploadFailed": "Wydatek zapisany, ale nie udało się przesłać zdjęcia paragonu. Spróbuj ponownie później.",
     "syncConflicts": "{count} element(ów) nie udało się zsynchronizować — coś zmieniło się w międzyczasie",
     "retrySync": "Ponów",
     "discardSync": "Odrzuć",
@@ -1357,7 +1386,9 @@
     "waiverAwaitingSignature": "Oczekuje na podpis",
     "costCodeUnassigned": "Bez kodu kosztowego",
     "startDate": "Data rozpoczęcia",
-    "endDate": "Data zakończenia"
+    "endDate": "Data zakończenia",
+    "confirmUnassign": "Usunąć tego podwykonawcę z projektu?",
+    "endBeforeStart": "Data zakończenia nie może być wcześniejsza niż data rozpoczęcia."
   },
   "reports": {
     "title": "Raporty",
@@ -1845,7 +1876,9 @@
     "assignCrew": "Przypisz brygadę",
     "levelSchedule": "Wyrównaj harmonogram",
     "levelNoChanges": "Już wyrównany — nic do przesunięcia.",
-    "leveledMoves": "Przesunięto {count} przydział(y), aby rozwiązać nakładanie się."
+    "leveledMoves": "Przesunięto {count} przydział(y), aby rozwiązać nakładanie się.",
+    "confirmDeleteCrew": "Usunąć tę brygadę? Już przypisane zadania nie zostaną naruszone.",
+    "confirmRemoveAssignment": "Usunąć to przypisanie?"
   },
   "checklistTemplates": {
     "title": "Szablony list kontrolnych",
@@ -1874,7 +1907,8 @@
     "jhaPpe": "Wymagane ŚOI",
     "editTemplate": "Edytuj szablon",
     "versionBadge": "w{version}",
-    "history": "Historia"
+    "history": "Historia",
+    "confirmDeleteTemplate": "Usunąć ten szablon listy kontrolnej?"
   },
   "subcontractorCompliance": {
     "title": "Podwykonawcy",
@@ -1908,6 +1942,10 @@
     "projectsWorked": "Zrealizowane projekty",
     "totalPaidOut": "Łącznie wypłacono",
     "referencedBy": "Polecane przez {name}",
+    "projects": "Projekty",
+    "noAssignedProjects": "Nie przypisano jeszcze do żadnego projektu.",
+    "costsAcrossProjects": "Koszty na wszystkich projektach",
+    "noCostsYet": "Nie zarejestrowano jeszcze żadnych kosztów.",
     "prequalification": "Prekwalifikacja i profil",
     "prequalificationHint": "Rejestrowane przed zleceniem prac — licencja, zdolność gwarancyjna i samodzielnie zgłoszone podsumowanie programu bezpieczeństwa, obok pól profilu publicznego.",
     "licenseNumberPlaceholder": "Numer licencji",
@@ -1950,7 +1988,8 @@
     "diversityCategory_dbe": "DBE",
     "diversityCategory_vbe": "VBE",
     "diversityCategory_sdvosb": "SDVOSB",
-    "diversityCategory_other": "Inna"
+    "diversityCategory_other": "Inna",
+    "confirmDeleteDocument": "Usunąć ten dokument?"
   },
   "weather": {
     "title": "Prognoza pogody",
@@ -2136,7 +2175,8 @@
     "noSavedReports": "Brak zapisanych raportów.",
     "createdBy": "przez {name}",
     "run": "Uruchom",
-    "exportCsv": "Eksportuj CSV"
+    "exportCsv": "Eksportuj CSV",
+    "confirmDeleteSavedReport": "Usunąć ten zapisany raport?"
   },
   "accountingSync": {
     "title": "Synchronizacja księgowa",
@@ -2152,7 +2192,8 @@
     "hideHistory": "Ukryj historię synchronizacji",
     "noHistory": "Brak jeszcze prób synchronizacji.",
     "syncBillsNow": "Synchronizuj faktury teraz",
-    "integrityCheckBills": "{count, plural, =0 {Wszystkie faktury zsynchronizowane} one {# faktura niezsynchronizowana} few {# faktury niezsynchronizowane} many {# faktur niezsynchronizowanych} other {# faktury niezsynchronizowane}}"
+    "integrityCheckBills": "{count, plural, =0 {Wszystkie faktury zsynchronizowane} one {# faktura niezsynchronizowana} few {# faktury niezsynchronizowane} many {# faktur niezsynchronizowanych} other {# faktury niezsynchronizowane}}",
+    "confirmDisconnect": "Odłączyć integrację księgową? Faktury przestaną się synchronizować do czasu ponownego połączenia."
   },
   "expenses": {
     "title": "Wydatki",
@@ -2255,7 +2296,8 @@
     "calendarFeed": "Kanał kalendarza",
     "calendarFeedHint": "Zasubskrybuj ten adres URL w Google Calendar, Outlook lub Apple Calendar, aby zobaczyć terminy zadań i kamieni milowych.",
     "generateCalendarFeed": "Wygeneruj URL kanału",
-    "regenerateCalendarFeed": "Wygeneruj ponownie URL kanału"
+    "regenerateCalendarFeed": "Wygeneruj ponownie URL kanału",
+    "managerOnlyHint": "Tylko właściciele i administratorzy mogą konfigurować integracje."
   },
   "integrationsMarketplace": {
     "title": "Stan integracji",
@@ -2436,7 +2478,8 @@
     "signatureRequired": "Do podpisania wymagane jest wpisane imię i nazwisko oraz odręczny podpis.",
     "signedThanks": "Dziękujemy — ta umowa została podpisana.",
     "notAwaitingSignature": "Ta umowa nie oczekuje na podpis.",
-    "linkNotFound": "Ten link jest nieprawidłowy lub wygasł."
+    "linkNotFound": "Ten link jest nieprawidłowy lub wygasł.",
+    "confirmDeleteTemplate": "Usunąć ten szablon umowy?"
   },
   "costCodes": {
     "title": "Kody kosztowe",
@@ -2464,7 +2507,9 @@
     "fundType_health": "Zdrowotny",
     "fundType_training": "Szkoleniowy",
     "fundType_vacation": "Urlopowy",
-    "fundType_other": "Inny"
+    "fundType_other": "Inny",
+    "confirmDeleteClassification": "Usunąć tę klasyfikację płacową? Przypisani pracownicy staną się nieprzypisani.",
+    "confirmDeleteFund": "Usunąć ten fundusz świadczeń dodatkowych?"
   },
   "certifiedPayroll": {
     "title": "Certyfikowana lista płac",
@@ -2607,7 +2652,8 @@
     "current": "Aktualna",
     "superseded": "Zastąpiona",
     "revisionLabel": "Wersja {n}",
-    "uploadRevision": "Prześlij nową rewizję"
+    "uploadRevision": "Prześlij nową rewizję",
+    "confirmDeleteSheet": "Usunąć ten arkusz rysunku? Wszystkie przypięte RFI lub punkty listy usterek stracą lokalizację."
   },
   "permits": {
     "title": "Pozwolenia i odbiory",
@@ -2632,7 +2678,8 @@
     "result_pending": "Oczekujący",
     "result_passed": "Pozytywny",
     "result_failed": "Negatywny",
-    "result_cancelled": "Anulowany"
+    "result_cancelled": "Anulowany",
+    "confirmDeletePermit": "Usunąć to pozwolenie? Historia kontroli również zostanie usunięta."
   },
   "sustainability": {
     "materialSettings": "Zrównoważony rozwój",
@@ -2821,7 +2868,8 @@
     "noCurrentDocuments": "Brak aktualnych certyfikatów w kartotece.",
     "validUntil": "Ważne do {date}",
     "download": "Pobierz",
-    "notFound": "Ten link jest nieprawidłowy lub nie jest już udostępniany."
+    "notFound": "Ten link jest nieprawidłowy lub nie jest już udostępniany.",
+    "confirmDeleteDocument": "Usunąć ten dokument ubezpieczeniowy?"
   },
   "insuranceClaims": {
     "title": "Roszczenia ubezpieczeniowe",
@@ -3175,6 +3223,7 @@
     "interviewNotesPlaceholder": "Notatki",
     "logInterview": "Zarejestruj rozmowę",
     "alreadyHired": "Ten kandydat został już zatrudniony.",
+    "viewWorkerProfile": "Zobacz profil pracownika",
     "rolePlaceholder": "Stanowisko",
     "hourlyCostPlaceholder": "Stawka godzinowa",
     "convertToWorker": "Przekształć w pracownika"
@@ -3253,6 +3302,7 @@
     "priority_high": "Wysoki",
     "priority_urgent": "Pilny",
     "slaBreached": "Naruszono SLA",
+    "manageSlaPolicies": "Zarządzaj politykami SLA",
     "unassigned": "Nieprzypisane",
     "internalNote": "Notatka wewnętrzna",
     "replyPlaceholder": "Napisz odpowiedź",
@@ -3366,6 +3416,8 @@
     "totalTaxCollected": "Pobrany podatek",
     "clientTaxTitle": "Podatek",
     "noJurisdictionAssigned": "Nie przypisano jurysdykcji",
+    "noJurisdictionsConfigured": "Nie skonfigurowano jeszcze jurysdykcji podatkowych.",
+    "manageJurisdictions": "Zarządzaj jurysdykcjami podatkowymi",
     "exemptionCertificates": "Certyfikaty zwolnienia",
     "noExemptionCertificates": "Brak certyfikatów zwolnienia.",
     "certificateNumberPlaceholder": "Numer certyfikatu",
@@ -3393,6 +3445,7 @@
     "addTier": "Dodaj poziom",
     "enrollWorker": "Zapisz pracownika",
     "noPlansYet": "Najpierw dodaj plan świadczeń.",
+    "managePlans": "Zarządzaj planami świadczeń",
     "effectiveDate": "Data obowiązywania",
     "enroll": "Zapisz",
     "enrolled": "Zapisano.",
@@ -3439,6 +3492,7 @@
     "noMaterials": "Brak substancji niebezpiecznych.",
     "staleSdsTitle": "Karty wymagające aktualizacji",
     "lastRevised": "ostatnia aktualizacja {date}",
+    "onSiteAt": "Na obiekcie",
     "noSdsOnFile": "brak karty w dokumentacji",
     "versionPlaceholder": "Wersja",
     "hazardClassificationPlaceholder": "Klasyfikacja zagrożenia",
@@ -3462,7 +3516,7 @@
     "noItems": "Brak pozycji w magazynie narzędzi.",
     "onHandCount": "{count} w magazynie",
     "lowStock": "poniżej minimum",
-    "checkedOutTo": "{quantity} × wydano dla {worker}",
+    "checkedOutToPrefix": "{quantity} × wydano dla",
     "checkIn": "Zwróć",
     "checkOut": "Wydaj",
     "quantity": "Ilość",
@@ -3550,7 +3604,8 @@
     "noFinishChange": "Brak zmiany daty zakończenia projektu.",
     "finishDelta": "Zakończenie projektu przesunęłoby się o {days} dni {direction}.",
     "later": "później",
-    "earlier": "wcześniej"
+    "earlier": "wcześniej",
+    "confirmDeleteScenario": "Usunąć ten scenariusz harmonogramu?"
   },
   "commissioning": {
     "title": "Rozruch (commissioning)",

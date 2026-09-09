@@ -19,8 +19,8 @@ export class PurchaseOrdersController {
   constructor(private readonly service: PurchaseOrdersService) {}
 
   @Get()
-  list(@CurrentUser() user: AuthUser) {
-    return this.service.list(user.companyId);
+  list(@CurrentUser() user: AuthUser, @Query("supplierId") supplierId?: string) {
+    return this.service.list(user.companyId, supplierId);
   }
 
   @Get("receiving-discrepancies")

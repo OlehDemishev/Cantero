@@ -45,6 +45,7 @@ export function TimeOffPanel() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (form.endDate < form.startDate) return;
     setBusy(true);
     try {
       await apiFetch("/time-off", {
@@ -108,11 +109,12 @@ export function TimeOffPanel() {
               type="date"
               className="input"
               value={form.startDate}
-              onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value, endDate: f.endDate && f.endDate < e.target.value ? e.target.value : f.endDate }))}
             />
             <input
               required
               type="date"
+              min={form.startDate || undefined}
               className="input"
               value={form.endDate}
               onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))}

@@ -82,6 +82,7 @@ export function MarkupRulesPanel() {
           type="number"
           step="0.01"
           min="0"
+          max="500"
           placeholder={t("markupPercentPlaceholder")}
           className="input w-32"
           value={form.markupPercent}

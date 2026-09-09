@@ -2,13 +2,18 @@
 
 import { use, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { DEPRECIATION_METHODS, type DepreciationMethod, type EquipmentStatus } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { EquipmentGpsPanel } from "@/components/equipment-gps-panel";
 import { CalibrationPanel } from "@/components/calibration-panel";
+import { EquipmentMaintenanceRecordsPanel } from "@/components/equipment-maintenance-records-panel";
+import { EquipmentFuelLogsPanel } from "@/components/equipment-fuel-logs-panel";
+import { EquipmentRentalHistoryPanel } from "@/components/equipment-rental-history-panel";
+import { EquipmentAssignmentHistoryPanel } from "@/components/equipment-assignment-history-panel";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
-import { formatDate, formatDateTime } from "@/lib/format-date";
+import { formatDate } from "@/lib/format-date";
 
 function getCurrentPositionSafe(): Promise<{ lat: number; lng: number } | null> {
   return new Promise((resolve) => {
@@ -33,8 +38,8 @@ interface Worker {
   name: string;
 }
 interface AssignmentSummary {
-  project: { name: string } | null;
-  worker: { name: string } | null;
+  project: { id: string; name: string } | null;
+  worker: { id: string; name: string } | null;
 }
 interface DepreciationResult {
   monthsElapsed: number;
@@ -68,29 +73,6 @@ interface Equipment {
   depreciation: DepreciationResult | null;
   disposal: AssetDisposal | null;
 }
-interface Supplier {
-  id: string;
-  name: string;
-}
-interface FuelLog {
-  id: string;
-  filledAt: string;
-  quantity: string;
-  cost: string | null;
-  meterHours: string | null;
-  supplier: { id: string; name: string } | null;
-}
-interface CostPerHour {
-  totalCost: number;
-  costPerHour: number | null;
-}
-interface Tco {
-  totalCost: number;
-  costPerHour: number | null;
-  fuelSharePercent: number | null;
-  maintenanceSharePercent: number | null;
-  depreciationSharePercent: number | null;
-}
 interface Rental {
   id: string;
   renterName: string;
@@ -103,25 +85,6 @@ interface Rental {
   daysElapsed: number;
   revenue: number;
 }
-interface Assignment {
-  id: string;
-  checkedOutAt: string;
-  checkedInAt: string | null;
-  notes: string | null;
-  project: { name: string } | null;
-  worker: { name: string } | null;
-  checkOutWithinGeofence: boolean | null;
-  checkInWithinGeofence: boolean | null;
-}
-interface MaintenanceRecord {
-  id: string;
-  description: string;
-  cost: string | null;
-  performedAt: string;
-  meterHours: string | null;
-  supplier: { id: string; name: string } | null;
-}
-
 const STATUS_STYLES: Record<EquipmentStatus, string> = {
   available: "bg-success-50 text-success-700",
   in_use: "bg-warning-50 text-warning-700",
@@ -140,16 +103,8 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
   const [equipment, setEquipment] = useState<Equipment | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [workers, setWorkers] = useState<Worker[]>([]);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [assignments, setAssignments] = useState<Assignment[] | null>(null);
-  const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[] | null>(null);
-  const [fuelLogs, setFuelLogs] = useState<FuelLog[] | null>(null);
-  const [costPerHour, setCostPerHour] = useState<CostPerHour | null>(null);
-  const [tco, setTco] = useState<Tco | null>(null);
   const [rentals, setRentals] = useState<Rental[] | null>(null);
   const [checkOutForm, setCheckOutForm] = useState({ projectId: "", workerId: "" });
-  const [maintenanceForm, setMaintenanceForm] = useState({ description: "", cost: "", supplierId: "", meterHours: "" });
-  const [fuelForm, setFuelForm] = useState({ quantity: "", cost: "", supplierId: "", meterHours: "" });
   const [rentalForm, setRentalForm] = useState({ renterName: "", renterContact: "", dailyRate: "", expectedReturnDate: "", notes: "" });
   const [scheduleIntervalDays, setScheduleIntervalDays] = useState("");
   const [scheduleIntervalHours, setScheduleIntervalHours] = useState("");
@@ -172,11 +127,6 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
         salvageValue: e.salvageValue !== null ? e.salvageValue : "",
       });
     });
-    apiFetch<Assignment[]>(`/equipment/${id}/assignments`).then(setAssignments);
-    apiFetch<MaintenanceRecord[]>(`/equipment/${id}/maintenance-records`).then(setMaintenanceRecords);
-    apiFetch<FuelLog[]>(`/equipment/${id}/fuel-logs`).then(setFuelLogs);
-    apiFetch<CostPerHour>(`/equipment/${id}/cost-per-hour`).then(setCostPerHour);
-    apiFetch<Tco>(`/equipment/${id}/tco`).then(setTco);
     apiFetch<Rental[]>(`/equipment/${id}/rentals`).then(setRentals);
   }
 
@@ -184,7 +134,6 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
     load();
     apiFetch<Project[]>("/projects").then(setProjects);
     apiFetch<Worker[]>("/workers").then(setWorkers);
-    apiFetch<Supplier[]>("/materials/suppliers").then(setSuppliers);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -373,47 +322,6 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
     }
   }
 
-  async function addMaintenanceRecord(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    try {
-      await apiFetch(`/equipment/${id}/maintenance-records`, {
-        method: "POST",
-        body: JSON.stringify({
-          description: maintenanceForm.description,
-          cost: maintenanceForm.cost ? Number(maintenanceForm.cost) : undefined,
-          supplierId: maintenanceForm.supplierId || undefined,
-          meterHours: maintenanceForm.meterHours ? Number(maintenanceForm.meterHours) : undefined,
-        }),
-      });
-      setMaintenanceForm({ description: "", cost: "", supplierId: "", meterHours: "" });
-      load();
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function addFuelLog(e: React.FormEvent) {
-    e.preventDefault();
-    if (!fuelForm.quantity) return;
-    setBusy(true);
-    try {
-      await apiFetch(`/equipment/${id}/fuel-logs`, {
-        method: "POST",
-        body: JSON.stringify({
-          quantity: Number(fuelForm.quantity),
-          cost: fuelForm.cost ? Number(fuelForm.cost) : undefined,
-          supplierId: fuelForm.supplierId || undefined,
-          meterHours: fuelForm.meterHours ? Number(fuelForm.meterHours) : undefined,
-        }),
-      });
-      setFuelForm({ quantity: "", cost: "", supplierId: "", meterHours: "" });
-      load();
-    } finally {
-      setBusy(false);
-    }
-  }
-
   if (!equipment) {
     return (
       <AuthenticatedShell>
@@ -474,9 +382,18 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
           )}
           {equipment.status === "in_use" && (
             <div>
-              {equipment.assignments[0] && (
+              {equipment.assignments[0] && (equipment.assignments[0].worker || equipment.assignments[0].project) && (
                 <p className="mb-3 text-sm text-gray-600">
-                  {t("currentlyWith")}: {equipment.assignments[0].worker?.name ?? equipment.assignments[0].project?.name}
+                  {t("currentlyWith")}:{" "}
+                  {equipment.assignments[0].worker ? (
+                    <Link href={`/team/${equipment.assignments[0].worker.id}`} className="text-brand-700 hover:underline">
+                      {equipment.assignments[0].worker.name}
+                    </Link>
+                  ) : (
+                    <Link href={`/projects/${equipment.assignments[0].project!.id}`} className="text-brand-700 hover:underline">
+                      {equipment.assignments[0].project!.name}
+                    </Link>
+                  )}
                 </p>
               )}
               <button onClick={checkIn} className="btn-primary">
@@ -743,254 +660,17 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
           )}
         </section>
 
-        <section className="card">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("maintenanceRecords")}</h2>
-          {!maintenanceRecords || maintenanceRecords.length === 0 ? (
-            <p className="mb-3 text-sm text-gray-400">{t("noMaintenanceRecords")}</p>
-          ) : (
-            <ul className="mb-3 flex flex-col gap-2">
-              {maintenanceRecords.map((r) => (
-                <li key={r.id} className="border-b border-gray-100 pb-2 text-sm">
-                  <div className="flex justify-between">
-                    <span>{r.description}</span>
-                    {r.cost && (
-                      <span className="text-gray-500">
-                        {r.cost} {currency}
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-xs text-gray-400">
-                    {formatDate(new Date(r.performedAt))}
-                    {r.supplier && ` · ${r.supplier.name}`}
-                    {r.meterHours && ` · ${r.meterHours}${t("hoursAbbr")}`}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-          <form onSubmit={addMaintenanceRecord} className="flex flex-col gap-2">
-            <input
-              required
-              placeholder={t("descriptionPlaceholder")}
-              className="input"
-              value={maintenanceForm.description}
-              onChange={(e) => setMaintenanceForm((f) => ({ ...f, description: e.target.value }))}
-            />
-            <div className="flex flex-wrap gap-2">
-              <input
-                type="number"
-                step="0.01"
-                placeholder={t("cost")}
-                className="input"
-                value={maintenanceForm.cost}
-                onChange={(e) => setMaintenanceForm((f) => ({ ...f, cost: e.target.value }))}
-              />
-              <input
-                type="number"
-                step="0.1"
-                placeholder={t("meterHoursPlaceholder")}
-                className="input w-32"
-                value={maintenanceForm.meterHours}
-                onChange={(e) => setMaintenanceForm((f) => ({ ...f, meterHours: e.target.value }))}
-              />
-              <select
-                className="input"
-                value={maintenanceForm.supplierId}
-                onChange={(e) => setMaintenanceForm((f) => ({ ...f, supplierId: e.target.value }))}
-              >
-                <option value="">{t("noSupplier")}</option>
-                {suppliers.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-              <button type="submit" disabled={busy} className="btn-secondary shrink-0 px-3 py-1.5 text-xs">
-                {t("addMaintenanceRecord")}
-              </button>
-            </div>
-          </form>
-        </section>
+        <EquipmentMaintenanceRecordsPanel equipmentId={id} currency={currency} />
 
         <CalibrationPanel equipmentId={id} />
 
-        <section className="card">
-          <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("fuelLogs")}</h2>
-          <p className="mb-3 text-xs text-gray-500">{t("fuelLogsHint")}</p>
-          {costPerHour && (
-            <p className="mb-3 text-sm text-gray-700 dark:text-gray-300">
-              {t("costPerHour")}: {costPerHour.costPerHour !== null ? `${costPerHour.costPerHour} ${currency}/${t("hoursAbbr")}` : "—"}
-              <span className="ml-2 text-xs text-gray-400">
-                ({t("totalCost")}: {costPerHour.totalCost} {currency})
-              </span>
-            </p>
-          )}
-          {tco && (
-            <div className="mb-3 rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-700 dark:bg-gray-800 dark:text-gray-300">
-              <span className="font-medium">
-                {t("tco")}: {tco.totalCost} {currency}
-              </span>
-              {tco.totalCost > 0 && (
-                <span className="ml-2 text-xs text-gray-400">
-                  ({t("tcoBreakdown", {
-                    fuel: tco.fuelSharePercent ?? 0,
-                    maintenance: tco.maintenanceSharePercent ?? 0,
-                    depreciation: tco.depreciationSharePercent ?? 0,
-                  })})
-                </span>
-              )}
-            </div>
-          )}
-          {!fuelLogs || fuelLogs.length === 0 ? (
-            <p className="mb-3 text-sm text-gray-400">{t("noFuelLogs")}</p>
-          ) : (
-            <ul className="mb-3 flex flex-col gap-2">
-              {fuelLogs.map((f) => (
-                <li key={f.id} className="border-b border-gray-100 pb-2 text-sm">
-                  <div className="flex justify-between">
-                    <span>{f.quantity}</span>
-                    {f.cost && (
-                      <span className="text-gray-500">
-                        {f.cost} {currency}
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-xs text-gray-400">
-                    {formatDate(new Date(f.filledAt))}
-                    {f.supplier && ` · ${f.supplier.name}`}
-                    {f.meterHours && ` · ${f.meterHours}${t("hoursAbbr")}`}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-          <form onSubmit={addFuelLog} className="flex flex-wrap gap-2">
-            <input
-              required
-              type="number"
-              step="0.01"
-              placeholder={t("quantityPlaceholder")}
-              className="input w-32"
-              value={fuelForm.quantity}
-              onChange={(e) => setFuelForm((f) => ({ ...f, quantity: e.target.value }))}
-            />
-            <input
-              type="number"
-              step="0.01"
-              placeholder={t("cost")}
-              className="input"
-              value={fuelForm.cost}
-              onChange={(e) => setFuelForm((f) => ({ ...f, cost: e.target.value }))}
-            />
-            <input
-              type="number"
-              step="0.1"
-              placeholder={t("meterHoursPlaceholder")}
-              className="input w-32"
-              value={fuelForm.meterHours}
-              onChange={(e) => setFuelForm((f) => ({ ...f, meterHours: e.target.value }))}
-            />
-            <select className="input" value={fuelForm.supplierId} onChange={(e) => setFuelForm((f) => ({ ...f, supplierId: e.target.value }))}>
-              <option value="">{t("noSupplier")}</option>
-              {suppliers.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-            <button type="submit" disabled={busy} className="btn-secondary shrink-0 px-3 py-1.5 text-xs">
-              {t("addFuelLog")}
-            </button>
-          </form>
-        </section>
+        <EquipmentFuelLogsPanel equipmentId={id} currency={currency} />
 
-        <section className="card lg:col-span-2">
-          <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("rentalHistory")}</h2>
-          <p className="mb-3 text-xs text-gray-500">{t("rentalHistoryHint")}</p>
-          {!rentals || rentals.length === 0 ? (
-            <p className="text-sm text-gray-400">{t("noRentals")}</p>
-          ) : (
-            <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-gray-200 text-left text-gray-500">
-                  <th className="py-2">{t("renter")}</th>
-                  <th>{t("dailyRate")}</th>
-                  <th>{t("rentalStart")}</th>
-                  <th>{t("rentalReturn")}</th>
-                  <th className="text-right">{t("rentalRevenue")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rentals.map((r) => (
-                  <tr key={r.id} className="border-b border-gray-100">
-                    <td className="py-2">
-                      {r.renterName}
-                      {!r.actualReturnDate && (
-                        <span className="ml-1.5 rounded-full bg-brand-50 px-1.5 py-0.5 text-[10px] font-medium text-brand-700">
-                          {t("rentalActive")}
-                        </span>
-                      )}
-                    </td>
-                    <td>
-                      {r.dailyRate} {currency}
-                    </td>
-                    <td>{formatDate(new Date(r.startDate))}</td>
-                    <td>{r.actualReturnDate ? formatDate(new Date(r.actualReturnDate)) : t("stillOut")}</td>
-                    <td className="text-right font-medium">
-                      {r.revenue} {currency}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            </div>
-          )}
-        </section>
+        <EquipmentRentalHistoryPanel equipmentId={id} currency={currency} />
 
         <EquipmentGpsPanel equipmentId={id} />
 
-        <section className="card lg:col-span-2">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("assignmentHistory")}</h2>
-          {!assignments || assignments.length === 0 ? (
-            <p className="text-sm text-gray-400">{t("noAssignments")}</p>
-          ) : (
-            <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-gray-200 text-left text-gray-500">
-                  <th className="py-2">{tc("name")}</th>
-                  <th>{t("checkedOutAt")}</th>
-                  <th>{t("checkedInAt")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {assignments.map((a) => (
-                  <tr key={a.id} className="border-b border-gray-100">
-                    <td className="py-2">{a.worker?.name ?? a.project?.name ?? "—"}</td>
-                    <td>
-                      {formatDateTime(new Date(a.checkedOutAt))}
-                      {a.checkOutWithinGeofence === false && (
-                        <span className="ml-1 rounded-full bg-warning-50 px-1.5 py-0.5 text-[10px] font-medium text-warning-700">
-                          {t("offSite")}
-                        </span>
-                      )}
-                    </td>
-                    <td>
-                      {a.checkedInAt ? formatDateTime(new Date(a.checkedInAt)) : t("stillOut")}
-                      {a.checkInWithinGeofence === false && (
-                        <span className="ml-1 rounded-full bg-warning-50 px-1.5 py-0.5 text-[10px] font-medium text-warning-700">
-                          {t("offSite")}
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            </div>
-          )}
-        </section>
+        <EquipmentAssignmentHistoryPanel equipmentId={id} />
       </div>
     </AuthenticatedShell>
   );

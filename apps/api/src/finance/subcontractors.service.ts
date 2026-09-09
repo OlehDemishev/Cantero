@@ -70,7 +70,7 @@ export class SubcontractorsService {
   listAssignments(companyId: string, subcontractorId: string) {
     return this.prisma.subcontractorAssignment.findMany({
       where: { subcontractorId, subcontractor: { companyId } },
-      include: { project: { select: { name: true } } },
+      include: { project: { select: { id: true, name: true } } },
       orderBy: { createdAt: "desc" },
     });
   }

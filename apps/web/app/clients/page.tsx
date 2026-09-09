@@ -7,7 +7,7 @@ import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { CsvImportButton } from "@/components/csv-import-button";
 import { SavedViewsBar } from "@/components/saved-views-bar";
 import { CrmPipelinePanel } from "@/components/crm-pipeline-panel";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, ApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 
@@ -63,6 +63,8 @@ export default function ClientsPage() {
   const [pendingLostId, setPendingLostId] = useState<string | null>(null);
   const [lostReasonDraft, setLostReasonDraft] = useState("");
   const [convertingId, setConvertingId] = useState<string | null>(null);
+  const [convertBusy, setConvertBusy] = useState(false);
+  const [convertError, setConvertError] = useState<string | null>(null);
   const [convertForm, setConvertForm] = useState({ name: "", address: "" });
   const [filters, setFilters] = useState<ClientFilters>(EMPTY_FILTERS);
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -123,15 +125,24 @@ export default function ClientsPage() {
   function startConvert(client: Client) {
     setConvertingId(client.id);
     setConvertForm({ name: client.name, address: "" });
+    setConvertError(null);
   }
 
   async function submitConvert(e: React.FormEvent, clientId: string) {
     e.preventDefault();
-    const project = await apiFetch<{ id: string }>(`/clients/${clientId}/convert-to-project`, {
-      method: "POST",
-      body: JSON.stringify({ name: convertForm.name, address: convertForm.address || undefined }),
-    });
-    router.push(`/projects/${project.id}`);
+    if (convertBusy) return;
+    setConvertBusy(true);
+    setConvertError(null);
+    try {
+      const project = await apiFetch<{ id: string }>(`/clients/${clientId}/convert-to-project`, {
+        method: "POST",
+        body: JSON.stringify({ name: convertForm.name, address: convertForm.address || undefined }),
+      });
+      router.push(`/projects/${project.id}`);
+    } catch (err) {
+      setConvertError(err instanceof ApiError ? err.message : tc("error"));
+      setConvertBusy(false);
+    }
   }
 
   const filteredClients = (clients ?? []).filter((c) => {
@@ -339,17 +350,21 @@ export default function ClientsPage() {
                               onChange={(e) => setConvertForm((f) => ({ ...f, name: e.target.value }))}
                             />
                             <div className="flex gap-1.5">
-                              <button type="submit" className="btn-primary px-2 py-0.5 text-xs">
+                              <button type="submit" disabled={convertBusy} className="btn-primary px-2 py-0.5 text-xs">
                                 {t("convertToProject")}
                               </button>
                               <button
                                 type="button"
-                                onClick={() => setConvertingId(null)}
+                                onClick={() => {
+                                  setConvertingId(null);
+                                  setConvertError(null);
+                                }}
                                 className="btn-secondary px-2 py-0.5 text-xs"
                               >
                                 {tc("cancel")}
                               </button>
                             </div>
+                            {convertError && <p className="text-xs text-error-700">{convertError}</p>}
                           </form>
                         ) : (
                           <div className="mt-2 flex flex-wrap gap-1">

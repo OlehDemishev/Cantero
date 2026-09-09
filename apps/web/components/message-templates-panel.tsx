@@ -47,6 +47,8 @@ export function MessageTemplatesPanel() {
     try {
       await apiFetch(`/message-templates/${key}`, { method: "DELETE" });
       load();
+    } catch (err) {
+      setErrorKey({ key, message: err instanceof ApiError ? err.message : t("error") });
     } finally {
       setBusyKey(null);
     }

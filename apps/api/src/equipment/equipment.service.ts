@@ -33,7 +33,7 @@ export class EquipmentService {
       include: {
         assignments: {
           where: { checkedInAt: null },
-          include: { project: { select: { name: true } }, worker: { select: { name: true } } },
+          include: { project: { select: { id: true, name: true } }, worker: { select: { id: true, name: true } } },
         },
       },
       orderBy: { createdAt: "desc" },
@@ -516,7 +516,7 @@ export class EquipmentService {
   listAssignments(companyId: string, id: string) {
     return this.prisma.equipmentAssignment.findMany({
       where: { equipmentId: id, equipment: { companyId } },
-      include: { project: { select: { name: true } }, worker: { select: { name: true } } },
+      include: { project: { select: { id: true, name: true } }, worker: { select: { id: true, name: true } } },
       orderBy: { checkedOutAt: "desc" },
     });
   }
@@ -548,7 +548,7 @@ export class EquipmentService {
       include: {
         assignments: {
           where: { checkedInAt: null },
-          include: { project: { select: { name: true } }, worker: { select: { name: true } } },
+          include: { project: { select: { id: true, name: true } }, worker: { select: { id: true, name: true } } },
         },
       },
     });

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, ApiError } from "@/lib/api-client";
 
 interface OffboardingTemplateItem {
   id: string;
@@ -17,6 +17,7 @@ export function OffboardingTemplatePanel() {
   const [items, setItems] = useState<OffboardingTemplateItem[] | null>(null);
   const [title, setTitle] = useState("");
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   function load() {
     apiFetch<OffboardingTemplateItem[]>("/company/offboarding-template").then(setItems);
@@ -28,10 +29,13 @@ export function OffboardingTemplatePanel() {
     e.preventDefault();
     if (!title.trim()) return;
     setBusy(true);
+    setError(null);
     try {
       await apiFetch("/company/offboarding-template", { method: "POST", body: JSON.stringify({ title }) });
       setTitle("");
       load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : tc("error"));
     } finally {
       setBusy(false);
     }
@@ -39,9 +43,12 @@ export function OffboardingTemplatePanel() {
 
   async function remove(id: string) {
     setBusy(true);
+    setError(null);
     try {
       await apiFetch(`/company/offboarding-template/${id}`, { method: "DELETE" });
       load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : tc("error"));
     } finally {
       setBusy(false);
     }
@@ -64,6 +71,7 @@ export function OffboardingTemplatePanel() {
           {t("addOffboardingTask")}
         </button>
       </form>
+      {error && <p className="mt-1.5 text-xs text-error-700">{error}</p>}
 
       <ul className="mt-4 flex max-w-md flex-col gap-1.5">
         {items === null ? (

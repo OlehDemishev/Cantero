@@ -87,6 +87,7 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
   }
 
   async function disconnect() {
+    if (!window.confirm(t("confirmDisconnect"))) return;
     setBusy(true);
     try {
       await apiFetch("/company/accounting/connection", { method: "DELETE" });

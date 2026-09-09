@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { apiFetch } from "@/lib/api-client";
 
 interface HazardousMaterial {
@@ -76,7 +77,9 @@ export function HazmatInventoryPanel({ projectId }: { projectId: string }) {
           {items.map((item) => (
             <li key={item.id} className="card flex items-center justify-between text-sm">
               <span>
-                {item.hazardousMaterial.name}
+                <Link href={`/hazmat?materialId=${item.hazardousMaterial.id}`} className="text-brand-700 hover:underline">
+                  {item.hazardousMaterial.name}
+                </Link>
                 {item.quantity && <span className="ml-1.5 text-xs text-gray-400">{item.quantity}</span>}
                 {item.location && <span className="ml-1.5 text-xs text-gray-400">— {item.location}</span>}
               </span>

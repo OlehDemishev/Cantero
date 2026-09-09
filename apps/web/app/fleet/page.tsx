@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { VEHICLE_TYPES, type VehicleInspectionResult, type VehicleType } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch } from "@/lib/api-client";
@@ -305,7 +306,15 @@ export default function FleetPage() {
                   </button>
                   <p className="mt-1 text-xs text-gray-400">
                     {t(`type_${v.type}`)}
-                    {v.assignedDriver && ` · ${t("driver")}: ${v.assignedDriver.name}`}
+                    {v.assignedDriver && (
+                      <>
+                        {" "}
+                        · {t("driver")}:{" "}
+                        <Link href={`/team/${v.assignedDriver.id}`} className="text-brand-700 hover:underline">
+                          {v.assignedDriver.name}
+                        </Link>
+                      </>
+                    )}
                   </p>
 
                   {expanded && detail && detail.id === v.id && (

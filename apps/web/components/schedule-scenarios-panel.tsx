@@ -65,6 +65,7 @@ export function ScheduleScenariosPanel({ projectId }: { projectId: string }) {
   }
 
   async function remove(id: string) {
+    if (!window.confirm(t("confirmDeleteScenario"))) return;
     await apiFetch(`/schedule-scenarios/${id}`, { method: "DELETE" });
     load();
   }

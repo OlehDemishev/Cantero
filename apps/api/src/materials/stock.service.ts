@@ -25,12 +25,13 @@ export class StockService {
     });
   }
 
-  listMovements(companyId: string, warehouseId?: string) {
+  listMovements(companyId: string, warehouseId?: string, cursor?: string) {
     return this.prisma.stockMovement.findMany({
       where: { companyId, ...(warehouseId ? { warehouseId } : {}) },
-      include: { materialCatalogItem: true },
+      include: { materialCatalogItem: true, project: { select: { id: true, name: true } } },
       orderBy: { createdAt: "desc" },
       take: 100,
+      ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
     });
   }
 

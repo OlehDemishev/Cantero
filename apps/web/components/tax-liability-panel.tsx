@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface TaxJurisdiction {
   id: string;
@@ -26,6 +27,7 @@ export function TaxLiabilityPanel() {
   const t = useTranslations("tax");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
+  const isManager = me?.user.role === "owner" || me?.user.role === "admin";
 
   const [jurisdictions, setJurisdictions] = useState<TaxJurisdiction[]>([]);
   const [jurisdictionId, setJurisdictionId] = useState("");
@@ -52,40 +54,47 @@ export function TaxLiabilityPanel() {
   }
   useEffect(load, [jurisdictionId, periodStart, periodEnd]);
 
-  if (jurisdictions.length === 0) return null;
-
   return (
     <div className="mt-10">
       <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("liabilityReportTitle")}</h2>
       <p className="mb-3 text-xs text-gray-500">{t("liabilityReportHint")}</p>
 
-      <div className="mb-3 flex flex-wrap items-end gap-2">
-        <select className="input w-auto" value={jurisdictionId} onChange={(e) => setJurisdictionId(e.target.value)}>
-          {jurisdictions.map((j) => (
-            <option key={j.id} value={j.id}>
-              {j.name}
-            </option>
-          ))}
-        </select>
-        <input type="date" className="input w-auto" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} />
-        <input type="date" className="input w-auto" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} />
-      </div>
+      {jurisdictions.length === 0 ? (
+        <EmptyState
+          message={t("noJurisdictionsConfigured")}
+          cta={isManager ? { label: t("manageJurisdictions"), href: "/settings?tab=billing" } : undefined}
+        />
+      ) : (
+        <>
+          <div className="mb-3 flex flex-wrap items-end gap-2">
+            <select className="input w-auto" value={jurisdictionId} onChange={(e) => setJurisdictionId(e.target.value)}>
+              {jurisdictions.map((j) => (
+                <option key={j.id} value={j.id}>
+                  {j.name}
+                </option>
+              ))}
+            </select>
+            <input type="date" className="input w-auto" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} />
+            <input type="date" className="input w-auto" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} />
+          </div>
 
-      {report && (
-        <div className="card grid grid-cols-2 gap-3 max-w-md">
-          <div>
-            <div className="text-xs text-gray-500">{t("totalTaxableSales")}</div>
-            <div className="mt-1 text-lg font-semibold text-gray-900">
-              {report.totalTaxableSales} {currency}
+          {report && (
+            <div className="card grid grid-cols-2 gap-3 max-w-md">
+              <div>
+                <div className="text-xs text-gray-500">{t("totalTaxableSales")}</div>
+                <div className="mt-1 text-lg font-semibold text-gray-900">
+                  {report.totalTaxableSales} {currency}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-500">{t("totalTaxCollected")}</div>
+                <div className="mt-1 text-lg font-semibold text-gray-900">
+                  {report.totalTaxCollected} {currency}
+                </div>
+              </div>
             </div>
-          </div>
-          <div>
-            <div className="text-xs text-gray-500">{t("totalTaxCollected")}</div>
-            <div className="mt-1 text-lg font-semibold text-gray-900">
-              {report.totalTaxCollected} {currency}
-            </div>
-          </div>
-        </div>
+          )}
+        </>
       )}
     </div>
   );

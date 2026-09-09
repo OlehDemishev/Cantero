@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
@@ -111,7 +112,15 @@ export function ContractDetail({ contractId }: { contractId: string }) {
         <span className={`rounded-full px-3 py-1 text-xs font-medium ${STATUS_STYLES[contract.status]}`}>{t(contract.status)}</span>
       </div>
       {(contract.client || contract.subcontractor) && (
-        <p className="text-sm text-gray-500">{contract.client?.name ?? contract.subcontractor?.name}</p>
+        <p className="text-sm text-gray-500">
+          {contract.client ? (
+            <Link href={`/clients/${contract.client.id}`} className="text-brand-700 hover:underline">
+              {contract.client.name}
+            </Link>
+          ) : (
+            contract.subcontractor?.name
+          )}
+        </p>
       )}
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">

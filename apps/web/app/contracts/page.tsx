@@ -56,6 +56,7 @@ export default function ContractsPage() {
   }
 
   async function deleteTemplate(id: string) {
+    if (!window.confirm(t("confirmDeleteTemplate"))) return;
     await apiFetch(`/contract-templates/${id}`, { method: "DELETE" });
     load();
   }

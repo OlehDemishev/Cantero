@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { TabNav, type TabNavItem } from "@/components/ui/tab-nav";
@@ -228,7 +229,11 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
         <h1 className="text-2xl font-semibold">{project?.name ?? tc("loading")}</h1>
         {project && <ProjectHealthBadge projectId={projectId} />}
       </div>
-      {project?.client && <p className="text-sm text-gray-500">{project.client.name}</p>}
+      {project?.client && (
+        <Link href={`/clients/${project.client.id}`} className="text-sm text-brand-700 hover:underline">
+          {project.client.name}
+        </Link>
+      )}
 
       <TabNav tabs={TABS} active={activeTab} onChange={setTab} />
 

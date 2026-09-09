@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { DASHBOARD_WIDGET_TYPES, type DashboardWidgetType } from "@cantero/shared";
-import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { apiFetch, downloadBlob, ApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 
@@ -30,6 +30,7 @@ export function DashboardWidgetsPanel() {
   const [newType, setNewType] = useState<DashboardWidgetType>("revenue_trend");
   const [newCustomReportId, setNewCustomReportId] = useState("");
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   function load() {
     apiFetch<Widget[]>("/dashboard-widgets").then(setWidgets);
@@ -43,6 +44,7 @@ export function DashboardWidgetsPanel() {
   async function addWidget(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
+    setError(null);
     try {
       await apiFetch("/dashboard-widgets", {
         method: "POST",
@@ -52,6 +54,8 @@ export function DashboardWidgetsPanel() {
         }),
       });
       load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : tc("error"));
     } finally {
       setBusy(false);
     }
@@ -59,9 +63,12 @@ export function DashboardWidgetsPanel() {
 
   async function removeWidget(id: string) {
     setBusy(true);
+    setError(null);
     try {
       await apiFetch(`/dashboard-widgets/${id}`, { method: "DELETE" });
       load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : tc("error"));
     } finally {
       setBusy(false);
     }
@@ -69,12 +76,18 @@ export function DashboardWidgetsPanel() {
 
   async function move(index: number, direction: -1 | 1) {
     if (!widgets) return;
+    const previous = widgets;
     const next = [...widgets];
     const swapWith = index + direction;
     if (swapWith < 0 || swapWith >= next.length) return;
     [next[index], next[swapWith]] = [next[swapWith], next[index]];
     setWidgets(next);
-    await apiFetch("/dashboard-widgets/reorder", { method: "POST", body: JSON.stringify({ orderedIds: next.map((w) => w.id) }) });
+    try {
+      await apiFetch("/dashboard-widgets/reorder", { method: "POST", body: JSON.stringify({ orderedIds: next.map((w) => w.id) }) });
+    } catch (err) {
+      setWidgets(previous);
+      setError(err instanceof ApiError ? err.message : tc("error"));
+    }
   }
 
   async function downloadPdf() {
@@ -115,6 +128,7 @@ export function DashboardWidgetsPanel() {
           {t("addWidget")}
         </button>
       </form>
+      {error && <p className="mb-3 text-xs text-error-700">{error}</p>}
 
       {!widgets ? (
         <p className="text-sm text-gray-400">{tc("loading")}</p>

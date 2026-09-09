@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { TICKET_PRIORITIES, TICKET_STATUSES, type TicketPriority, type TicketStatus } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch } from "@/lib/api-client";
 import { formatDateTime } from "@/lib/format-date";
+import { useMe } from "@/lib/use-me";
 
 interface Member {
   id: string;
@@ -60,6 +62,8 @@ const PRIORITY_STYLES: Record<TicketPriority, string> = {
 export default function SupportTicketsPage() {
   const t = useTranslations("supportTickets");
   const tc = useTranslations("common");
+  const { data: me } = useMe();
+  const isManager = me?.user.role === "owner" || me?.user.role === "admin";
 
   const [tickets, setTickets] = useState<Ticket[] | null>(null);
   const [statusFilter, setStatusFilter] = useState<TicketStatus | "">("");
@@ -163,11 +167,18 @@ export default function SupportTicketsPage() {
     <AuthenticatedShell>
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{t("title")}</h1>
-        {!adding && (
-          <button onClick={() => setAdding(true)} className="btn-secondary px-3 py-1.5 text-sm">
-            {t("newTicket")}
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {isManager && (
+            <Link href="/settings?tab=operations" className="text-xs font-medium text-brand-700 hover:underline">
+              {t("manageSlaPolicies")}
+            </Link>
+          )}
+          {!adding && (
+            <button onClick={() => setAdding(true)} className="btn-secondary px-3 py-1.5 text-sm">
+              {t("newTicket")}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="mt-4 flex flex-wrap gap-1.5">
@@ -255,10 +266,35 @@ export default function SupportTicketsPage() {
               const expanded = expandedId === ticket.id;
               return (
                 <li key={ticket.id} className="card">
-                  <button onClick={() => toggleExpand(ticket.id)} className="flex w-full items-center justify-between text-left">
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => toggleExpand(ticket.id)}
+                    onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && toggleExpand(ticket.id)}
+                    className="flex w-full cursor-pointer items-center justify-between text-left"
+                  >
                     <div>
                       <span className="text-sm font-medium text-gray-900">{ticket.subject}</span>
-                      <span className="ml-2 text-xs text-gray-400">{ticket.requesterClient?.name ?? ticket.requesterName}</span>
+                      {ticket.requesterClient ? (
+                        <Link
+                          href={`/clients/${ticket.requesterClient.id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="ml-2 text-xs text-brand-700 hover:underline"
+                        >
+                          {ticket.requesterClient.name}
+                        </Link>
+                      ) : (
+                        <span className="ml-2 text-xs text-gray-400">{ticket.requesterName}</span>
+                      )}
+                      {ticket.project && (
+                        <Link
+                          href={`/projects/${ticket.project.id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="ml-2 text-xs text-brand-700 hover:underline"
+                        >
+                          {ticket.project.name}
+                        </Link>
+                      )}
                       <span className={`ml-2 text-xs font-medium ${PRIORITY_STYLES[ticket.priority]}`}>{t(`priority_${ticket.priority}`)}</span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -267,7 +303,7 @@ export default function SupportTicketsPage() {
                       )}
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[ticket.status]}`}>{t(`status_${ticket.status}`)}</span>
                     </div>
-                  </button>
+                  </div>
 
                   {expanded && detail && detail.id === ticket.id && (
                     <div className="mt-3 flex flex-col gap-3 border-t border-gray-100 pt-3">

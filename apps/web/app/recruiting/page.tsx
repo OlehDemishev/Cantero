@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { CANDIDATE_STAGES, type CandidateStage, type JobPostingStatus } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch } from "@/lib/api-client";
@@ -357,7 +358,12 @@ export default function RecruitingPage() {
                             </div>
 
                             {c.hiredWorkerId ? (
-                              <p className="text-sm text-success-700">{t("alreadyHired")}</p>
+                              <p className="text-sm text-success-700">
+                                {t("alreadyHired")}{" "}
+                                <Link href={`/team/${c.hiredWorkerId}`} className="font-medium underline">
+                                  {t("viewWorkerProfile")}
+                                </Link>
+                              </p>
                             ) : (
                               c.stage !== "rejected" && (
                                 <div className="flex flex-wrap items-end gap-2 border-t border-gray-100 pt-3">

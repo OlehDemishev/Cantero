@@ -253,6 +253,7 @@
     "auditLog": "Audit log",
     "auditLogHint": "Who changed what, and when.",
     "confirmRevokeInvite": "Revoke this pending invite? The link in the invite email will stop working.",
+    "confirmRemoveMember": "Remove this person from the company? They will immediately lose access.",
     "confirmRevokeApiKey": "Revoke this API key? Any integration using it will immediately stop working.",
     "noAuditLog": "No activity recorded yet.",
     "tab_account": "Account & Notifications",
@@ -420,7 +421,11 @@
     "rateCatalogApprovalThresholdPercentHint": "A labor-hours edit changing a rate item by more than this percentage is held for approval instead of applying immediately. Leave blank to apply every edit at once.",
     "noThresholdPlaceholder": "No threshold",
     "npsDetractorFollowUpEnabled": "NPS detractor follow-up",
-    "npsDetractorFollowUpEnabledHint": "A client response at or below 6/10 adds a follow-up task to the project and emails the company owner(s)."
+    "npsDetractorFollowUpEnabledHint": "A client response at or below 6/10 adds a follow-up task to the project and emails the company owner(s).",
+    "confirmDeleteCustomRole": "Delete this custom role? Anyone still assigned to it will lose those permissions.",
+    "confirmDeleteWebhook": "Delete this webhook? It will stop receiving events immediately.",
+    "auditLoadMore": "Load more",
+    "companySettingsManagerOnlyHint": "Only owners and admins can edit company settings."
   },
   "projects": {
     "title": "Projects",
@@ -524,6 +529,12 @@
     "title": "Team",
     "managerOnlyHint": "Only owners and admins can edit a worker's profile, PTO balance, or kiosk PIN.",
     "confirmTerminateEnrollment": "Terminate this worker's benefits enrollment? Their coverage under this plan will end.",
+    "noBenefitEnrollments": "No benefit enrollments yet.",
+    "enrollInBenefits": "Enroll in a benefit plan",
+    "noTrainingEnrollments": "No training enrollments yet.",
+    "enrollInTraining": "Manage training enrollments",
+    "noToolCheckouts": "No tools checked out yet.",
+    "checkOutTool": "Check out a tool",
     "workers": "Workers",
     "newWorker": "New worker",
     "role": "Role",
@@ -598,7 +609,8 @@
     "trainingHistory": "Training",
     "cdlExpiry": "CDL expiry",
     "isApprentice": "Apprentice (not a journeyman)",
-    "loadedRate": "Loaded rate"
+    "loadedRate": "Loaded rate",
+    "confirmDeleteCertification": "Delete this certification record?"
   },
   "documents": {
     "title": "Documents",
@@ -845,7 +857,8 @@
     "fxGainLoss": "FX gain/loss",
     "paidInForeignCurrency": "Paid in a different currency",
     "foreignAmount": "Amount received",
-    "exchangeRateUsed": "Exchange rate used"
+    "exchangeRateUsed": "Exchange rate used",
+    "confirmDeleteRecurring": "Delete this recurring invoice? Future automatic billing to this client will stop."
   },
   "portal": {
     "signInTitle": "Client portal",
@@ -915,7 +928,8 @@
     "noProjects": "No projects yet.",
     "changeRequestTitlePlaceholder": "What would you like changed?",
     "submitChangeRequest": "Submit request",
-    "changeRequestSubmitted": "Request submitted — we'll review it and follow up."
+    "changeRequestSubmitted": "Request submitted — we'll review it and follow up.",
+    "confirmRemoveCard": "Remove this saved card? You'll need to add a new one to keep autopay working."
   },
   "equipment": {
     "title": "Equipment",
@@ -1109,6 +1123,11 @@
     "stockLevels": "Stock levels",
     "quantity": "Qty on hand",
     "recordMovement": "Record movement",
+    "movementHistory": "Movement history",
+    "movementType": "Type",
+    "movementQuantity": "Quantity",
+    "movementProject": "Project",
+    "movementDate": "Date",
     "material": "Material",
     "type": "Type",
     "receipt": "Receipt",
@@ -1160,7 +1179,8 @@
     "transferStatus_in_transit": "In transit",
     "transferStatus_received": "Received",
     "transferStatus_cancelled": "Cancelled",
-    "receiveTransfer": "Receive"
+    "receiveTransfer": "Receive",
+    "loadMoreMovements": "Load more"
   },
   "suppliers": {
     "title": "Suppliers",
@@ -1175,6 +1195,13 @@
     "catalogSyncResult": "{updated} price(s) updated, {skipped} skipped",
     "averageRating": "Avg. rating",
     "wouldReorderPercent": "Would reorder",
+    "purchaseOrders": "Purchase orders",
+    "viewAllPurchaseOrders": "View all purchase orders",
+    "noPurchaseOrdersYet": "No purchase orders with this supplier yet.",
+    "draft": "Draft",
+    "ordered": "Ordered",
+    "received": "Received",
+    "partially_received": "Partially received",
     "coiDocuments": "Insurance certificates (COI)",
     "noCoiDocuments": "No certificates on file.",
     "general_liability_insurance": "General liability insurance",
@@ -1187,7 +1214,8 @@
     "wouldReorder": "Would reorder?",
     "reviewCommentsPlaceholder": "A short note about this order...",
     "addReview": "Add review",
-    "priceVariance": "Price variance vs. catalog"
+    "priceVariance": "Price variance vs. catalog",
+    "confirmDeleteDocument": "Delete this document?"
   },
   "scheduling": {
     "board": "Task board",
@@ -1323,6 +1351,7 @@
     "expenses": "Expenses",
     "queuedOfflineNoReceipt": "Saved offline — the receipt photo will need to be added once you're back online",
     "receiptQueuedOffline": "Saved — receipt photo will upload once you're back online",
+    "receiptUploadFailed": "Expense saved, but the receipt photo failed to upload. Try attaching it again later.",
     "syncConflicts": "{count} item(s) couldn't sync — something changed elsewhere",
     "retrySync": "Retry",
     "discardSync": "Discard",
@@ -1357,7 +1386,9 @@
     "waiverAwaitingSignature": "Awaiting signature",
     "costCodeUnassigned": "Unassigned cost code",
     "startDate": "Start date",
-    "endDate": "End date"
+    "endDate": "End date",
+    "confirmUnassign": "Remove this subcontractor from the project?",
+    "endBeforeStart": "End date can't be before the start date."
   },
   "reports": {
     "title": "Reports",
@@ -1845,7 +1876,9 @@
     "assignCrew": "Assign crew",
     "levelSchedule": "Level schedule",
     "levelNoChanges": "Already level — nothing to shift.",
-    "leveledMoves": "Shifted {count} assignment(s) to resolve the overlap."
+    "leveledMoves": "Shifted {count} assignment(s) to resolve the overlap.",
+    "confirmDeleteCrew": "Delete this crew? Assignments already made won't be affected.",
+    "confirmRemoveAssignment": "Remove this assignment?"
   },
   "checklistTemplates": {
     "title": "Checklist templates",
@@ -1874,7 +1907,8 @@
     "jhaPpe": "Required PPE",
     "editTemplate": "Edit template",
     "versionBadge": "v{version}",
-    "history": "History"
+    "history": "History",
+    "confirmDeleteTemplate": "Delete this checklist template?"
   },
   "subcontractorCompliance": {
     "title": "Subcontractors",
@@ -1908,6 +1942,10 @@
     "projectsWorked": "Projects worked",
     "totalPaidOut": "Total paid out",
     "referencedBy": "Referenced by {name}",
+    "projects": "Projects",
+    "noAssignedProjects": "Not assigned to any project yet.",
+    "costsAcrossProjects": "Costs across projects",
+    "noCostsYet": "No costs logged yet.",
     "prequalification": "Prequalification & profile",
     "prequalificationHint": "Recorded before awarding work — license, bonding capacity, and a self-reported safety program summary, alongside the public-profile fields.",
     "licenseNumberPlaceholder": "License number",
@@ -1950,7 +1988,8 @@
     "diversityCategory_dbe": "DBE",
     "diversityCategory_vbe": "VBE",
     "diversityCategory_sdvosb": "SDVOSB",
-    "diversityCategory_other": "Other"
+    "diversityCategory_other": "Other",
+    "confirmDeleteDocument": "Delete this document?"
   },
   "weather": {
     "title": "Weather forecast",
@@ -2136,7 +2175,8 @@
     "noSavedReports": "No saved reports yet.",
     "createdBy": "by {name}",
     "run": "Run",
-    "exportCsv": "Export CSV"
+    "exportCsv": "Export CSV",
+    "confirmDeleteSavedReport": "Delete this saved report?"
   },
   "accountingSync": {
     "title": "Accounting sync",
@@ -2152,7 +2192,8 @@
     "hideHistory": "Hide sync history",
     "noHistory": "No sync attempts yet.",
     "syncBillsNow": "Sync bills now",
-    "integrityCheckBills": "{count, plural, =0 {All bills are synced} one {# bill not yet synced} other {# bills not yet synced}}"
+    "integrityCheckBills": "{count, plural, =0 {All bills are synced} one {# bill not yet synced} other {# bills not yet synced}}",
+    "confirmDisconnect": "Disconnect your accounting integration? Invoices and bills will stop syncing until you reconnect."
   },
   "expenses": {
     "title": "Expenses",
@@ -2255,7 +2296,8 @@
     "calendarFeed": "Calendar feed",
     "calendarFeedHint": "Subscribe to this URL from Google Calendar, Outlook, or Apple Calendar to see task and milestone due dates.",
     "generateCalendarFeed": "Generate feed URL",
-    "regenerateCalendarFeed": "Regenerate feed URL"
+    "regenerateCalendarFeed": "Regenerate feed URL",
+    "managerOnlyHint": "Only owners and admins can configure integrations."
   },
   "integrationsMarketplace": {
     "title": "Integration status",
@@ -2436,7 +2478,8 @@
     "signatureRequired": "A typed name and drawn signature are required to sign.",
     "signedThanks": "Thank you — this contract has been signed.",
     "notAwaitingSignature": "This contract is not awaiting a signature.",
-    "linkNotFound": "This link is invalid or has expired."
+    "linkNotFound": "This link is invalid or has expired.",
+    "confirmDeleteTemplate": "Delete this contract template?"
   },
   "costCodes": {
     "title": "Cost codes",
@@ -2464,7 +2507,9 @@
     "fundType_health": "Health",
     "fundType_training": "Training",
     "fundType_vacation": "Vacation",
-    "fundType_other": "Other"
+    "fundType_other": "Other",
+    "confirmDeleteClassification": "Delete this wage classification? Workers assigned to it will become unclassified.",
+    "confirmDeleteFund": "Delete this fringe benefit fund?"
   },
   "certifiedPayroll": {
     "title": "Certified payroll",
@@ -2607,7 +2652,8 @@
     "current": "Current",
     "superseded": "Superseded",
     "revisionLabel": "Version {n}",
-    "uploadRevision": "Upload new revision"
+    "uploadRevision": "Upload new revision",
+    "confirmDeleteSheet": "Delete this drawing sheet? Any RFI or punch-list pins on it will lose their location."
   },
   "permits": {
     "title": "Permits & inspections",
@@ -2632,7 +2678,8 @@
     "result_pending": "Pending",
     "result_passed": "Passed",
     "result_failed": "Failed",
-    "result_cancelled": "Cancelled"
+    "result_cancelled": "Cancelled",
+    "confirmDeletePermit": "Delete this permit? Its inspection history will be deleted too."
   },
   "sustainability": {
     "materialSettings": "Sustainability",
@@ -2821,7 +2868,8 @@
     "noCurrentDocuments": "No current certificates on file.",
     "validUntil": "Valid until {date}",
     "download": "Download",
-    "notFound": "This link is invalid or no longer shared."
+    "notFound": "This link is invalid or no longer shared.",
+    "confirmDeleteDocument": "Delete this insurance document?"
   },
   "insuranceClaims": {
     "title": "Insurance claims",
@@ -3175,6 +3223,7 @@
     "interviewNotesPlaceholder": "Notes",
     "logInterview": "Log interview",
     "alreadyHired": "This candidate has already been hired.",
+    "viewWorkerProfile": "View worker profile",
     "rolePlaceholder": "Role",
     "hourlyCostPlaceholder": "Hourly rate",
     "convertToWorker": "Convert to worker"
@@ -3253,6 +3302,7 @@
     "priority_high": "High",
     "priority_urgent": "Urgent",
     "slaBreached": "SLA breached",
+    "manageSlaPolicies": "Manage SLA policies",
     "unassigned": "Unassigned",
     "internalNote": "Internal note",
     "replyPlaceholder": "Write a reply",
@@ -3366,6 +3416,8 @@
     "totalTaxCollected": "Tax collected",
     "clientTaxTitle": "Tax",
     "noJurisdictionAssigned": "No jurisdiction assigned",
+    "noJurisdictionsConfigured": "No tax jurisdictions configured yet.",
+    "manageJurisdictions": "Manage tax jurisdictions",
     "exemptionCertificates": "Exemption certificates",
     "noExemptionCertificates": "No exemption certificates on file.",
     "certificateNumberPlaceholder": "Certificate number",
@@ -3393,6 +3445,7 @@
     "addTier": "Add tier",
     "enrollWorker": "Enroll a worker",
     "noPlansYet": "Add a benefit plan first.",
+    "managePlans": "Manage benefit plans",
     "effectiveDate": "Effective date",
     "enroll": "Enroll",
     "enrolled": "Enrolled.",
@@ -3439,6 +3492,7 @@
     "noMaterials": "No hazardous materials yet.",
     "staleSdsTitle": "SDS needing a fresh copy",
     "lastRevised": "last revised {date}",
+    "onSiteAt": "On-site at",
     "noSdsOnFile": "no SDS on file",
     "versionPlaceholder": "Version",
     "hazardClassificationPlaceholder": "Hazard classification",
@@ -3462,7 +3516,7 @@
     "noItems": "No tool crib items yet.",
     "onHandCount": "{count} on hand",
     "lowStock": "below par",
-    "checkedOutTo": "{quantity} × checked out to {worker}",
+    "checkedOutToPrefix": "{quantity} × checked out to",
     "checkIn": "Check in",
     "checkOut": "Check out",
     "quantity": "Quantity",
@@ -3550,7 +3604,8 @@
     "noFinishChange": "No change to the project finish date.",
     "finishDelta": "Project finish would move {days} day(s) {direction}.",
     "later": "later",
-    "earlier": "earlier"
+    "earlier": "earlier",
+    "confirmDeleteScenario": "Delete this schedule scenario?"
   },
   "commissioning": {
     "title": "Commissioning",

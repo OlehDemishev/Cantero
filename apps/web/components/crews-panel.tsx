@@ -98,6 +98,7 @@ export function CrewsPanel({ workers, projects }: { workers: Worker[]; projects:
   }
 
   async function deleteCrew(id: string) {
+    if (!window.confirm(t("confirmDeleteCrew"))) return;
     await apiFetch(`/resource-planning/crews/${id}`, { method: "DELETE" });
     load();
   }

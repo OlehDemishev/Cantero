@@ -24,8 +24,8 @@ export class StockController {
   }
 
   @Get("movements")
-  movements(@CurrentUser() user: AuthUser, @Query("warehouseId") warehouseId?: string) {
-    return this.service.listMovements(user.companyId, warehouseId);
+  movements(@CurrentUser() user: AuthUser, @Query("warehouseId") warehouseId?: string, @Query("cursor") cursor?: string) {
+    return this.service.listMovements(user.companyId, warehouseId, cursor);
   }
 
   @Get("valuation")

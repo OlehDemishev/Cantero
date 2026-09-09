@@ -71,6 +71,7 @@ export default function RateCatalogPage() {
   const [catalogs, setCatalogs] = useState<Catalog[]>([]);
   const [activeCatalogId, setActiveCatalogId] = useState<string>("all");
   const [newCatalogName, setNewCatalogName] = useState("");
+  const [catalogBusy, setCatalogBusy] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [lines, setLines] = useState<MaterialLine[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -138,10 +139,15 @@ export default function RateCatalogPage() {
 
   async function createCatalog(e: React.FormEvent) {
     e.preventDefault();
-    if (!newCatalogName.trim()) return;
-    await apiFetch("/catalogs", { method: "POST", body: JSON.stringify({ name: newCatalogName.trim() }) });
-    setNewCatalogName("");
-    loadCatalogs();
+    if (!newCatalogName.trim() || catalogBusy) return;
+    setCatalogBusy(true);
+    try {
+      await apiFetch("/catalogs", { method: "POST", body: JSON.stringify({ name: newCatalogName.trim() }) });
+      setNewCatalogName("");
+      loadCatalogs();
+    } finally {
+      setCatalogBusy(false);
+    }
   }
 
   function startEdit(item: RateCatalogItem) {
@@ -285,7 +291,7 @@ export default function RateCatalogPage() {
             value={newCatalogName}
             onChange={(e) => setNewCatalogName(e.target.value)}
           />
-          <button type="submit" className="btn-secondary px-2 py-1 text-xs">
+          <button type="submit" disabled={catalogBusy} className="btn-secondary px-2 py-1 text-xs">
             +
           </button>
         </form>

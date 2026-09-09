@@ -13,9 +13,9 @@ export class PurchaseOrdersService {
     private readonly audit: AuditService,
   ) {}
 
-  list(companyId: string) {
+  list(companyId: string, supplierId?: string) {
     return this.prisma.purchaseOrder.findMany({
-      where: { companyId },
+      where: { companyId, ...(supplierId ? { supplierId } : {}) },
       include: { supplier: true, lines: { include: { materialCatalogItem: true } } },
       orderBy: { createdAt: "desc" },
     });

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
+import { EmptyState } from "@/components/ui/empty-state";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
@@ -32,6 +33,7 @@ export default function BenefitsPage() {
   const tc = useTranslations("common");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
+  const isManager = me?.user.role === "owner" || me?.user.role === "admin";
 
   const [summary, setSummary] = useState<CostSummary | null>(null);
   const [workers, setWorkers] = useState<Worker[]>([]);
@@ -104,7 +106,10 @@ export default function BenefitsPage() {
       <div className="card mt-6 max-w-lg">
         <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("enrollWorker")}</h2>
         {plans.length === 0 ? (
-          <p className="text-sm text-gray-400">{t("noPlansYet")}</p>
+          <EmptyState
+            message={t("noPlansYet")}
+            cta={isManager ? { label: t("managePlans"), href: "/settings?tab=team" } : undefined}
+          />
         ) : (
           <form onSubmit={enroll} className="flex flex-col gap-2">
             <select className="input" value={form.workerId} onChange={(e) => setForm((f) => ({ ...f, workerId: e.target.value }))}>

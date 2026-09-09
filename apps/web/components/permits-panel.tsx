@@ -106,6 +106,7 @@ export function PermitsPanel({ projectId }: { projectId: string }) {
   }
 
   async function deletePermit(id: string) {
+    if (!window.confirm(t("confirmDeletePermit"))) return;
     await apiFetch(`/permits/${id}`, { method: "DELETE" });
     if (expandedId === id) setExpandedId(null);
     load();

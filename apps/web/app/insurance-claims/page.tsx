@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { INSURANCE_CLAIM_TYPES, INSURANCE_CLAIM_STATUSES, type InsuranceClaimType, type InsuranceClaimStatus } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
@@ -332,7 +333,14 @@ export default function InsuranceClaimsPage() {
                 </button>
               </div>
               <p className="mt-1 text-xs text-gray-500">
-                {claim.project?.name ?? t("noProject")} · {formatDate(new Date(claim.dateFiled))}
+                {claim.project ? (
+                  <Link href={`/projects/${claim.project.id}`} className="text-brand-700 hover:underline">
+                    {claim.project.name}
+                  </Link>
+                ) : (
+                  t("noProject")
+                )}{" "}
+                · {formatDate(new Date(claim.dateFiled))}
                 {claim.claimAmount && ` · ${claim.claimAmount} ${currency}`}
               </p>
               <p className="mt-1 text-sm text-gray-700">{claim.description}</p>

@@ -2,6 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch } from "@/lib/api-client";
@@ -96,7 +97,13 @@ export default function ServiceContractDetailPage({ params }: { params: Promise<
       </button>
       <h1 className="mt-2 text-2xl font-semibold">{contract.title}</h1>
       <p className="text-sm text-gray-500">
-        {contract.project.name} · {contract.client.name}
+        <Link href={`/projects/${contract.project.id}`} className="text-brand-700 hover:underline">
+          {contract.project.name}
+        </Link>{" "}
+        ·{" "}
+        <Link href={`/clients/${contract.client.id}`} className="text-brand-700 hover:underline">
+          {contract.client.name}
+        </Link>
       </p>
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">

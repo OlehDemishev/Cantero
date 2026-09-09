@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { SUPPLIER_DOCUMENT_TYPES, type ImportResult, type SupplierDocumentType } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { CertificateAttachment } from "@/components/certificate-attachment";
@@ -40,6 +41,12 @@ interface SupplierReview {
   comments: string | null;
   createdAt: string;
 }
+interface SupplierPurchaseOrder {
+  id: string;
+  status: "draft" | "ordered" | "partially_received" | "received";
+  createdAt: string;
+  lines: { quantity: string; unitPrice: string }[];
+}
 
 export default function SuppliersPage() {
   const t = useTranslations("suppliers");
@@ -56,10 +63,12 @@ export default function SuppliersPage() {
   const [docForm, setDocForm] = useState({ type: "general_liability_insurance" as SupplierDocumentType, name: "", expiresAt: "" });
   const [reviewForm, setReviewForm] = useState({ rating: "5", wouldReorder: "", comments: "" });
   const [detailBusy, setDetailBusy] = useState(false);
+  const [purchaseOrders, setPurchaseOrders] = useState<SupplierPurchaseOrder[] | null>(null);
 
   function loadDetail(id: string) {
     apiFetch<SupplierDocument[]>(`/materials/suppliers/${id}/documents`).then(setDocuments);
     apiFetch<SupplierReview[]>(`/materials/suppliers/${id}/reviews`).then(setReviews);
+    apiFetch<SupplierPurchaseOrder[]>(`/materials/purchase-orders?supplierId=${id}`).then(setPurchaseOrders);
   }
 
   function toggleExpand(id: string) {
@@ -67,11 +76,13 @@ export default function SuppliersPage() {
       setExpandedId(null);
       setDocuments(null);
       setReviews(null);
+      setPurchaseOrders(null);
       return;
     }
     setExpandedId(id);
     setDocuments(null);
     setReviews(null);
+    setPurchaseOrders(null);
     if (!scorecards[id]) {
       apiFetch<Scorecard>(`/materials/suppliers/${id}/scorecard`).then((s) => setScorecards((prev) => ({ ...prev, [id]: s })));
     }
@@ -95,6 +106,7 @@ export default function SuppliersPage() {
   }
 
   async function removeDocument(supplierId: string, documentId: string) {
+    if (!window.confirm(t("confirmDeleteDocument"))) return;
     await apiFetch(`/materials/suppliers/${supplierId}/documents/${documentId}`, { method: "DELETE" });
     loadDetail(supplierId);
   }
@@ -248,6 +260,33 @@ export default function SuppliersPage() {
                                 </div>
                               </div>
                             </>
+                          )}
+                        </div>
+
+                        <div className="mt-3 border-t border-gray-100 pt-3">
+                          <div className="mb-1.5 flex items-center justify-between">
+                            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">{t("purchaseOrders")}</h3>
+                            <Link href="/purchase-orders" className="text-xs text-brand-700 hover:underline">
+                              {t("viewAllPurchaseOrders")}
+                            </Link>
+                          </div>
+                          {purchaseOrders === null ? (
+                            <p className="text-xs text-gray-400">{tc("loading")}</p>
+                          ) : purchaseOrders.length === 0 ? (
+                            <p className="text-xs text-gray-400">{t("noPurchaseOrdersYet")}</p>
+                          ) : (
+                            <ul className="flex flex-col gap-1">
+                              {purchaseOrders.map((po) => {
+                                const total = po.lines.reduce((sum, l) => sum + Number(l.quantity) * Number(l.unitPrice), 0);
+                                return (
+                                  <li key={po.id} className="flex items-center justify-between text-xs">
+                                    <span className="text-gray-500">{formatDate(new Date(po.createdAt))}</span>
+                                    <span>{t(po.status)}</span>
+                                    <span className="font-medium">{total.toFixed(2)}</span>
+                                  </li>
+                                );
+                              })}
+                            </ul>
                           )}
                         </div>
 

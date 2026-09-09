@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
@@ -12,12 +14,17 @@ interface SdsSheet {
   revisionDate: string | null;
   hazardClassification: string | null;
 }
+interface ProjectInventoryEntry {
+  id: string;
+  project: { id: string; name: string };
+}
 interface HazardousMaterial {
   id: string;
   name: string;
   manufacturer: string | null;
   casNumber: string | null;
   sdsSheets: SdsSheet[];
+  projectInventory: ProjectInventoryEntry[];
 }
 interface StaleEntry {
   id: string;
@@ -29,13 +36,14 @@ interface StaleEntry {
 export default function HazmatPage() {
   const t = useTranslations("hazmat");
   const tc = useTranslations("common");
+  const searchParams = useSearchParams();
 
   const [materials, setMaterials] = useState<HazardousMaterial[] | null>(null);
   const [stale, setStale] = useState<StaleEntry[] | null>(null);
   const [search, setSearch] = useState("");
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ name: "", manufacturer: "", casNumber: "" });
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(() => searchParams.get("materialId"));
   const [sdsForm, setSdsForm] = useState({ version: "", revisionDate: "", hazardClassification: "" });
   const [busy, setBusy] = useState(false);
 
@@ -174,6 +182,19 @@ export default function HazmatPage() {
                     )}
                   </button>
                   {m.casNumber && <p className="mt-0.5 text-xs text-gray-400">CAS {m.casNumber}</p>}
+                  {m.projectInventory.length > 0 && (
+                    <p className="mt-0.5 text-xs text-gray-500">
+                      {t("onSiteAt")}:{" "}
+                      {m.projectInventory.map((entry, i) => (
+                        <span key={entry.id}>
+                          {i > 0 && ", "}
+                          <Link href={`/projects/${entry.project.id}`} className="text-brand-700 hover:underline">
+                            {entry.project.name}
+                          </Link>
+                        </span>
+                      ))}
+                    </p>
+                  )}
 
                   {expanded && (
                     <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 pt-3">

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
@@ -130,7 +131,11 @@ function ProjectScheduleSection({ schedule }: { schedule: ProjectSchedule }) {
   if (dates.length === 0) {
     return (
       <div>
-        <h2 className="mb-2 text-sm font-semibold text-gray-700">{schedule.projectName}</h2>
+        <h2 className="mb-2 text-sm font-semibold text-gray-700">
+        <Link href={`/projects/${schedule.projectId}`} className="text-brand-700 hover:underline">
+          {schedule.projectName}
+        </Link>
+      </h2>
         <p className="text-xs text-gray-400">{t("noScheduledTasks")}</p>
       </div>
     );
@@ -143,7 +148,11 @@ function ProjectScheduleSection({ schedule }: { schedule: ProjectSchedule }) {
 
   return (
     <div>
-      <h2 className="mb-2 text-sm font-semibold text-gray-700">{schedule.projectName}</h2>
+      <h2 className="mb-2 text-sm font-semibold text-gray-700">
+        <Link href={`/projects/${schedule.projectId}`} className="text-brand-700 hover:underline">
+          {schedule.projectName}
+        </Link>
+      </h2>
       <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white p-4">
         <div className="relative flex flex-col gap-2" style={{ minWidth: 480 }}>
           {schedule.milestones

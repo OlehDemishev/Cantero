@@ -15,8 +15,8 @@ export class SubcontractorCostsController {
   constructor(private readonly service: SubcontractorCostsService) {}
 
   @Get()
-  list(@CurrentUser() user: AuthUser, @Query("projectId") projectId?: string) {
-    return this.service.list(user.companyId, projectId);
+  list(@CurrentUser() user: AuthUser, @Query("projectId") projectId?: string, @Query("subcontractorId") subcontractorId?: string) {
+    return this.service.list(user.companyId, projectId, subcontractorId);
   }
 
   @Post()

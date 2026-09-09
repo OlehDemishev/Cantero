@@ -420,7 +420,12 @@
     "tab_operations": "Operaciones",
     "tab_marketing": "Marketing",
     "confirmRevokeInvite": "¿Revocar esta invitación pendiente? El enlace en el correo de invitación dejará de funcionar.",
-    "confirmRevokeApiKey": "¿Revocar esta clave de API? Cualquier integración que la use dejará de funcionar de inmediato."
+    "confirmRemoveMember": "¿Eliminar a esta persona de la empresa? Perderá el acceso de inmediato.",
+    "confirmRevokeApiKey": "¿Revocar esta clave de API? Cualquier integración que la use dejará de funcionar de inmediato.",
+    "confirmDeleteCustomRole": "¿Eliminar este rol personalizado? Quienes aún lo tengan asignado perderán esos permisos.",
+    "confirmDeleteWebhook": "¿Eliminar este webhook? Dejará de recibir eventos de inmediato.",
+    "auditLoadMore": "Cargar más",
+    "companySettingsManagerOnlyHint": "Solo los propietarios y administradores pueden editar la configuración de la empresa."
   },
   "projects": {
     "title": "Proyectos",
@@ -598,7 +603,14 @@
     "isApprentice": "Aprendiz (no oficial)",
     "loadedRate": "Tasa cargada",
     "managerOnlyHint": "Solo los propietarios y administradores pueden editar el perfil, el saldo de PTO o el PIN del quiosco de un trabajador.",
-    "confirmTerminateEnrollment": "¿Terminar la inscripción de beneficios de este trabajador? Su cobertura bajo este plan finalizará."
+    "confirmTerminateEnrollment": "¿Terminar la inscripción de beneficios de este trabajador? Su cobertura bajo este plan finalizará.",
+    "noBenefitEnrollments": "Aún no hay inscripciones a beneficios.",
+    "enrollInBenefits": "Inscribir en un plan de beneficios",
+    "noTrainingEnrollments": "Aún no hay inscripciones a formación.",
+    "enrollInTraining": "Gestionar inscripciones a formación",
+    "noToolCheckouts": "Aún no hay herramientas entregadas.",
+    "checkOutTool": "Entregar una herramienta",
+    "confirmDeleteCertification": "¿Eliminar este registro de certificación?"
   },
   "documents": {
     "title": "Documentos",
@@ -845,7 +857,8 @@
     "fxGainLoss": "Ganancia/pérdida cambiaria",
     "paidInForeignCurrency": "Pagado en otra moneda",
     "foreignAmount": "Importe recibido",
-    "exchangeRateUsed": "Tipo de cambio utilizado"
+    "exchangeRateUsed": "Tipo de cambio utilizado",
+    "confirmDeleteRecurring": "¿Eliminar esta factura recurrente? La facturación automática futura a este cliente se detendrá."
   },
   "portal": {
     "signInTitle": "Portal del cliente",
@@ -915,7 +928,8 @@
     "noProjects": "Todavía no hay proyectos.",
     "changeRequestTitlePlaceholder": "¿Qué le gustaría cambiar?",
     "submitChangeRequest": "Enviar solicitud",
-    "changeRequestSubmitted": "Solicitud enviada — la revisaremos y le responderemos."
+    "changeRequestSubmitted": "Solicitud enviada — la revisaremos y le responderemos.",
+    "confirmRemoveCard": "¿Quitar esta tarjeta guardada? Deberá añadir una nueva para que el pago automático siga funcionando."
   },
   "equipment": {
     "title": "Equipos",
@@ -1109,6 +1123,11 @@
     "stockLevels": "Existencias",
     "quantity": "Cantidad en stock",
     "recordMovement": "Registrar movimiento",
+    "movementHistory": "Historial de movimientos",
+    "movementType": "Tipo",
+    "movementQuantity": "Cantidad",
+    "movementProject": "Proyecto",
+    "movementDate": "Fecha",
     "material": "Material",
     "type": "Tipo",
     "receipt": "Entrada",
@@ -1160,7 +1179,8 @@
     "transferStatus_in_transit": "En tránsito",
     "transferStatus_received": "Recibido",
     "transferStatus_cancelled": "Cancelado",
-    "receiveTransfer": "Recibir"
+    "receiveTransfer": "Recibir",
+    "loadMoreMovements": "Cargar más"
   },
   "suppliers": {
     "title": "Proveedores",
@@ -1175,6 +1195,13 @@
     "catalogSyncResult": "{updated} precio(s) actualizado(s), {skipped} omitido(s)",
     "averageRating": "Valoración media",
     "wouldReorderPercent": "Volvería a pedir",
+    "purchaseOrders": "Pedidos de compra",
+    "viewAllPurchaseOrders": "Ver todos los pedidos de compra",
+    "noPurchaseOrdersYet": "Aún no hay pedidos con este proveedor.",
+    "draft": "Borrador",
+    "ordered": "Pedido",
+    "received": "Recibido",
+    "partially_received": "Recibido parcialmente",
     "coiDocuments": "Certificados de seguro (COI)",
     "noCoiDocuments": "No hay certificados registrados.",
     "general_liability_insurance": "Seguro de responsabilidad civil general",
@@ -1187,7 +1214,8 @@
     "wouldReorder": "¿Volvería a pedir?",
     "reviewCommentsPlaceholder": "Una breve nota sobre este pedido...",
     "addReview": "Añadir reseña",
-    "priceVariance": "Variación de precio vs. catálogo"
+    "priceVariance": "Variación de precio vs. catálogo",
+    "confirmDeleteDocument": "¿Eliminar este documento?"
   },
   "scheduling": {
     "board": "Tablero de tareas",
@@ -1323,6 +1351,7 @@
     "expenses": "Gastos",
     "queuedOfflineNoReceipt": "Guardado sin conexión — la foto del recibo deberá añadirse cuando vuelva a estar en línea",
     "receiptQueuedOffline": "Guardado — la foto del recibo se subirá cuando vuelva a estar en línea",
+    "receiptUploadFailed": "Gasto guardado, pero no se pudo subir la foto del recibo. Inténtalo de nuevo más tarde.",
     "syncConflicts": "{count} elemento(s) no se pudieron sincronizar — algo cambió mientras tanto",
     "retrySync": "Reintentar",
     "discardSync": "Descartar",
@@ -1357,7 +1386,9 @@
     "waiverAwaitingSignature": "Pendiente de firma",
     "costCodeUnassigned": "Sin código de costo",
     "startDate": "Fecha de inicio",
-    "endDate": "Fecha de fin"
+    "endDate": "Fecha de fin",
+    "confirmUnassign": "¿Quitar a este subcontratista del proyecto?",
+    "endBeforeStart": "La fecha de fin no puede ser anterior a la fecha de inicio."
   },
   "reports": {
     "title": "Informes",
@@ -1845,7 +1876,9 @@
     "assignCrew": "Asignar cuadrilla",
     "levelSchedule": "Nivelar cronograma",
     "levelNoChanges": "Ya está nivelado — nada que mover.",
-    "leveledMoves": "Se movieron {count} asignación(es) para resolver el solapamiento."
+    "leveledMoves": "Se movieron {count} asignación(es) para resolver el solapamiento.",
+    "confirmDeleteCrew": "¿Eliminar esta cuadrilla? Las asignaciones ya realizadas no se verán afectadas.",
+    "confirmRemoveAssignment": "¿Quitar esta asignación?"
   },
   "checklistTemplates": {
     "title": "Plantillas de listas de verificación",
@@ -1874,7 +1907,8 @@
     "jhaPpe": "EPP requerido",
     "editTemplate": "Editar plantilla",
     "versionBadge": "v{version}",
-    "history": "Historial"
+    "history": "Historial",
+    "confirmDeleteTemplate": "¿Eliminar esta plantilla de lista de verificación?"
   },
   "subcontractorCompliance": {
     "title": "Subcontratistas",
@@ -1908,6 +1942,10 @@
     "projectsWorked": "Proyectos realizados",
     "totalPaidOut": "Total pagado",
     "referencedBy": "Referenciado por {name}",
+    "projects": "Proyectos",
+    "noAssignedProjects": "Aún no asignado a ningún proyecto.",
+    "costsAcrossProjects": "Costes en todos los proyectos",
+    "noCostsYet": "Aún no hay costes registrados.",
     "prequalification": "Precalificación y perfil",
     "prequalificationHint": "Registrado antes de adjudicar el trabajo — licencia, capacidad de fianza y un resumen autoinformado del programa de seguridad, junto con los campos del perfil público.",
     "licenseNumberPlaceholder": "Número de licencia",
@@ -1950,7 +1988,8 @@
     "diversityCategory_dbe": "DBE",
     "diversityCategory_vbe": "VBE",
     "diversityCategory_sdvosb": "SDVOSB",
-    "diversityCategory_other": "Otra"
+    "diversityCategory_other": "Otra",
+    "confirmDeleteDocument": "¿Eliminar este documento?"
   },
   "weather": {
     "title": "Pronóstico del tiempo",
@@ -2136,7 +2175,8 @@
     "noSavedReports": "Aún no hay informes guardados.",
     "createdBy": "por {name}",
     "run": "Ejecutar",
-    "exportCsv": "Exportar CSV"
+    "exportCsv": "Exportar CSV",
+    "confirmDeleteSavedReport": "¿Eliminar este informe guardado?"
   },
   "accountingSync": {
     "title": "Sincronización contable",
@@ -2152,7 +2192,8 @@
     "hideHistory": "Ocultar historial de sincronización",
     "noHistory": "Aún no hay intentos de sincronización.",
     "syncBillsNow": "Sincronizar facturas ahora",
-    "integrityCheckBills": "{count, plural, =0 {Todas las facturas están sincronizadas} one {# factura sin sincronizar} other {# facturas sin sincronizar}}"
+    "integrityCheckBills": "{count, plural, =0 {Todas las facturas están sincronizadas} one {# factura sin sincronizar} other {# facturas sin sincronizar}}",
+    "confirmDisconnect": "¿Desconectar la integración contable? Las facturas dejarán de sincronizarse hasta que vuelva a conectar."
   },
   "expenses": {
     "title": "Gastos",
@@ -2255,7 +2296,8 @@
     "calendarFeed": "Feed de calendario",
     "calendarFeedHint": "Suscríbase a esta URL desde Google Calendar, Outlook o Apple Calendar para ver las fechas de tareas e hitos.",
     "generateCalendarFeed": "Generar URL del feed",
-    "regenerateCalendarFeed": "Regenerar URL del feed"
+    "regenerateCalendarFeed": "Regenerar URL del feed",
+    "managerOnlyHint": "Solo los propietarios y administradores pueden configurar integraciones."
   },
   "integrationsMarketplace": {
     "title": "Estado de integraciones",
@@ -2436,7 +2478,8 @@
     "signatureRequired": "Se requiere un nombre escrito y una firma dibujada para firmar.",
     "signedThanks": "Gracias — este contrato ha sido firmado.",
     "notAwaitingSignature": "Este contrato no está a la espera de firma.",
-    "linkNotFound": "Este enlace no es válido o ha caducado."
+    "linkNotFound": "Este enlace no es válido o ha caducado.",
+    "confirmDeleteTemplate": "¿Eliminar esta plantilla de contrato?"
   },
   "costCodes": {
     "title": "Códigos de costo",
@@ -2464,7 +2507,9 @@
     "fundType_health": "Salud",
     "fundType_training": "Capacitación",
     "fundType_vacation": "Vacaciones",
-    "fundType_other": "Otro"
+    "fundType_other": "Otro",
+    "confirmDeleteClassification": "¿Eliminar esta clasificación salarial? Los trabajadores asignados quedarán sin clasificar.",
+    "confirmDeleteFund": "¿Eliminar este fondo de beneficios adicionales?"
   },
   "certifiedPayroll": {
     "title": "Nómina certificada",
@@ -2607,7 +2652,8 @@
     "current": "Actual",
     "superseded": "Reemplazada",
     "revisionLabel": "Versión {n}",
-    "uploadRevision": "Subir nueva revisión"
+    "uploadRevision": "Subir nueva revisión",
+    "confirmDeleteSheet": "¿Eliminar esta lámina de plano? Los pines de RFI o de la lista de pendientes perderán su ubicación."
   },
   "permits": {
     "title": "Permisos e inspecciones",
@@ -2632,7 +2678,8 @@
     "result_pending": "Pendiente",
     "result_passed": "Aprobada",
     "result_failed": "Rechazada",
-    "result_cancelled": "Cancelada"
+    "result_cancelled": "Cancelada",
+    "confirmDeletePermit": "¿Eliminar este permiso? Su historial de inspecciones también se eliminará."
   },
   "sustainability": {
     "materialSettings": "Sostenibilidad",
@@ -2821,7 +2868,8 @@
     "noCurrentDocuments": "No hay certificados vigentes registrados.",
     "validUntil": "Válido hasta {date}",
     "download": "Descargar",
-    "notFound": "Este enlace no es válido o ya no está compartido."
+    "notFound": "Este enlace no es válido o ya no está compartido.",
+    "confirmDeleteDocument": "¿Eliminar este documento de seguro?"
   },
   "insuranceClaims": {
     "title": "Reclamaciones de seguro",
@@ -3175,6 +3223,7 @@
     "interviewNotesPlaceholder": "Notas",
     "logInterview": "Registrar entrevista",
     "alreadyHired": "Este candidato ya ha sido contratado.",
+    "viewWorkerProfile": "Ver perfil del trabajador",
     "rolePlaceholder": "Puesto",
     "hourlyCostPlaceholder": "Tarifa por hora",
     "convertToWorker": "Convertir en trabajador"
@@ -3253,6 +3302,7 @@
     "priority_high": "Alta",
     "priority_urgent": "Urgente",
     "slaBreached": "SLA incumplido",
+    "manageSlaPolicies": "Gestionar políticas de SLA",
     "unassigned": "Sin asignar",
     "internalNote": "Nota interna",
     "replyPlaceholder": "Escribe una respuesta",
@@ -3366,6 +3416,8 @@
     "totalTaxCollected": "Impuesto recaudado",
     "clientTaxTitle": "Impuesto",
     "noJurisdictionAssigned": "Sin jurisdicción asignada",
+    "noJurisdictionsConfigured": "Aún no hay jurisdicciones fiscales configuradas.",
+    "manageJurisdictions": "Gestionar jurisdicciones fiscales",
     "exemptionCertificates": "Certificados de exención",
     "noExemptionCertificates": "Aún no hay certificados de exención.",
     "certificateNumberPlaceholder": "Número de certificado",
@@ -3393,6 +3445,7 @@
     "addTier": "Añadir nivel",
     "enrollWorker": "Inscribir a un trabajador",
     "noPlansYet": "Primero añade un plan de beneficios.",
+    "managePlans": "Gestionar planes de beneficios",
     "effectiveDate": "Fecha de vigencia",
     "enroll": "Inscribir",
     "enrolled": "Inscrito.",
@@ -3439,6 +3492,7 @@
     "noMaterials": "Aún no hay sustancias peligrosas.",
     "staleSdsTitle": "FDS que necesitan una copia actualizada",
     "lastRevised": "última revisión {date}",
+    "onSiteAt": "En el sitio en",
     "noSdsOnFile": "sin FDS registrada",
     "versionPlaceholder": "Versión",
     "hazardClassificationPlaceholder": "Clasificación de peligro",
@@ -3462,7 +3516,7 @@
     "noItems": "Aún no hay artículos en el pañol.",
     "onHandCount": "{count} en stock",
     "lowStock": "bajo el mínimo",
-    "checkedOutTo": "{quantity} × prestado a {worker}",
+    "checkedOutToPrefix": "{quantity} × prestado a",
     "checkIn": "Devolver",
     "checkOut": "Prestar",
     "quantity": "Cantidad",
@@ -3550,7 +3604,8 @@
     "noFinishChange": "Sin cambios en la fecha de finalización del proyecto.",
     "finishDelta": "La finalización del proyecto se movería {days} día(s) {direction}.",
     "later": "más tarde",
-    "earlier": "más temprano"
+    "earlier": "más temprano",
+    "confirmDeleteScenario": "¿Eliminar este escenario de programación?"
   },
   "commissioning": {
     "title": "Puesta en marcha",

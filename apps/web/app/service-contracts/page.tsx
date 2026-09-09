@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
@@ -142,17 +143,23 @@ export default function ServiceContractsPage() {
           ) : (
             <ul className="flex flex-col gap-2">
               {contracts.map((c) => (
-                <li key={c.id}>
-                  <a href={`/service-contracts/${c.id}`} className="card flex items-center justify-between hover:border-gray-400">
-                    <div>
-                      <span className="font-medium">{c.title}</span>
-                      <span className="ml-2 text-sm text-gray-500">
-                        {c.project.name} · {c.client.name}
-                      </span>
-                    </div>
-                    <span className="text-sm text-gray-500">
-                      {t("nextVisit")}: {formatDate(new Date(c.nextVisitDate))}
+                <li key={c.id} className="card flex items-center justify-between hover:border-gray-400">
+                  <div>
+                    <a href={`/service-contracts/${c.id}`} className="font-medium hover:underline">
+                      {c.title}
+                    </a>
+                    <span className="ml-2 text-sm text-gray-500">
+                      <Link href={`/projects/${c.project.id}`} className="text-brand-700 hover:underline">
+                        {c.project.name}
+                      </Link>{" "}
+                      ·{" "}
+                      <Link href={`/clients/${c.client.id}`} className="text-brand-700 hover:underline">
+                        {c.client.name}
+                      </Link>
                     </span>
+                  </div>
+                  <a href={`/service-contracts/${c.id}`} className="text-sm text-gray-500 hover:underline">
+                    {t("nextVisit")}: {formatDate(new Date(c.nextVisitDate))}
                   </a>
                 </li>
               ))}

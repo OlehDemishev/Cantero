@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { RECURRING_INVOICE_FREQUENCIES, type RecurringInvoiceFrequency } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
@@ -12,8 +13,8 @@ interface Invoice {
   number: string;
   status: "draft" | "sent" | "paid" | "void";
   total: string;
-  client: { name: string };
-  project: { name: string };
+  client: { id: string; name: string };
+  project: { id: string; name: string };
 }
 interface Project {
   id: string;
@@ -39,8 +40,8 @@ interface RecurringInvoice {
   nextRunDate: string;
   endDate: string | null;
   lastGeneratedAt: string | null;
-  project: { name: string };
-  client: { name: string };
+  project: { id: string; name: string };
+  client: { id: string; name: string };
   lines: RecurringInvoiceLine[];
 }
 interface RecurringLineForm {
@@ -161,6 +162,7 @@ export default function InvoicesPage() {
   }
 
   async function deleteRecurring(id: string) {
+    if (!window.confirm(t("confirmDeleteRecurring"))) return;
     await apiFetch(`/recurring-invoices/${id}`, { method: "DELETE" });
     loadRecurring();
   }
@@ -220,7 +222,13 @@ export default function InvoicesPage() {
                     </a>
                   </td>
                   <td>
-                    {inv.client.name} · {inv.project.name}
+                    <Link href={`/clients/${inv.client.id}`} className="text-brand-700 hover:underline">
+                      {inv.client.name}
+                    </Link>{" "}
+                    ·{" "}
+                    <Link href={`/projects/${inv.project.id}`} className="text-brand-700 hover:underline">
+                      {inv.project.name}
+                    </Link>
                   </td>
                   <td>{t(inv.status)}</td>
                   <td>
@@ -249,7 +257,14 @@ export default function InvoicesPage() {
                   <div>
                     <span className="text-sm font-medium text-gray-900">{r.name}</span>
                     <span className="ml-2 text-xs text-gray-500">
-                      {r.client.name} · {r.project.name} · {t(`frequency_${r.frequency}`)}
+                      <Link href={`/clients/${r.client.id}`} className="text-brand-700 hover:underline">
+                        {r.client.name}
+                      </Link>{" "}
+                      ·{" "}
+                      <Link href={`/projects/${r.project.id}`} className="text-brand-700 hover:underline">
+                        {r.project.name}
+                      </Link>{" "}
+                      · {t(`frequency_${r.frequency}`)}
                     </span>
                   </div>
                   <span

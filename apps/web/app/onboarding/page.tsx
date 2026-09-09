@@ -15,6 +15,7 @@ export default function OnboardingPage() {
   const router = useRouter();
   const [stepIndex, setStepIndex] = useState(0);
   const [finishing, setFinishing] = useState(false);
+  const [finishError, setFinishError] = useState<string | null>(null);
 
   const [catalogState, setCatalogState] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [catalogResult, setCatalogResult] = useState<{ materialsCreated: number; rateItemsCreated: number } | null>(null);
@@ -90,10 +91,12 @@ export default function OnboardingPage() {
 
   async function finish() {
     setFinishing(true);
+    setFinishError(null);
     try {
       await apiFetch("/company/complete-onboarding", { method: "POST" });
       router.replace("/dashboard");
-    } catch {
+    } catch (err) {
+      setFinishError(err instanceof ApiError ? err.message : tc("error"));
       setFinishing(false);
     }
   }
@@ -115,6 +118,7 @@ export default function OnboardingPage() {
           </button>
         )}
       </div>
+      {finishError && <p className="mb-4 text-sm text-error-700">{finishError}</p>}
 
       <div className="card">
         {step === "catalog" && (

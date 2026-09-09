@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { TOOL_CHECKOUT_CONDITIONS, type ToolCheckoutCondition } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { CalibrationPanel } from "@/components/calibration-panel";
@@ -205,8 +206,11 @@ export default function ToolCribPage() {
                     {item.checkouts.map((co) => (
                       <li key={co.id} className="flex items-center justify-between text-xs text-gray-500">
                         <span>
-                          {t("checkedOutTo", { worker: co.worker.name, quantity: co.quantity })} ·{" "}
-                          {formatDate(new Date(co.checkedOutAt))}
+                          {t("checkedOutToPrefix", { quantity: co.quantity })}{" "}
+                          <Link href={`/team/${co.worker.id}`} className="text-brand-700 hover:underline">
+                            {co.worker.name}
+                          </Link>{" "}
+                          · {formatDate(new Date(co.checkedOutAt))}
                         </span>
                         {checkInId === co.id ? (
                           <div className="flex items-center gap-1.5">

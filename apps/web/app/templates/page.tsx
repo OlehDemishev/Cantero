@@ -144,6 +144,7 @@ export default function TemplatesPage() {
   }
 
   async function remove(id: string) {
+    if (!window.confirm(t("confirmDeleteTemplate"))) return;
     await apiFetch(`/checklist-templates/${id}`, { method: "DELETE" });
     load();
   }

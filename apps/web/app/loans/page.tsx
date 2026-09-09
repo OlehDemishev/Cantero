@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import type { LoanStatus } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch } from "@/lib/api-client";
@@ -226,10 +227,24 @@ export default function LoansPage() {
               const expanded = expandedId === loan.id;
               return (
                 <li key={loan.id} className="card">
-                  <button onClick={() => toggleExpand(loan.id)} className="flex w-full items-center justify-between text-left">
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => toggleExpand(loan.id)}
+                    onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && toggleExpand(loan.id)}
+                    className="flex w-full cursor-pointer items-center justify-between text-left"
+                  >
                     <span className="text-sm font-medium text-gray-900">
                       {loan.lenderName}
-                      {loan.equipment && <span className="ml-1.5 text-xs text-gray-400">({loan.equipment.name})</span>}
+                      {loan.equipment && (
+                        <Link
+                          href={`/equipment/${loan.equipment.id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="ml-1.5 text-xs text-brand-700 hover:underline"
+                        >
+                          ({loan.equipment.name})
+                        </Link>
+                      )}
                     </span>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-gray-500">
@@ -237,7 +252,7 @@ export default function LoansPage() {
                       </span>
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[loan.status]}`}>{t(`status_${loan.status}`)}</span>
                     </div>
-                  </button>
+                  </div>
 
                   {expanded && detail && detail.id === loan.id && (
                     <div className="mt-3 overflow-x-auto border-t border-gray-100 pt-3">

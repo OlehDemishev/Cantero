@@ -53,6 +53,10 @@ export function SubcontractorAssignmentsPanel({ projectId }: { projectId: string
 
   async function assign(e: React.FormEvent) {
     e.preventDefault();
+    if (startDate && endDate && endDate < startDate) {
+      setError(t("endBeforeStart"));
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -85,6 +89,7 @@ export function SubcontractorAssignmentsPanel({ projectId }: { projectId: string
   }
 
   async function unassign(subcontractorId: string, assignmentId: string) {
+    if (!window.confirm(t("confirmUnassign"))) return;
     await apiFetch(`/finance/subcontractors/${subcontractorId}/assignments/${assignmentId}`, { method: "DELETE" });
     load();
   }
@@ -163,7 +168,13 @@ export function SubcontractorAssignmentsPanel({ projectId }: { projectId: string
         </label>
         <label className="flex flex-col gap-1 text-xs text-gray-500">
           {t("endDate")}
-          <input type="date" className="input w-auto" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+          <input
+            type="date"
+            min={startDate || undefined}
+            className="input w-auto"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+          />
         </label>
         <button type="submit" disabled={busy} className="btn-secondary">
           {t("assignToProject")}

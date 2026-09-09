@@ -116,6 +116,7 @@ export default function PortalDashboardPage() {
   }
 
   async function removeCard() {
+    if (!window.confirm(t("confirmRemoveCard"))) return;
     setPaymentMethodBusy(true);
     try {
       await portalApiFetch("/portal/payment-method", { method: "DELETE" });

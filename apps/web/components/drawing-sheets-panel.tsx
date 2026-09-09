@@ -55,6 +55,7 @@ export function DrawingSheetsPanel({ projectId }: { projectId: string }) {
   }
 
   async function remove(id: string) {
+    if (!window.confirm(t("confirmDeleteSheet"))) return;
     await apiFetch(`/drawing-sheets/${id}`, { method: "DELETE" });
     load();
   }

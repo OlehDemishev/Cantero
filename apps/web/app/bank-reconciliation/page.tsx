@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { EXPENSE_CATEGORIES, type ExpenseCategory } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { CsvImportButton } from "@/components/csv-import-button";
@@ -298,7 +299,15 @@ export default function BankReconciliationPage() {
                   <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
                     <span>
                       {t("matchedTo")}{" "}
-                      {tx.matchedInvoice ? tx.matchedInvoice.number : tx.matchedExpense ? tx.matchedExpense.description : "—"}
+                      {tx.matchedInvoice ? (
+                        <Link href={`/invoices/${tx.matchedInvoice.id}`} className="text-brand-700 hover:underline">
+                          {tx.matchedInvoice.number}
+                        </Link>
+                      ) : tx.matchedExpense ? (
+                        tx.matchedExpense.description
+                      ) : (
+                        "—"
+                      )}
                     </span>
                     <button onClick={() => unmatch(tx.id)} disabled={busy} className="text-error-700 hover:underline">
                       {t("unmatch")}

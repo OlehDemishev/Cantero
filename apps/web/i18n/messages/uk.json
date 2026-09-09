@@ -420,7 +420,12 @@
     "tab_operations": "Операції",
     "tab_marketing": "Маркетинг",
     "confirmRevokeInvite": "Відкликати це очікуюче запрошення? Посилання в листі-запрошенні перестане працювати.",
-    "confirmRevokeApiKey": "Відкликати цей API-ключ? Будь-яка інтеграція, що його використовує, негайно перестане працювати."
+    "confirmRemoveMember": "Видалити цю людину з компанії? Вона одразу втратить доступ.",
+    "confirmRevokeApiKey": "Відкликати цей API-ключ? Будь-яка інтеграція, що його використовує, негайно перестане працювати.",
+    "confirmDeleteCustomRole": "Видалити цю користувацьку роль? Усі, кому вона ще призначена, втратять ці права.",
+    "confirmDeleteWebhook": "Видалити цей webhook? Він одразу перестане отримувати події.",
+    "auditLoadMore": "Завантажити ще",
+    "companySettingsManagerOnlyHint": "Редагувати налаштування компанії можуть лише власники та адміністратори."
   },
   "projects": {
     "title": "Проєкти",
@@ -598,7 +603,14 @@
     "isApprentice": "Учень (не кваліфікований робітник)",
     "loadedRate": "Навантажена ставка",
     "managerOnlyHint": "Редагувати профіль працівника, баланс відпустки або PIN кіоску можуть лише власники та адміністратори.",
-    "confirmTerminateEnrollment": "Припинити реєстрацію цього працівника у програмі пільг? Його покриття за цим планом закінчиться."
+    "confirmTerminateEnrollment": "Припинити реєстрацію цього працівника у програмі пільг? Його покриття за цим планом закінчиться.",
+    "noBenefitEnrollments": "Ще немає реєстрацій у програмах пільг.",
+    "enrollInBenefits": "Записати на програму пільг",
+    "noTrainingEnrollments": "Ще немає записів на навчання.",
+    "enrollInTraining": "Керувати записами на навчання",
+    "noToolCheckouts": "Інструмент ще не видавався.",
+    "checkOutTool": "Видати інструмент",
+    "confirmDeleteCertification": "Видалити цей запис сертифікації?"
   },
   "documents": {
     "title": "Документи",
@@ -845,7 +857,8 @@
     "fxGainLoss": "Курсовий прибуток/збиток",
     "paidInForeignCurrency": "Оплачено в іншій валюті",
     "foreignAmount": "Отримана сума",
-    "exchangeRateUsed": "Використаний курс обміну"
+    "exchangeRateUsed": "Використаний курс обміну",
+    "confirmDeleteRecurring": "Видалити цей регулярний рахунок? Автоматичне виставлення рахунків цьому клієнту в майбутньому припиниться."
   },
   "portal": {
     "signInTitle": "Кабінет клієнта",
@@ -915,7 +928,8 @@
     "noProjects": "Проєктів ще немає.",
     "changeRequestTitlePlaceholder": "Що б ви хотіли змінити?",
     "submitChangeRequest": "Надіслати запит",
-    "changeRequestSubmitted": "Запит надіслано — ми розглянемо його і зв'яжемося з вами."
+    "changeRequestSubmitted": "Запит надіслано — ми розглянемо його і зв'яжемося з вами.",
+    "confirmRemoveCard": "Видалити цю збережену картку? Щоб автосписання й далі працювало, потрібно буде додати нову."
   },
   "equipment": {
     "title": "Техніка",
@@ -1109,6 +1123,11 @@
     "stockLevels": "Складські залишки",
     "quantity": "Кількість на складі",
     "recordMovement": "Зафіксувати рух",
+    "movementHistory": "Історія руху",
+    "movementType": "Тип",
+    "movementQuantity": "Кількість",
+    "movementProject": "Проєкт",
+    "movementDate": "Дата",
     "material": "Матеріал",
     "type": "Тип",
     "receipt": "Надходження",
@@ -1160,7 +1179,8 @@
     "transferStatus_in_transit": "В дорозі",
     "transferStatus_received": "Отримано",
     "transferStatus_cancelled": "Скасовано",
-    "receiveTransfer": "Отримати"
+    "receiveTransfer": "Отримати",
+    "loadMoreMovements": "Завантажити ще"
   },
   "suppliers": {
     "title": "Постачальники",
@@ -1175,6 +1195,13 @@
     "catalogSyncResult": "Оновлено цін: {updated}, пропущено: {skipped}",
     "averageRating": "Сер. оцінка",
     "wouldReorderPercent": "Замовили б знову",
+    "purchaseOrders": "Замовлення на закупівлю",
+    "viewAllPurchaseOrders": "Переглянути всі замовлення на закупівлю",
+    "noPurchaseOrdersYet": "Замовлень у цього постачальника ще немає.",
+    "draft": "Чернетка",
+    "ordered": "Замовлено",
+    "received": "Отримано",
+    "partially_received": "Частково отримано",
     "coiDocuments": "Страхові сертифікати (COI)",
     "noCoiDocuments": "Сертифікатів не додано.",
     "general_liability_insurance": "Страхування загальної відповідальності",
@@ -1187,7 +1214,8 @@
     "wouldReorder": "Замовили б знову?",
     "reviewCommentsPlaceholder": "Короткий коментар про це замовлення...",
     "addReview": "Додати відгук",
-    "priceVariance": "Відхилення ціни від каталогу"
+    "priceVariance": "Відхилення ціни від каталогу",
+    "confirmDeleteDocument": "Видалити цей документ?"
   },
   "scheduling": {
     "board": "Дошка завдань",
@@ -1323,6 +1351,7 @@
     "expenses": "Витрати",
     "queuedOfflineNoReceipt": "Збережено офлайн — фото чека потрібно буде додати після відновлення з'єднання",
     "receiptQueuedOffline": "Збережено — фото чека завантажиться після відновлення з'єднання",
+    "receiptUploadFailed": "Витрату збережено, але фото чека не вдалося завантажити. Спробуйте додати його пізніше.",
     "syncConflicts": "{count} елемент(и) не вдалося синхронізувати — щось змінилося тим часом",
     "retrySync": "Повторити",
     "discardSync": "Відхилити",
@@ -1357,7 +1386,9 @@
     "waiverAwaitingSignature": "Очікує підпису",
     "costCodeUnassigned": "Без коду витрат",
     "startDate": "Дата початку",
-    "endDate": "Дата завершення"
+    "endDate": "Дата завершення",
+    "confirmUnassign": "Видалити цього субпідрядника з проєкту?",
+    "endBeforeStart": "Дата завершення не може бути раніше дати початку."
   },
   "reports": {
     "title": "Звіти",
@@ -1845,7 +1876,9 @@
     "assignCrew": "Призначити бригаду",
     "levelSchedule": "Вирівняти графік",
     "levelNoChanges": "Уже вирівняно — переносити нічого.",
-    "leveledMoves": "Перенесено {count} призначення(ь) для усунення перетину."
+    "leveledMoves": "Перенесено {count} призначення(ь) для усунення перетину.",
+    "confirmDeleteCrew": "Видалити цю бригаду? Вже зроблені призначення це не торкнеться.",
+    "confirmRemoveAssignment": "Видалити це призначення?"
   },
   "checklistTemplates": {
     "title": "Шаблони чек-листів",
@@ -1874,7 +1907,8 @@
     "jhaPpe": "Необхідні ЗІЗ",
     "editTemplate": "Редагувати шаблон",
     "versionBadge": "в{version}",
-    "history": "Історія"
+    "history": "Історія",
+    "confirmDeleteTemplate": "Видалити цей шаблон чек-листа?"
   },
   "subcontractorCompliance": {
     "title": "Субпідрядники",
@@ -1908,6 +1942,10 @@
     "projectsWorked": "Опрацьовано проєктів",
     "totalPaidOut": "Всього виплачено",
     "referencedBy": "Рекомендовано {name}",
+    "projects": "Проєкти",
+    "noAssignedProjects": "Ще не призначено на жоден проєкт.",
+    "costsAcrossProjects": "Витрати за всіма проєктами",
+    "noCostsYet": "Витрат ще не зафіксовано.",
     "prequalification": "Попередня кваліфікація та профіль",
     "prequalificationHint": "Фіксується перед призначенням роботи — ліцензія, гарантійна спроможність і самостійно заявлене резюме програми безпеки, поряд із полями публічного профілю.",
     "licenseNumberPlaceholder": "Номер ліцензії",
@@ -1950,7 +1988,8 @@
     "diversityCategory_dbe": "DBE",
     "diversityCategory_vbe": "VBE",
     "diversityCategory_sdvosb": "SDVOSB",
-    "diversityCategory_other": "Інше"
+    "diversityCategory_other": "Інше",
+    "confirmDeleteDocument": "Видалити цей документ?"
   },
   "weather": {
     "title": "Прогноз погоди",
@@ -2136,7 +2175,8 @@
     "noSavedReports": "Ще немає збережених звітів.",
     "createdBy": "від {name}",
     "run": "Виконати",
-    "exportCsv": "Експортувати CSV"
+    "exportCsv": "Експортувати CSV",
+    "confirmDeleteSavedReport": "Видалити цей збережений звіт?"
   },
   "accountingSync": {
     "title": "Синхронізація з бухгалтерією",
@@ -2152,7 +2192,8 @@
     "hideHistory": "Приховати історію синхронізації",
     "noHistory": "Ще немає спроб синхронізації.",
     "syncBillsNow": "Синхронізувати рахунки зараз",
-    "integrityCheckBills": "{count, plural, =0 {Усі рахунки синхронізовано} one {# рахунок ще не синхронізовано} few {# рахунки ще не синхронізовано} many {# рахунків ще не синхронізовано} other {# рахунків ще не синхронізовано}}"
+    "integrityCheckBills": "{count, plural, =0 {Усі рахунки синхронізовано} one {# рахунок ще не синхронізовано} few {# рахунки ще не синхронізовано} many {# рахунків ще не синхронізовано} other {# рахунків ще не синхронізовано}}",
+    "confirmDisconnect": "Від'єднати інтеграцію з бухгалтерією? Синхронізація рахунків припиниться, доки ви не підключите її знову."
   },
   "expenses": {
     "title": "Витрати",
@@ -2255,7 +2296,8 @@
     "calendarFeed": "Календарна стрічка",
     "calendarFeedHint": "Підпишіться на цю URL-адресу в Google Calendar, Outlook або Apple Calendar, щоб бачити терміни завдань і етапів.",
     "generateCalendarFeed": "Згенерувати URL стрічки",
-    "regenerateCalendarFeed": "Перегенерувати URL стрічки"
+    "regenerateCalendarFeed": "Перегенерувати URL стрічки",
+    "managerOnlyHint": "Налаштовувати інтеграції можуть лише власники та адміністратори."
   },
   "integrationsMarketplace": {
     "title": "Стан інтеграцій",
@@ -2436,7 +2478,8 @@
     "signatureRequired": "Для підпису потрібні введене ім'я та намальований підпис.",
     "signedThanks": "Дякуємо — цей договір підписано.",
     "notAwaitingSignature": "Цей договір не очікує на підпис.",
-    "linkNotFound": "Це посилання недійсне або застаріле."
+    "linkNotFound": "Це посилання недійсне або застаріле.",
+    "confirmDeleteTemplate": "Видалити цей шаблон договору?"
   },
   "costCodes": {
     "title": "Коди витрат",
@@ -2464,7 +2507,9 @@
     "fundType_health": "Медичний",
     "fundType_training": "Навчальний",
     "fundType_vacation": "Відпускний",
-    "fundType_other": "Інший"
+    "fundType_other": "Інший",
+    "confirmDeleteClassification": "Видалити цей кваліфікаційний розряд? Призначені працівники залишаться без розряду.",
+    "confirmDeleteFund": "Видалити цей фонд додаткових пільг?"
   },
   "certifiedPayroll": {
     "title": "Сертифікована заробітна плата",
@@ -2607,7 +2652,8 @@
     "current": "Поточна",
     "superseded": "Замінена",
     "revisionLabel": "Версія {n}",
-    "uploadRevision": "Завантажити нову ревізію"
+    "uploadRevision": "Завантажити нову ревізію",
+    "confirmDeleteSheet": "Видалити цей аркуш креслення? Прив'язані до нього RFI чи пункти переліку недоробок втратять розташування."
   },
   "permits": {
     "title": "Дозволи та інспекції",
@@ -2632,7 +2678,8 @@
     "result_pending": "Очікує",
     "result_passed": "Пройдено",
     "result_failed": "Не пройдено",
-    "result_cancelled": "Скасовано"
+    "result_cancelled": "Скасовано",
+    "confirmDeletePermit": "Видалити цей дозвіл? Історія перевірок теж буде видалена."
   },
   "sustainability": {
     "materialSettings": "Сталий розвиток",
@@ -2821,7 +2868,8 @@
     "noCurrentDocuments": "Чинних сертифікатів не додано.",
     "validUntil": "Дійсний до {date}",
     "download": "Завантажити",
-    "notFound": "Це посилання недійсне або більше не є відкритим."
+    "notFound": "Це посилання недійсне або більше не є відкритим.",
+    "confirmDeleteDocument": "Видалити цей страховий документ?"
   },
   "insuranceClaims": {
     "title": "Страхові претензії",
@@ -3175,6 +3223,7 @@
     "interviewNotesPlaceholder": "Примітки",
     "logInterview": "Зафіксувати співбесіду",
     "alreadyHired": "Цього кандидата вже прийнято на роботу.",
+    "viewWorkerProfile": "Переглянути профіль працівника",
     "rolePlaceholder": "Посада",
     "hourlyCostPlaceholder": "Погодинна ставка",
     "convertToWorker": "Перетворити на працівника"
@@ -3253,6 +3302,7 @@
     "priority_high": "Високий",
     "priority_urgent": "Терміновий",
     "slaBreached": "Порушено SLA",
+    "manageSlaPolicies": "Керувати політиками SLA",
     "unassigned": "Не призначено",
     "internalNote": "Внутрішня примітка",
     "replyPlaceholder": "Написати відповідь",
@@ -3366,6 +3416,8 @@
     "totalTaxCollected": "Зібраний податок",
     "clientTaxTitle": "Податок",
     "noJurisdictionAssigned": "Юрисдикцію не призначено",
+    "noJurisdictionsConfigured": "Податкові юрисдикції ще не налаштовано.",
+    "manageJurisdictions": "Керувати податковими юрисдикціями",
     "exemptionCertificates": "Сертифікати звільнення",
     "noExemptionCertificates": "Сертифікатів звільнення ще немає.",
     "certificateNumberPlaceholder": "Номер сертифіката",
@@ -3393,6 +3445,7 @@
     "addTier": "Додати рівень",
     "enrollWorker": "Записати працівника",
     "noPlansYet": "Спочатку додайте план пільг.",
+    "managePlans": "Керувати планами пільг",
     "effectiveDate": "Дата набуття чинності",
     "enroll": "Записати",
     "enrolled": "Записано.",
@@ -3439,6 +3492,7 @@
     "noMaterials": "Небезпечних речовин ще немає.",
     "staleSdsTitle": "Паспорти, що потребують оновлення",
     "lastRevised": "востаннє оновлено {date}",
+    "onSiteAt": "На об'єкті",
     "noSdsOnFile": "паспорта безпеки немає",
     "versionPlaceholder": "Версія",
     "hazardClassificationPlaceholder": "Класифікація небезпеки",
@@ -3462,7 +3516,7 @@
     "noItems": "У видачі інструменту поки немає позицій.",
     "onHandCount": "{count} в наявності",
     "lowStock": "нижче мінімуму",
-    "checkedOutTo": "{quantity} × видано {worker}",
+    "checkedOutToPrefix": "{quantity} × видано",
     "checkIn": "Повернути",
     "checkOut": "Видати",
     "quantity": "Кількість",
@@ -3550,7 +3604,8 @@
     "noFinishChange": "Дата завершення проєкту не зміниться.",
     "finishDelta": "Завершення проєкту зміститься на {days} дн. {direction}.",
     "later": "пізніше",
-    "earlier": "раніше"
+    "earlier": "раніше",
+    "confirmDeleteScenario": "Видалити цей сценарій графіка?"
   },
   "commissioning": {
     "title": "Пусконаладка",

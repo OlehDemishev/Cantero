@@ -2,14 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import type { EquipmentStatus } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
 interface AssignmentSummary {
-  project: { name: string } | null;
-  worker: { name: string } | null;
+  project: { id: string; name: string } | null;
+  worker: { id: string; name: string } | null;
 }
 interface Equipment {
   id: string;
@@ -116,9 +117,18 @@ export default function EquipmentPage() {
                         {eq.serialNumber && ` · ${eq.serialNumber}`}
                         {eq.purchaseCost && ` · ${eq.purchaseCost} ${currency}`}
                       </p>
-                      {assignment && (
+                      {assignment && (assignment.worker || assignment.project) && (
                         <p className="mt-1 text-xs text-brand-600">
-                          {t("currentlyWith")}: {assignment.worker?.name ?? assignment.project?.name}
+                          {t("currentlyWith")}:{" "}
+                          {assignment.worker ? (
+                            <Link href={`/team/${assignment.worker.id}`} className="hover:underline">
+                              {assignment.worker.name}
+                            </Link>
+                          ) : (
+                            <Link href={`/projects/${assignment.project!.id}`} className="hover:underline">
+                              {assignment.project!.name}
+                            </Link>
+                          )}
                         </p>
                       )}
                     </div>
@@ -188,6 +198,7 @@ export default function EquipmentPage() {
             <input
               type="number"
               step="0.01"
+              min="0"
               className="input w-32"
               value={form.purchaseCost}
               onChange={(e) => setForm((f) => ({ ...f, purchaseCost: e.target.value }))}

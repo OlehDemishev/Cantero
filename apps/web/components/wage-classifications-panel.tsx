@@ -63,6 +63,7 @@ export function WageClassificationsPanel() {
   }
 
   async function remove(id: string) {
+    if (!window.confirm(t("confirmDeleteClassification"))) return;
     await apiFetch(`/wage-classifications/${id}`, { method: "DELETE" });
     load();
   }
@@ -78,6 +79,7 @@ export function WageClassificationsPanel() {
   }
 
   async function removeFund(id: string) {
+    if (!window.confirm(t("confirmDeleteFund"))) return;
     await apiFetch(`/wage-classifications/fringe-funds/${id}`, { method: "DELETE" });
     load();
   }
