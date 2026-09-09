@@ -53,7 +53,10 @@ export function PurchaseOrdersPanel() {
   const tc = useTranslations("common");
   const { data: me } = useMe();
 
+  const PURCHASE_ORDERS_PAGE_SIZE = 100;
   const [orders, setOrders] = useState<PurchaseOrder[] | null>(null);
+  const [ordersHasMore, setOrdersHasMore] = useState(false);
+  const [ordersLoadMoreBusy, setOrdersLoadMoreBusy] = useState(false);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [materials, setMaterials] = useState<MaterialCatalogItem[]>([]);
@@ -68,7 +71,24 @@ export function PurchaseOrdersPanel() {
   const [shipmentBusy, setShipmentBusy] = useState(false);
 
   function load() {
-    apiFetch<PurchaseOrder[]>("/materials/purchase-orders").then(setOrders);
+    apiFetch<PurchaseOrder[]>("/materials/purchase-orders").then((page) => {
+      setOrders(page);
+      setOrdersHasMore(page.length === PURCHASE_ORDERS_PAGE_SIZE);
+    });
+  }
+
+  async function loadMoreOrders() {
+    if (!orders || orders.length === 0) return;
+    setOrdersLoadMoreBusy(true);
+    try {
+      const page = await apiFetch<PurchaseOrder[]>(
+        `/materials/purchase-orders?cursor=${orders[orders.length - 1].id}`,
+      );
+      setOrders([...orders, ...page]);
+      setOrdersHasMore(page.length === PURCHASE_ORDERS_PAGE_SIZE);
+    } finally {
+      setOrdersLoadMoreBusy(false);
+    }
   }
 
   useEffect(() => {
@@ -83,7 +103,10 @@ export function PurchaseOrdersPanel() {
 
   function addLine() {
     if (materials.length === 0) return;
-    setLines((l) => [...l, { materialCatalogItemId: materials[0].id, quantity: "1", unitPrice: "0" }]);
+    setLines((l) => [
+      ...l,
+      { materialCatalogItemId: materials[0].id, quantity: "1", unitPrice: "0" },
+    ]);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -95,7 +118,9 @@ export function PurchaseOrdersPanel() {
         method: "POST",
         body: JSON.stringify({
           supplierId,
-          expectedDate: expectedDate ? new Date(expectedDate).toISOString() : undefined,
+          expectedDate: expectedDate
+            ? new Date(expectedDate).toISOString()
+            : undefined,
           lines: lines.map((l) => ({
             materialCatalogItemId: l.materialCatalogItemId,
             quantity: Number(l.quantity),
@@ -126,7 +151,12 @@ export function PurchaseOrdersPanel() {
     setShipmentLines(
       po.lines
         .filter((l) => Number(l.quantityReceived) < Number(l.quantity))
-        .map((l) => ({ lineId: l.id, quantityReceived: "", quantityDamaged: "", shortfallType: "" })),
+        .map((l) => ({
+          lineId: l.id,
+          quantityReceived: "",
+          quantityDamaged: "",
+          shortfallType: "",
+        })),
     );
   }
 
@@ -137,16 +167,24 @@ export function PurchaseOrdersPanel() {
       .map((l) => ({
         lineId: l.lineId,
         quantityReceived: Number(l.quantityReceived),
-        quantityDamaged: l.quantityDamaged ? Number(l.quantityDamaged) : undefined,
+        quantityDamaged: l.quantityDamaged
+          ? Number(l.quantityDamaged)
+          : undefined,
         shortfallType: l.shortfallType || undefined,
       }));
     if (shipLines.length === 0 || !receivingOrderId) return;
     setShipmentBusy(true);
     try {
-      await apiFetch(`/materials/purchase-orders/${receivingOrderId}/receive-shipment`, {
-        method: "POST",
-        body: JSON.stringify({ warehouseId: shipmentWarehouseId, lines: shipLines }),
-      });
+      await apiFetch(
+        `/materials/purchase-orders/${receivingOrderId}/receive-shipment`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            warehouseId: shipmentWarehouseId,
+            lines: shipLines,
+          }),
+        },
+      );
       setReceivingOrderId(null);
       setShipmentLines([]);
       load();
@@ -158,9 +196,15 @@ export function PurchaseOrdersPanel() {
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
       <div className="card lg:col-span-1">
-        <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("newOrder")}</h2>
+        <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-200">
+          {t("newOrder")}
+        </h2>
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-          <select className="input" value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
+          <select
+            className="input"
+            value={supplierId}
+            onChange={(e) => setSupplierId(e.target.value)}
+          >
             {suppliers.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
@@ -178,8 +222,14 @@ export function PurchaseOrdersPanel() {
           </label>
 
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{t("material")}</span>
-            <button type="button" onClick={addLine} className="btn-secondary px-2 py-1 text-xs">
+            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+              {t("material")}
+            </span>
+            <button
+              type="button"
+              onClick={addLine}
+              className="btn-secondary px-2 py-1 text-xs"
+            >
               + {t("addLine")}
             </button>
           </div>
@@ -189,7 +239,13 @@ export function PurchaseOrdersPanel() {
                 className="input"
                 value={line.materialCatalogItemId}
                 onChange={(e) =>
-                  setLines((ls) => ls.map((l, j) => (j === i ? { ...l, materialCatalogItemId: e.target.value } : l)))
+                  setLines((ls) =>
+                    ls.map((l, j) =>
+                      j === i
+                        ? { ...l, materialCatalogItemId: e.target.value }
+                        : l,
+                    ),
+                  )
                 }
               >
                 {materials.map((m) => (
@@ -205,7 +261,13 @@ export function PurchaseOrdersPanel() {
                 placeholder={t("quantity")}
                 className="input w-20"
                 value={line.quantity}
-                onChange={(e) => setLines((ls) => ls.map((l, j) => (j === i ? { ...l, quantity: e.target.value } : l)))}
+                onChange={(e) =>
+                  setLines((ls) =>
+                    ls.map((l, j) =>
+                      j === i ? { ...l, quantity: e.target.value } : l,
+                    ),
+                  )
+                }
               />
               <input
                 type="number"
@@ -215,13 +277,21 @@ export function PurchaseOrdersPanel() {
                 className="input w-20"
                 value={line.unitPrice}
                 onChange={(e) =>
-                  setLines((ls) => ls.map((l, j) => (j === i ? { ...l, unitPrice: e.target.value } : l)))
+                  setLines((ls) =>
+                    ls.map((l, j) =>
+                      j === i ? { ...l, unitPrice: e.target.value } : l,
+                    ),
+                  )
                 }
               />
             </div>
           ))}
 
-          <button type="submit" disabled={submitting || lines.length === 0} className="btn-primary mt-2">
+          <button
+            type="submit"
+            disabled={submitting || lines.length === 0}
+            className="btn-primary mt-2"
+          >
             {tc("create")}
           </button>
         </form>
@@ -258,9 +328,17 @@ export function PurchaseOrdersPanel() {
                 <ul className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                   {po.lines.map((l) => (
                     <li key={l.id}>
-                      {l.materialCatalogItem.code} × {l.quantity} @ {l.unitPrice} {me?.company.currency}
+                      {l.materialCatalogItem.code} × {l.quantity} @{" "}
+                      {l.unitPrice} {me?.company.currency}
                       {Number(l.quantityReceived) > 0 && (
-                        <span className="ml-1.5 text-xs text-gray-400 dark:text-gray-500">({t("receivedOf", { received: l.quantityReceived, quantity: l.quantity })})</span>
+                        <span className="ml-1.5 text-xs text-gray-400 dark:text-gray-500">
+                          (
+                          {t("receivedOf", {
+                            received: l.quantityReceived,
+                            quantity: l.quantity,
+                          })}
+                          )
+                        </span>
                       )}
                     </li>
                   ))}
@@ -269,19 +347,35 @@ export function PurchaseOrdersPanel() {
                   <p className="mt-2 text-xs text-success-700 dark:text-success-500">
                     {t("acknowledgedBy", {
                       date: formatDate(new Date(po.acknowledgedAt)),
-                      eta: po.supplierEta ? formatDate(new Date(po.supplierEta)) : "—",
+                      eta: po.supplierEta
+                        ? formatDate(new Date(po.supplierEta))
+                        : "—",
                     })}
-                    {po.supplierNote && <span className="block text-gray-500 dark:text-gray-400">{po.supplierNote}</span>}
+                    {po.supplierNote && (
+                      <span className="block text-gray-500 dark:text-gray-400">
+                        {po.supplierNote}
+                      </span>
+                    )}
                   </p>
                 ) : (
-                  po.status !== "draft" && <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">{t("notAcknowledged")}</p>
+                  po.status !== "draft" && (
+                    <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
+                      {t("notAcknowledged")}
+                    </p>
+                  )
                 )}
                 {po.status !== "received" && (
                   <div className="mt-3 flex gap-2">
-                    <button onClick={() => receive(po.id)} className="btn-secondary">
+                    <button
+                      onClick={() => receive(po.id)}
+                      className="btn-secondary"
+                    >
                       {t("receive")}
                     </button>
-                    <button onClick={() => openReceiveShipment(po)} className="btn-secondary">
+                    <button
+                      onClick={() => openReceiveShipment(po)}
+                      className="btn-secondary"
+                    >
                       {t("receiveShipment")}
                     </button>
                   </div>
@@ -289,7 +383,11 @@ export function PurchaseOrdersPanel() {
 
                 {receivingOrderId === po.id && (
                   <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 dark:border-gray-700 pt-3">
-                    <select className="input" value={shipmentWarehouseId} onChange={(e) => setShipmentWarehouseId(e.target.value)}>
+                    <select
+                      className="input"
+                      value={shipmentWarehouseId}
+                      onChange={(e) => setShipmentWarehouseId(e.target.value)}
+                    >
                       {warehouses.map((w) => (
                         <option key={w.id} value={w.id}>
                           {w.name}
@@ -299,8 +397,13 @@ export function PurchaseOrdersPanel() {
                     {shipmentLines.map((sl, i) => {
                       const line = po.lines.find((l) => l.id === sl.lineId)!;
                       return (
-                        <div key={sl.lineId} className="flex flex-wrap items-center gap-2">
-                          <span className="w-32 truncate text-xs text-gray-500 dark:text-gray-400">{line.materialCatalogItem.code}</span>
+                        <div
+                          key={sl.lineId}
+                          className="flex flex-wrap items-center gap-2"
+                        >
+                          <span className="w-32 truncate text-xs text-gray-500 dark:text-gray-400">
+                            {line.materialCatalogItem.code}
+                          </span>
                           <input
                             type="number"
                             step="0.01"
@@ -308,7 +411,15 @@ export function PurchaseOrdersPanel() {
                             placeholder={t("quantityReceivedPlaceholder")}
                             className="input w-32"
                             value={sl.quantityReceived}
-                            onChange={(e) => setShipmentLines((ls) => ls.map((l, j) => (j === i ? { ...l, quantityReceived: e.target.value } : l)))}
+                            onChange={(e) =>
+                              setShipmentLines((ls) =>
+                                ls.map((l, j) =>
+                                  j === i
+                                    ? { ...l, quantityReceived: e.target.value }
+                                    : l,
+                                ),
+                              )
+                            }
                           />
                           <input
                             type="number"
@@ -317,25 +428,56 @@ export function PurchaseOrdersPanel() {
                             placeholder={t("quantityDamagedPlaceholder")}
                             className="input w-32"
                             value={sl.quantityDamaged}
-                            onChange={(e) => setShipmentLines((ls) => ls.map((l, j) => (j === i ? { ...l, quantityDamaged: e.target.value } : l)))}
+                            onChange={(e) =>
+                              setShipmentLines((ls) =>
+                                ls.map((l, j) =>
+                                  j === i
+                                    ? { ...l, quantityDamaged: e.target.value }
+                                    : l,
+                                ),
+                              )
+                            }
                           />
                           <select
                             className="input"
                             value={sl.shortfallType}
-                            onChange={(e) => setShipmentLines((ls) => ls.map((l, j) => (j === i ? { ...l, shortfallType: e.target.value as ShipmentLineDraft["shortfallType"] } : l)))}
+                            onChange={(e) =>
+                              setShipmentLines((ls) =>
+                                ls.map((l, j) =>
+                                  j === i
+                                    ? {
+                                        ...l,
+                                        shortfallType: e.target
+                                          .value as ShipmentLineDraft["shortfallType"],
+                                      }
+                                    : l,
+                                ),
+                              )
+                            }
                           >
                             <option value="">{t("shortfallTypeNone")}</option>
-                            <option value="short_ship">{t("shortfallType_short_ship")}</option>
-                            <option value="backorder">{t("shortfallType_backorder")}</option>
+                            <option value="short_ship">
+                              {t("shortfallType_short_ship")}
+                            </option>
+                            <option value="backorder">
+                              {t("shortfallType_backorder")}
+                            </option>
                           </select>
                         </div>
                       );
                     })}
                     <div className="flex gap-2">
-                      <button onClick={submitShipment} disabled={shipmentBusy} className="btn-primary px-3 py-1.5 text-xs">
+                      <button
+                        onClick={submitShipment}
+                        disabled={shipmentBusy}
+                        className="btn-primary px-3 py-1.5 text-xs"
+                      >
                         {tc("save")}
                       </button>
-                      <button onClick={() => setReceivingOrderId(null)} className="btn-secondary px-3 py-1.5 text-xs">
+                      <button
+                        onClick={() => setReceivingOrderId(null)}
+                        className="btn-secondary px-3 py-1.5 text-xs"
+                      >
                         {tc("cancel")}
                       </button>
                     </div>
@@ -344,6 +486,15 @@ export function PurchaseOrdersPanel() {
               </li>
             ))}
           </ul>
+        )}
+        {ordersHasMore && (
+          <button
+            onClick={loadMoreOrders}
+            disabled={ordersLoadMoreBusy}
+            className="btn-secondary mt-3 px-2.5 py-1.5 text-xs"
+          >
+            {tc("loadMore")}
+          </button>
         )}
       </div>
     </div>

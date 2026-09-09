@@ -19,7 +19,7 @@ export class StockTransfersService {
     private readonly stockService: StockService,
   ) {}
 
-  list(companyId: string, warehouseId?: string) {
+  list(companyId: string, warehouseId: string | undefined, take: number, cursor?: string) {
     return this.prisma.stockTransfer.findMany({
       where: {
         companyId,
@@ -30,7 +30,11 @@ export class StockTransfersService {
         toWarehouse: { select: { id: true, name: true } },
         materialCatalogItem: { select: { id: true, name: true, unit: true } },
       },
-      orderBy: { initiatedAt: "desc" },
+      // initiatedAt is set once per transfer but not guaranteed unique to the millisecond — an
+      // id tiebreaker keeps the sort (and cursor pagination) deterministic.
+      orderBy: [{ initiatedAt: "desc" }, { id: "desc" }],
+      take,
+      ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
     });
   }
 

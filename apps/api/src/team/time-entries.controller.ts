@@ -10,6 +10,8 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { TimeEntriesService } from "./time-entries.service";
 
+const TIME_ENTRIES_PAGE_SIZE = 100;
+
 @Controller("time-entries")
 export class TimeEntriesController {
   constructor(private readonly service: TimeEntriesService) {}
@@ -21,8 +23,9 @@ export class TimeEntriesController {
     @Query("workerId") workerId?: string,
     @Query("from") from?: string,
     @Query("to") to?: string,
+    @Query("cursor") cursor?: string,
   ) {
-    return this.service.list(user.companyId, { projectId, workerId, from, to });
+    return this.service.list(user.companyId, { projectId, workerId, from, to }, { take: TIME_ENTRIES_PAGE_SIZE, cursor });
   }
 
   @Post()

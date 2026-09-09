@@ -5,7 +5,7 @@ import { Prisma } from "@prisma/client";
 import type { CreateRecurringInvoiceInput, UpdateRecurringInvoiceInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 import { RECURRING_INVOICES_QUEUE } from "../common/queue/queue.module";
 import { advanceDate, calculateRecurringInvoice } from "./recurring-invoice-schedule";
 import { InvoicesService } from "./invoices.service";
@@ -24,7 +24,7 @@ export class RecurringInvoicesService implements OnModuleInit {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
-    private readonly webhooks: WebhooksService,
+    private readonly outbox: OutboxService,
     private readonly invoices: InvoicesService,
     private readonly clientPaymentMethods: ClientPaymentMethodsService,
     @InjectQueue(RECURRING_INVOICES_QUEUE) private readonly queue: Queue,
@@ -39,11 +39,13 @@ export class RecurringInvoicesService implements OnModuleInit {
     );
   }
 
-  list(companyId: string) {
+  list(companyId: string, take: number, cursor?: string) {
     return this.prisma.recurringInvoice.findMany({
       where: { companyId },
       include: { lines: { orderBy: { sortOrder: "asc" } }, project: true, client: true },
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take,
+      ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
     });
   }
 
@@ -261,6 +263,12 @@ export class RecurringInvoicesService implements OnModuleInit {
           data: { nextRunDate: advanceDate(recurring.nextRunDate, recurring.frequency), lastGeneratedAt: new Date() },
         });
 
+        await this.outbox.enqueue(tx, recurring.companyId, "invoice.recurring_generated", {
+          invoiceId: created.id,
+          number: created.number,
+          recurringInvoiceId: recurring.id,
+        });
+
         return created;
       });
     } catch (err) {
@@ -274,12 +282,6 @@ export class RecurringInvoicesService implements OnModuleInit {
         include: { lines: true, client: true, project: true },
       });
     }
-
-    this.webhooks.trigger(recurring.companyId, "invoice.recurring_generated", {
-      invoiceId: invoice.id,
-      number: invoice.number,
-      recurringInvoiceId: recurring.id,
-    });
 
     if (recurring.autopayEnabled) {
       await this.attemptAutopay(recurring.companyId, invoice.id, invoice.number, invoice.clientId, Number(invoice.total), invoice.currency);

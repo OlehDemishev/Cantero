@@ -20,6 +20,8 @@ import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { ExpensesService } from "./expenses.service";
 import { ReceiptOcrService } from "./receipt-ocr.service";
 
+const EXPENSES_PAGE_SIZE = 100;
+
 @Controller("expenses")
 export class ExpensesController {
   constructor(
@@ -41,8 +43,9 @@ export class ExpensesController {
     @Query("projectId") projectId?: string,
     @Query("workerId") workerId?: string,
     @Query("status") status?: string,
+    @Query("cursor") cursor?: string,
   ) {
-    return this.service.list(user.companyId, { projectId, workerId, status });
+    return this.service.list(user.companyId, { projectId, workerId, status }, EXPENSES_PAGE_SIZE, cursor);
   }
 
   @Post()

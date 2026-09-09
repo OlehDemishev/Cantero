@@ -14,13 +14,15 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { PurchaseOrdersService } from "./purchase-orders.service";
 
+const PURCHASE_ORDERS_PAGE_SIZE = 100;
+
 @Controller("materials/purchase-orders")
 export class PurchaseOrdersController {
   constructor(private readonly service: PurchaseOrdersService) {}
 
   @Get()
-  list(@CurrentUser() user: AuthUser, @Query("supplierId") supplierId?: string) {
-    return this.service.list(user.companyId, supplierId);
+  list(@CurrentUser() user: AuthUser, @Query("supplierId") supplierId?: string, @Query("cursor") cursor?: string) {
+    return this.service.list(user.companyId, supplierId, PURCHASE_ORDERS_PAGE_SIZE, cursor);
   }
 
   @Get("receiving-discrepancies")

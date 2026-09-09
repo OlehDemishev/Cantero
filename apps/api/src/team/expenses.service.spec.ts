@@ -4,7 +4,7 @@ import { ExpensesService } from "./expenses.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { StorageService } from "../common/storage/storage.service";
 import { AuditService } from "../common/audit/audit.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 
 const COMPANY_A = "company-a";
 const ACTOR = { userId: "user-1", name: "Jane" };
@@ -15,20 +15,24 @@ describe("ExpensesService", () => {
     project: { findFirst: jest.Mock };
     worker: { findFirst: jest.Mock };
     expense: { create: jest.Mock; findFirst: jest.Mock; findMany: jest.Mock; update: jest.Mock };
+    $transaction: jest.Mock;
+    $queryRaw: jest.Mock;
   };
   let storage: { save: jest.Mock; read: jest.Mock };
   let audit: { record: jest.Mock };
-  let webhooks: { trigger: jest.Mock };
+  let outbox: { enqueue: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
       project: { findFirst: jest.fn() },
       worker: { findFirst: jest.fn() },
       expense: { create: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), update: jest.fn() },
+      $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
+      $queryRaw: jest.fn(),
     };
     storage = { save: jest.fn(), read: jest.fn() };
     audit = { record: jest.fn() };
-    webhooks = { trigger: jest.fn() };
+    outbox = { enqueue: jest.fn() };
 
     const module = await Test.createTestingModule({
       providers: [
@@ -36,7 +40,7 @@ describe("ExpensesService", () => {
         { provide: PrismaService, useValue: prisma },
         { provide: StorageService, useValue: storage },
         { provide: AuditService, useValue: audit },
-        { provide: WebhooksService, useValue: webhooks },
+        { provide: OutboxService, useValue: outbox },
       ],
     }).compile();
 
@@ -45,27 +49,24 @@ describe("ExpensesService", () => {
 
   describe("list", () => {
     it("flags an expense far above the company's own category history and excludes itself from the baseline", async () => {
-      prisma.expense.findMany
-        .mockResolvedValueOnce([{ id: "exp-1", category: "fuel", amount: "1000" }])
-        .mockResolvedValueOnce([
-          { id: "exp-1", category: "fuel", amount: "1000" },
-          { id: "exp-2", category: "fuel", amount: "100" },
-          { id: "exp-3", category: "fuel", amount: "110" },
-          { id: "exp-4", category: "fuel", amount: "95" },
-        ]);
+      // $queryRaw returns one pre-aggregated row per category (count/sum/sum-of-squares) — this
+      // one reflects the DB-level `status != 'rejected'` filter already including exp-1 itself
+      // (amounts: 1000, 100, 110, 95 → n=4, sum=1305, sumSq=1000²+100²+110²+95²=1031125); the
+      // service then subtracts exp-1's own amount out (leave-one-out) before scoring it.
+      prisma.expense.findMany.mockResolvedValueOnce([{ id: "exp-1", category: "fuel", amount: "1000" }]);
+      prisma.$queryRaw.mockResolvedValueOnce([{ category: "fuel", n: 4n, sum: 1305, sumsq: 1031125 }]);
 
-      const [result] = await service.list(COMPANY_A, {});
+      const [result] = await service.list(COMPANY_A, {}, 100);
 
       expect(result.anomaly.isAnomaly).toBe(true);
       expect(result.anomaly.historicalSampleSize).toBe(3);
     });
 
     it("does not flag anything when the category has too little history", async () => {
-      prisma.expense.findMany
-        .mockResolvedValueOnce([{ id: "exp-1", category: "other", amount: "500" }])
-        .mockResolvedValueOnce([{ id: "exp-1", category: "other", amount: "500" }]);
+      prisma.expense.findMany.mockResolvedValueOnce([{ id: "exp-1", category: "other", amount: "500" }]);
+      prisma.$queryRaw.mockResolvedValueOnce([{ category: "other", n: 1n, sum: 500, sumsq: 250000 }]);
 
-      const [result] = await service.list(COMPANY_A, {});
+      const [result] = await service.list(COMPANY_A, {}, 100);
 
       expect(result.anomaly).toEqual({ isAnomaly: false, historicalAverage: null, historicalSampleSize: 0, deviationPercent: null });
     });
@@ -128,7 +129,7 @@ describe("ExpensesService", () => {
         data: { status: "approved", approvedByUserId: "user-1", approvedAt: expect.any(Date) },
       });
       expect(audit.record).toHaveBeenCalled();
-      expect(webhooks.trigger).toHaveBeenCalledWith(COMPANY_A, "expense.approved", { expenseId: "exp-1", amount: "42.00" });
+      expect(outbox.enqueue).toHaveBeenCalledWith(prisma, COMPANY_A, "expense.approved", { expenseId: "exp-1", amount: "42.00" });
     });
 
     it("rejects a pending expense with a reason", async () => {

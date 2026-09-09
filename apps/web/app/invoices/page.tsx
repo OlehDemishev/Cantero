@@ -3,7 +3,10 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { RECURRING_INVOICE_FREQUENCIES, type RecurringInvoiceFrequency } from "@cantero/shared";
+import {
+  RECURRING_INVOICE_FREQUENCIES,
+  type RecurringInvoiceFrequency,
+} from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
@@ -49,15 +52,22 @@ interface RecurringLineForm {
   quantity: string;
   unitPrice: string;
 }
+const INVOICES_PAGE_SIZE = 100;
+const RECURRING_INVOICES_PAGE_SIZE = 100;
+
 export default function InvoicesPage() {
   const t = useTranslations("invoices");
   const tc = useTranslations("common");
   const { data: me } = useMe();
   const [invoices, setInvoices] = useState<Invoice[] | null>(null);
+  const [invoicesHasMore, setInvoicesHasMore] = useState(false);
+  const [invoicesLoadMoreBusy, setInvoicesLoadMoreBusy] = useState(false);
   const currency = me?.company.currency ?? "";
   const locale = me?.company.locale ?? "en";
 
   const [recurring, setRecurring] = useState<RecurringInvoice[] | null>(null);
+  const [recurringHasMore, setRecurringHasMore] = useState(false);
+  const [recurringLoadMoreBusy, setRecurringLoadMoreBusy] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [recurringForm, setRecurringForm] = useState({
@@ -69,16 +79,56 @@ export default function InvoicesPage() {
     startDate: new Date().toISOString().slice(0, 10),
     endDate: "",
   });
-  const [recurringLines, setRecurringLines] = useState<RecurringLineForm[]>([{ description: "", quantity: "1", unitPrice: "0" }]);
+  const [recurringLines, setRecurringLines] = useState<RecurringLineForm[]>([
+    { description: "", quantity: "1", unitPrice: "0" },
+  ]);
   const [recurringBusy, setRecurringBusy] = useState(false);
   const [recurringError, setRecurringError] = useState<string | null>(null);
 
   function loadRecurring() {
-    apiFetch<RecurringInvoice[]>("/recurring-invoices").then(setRecurring);
+    apiFetch<RecurringInvoice[]>("/recurring-invoices").then((page) => {
+      setRecurring(page);
+      setRecurringHasMore(page.length === RECURRING_INVOICES_PAGE_SIZE);
+    });
+  }
+
+  async function loadMoreRecurring() {
+    if (!recurring || recurring.length === 0) return;
+    setRecurringLoadMoreBusy(true);
+    try {
+      const page = await apiFetch<RecurringInvoice[]>(
+        `/recurring-invoices?cursor=${recurring[recurring.length - 1].id}`,
+      );
+      setRecurring([...recurring, ...page]);
+      setRecurringHasMore(page.length === RECURRING_INVOICES_PAGE_SIZE);
+    } finally {
+      setRecurringLoadMoreBusy(false);
+    }
+  }
+
+  function loadInvoices() {
+    apiFetch<Invoice[]>("/invoices").then((page) => {
+      setInvoices(page);
+      setInvoicesHasMore(page.length === INVOICES_PAGE_SIZE);
+    });
+  }
+
+  async function loadMoreInvoices() {
+    if (!invoices || invoices.length === 0) return;
+    setInvoicesLoadMoreBusy(true);
+    try {
+      const page = await apiFetch<Invoice[]>(
+        `/invoices?cursor=${invoices[invoices.length - 1].id}`,
+      );
+      setInvoices([...invoices, ...page]);
+      setInvoicesHasMore(page.length === INVOICES_PAGE_SIZE);
+    } finally {
+      setInvoicesLoadMoreBusy(false);
+    }
   }
 
   useEffect(() => {
-    apiFetch<Invoice[]>("/invoices").then(setInvoices);
+    loadInvoices();
     apiFetch<Project[]>("/projects").then(setProjects);
     apiFetch<Client[]>("/clients").then(setClients);
     loadRecurring();
@@ -99,12 +149,21 @@ export default function InvoicesPage() {
     downloadBlob(blob, "invoices-xero.csv");
   }
 
-  function updateRecurringLine(index: number, field: keyof RecurringLineForm, value: string) {
-    setRecurringLines((lines) => lines.map((l, i) => (i === index ? { ...l, [field]: value } : l)));
+  function updateRecurringLine(
+    index: number,
+    field: keyof RecurringLineForm,
+    value: string,
+  ) {
+    setRecurringLines((lines) =>
+      lines.map((l, i) => (i === index ? { ...l, [field]: value } : l)),
+    );
   }
 
   function addRecurringLine() {
-    setRecurringLines((lines) => [...lines, { description: "", quantity: "1", unitPrice: "0" }]);
+    setRecurringLines((lines) => [
+      ...lines,
+      { description: "", quantity: "1", unitPrice: "0" },
+    ]);
   }
 
   function removeRecurringLine(index: number) {
@@ -125,7 +184,9 @@ export default function InvoicesPage() {
           frequency: recurringForm.frequency,
           taxPercent: Number(recurringForm.taxPercent),
           startDate: new Date(recurringForm.startDate).toISOString(),
-          endDate: recurringForm.endDate ? new Date(recurringForm.endDate).toISOString() : undefined,
+          endDate: recurringForm.endDate
+            ? new Date(recurringForm.endDate).toISOString()
+            : undefined,
           lines: recurringLines.map((l) => ({
             description: l.description,
             quantity: Number(l.quantity),
@@ -133,7 +194,12 @@ export default function InvoicesPage() {
           })),
         }),
       });
-      setRecurringForm((f) => ({ ...f, name: "", projectId: "", clientId: "" }));
+      setRecurringForm((f) => ({
+        ...f,
+        name: "",
+        projectId: "",
+        clientId: "",
+      }));
       setRecurringLines([{ description: "", quantity: "1", unitPrice: "0" }]);
       loadRecurring();
     } catch (err) {
@@ -144,16 +210,21 @@ export default function InvoicesPage() {
   }
 
   async function toggleRecurringActive(item: RecurringInvoice) {
-    await apiFetch(`/recurring-invoices/${item.id}/${item.active ? "pause" : "resume"}`, { method: "POST" });
+    await apiFetch(
+      `/recurring-invoices/${item.id}/${item.active ? "pause" : "resume"}`,
+      { method: "POST" },
+    );
     loadRecurring();
   }
 
   async function generateRecurringNow(id: string) {
     setRecurringBusy(true);
     try {
-      await apiFetch(`/recurring-invoices/${id}/generate-now`, { method: "POST" });
+      await apiFetch(`/recurring-invoices/${id}/generate-now`, {
+        method: "POST",
+      });
       loadRecurring();
-      apiFetch<Invoice[]>("/invoices").then(setInvoices);
+      loadInvoices();
     } catch (err) {
       setRecurringError(err instanceof Error ? err.message : tc("error"));
     } finally {
@@ -204,64 +275,103 @@ export default function InvoicesPage() {
           <p className="text-gray-500 dark:text-gray-400">—</p>
         ) : (
           <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-                <th className="py-2">{t("number")}</th>
-                <th>{tc("name")}</th>
-                <th>{tc("status")}</th>
-                <th>{t("total")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {invoices.map((inv) => (
-                <tr key={inv.id} className="cursor-pointer border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-white/5">
-                  <td className="py-2">
-                    <a href={`/invoices/${inv.id}`} className="block">
-                      {inv.number}
-                    </a>
-                  </td>
-                  <td>
-                    <Link href={`/clients/${inv.client.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
-                      {inv.client.name}
-                    </Link>{" "}
-                    ·{" "}
-                    <Link href={`/projects/${inv.project.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
-                      {inv.project.name}
-                    </Link>
-                  </td>
-                  <td>{t(inv.status)}</td>
-                  <td>
-                    {inv.total} {currency}
-                  </td>
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+                  <th className="py-2">{t("number")}</th>
+                  <th>{tc("name")}</th>
+                  <th>{tc("status")}</th>
+                  <th>{t("total")}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {invoices.map((inv) => (
+                  <tr
+                    key={inv.id}
+                    className="cursor-pointer border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-white/5"
+                  >
+                    <td className="py-2">
+                      <a href={`/invoices/${inv.id}`} className="block">
+                        {inv.number}
+                      </a>
+                    </td>
+                    <td>
+                      <Link
+                        href={`/clients/${inv.client.id}`}
+                        className="text-brand-700 dark:text-brand-400 hover:underline"
+                      >
+                        {inv.client.name}
+                      </Link>{" "}
+                      ·{" "}
+                      <Link
+                        href={`/projects/${inv.project.id}`}
+                        className="text-brand-700 dark:text-brand-400 hover:underline"
+                      >
+                        {inv.project.name}
+                      </Link>
+                    </td>
+                    <td>{t(inv.status)}</td>
+                    <td>
+                      {inv.total} {currency}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {invoicesHasMore && (
+              <button
+                onClick={loadMoreInvoices}
+                disabled={invoicesLoadMoreBusy}
+                className="btn-secondary mt-3 px-2.5 py-1.5 text-xs"
+              >
+                {tc("loadMore")}
+              </button>
+            )}
           </div>
         )}
       </div>
 
       <div className="mt-10">
-        <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("recurring")}</h2>
-        <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("recurringHint")}</p>
-        {recurringError && <p className="mb-3 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{recurringError}</p>}
+        <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">
+          {t("recurring")}
+        </h2>
+        <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">
+          {t("recurringHint")}
+        </p>
+        {recurringError && (
+          <p className="mb-3 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">
+            {recurringError}
+          </p>
+        )}
 
         {!recurring || recurring.length === 0 ? (
-          <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">{t("noRecurring")}</p>
+          <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">
+            {t("noRecurring")}
+          </p>
         ) : (
           <div className="mb-6 flex flex-col gap-2">
             {recurring.map((r) => (
-              <div key={r.id} className="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+              <div
+                key={r.id}
+                className="rounded-lg border border-gray-200 dark:border-gray-700 p-3"
+              >
                 <div className="flex items-center justify-between gap-2">
                   <div>
-                    <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{r.name}</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
+                      {r.name}
+                    </span>
                     <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
-                      <Link href={`/clients/${r.client.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
+                      <Link
+                        href={`/clients/${r.client.id}`}
+                        className="text-brand-700 dark:text-brand-400 hover:underline"
+                      >
                         {r.client.name}
                       </Link>{" "}
                       ·{" "}
-                      <Link href={`/projects/${r.project.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
+                      <Link
+                        href={`/projects/${r.project.id}`}
+                        className="text-brand-700 dark:text-brand-400 hover:underline"
+                      >
                         {r.project.name}
                       </Link>{" "}
                       · {t(`frequency_${r.frequency}`)}
@@ -274,9 +384,12 @@ export default function InvoicesPage() {
                   </span>
                 </div>
                 <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                  {t("nextRun")}: {new Date(r.nextRunDate).toLocaleDateString(locale)}
-                  {r.lastGeneratedAt && ` · ${t("lastGenerated")}: ${new Date(r.lastGeneratedAt).toLocaleDateString(locale)}`}
-                  {r.endDate && ` · ${t("endDate")}: ${new Date(r.endDate).toLocaleDateString(locale)}`}
+                  {t("nextRun")}:{" "}
+                  {new Date(r.nextRunDate).toLocaleDateString(locale)}
+                  {r.lastGeneratedAt &&
+                    ` · ${t("lastGenerated")}: ${new Date(r.lastGeneratedAt).toLocaleDateString(locale)}`}
+                  {r.endDate &&
+                    ` · ${t("endDate")}: ${new Date(r.endDate).toLocaleDateString(locale)}`}
                 </p>
                 <div className="mt-2 flex gap-2">
                   <button
@@ -286,36 +399,62 @@ export default function InvoicesPage() {
                   >
                     {t("generateNow")}
                   </button>
-                  <button onClick={() => toggleRecurringActive(r)} className="btn-secondary px-2 py-1 text-xs">
+                  <button
+                    onClick={() => toggleRecurringActive(r)}
+                    className="btn-secondary px-2 py-1 text-xs"
+                  >
                     {r.active ? t("pause") : t("resume")}
                   </button>
-                  <button onClick={() => deleteRecurring(r.id)} className="btn-secondary px-2 py-1 text-xs">
+                  <button
+                    onClick={() => deleteRecurring(r.id)}
+                    className="btn-secondary px-2 py-1 text-xs"
+                  >
                     {tc("delete")}
                   </button>
                   <label className="ml-auto flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300">
-                    <input type="checkbox" checked={r.autopayEnabled} onChange={() => toggleAutopay(r)} />
+                    <input
+                      type="checkbox"
+                      checked={r.autopayEnabled}
+                      onChange={() => toggleAutopay(r)}
+                    />
                     {t("autopay")}
                   </label>
                 </div>
               </div>
             ))}
+            {recurringHasMore && (
+              <button
+                onClick={loadMoreRecurring}
+                disabled={recurringLoadMoreBusy}
+                className="btn-secondary self-start px-2.5 py-1.5 text-xs"
+              >
+                {tc("loadMore")}
+              </button>
+            )}
           </div>
         )}
 
-        <form onSubmit={createRecurring} className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+        <form
+          onSubmit={createRecurring}
+          className="rounded-lg border border-gray-200 dark:border-gray-700 p-4"
+        >
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <input
               required
               placeholder={t("recurringNamePlaceholder")}
               className="input"
               value={recurringForm.name}
-              onChange={(e) => setRecurringForm((f) => ({ ...f, name: e.target.value }))}
+              onChange={(e) =>
+                setRecurringForm((f) => ({ ...f, name: e.target.value }))
+              }
             />
             <select
               required
               className="input"
               value={recurringForm.projectId}
-              onChange={(e) => setRecurringForm((f) => ({ ...f, projectId: e.target.value }))}
+              onChange={(e) =>
+                setRecurringForm((f) => ({ ...f, projectId: e.target.value }))
+              }
             >
               <option value="">{t("selectProject")}</option>
               {projects.map((p) => (
@@ -328,7 +467,9 @@ export default function InvoicesPage() {
               required
               className="input"
               value={recurringForm.clientId}
-              onChange={(e) => setRecurringForm((f) => ({ ...f, clientId: e.target.value }))}
+              onChange={(e) =>
+                setRecurringForm((f) => ({ ...f, clientId: e.target.value }))
+              }
             >
               <option value="">{t("selectClient")}</option>
               {clients.map((c) => (
@@ -340,7 +481,12 @@ export default function InvoicesPage() {
             <select
               className="input"
               value={recurringForm.frequency}
-              onChange={(e) => setRecurringForm((f) => ({ ...f, frequency: e.target.value as RecurringInvoiceFrequency }))}
+              onChange={(e) =>
+                setRecurringForm((f) => ({
+                  ...f,
+                  frequency: e.target.value as RecurringInvoiceFrequency,
+                }))
+              }
             >
               {RECURRING_INVOICE_FREQUENCIES.map((freq) => (
                 <option key={freq} value={freq}>
@@ -355,7 +501,9 @@ export default function InvoicesPage() {
                 type="date"
                 className="input"
                 value={recurringForm.startDate}
-                onChange={(e) => setRecurringForm((f) => ({ ...f, startDate: e.target.value }))}
+                onChange={(e) =>
+                  setRecurringForm((f) => ({ ...f, startDate: e.target.value }))
+                }
               />
             </label>
             <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
@@ -364,7 +512,9 @@ export default function InvoicesPage() {
                 type="date"
                 className="input"
                 value={recurringForm.endDate}
-                onChange={(e) => setRecurringForm((f) => ({ ...f, endDate: e.target.value }))}
+                onChange={(e) =>
+                  setRecurringForm((f) => ({ ...f, endDate: e.target.value }))
+                }
               />
             </label>
             <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
@@ -376,7 +526,12 @@ export default function InvoicesPage() {
                 max="100"
                 className="input"
                 value={recurringForm.taxPercent}
-                onChange={(e) => setRecurringForm((f) => ({ ...f, taxPercent: e.target.value }))}
+                onChange={(e) =>
+                  setRecurringForm((f) => ({
+                    ...f,
+                    taxPercent: e.target.value,
+                  }))
+                }
               />
             </label>
           </div>
@@ -389,7 +544,9 @@ export default function InvoicesPage() {
                   placeholder={t("lineDescriptionPlaceholder")}
                   className="input flex-1"
                   value={line.description}
-                  onChange={(e) => updateRecurringLine(i, "description", e.target.value)}
+                  onChange={(e) =>
+                    updateRecurringLine(i, "description", e.target.value)
+                  }
                 />
                 <input
                   required
@@ -398,7 +555,9 @@ export default function InvoicesPage() {
                   placeholder={t("quantity")}
                   className="input w-24"
                   value={line.quantity}
-                  onChange={(e) => updateRecurringLine(i, "quantity", e.target.value)}
+                  onChange={(e) =>
+                    updateRecurringLine(i, "quantity", e.target.value)
+                  }
                 />
                 <input
                   required
@@ -407,28 +566,44 @@ export default function InvoicesPage() {
                   placeholder={t("unitPrice")}
                   className="input w-28"
                   value={line.unitPrice}
-                  onChange={(e) => updateRecurringLine(i, "unitPrice", e.target.value)}
+                  onChange={(e) =>
+                    updateRecurringLine(i, "unitPrice", e.target.value)
+                  }
                 />
                 {recurringLines.length > 1 && (
-                  <button type="button" onClick={() => removeRecurringLine(i)} className="btn-secondary shrink-0 px-2 py-1.5 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => removeRecurringLine(i)}
+                    className="btn-secondary shrink-0 px-2 py-1.5 text-xs"
+                  >
                     {tc("delete")}
                   </button>
                 )}
               </div>
             ))}
-            <button type="button" onClick={addRecurringLine} className="btn-secondary self-start px-3 py-1 text-xs">
+            <button
+              type="button"
+              onClick={addRecurringLine}
+              className="btn-secondary self-start px-3 py-1 text-xs"
+            >
               {t("addLine")}
             </button>
           </div>
 
-          <button type="submit" disabled={recurringBusy} className="btn-primary mt-4">
+          <button
+            type="submit"
+            disabled={recurringBusy}
+            className="btn-primary mt-4"
+          >
             {t("createRecurring")}
           </button>
         </form>
       </div>
 
       <a href="/reports" className="card mt-10 block hover:border-gray-400">
-        <div className="text-sm font-medium text-gray-700 dark:text-gray-200">{t("cashFlowForecastLink")}</div>
+        <div className="text-sm font-medium text-gray-700 dark:text-gray-200">
+          {t("cashFlowForecastLink")}
+        </div>
         <div className="mt-1 text-gray-900 dark:text-gray-50">→</div>
       </a>
     </AuthenticatedShell>

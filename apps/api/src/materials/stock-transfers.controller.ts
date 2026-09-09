@@ -4,13 +4,15 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { StockTransfersService } from "./stock-transfers.service";
 
+const STOCK_TRANSFERS_PAGE_SIZE = 100;
+
 @Controller("materials/stock-transfers")
 export class StockTransfersController {
   constructor(private readonly service: StockTransfersService) {}
 
   @Get()
-  list(@CurrentUser() user: AuthUser, @Query("warehouseId") warehouseId?: string) {
-    return this.service.list(user.companyId, warehouseId);
+  list(@CurrentUser() user: AuthUser, @Query("warehouseId") warehouseId?: string, @Query("cursor") cursor?: string) {
+    return this.service.list(user.companyId, warehouseId, STOCK_TRANSFERS_PAGE_SIZE, cursor);
   }
 
   @Post()

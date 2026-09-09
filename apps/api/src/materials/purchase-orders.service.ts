@@ -13,11 +13,13 @@ export class PurchaseOrdersService {
     private readonly audit: AuditService,
   ) {}
 
-  list(companyId: string, supplierId?: string) {
+  list(companyId: string, supplierId: string | undefined, take: number, cursor?: string) {
     return this.prisma.purchaseOrder.findMany({
       where: { companyId, ...(supplierId ? { supplierId } : {}) },
       include: { supplier: true, lines: { include: { materialCatalogItem: true } } },
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take,
+      ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
     });
   }
 

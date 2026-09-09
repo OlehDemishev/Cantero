@@ -86,7 +86,15 @@ export class PublicApiService {
   }
 
   async timeEntries(companyId: string, format: ExportFormat, page?: PageParams) {
-    const rows = paginate(await this.timeEntriesService.list(companyId, {}), page);
+    // Pushed into the query itself (take/skip) rather than fetched in full and sliced via
+    // paginate() — that in-memory slice still required reading every time entry the company ever
+    // logged on every paginated request. limit/offset stay the external contract; internally
+    // they map onto TimeEntriesService's cursor-pagination signature as a plain offset.
+    const rows = await this.timeEntriesService.list(
+      companyId,
+      {},
+      page ? { take: page.limit, skip: page.offset } : undefined,
+    );
     if (format === "json") return rows;
     return toCsv(
       ["ID", "Worker", "Project", "Date", "Hours"],

@@ -14,7 +14,11 @@ export interface TimeEntryFilter {
 export class TimeEntriesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  list(companyId: string, filter: TimeEntryFilter) {
+  /** `pagination.cursor` (internal controller, id-based) and `pagination.skip` (public API,
+   * offset-based — see PublicApiService.timeEntries()) are mutually exclusive ways to page
+   * through the same deterministic [date desc, id desc] order; omit both for "everything",
+   * unchanged from before pagination existed. */
+  list(companyId: string, filter: TimeEntryFilter, pagination?: { take?: number; skip?: number; cursor?: string }) {
     return this.prisma.timeEntry.findMany({
       where: {
         companyId,
@@ -30,7 +34,15 @@ export class TimeEntriesService {
           : {}),
       },
       include: { worker: true, task: true, project: true },
-      orderBy: { date: "desc" },
+      // date is user-entered (a shift's calendar date), not a generated timestamp — an id
+      // tiebreaker keeps the sort (and cursor pagination) deterministic across same-day entries.
+      orderBy: [{ date: "desc" }, { id: "desc" }],
+      ...(pagination?.take !== undefined ? { take: pagination.take } : {}),
+      ...(pagination?.cursor
+        ? { skip: 1, cursor: { id: pagination.cursor } }
+        : pagination?.skip !== undefined
+          ? { skip: pagination.skip }
+          : {}),
     });
   }
 

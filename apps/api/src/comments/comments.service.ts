@@ -10,6 +10,14 @@ export interface CommentListFilter {
   projectId?: string;
 }
 
+/** Not cursor-paginated: CommentsThread renders oldest-first like a chat log, where the natural
+ * "more" direction is loading older messages above the visible ones, not appending a next page
+ * below — a different UX than the flat lists elsewhere in this app. A single task/RFI/punch-list
+ * thread is inherently small; only the projectId-scoped view (every comment on the project) can
+ * really grow over a project's lifetime, so this cap is a backstop for that view rather than an
+ * expected page size. */
+const COMMENTS_QUERY_CAP = 500;
+
 @Injectable()
 export class CommentsService {
   constructor(
@@ -19,7 +27,10 @@ export class CommentsService {
 
   async list(companyId: string, filter: CommentListFilter) {
     await this.assertTarget(companyId, filter);
-    return this.prisma.comment.findMany({
+    // Capped at the most recent COMMENTS_QUERY_CAP comments — fetched newest-first so the cap
+    // keeps recent activity (not the oldest messages ever posted), then reversed back to the
+    // oldest-first order the thread UI expects.
+    const comments = await this.prisma.comment.findMany({
       where: {
         companyId,
         ...(filter.taskId ? { taskId: filter.taskId } : {}),
@@ -28,8 +39,10 @@ export class CommentsService {
         ...(filter.projectId ? { projectId: filter.projectId } : {}),
       },
       include: { mentions: { include: { user: { select: { id: true, name: true } } } } },
-      orderBy: { createdAt: "asc" },
+      orderBy: { createdAt: "desc" },
+      take: COMMENTS_QUERY_CAP,
     });
+    return comments.reverse();
   }
 
   async create(companyId: string, actor: AuditActor, input: CreateCommentInput) {

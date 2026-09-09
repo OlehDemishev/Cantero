@@ -7,6 +7,8 @@ import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { ProjectAccessService } from "../common/project-access/project-access.service";
 
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024; // 25MB — contracts/photos, not video
+const DOCUMENTS_QUERY_CAP = 2000;
+const DELETED_DOCUMENTS_PAGE_SIZE = 100;
 
 const ALLOWED_MIME_TYPES = new Set([
   "application/pdf",
@@ -77,7 +79,15 @@ export class DocumentsService {
   /** Latest version per chain, excluding soft-deleted documents. `userId`/`role` narrow the
    * result to documents whose project (if any) the caller may actually see — covers every filter
    * combination (by rfiId, punchListItemId, ...), not just an explicit projectId filter, since a
-   * document attached to e.g. a restricted project's RFI is just as off-limits. */
+   * document attached to e.g. a restricted project's RFI is just as off-limits.
+   *
+   * Bounded at DOCUMENTS_QUERY_CAP rather than proper cursor pagination (unlike most other list
+   * endpoints in this app): the version-chain grouping and the project-access post-filter below
+   * both happen in memory, after the fetch — cursor-paginating the raw query could split a
+   * chain's versions across pages, or return a short page purely because access-filtering
+   * removed rows, not because there were no more. A DB-level fix needs the grouping done in SQL
+   * (e.g. DISTINCT ON), which is a larger change; the cap only closes the "truly unbounded"
+   * failure mode the audit flagged. */
   async list(companyId: string, filter: DocumentListFilter, userId?: string, role?: string) {
     const category = filter.category ? documentCategorySchema.parse(filter.category) : undefined;
 
@@ -106,6 +116,7 @@ export class DocumentsService {
       },
       include: { uploadedBy: { select: { id: true, name: true } }, project: true },
       orderBy: { createdAt: "desc" },
+      take: DOCUMENTS_QUERY_CAP,
     });
 
     const latestByChain = new Map<string, (typeof docs)[number]>();
@@ -140,11 +151,15 @@ export class DocumentsService {
 
   /** Soft-deleted documents, most recently deleted first — lets an owner/admin undo a delete
    * instead of it being silent and (from the UI's point of view) permanent. */
-  async listDeleted(companyId: string) {
+  async listDeleted(companyId: string, take: number = DELETED_DOCUMENTS_PAGE_SIZE, cursor?: string) {
     return this.prisma.document.findMany({
       where: { companyId, deletedAt: { not: null } },
       include: { uploadedBy: { select: { id: true, name: true } }, project: true },
-      orderBy: { deletedAt: "desc" },
+      // deletedAt is a server-set timestamp but not guaranteed unique to the millisecond under
+      // a bulk delete — an id tiebreaker keeps the sort (and cursor pagination) deterministic.
+      orderBy: [{ deletedAt: "desc" }, { id: "desc" }],
+      take,
+      ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
     });
   }
 

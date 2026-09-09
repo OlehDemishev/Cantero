@@ -76,8 +76,8 @@ export class DocumentsController {
 
   @Roles("owner", "admin")
   @Get("deleted")
-  listDeleted(@CurrentUser() user: AuthUser) {
-    return this.service.listDeleted(user.companyId);
+  listDeleted(@CurrentUser() user: AuthUser, @Query("cursor") cursor?: string) {
+    return this.service.listDeleted(user.companyId, undefined, cursor);
   }
 
   @Roles("owner", "admin")

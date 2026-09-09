@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Header, Param, Patch, Post, Res, StreamableFile } from "@nestjs/common";
+import { Body, Controller, Get, Header, Param, Patch, Post, Query, Res, StreamableFile } from "@nestjs/common";
 import { IsUUID } from "class-validator";
 import type { Response } from "express";
 import {
@@ -25,6 +25,8 @@ class GenerateFromEstimateDto {
   estimateId!: string;
 }
 
+const INVOICES_PAGE_SIZE = 100;
+
 @Controller("invoices")
 export class InvoicesController {
   constructor(
@@ -33,8 +35,8 @@ export class InvoicesController {
   ) {}
 
   @Get()
-  list(@CurrentUser() user: AuthUser) {
-    return this.service.list(user.companyId);
+  list(@CurrentUser() user: AuthUser, @Query("cursor") cursor?: string) {
+    return this.service.list(user.companyId, INVOICES_PAGE_SIZE, cursor);
   }
 
   // Declared before ":id" so "export.csv" isn't swallowed as an invoice id.

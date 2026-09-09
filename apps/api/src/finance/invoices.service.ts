@@ -8,7 +8,7 @@ import { StorageService } from "../common/storage/storage.service";
 import { toCsv } from "../common/csv";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 import { calculateProgressDraw, round2 } from "./progress-billing";
 import { buildXRechnungXml } from "./e-invoice";
 import { calculateLateFee, daysOverdue } from "./late-fee";
@@ -29,12 +29,21 @@ export class InvoicesService {
     private readonly audit: AuditService,
     private readonly config: ConfigService,
     private readonly mail: MailService,
-    private readonly webhooks: WebhooksService,
+    private readonly outbox: OutboxService,
     private readonly exchangeRates: ExchangeRateService,
   ) {}
 
-  list(companyId: string) {
-    return this.prisma.invoice.findMany({ where: { companyId }, include: { client: true, project: true } });
+  /** take omitted (public-api's JSON export, out of scope for this round's pagination pass —
+   * paginates client-side via its own paginate() helper instead) returns every invoice, same as
+   * before pagination existed here. */
+  list(companyId: string, take?: number, cursor?: string) {
+    return this.prisma.invoice.findMany({
+      where: { companyId },
+      include: { client: true, project: true },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      ...(take !== undefined ? { take } : {}),
+      ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
+    });
   }
 
   async get(companyId: string, id: string) {
@@ -281,13 +290,16 @@ export class InvoicesService {
       dueDate = new Date(Date.now() + termsDays * 24 * 60 * 60 * 1000);
     }
 
-    const updated = await this.prisma.invoice.update({
-      where: { id },
-      data: { status: "sent", dueDate },
-      include: { lines: true, client: true, project: true, payments: true, installments: true },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.invoice.update({
+        where: { id },
+        data: { status: "sent", dueDate },
+        include: { lines: true, client: true, project: true, payments: true, installments: true },
+      });
+      await this.outbox.enqueue(tx, companyId, "invoice.sent", { invoiceId: id, number: invoice.number });
+      return updated;
     });
     this.audit.record(companyId, actor, "invoice.sent", "Invoice", id, `Sent invoice ${invoice.number} to ${invoice.client.name}`);
-    this.webhooks.trigger(companyId, "invoice.sent", { invoiceId: id, number: invoice.number });
 
     if (updated.client.email) {
       const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
@@ -384,6 +396,26 @@ export class InvoicesService {
     const paidTotal = payments.reduce((sum, p) => sum + Number(p.amount), 0);
     const newStatus = paidTotal >= Number(invoice.total) ? "paid" : "sent";
 
+    // The payment row itself is already committed above (its own try/catch needs to run first to
+    // detect a redelivered Stripe webhook) — this transaction covers only the invoice's derived
+    // status update, which is what the webhook payload actually describes, so the two commit
+    // together.
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.invoice.update({
+        where: { id },
+        data: { status: newStatus },
+        include: { lines: true, client: true, project: true, payments: true, installments: true },
+      });
+      await this.outbox.enqueue(tx, companyId, "invoice.payment_recorded", {
+        invoiceId: id,
+        number: invoice.number,
+        amount,
+        method: input.method,
+        newStatus,
+      });
+      return updated;
+    });
+
     this.audit.record(
       companyId,
       actor,
@@ -393,19 +425,8 @@ export class InvoicesService {
       `Recorded a ${amount} payment (${input.method}) on invoice ${invoice.number}`,
       { amount, method: input.method },
     );
-    this.webhooks.trigger(companyId, "invoice.payment_recorded", {
-      invoiceId: id,
-      number: invoice.number,
-      amount,
-      method: input.method,
-      newStatus,
-    });
 
-    return this.prisma.invoice.update({
-      where: { id },
-      data: { status: newStatus },
-      include: { lines: true, client: true, project: true, payments: true, installments: true },
-    });
+    return updated;
   }
 
   async generatePdf(companyId: string, id: string): Promise<Buffer> {

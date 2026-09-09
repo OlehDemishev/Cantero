@@ -1,9 +1,22 @@
 import { Test } from "@nestjs/testing";
+import type { Archiver } from "archiver";
 import { DataExportService, toTeamExportRow } from "./data-export.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 
 function emptyFindMany() {
   return jest.fn().mockResolvedValue([]);
+}
+
+/** Streamed archive entries only finish writing once their source stream ends — collecting into
+ * a buffer here (rather than asserting against the live stream) is the simplest way to inspect
+ * the finished ZIP's bytes in a test. */
+function collectArchive(archive: Archiver): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    archive.on("data", (chunk: Buffer) => chunks.push(chunk));
+    archive.on("end", () => resolve(Buffer.concat(chunks)));
+    archive.on("error", reject);
+  });
 }
 
 describe("DataExportService", () => {
@@ -13,7 +26,11 @@ describe("DataExportService", () => {
   beforeEach(async () => {
     prisma = {
       company: { findUniqueOrThrow: jest.fn().mockResolvedValue({ id: "company-a", name: "Acme" }) },
-      membership: { findMany: jest.fn().mockResolvedValue([{ role: "owner", emailDigestFrequency: "off", user: { id: "u1", name: "Jane", email: "jane@example.com" } }]) },
+      membership: {
+        findMany: jest
+          .fn()
+          .mockResolvedValue([{ id: "m1", role: "owner", emailDigestFrequency: "off", user: { id: "u1", name: "Jane", email: "jane@example.com" } }]),
+      },
       client: { findMany: emptyFindMany() },
       project: { findMany: emptyFindMany() },
       estimate: { findMany: emptyFindMany() },
@@ -36,7 +53,8 @@ describe("DataExportService", () => {
   });
 
   it("produces a real ZIP scoped to the requesting company only", async () => {
-    const buffer = await service.buildExport("company-a");
+    const archive = await service.buildExport("company-a");
+    const buffer = await collectArchive(archive);
 
     expect(buffer.subarray(0, 2).toString()).toBe("PK");
     for (const [model, methods] of Object.entries(prisma)) {
@@ -47,29 +65,29 @@ describe("DataExportService", () => {
   });
 
   it("includes each expected entity file in the archive", async () => {
-    const buffer = await service.buildExport("company-a");
+    const archive = await service.buildExport("company-a");
+    const buffer = await collectArchive(archive);
     const text = buffer.toString("latin1");
 
     for (const name of [
       "company.json",
-      "team.json",
-      "clients.json",
-      "projects.json",
-      "estimates.json",
-      "invoices.json",
-      "workers.json",
-      "time-entries.json",
-      "documents.json",
-      "punch-list.json",
-      "rfis.json",
-      "warranty-claims.json",
-      "daily-logs.json",
-      "incident-reports.json",
+      "team.ndjson",
+      "clients.ndjson",
+      "projects.ndjson",
+      "estimates.ndjson",
+      "invoices.ndjson",
+      "workers.ndjson",
+      "time-entries.ndjson",
+      "documents.ndjson",
+      "punch-list.ndjson",
+      "rfis.ndjson",
+      "warranty-claims.ndjson",
+      "daily-logs.ndjson",
+      "incident-reports.ndjson",
     ]) {
       expect(text).toContain(name);
     }
   });
-
 });
 
 describe("toTeamExportRow", () => {

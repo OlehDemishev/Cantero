@@ -105,13 +105,16 @@ function MaterialPicker({
   const selectedMaterial = materials.find((m) => m.id === value);
 
   useEffect(() => {
-    if (selectedMaterial) resetStateInEffect(() => setQuery(selectedMaterial.code));
+    if (selectedMaterial)
+      resetStateInEffect(() => setQuery(selectedMaterial.code));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedMaterial?.id]);
 
   function handleInput(next: string) {
     setQuery(next);
-    const match = materials.find((m) => m.code.toLowerCase() === next.trim().toLowerCase());
+    const match = materials.find(
+      (m) => m.code.toLowerCase() === next.trim().toLowerCase(),
+    );
     if (match) onChange(match.id);
   }
 
@@ -135,13 +138,20 @@ function MaterialPicker({
   );
 }
 
-export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: string; allWarehouses: Warehouse[] }) {
+export function WarehouseDetail({
+  warehouseId,
+  allWarehouses,
+}: {
+  warehouseId: string;
+  allWarehouses: Warehouse[];
+}) {
   const t = useTranslations("warehouses");
   const tc = useTranslations("common");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
   const MOVEMENTS_PAGE_SIZE = 100;
+  const STOCK_TRANSFERS_PAGE_SIZE = 100;
   const [levels, setLevels] = useState<StockLevel[] | null>(null);
   const [movements, setMovements] = useState<StockMovement[] | null>(null);
   const [movementsHasMore, setMovementsHasMore] = useState(false);
@@ -154,9 +164,22 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
     unitCost: "",
   });
   const [valuation, setValuation] = useState<InventoryValuation | null>(null);
-  const [transfer, setTransfer] = useState({ materialCatalogItemId: "", toWarehouseId: "", quantity: "1" });
-  const [inTransitForm, setInTransitForm] = useState({ materialCatalogItemId: "", toWarehouseId: "", quantity: "1" });
-  const [stockTransfers, setStockTransfers] = useState<StockTransfer[] | null>(null);
+  const [transfer, setTransfer] = useState({
+    materialCatalogItemId: "",
+    toWarehouseId: "",
+    quantity: "1",
+  });
+  const [inTransitForm, setInTransitForm] = useState({
+    materialCatalogItemId: "",
+    toWarehouseId: "",
+    quantity: "1",
+  });
+  const [stockTransfers, setStockTransfers] = useState<StockTransfer[] | null>(
+    null,
+  );
+  const [stockTransfersHasMore, setStockTransfersHasMore] = useState(false);
+  const [stockTransfersLoadMoreBusy, setStockTransfersLoadMoreBusy] =
+    useState(false);
   const [busy, setBusy] = useState(false);
   const [counts, setCounts] = useState<StockCount[] | null>(null);
   const [activeCount, setActiveCount] = useState<StockCount | null>(null);
@@ -164,29 +187,49 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
   const [editingBinFor, setEditingBinFor] = useState<string | null>(null);
   const [binDraft, setBinDraft] = useState("");
   const [barcodeInput, setBarcodeInput] = useState("");
-  const [barcodeResult, setBarcodeResult] = useState<BarcodeLookupResult | null>(null);
+  const [barcodeResult, setBarcodeResult] =
+    useState<BarcodeLookupResult | null>(null);
   const [barcodeError, setBarcodeError] = useState<string | null>(null);
 
   useEffect(() => {
     if (activeCount) {
-      resetStateInEffect(() => setLineInputs(Object.fromEntries(activeCount.lines.map((l) => [l.id, l.countedQuantity]))));
+      resetStateInEffect(() =>
+        setLineInputs(
+          Object.fromEntries(
+            activeCount.lines.map((l) => [l.id, l.countedQuantity]),
+          ),
+        ),
+      );
     }
   }, [activeCount?.id]);
 
   const otherWarehouses = allWarehouses.filter((w) => w.id !== warehouseId);
 
   function load() {
-    apiFetch<StockLevel[]>(`/materials/stock/levels?warehouseId=${warehouseId}`).then(setLevels);
-    apiFetch<InventoryValuation>(`/materials/stock/valuation?warehouseId=${warehouseId}`).then(setValuation);
-    apiFetch<StockTransfer[]>(`/materials/stock-transfers?warehouseId=${warehouseId}`).then(setStockTransfers);
-    apiFetch<StockMovement[]>(`/materials/stock/movements?warehouseId=${warehouseId}`).then((page) => {
+    apiFetch<StockLevel[]>(
+      `/materials/stock/levels?warehouseId=${warehouseId}`,
+    ).then(setLevels);
+    apiFetch<InventoryValuation>(
+      `/materials/stock/valuation?warehouseId=${warehouseId}`,
+    ).then(setValuation);
+    apiFetch<StockTransfer[]>(
+      `/materials/stock-transfers?warehouseId=${warehouseId}`,
+    ).then((page) => {
+      setStockTransfers(page);
+      setStockTransfersHasMore(page.length === STOCK_TRANSFERS_PAGE_SIZE);
+    });
+    apiFetch<StockMovement[]>(
+      `/materials/stock/movements?warehouseId=${warehouseId}`,
+    ).then((page) => {
       setMovements(page);
       setMovementsHasMore(page.length === MOVEMENTS_PAGE_SIZE);
     });
   }
 
   function loadCounts() {
-    apiFetch<StockCount[]>(`/materials/stock/counts?warehouseId=${warehouseId}`).then(setCounts);
+    apiFetch<StockCount[]>(
+      `/materials/stock/counts?warehouseId=${warehouseId}`,
+    ).then(setCounts);
   }
 
   async function loadMoreMovements() {
@@ -200,6 +243,20 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
       setMovementsHasMore(page.length === MOVEMENTS_PAGE_SIZE);
     } finally {
       setMovementsLoadMoreBusy(false);
+    }
+  }
+
+  async function loadMoreStockTransfers() {
+    if (!stockTransfers || stockTransfers.length === 0) return;
+    setStockTransfersLoadMoreBusy(true);
+    try {
+      const page = await apiFetch<StockTransfer[]>(
+        `/materials/stock-transfers?warehouseId=${warehouseId}&cursor=${stockTransfers[stockTransfers.length - 1].id}`,
+      );
+      setStockTransfers([...stockTransfers, ...page]);
+      setStockTransfersHasMore(page.length === STOCK_TRANSFERS_PAGE_SIZE);
+    } finally {
+      setStockTransfersLoadMoreBusy(false);
     }
   }
 
@@ -238,12 +295,22 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
 
   async function saveLine(lineId: string, countedQuantity: string) {
     if (!activeCount || countedQuantity === "") return;
-    await apiFetch(`/materials/stock/counts/${activeCount.id}/lines/${lineId}`, {
-      method: "PATCH",
-      body: JSON.stringify({ countedQuantity: Number(countedQuantity) }),
-    });
+    await apiFetch(
+      `/materials/stock/counts/${activeCount.id}/lines/${lineId}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ countedQuantity: Number(countedQuantity) }),
+      },
+    );
     setActiveCount((c) =>
-      c ? { ...c, lines: c.lines.map((l) => (l.id === lineId ? { ...l, countedQuantity } : l)) } : c,
+      c
+        ? {
+            ...c,
+            lines: c.lines.map((l) =>
+              l.id === lineId ? { ...l, countedQuantity } : l,
+            ),
+          }
+        : c,
     );
   }
 
@@ -251,7 +318,9 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
     if (!activeCount) return;
     setBusy(true);
     try {
-      await apiFetch(`/materials/stock/counts/${activeCount.id}/finalize`, { method: "POST" });
+      await apiFetch(`/materials/stock/counts/${activeCount.id}/finalize`, {
+        method: "POST",
+      });
       setActiveCount(null);
       loadCounts();
       load();
@@ -262,7 +331,9 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
 
   useEffect(() => {
     if (!transfer.toWarehouseId && otherWarehouses[0]) {
-      resetStateInEffect(() => setTransfer((tr) => ({ ...tr, toWarehouseId: otherWarehouses[0].id })));
+      resetStateInEffect(() =>
+        setTransfer((tr) => ({ ...tr, toWarehouseId: otherWarehouses[0].id })),
+      );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [otherWarehouses[0]?.id]);
@@ -278,7 +349,10 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
           materialCatalogItemId: movement.materialCatalogItemId,
           type: movement.type,
           quantity: Number(movement.quantity),
-          unitCost: movement.type === "receipt" && movement.unitCost ? Number(movement.unitCost) : undefined,
+          unitCost:
+            movement.type === "receipt" && movement.unitCost
+              ? Number(movement.unitCost)
+              : undefined,
         }),
       });
       setMovement((m) => ({ ...m, unitCost: "" }));
@@ -293,7 +367,11 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
     try {
       await apiFetch("/materials/stock/bin-location", {
         method: "POST",
-        body: JSON.stringify({ warehouseId, materialCatalogItemId, binLocation: binDraft || null }),
+        body: JSON.stringify({
+          warehouseId,
+          materialCatalogItemId,
+          binLocation: binDraft || null,
+        }),
       });
       setEditingBinFor(null);
       load();
@@ -308,7 +386,9 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
     setBarcodeError(null);
     setBarcodeResult(null);
     try {
-      const result = await apiFetch<BarcodeLookupResult>(`/materials/catalog/by-barcode/${encodeURIComponent(barcodeInput.trim())}`);
+      const result = await apiFetch<BarcodeLookupResult>(
+        `/materials/catalog/by-barcode/${encodeURIComponent(barcodeInput.trim())}`,
+      );
       setBarcodeResult(result);
     } catch (err) {
       setBarcodeError(err instanceof Error ? err.message : tc("error"));
@@ -358,7 +438,9 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
   async function receiveStockTransfer(id: string) {
     setBusy(true);
     try {
-      await apiFetch(`/materials/stock-transfers/${id}/receive`, { method: "POST" });
+      await apiFetch(`/materials/stock-transfers/${id}/receive`, {
+        method: "POST",
+      });
       load();
     } finally {
       setBusy(false);
@@ -368,7 +450,9 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
   async function cancelStockTransfer(id: string) {
     setBusy(true);
     try {
-      await apiFetch(`/materials/stock-transfers/${id}/cancel`, { method: "POST" });
+      await apiFetch(`/materials/stock-transfers/${id}/cancel`, {
+        method: "POST",
+      });
       load();
     } finally {
       setBusy(false);
@@ -377,7 +461,9 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
 
   return (
     <div>
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("scanBarcode")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">
+        {t("scanBarcode")}
+      </h2>
       <form onSubmit={lookupBarcode} className="flex items-end gap-2">
         <input
           placeholder={t("barcodePlaceholder")}
@@ -389,14 +475,18 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
           {t("lookUp")}
         </button>
       </form>
-      {barcodeError && <p className="mt-1 text-xs text-error-600">{barcodeError}</p>}
+      {barcodeError && (
+        <p className="mt-1 text-xs text-error-600">{barcodeError}</p>
+      )}
       {barcodeResult && (
         <div className="mt-2 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 text-sm">
           <p className="font-medium text-gray-900 dark:text-gray-50">
             {barcodeResult.name} ({barcodeResult.code})
           </p>
           {barcodeResult.stockLevels.length === 0 ? (
-            <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{t("noStockAnywhere")}</p>
+            <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+              {t("noStockAnywhere")}
+            </p>
           ) : (
             <ul className="mt-1 flex flex-col gap-0.5 text-xs text-gray-500 dark:text-gray-400">
               {barcodeResult.stockLevels.map((sl) => (
@@ -410,114 +500,154 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
         </div>
       )}
 
-      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("stockLevels")}</h2>
+      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">
+        {t("stockLevels")}
+      </h2>
       {!levels ? (
         <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
       ) : (
         <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-sm">
-          <thead>
-            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-              <th className="py-2">{t("material")}</th>
-              <th>{t("quantity")}</th>
-              <th>{t("bin")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {levels.map((l) => (
-              <tr key={l.id} className="border-b border-gray-100 dark:border-gray-700">
-                <td className="py-2">
-                  {l.materialCatalogItem.name} ({l.materialCatalogItem.code})
-                </td>
-                <td className={Number(l.quantityOnHand) < 0 ? "text-red-600" : ""}>
-                  {l.quantityOnHand} {l.materialCatalogItem.unit}
-                </td>
-                <td>
-                  {editingBinFor === l.materialCatalogItem.id ? (
-                    <span className="flex items-center gap-1">
-                      <input
-                        autoFocus
-                        className="input w-24 py-0.5 text-xs"
-                        value={binDraft}
-                        onChange={(e) => setBinDraft(e.target.value)}
-                      />
-                      <button onClick={() => saveBinLocation(l.materialCatalogItem.id)} disabled={busy} className="btn-primary px-1.5 py-0.5 text-xs">
-                        {tc("save")}
-                      </button>
-                    </span>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        setEditingBinFor(l.materialCatalogItem.id);
-                        setBinDraft(l.binLocation ?? "");
-                      }}
-                      className="text-xs text-gray-500 dark:text-gray-400 hover:underline"
-                    >
-                      {l.binLocation ?? t("setBin")}
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        </div>
-      )}
-
-      {valuation && valuation.rows.length > 0 && (
-        <div className="mt-8">
-          <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("inventoryValuation")}</h2>
-          <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("inventoryValuationHint", { method: t(`costingMethod_${valuation.method}`) })}</p>
-          <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
                 <th className="py-2">{t("material")}</th>
                 <th>{t("quantity")}</th>
-                <th className="text-right">{t("unitValue")}</th>
-                <th className="text-right">{t("totalValue")}</th>
+                <th>{t("bin")}</th>
               </tr>
             </thead>
             <tbody>
-              {valuation.rows.map((row) => (
-                <tr key={row.materialCatalogItemId} className="border-b border-gray-100 dark:border-gray-700">
-                  <td className="py-2">{row.materialName}</td>
-                  <td>
-                    {row.quantity} {row.unit}
+              {levels.map((l) => (
+                <tr
+                  key={l.id}
+                  className="border-b border-gray-100 dark:border-gray-700"
+                >
+                  <td className="py-2">
+                    {l.materialCatalogItem.name} ({l.materialCatalogItem.code})
                   </td>
-                  <td className="text-right">{row.unitValue !== null ? `${row.unitValue.toFixed(4)} ${currency}` : "—"}</td>
-                  <td className="text-right font-medium">{row.totalValue.toFixed(2)} {currency}</td>
+                  <td
+                    className={
+                      Number(l.quantityOnHand) < 0 ? "text-red-600" : ""
+                    }
+                  >
+                    {l.quantityOnHand} {l.materialCatalogItem.unit}
+                  </td>
+                  <td>
+                    {editingBinFor === l.materialCatalogItem.id ? (
+                      <span className="flex items-center gap-1">
+                        <input
+                          autoFocus
+                          className="input w-24 py-0.5 text-xs"
+                          value={binDraft}
+                          onChange={(e) => setBinDraft(e.target.value)}
+                        />
+                        <button
+                          onClick={() =>
+                            saveBinLocation(l.materialCatalogItem.id)
+                          }
+                          disabled={busy}
+                          className="btn-primary px-1.5 py-0.5 text-xs"
+                        >
+                          {tc("save")}
+                        </button>
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setEditingBinFor(l.materialCatalogItem.id);
+                          setBinDraft(l.binLocation ?? "");
+                        }}
+                        className="text-xs text-gray-500 dark:text-gray-400 hover:underline"
+                      >
+                        {l.binLocation ?? t("setBin")}
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
-            <tfoot>
-              <tr className="font-semibold">
-                <td className="pt-2" colSpan={3}>
-                  {t("total")}
-                </td>
-                <td className="pt-2 text-right">
-                  {valuation.totalValue.toFixed(2)} {currency}
-                </td>
-              </tr>
-            </tfoot>
           </table>
+        </div>
+      )}
+
+      {valuation && valuation.rows.length > 0 && (
+        <div className="mt-8">
+          <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">
+            {t("inventoryValuation")}
+          </h2>
+          <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">
+            {t("inventoryValuationHint", {
+              method: t(`costingMethod_${valuation.method}`),
+            })}
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+                  <th className="py-2">{t("material")}</th>
+                  <th>{t("quantity")}</th>
+                  <th className="text-right">{t("unitValue")}</th>
+                  <th className="text-right">{t("totalValue")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {valuation.rows.map((row) => (
+                  <tr
+                    key={row.materialCatalogItemId}
+                    className="border-b border-gray-100 dark:border-gray-700"
+                  >
+                    <td className="py-2">{row.materialName}</td>
+                    <td>
+                      {row.quantity} {row.unit}
+                    </td>
+                    <td className="text-right">
+                      {row.unitValue !== null
+                        ? `${row.unitValue.toFixed(4)} ${currency}`
+                        : "—"}
+                    </td>
+                    <td className="text-right font-medium">
+                      {row.totalValue.toFixed(2)} {currency}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="font-semibold">
+                  <td className="pt-2" colSpan={3}>
+                    {t("total")}
+                  </td>
+                  <td className="pt-2 text-right">
+                    {valuation.totalValue.toFixed(2)} {currency}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
           </div>
         </div>
       )}
 
-      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("recordMovement")}</h2>
-      <form onSubmit={recordMovement} className="flex flex-wrap items-end gap-2">
+      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">
+        {t("recordMovement")}
+      </h2>
+      <form
+        onSubmit={recordMovement}
+        className="flex flex-wrap items-end gap-2"
+      >
         <MaterialPicker
           id="movement-material"
           materials={materials}
           value={movement.materialCatalogItemId}
-          onChange={(id) => setMovement((m) => ({ ...m, materialCatalogItemId: id }))}
+          onChange={(id) =>
+            setMovement((m) => ({ ...m, materialCatalogItemId: id }))
+          }
         />
         <select
           className="input w-auto"
           value={movement.type}
           onChange={(e) =>
-            setMovement((m) => ({ ...m, type: e.target.value as (typeof GENERIC_MOVEMENT_TYPES)[number] }))
+            setMovement((m) => ({
+              ...m,
+              type: e.target.value as (typeof GENERIC_MOVEMENT_TYPES)[number],
+            }))
           }
         >
           {GENERIC_MOVEMENT_TYPES.map((ty) => (
@@ -531,7 +661,9 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
           step="0.01"
           className="input w-24"
           value={movement.quantity}
-          onChange={(e) => setMovement((m) => ({ ...m, quantity: e.target.value }))}
+          onChange={(e) =>
+            setMovement((m) => ({ ...m, quantity: e.target.value }))
+          }
         />
         {movement.type === "receipt" && (
           <input
@@ -541,7 +673,9 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
             placeholder={t("unitCostPlaceholder")}
             className="input w-32"
             value={movement.unitCost}
-            onChange={(e) => setMovement((m) => ({ ...m, unitCost: e.target.value }))}
+            onChange={(e) =>
+              setMovement((m) => ({ ...m, unitCost: e.target.value }))
+            }
           />
         )}
         <button type="submit" disabled={busy} className="btn-secondary">
@@ -551,7 +685,9 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
 
       {movements && movements.length > 0 && (
         <div className="mt-8">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("movementHistory")}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">
+            {t("movementHistory")}
+          </h2>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
@@ -565,9 +701,13 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
               </thead>
               <tbody>
                 {movements.map((mv) => (
-                  <tr key={mv.id} className="border-b border-gray-100 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-300">
+                  <tr
+                    key={mv.id}
+                    className="border-b border-gray-100 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-300"
+                  >
                     <td className="py-1.5">
-                      {mv.materialCatalogItem.name} ({mv.materialCatalogItem.code})
+                      {mv.materialCatalogItem.name} (
+                      {mv.materialCatalogItem.code})
                     </td>
                     <td>{t(mv.type)}</td>
                     <td>
@@ -575,7 +715,10 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
                     </td>
                     <td>
                       {mv.project ? (
-                        <Link href={`/projects/${mv.project.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
+                        <Link
+                          href={`/projects/${mv.project.id}`}
+                          className="text-brand-700 dark:text-brand-400 hover:underline"
+                        >
                           {mv.project.name}
                         </Link>
                       ) : (
@@ -589,7 +732,11 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
             </table>
           </div>
           {movementsHasMore && (
-            <button onClick={loadMoreMovements} disabled={movementsLoadMoreBusy} className="btn-secondary mt-3 px-2.5 py-1 text-xs">
+            <button
+              onClick={loadMoreMovements}
+              disabled={movementsLoadMoreBusy}
+              className="btn-secondary mt-3 px-2.5 py-1 text-xs"
+            >
               {t("loadMoreMovements")}
             </button>
           )}
@@ -598,19 +745,30 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
 
       {otherWarehouses.length > 0 && (
         <>
-          <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("transferStock")}</h2>
-          <form onSubmit={recordTransfer} className="flex flex-wrap items-end gap-2">
+          <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">
+            {t("transferStock")}
+          </h2>
+          <form
+            onSubmit={recordTransfer}
+            className="flex flex-wrap items-end gap-2"
+          >
             <MaterialPicker
               id="transfer-material"
               materials={materials}
               value={transfer.materialCatalogItemId}
-              onChange={(id) => setTransfer((tr) => ({ ...tr, materialCatalogItemId: id }))}
+              onChange={(id) =>
+                setTransfer((tr) => ({ ...tr, materialCatalogItemId: id }))
+              }
             />
-            <span className="pb-2.5 text-sm text-gray-400 dark:text-gray-500">→</span>
+            <span className="pb-2.5 text-sm text-gray-400 dark:text-gray-500">
+              →
+            </span>
             <select
               className="input w-auto"
               value={transfer.toWarehouseId}
-              onChange={(e) => setTransfer((tr) => ({ ...tr, toWarehouseId: e.target.value }))}
+              onChange={(e) =>
+                setTransfer((tr) => ({ ...tr, toWarehouseId: e.target.value }))
+              }
             >
               {otherWarehouses.map((w) => (
                 <option key={w.id} value={w.id}>
@@ -623,27 +781,45 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
               step="0.01"
               className="input w-24"
               value={transfer.quantity}
-              onChange={(e) => setTransfer((tr) => ({ ...tr, quantity: e.target.value }))}
+              onChange={(e) =>
+                setTransfer((tr) => ({ ...tr, quantity: e.target.value }))
+              }
             />
             <button type="submit" disabled={busy} className="btn-secondary">
               {t("transfer")}
             </button>
           </form>
 
-          <h2 className="mb-1 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("inTransitTransfer")}</h2>
-          <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("inTransitTransferHint")}</p>
-          <form onSubmit={initiateStockTransfer} className="flex flex-wrap items-end gap-2">
+          <h2 className="mb-1 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">
+            {t("inTransitTransfer")}
+          </h2>
+          <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">
+            {t("inTransitTransferHint")}
+          </p>
+          <form
+            onSubmit={initiateStockTransfer}
+            className="flex flex-wrap items-end gap-2"
+          >
             <MaterialPicker
               id="in-transit-material"
               materials={materials}
               value={inTransitForm.materialCatalogItemId}
-              onChange={(id) => setInTransitForm((f) => ({ ...f, materialCatalogItemId: id }))}
+              onChange={(id) =>
+                setInTransitForm((f) => ({ ...f, materialCatalogItemId: id }))
+              }
             />
-            <span className="pb-2.5 text-sm text-gray-400 dark:text-gray-500">→</span>
+            <span className="pb-2.5 text-sm text-gray-400 dark:text-gray-500">
+              →
+            </span>
             <select
               className="input w-auto"
               value={inTransitForm.toWarehouseId}
-              onChange={(e) => setInTransitForm((f) => ({ ...f, toWarehouseId: e.target.value }))}
+              onChange={(e) =>
+                setInTransitForm((f) => ({
+                  ...f,
+                  toWarehouseId: e.target.value,
+                }))
+              }
             >
               {otherWarehouses.map((w) => (
                 <option key={w.id} value={w.id}>
@@ -656,7 +832,9 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
               step="0.01"
               className="input w-24"
               value={inTransitForm.quantity}
-              onChange={(e) => setInTransitForm((f) => ({ ...f, quantity: e.target.value }))}
+              onChange={(e) =>
+                setInTransitForm((f) => ({ ...f, quantity: e.target.value }))
+              }
             />
             <button type="submit" disabled={busy} className="btn-secondary">
               {t("initiateTransfer")}
@@ -668,62 +846,90 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
       {stockTransfers && stockTransfers.length > 0 && (
         <div className="mt-4">
           <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-                <th className="py-2">{t("material")}</th>
-                <th>{t("route")}</th>
-                <th>{t("quantity")}</th>
-                <th>{tc("status")}</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {stockTransfers.map((tr) => (
-                <tr key={tr.id} className="border-b border-gray-100 dark:border-gray-700">
-                  <td className="py-2">{tr.materialCatalogItem.name}</td>
-                  <td className="text-xs text-gray-500 dark:text-gray-400">
-                    {tr.fromWarehouse.name} → {tr.toWarehouse.name}
-                  </td>
-                  <td>
-                    {tr.quantity} {tr.materialCatalogItem.unit}
-                  </td>
-                  <td>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        tr.status === "in_transit"
-                          ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400"
-                          : tr.status === "received"
-                            ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
-                            : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
-                      }`}
-                    >
-                      {t(`transferStatus_${tr.status}`)}
-                    </span>
-                  </td>
-                  <td className="text-right">
-                    {tr.status === "in_transit" && tr.toWarehouse.id === warehouseId && (
-                      <button onClick={() => receiveStockTransfer(tr.id)} disabled={busy} className="btn-secondary px-2 py-1 text-xs">
-                        {t("receiveTransfer")}
-                      </button>
-                    )}
-                    {tr.status === "in_transit" && tr.fromWarehouse.id === warehouseId && (
-                      <button onClick={() => cancelStockTransfer(tr.id)} disabled={busy} className="ml-1.5 text-xs text-gray-400 dark:text-gray-500 hover:text-error-600">
-                        {tc("cancel")}
-                      </button>
-                    )}
-                  </td>
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+                  <th className="py-2">{t("material")}</th>
+                  <th>{t("route")}</th>
+                  <th>{t("quantity")}</th>
+                  <th>{tc("status")}</th>
+                  <th></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {stockTransfers.map((tr) => (
+                  <tr
+                    key={tr.id}
+                    className="border-b border-gray-100 dark:border-gray-700"
+                  >
+                    <td className="py-2">{tr.materialCatalogItem.name}</td>
+                    <td className="text-xs text-gray-500 dark:text-gray-400">
+                      {tr.fromWarehouse.name} → {tr.toWarehouse.name}
+                    </td>
+                    <td>
+                      {tr.quantity} {tr.materialCatalogItem.unit}
+                    </td>
+                    <td>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                          tr.status === "in_transit"
+                            ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400"
+                            : tr.status === "received"
+                              ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
+                              : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
+                        }`}
+                      >
+                        {t(`transferStatus_${tr.status}`)}
+                      </span>
+                    </td>
+                    <td className="text-right">
+                      {tr.status === "in_transit" &&
+                        tr.toWarehouse.id === warehouseId && (
+                          <button
+                            onClick={() => receiveStockTransfer(tr.id)}
+                            disabled={busy}
+                            className="btn-secondary px-2 py-1 text-xs"
+                          >
+                            {t("receiveTransfer")}
+                          </button>
+                        )}
+                      {tr.status === "in_transit" &&
+                        tr.fromWarehouse.id === warehouseId && (
+                          <button
+                            onClick={() => cancelStockTransfer(tr.id)}
+                            disabled={busy}
+                            className="ml-1.5 text-xs text-gray-400 dark:text-gray-500 hover:text-error-600"
+                          >
+                            {tc("cancel")}
+                          </button>
+                        )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {stockTransfersHasMore && (
+              <button
+                onClick={loadMoreStockTransfers}
+                disabled={stockTransfersLoadMoreBusy}
+                className="btn-secondary mt-3 px-2.5 py-1 text-xs"
+              >
+                {tc("loadMore")}
+              </button>
+            )}
           </div>
         </div>
       )}
 
       <div className="mb-3 mt-8 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("stockCounts")}</h2>
-        <button onClick={startCount} disabled={busy} className="btn-secondary px-3 py-1 text-xs">
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+          {t("stockCounts")}
+        </h2>
+        <button
+          onClick={startCount}
+          disabled={busy}
+          className="btn-secondary px-3 py-1 text-xs"
+        >
           {t("startCount")}
         </button>
       </div>
@@ -731,14 +937,18 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
       {counts && counts.length > 0 && !activeCount && (
         <ul className="flex flex-col gap-2">
           {counts.map((c) => {
-            const varianceCount = c.lines.filter((l) => l.countedQuantity !== l.systemQuantity).length;
+            const varianceCount = c.lines.filter(
+              (l) => l.countedQuantity !== l.systemQuantity,
+            ).length;
             return (
               <li key={c.id}>
                 <button
                   onClick={() => viewCount(c.id)}
                   className="card flex w-full items-center justify-between text-left hover:border-gray-400"
                 >
-                  <span className="text-sm">{formatDate(new Date(c.createdAt))}</span>
+                  <span className="text-sm">
+                    {formatDate(new Date(c.createdAt))}
+                  </span>
                   <span className="flex items-center gap-2 text-xs">
                     {varianceCount > 0 && (
                       <span className="text-warning-700 dark:text-warning-500">
@@ -747,7 +957,9 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
                     )}
                     <span
                       className={`rounded-full px-2 py-0.5 font-medium ${
-                        c.status === "finalized" ? "bg-green-100 dark:bg-green-500/15 text-green-800 dark:text-green-400" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
+                        c.status === "finalized"
+                          ? "bg-green-100 dark:bg-green-500/15 text-green-800 dark:text-green-400"
+                          : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                       }`}
                     >
                       {t(c.status)}
@@ -762,58 +974,85 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
 
       {activeCount && (
         <div>
-          <button onClick={() => setActiveCount(null)} className="mb-2 text-xs text-gray-500 dark:text-gray-400 hover:underline">
+          <button
+            onClick={() => setActiveCount(null)}
+            className="mb-2 text-xs text-gray-500 dark:text-gray-400 hover:underline"
+          >
             ← {tc("back")}
           </button>
           <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-                <th className="py-2">{t("material")}</th>
-                <th>{t("systemQuantity")}</th>
-                <th>{t("countedQuantity")}</th>
-                <th>{t("variance")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {activeCount.lines.map((line) => {
-                const variance = Number(lineInputs[line.id] ?? line.countedQuantity) - Number(line.systemQuantity);
-                return (
-                  <tr key={line.id} className="border-b border-gray-100 dark:border-gray-700">
-                    <td className="py-1.5">
-                      {line.materialCatalogItem.name} ({line.materialCatalogItem.code})
-                    </td>
-                    <td className="text-gray-500 dark:text-gray-400">
-                      {line.systemQuantity} {line.materialCatalogItem.unit}
-                    </td>
-                    <td>
-                      {activeCount.status === "draft" ? (
-                        <input
-                          type="number"
-                          step="0.01"
-                          className="input w-24"
-                          value={lineInputs[line.id] ?? line.countedQuantity}
-                          onChange={(e) => setLineInputs((li) => ({ ...li, [line.id]: e.target.value }))}
-                          onBlur={(e) => saveLine(line.id, e.target.value)}
-                        />
-                      ) : (
-                        <span>
-                          {line.countedQuantity} {line.materialCatalogItem.unit}
-                        </span>
-                      )}
-                    </td>
-                    <td className={variance === 0 ? "text-gray-400 dark:text-gray-500" : variance > 0 ? "text-success-700 dark:text-success-500" : "text-error-600"}>
-                      {variance > 0 ? "+" : ""}
-                      {variance !== 0 ? variance : "—"}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+                  <th className="py-2">{t("material")}</th>
+                  <th>{t("systemQuantity")}</th>
+                  <th>{t("countedQuantity")}</th>
+                  <th>{t("variance")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {activeCount.lines.map((line) => {
+                  const variance =
+                    Number(lineInputs[line.id] ?? line.countedQuantity) -
+                    Number(line.systemQuantity);
+                  return (
+                    <tr
+                      key={line.id}
+                      className="border-b border-gray-100 dark:border-gray-700"
+                    >
+                      <td className="py-1.5">
+                        {line.materialCatalogItem.name} (
+                        {line.materialCatalogItem.code})
+                      </td>
+                      <td className="text-gray-500 dark:text-gray-400">
+                        {line.systemQuantity} {line.materialCatalogItem.unit}
+                      </td>
+                      <td>
+                        {activeCount.status === "draft" ? (
+                          <input
+                            type="number"
+                            step="0.01"
+                            className="input w-24"
+                            value={lineInputs[line.id] ?? line.countedQuantity}
+                            onChange={(e) =>
+                              setLineInputs((li) => ({
+                                ...li,
+                                [line.id]: e.target.value,
+                              }))
+                            }
+                            onBlur={(e) => saveLine(line.id, e.target.value)}
+                          />
+                        ) : (
+                          <span>
+                            {line.countedQuantity}{" "}
+                            {line.materialCatalogItem.unit}
+                          </span>
+                        )}
+                      </td>
+                      <td
+                        className={
+                          variance === 0
+                            ? "text-gray-400 dark:text-gray-500"
+                            : variance > 0
+                              ? "text-success-700 dark:text-success-500"
+                              : "text-error-600"
+                        }
+                      >
+                        {variance > 0 ? "+" : ""}
+                        {variance !== 0 ? variance : "—"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
           {activeCount.status === "draft" && (
-            <button onClick={finalizeCount} disabled={busy} className="btn-primary mt-3">
+            <button
+              onClick={finalizeCount}
+              disabled={busy}
+              className="btn-primary mt-3"
+            >
               {t("finalizeCount")}
             </button>
           )}

@@ -8,7 +8,7 @@ import { PdfService } from "../common/pdf/pdf.service";
 import { StorageService } from "../common/storage/storage.service";
 import { AuditService } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 import { ExchangeRateService } from "../common/exchange-rate/exchange-rate.service";
 
 const COMPANY_A = "company-a";
@@ -22,6 +22,7 @@ describe("InvoicesService — late fees & payment terms", () => {
     company: { findUniqueOrThrow: jest.Mock };
     payment: { create: jest.Mock; findMany: jest.Mock };
     estimate: { findFirst: jest.Mock };
+    $transaction: jest.Mock;
   };
   let audit: { record: jest.Mock };
   let mail: { send: jest.Mock };
@@ -34,6 +35,7 @@ describe("InvoicesService — late fees & payment terms", () => {
       company: { findUniqueOrThrow: jest.fn() },
       payment: { create: jest.fn(), findMany: jest.fn().mockResolvedValue([]) },
       estimate: { findFirst: jest.fn() },
+      $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
     };
     audit = { record: jest.fn() };
     mail = { send: jest.fn() };
@@ -48,7 +50,7 @@ describe("InvoicesService — late fees & payment terms", () => {
         { provide: AuditService, useValue: audit },
         { provide: ConfigService, useValue: { get: () => undefined } },
         { provide: MailService, useValue: mail },
-        { provide: WebhooksService, useValue: { trigger: jest.fn() } },
+        { provide: OutboxService, useValue: { enqueue: jest.fn() } },
         { provide: ExchangeRateService, useValue: exchangeRates },
       ],
     }).compile();
@@ -456,7 +458,7 @@ describe("InvoicesService — partial retainage release", () => {
         { provide: AuditService, useValue: { record: jest.fn() } },
         { provide: ConfigService, useValue: { get: () => undefined } },
         { provide: MailService, useValue: { send: jest.fn() } },
-        { provide: WebhooksService, useValue: { trigger: jest.fn() } },
+        { provide: OutboxService, useValue: { enqueue: jest.fn() } },
         { provide: ExchangeRateService, useValue: { getRate: jest.fn(), convert: jest.fn((amount: number) => Promise.resolve(amount)) } },
       ],
     }).compile();

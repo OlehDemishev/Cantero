@@ -4,7 +4,7 @@ import { Prisma } from "@prisma/client";
 import { RecurringInvoicesService } from "./recurring-invoices.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService } from "../common/audit/audit.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 import { InvoicesService } from "./invoices.service";
 import { ClientPaymentMethodsService } from "./client-payment-methods.service";
 import { RECURRING_INVOICES_QUEUE } from "../common/queue/queue.module";
@@ -46,7 +46,7 @@ describe("RecurringInvoicesService", () => {
         RecurringInvoicesService,
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: { record: jest.fn(), list: jest.fn() } },
-        { provide: WebhooksService, useValue: { trigger: jest.fn() } },
+        { provide: OutboxService, useValue: { enqueue: jest.fn() } },
         { provide: InvoicesService, useValue: invoices },
         { provide: ClientPaymentMethodsService, useValue: clientPaymentMethods },
         { provide: getQueueToken(RECURRING_INVOICES_QUEUE), useValue: { add: jest.fn() } },

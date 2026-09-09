@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from "@nestjs/common";
 import {
   createRecurringInvoiceSchema,
   updateRecurringInvoiceSchema,
@@ -11,14 +11,16 @@ import { Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { RecurringInvoicesService } from "./recurring-invoices.service";
 
+const RECURRING_INVOICES_PAGE_SIZE = 100;
+
 @Roles("owner", "admin", "accountant")
 @Controller("recurring-invoices")
 export class RecurringInvoicesController {
   constructor(private readonly service: RecurringInvoicesService) {}
 
   @Get()
-  list(@CurrentUser() user: AuthUser) {
-    return this.service.list(user.companyId);
+  list(@CurrentUser() user: AuthUser, @Query("cursor") cursor?: string) {
+    return this.service.list(user.companyId, RECURRING_INVOICES_PAGE_SIZE, cursor);
   }
 
   @Get(":id")

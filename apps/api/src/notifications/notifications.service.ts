@@ -39,6 +39,15 @@ const REMINDER_LOOKAHEAD_DAYS = 3;
 const DOCUMENT_EXPIRY_LOOKAHEAD_DAYS = 30;
 const WEATHER_RISK_LOOKAHEAD_DAYS = 7;
 const MATERIAL_PRICE_CHANGE_LOOKBACK_DAYS = 14;
+/** This is a "what's new" activity feed fanning out into ~15 independent queries, not a list a
+ * user pages through — there's no shared cursor across tables that would make sense to page. Each
+ * source caps itself at its most urgent/recent N instead, bounding the whole fan-out to a small,
+ * predictable number of rows regardless of company size. 100 (rather than a tighter number like
+ * 20) because several sources filter further in memory after the fetch (lowStockItems checks
+ * on-hand-vs-threshold, overdueInvoices nets out payments, pendingSubmittals groups by revision
+ * chain) — a tight cap risks silently hiding a real alert behind rows that get filtered out
+ * afterward. See AUDIT-2026-09-07.md. */
+const NOTIFICATION_SOURCE_LIMIT = 100;
 
 /**
  * Notifications are fully derived from live data, not a persisted table —
@@ -174,6 +183,7 @@ export class NotificationsService {
         stockLevels: true,
         stockMovements: { orderBy: { createdAt: "desc" }, take: 1 },
       },
+      take: NOTIFICATION_SOURCE_LIMIT,
     });
 
     return materials
@@ -201,6 +211,7 @@ export class NotificationsService {
       where: { companyId, done: false, dueDate: { lte: cutoff } },
       include: { client: { select: { id: true, name: true } } },
       orderBy: { dueDate: "asc" },
+      take: NOTIFICATION_SOURCE_LIMIT,
     });
 
     const now = new Date();
@@ -221,6 +232,8 @@ export class NotificationsService {
     const invoices = await this.prisma.invoice.findMany({
       where: { companyId, status: { not: "void" }, dueDate: { not: null, lt: new Date() } },
       include: { payments: true, client: { select: { name: true } } },
+      orderBy: { dueDate: "asc" },
+      take: NOTIFICATION_SOURCE_LIMIT,
     });
 
     return invoices
@@ -248,6 +261,8 @@ export class NotificationsService {
     const rfis = await this.prisma.rfi.findMany({
       where: { companyId, status: "open" },
       include: { project: { select: { id: true, name: true } } },
+      orderBy: { createdAt: "desc" },
+      take: NOTIFICATION_SOURCE_LIMIT,
     });
 
     return rfis.map((rfi) => ({
@@ -266,6 +281,8 @@ export class NotificationsService {
     const items = await this.prisma.punchListItem.findMany({
       where: { companyId, status: "open" },
       include: { project: { select: { id: true, name: true } } },
+      orderBy: { createdAt: "desc" },
+      take: NOTIFICATION_SOURCE_LIMIT,
     });
 
     return items.map((item) => ({
@@ -285,6 +302,8 @@ export class NotificationsService {
     const all = await this.prisma.submittal.findMany({
       where: { companyId },
       include: { project: { select: { id: true, name: true } } },
+      orderBy: { createdAt: "desc" },
+      take: NOTIFICATION_SOURCE_LIMIT,
     });
     const latestByChain = new Map<string, (typeof all)[number]>();
     for (const s of all) {
@@ -311,6 +330,8 @@ export class NotificationsService {
     const incidents = await this.prisma.incidentReport.findMany({
       where: { companyId },
       include: { project: { select: { id: true, name: true } } },
+      orderBy: { createdAt: "desc" },
+      take: NOTIFICATION_SOURCE_LIMIT,
     });
 
     return incidents.map((incident) => ({
@@ -328,6 +349,8 @@ export class NotificationsService {
     const claims = await this.prisma.warrantyClaim.findMany({
       where: { companyId, status: "open" },
       include: { project: { select: { id: true, name: true } } },
+      orderBy: { createdAt: "desc" },
+      take: NOTIFICATION_SOURCE_LIMIT,
     });
 
     return claims.map((claim) => ({
@@ -356,6 +379,7 @@ export class NotificationsService {
         },
       },
       orderBy: { createdAt: "desc" },
+      take: NOTIFICATION_SOURCE_LIMIT,
     });
 
     return mentions.map((m) => {
@@ -378,6 +402,8 @@ export class NotificationsService {
     const docs = await this.prisma.subcontractorDocument.findMany({
       where: { companyId, expiresAt: { lte: cutoff } },
       include: { subcontractor: { select: { name: true } } },
+      orderBy: { expiresAt: "asc" },
+      take: NOTIFICATION_SOURCE_LIMIT,
     });
 
     const now = new Date();
@@ -400,6 +426,8 @@ export class NotificationsService {
     const docs = await this.prisma.supplierDocument.findMany({
       where: { companyId, expiresAt: { lte: cutoff } },
       include: { supplier: { select: { name: true } } },
+      orderBy: { expiresAt: "asc" },
+      take: NOTIFICATION_SOURCE_LIMIT,
     });
 
     const now = new Date();
@@ -422,6 +450,8 @@ export class NotificationsService {
     const changes = await this.prisma.materialPriceChange.findMany({
       where: { companyId, createdAt: { gte: cutoff } },
       include: { materialCatalogItem: { select: { id: true, name: true } } },
+      orderBy: { createdAt: "desc" },
+      take: NOTIFICATION_SOURCE_LIMIT,
     });
 
     return changes.map((change) => ({
@@ -440,6 +470,8 @@ export class NotificationsService {
     const permits = await this.prisma.permit.findMany({
       where: { companyId, expiresAt: { not: null, lte: cutoff } },
       include: { project: { select: { id: true, name: true } } },
+      orderBy: { expiresAt: "asc" },
+      take: NOTIFICATION_SOURCE_LIMIT,
     });
 
     const now = new Date();
@@ -456,7 +488,11 @@ export class NotificationsService {
 
   private async expiringCompanyDocuments(companyId: string): Promise<NotificationItem[]> {
     const cutoff = new Date(Date.now() + DOCUMENT_EXPIRY_LOOKAHEAD_DAYS * 24 * 60 * 60 * 1000);
-    const docs = await this.prisma.companyDocument.findMany({ where: { companyId, expiresAt: { lte: cutoff } } });
+    const docs = await this.prisma.companyDocument.findMany({
+      where: { companyId, expiresAt: { lte: cutoff } },
+      orderBy: { expiresAt: "asc" },
+      take: NOTIFICATION_SOURCE_LIMIT,
+    });
 
     const now = new Date();
     return docs.map((doc) => ({
@@ -475,6 +511,8 @@ export class NotificationsService {
     const certs = await this.prisma.workerCertification.findMany({
       where: { companyId, expiresAt: { lte: cutoff } },
       include: { worker: { select: { id: true, name: true } } },
+      orderBy: { expiresAt: "asc" },
+      take: NOTIFICATION_SOURCE_LIMIT,
     });
 
     const now = new Date();
@@ -514,6 +552,8 @@ export class NotificationsService {
         project: { companyId },
       },
       include: { project: { select: { id: true, name: true, address: true } } },
+      orderBy: { startDate: "asc" },
+      take: NOTIFICATION_SOURCE_LIMIT,
     });
     if (tasks.length === 0) return [];
 
@@ -562,6 +602,8 @@ export class NotificationsService {
     const projects = await this.prisma.project.findMany({
       where: { companyId },
       select: { id: true, name: true, budgetAlertThresholdPercent: true },
+      orderBy: { createdAt: "desc" },
+      take: NOTIFICATION_SOURCE_LIMIT,
     });
 
     const items: NotificationItem[] = [];
@@ -594,6 +636,8 @@ export class NotificationsService {
     const projects = await this.prisma.project.findMany({
       where: { companyId },
       select: { id: true, name: true, budgetAlertThresholdPercent: true },
+      orderBy: { createdAt: "desc" },
+      take: NOTIFICATION_SOURCE_LIMIT,
     });
 
     const items: NotificationItem[] = [];
