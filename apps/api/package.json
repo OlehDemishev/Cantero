@@ -16,6 +16,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1127.0",
     "@cantero/shared": "workspace:*",
+    "prisma": "^5.22.0",
     "@nestjs/bullmq": "^10.2.3",
     "@nestjs/common": "^10.4.15",
     "@nestjs/config": "^3.3.0",
@@ -58,7 +59,6 @@
     "@types/pdfkit": "^0.13.4",
     "@types/web-push": "^3.6.4",
     "jest": "^29.7.0",
-    "prisma": "^5.22.0",
     "source-map-support": "^0.5.21",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",

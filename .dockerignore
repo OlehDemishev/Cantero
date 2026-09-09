@@ -1,0 +1,17 @@
+node_modules
+**/node_modules
+**/dist
+**/.next
+apps/api/uploads
+.git
+.github
+.claude
+coverage
+**/*.log
+.DS_Store
+# `pnpm --prod deploy` (used in apps/api/Dockerfile) copies whatever's on disk in its package
+# directory verbatim — it does NOT respect .gitignore — so a stray local .env with dev secrets
+# must never even reach the build context, or it ends up baked into the image.
+.env
+.env.*
+!.env.example

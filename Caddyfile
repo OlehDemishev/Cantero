@@ -1,0 +1,12 @@
+# Replace app.example.com / api.example.com with your real hostnames, and make sure DNS A
+# records for both already point at this server's IP before the first request — Caddy issues
+# and renews Let's Encrypt certificates for each automatically (cert data persists in the
+# caddy_data volume across restarts).
+
+app.example.com {
+	reverse_proxy web:3000
+}
+
+api.example.com {
+	reverse_proxy api:4000
+}
