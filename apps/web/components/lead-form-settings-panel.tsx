@@ -42,8 +42,8 @@ export function LeadFormSettingsPanel({ token, canManage, onChange }: { token: s
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("title")}</h2>
-      <p className="mb-4 text-xs text-gray-500">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
 
       {url ? (
         <div className="flex flex-col gap-2">
@@ -71,7 +71,7 @@ export function LeadFormSettingsPanel({ token, canManage, onChange }: { token: s
           </button>
         )
       )}
-      {!canManage && !url && <p className="text-sm text-gray-400">{t("notEnabled")}</p>}
+      {!canManage && !url && <p className="text-sm text-gray-400 dark:text-gray-500">{t("notEnabled")}</p>}
     </section>
   );
 }

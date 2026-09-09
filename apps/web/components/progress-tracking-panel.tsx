@@ -42,36 +42,36 @@ export function ProgressTrackingPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
         <button onClick={recompute} disabled={busy} className="btn-secondary px-2.5 py-1 text-xs">
           {t("recompute")}
         </button>
       </div>
-      <p className="mb-3 text-xs text-gray-500">{t("hint")}</p>
+      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
 
       {!history ? (
-        <p className="text-sm text-gray-500">{tc("loading")}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
       ) : !latest ? (
-        <p className="text-sm text-gray-400">{t("noEstimates")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noEstimates")}</p>
       ) : (
         <div className="card">
           <div className="flex items-center justify-between">
-            <span className="text-2xl font-semibold text-gray-900">{latest.estimatedPercentComplete}%</span>
+            <span className="text-2xl font-semibold text-gray-900 dark:text-gray-50">{latest.estimatedPercentComplete}%</span>
             {latest.billedPercentComplete !== null && (
-              <span className="text-sm text-gray-500">{t("billedPercent", { percent: Number(latest.billedPercentComplete).toFixed(0) })}</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">{t("billedPercent", { percent: Number(latest.billedPercentComplete).toFixed(0) })}</span>
             )}
           </div>
-          {latest.varianceFlagged && <p className="mt-2 text-xs font-medium text-error-700">{t("varianceFlag")}</p>}
-          <p className="mt-2 text-xs text-gray-400">
+          {latest.varianceFlagged && <p className="mt-2 text-xs font-medium text-error-700 dark:text-error-500">{t("varianceFlag")}</p>}
+          <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
             {t("basedOnPhotos", { count: latest.photoCount })}
             {latest.matchedKeywords.length > 0 && ` — ${latest.matchedKeywords.join(", ")}`}
           </p>
-          <p className="mt-1 text-xs text-gray-400">{formatDateTime(new Date(latest.computedAt))}</p>
+          <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{formatDateTime(new Date(latest.computedAt))}</p>
 
           {history.length > 1 && (
-            <div className="mt-3 border-t border-gray-100 pt-3">
-              <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("history")}</h3>
-              <ul className="flex flex-col gap-1 text-xs text-gray-500">
+            <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-3">
+              <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("history")}</h3>
+              <ul className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
                 {history.slice(1).map((h) => (
                   <li key={h.id}>
                     {formatDate(new Date(h.computedAt))} — {h.estimatedPercentComplete}%

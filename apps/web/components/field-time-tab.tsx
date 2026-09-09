@@ -92,13 +92,13 @@ export function TimeTab({ projectId, meUserId }: { projectId: string; meUserId: 
     }
   }
 
-  if (error) return <p className="text-sm text-gray-400">{t("offline")}</p>;
-  if (workers.length === 0) return <p className="text-sm text-gray-400">{tc("loading")}</p>;
+  if (error) return <p className="text-sm text-gray-400 dark:text-gray-500">{t("offline")}</p>;
+  if (workers.length === 0) return <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>;
 
   return (
     <form onSubmit={submit} className="card flex flex-col gap-3">
       <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-gray-700">{tt("worker")}</span>
+        <span className="font-medium text-gray-700 dark:text-gray-200">{tt("worker")}</span>
         <select className="input" value={form.workerId} onChange={(e) => setForm((f) => ({ ...f, workerId: e.target.value }))}>
           {workers.map((w) => (
             <option key={w.id} value={w.id}>
@@ -108,7 +108,7 @@ export function TimeTab({ projectId, meUserId }: { projectId: string; meUserId: 
         </select>
       </label>
       <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-gray-700">{tt("task")}</span>
+        <span className="font-medium text-gray-700 dark:text-gray-200">{tt("task")}</span>
         <select className="input" value={form.taskId} onChange={(e) => setForm((f) => ({ ...f, taskId: e.target.value }))}>
           <option value="">{tt("noneTask")}</option>
           {tasks.map((task) => (
@@ -120,7 +120,7 @@ export function TimeTab({ projectId, meUserId }: { projectId: string; meUserId: 
       </label>
       <div className="flex gap-3">
         <label className="flex flex-1 flex-col gap-1.5 text-sm">
-          <span className="font-medium text-gray-700">{tt("hours")}</span>
+          <span className="font-medium text-gray-700 dark:text-gray-200">{tt("hours")}</span>
           <input
             type="number"
             step="0.25"
@@ -132,7 +132,7 @@ export function TimeTab({ projectId, meUserId }: { projectId: string; meUserId: 
           />
         </label>
         <label className="flex flex-1 flex-col gap-1.5 text-sm">
-          <span className="font-medium text-gray-700">{tt("date")}</span>
+          <span className="font-medium text-gray-700 dark:text-gray-200">{tt("date")}</span>
           <input
             type="date"
             className="input"

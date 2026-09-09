@@ -117,7 +117,7 @@ export function AuthenticatedShell({ children }: { children: React.ReactNode }) 
   }, [data, router]);
 
   if (loading || !data) {
-    return <div className="flex min-h-screen items-center justify-center text-gray-500">{tc("loading")}</div>;
+    return <div className="flex min-h-screen items-center justify-center text-gray-500 dark:text-gray-400">{tc("loading")}</div>;
   }
 
   const mainMargin = isMobileOpen ? "ml-0" : isExpanded ? "lg:ml-[270px]" : "lg:ml-[90px]";
@@ -160,7 +160,7 @@ function AppSidebar() {
         )}
       </div>
       <nav className="flex flex-1 flex-col overflow-y-auto no-scrollbar">
-        <span className={`mb-3 text-xs font-medium uppercase text-gray-400 ${expanded ? "" : "text-center"}`}>
+        <span className={`mb-3 text-xs font-medium uppercase text-gray-400 dark:text-gray-500 ${expanded ? "" : "text-center"}`}>
           {expanded ? tn("menu") : "···"}
         </span>
         <ul className="flex flex-col gap-1">
@@ -262,7 +262,7 @@ function AppHeader({ me }: { me: NonNullable<ReturnType<typeof useMe>["data"]> }
             <span className="hidden text-left sm:block">
               <span className="block text-sm font-medium text-gray-700 dark:text-gray-300">{me.user.name}</span>
             </span>
-            <ChevronDownIcon className={`text-gray-400 transition-transform ${menuOpen ? "rotate-180" : ""}`} />
+            <ChevronDownIcon className={`text-gray-400 dark:text-gray-500 transition-transform ${menuOpen ? "rotate-180" : ""}`} />
           </button>
 
           {menuOpen && (

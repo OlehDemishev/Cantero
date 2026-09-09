@@ -75,14 +75,14 @@ export function TwoFactorSettingsPanel() {
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("title")}</h2>
-      <p className="mb-4 text-xs text-gray-500">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
 
-      {error && <p className="mb-3 text-xs text-error-700">{error}</p>}
+      {error && <p className="mb-3 text-xs text-error-700 dark:text-error-500">{error}</p>}
 
       {backupCodes && (
         <div className="mb-4 rounded border border-amber-200 bg-amber-50 p-3">
-          <p className="mb-2 text-xs font-semibold text-amber-800">{t("backupCodesTitle")}</p>
+          <p className="mb-2 text-xs font-semibold text-amber-800 dark:text-amber-400">{t("backupCodesTitle")}</p>
           <p className="mb-2 text-xs text-amber-700">{t("backupCodesHint")}</p>
           <div className="grid grid-cols-2 gap-1 font-mono text-xs text-amber-900">
             {backupCodes.map((c) => (
@@ -100,9 +100,9 @@ export function TwoFactorSettingsPanel() {
 
       {setupData && (
         <form onSubmit={confirmEnable} className="flex flex-col gap-2">
-          <p className="text-xs text-gray-600">{t("scanHint")}</p>
-          <p className="break-all rounded bg-gray-50 p-2 font-mono text-xs">{setupData.secret}</p>
-          <label className="text-xs text-gray-500">
+          <p className="text-xs text-gray-600 dark:text-gray-300">{t("scanHint")}</p>
+          <p className="break-all rounded bg-gray-50 dark:bg-gray-700 p-2 font-mono text-xs">{setupData.secret}</p>
+          <label className="text-xs text-gray-500 dark:text-gray-400">
             {t("codeLabel")}
             <input
               required
@@ -120,7 +120,7 @@ export function TwoFactorSettingsPanel() {
 
       {isEnabled && (
         <form onSubmit={disable} className="flex items-end gap-2">
-          <label className="text-xs text-gray-500">
+          <label className="text-xs text-gray-500 dark:text-gray-400">
             {t("passwordToDisable")}
             <input
               required

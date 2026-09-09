@@ -116,13 +116,13 @@ export function ExpensesTab({ projectId, meUserId }: { projectId: string; meUser
     }
   }
 
-  if (error) return <p className="text-sm text-gray-400">{t("offline")}</p>;
-  if (workers.length === 0) return <p className="text-sm text-gray-400">{tc("loading")}</p>;
+  if (error) return <p className="text-sm text-gray-400 dark:text-gray-500">{t("offline")}</p>;
+  if (workers.length === 0) return <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>;
 
   return (
     <form onSubmit={submit} className="card flex flex-col gap-3">
       <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-gray-700">{tt("worker")}</span>
+        <span className="font-medium text-gray-700 dark:text-gray-200">{tt("worker")}</span>
         <select className="input" value={form.workerId} onChange={(e) => setForm((f) => ({ ...f, workerId: e.target.value }))}>
           {workers.map((w) => (
             <option key={w.id} value={w.id}>
@@ -132,7 +132,7 @@ export function ExpensesTab({ projectId, meUserId }: { projectId: string; meUser
         </select>
       </label>
       <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-gray-700">{te("category")}</span>
+        <span className="font-medium text-gray-700 dark:text-gray-200">{te("category")}</span>
         <select
           className="input"
           value={form.category}
@@ -147,7 +147,7 @@ export function ExpensesTab({ projectId, meUserId }: { projectId: string; meUser
       </label>
       <div className="flex gap-3">
         <label className="flex flex-1 flex-col gap-1.5 text-sm">
-          <span className="font-medium text-gray-700">{te("amount")}</span>
+          <span className="font-medium text-gray-700 dark:text-gray-200">{te("amount")}</span>
           <input
             required
             type="number"
@@ -159,7 +159,7 @@ export function ExpensesTab({ projectId, meUserId }: { projectId: string; meUser
           />
         </label>
         <label className="flex flex-1 flex-col gap-1.5 text-sm">
-          <span className="font-medium text-gray-700">{te("date")}</span>
+          <span className="font-medium text-gray-700 dark:text-gray-200">{te("date")}</span>
           <input
             type="date"
             className="input"
@@ -169,7 +169,7 @@ export function ExpensesTab({ projectId, meUserId }: { projectId: string; meUser
         </label>
       </div>
       <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-gray-700">{te("description")}</span>
+        <span className="font-medium text-gray-700 dark:text-gray-200">{te("description")}</span>
         <input
           className="input"
           value={form.description}
@@ -177,7 +177,7 @@ export function ExpensesTab({ projectId, meUserId }: { projectId: string; meUser
         />
       </label>
       <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-gray-700">{te("receipt")}</span>
+        <span className="font-medium text-gray-700 dark:text-gray-200">{te("receipt")}</span>
         <input
           type="file"
           accept="image/*,application/pdf"
@@ -193,7 +193,7 @@ export function ExpensesTab({ projectId, meUserId }: { projectId: string; meUser
           <button type="button" onClick={scanReceipt} disabled={scanning} className="btn-secondary px-3 py-1 text-xs">
             {scanning ? t("scanReceiptScanning") : t("scanReceiptButton")}
           </button>
-          {scanMessage && <span className="text-xs text-gray-500">{scanMessage}</span>}
+          {scanMessage && <span className="text-xs text-gray-500 dark:text-gray-400">{scanMessage}</span>}
         </div>
       )}
       <button type="submit" disabled={busy} className="btn-primary mt-1">

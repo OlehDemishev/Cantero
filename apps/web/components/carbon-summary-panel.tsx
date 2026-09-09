@@ -36,21 +36,21 @@ export function CarbonSummaryPanel() {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("carbonSummary")}</h2>
-      <p className="mb-3 text-xs text-gray-500">{t("carbonSummaryHint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("carbonSummary")}</h2>
+      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("carbonSummaryHint")}</p>
 
       <div className="grid grid-cols-3 gap-3">
         <div className="card">
-          <div className="text-xs text-gray-500">{t("totalCarbon")}</div>
-          <div className="mt-1 text-lg font-semibold text-gray-900">{summary.totalKgCo2e} kg CO2e</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">{t("totalCarbon")}</div>
+          <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-50">{summary.totalKgCo2e} kg CO2e</div>
         </div>
         <div className="card">
-          <div className="text-xs text-gray-500">{t("greenCertifiedPercent")}</div>
-          <div className="mt-1 text-lg font-semibold text-success-700">{summary.greenCertifiedPercent}%</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">{t("greenCertifiedPercent")}</div>
+          <div className="mt-1 text-lg font-semibold text-success-700 dark:text-success-500">{summary.greenCertifiedPercent}%</div>
         </div>
         <div className="card">
-          <div className="text-xs text-gray-500">{t("untrackedMaterials")}</div>
-          <div className="mt-1 text-lg font-semibold text-gray-900">{summary.untrackedMaterialCount}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">{t("untrackedMaterials")}</div>
+          <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-50">{summary.untrackedMaterialCount}</div>
         </div>
       </div>
 
@@ -58,7 +58,7 @@ export function CarbonSummaryPanel() {
         <div className="overflow-x-auto">
         <table className="mt-4 w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-gray-200 text-left text-gray-500">
+            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
               <th className="py-2">{t("material")}</th>
               <th className="text-right">{t("quantityUsed")}</th>
               <th className="text-right">{t("carbonFootprint")}</th>
@@ -66,10 +66,10 @@ export function CarbonSummaryPanel() {
           </thead>
           <tbody>
             {topMaterials.map((r) => (
-              <tr key={r.materialCatalogItemId} className="border-b border-gray-100">
+              <tr key={r.materialCatalogItemId} className="border-b border-gray-100 dark:border-gray-700">
                 <td className="py-2">
                   {r.name}
-                  {r.greenCertified && <span className="ml-1 rounded-full bg-success-50 px-1.5 py-0.5 text-[10px] text-success-700">{t("greenCertified")}</span>}
+                  {r.greenCertified && <span className="ml-1 rounded-full bg-success-50 dark:bg-success-500/15 px-1.5 py-0.5 text-[10px] text-success-700 dark:text-success-500">{t("greenCertified")}</span>}
                 </td>
                 <td className="text-right">
                   {r.quantity} {r.unit}

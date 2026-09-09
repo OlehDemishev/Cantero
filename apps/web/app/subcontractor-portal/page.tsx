@@ -209,14 +209,14 @@ export default function SubcontractorPortalDashboardPage() {
 
   if (!me) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 px-6 py-12">
-        <p className="text-sm text-gray-500">{t("loading")}</p>
+      <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
+        <p className="text-sm text-gray-500 dark:text-gray-400">{t("loading")}</p>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 px-6 py-10">
+    <main className="min-h-screen bg-gray-50 dark:bg-gray-700 px-6 py-10">
       <div className="mx-auto w-full max-w-2xl">
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -224,26 +224,26 @@ export default function SubcontractorPortalDashboardPage() {
               C
             </span>
             <div>
-              <p className="text-sm font-semibold text-gray-900">{me.companyName}</p>
-              <p className="text-xs text-gray-500">{t("welcome", { name: me.name })}</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-gray-50">{me.companyName}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{t("welcome", { name: me.name })}</p>
             </div>
           </div>
           <button onClick={logout} className="btn-secondary px-3 py-1.5 text-xs">
             {t("logout")}
           </button>
         </div>
-        {error && <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+        {error && <p className="mb-4 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{error}</p>}
 
         <section className="card">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("projects")}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("projects")}</h2>
           {!assignments || assignments.length === 0 ? (
-            <p className="text-sm text-gray-400">{t("noProjects")}</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noProjects")}</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {assignments.map((a) => (
-                <li key={a.id} className="rounded-md border border-gray-200 px-3 py-2 text-sm">
-                  <span className="font-medium text-gray-900">{a.project.name}</span>
-                  {a.project.address && <span className="ml-2 text-xs text-gray-400">{a.project.address}</span>}
+                <li key={a.id} className="rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm">
+                  <span className="font-medium text-gray-900 dark:text-gray-50">{a.project.name}</span>
+                  {a.project.address && <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">{a.project.address}</span>}
                 </li>
               ))}
             </ul>
@@ -251,33 +251,33 @@ export default function SubcontractorPortalDashboardPage() {
         </section>
 
         <section className="card mt-6">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("punchListItems")}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("punchListItems")}</h2>
           {!punchListItems || punchListItems.length === 0 ? (
-            <p className="text-sm text-gray-400">{t("noPunchListItems")}</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noPunchListItems")}</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {punchListItems.map((item) => (
-                <li key={item.id} className="rounded-md border border-gray-200 px-3 py-2 text-sm">
+                <li key={item.id} className="rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm">
                   <div className="flex items-center justify-between">
-                    <span className="font-medium text-gray-900">{item.title}</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-50">{item.title}</span>
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                         item.status === "verified"
-                          ? "bg-success-50 text-success-700"
+                          ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
                           : item.status === "resolved"
-                            ? "bg-warning-50 text-warning-700"
-                            : "bg-gray-100 text-gray-600"
+                            ? "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500"
+                            : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                       }`}
                     >
                       {t(`punchListStatus_${item.status}`)}
                     </span>
                   </div>
-                  <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-gray-400">
+                  <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-gray-400 dark:text-gray-500">
                     <span>{item.project.name}</span>
                     {item.location && <span>{item.location}</span>}
                     {item.dueDate && <span>{formatDate(new Date(item.dueDate))}</span>}
                   </div>
-                  {item.description && <p className="mt-1 text-xs text-gray-500">{item.description}</p>}
+                  {item.description && <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{item.description}</p>}
                 </li>
               ))}
             </ul>
@@ -285,21 +285,21 @@ export default function SubcontractorPortalDashboardPage() {
         </section>
 
         <section className="card mt-6">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("costs")}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("costs")}</h2>
           {!costs || costs.length === 0 ? (
-            <p className="mb-4 text-sm text-gray-400">{t("noCosts")}</p>
+            <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">{t("noCosts")}</p>
           ) : (
             <div className="overflow-x-auto">
             <table className="mb-4 w-full border-collapse text-sm">
               <tbody>
                 {costs.map((c) => (
-                  <tr key={c.id} className="border-b border-gray-100">
+                  <tr key={c.id} className="border-b border-gray-100 dark:border-gray-700">
                     <td className="py-1.5">{c.description}</td>
-                    <td className="text-gray-500">{c.project.name}</td>
+                    <td className="text-gray-500 dark:text-gray-400">{c.project.name}</td>
                     <td>
                       <span
                         className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          c.paid ? "bg-success-50 text-success-700" : "bg-gray-100 text-gray-500"
+                          c.paid ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
                         }`}
                       >
                         {c.paid ? t("paid") : t("unpaid")}
@@ -316,7 +316,7 @@ export default function SubcontractorPortalDashboardPage() {
           )}
 
           {assignments && assignments.length > 0 && (
-            <form onSubmit={submitCost} className="flex flex-wrap items-end gap-2 border-t border-gray-100 pt-4">
+            <form onSubmit={submitCost} className="flex flex-wrap items-end gap-2 border-t border-gray-100 dark:border-gray-700 pt-4">
               <select
                 className="input w-auto"
                 value={form.projectId}
@@ -352,39 +352,39 @@ export default function SubcontractorPortalDashboardPage() {
         </section>
 
         <section className="card mt-6">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("bidRequests")}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("bidRequests")}</h2>
           {!bidRequests || bidRequests.length === 0 ? (
-            <p className="text-sm text-gray-400">{t("noBidRequests")}</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noBidRequests")}</p>
           ) : (
             <ul className="flex flex-col gap-3">
               {bidRequests.map((r) => {
                 const myBid = r.bids[0];
                 const form = bidForms[r.id] ?? { amount: "", notes: "" };
                 return (
-                  <li key={r.id} className="rounded-md border border-gray-200 p-3 text-sm">
+                  <li key={r.id} className="rounded-md border border-gray-200 dark:border-gray-700 p-3 text-sm">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-gray-900">{r.title}</p>
-                        <p className="text-xs text-gray-500">{r.project.name}</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-50">{r.title}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{r.project.name}</p>
                       </div>
                       <span
                         className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                           r.status === "open"
-                            ? "bg-brand-50 text-brand-700"
+                            ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400"
                             : r.status === "awarded" && myBid?.isAwarded
-                              ? "bg-success-50 text-success-700"
-                              : "bg-gray-100 text-gray-500"
+                              ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
+                              : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
                         }`}
                       >
                         {r.status === "awarded" && myBid?.isAwarded ? t("youWon") : t(`bidStatus_${r.status}`)}
                       </span>
                     </div>
-                    {r.description && <p className="mt-1.5 text-xs text-gray-500">{r.description}</p>}
+                    {r.description && <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">{r.description}</p>}
 
                     {r.status === "open" ? (
                       <div className="mt-2 flex flex-col gap-2">
                         <div className="flex flex-wrap items-end gap-2">
-                          <label className="flex flex-col gap-1 text-xs text-gray-500">
+                          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
                             {t("yourBidAmount")}
                             <input
                               type="number"
@@ -394,7 +394,7 @@ export default function SubcontractorPortalDashboardPage() {
                               onChange={(e) => setBidForms((f) => ({ ...f, [r.id]: { ...form, amount: e.target.value } }))}
                             />
                           </label>
-                          <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500">
+                          <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
                             {t("notes")}
                             <input
                               className="input"
@@ -410,7 +410,7 @@ export default function SubcontractorPortalDashboardPage() {
                             {myBid ? t("updateBid") : t("submitBid")}
                           </button>
                         </div>
-                        <label className="flex flex-col gap-1 text-xs text-gray-500">
+                        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
                           {t("scopeLinesLabel")}
                           <textarea
                             rows={2}
@@ -423,7 +423,7 @@ export default function SubcontractorPortalDashboardPage() {
                       </div>
                     ) : (
                       myBid && (
-                        <p className="mt-2 text-xs text-gray-600">
+                        <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">
                           {t("yourBidWas", { amount: myBid.amount, currency: me.currency })}
                         </p>
                       )
@@ -436,23 +436,23 @@ export default function SubcontractorPortalDashboardPage() {
         </section>
 
         <section className="card mt-6">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("lienWaivers")}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("lienWaivers")}</h2>
           {!waivers || waivers.length === 0 ? (
-            <p className="text-sm text-gray-400">{t("noLienWaivers")}</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noLienWaivers")}</p>
           ) : (
             <ul className="flex flex-col gap-3">
               {waivers.map((w) => (
-                <li key={w.id} className="rounded-md border border-gray-200 p-3 text-sm">
+                <li key={w.id} className="rounded-md border border-gray-200 dark:border-gray-700 p-3 text-sm">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium text-gray-900">{t(`lienWaiverType_${w.type}`)}</p>
-                      <p className="text-xs text-gray-500">
+                      <p className="font-medium text-gray-900 dark:text-gray-50">{t(`lienWaiverType_${w.type}`)}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
                         {w.project.name} · {w.amount} {me.currency}
                       </p>
                     </div>
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        w.signedAt ? "bg-success-50 text-success-700" : "bg-warning-50 text-warning-700"
+                        w.signedAt ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500"
                       }`}
                     >
                       {w.signedAt ? t("signed") : t("awaitingSignature")}
@@ -473,8 +473,8 @@ export default function SubcontractorPortalDashboardPage() {
                   )}
 
                   {signingId === w.id && (
-                    <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 pt-3">
-                      <label className="flex flex-col gap-1 text-xs text-gray-500">
+                    <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 dark:border-gray-700 pt-3">
+                      <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
                         {t("signerNameLabel")}
                         <input
                           className="input"

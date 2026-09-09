@@ -200,7 +200,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   if (!invoice) {
     return (
       <AuthenticatedShell>
-        <p className="text-gray-500">{tc("loading")}</p>
+        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
       </AuthenticatedShell>
     );
   }
@@ -224,23 +224,23 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
 
   const statusColor =
     invoice.status === "paid"
-      ? "bg-green-100 text-green-800"
+      ? "bg-green-100 dark:bg-green-500/15 text-green-800 dark:text-green-400"
       : invoice.status === "sent"
-        ? "bg-amber-100 text-amber-800"
+        ? "bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-400"
         : invoice.status === "void"
-          ? "bg-red-100 text-red-800"
-          : "bg-gray-100 text-gray-600";
+          ? "bg-red-100 dark:bg-red-500/15 text-red-800 dark:text-red-400"
+          : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300";
 
   return (
     <AuthenticatedShell>
-      <a href={`/projects/${invoice.project.id}`} className="text-sm text-gray-500 hover:underline">
+      <a href={`/projects/${invoice.project.id}`} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">
         ← {invoice.project.name}
       </a>
       <div className="mt-2 flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{invoice.number}</h1>
         <span className={`rounded-full px-3 py-1 text-xs font-medium ${statusColor}`}>{t(invoice.status)}</span>
       </div>
-      <p className="text-sm text-gray-500">
+      <p className="text-sm text-gray-500 dark:text-gray-400">
         <Link href={`/clients/${invoice.client.id}`} className="hover:underline">
           {invoice.client.name}
         </Link>
@@ -251,14 +251,14 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
           <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 text-left text-gray-500">
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
                 <th className="py-2">{tc("name")}</th>
                 <th>{tc("actions")}</th>
               </tr>
             </thead>
             <tbody>
               {invoice.lines.map((line) => (
-                <tr key={line.id} className="border-b border-gray-100">
+                <tr key={line.id} className="border-b border-gray-100 dark:border-gray-700">
                   <td className="py-2">{line.description}</td>
                   <td>{money(line.lineTotal)}</td>
                 </tr>
@@ -267,27 +267,27 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
           </table>
           </div>
 
-          <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700">{t("paymentPlan")}</h2>
+          <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("paymentPlan")}</h2>
           {installmentRows.length === 0 ? (
-            <p className="text-sm text-gray-400">{t("noInstallments")}</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noInstallments")}</p>
           ) : (
             <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <tbody>
                 {installmentRows.map((inst) => (
-                  <tr key={inst.id} className="border-b border-gray-100">
+                  <tr key={inst.id} className="border-b border-gray-100 dark:border-gray-700">
                     <td className="py-1.5">{inst.label}</td>
-                    <td className="text-gray-500">
+                    <td className="text-gray-500 dark:text-gray-400">
                       {inst.dueDate ? formatDate(new Date(inst.dueDate)) : "—"}
                     </td>
                     <td>
                       <span
                         className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                           inst.fulfilled
-                            ? "bg-success-50 text-success-700"
+                            ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
                             : inst.partial
-                              ? "bg-warning-50 text-warning-700"
-                              : "bg-gray-100 text-gray-500"
+                              ? "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500"
+                              : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
                         }`}
                       >
                         {inst.fulfilled ? t("fulfilled") : inst.partial ? t("partial") : t("pending")}
@@ -330,27 +330,27 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
             </form>
           )}
 
-          <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700">{t("payments")}</h2>
+          <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("payments")}</h2>
           {invoice.payments.length === 0 ? (
-            <p className="text-sm text-gray-400">{t("noPayments")}</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noPayments")}</p>
           ) : (
             <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <tbody>
                 {invoice.payments.map((p) => (
-                  <tr key={p.id} className="border-b border-gray-100">
+                  <tr key={p.id} className="border-b border-gray-100 dark:border-gray-700">
                     <td className="py-1">{formatDate(new Date(p.paidAt))}</td>
                     <td>{t(p.method as (typeof PAYMENT_METHODS)[number])}</td>
                     <td className="text-right">
                       {money(p.amount)}
                       {p.currency && (
-                        <span className="ml-1.5 text-xs text-gray-400">
+                        <span className="ml-1.5 text-xs text-gray-400 dark:text-gray-500">
                           ({p.foreignAmount} {p.currency} @ {p.exchangeRate})
                         </span>
                       )}
                     </td>
                     {p.fxGainLoss !== null && (
-                      <td className={`pl-2 text-right text-xs font-medium ${Number(p.fxGainLoss) < 0 ? "text-error-600" : "text-success-700"}`}>
+                      <td className={`pl-2 text-right text-xs font-medium ${Number(p.fxGainLoss) < 0 ? "text-error-600" : "text-success-700 dark:text-success-500"}`}>
                         {t("fxGainLoss")}: {Number(p.fxGainLoss) > 0 ? "+" : ""}
                         {money(p.fxGainLoss)}
                       </td>
@@ -391,7 +391,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
                   {t("recordPayment")}
                 </button>
               </div>
-              <label className="flex items-center gap-1.5 text-xs text-gray-500">
+              <label className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
                 <input type="checkbox" checked={foreignPayment} onChange={(e) => setForeignPayment(e.target.checked)} />
                 {t("paidInForeignCurrency")}
               </label>
@@ -447,8 +447,8 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
           )}
 
           {invoice.lateFeeAccrued > 0 && (
-            <div className="mt-3 flex items-center justify-between rounded-lg border border-warning-200 bg-warning-50 px-3 py-2">
-              <span className="text-xs text-warning-700">
+            <div className="mt-3 flex items-center justify-between rounded-lg border border-warning-200 bg-warning-50 dark:bg-warning-500/15 px-3 py-2">
+              <span className="text-xs text-warning-700 dark:text-warning-500">
                 {t("lateFeeAccrued", { amount: invoice.lateFeeAccrued, currency })}
               </span>
               <button onClick={chargeLateFee} disabled={busy} className="btn-secondary px-2 py-1 text-xs">
@@ -457,8 +457,8 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
             </div>
           )}
 
-          <form onSubmit={saveDueDate} className="mt-4 flex items-end gap-2 border-t border-gray-100 pt-4">
-            <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500">
+          <form onSubmit={saveDueDate} className="mt-4 flex items-end gap-2 border-t border-gray-100 dark:border-gray-700 pt-4">
+            <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
               {t("dueDate")}
               <input
                 type="date"
@@ -491,7 +491,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
             </button>
             {eInvoiceError && <p className="text-xs text-error-600">{eInvoiceError}</p>}
             {emailSentTo !== undefined && (
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 {emailSentTo ? tc("emailedTo", { email: emailSentTo }) : tc("noClientEmail")}
               </p>
             )}
@@ -506,8 +506,8 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
 
 function Row({ label, value, emphasize }: { label: string; value: string; emphasize?: boolean }) {
   return (
-    <div className={`flex justify-between ${emphasize ? "border-t border-gray-200 pt-2 font-semibold" : ""}`}>
-      <dt className="text-gray-500">{label}</dt>
+    <div className={`flex justify-between ${emphasize ? "border-t border-gray-200 dark:border-gray-700 pt-2 font-semibold" : ""}`}>
+      <dt className="text-gray-500 dark:text-gray-400">{label}</dt>
       <dd>{value}</dd>
     </div>
   );

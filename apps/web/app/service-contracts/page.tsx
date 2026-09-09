@@ -72,7 +72,7 @@ export default function ServiceContractsPage() {
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="card lg:col-span-1">
-          <h2 className="mb-4 text-sm font-semibold text-gray-700">{t("newContract")}</h2>
+          <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("newContract")}</h2>
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             <input
               required
@@ -107,7 +107,7 @@ export default function ServiceContractsPage() {
                 </option>
               ))}
             </select>
-            <label className="text-xs text-gray-500">
+            <label className="text-xs text-gray-500 dark:text-gray-400">
               {t("frequencyMonths")}
               <input
                 required
@@ -118,7 +118,7 @@ export default function ServiceContractsPage() {
                 onChange={(e) => setForm((f) => ({ ...f, frequencyMonths: e.target.value }))}
               />
             </label>
-            <label className="text-xs text-gray-500">
+            <label className="text-xs text-gray-500 dark:text-gray-400">
               {t("startDate")}
               <input
                 required
@@ -135,11 +135,11 @@ export default function ServiceContractsPage() {
         </div>
 
         <div className="lg:col-span-2">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("contracts")}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("contracts")}</h2>
           {!contracts ? (
-            <p className="text-gray-500">{tc("loading")}</p>
+            <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
           ) : contracts.length === 0 ? (
-            <p className="text-sm text-gray-400">—</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">—</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {contracts.map((c) => (
@@ -148,17 +148,17 @@ export default function ServiceContractsPage() {
                     <a href={`/service-contracts/${c.id}`} className="font-medium hover:underline">
                       {c.title}
                     </a>
-                    <span className="ml-2 text-sm text-gray-500">
-                      <Link href={`/projects/${c.project.id}`} className="text-brand-700 hover:underline">
+                    <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
+                      <Link href={`/projects/${c.project.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
                         {c.project.name}
                       </Link>{" "}
                       ·{" "}
-                      <Link href={`/clients/${c.client.id}`} className="text-brand-700 hover:underline">
+                      <Link href={`/clients/${c.client.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
                         {c.client.name}
                       </Link>
                     </span>
                   </div>
-                  <a href={`/service-contracts/${c.id}`} className="text-sm text-gray-500 hover:underline">
+                  <a href={`/service-contracts/${c.id}`} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">
                     {t("nextVisit")}: {formatDate(new Date(c.nextVisitDate))}
                   </a>
                 </li>

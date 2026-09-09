@@ -377,7 +377,7 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
 
   return (
     <div>
-      <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("scanBarcode")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("scanBarcode")}</h2>
       <form onSubmit={lookupBarcode} className="flex items-end gap-2">
         <input
           placeholder={t("barcodePlaceholder")}
@@ -391,14 +391,14 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
       </form>
       {barcodeError && <p className="mt-1 text-xs text-error-600">{barcodeError}</p>}
       {barcodeResult && (
-        <div className="mt-2 rounded-md border border-gray-200 bg-white p-3 text-sm">
-          <p className="font-medium text-gray-900">
+        <div className="mt-2 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 text-sm">
+          <p className="font-medium text-gray-900 dark:text-gray-50">
             {barcodeResult.name} ({barcodeResult.code})
           </p>
           {barcodeResult.stockLevels.length === 0 ? (
-            <p className="mt-1 text-xs text-gray-400">{t("noStockAnywhere")}</p>
+            <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{t("noStockAnywhere")}</p>
           ) : (
-            <ul className="mt-1 flex flex-col gap-0.5 text-xs text-gray-500">
+            <ul className="mt-1 flex flex-col gap-0.5 text-xs text-gray-500 dark:text-gray-400">
               {barcodeResult.stockLevels.map((sl) => (
                 <li key={sl.warehouse.id}>
                   {sl.warehouse.name}: {sl.quantityOnHand} {barcodeResult.unit}
@@ -410,14 +410,14 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
         </div>
       )}
 
-      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700">{t("stockLevels")}</h2>
+      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("stockLevels")}</h2>
       {!levels ? (
-        <p className="text-gray-500">{tc("loading")}</p>
+        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
       ) : (
         <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-gray-200 text-left text-gray-500">
+            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
               <th className="py-2">{t("material")}</th>
               <th>{t("quantity")}</th>
               <th>{t("bin")}</th>
@@ -425,7 +425,7 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
           </thead>
           <tbody>
             {levels.map((l) => (
-              <tr key={l.id} className="border-b border-gray-100">
+              <tr key={l.id} className="border-b border-gray-100 dark:border-gray-700">
                 <td className="py-2">
                   {l.materialCatalogItem.name} ({l.materialCatalogItem.code})
                 </td>
@@ -451,7 +451,7 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
                         setEditingBinFor(l.materialCatalogItem.id);
                         setBinDraft(l.binLocation ?? "");
                       }}
-                      className="text-xs text-gray-500 hover:underline"
+                      className="text-xs text-gray-500 dark:text-gray-400 hover:underline"
                     >
                       {l.binLocation ?? t("setBin")}
                     </button>
@@ -466,12 +466,12 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
 
       {valuation && valuation.rows.length > 0 && (
         <div className="mt-8">
-          <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("inventoryValuation")}</h2>
-          <p className="mb-3 text-xs text-gray-500">{t("inventoryValuationHint", { method: t(`costingMethod_${valuation.method}`) })}</p>
+          <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("inventoryValuation")}</h2>
+          <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("inventoryValuationHint", { method: t(`costingMethod_${valuation.method}`) })}</p>
           <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 text-left text-gray-500">
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
                 <th className="py-2">{t("material")}</th>
                 <th>{t("quantity")}</th>
                 <th className="text-right">{t("unitValue")}</th>
@@ -480,7 +480,7 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
             </thead>
             <tbody>
               {valuation.rows.map((row) => (
-                <tr key={row.materialCatalogItemId} className="border-b border-gray-100">
+                <tr key={row.materialCatalogItemId} className="border-b border-gray-100 dark:border-gray-700">
                   <td className="py-2">{row.materialName}</td>
                   <td>
                     {row.quantity} {row.unit}
@@ -505,7 +505,7 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
         </div>
       )}
 
-      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700">{t("recordMovement")}</h2>
+      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("recordMovement")}</h2>
       <form onSubmit={recordMovement} className="flex flex-wrap items-end gap-2">
         <MaterialPicker
           id="movement-material"
@@ -551,11 +551,11 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
 
       {movements && movements.length > 0 && (
         <div className="mt-8">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("movementHistory")}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("movementHistory")}</h2>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 text-left text-gray-500">
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
                   <th className="py-2">{t("material")}</th>
                   <th>{t("movementType")}</th>
                   <th>{t("movementQuantity")}</th>
@@ -565,7 +565,7 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
               </thead>
               <tbody>
                 {movements.map((mv) => (
-                  <tr key={mv.id} className="border-b border-gray-100 text-xs text-gray-600">
+                  <tr key={mv.id} className="border-b border-gray-100 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-300">
                     <td className="py-1.5">
                       {mv.materialCatalogItem.name} ({mv.materialCatalogItem.code})
                     </td>
@@ -575,7 +575,7 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
                     </td>
                     <td>
                       {mv.project ? (
-                        <Link href={`/projects/${mv.project.id}`} className="text-brand-700 hover:underline">
+                        <Link href={`/projects/${mv.project.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
                           {mv.project.name}
                         </Link>
                       ) : (
@@ -598,7 +598,7 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
 
       {otherWarehouses.length > 0 && (
         <>
-          <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700">{t("transferStock")}</h2>
+          <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("transferStock")}</h2>
           <form onSubmit={recordTransfer} className="flex flex-wrap items-end gap-2">
             <MaterialPicker
               id="transfer-material"
@@ -606,7 +606,7 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
               value={transfer.materialCatalogItemId}
               onChange={(id) => setTransfer((tr) => ({ ...tr, materialCatalogItemId: id }))}
             />
-            <span className="pb-2.5 text-sm text-gray-400">→</span>
+            <span className="pb-2.5 text-sm text-gray-400 dark:text-gray-500">→</span>
             <select
               className="input w-auto"
               value={transfer.toWarehouseId}
@@ -630,8 +630,8 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
             </button>
           </form>
 
-          <h2 className="mb-1 mt-8 text-sm font-semibold text-gray-700">{t("inTransitTransfer")}</h2>
-          <p className="mb-3 text-xs text-gray-500">{t("inTransitTransferHint")}</p>
+          <h2 className="mb-1 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("inTransitTransfer")}</h2>
+          <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("inTransitTransferHint")}</p>
           <form onSubmit={initiateStockTransfer} className="flex flex-wrap items-end gap-2">
             <MaterialPicker
               id="in-transit-material"
@@ -639,7 +639,7 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
               value={inTransitForm.materialCatalogItemId}
               onChange={(id) => setInTransitForm((f) => ({ ...f, materialCatalogItemId: id }))}
             />
-            <span className="pb-2.5 text-sm text-gray-400">→</span>
+            <span className="pb-2.5 text-sm text-gray-400 dark:text-gray-500">→</span>
             <select
               className="input w-auto"
               value={inTransitForm.toWarehouseId}
@@ -670,7 +670,7 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
           <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 text-left text-gray-500">
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
                 <th className="py-2">{t("material")}</th>
                 <th>{t("route")}</th>
                 <th>{t("quantity")}</th>
@@ -680,9 +680,9 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
             </thead>
             <tbody>
               {stockTransfers.map((tr) => (
-                <tr key={tr.id} className="border-b border-gray-100">
+                <tr key={tr.id} className="border-b border-gray-100 dark:border-gray-700">
                   <td className="py-2">{tr.materialCatalogItem.name}</td>
-                  <td className="text-xs text-gray-500">
+                  <td className="text-xs text-gray-500 dark:text-gray-400">
                     {tr.fromWarehouse.name} → {tr.toWarehouse.name}
                   </td>
                   <td>
@@ -692,10 +692,10 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                         tr.status === "in_transit"
-                          ? "bg-brand-50 text-brand-700"
+                          ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400"
                           : tr.status === "received"
-                            ? "bg-success-50 text-success-700"
-                            : "bg-gray-100 text-gray-500"
+                            ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
+                            : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
                       }`}
                     >
                       {t(`transferStatus_${tr.status}`)}
@@ -708,7 +708,7 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
                       </button>
                     )}
                     {tr.status === "in_transit" && tr.fromWarehouse.id === warehouseId && (
-                      <button onClick={() => cancelStockTransfer(tr.id)} disabled={busy} className="ml-1.5 text-xs text-gray-400 hover:text-error-600">
+                      <button onClick={() => cancelStockTransfer(tr.id)} disabled={busy} className="ml-1.5 text-xs text-gray-400 dark:text-gray-500 hover:text-error-600">
                         {tc("cancel")}
                       </button>
                     )}
@@ -722,7 +722,7 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
       )}
 
       <div className="mb-3 mt-8 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700">{t("stockCounts")}</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("stockCounts")}</h2>
         <button onClick={startCount} disabled={busy} className="btn-secondary px-3 py-1 text-xs">
           {t("startCount")}
         </button>
@@ -741,13 +741,13 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
                   <span className="text-sm">{formatDate(new Date(c.createdAt))}</span>
                   <span className="flex items-center gap-2 text-xs">
                     {varianceCount > 0 && (
-                      <span className="text-warning-700">
+                      <span className="text-warning-700 dark:text-warning-500">
                         {t("variances", { count: varianceCount })}
                       </span>
                     )}
                     <span
                       className={`rounded-full px-2 py-0.5 font-medium ${
-                        c.status === "finalized" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"
+                        c.status === "finalized" ? "bg-green-100 dark:bg-green-500/15 text-green-800 dark:text-green-400" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                       }`}
                     >
                       {t(c.status)}
@@ -762,13 +762,13 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
 
       {activeCount && (
         <div>
-          <button onClick={() => setActiveCount(null)} className="mb-2 text-xs text-gray-500 hover:underline">
+          <button onClick={() => setActiveCount(null)} className="mb-2 text-xs text-gray-500 dark:text-gray-400 hover:underline">
             ← {tc("back")}
           </button>
           <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 text-left text-gray-500">
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
                 <th className="py-2">{t("material")}</th>
                 <th>{t("systemQuantity")}</th>
                 <th>{t("countedQuantity")}</th>
@@ -779,11 +779,11 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
               {activeCount.lines.map((line) => {
                 const variance = Number(lineInputs[line.id] ?? line.countedQuantity) - Number(line.systemQuantity);
                 return (
-                  <tr key={line.id} className="border-b border-gray-100">
+                  <tr key={line.id} className="border-b border-gray-100 dark:border-gray-700">
                     <td className="py-1.5">
                       {line.materialCatalogItem.name} ({line.materialCatalogItem.code})
                     </td>
-                    <td className="text-gray-500">
+                    <td className="text-gray-500 dark:text-gray-400">
                       {line.systemQuantity} {line.materialCatalogItem.unit}
                     </td>
                     <td>
@@ -802,7 +802,7 @@ export function WarehouseDetail({ warehouseId, allWarehouses }: { warehouseId: s
                         </span>
                       )}
                     </td>
-                    <td className={variance === 0 ? "text-gray-400" : variance > 0 ? "text-success-700" : "text-error-600"}>
+                    <td className={variance === 0 ? "text-gray-400 dark:text-gray-500" : variance > 0 ? "text-success-700 dark:text-success-500" : "text-error-600"}>
                       {variance > 0 ? "+" : ""}
                       {variance !== 0 ? variance : "—"}
                     </td>

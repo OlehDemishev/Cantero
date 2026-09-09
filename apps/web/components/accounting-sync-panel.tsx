@@ -128,14 +128,14 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("title")}</h2>
-      <p className="mb-4 text-xs text-gray-500">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
 
       {error && <p className="mb-3 text-xs text-error-600">{error}</p>}
 
       {status.connected ? (
         <div className="flex flex-col gap-3">
-          <p className="text-sm text-success-700">
+          <p className="text-sm text-success-700 dark:text-success-500">
             {t("connectedSummary", {
               provider: PROVIDER_LABELS[status.provider!],
               date: status.connectedAt ? formatDate(new Date(status.connectedAt)) : "",
@@ -155,7 +155,7 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
             </div>
           )}
           {syncResult && (
-            <p className="text-xs text-gray-600">
+            <p className="text-xs text-gray-600 dark:text-gray-300">
               {t("syncResult", { synced: syncResult.synced, failed: syncResult.failed })}
               {syncResult.errors.length > 0 && (
                 <span className="mt-1 block text-error-600">{syncResult.errors.slice(0, 3).join("; ")}</span>
@@ -164,11 +164,11 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
           )}
 
           {integrity && (
-            <div className="rounded-lg border border-gray-100 p-3 text-xs">
-              <p className="font-medium text-gray-700">
+            <div className="rounded-lg border border-gray-100 dark:border-gray-700 p-3 text-xs">
+              <p className="font-medium text-gray-700 dark:text-gray-200">
                 {t("integrityCheck", { count: integrity.unsyncedInvoices.length })}
               </p>
-              <p className="mt-1 font-medium text-gray-700">
+              <p className="mt-1 font-medium text-gray-700 dark:text-gray-200">
                 {t("integrityCheckBills", { count: integrity.unsyncedBills.length })}
               </p>
               {integrity.recentFailures.length > 0 && (
@@ -180,18 +180,18 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
                   ))}
                 </ul>
               )}
-              <button onClick={toggleHistory} className="mt-2 text-brand-700 hover:underline">
+              <button onClick={toggleHistory} className="mt-2 text-brand-700 dark:text-brand-400 hover:underline">
                 {showHistory ? t("hideHistory") : t("showHistory")}
               </button>
               {showHistory && (
                 <ul className="mt-2 flex flex-col gap-1">
                   {!history ? (
-                    <li className="text-gray-400">…</li>
+                    <li className="text-gray-400 dark:text-gray-500">…</li>
                   ) : history.length === 0 ? (
-                    <li className="text-gray-400">{t("noHistory")}</li>
+                    <li className="text-gray-400 dark:text-gray-500">{t("noHistory")}</li>
                   ) : (
                     history.map((h) => (
-                      <li key={h.id} className={h.status === "failed" ? "text-error-600" : "text-success-700"}>
+                      <li key={h.id} className={h.status === "failed" ? "text-error-600" : "text-success-700 dark:text-success-500"}>
                         {formatDateTime(new Date(h.attemptedAt))} — {h.invoiceNumber ?? h.subcontractorCostReference} — {h.status}
                         {h.errorMessage ? `: ${h.errorMessage}` : ""}
                       </li>

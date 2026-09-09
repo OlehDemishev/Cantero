@@ -70,8 +70,8 @@ export function ClientBillingAddressPanel({ clientId }: { clientId: string }) {
 
   return (
     <div className="mt-6 card max-w-md">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("billingAddress")}</h2>
-      <p className="mb-3 text-xs text-gray-500">{t("billingAddressHint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("billingAddress")}</h2>
+      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("billingAddressHint")}</p>
       <form onSubmit={saveBilling} className="flex flex-col gap-2">
         <input
           className="input"
@@ -106,7 +106,7 @@ export function ClientBillingAddressPanel({ clientId }: { clientId: string }) {
           value={billingForm.vatId}
           onChange={(e) => setBillingForm((f) => ({ ...f, vatId: e.target.value }))}
         />
-        <label className="flex w-40 flex-col gap-1 text-xs text-gray-500">
+        <label className="flex w-40 flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {t("paymentTermsDays")}
           <input
             type="number"
@@ -118,7 +118,7 @@ export function ClientBillingAddressPanel({ clientId }: { clientId: string }) {
             onChange={(e) => setBillingForm((f) => ({ ...f, paymentTermsDays: e.target.value }))}
           />
         </label>
-        <label className="flex w-40 flex-col gap-1 text-xs text-gray-500">
+        <label className="flex w-40 flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {t("preferredLocale")}
           <select
             className="input"
@@ -137,7 +137,7 @@ export function ClientBillingAddressPanel({ clientId }: { clientId: string }) {
           <button type="submit" disabled={busy} className="btn-secondary self-start">
             {tc("save")}
           </button>
-          {billingSaved && <span className="text-xs text-success-700">{tc("saved")}</span>}
+          {billingSaved && <span className="text-xs text-success-700 dark:text-success-500">{tc("saved")}</span>}
         </div>
       </form>
     </div>

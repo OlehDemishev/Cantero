@@ -154,13 +154,13 @@ export default function TemplatesPage() {
   return (
     <AuthenticatedShell>
       <h1 className="text-2xl font-semibold">{t("title")}</h1>
-      <p className="mt-1 text-sm text-gray-500">{t("subtitle")}</p>
+      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("subtitle")}</p>
 
       <div className="mt-6 card max-w-xl">
-        <h2 className="mb-4 text-sm font-semibold text-gray-700">{editingId ? t("editTemplate") : t("newTemplate")}</h2>
+        <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{editingId ? t("editTemplate") : t("newTemplate")}</h2>
         <form onSubmit={submit} className="flex flex-col gap-3">
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("templateType")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("templateType")}</span>
             <select
               className="input"
               disabled={!!editingId}
@@ -175,13 +175,13 @@ export default function TemplatesPage() {
             </select>
           </label>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("templateName")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("templateName")}</span>
             <input required className="input" value={name} onChange={(e) => setName(e.target.value)} />
           </label>
 
           {type === "punch_list" ? (
             <div className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-gray-700">{t("checklistItems")}</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{t("checklistItems")}</span>
               {items.map((item, i) => (
                 <div key={i} className="flex gap-2">
                   <input
@@ -197,7 +197,7 @@ export default function TemplatesPage() {
                     onChange={(e) => updateItem(i, { location: e.target.value })}
                   />
                   {items.length > 1 && (
-                    <button type="button" onClick={() => removeItem(i)} className="text-gray-400 hover:text-error-600">
+                    <button type="button" onClick={() => removeItem(i)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
                       ×
                     </button>
                   )}
@@ -210,30 +210,30 @@ export default function TemplatesPage() {
           ) : type === "jha" ? (
             <>
               <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700">{t("jhaTaskDescription")}</span>
+                <span className="font-medium text-gray-700 dark:text-gray-200">{t("jhaTaskDescription")}</span>
                 <input required className="input" value={defaultSubject} onChange={(e) => setDefaultSubject(e.target.value)} />
               </label>
               <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700">{t("jhaHazards")}</span>
+                <span className="font-medium text-gray-700 dark:text-gray-200">{t("jhaHazards")}</span>
                 <textarea rows={2} className="input" value={defaultHazards} onChange={(e) => setDefaultHazards(e.target.value)} />
               </label>
               <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700">{t("jhaControlMeasures")}</span>
+                <span className="font-medium text-gray-700 dark:text-gray-200">{t("jhaControlMeasures")}</span>
                 <textarea rows={2} className="input" value={defaultControlMeasures} onChange={(e) => setDefaultControlMeasures(e.target.value)} />
               </label>
               <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700">{t("jhaPpe")}</span>
+                <span className="font-medium text-gray-700 dark:text-gray-200">{t("jhaPpe")}</span>
                 <input className="input" value={defaultPpe} onChange={(e) => setDefaultPpe(e.target.value)} />
               </label>
             </>
           ) : (
             <>
               <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700">{type === "rfi" ? t("subject") : t("topic")}</span>
+                <span className="font-medium text-gray-700 dark:text-gray-200">{type === "rfi" ? t("subject") : t("topic")}</span>
                 <input required className="input" value={defaultSubject} onChange={(e) => setDefaultSubject(e.target.value)} />
               </label>
               <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700">{type === "rfi" ? t("question") : t("notes")}</span>
+                <span className="font-medium text-gray-700 dark:text-gray-200">{type === "rfi" ? t("question") : t("notes")}</span>
                 <textarea rows={3} className="input" value={defaultBody} onChange={(e) => setDefaultBody(e.target.value)} />
               </label>
             </>
@@ -253,13 +253,13 @@ export default function TemplatesPage() {
       </div>
 
       {!templates ? (
-        <p className="mt-8 text-gray-500">{tc("loading")}</p>
+        <p className="mt-8 text-gray-500 dark:text-gray-400">{tc("loading")}</p>
       ) : (
         grouped.map(({ type: ty, list }) => (
           <div key={ty} className="mt-8">
-            <h2 className="mb-3 text-sm font-semibold text-gray-700">{t(ty)}</h2>
+            <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t(ty)}</h2>
             {list.length === 0 ? (
-              <p className="text-sm text-gray-400">{t("noTemplates")}</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500">{t("noTemplates")}</p>
             ) : (
               <ul className="flex flex-col gap-2">
                 {list.map((tpl) => (
@@ -267,13 +267,13 @@ export default function TemplatesPage() {
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-gray-900">{tpl.name}</span>
-                          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">{t("versionBadge", { version: tpl.version })}</span>
+                          <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{tpl.name}</span>
+                          <span className="rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs text-gray-500 dark:text-gray-400">{t("versionBadge", { version: tpl.version })}</span>
                         </div>
                         {tpl.type === "punch_list" ? (
-                          <div className="mt-1 text-xs text-gray-500">{t("itemCount", { count: tpl.items.length })}</div>
+                          <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t("itemCount", { count: tpl.items.length })}</div>
                         ) : (
-                          <div className="mt-1 text-xs text-gray-500">{tpl.defaultSubject}</div>
+                          <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">{tpl.defaultSubject}</div>
                         )}
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
@@ -285,18 +285,18 @@ export default function TemplatesPage() {
                             {t("history")}
                           </button>
                         )}
-                        <button onClick={() => remove(tpl.id)} className="text-gray-400 hover:text-error-600">
+                        <button onClick={() => remove(tpl.id)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
                           ×
                         </button>
                       </div>
                     </div>
                     {historyFor === tpl.id && (
-                      <ul className="mt-3 flex flex-col gap-1 border-t border-gray-100 pt-3">
+                      <ul className="mt-3 flex flex-col gap-1 border-t border-gray-100 dark:border-gray-700 pt-3">
                         {history === null ? (
-                          <li className="text-xs text-gray-400">{tc("loading")}</li>
+                          <li className="text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</li>
                         ) : (
                           history.map((v) => (
-                            <li key={v.id} className="flex items-center justify-between text-xs text-gray-500">
+                            <li key={v.id} className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                               <span>{t("versionBadge", { version: v.version })}</span>
                               <span>{formatDate(new Date(v.createdAt))}</span>
                             </li>

@@ -62,30 +62,30 @@ export function CostCodesPanel() {
   return (
     <section className="card">
       <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
         <button onClick={importStandardLibrary} disabled={busy} className="btn-secondary px-2.5 py-1 text-xs">
           {t("importStandardLibrary")}
         </button>
       </div>
-      <p className="mb-2 text-xs text-gray-500">{t("hint")}</p>
+      <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
       {importResult && (
-        <p className="mb-2 text-xs text-success-700">
+        <p className="mb-2 text-xs text-success-700 dark:text-success-500">
           {t("importResult", { created: importResult.created, skipped: importResult.skipped })}
         </p>
       )}
 
       {!costCodes ? (
-        <p className="text-gray-500">{tc("loading")}</p>
+        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
       ) : costCodes.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noCostCodes")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noCostCodes")}</p>
       ) : (
         <ul className="mb-4 flex flex-col gap-1.5">
           {costCodes.map((cc) => (
             <li key={cc.id} className="flex items-center justify-between text-sm">
               <span className="text-gray-700 dark:text-gray-300">
-                <span className="font-mono text-xs text-gray-400">{cc.code}</span> {cc.name}
+                <span className="font-mono text-xs text-gray-400 dark:text-gray-500">{cc.code}</span> {cc.name}
               </span>
-              <button onClick={() => remove(cc.id)} className="text-gray-400 hover:text-error-600">
+              <button onClick={() => remove(cc.id)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
                 ×
               </button>
             </li>

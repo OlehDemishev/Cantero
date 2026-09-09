@@ -36,8 +36,8 @@ export function ComplianceCalendarPanel() {
   return (
     <div className="mt-10">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700">{t("title")}</h2>
-        <label className="flex items-center gap-1.5 text-xs text-gray-500">
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+        <label className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
           {t("lookahead")}
           <select className="input w-auto py-1 text-xs" value={lookaheadDays} onChange={(e) => setLookaheadDays(Number(e.target.value))}>
             <option value={30}>{t("days", { n: 30 })}</option>
@@ -51,12 +51,12 @@ export function ComplianceCalendarPanel() {
         {(data.expiredCount > 0 || data.expiringCount > 0) && (
           <div className="mb-3 flex flex-wrap gap-2 text-xs">
             {data.expiredCount > 0 && (
-              <span className="rounded-full bg-error-50 px-2.5 py-1 font-medium text-error-700">
+              <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2.5 py-1 font-medium text-error-700 dark:text-error-500">
                 {t("expiredCount", { count: data.expiredCount })}
               </span>
             )}
             {data.expiringCount > 0 && (
-              <span className="rounded-full bg-warning-50 px-2.5 py-1 font-medium text-warning-700">
+              <span className="rounded-full bg-warning-50 dark:bg-warning-500/15 px-2.5 py-1 font-medium text-warning-700 dark:text-warning-500">
                 {t("expiringCount", { count: data.expiringCount })}
               </span>
             )}
@@ -64,12 +64,12 @@ export function ComplianceCalendarPanel() {
         )}
 
         {data.items.length === 0 ? (
-          <p className="text-sm text-gray-400">{t("empty")}</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500">{t("empty")}</p>
         ) : (
           <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 text-left text-gray-500">
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
                 <th className="py-1.5">{t("item")}</th>
                 <th>{t("type")}</th>
                 <th>{t("holder")}</th>
@@ -79,15 +79,15 @@ export function ComplianceCalendarPanel() {
             </thead>
             <tbody>
               {data.items.map((item, i) => (
-                <tr key={i} className="border-b border-gray-100">
+                <tr key={i} className="border-b border-gray-100 dark:border-gray-700">
                   <td className="py-1.5">{item.label}</td>
-                  <td className="text-xs text-gray-500">{t(`type_${item.type}`)}</td>
-                  <td className="text-xs text-gray-500">{item.holderName ?? "—"}</td>
-                  <td className="text-xs text-gray-500">{formatDate(new Date(item.expiresAt))}</td>
+                  <td className="text-xs text-gray-500 dark:text-gray-400">{t(`type_${item.type}`)}</td>
+                  <td className="text-xs text-gray-500 dark:text-gray-400">{item.holderName ?? "—"}</td>
+                  <td className="text-xs text-gray-500 dark:text-gray-400">{formatDate(new Date(item.expiresAt))}</td>
                   <td>
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        item.status === "expired" ? "bg-error-50 text-error-700" : "bg-warning-50 text-warning-700"
+                        item.status === "expired" ? "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500" : "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500"
                       }`}
                     >
                       {t(item.status)}

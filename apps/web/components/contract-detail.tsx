@@ -22,10 +22,10 @@ interface Contract {
 }
 
 const STATUS_STYLES: Record<Contract["status"], string> = {
-  draft: "bg-gray-100 text-gray-600",
-  sent: "bg-amber-100 text-amber-800",
-  signed: "bg-success-50 text-success-700",
-  void: "bg-error-50 text-error-700",
+  draft: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
+  sent: "bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-400",
+  signed: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
+  void: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
 };
 
 export function ContractDetail({ contractId }: { contractId: string }) {
@@ -97,14 +97,14 @@ export function ContractDetail({ contractId }: { contractId: string }) {
   if (!contract) {
     return (
       <AuthenticatedShell>
-        <p className="text-gray-500">{tc("loading")}</p>
+        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
       </AuthenticatedShell>
     );
   }
 
   return (
     <AuthenticatedShell>
-      <button onClick={() => goBack(router, "/contracts")} className="text-sm text-gray-500 hover:underline">
+      <button onClick={() => goBack(router, "/contracts")} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">
         ← {tc("back")}
       </button>
       <div className="mt-2 flex items-center justify-between">
@@ -112,9 +112,9 @@ export function ContractDetail({ contractId }: { contractId: string }) {
         <span className={`rounded-full px-3 py-1 text-xs font-medium ${STATUS_STYLES[contract.status]}`}>{t(contract.status)}</span>
       </div>
       {(contract.client || contract.subcontractor) && (
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           {contract.client ? (
-            <Link href={`/clients/${contract.client.id}`} className="text-brand-700 hover:underline">
+            <Link href={`/clients/${contract.client.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
               {contract.client.name}
             </Link>
           ) : (
@@ -143,7 +143,7 @@ export function ContractDetail({ contractId }: { contractId: string }) {
 
           {contract.status === "signed" && contract.signerName && (
             <div className="card mt-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{t("signedBy")}</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{t("signedBy")}</p>
               <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">
                 {contract.signerName} · {contract.signedAt && formatDateTime(new Date(contract.signedAt))}
               </p>

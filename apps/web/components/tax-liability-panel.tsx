@@ -56,8 +56,8 @@ export function TaxLiabilityPanel() {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("liabilityReportTitle")}</h2>
-      <p className="mb-3 text-xs text-gray-500">{t("liabilityReportHint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("liabilityReportTitle")}</h2>
+      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("liabilityReportHint")}</p>
 
       {jurisdictions.length === 0 ? (
         <EmptyState
@@ -81,14 +81,14 @@ export function TaxLiabilityPanel() {
           {report && (
             <div className="card grid grid-cols-2 gap-3 max-w-md">
               <div>
-                <div className="text-xs text-gray-500">{t("totalTaxableSales")}</div>
-                <div className="mt-1 text-lg font-semibold text-gray-900">
+                <div className="text-xs text-gray-500 dark:text-gray-400">{t("totalTaxableSales")}</div>
+                <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-50">
                   {report.totalTaxableSales} {currency}
                 </div>
               </div>
               <div>
-                <div className="text-xs text-gray-500">{t("totalTaxCollected")}</div>
-                <div className="mt-1 text-lg font-semibold text-gray-900">
+                <div className="text-xs text-gray-500 dark:text-gray-400">{t("totalTaxCollected")}</div>
+                <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-50">
                   {report.totalTaxCollected} {currency}
                 </div>
               </div>

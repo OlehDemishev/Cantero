@@ -46,7 +46,7 @@ export function CsvImportButton({
         {busy ? t("importing") : label}
       </button>
       {result && (
-        <p className="mt-2 max-w-md text-xs text-gray-600">
+        <p className="mt-2 max-w-md text-xs text-gray-600 dark:text-gray-300">
           {t("resultSummary", { created: result.created, skipped: result.skipped })}
           {result.errors.length > 0 && (
             <span className="mt-1 block text-error-600">

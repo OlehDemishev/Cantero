@@ -18,9 +18,9 @@ interface FieldRfi {
 }
 
 const RFI_STATUS_STYLES: Record<FieldRfi["status"], string> = {
-  open: "bg-warning-50 text-warning-700",
-  answered: "bg-brand-50 text-brand-700",
-  closed: "bg-success-50 text-success-700",
+  open: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
+  answered: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
+  closed: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
 };
 
 export function RfiTab({ projectId }: { projectId: string }) {
@@ -78,18 +78,18 @@ export function RfiTab({ projectId }: { projectId: string }) {
       <CachedNote cachedAt={cachedAt} />
       <form onSubmit={submit} className="card flex flex-col gap-3">
         <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium text-gray-700">{tr("subject")}</span>
+          <span className="font-medium text-gray-700 dark:text-gray-200">{tr("subject")}</span>
           <input required className="input" value={form.subject} onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value }))} />
         </label>
         <label className="flex flex-col gap-1.5 text-sm">
-          <span className="flex items-center gap-2 font-medium text-gray-700">
+          <span className="flex items-center gap-2 font-medium text-gray-700 dark:text-gray-200">
             {tr("question")}
             <VoiceInputButton onTranscript={(text) => setForm((f) => ({ ...f, question: f.question ? `${f.question} ${text}` : text }))} />
           </span>
           <textarea required rows={3} className="input" value={form.question} onChange={(e) => setForm((f) => ({ ...f, question: e.target.value }))} />
         </label>
         <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium text-gray-700">{tr("priority")}</span>
+          <span className="font-medium text-gray-700 dark:text-gray-200">{tr("priority")}</span>
           <select className="input" value={form.priority} onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value as RfiPriority }))}>
             {RFI_PRIORITIES.map((p) => (
               <option key={p} value={p}>
@@ -105,16 +105,16 @@ export function RfiTab({ projectId }: { projectId: string }) {
       </form>
 
       {items === null ? (
-        <p className="text-sm text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
       ) : items.length === 0 ? (
-        <p className="text-sm text-gray-400">{tr("noItems")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{tr("noItems")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {items.map((item) => (
             <li key={item.id} className="card flex items-center justify-between">
               <div>
-                <div className="text-xs font-mono text-gray-400">{item.number}</div>
-                <div className="text-sm font-medium text-gray-900">{item.subject}</div>
+                <div className="text-xs font-mono text-gray-400 dark:text-gray-500">{item.number}</div>
+                <div className="text-sm font-medium text-gray-900 dark:text-gray-50">{item.subject}</div>
               </div>
               <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${RFI_STATUS_STYLES[item.status]}`}>{tr(item.status)}</span>
             </li>

@@ -41,38 +41,38 @@ export default function CompanyCoiPublicPage({ params }: { params: Promise<{ tok
 
   if (error) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 px-6 py-12">
-        <p className="text-sm text-gray-500">{error}</p>
+      <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
+        <p className="text-sm text-gray-500 dark:text-gray-400">{error}</p>
       </main>
     );
   }
 
   if (!coi) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 px-6 py-12">
-        <p className="text-sm text-gray-500">{tc("loading")}</p>
+      <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
+        <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
       </main>
     );
   }
 
   return (
-    <main className="flex min-h-screen justify-center bg-gray-50 px-6 py-12">
+    <main className="flex min-h-screen justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
       <div className="w-full max-w-lg">
         <div className="card">
-          <h1 className="text-xl font-semibold text-gray-900">{coi.companyName}</h1>
-          <p className="mt-1 text-sm text-gray-500">{t("publicSubtitle")}</p>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">{coi.companyName}</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("publicSubtitle")}</p>
 
           {coi.documents.length === 0 ? (
-            <p className="mt-5 border-t border-gray-100 pt-4 text-sm text-gray-400">{t("noCurrentDocuments")}</p>
+            <p className="mt-5 border-t border-gray-100 dark:border-gray-700 pt-4 text-sm text-gray-400 dark:text-gray-500">{t("noCurrentDocuments")}</p>
           ) : (
-            <ul className="mt-5 flex flex-col gap-3 border-t border-gray-100 pt-4">
+            <ul className="mt-5 flex flex-col gap-3 border-t border-gray-100 dark:border-gray-700 pt-4">
               {coi.documents.map((doc) => (
                 <li key={doc.id} className="flex items-center justify-between text-sm">
                   <span>
-                    <span className="font-medium text-gray-900">{t(doc.type)}</span>
-                    <span className="text-gray-500"> — {doc.name}</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-50">{t(doc.type)}</span>
+                    <span className="text-gray-500 dark:text-gray-400"> — {doc.name}</span>
                     <br />
-                    <span className="text-xs text-gray-400">{t("validUntil", { date: formatDate(new Date(doc.expiresAt)) })}</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500">{t("validUntil", { date: formatDate(new Date(doc.expiresAt)) })}</span>
                   </span>
                   {doc.fileDocumentId && (
                     <button onClick={() => download(doc)} className="btn-secondary shrink-0 px-3 py-1.5 text-xs">

@@ -19,9 +19,9 @@ interface SuretyBond {
 }
 
 const STATUS_STYLES: Record<SuretyBondStatus, string> = {
-  active: "bg-success-50 text-success-700",
-  released: "bg-gray-100 text-gray-600",
-  expired: "bg-error-50 text-error-700",
+  active: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
+  released: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
+  expired: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
 };
 
 export function SuretyBondsPanel({ projectId }: { projectId: string }) {
@@ -78,14 +78,14 @@ export function SuretyBondsPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
         {!adding && (
           <button onClick={() => setAdding(true)} className="btn-secondary px-2.5 py-1 text-xs">
             {t("addBond")}
           </button>
         )}
       </div>
-      <p className="mb-3 text-xs text-gray-500">{t("hint")}</p>
+      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
 
       {adding && (
         <form onSubmit={createBond} className="card mb-3 flex flex-wrap items-end gap-2">
@@ -119,7 +119,7 @@ export function SuretyBondsPanel({ projectId }: { projectId: string }) {
             value={form.penalSum}
             onChange={(e) => setForm((f) => ({ ...f, penalSum: e.target.value }))}
           />
-          <label className="flex flex-col gap-1 text-xs text-gray-500">
+          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
             {t("issueDate")}
             <input
               required
@@ -129,7 +129,7 @@ export function SuretyBondsPanel({ projectId }: { projectId: string }) {
               onChange={(e) => setForm((f) => ({ ...f, issueDate: e.target.value }))}
             />
           </label>
-          <label className="flex flex-col gap-1 text-xs text-gray-500">
+          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
             {t("expiryDate")}
             <input
               type="date"
@@ -148,9 +148,9 @@ export function SuretyBondsPanel({ projectId }: { projectId: string }) {
       )}
 
       {!bonds ? (
-        <p className="text-sm text-gray-500">{tc("loading")}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
       ) : bonds.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noBonds")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noBonds")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {bonds.map((bond) => (
@@ -158,11 +158,11 @@ export function SuretyBondsPanel({ projectId }: { projectId: string }) {
               <div className="flex items-center justify-between">
                 <div className="font-medium">
                   {t(`type_${bond.type}`)} · {bond.suretyName}
-                  {bond.bondNumber && <span className="ml-1 text-xs text-gray-400">({bond.bondNumber})</span>}
+                  {bond.bondNumber && <span className="ml-1 text-xs text-gray-400 dark:text-gray-500">({bond.bondNumber})</span>}
                 </div>
                 <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[bond.status]}`}>{t(`status_${bond.status}`)}</span>
               </div>
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 {t("penalSum")}: {bond.penalSum} {currency} · {t("issueDate")}: {formatDate(new Date(bond.issueDate))}
                 {bond.expiryDate && ` · ${t("expiryDate")}: ${formatDate(new Date(bond.expiryDate))}`}
               </p>

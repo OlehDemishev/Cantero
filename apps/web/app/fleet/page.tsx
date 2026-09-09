@@ -217,7 +217,7 @@ export default function FleetPage() {
             ))}
           </select>
           <div className="flex flex-wrap gap-2">
-            <label className="flex flex-col gap-1 text-xs text-gray-500">
+            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
               {t("registrationExpiresAt")}
               <input
                 type="date"
@@ -226,7 +226,7 @@ export default function FleetPage() {
                 onChange={(e) => setForm((f) => ({ ...f, registrationExpiresAt: e.target.value }))}
               />
             </label>
-            <label className="flex flex-col gap-1 text-xs text-gray-500">
+            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
               {t("insuranceExpiresAt")}
               <input
                 type="date"
@@ -249,10 +249,10 @@ export default function FleetPage() {
 
       {fuelEfficiency && fuelEfficiency.some((r) => r.totalQuantity > 0) && (
         <div className="card mt-6 overflow-x-auto">
-          <h2 className="mb-2 text-sm font-semibold text-gray-700">{t("fuelEfficiencyTitle")}</h2>
+          <h2 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("fuelEfficiencyTitle")}</h2>
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 text-left text-gray-500">
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
                 <th className="py-1.5">{t("vehicle")}</th>
                 <th className="text-right">{t("milesPerUnit")}</th>
                 <th className="text-right">{t("totalIdleHours")}</th>
@@ -262,8 +262,8 @@ export default function FleetPage() {
               {fuelEfficiency
                 .filter((r) => r.totalQuantity > 0)
                 .map((r) => (
-                  <tr key={r.vehicleId} className="border-b border-gray-100">
-                    <td className="py-1.5 font-medium text-gray-900">{r.vehicleName}</td>
+                  <tr key={r.vehicleId} className="border-b border-gray-100 dark:border-gray-700">
+                    <td className="py-1.5 font-medium text-gray-900 dark:text-gray-50">{r.vehicleName}</td>
                     <td className="text-right tabular-nums">{r.milesPerUnit ?? "—"}</td>
                     <td className="text-right tabular-nums">{r.totalIdleHours}</td>
                   </tr>
@@ -275,9 +275,9 @@ export default function FleetPage() {
 
       <div className="mt-6">
         {!vehicles ? (
-          <p className="text-gray-500">{tc("loading")}</p>
+          <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
         ) : vehicles.length === 0 ? (
-          <p className="text-gray-500">{t("noVehicles")}</p>
+          <p className="text-gray-500 dark:text-gray-400">{t("noVehicles")}</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {vehicles.map((v) => {
@@ -287,30 +287,30 @@ export default function FleetPage() {
               return (
                 <li key={v.id} className="card">
                   <button onClick={() => toggleExpand(v.id)} className="flex w-full items-center justify-between text-left">
-                    <span className="text-sm font-medium text-gray-900">
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
                       {v.name}
-                      {v.licensePlate && <span className="ml-1.5 text-xs text-gray-400">({v.licensePlate})</span>}
+                      {v.licensePlate && <span className="ml-1.5 text-xs text-gray-400 dark:text-gray-500">({v.licensePlate})</span>}
                     </span>
                     <div className="flex items-center gap-1.5">
                       {regFlag && (
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${regFlag === "expired" ? "bg-error-50 text-error-700" : "bg-warning-50 text-warning-700"}`}>
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${regFlag === "expired" ? "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500" : "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500"}`}>
                           {t(regFlag === "expired" ? "registrationExpired" : "registrationExpiringSoon")}
                         </span>
                       )}
                       {insFlag && (
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${insFlag === "expired" ? "bg-error-50 text-error-700" : "bg-warning-50 text-warning-700"}`}>
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${insFlag === "expired" ? "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500" : "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500"}`}>
                           {t(insFlag === "expired" ? "insuranceExpired" : "insuranceExpiringSoon")}
                         </span>
                       )}
                     </div>
                   </button>
-                  <p className="mt-1 text-xs text-gray-400">
+                  <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
                     {t(`type_${v.type}`)}
                     {v.assignedDriver && (
                       <>
                         {" "}
                         · {t("driver")}:{" "}
-                        <Link href={`/team/${v.assignedDriver.id}`} className="text-brand-700 hover:underline">
+                        <Link href={`/team/${v.assignedDriver.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
                           {v.assignedDriver.name}
                         </Link>
                       </>
@@ -318,23 +318,23 @@ export default function FleetPage() {
                   </p>
 
                   {expanded && detail && detail.id === v.id && (
-                    <div className="mt-3 flex flex-col gap-3 border-t border-gray-100 pt-3">
-                      <div className="text-xs text-gray-500">
+                    <div className="mt-3 flex flex-col gap-3 border-t border-gray-100 dark:border-gray-700 pt-3">
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
                         {v.registrationExpiresAt && <div>{t("registrationExpiresAt")}: {formatDate(new Date(v.registrationExpiresAt))}</div>}
                         {v.insuranceExpiresAt && <div>{t("insuranceExpiresAt")}: {formatDate(new Date(v.insuranceExpiresAt))}</div>}
                       </div>
 
                       <div>
-                        <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("inspections")}</h3>
+                        <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("inspections")}</h3>
                         {detail.inspections.length === 0 ? (
-                          <p className="mb-2 text-xs text-gray-400">{t("noInspections")}</p>
+                          <p className="mb-2 text-xs text-gray-400 dark:text-gray-500">{t("noInspections")}</p>
                         ) : (
                           <ul className="mb-2 flex flex-col gap-1">
                             {detail.inspections.map((i) => (
                               <li key={i.id} className="text-xs">
-                                <span className={i.result === "passed" ? "text-success-700" : "text-error-700"}>{t(`result_${i.result}`)}</span>
-                                <span className="text-gray-400"> · {formatDate(new Date(i.inspectedAt))}</span>
-                                {i.inspectorName && <span className="text-gray-400"> · {i.inspectorName}</span>}
+                                <span className={i.result === "passed" ? "text-success-700 dark:text-success-500" : "text-error-700 dark:text-error-500"}>{t(`result_${i.result}`)}</span>
+                                <span className="text-gray-400 dark:text-gray-500"> · {formatDate(new Date(i.inspectedAt))}</span>
+                                {i.inspectorName && <span className="text-gray-400 dark:text-gray-500"> · {i.inspectorName}</span>}
                               </li>
                             ))}
                           </ul>
@@ -361,16 +361,16 @@ export default function FleetPage() {
                       </div>
 
                       <div>
-                        <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("fuelLogs")}</h3>
+                        <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("fuelLogs")}</h3>
                         {!fuelLogs || fuelLogs.length === 0 ? (
-                          <p className="mb-2 text-xs text-gray-400">{t("noFuelLogs")}</p>
+                          <p className="mb-2 text-xs text-gray-400 dark:text-gray-500">{t("noFuelLogs")}</p>
                         ) : (
                           <ul className="mb-2 flex flex-col gap-1">
                             {fuelLogs.map((f) => (
-                              <li key={f.id} className="text-xs text-gray-600">
+                              <li key={f.id} className="text-xs text-gray-600 dark:text-gray-300">
                                 {f.quantity} · {formatDate(new Date(f.filledAt))}
-                                {f.odometerMiles && <span className="text-gray-400"> · {f.odometerMiles} mi</span>}
-                                {f.idleHours && <span className="text-gray-400"> · {t("idleHoursShort", { hours: f.idleHours })}</span>}
+                                {f.odometerMiles && <span className="text-gray-400 dark:text-gray-500"> · {f.odometerMiles} mi</span>}
+                                {f.idleHours && <span className="text-gray-400 dark:text-gray-500"> · {t("idleHoursShort", { hours: f.idleHours })}</span>}
                               </li>
                             ))}
                           </ul>

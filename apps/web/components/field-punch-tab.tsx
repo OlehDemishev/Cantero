@@ -86,7 +86,7 @@ export function PunchTab({ projectId }: { projectId: string }) {
       <CachedNote cachedAt={cachedAt} />
       <form onSubmit={submit} className="card flex flex-col gap-3">
         <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium text-gray-700">{tp("itemTitle")}</span>
+          <span className="font-medium text-gray-700 dark:text-gray-200">{tp("itemTitle")}</span>
           <input
             required
             className="input"
@@ -95,7 +95,7 @@ export function PunchTab({ projectId }: { projectId: string }) {
           />
         </label>
         <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium text-gray-700">{tp("location")}</span>
+          <span className="font-medium text-gray-700 dark:text-gray-200">{tp("location")}</span>
           <input
             className="input"
             placeholder={tp("locationPlaceholder")}
@@ -110,23 +110,23 @@ export function PunchTab({ projectId }: { projectId: string }) {
       </form>
 
       {items === null ? (
-        <p className="text-sm text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
       ) : openAndResolved.length === 0 ? (
-        <p className="text-sm text-gray-400">{tp("noItems")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{tp("noItems")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {openAndResolved.map((item) => (
             <li key={item.id} className="card flex items-center justify-between">
               <div>
-                <div className="text-sm font-medium text-gray-900">{item.title}</div>
-                {item.location && <div className="text-xs text-gray-500">{item.location}</div>}
+                <div className="text-sm font-medium text-gray-900 dark:text-gray-50">{item.title}</div>
+                {item.location && <div className="text-xs text-gray-500 dark:text-gray-400">{item.location}</div>}
               </div>
               {item.status === "open" ? (
                 <button onClick={() => resolve(item.id)} className="btn-secondary px-2.5 py-1 text-xs">
                   {tp("markResolved")}
                 </button>
               ) : (
-                <span className="rounded-full bg-warning-50 px-2.5 py-1 text-xs font-medium text-warning-700">
+                <span className="rounded-full bg-warning-50 dark:bg-warning-500/15 px-2.5 py-1 text-xs font-medium text-warning-700 dark:text-warning-500">
                   {tp("resolved")}
                 </span>
               )}

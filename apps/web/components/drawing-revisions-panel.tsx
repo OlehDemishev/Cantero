@@ -56,17 +56,17 @@ export function DrawingRevisionsPanel({ sheetId, onSuperseded }: { sheetId: stri
 
   return (
     <div className="mt-6 border-t border-gray-100 pt-4 dark:border-gray-800">
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("revisionHistory")}</h3>
+      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("revisionHistory")}</h3>
       {versions.length <= 1 ? (
-        <p className="mb-3 text-xs text-gray-400">{t("noPriorRevisions")}</p>
+        <p className="mb-3 text-xs text-gray-400 dark:text-gray-500">{t("noPriorRevisions")}</p>
       ) : (
         <ul className="mb-3 flex flex-col gap-1">
           {versions.map((v, i) => (
-            <li key={v.id} className="flex items-center gap-2 text-xs text-gray-500">
+            <li key={v.id} className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
               {i === 0 ? (
-                <span className="rounded-full bg-success-50 px-2 py-0.5 font-medium text-success-700">{t("current")}</span>
+                <span className="rounded-full bg-success-50 dark:bg-success-500/15 px-2 py-0.5 font-medium text-success-700 dark:text-success-500">{t("current")}</span>
               ) : (
-                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-gray-500">{t("superseded")}</span>
+                <span className="rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-gray-500 dark:text-gray-400">{t("superseded")}</span>
               )}
               <span>{t("revisionLabel", { n: v.version })}</span>
               {v.revision && <span>· {v.revision}</span>}

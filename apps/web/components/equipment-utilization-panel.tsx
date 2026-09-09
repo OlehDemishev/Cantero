@@ -25,13 +25,13 @@ export function EquipmentUtilizationPanel() {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("title")}</h2>
-      <p className="mb-3 text-xs text-gray-500">{t("description")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("description")}</p>
       <div className="card">
         <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-gray-200 text-left text-gray-500">
+            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
               <th className="py-1.5">{t("equipment")}</th>
               <th>{t("category")}</th>
               <th>{t("hoursInUse")}</th>
@@ -40,13 +40,13 @@ export function EquipmentUtilizationPanel() {
           </thead>
           <tbody>
             {entries.map((e) => (
-              <tr key={e.id} className="border-b border-gray-100">
+              <tr key={e.id} className="border-b border-gray-100 dark:border-gray-700">
                 <td className="py-1.5">{e.name}</td>
-                <td className="text-xs text-gray-500">{e.category}</td>
+                <td className="text-xs text-gray-500 dark:text-gray-400">{e.category}</td>
                 <td>{e.hoursInUse}</td>
                 <td>
                   <div className="flex items-center gap-2">
-                    <div className="h-1.5 w-24 overflow-hidden rounded-full bg-gray-100">
+                    <div className="h-1.5 w-24 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
                       <div
                         className={`h-full rounded-full ${
                           e.utilizationPercent >= 60 ? "bg-success-500" : e.utilizationPercent >= 25 ? "bg-amber-500" : "bg-error-500"
@@ -54,7 +54,7 @@ export function EquipmentUtilizationPanel() {
                         style={{ width: `${Math.min(100, e.utilizationPercent)}%` }}
                       />
                     </div>
-                    <span className="text-xs text-gray-500">{e.utilizationPercent}%</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{e.utilizationPercent}%</span>
                   </div>
                 </td>
               </tr>

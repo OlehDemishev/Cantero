@@ -90,8 +90,8 @@ export function EquipmentGpsPanel({ equipmentId }: { equipmentId: string }) {
     <section className="card lg:col-span-2">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-sm font-semibold text-gray-700">{t("gpsTracking")}</h2>
-          <p className="text-xs text-gray-500">{t("gpsTrackingHint")}</p>
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("gpsTracking")}</h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{t("gpsTrackingHint")}</p>
         </div>
         <button onClick={tracking ? stopTracking : startTracking} className={tracking ? "btn-secondary" : "btn-primary"}>
           {t(tracking ? "gpsStop" : "gpsStart")}
@@ -101,7 +101,7 @@ export function EquipmentGpsPanel({ equipmentId }: { equipmentId: string }) {
 
       <div className="mt-4">
         {!points ? (
-          <p className="text-sm text-gray-400">{t("gpsNoRoute")}</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500">{t("gpsNoRoute")}</p>
         ) : (
           <svg viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`} className="h-64 w-full rounded-lg bg-gray-50 dark:bg-white/5">
             <polyline points={points.join(" ")} fill="none" stroke="var(--color-brand-500, #465fff)" strokeWidth="2" />

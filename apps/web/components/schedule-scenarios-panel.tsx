@@ -97,14 +97,14 @@ export function ScheduleScenariosPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
         {!adding && (
           <button onClick={() => setAdding(true)} className="btn-secondary px-2.5 py-1 text-xs">
             {t("newScenario")}
           </button>
         )}
       </div>
-      <p className="mb-3 text-xs text-gray-500">{t("hint")}</p>
+      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
 
       {adding && (
         <form onSubmit={create} className="card mb-3 flex flex-wrap items-end gap-2">
@@ -119,9 +119,9 @@ export function ScheduleScenariosPanel({ projectId }: { projectId: string }) {
       )}
 
       {!scenarios ? (
-        <p className="text-sm text-gray-500">{tc("loading")}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
       ) : scenarios.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noScenarios")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noScenarios")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {scenarios.map((s) => {
@@ -130,14 +130,14 @@ export function ScheduleScenariosPanel({ projectId }: { projectId: string }) {
             return (
               <li key={s.id} className="card">
                 <button onClick={() => setExpandedId(expanded ? null : s.id)} className="flex w-full items-center justify-between text-left">
-                  <span className="text-sm font-medium text-gray-900">{s.name}</span>
-                  <span className="text-xs text-gray-400">{t("overridesCount", { count: s.overrides.length })}</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{s.name}</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">{t("overridesCount", { count: s.overrides.length })}</span>
                 </button>
 
                 {expanded && (
-                  <div className="mt-3 flex flex-col gap-3 border-t border-gray-100 pt-3">
+                  <div className="mt-3 flex flex-col gap-3 border-t border-gray-100 dark:border-gray-700 pt-3">
                     {s.overrides.length > 0 && (
-                      <ul className="flex flex-col gap-1 text-xs text-gray-500">
+                      <ul className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
                         {s.overrides.map((o) => {
                           const task = tasks.find((tk) => tk.id === o.taskId);
                           return (
@@ -158,11 +158,11 @@ export function ScheduleScenariosPanel({ projectId }: { projectId: string }) {
                           </option>
                         ))}
                       </select>
-                      <label className="flex flex-col gap-1 text-xs text-gray-500">
+                      <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
                         {t("startDate")}
                         <input type="date" className="input" value={overrideForm.startDate} onChange={(e) => setOverrideForm((f) => ({ ...f, startDate: e.target.value }))} />
                       </label>
-                      <label className="flex flex-col gap-1 text-xs text-gray-500">
+                      <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
                         {t("dueDate")}
                         <input type="date" className="input" value={overrideForm.dueDate} onChange={(e) => setOverrideForm((f) => ({ ...f, dueDate: e.target.value }))} />
                       </label>
@@ -175,7 +175,7 @@ export function ScheduleScenariosPanel({ projectId }: { projectId: string }) {
                       <button onClick={() => compare(s.id)} className="btn-secondary px-2.5 py-1 text-xs">
                         {t("compare")}
                       </button>
-                      <button onClick={() => remove(s.id)} className="text-xs text-error-700 hover:underline">
+                      <button onClick={() => remove(s.id)} className="text-xs text-error-700 dark:text-error-500 hover:underline">
                         {tc("delete")}
                       </button>
                     </div>
@@ -184,12 +184,12 @@ export function ScheduleScenariosPanel({ projectId }: { projectId: string }) {
                       <div
                         className={`rounded-md px-2.5 py-1.5 text-xs ${
                           compareResult.finishDeltaDays === null
-                            ? "bg-gray-100 text-gray-600"
+                            ? "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                             : compareResult.finishDeltaDays > 0
-                              ? "bg-error-50 text-error-700"
+                              ? "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500"
                               : compareResult.finishDeltaDays < 0
-                                ? "bg-success-50 text-success-700"
-                                : "bg-gray-100 text-gray-600"
+                                ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
+                                : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                         }`}
                       >
                         {compareResult.finishDeltaDays === null

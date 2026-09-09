@@ -38,9 +38,9 @@ interface EnvironmentalIncident {
 }
 
 const SEVERITY_STYLES: Record<EnvironmentalIncidentSeverity, string> = {
-  minor: "bg-gray-100 text-gray-600",
-  moderate: "bg-warning-50 text-warning-700",
-  major: "bg-error-50 text-error-700",
+  minor: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
+  moderate: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
+  major: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
 };
 const OPEN_INCIDENT_STATUSES: EnvironmentalIncidentStatus[] = ["open", "contained"];
 
@@ -150,14 +150,14 @@ export function EnvironmentalPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
         {!addingPermit && (
           <button onClick={() => setAddingPermit(true)} className="btn-secondary px-2.5 py-1 text-xs">
             {t("addPermit")}
           </button>
         )}
       </div>
-      <p className="mb-3 text-xs text-gray-500">{t("hint")}</p>
+      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
 
       {addingPermit && (
         <form onSubmit={createPermit} className="card mb-3 flex flex-wrap items-end gap-2">
@@ -167,7 +167,7 @@ export function EnvironmentalPanel({ projectId }: { projectId: string }) {
             value={permitForm.permitNumber}
             onChange={(e) => setPermitForm((f) => ({ ...f, permitNumber: e.target.value }))}
           />
-          <label className="flex flex-col gap-1 text-xs text-gray-500">
+          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
             {t("noiFiledAt")}
             <input type="date" className="input" value={permitForm.noiFiledAt} onChange={(e) => setPermitForm((f) => ({ ...f, noiFiledAt: e.target.value }))} />
           </label>
@@ -181,27 +181,27 @@ export function EnvironmentalPanel({ projectId }: { projectId: string }) {
       )}
 
       {!permits ? (
-        <p className="text-sm text-gray-500">{tc("loading")}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
       ) : permits.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noPermits")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noPermits")}</p>
       ) : (
         <ul className="mb-6 flex flex-col gap-2">
           {permits.map((p) => (
             <li key={p.id} className="card">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-900">{p.permitNumber ?? t("permitNumberPlaceholder")}</span>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${p.active ? "bg-success-50 text-success-700" : "bg-gray-100 text-gray-600"}`}>
+                <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{p.permitNumber ?? t("permitNumberPlaceholder")}</span>
+                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${p.active ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"}`}>
                   {p.active ? t("active") : t("inactive")}
                 </span>
               </div>
-              {p.noiFiledAt && <p className="mt-1 text-xs text-gray-400">{t("noiFiledAt")}: {formatDate(new Date(p.noiFiledAt))}</p>}
+              {p.noiFiledAt && <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{t("noiFiledAt")}: {formatDate(new Date(p.noiFiledAt))}</p>}
 
               {p.inspections.length > 0 && (
                 <ul className="mt-2 flex flex-col gap-1">
                   {p.inspections.map((insp) => (
-                    <li key={insp.id} className="text-xs text-gray-500">
-                      <span className="text-gray-400">{formatDate(new Date(insp.inspectedAt))}</span> —{" "}
-                      <span className={insp.result === "deficient" ? "font-medium text-error-700" : ""}>{t(`result_${insp.result}`)}</span>
+                    <li key={insp.id} className="text-xs text-gray-500 dark:text-gray-400">
+                      <span className="text-gray-400 dark:text-gray-500">{formatDate(new Date(insp.inspectedAt))}</span> —{" "}
+                      <span className={insp.result === "deficient" ? "font-medium text-error-700 dark:text-error-500" : ""}>{t(`result_${insp.result}`)}</span>
                       {insp.inspectorName && ` (${insp.inspectorName})`}
                     </li>
                   ))}
@@ -244,7 +244,7 @@ export function EnvironmentalPanel({ projectId }: { projectId: string }) {
                       <button onClick={() => setInspectingPermitId(p.id)} className="btn-secondary px-2.5 py-1 text-xs">
                         {t("addInspection")}
                       </button>
-                      <button onClick={() => fileNot(p.id)} disabled={busy} className="text-xs text-gray-500 hover:underline">
+                      <button onClick={() => fileNot(p.id)} disabled={busy} className="text-xs text-gray-500 dark:text-gray-400 hover:underline">
                         {t("fileNot")}
                       </button>
                     </>
@@ -257,7 +257,7 @@ export function EnvironmentalPanel({ projectId }: { projectId: string }) {
       )}
 
       <div className="mb-1 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-700">{t("incidentsTitle")}</h3>
+        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("incidentsTitle")}</h3>
         {!addingIncident && (
           <button onClick={() => setAddingIncident(true)} className="btn-secondary px-2.5 py-1 text-xs">
             {t("reportIncident")}
@@ -287,7 +287,7 @@ export function EnvironmentalPanel({ projectId }: { projectId: string }) {
                 </option>
               ))}
             </select>
-            <label className="flex items-center gap-1.5 text-xs text-gray-600">
+            <label className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300">
               <input
                 type="checkbox"
                 checked={incidentForm.regulatorNotified}
@@ -308,18 +308,18 @@ export function EnvironmentalPanel({ projectId }: { projectId: string }) {
       )}
 
       {!incidents ? (
-        <p className="text-sm text-gray-500">{tc("loading")}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
       ) : incidents.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noIncidents")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noIncidents")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {incidents.map((inc) => (
             <li key={inc.id} className="card">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-900">{inc.description}</span>
+                <span className="text-sm text-gray-900 dark:text-gray-50">{inc.description}</span>
                 <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${SEVERITY_STYLES[inc.severity]}`}>{t(`severity_${inc.severity}`)}</span>
               </div>
-              <p className="mt-1 text-xs text-gray-400">
+              <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
                 {formatDate(new Date(inc.occurredAt))} · {t(`status_${inc.status}`)}
                 {inc.regulatorNotified && ` · ${t("regulatorNotifiedLabel")}`}
               </p>

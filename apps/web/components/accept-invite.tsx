@@ -49,7 +49,7 @@ export function AcceptInvite({ token }: { token: string }) {
   if (invite === "invalid") {
     return (
       <main className="mx-auto flex min-h-screen max-w-sm flex-col items-center justify-center px-6 py-12 text-center">
-        <p className="text-gray-600">{t("inviteInvalid")}</p>
+        <p className="text-gray-600 dark:text-gray-300">{t("inviteInvalid")}</p>
       </main>
     );
   }
@@ -57,7 +57,7 @@ export function AcceptInvite({ token }: { token: string }) {
   if (!invite) {
     return (
       <main className="mx-auto flex min-h-screen max-w-sm flex-col items-center justify-center px-6 py-12 text-center">
-        <p className="text-gray-400">{tc("loading")}</p>
+        <p className="text-gray-400 dark:text-gray-500">{tc("loading")}</p>
       </main>
     );
   }
@@ -65,13 +65,13 @@ export function AcceptInvite({ token }: { token: string }) {
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-6 py-12">
       <h1 className="text-2xl font-semibold">{t("acceptInviteTitle", { company: invite.company.name })}</h1>
-      <p className="mt-1 text-sm text-gray-500">{t("acceptInviteSubtitle", { role: t(invite.role) })}</p>
+      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("acceptInviteSubtitle", { role: t(invite.role) })}</p>
 
-      {error && <p className="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="mt-4 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{error}</p>}
 
       <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-gray-700">{t("yourName")}</span>
+          <span className="font-medium text-gray-700 dark:text-gray-200">{t("yourName")}</span>
           <input
             required
             className="input"
@@ -80,7 +80,7 @@ export function AcceptInvite({ token }: { token: string }) {
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-gray-700">{t("password")}</span>
+          <span className="font-medium text-gray-700 dark:text-gray-200">{t("password")}</span>
           <input
             required
             type="password"

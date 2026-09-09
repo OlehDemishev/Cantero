@@ -48,20 +48,20 @@ export function ClientRemindersPanel({ clientId }: { clientId: string }) {
 
   return (
     <div className="lg:col-span-1">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("reminders")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("reminders")}</h2>
       {!reminders ? (
-        <p className="text-sm text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
       ) : reminders.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noReminders")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noReminders")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {reminders.map((r) => (
             <li key={r.id} className="card flex items-center justify-between">
               <div>
-                <div className={`text-sm font-medium ${r.done ? "text-gray-400 line-through" : "text-gray-900"}`}>
+                <div className={`text-sm font-medium ${r.done ? "text-gray-400 dark:text-gray-500 line-through" : "text-gray-900 dark:text-gray-50"}`}>
                   {r.title}
                 </div>
-                <div className="text-xs text-gray-500">{formatDate(new Date(r.dueDate))}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">{formatDate(new Date(r.dueDate))}</div>
               </div>
               {!r.done && (
                 <button onClick={() => completeReminder(r.id)} className="btn-secondary px-2 py-1 text-xs">

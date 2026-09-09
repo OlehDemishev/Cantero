@@ -16,10 +16,10 @@ interface Contract {
 }
 
 const STATUS_STYLES: Record<Contract["status"], string> = {
-  draft: "bg-gray-100 text-gray-600",
-  sent: "bg-amber-100 text-amber-800",
-  signed: "bg-success-50 text-success-700",
-  void: "bg-error-50 text-error-700",
+  draft: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
+  sent: "bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-400",
+  signed: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
+  void: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
 };
 
 export function ContractsPanel({ projectId }: { projectId: string }) {
@@ -62,10 +62,10 @@ export function ContractsPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-8">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("title")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
       <div className="card">
         {!contracts || contracts.length === 0 ? (
-          <p className="text-sm text-gray-400">{t("noContracts")}</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500">{t("noContracts")}</p>
         ) : (
           <ul className="mb-4 flex flex-col gap-1.5">
             {contracts.map((c) => (

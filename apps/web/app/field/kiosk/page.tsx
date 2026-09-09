@@ -108,23 +108,23 @@ export default function KioskPage() {
   }
 
   if (!workers) {
-    return <div className="flex min-h-screen items-center justify-center text-gray-500">{tc("loading")}</div>;
+    return <div className="flex min-h-screen items-center justify-center text-gray-500 dark:text-gray-400">{tc("loading")}</div>;
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-gray-50 px-6 py-10">
-      <h1 className="mb-8 text-2xl font-semibold text-gray-900">{t("title")}</h1>
+    <div className="flex min-h-screen flex-col items-center bg-gray-50 dark:bg-gray-700 px-6 py-10">
+      <h1 className="mb-8 text-2xl font-semibold text-gray-900 dark:text-gray-50">{t("title")}</h1>
 
       {!selectedWorker ? (
         <div className="grid w-full max-w-2xl grid-cols-2 gap-3 sm:grid-cols-3">
           {workers.length === 0 ? (
-            <p className="col-span-full text-center text-sm text-gray-400">{t("noWorkers")}</p>
+            <p className="col-span-full text-center text-sm text-gray-400 dark:text-gray-500">{t("noWorkers")}</p>
           ) : (
             workers.map((w) => (
               <button
                 key={w.id}
                 onClick={() => pickWorker(w)}
-                className="card flex h-24 items-center justify-center px-3 text-center text-base font-medium text-gray-800 hover:border-brand-300"
+                className="card flex h-24 items-center justify-center px-3 text-center text-base font-medium text-gray-800 dark:text-gray-100 hover:border-brand-300"
               >
                 {w.name}
               </button>
@@ -135,20 +135,20 @@ export default function KioskPage() {
         <div className="w-full max-w-sm">
           <div className="card">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">{selectedWorker.name}</h2>
-              <button onClick={reset} className="text-xs text-gray-400 hover:underline">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-50">{selectedWorker.name}</h2>
+              <button onClick={reset} className="text-xs text-gray-400 dark:text-gray-500 hover:underline">
                 {tc("cancel")}
               </button>
             </div>
 
             {done ? (
-              <p className="rounded-lg border border-success-200 bg-success-50 px-4 py-3 text-center text-sm text-success-700">
+              <p className="rounded-lg border border-success-200 bg-success-50 dark:bg-success-500/15 px-4 py-3 text-center text-sm text-success-700 dark:text-success-500">
                 {t("entrySaved")}
               </p>
             ) : !verified ? (
               <>
                 <label className="flex flex-col gap-1.5 text-sm">
-                  <span className="font-medium text-gray-700">{t("enterPin")}</span>
+                  <span className="font-medium text-gray-700 dark:text-gray-200">{t("enterPin")}</span>
                   <input
                     type="password"
                     inputMode="numeric"
@@ -159,7 +159,7 @@ export default function KioskPage() {
                     onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
                   />
                 </label>
-                {pinError && <p className="mt-2 text-xs text-error-700">{pinError}</p>}
+                {pinError && <p className="mt-2 text-xs text-error-700 dark:text-error-500">{pinError}</p>}
                 <button onClick={submitPin} disabled={busy || pin.length < 4} className="btn-primary mt-4 w-full">
                   {t("submitPin")}
                 </button>
@@ -167,7 +167,7 @@ export default function KioskPage() {
             ) : (
               <form onSubmit={submitEntry} className="flex flex-col gap-3">
                 <label className="flex flex-col gap-1.5 text-sm">
-                  <span className="font-medium text-gray-700">{t("project")}</span>
+                  <span className="font-medium text-gray-700 dark:text-gray-200">{t("project")}</span>
                   <select
                     required
                     className="input"
@@ -183,7 +183,7 @@ export default function KioskPage() {
                   </select>
                 </label>
                 <label className="flex flex-col gap-1.5 text-sm">
-                  <span className="font-medium text-gray-700">{t("hours")}</span>
+                  <span className="font-medium text-gray-700 dark:text-gray-200">{t("hours")}</span>
                   <input
                     type="number"
                     min="0.25"

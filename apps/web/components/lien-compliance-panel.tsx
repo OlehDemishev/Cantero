@@ -35,9 +35,9 @@ interface MechanicsLienFiling {
 }
 
 const FILING_STATUS_STYLES: Record<LienFilingStatus, string> = {
-  filed: "bg-warning-50 text-warning-700",
-  released: "bg-success-50 text-success-700",
-  disputed: "bg-error-50 text-error-700",
+  filed: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
+  released: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
+  disputed: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
 };
 
 export function LienCompliancePanel({ projectId }: { projectId: string }) {
@@ -133,14 +133,14 @@ export function LienCompliancePanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
         {!addingNotice && (
           <button onClick={() => setAddingNotice(true)} className="btn-secondary px-2.5 py-1 text-xs">
             {t("logNotice")}
           </button>
         )}
       </div>
-      <p className="mb-3 text-xs text-gray-500">{t("hint")}</p>
+      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
 
       {addingNotice && (
         <form onSubmit={createNotice} className="card mb-3 flex flex-wrap items-end gap-2">
@@ -165,7 +165,7 @@ export function LienCompliancePanel({ projectId }: { projectId: string }) {
             value={noticeForm.relatedPartyName}
             onChange={(e) => setNoticeForm((f) => ({ ...f, relatedPartyName: e.target.value }))}
           />
-          <label className="flex flex-col gap-1 text-xs text-gray-500">
+          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
             {t("deadlineDate")}
             <input type="date" className="input" value={noticeForm.deadlineDate} onChange={(e) => setNoticeForm((f) => ({ ...f, deadlineDate: e.target.value }))} />
           </label>
@@ -185,22 +185,22 @@ export function LienCompliancePanel({ projectId }: { projectId: string }) {
       )}
 
       {!notices ? (
-        <p className="text-sm text-gray-500">{tc("loading")}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
       ) : notices.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noNotices")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noNotices")}</p>
       ) : (
         <ul className="mb-6 flex flex-col gap-2">
           {notices.map((n) => (
             <li key={n.id} className="card">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-900">
+                <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
                   {t(`type_${n.type}`)} · {n.relatedPartyName}
                 </span>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${n.sentAt ? "bg-success-50 text-success-700" : "bg-gray-100 text-gray-600"}`}>
+                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${n.sentAt ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"}`}>
                   {t(`direction_${n.direction}`)} · {n.sentAt ? t("sent") : t("pending")}
                 </span>
               </div>
-              <p className="mt-1 text-xs text-gray-400">
+              <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
                 {n.deadlineDate && `${t("deadlineDate")}: ${formatDate(new Date(n.deadlineDate))}`}
                 {n.methodOfService && ` · ${n.methodOfService}`}
               </p>
@@ -215,7 +215,7 @@ export function LienCompliancePanel({ projectId }: { projectId: string }) {
       )}
 
       <div className="mb-1 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-700">{t("filingsTitle")}</h3>
+        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("filingsTitle")}</h3>
         {!addingFiling && (
           <button onClick={() => setAddingFiling(true)} className="btn-secondary px-2.5 py-1 text-xs">
             {t("fileLien")}
@@ -242,7 +242,7 @@ export function LienCompliancePanel({ projectId }: { projectId: string }) {
             value={filingForm.amount}
             onChange={(e) => setFilingForm((f) => ({ ...f, amount: e.target.value }))}
           />
-          <label className="flex flex-col gap-1 text-xs text-gray-500">
+          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
             {t("filedAt")}
             <input required type="date" className="input" value={filingForm.filedAt} onChange={(e) => setFilingForm((f) => ({ ...f, filedAt: e.target.value }))} />
           </label>
@@ -256,26 +256,26 @@ export function LienCompliancePanel({ projectId }: { projectId: string }) {
       )}
 
       {!filings ? (
-        <p className="text-sm text-gray-500">{tc("loading")}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
       ) : filings.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noFilings")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noFilings")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {filings.map((f) => (
             <li key={f.id} className="card">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-900">
+                <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
                   {f.filedByName} · {f.amount} {currency}
                 </span>
                 <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${FILING_STATUS_STYLES[f.status]}`}>{t(`status_${f.status}`)}</span>
               </div>
-              <p className="mt-1 text-xs text-gray-400">{t("filedAt")}: {formatDate(new Date(f.filedAt))}</p>
+              <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{t("filedAt")}: {formatDate(new Date(f.filedAt))}</p>
               {f.status === "filed" && (
                 <div className="mt-2 flex gap-2">
                   <button onClick={() => updateFilingStatus(f.id, "released")} disabled={busy} className="btn-secondary px-2 py-1 text-xs">
                     {t("moveTo_released")}
                   </button>
-                  <button onClick={() => updateFilingStatus(f.id, "disputed")} disabled={busy} className="text-xs text-error-700 hover:underline">
+                  <button onClick={() => updateFilingStatus(f.id, "disputed")} disabled={busy} className="text-xs text-error-700 dark:text-error-500 hover:underline">
                     {t("moveTo_disputed")}
                   </button>
                 </div>

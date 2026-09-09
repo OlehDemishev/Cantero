@@ -6,5 +6,5 @@ import { useTranslations } from "next-intl";
 export function CachedNote({ cachedAt }: { cachedAt: number | null }) {
   const t = useTranslations("field");
   if (cachedAt == null) return null;
-  return <p className="mb-2 text-xs text-warning-700">{t("cachedFrom", { time: new Date(cachedAt).toLocaleTimeString() })}</p>;
+  return <p className="mb-2 text-xs text-warning-700 dark:text-warning-500">{t("cachedFrom", { time: new Date(cachedAt).toLocaleTimeString() })}</p>;
 }

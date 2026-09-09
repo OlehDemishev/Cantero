@@ -56,14 +56,14 @@ export function SiteSignInsPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-8">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("title")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
       <div className="card">
         <form onSubmit={signIn} className="flex flex-wrap items-end gap-2">
-          <label className="flex flex-col gap-1 text-xs text-gray-500">
+          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
             {t("name")}
             <input className="input py-1 text-xs" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
           </label>
-          <label className="flex flex-col gap-1 text-xs text-gray-500">
+          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
             {t("visitorCompany")}
             <input
               className="input py-1 text-xs"
@@ -71,7 +71,7 @@ export function SiteSignInsPanel({ projectId }: { projectId: string }) {
               onChange={(e) => setForm((f) => ({ ...f, visitorCompany: e.target.value }))}
             />
           </label>
-          <label className="flex flex-col gap-1 text-xs text-gray-500">
+          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
             {t("purpose")}
             <input className="input py-1 text-xs" value={form.purpose} onChange={(e) => setForm((f) => ({ ...f, purpose: e.target.value }))} />
           </label>
@@ -81,17 +81,17 @@ export function SiteSignInsPanel({ projectId }: { projectId: string }) {
         </form>
 
         {onSite.length > 0 && (
-          <div className="mt-4 border-t border-gray-100 pt-3">
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("onSite", { count: onSite.length })}</h3>
+          <div className="mt-4 border-t border-gray-100 dark:border-gray-700 pt-3">
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("onSite", { count: onSite.length })}</h3>
             <ul className="flex flex-col gap-1.5">
               {onSite.map((s) => (
                 <li key={s.id} className="flex items-center justify-between text-sm">
                   <span>
                     {s.name}
-                    {s.visitorCompany && <span className="text-gray-400"> — {s.visitorCompany}</span>}
-                    {s.purpose && <span className="ml-1 text-xs text-gray-400">({s.purpose})</span>}
+                    {s.visitorCompany && <span className="text-gray-400 dark:text-gray-500"> — {s.visitorCompany}</span>}
+                    {s.purpose && <span className="ml-1 text-xs text-gray-400 dark:text-gray-500">({s.purpose})</span>}
                   </span>
-                  <button onClick={() => signOut(s.id)} className="text-xs text-brand-700 hover:underline">
+                  <button onClick={() => signOut(s.id)} className="text-xs text-brand-700 dark:text-brand-400 hover:underline">
                     {t("signOut")}
                   </button>
                 </li>
@@ -101,9 +101,9 @@ export function SiteSignInsPanel({ projectId }: { projectId: string }) {
         )}
 
         {departed.length > 0 && (
-          <div className="mt-4 border-t border-gray-100 pt-3">
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("history")}</h3>
-            <ul className="flex flex-col gap-1 text-xs text-gray-500">
+          <div className="mt-4 border-t border-gray-100 dark:border-gray-700 pt-3">
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("history")}</h3>
+            <ul className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
               {departed.slice(0, 10).map((s) => (
                 <li key={s.id}>
                   {s.name}

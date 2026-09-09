@@ -37,14 +37,14 @@ export function WorkerCdlPanel({ workerId }: { workerId: string }) {
 
   return (
     <>
-      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700">{t("cdlExpiry")}</h2>
+      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("cdlExpiry")}</h2>
       <form onSubmit={saveCdlExpiry} className="flex items-center gap-2">
         <input type="date" className="input flex-1" value={cdlExpiresAt} onChange={(e) => setCdlExpiresAt(e.target.value)} />
         <button type="submit" disabled={cdlBusy} className="btn-secondary shrink-0">
           {tc("save")}
         </button>
       </form>
-      {cdlMessage && <p className={`mt-1.5 text-xs ${cdlMessage.error ? "text-error-700" : "text-success-700"}`}>{cdlMessage.text}</p>}
+      {cdlMessage && <p className={`mt-1.5 text-xs ${cdlMessage.error ? "text-error-700 dark:text-error-500" : "text-success-700 dark:text-success-500"}`}>{cdlMessage.text}</p>}
     </>
   );
 }

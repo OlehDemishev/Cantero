@@ -34,17 +34,17 @@ export function WorkerChecklistsPanel({ workerId }: { workerId: string }) {
 
   return (
     <>
-      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700">{t("onboardingChecklist")}</h2>
+      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("onboardingChecklist")}</h2>
       {onboardingTasks === null ? (
-        <p className="text-sm text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
       ) : onboardingTasks.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noOnboardingTasks")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noOnboardingTasks")}</p>
       ) : (
         <ul className="flex flex-col gap-1.5">
           {onboardingTasks.map((task) => (
             <li key={task.id} className="card flex items-center gap-2 text-sm">
               <input type="checkbox" checked={task.done} onChange={() => toggleOnboardingTask(task.id)} />
-              <span className={task.done ? "text-gray-400 line-through" : "text-gray-900"}>{task.title}</span>
+              <span className={task.done ? "text-gray-400 dark:text-gray-500 line-through" : "text-gray-900 dark:text-gray-50"}>{task.title}</span>
             </li>
           ))}
         </ul>
@@ -52,12 +52,12 @@ export function WorkerChecklistsPanel({ workerId }: { workerId: string }) {
 
       {offboardingTasks !== null && offboardingTasks.length > 0 && (
         <>
-          <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700">{t("offboardingChecklist")}</h2>
+          <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("offboardingChecklist")}</h2>
           <ul className="flex flex-col gap-1.5">
             {offboardingTasks.map((task) => (
               <li key={task.id} className="card flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={task.done} onChange={() => toggleOffboardingTask(task.id)} />
-                <span className={task.done ? "text-gray-400 line-through" : "text-gray-900"}>{task.title}</span>
+                <span className={task.done ? "text-gray-400 dark:text-gray-500 line-through" : "text-gray-900 dark:text-gray-50"}>{task.title}</span>
               </li>
             ))}
           </ul>

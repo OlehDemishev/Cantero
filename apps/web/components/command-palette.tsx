@@ -107,7 +107,7 @@ export function CommandPalette({ navItems }: { navItems: readonly NavAction[] })
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 border-b border-gray-100 px-4 py-3 dark:border-gray-800">
-          <SearchIcon width={16} height={16} className="shrink-0 text-gray-400" />
+          <SearchIcon width={16} height={16} className="shrink-0 text-gray-400 dark:text-gray-500" />
           <input
             ref={inputRef}
             className="w-full bg-transparent text-sm text-gray-800 outline-none placeholder:text-gray-400 dark:text-white/90"
@@ -125,7 +125,7 @@ export function CommandPalette({ navItems }: { navItems: readonly NavAction[] })
         </div>
         <div className="max-h-96 overflow-y-auto p-2">
           {items.length === 0 ? (
-            <p className="px-2 py-6 text-center text-sm text-gray-400">{t("noResults")}</p>
+            <p className="px-2 py-6 text-center text-sm text-gray-400 dark:text-gray-500">{t("noResults")}</p>
           ) : (
             <ul className="flex flex-col gap-0.5">
               {items.map((item, i) => (

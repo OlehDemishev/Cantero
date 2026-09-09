@@ -65,13 +65,13 @@ export function StockTab({ projectId }: { projectId: string }) {
     }
   }
 
-  if (error) return <p className="text-sm text-gray-400">{t("offline")}</p>;
-  if (warehouses.length === 0 || materials.length === 0) return <p className="text-sm text-gray-400">{tc("loading")}</p>;
+  if (error) return <p className="text-sm text-gray-400 dark:text-gray-500">{t("offline")}</p>;
+  if (warehouses.length === 0 || materials.length === 0) return <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>;
 
   return (
     <form onSubmit={submit} className="card flex flex-col gap-3">
       <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-gray-700">{tw("title")}</span>
+        <span className="font-medium text-gray-700 dark:text-gray-200">{tw("title")}</span>
         <select
           className="input"
           value={form.warehouseId}
@@ -85,7 +85,7 @@ export function StockTab({ projectId }: { projectId: string }) {
         </select>
       </label>
       <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-gray-700">{tw("material")}</span>
+        <span className="font-medium text-gray-700 dark:text-gray-200">{tw("material")}</span>
         <select
           className="input"
           value={form.materialCatalogItemId}
@@ -100,7 +100,7 @@ export function StockTab({ projectId }: { projectId: string }) {
       </label>
       <div className="flex gap-3">
         <label className="flex flex-1 flex-col gap-1.5 text-sm">
-          <span className="font-medium text-gray-700">{tw("type")}</span>
+          <span className="font-medium text-gray-700 dark:text-gray-200">{tw("type")}</span>
           <select
             className="input"
             value={form.type}
@@ -111,7 +111,7 @@ export function StockTab({ projectId }: { projectId: string }) {
           </select>
         </label>
         <label className="flex flex-1 flex-col gap-1.5 text-sm">
-          <span className="font-medium text-gray-700">{t("quantity")}</span>
+          <span className="font-medium text-gray-700 dark:text-gray-200">{t("quantity")}</span>
           <input
             type="number"
             step="0.01"

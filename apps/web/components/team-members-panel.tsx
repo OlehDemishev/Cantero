@@ -50,14 +50,14 @@ export function TeamMembersPanel({ isManager }: { isManager: boolean }) {
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-4 text-sm font-semibold text-gray-700">{t("members")}</h2>
+      <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("members")}</h2>
       {!members ? (
-        <p className="text-gray-500">{tc("loading")}</p>
+        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
       ) : (
         <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-gray-200 text-left text-gray-500">
+            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
               <th className="py-2">{tc("name")}</th>
               <th>{tc("email")}</th>
               <th>{t("role")}</th>
@@ -67,7 +67,7 @@ export function TeamMembersPanel({ isManager }: { isManager: boolean }) {
           </thead>
           <tbody>
             {members.map((m) => (
-              <tr key={m.userId} className="border-b border-gray-100">
+              <tr key={m.userId} className="border-b border-gray-100 dark:border-gray-700">
                 <td className="py-2">{m.user.name}</td>
                 <td>{m.user.email}</td>
                 <td>

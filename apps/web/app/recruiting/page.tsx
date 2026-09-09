@@ -36,12 +36,12 @@ interface CandidateDetail extends Candidate {
 }
 
 const STAGE_STYLES: Record<CandidateStage, string> = {
-  applied: "bg-gray-100 text-gray-600",
-  screening: "bg-warning-50 text-warning-700",
-  interviewing: "bg-brand-50 text-brand-700",
+  applied: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
+  screening: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
+  interviewing: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
   offer: "bg-amber-50 text-amber-700",
-  hired: "bg-success-50 text-success-700",
-  rejected: "bg-error-50 text-error-700",
+  hired: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
+  rejected: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
 };
 
 export default function RecruitingPage() {
@@ -187,9 +187,9 @@ export default function RecruitingPage() {
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="lg:col-span-1">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("jobPostings")}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("jobPostings")}</h2>
           {!postings ? (
-            <p className="text-sm text-gray-500">{tc("loading")}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
           ) : (
             <ul className="mb-4 flex flex-col gap-1.5">
               {postings.map((p) => (
@@ -200,11 +200,11 @@ export default function RecruitingPage() {
                   >
                     <span>
                       {p.title}
-                      {p.trade && <span className="text-gray-400"> · {p.trade}</span>}
-                      <span className="ml-1 text-xs text-gray-400">({p._count.candidates})</span>
+                      {p.trade && <span className="text-gray-400 dark:text-gray-500"> · {p.trade}</span>}
+                      <span className="ml-1 text-xs text-gray-400 dark:text-gray-500">({p._count.candidates})</span>
                     </span>
                     <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${p.status === "open" ? "bg-success-50 text-success-700" : "bg-gray-100 text-gray-600"}`}
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${p.status === "open" ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"}`}
                     >
                       {t(`postingStatus_${p.status}`)}
                     </span>
@@ -246,9 +246,9 @@ export default function RecruitingPage() {
         </div>
 
         <div className="lg:col-span-2">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("candidates")}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("candidates")}</h2>
           {!selectedPostingId ? (
-            <p className="text-sm text-gray-400">{t("selectPosting")}</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">{t("selectPosting")}</p>
           ) : (
             <>
               <form onSubmit={createCandidate} className="card mb-4 flex flex-wrap items-end gap-2">
@@ -283,9 +283,9 @@ export default function RecruitingPage() {
               </form>
 
               {!candidates ? (
-                <p className="text-sm text-gray-500">{tc("loading")}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
               ) : candidates.length === 0 ? (
-                <p className="text-sm text-gray-400">{t("noCandidates")}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t("noCandidates")}</p>
               ) : (
                 <ul className="flex flex-col gap-2">
                   {candidates.map((c) => {
@@ -293,15 +293,15 @@ export default function RecruitingPage() {
                     return (
                       <li key={c.id} className="card">
                         <button onClick={() => toggleExpand(c.id)} className="flex w-full items-center justify-between text-left">
-                          <span className="text-sm font-medium text-gray-900">
+                          <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
                             {c.name}
-                            {c.source && <span className="ml-1 text-xs text-gray-400">({c.source})</span>}
+                            {c.source && <span className="ml-1 text-xs text-gray-400 dark:text-gray-500">({c.source})</span>}
                           </span>
                           <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STAGE_STYLES[c.stage]}`}>{t(`stage_${c.stage}`)}</span>
                         </button>
 
                         {expanded && detail && detail.id === c.id && (
-                          <div className="mt-3 flex flex-col gap-3 border-t border-gray-100 pt-3">
+                          <div className="mt-3 flex flex-col gap-3 border-t border-gray-100 dark:border-gray-700 pt-3">
                             {c.stage !== "hired" && c.stage !== "rejected" && (
                               <div className="flex flex-wrap gap-1.5">
                                 {CANDIDATE_STAGES.filter((s) => s !== c.stage && s !== "hired").map((s) => (
@@ -313,16 +313,16 @@ export default function RecruitingPage() {
                             )}
 
                             <div>
-                              <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("interviews")}</h3>
+                              <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("interviews")}</h3>
                               {detail.interviews.length === 0 ? (
-                                <p className="mb-2 text-xs text-gray-400">{t("noInterviews")}</p>
+                                <p className="mb-2 text-xs text-gray-400 dark:text-gray-500">{t("noInterviews")}</p>
                               ) : (
                                 <ul className="mb-2 flex flex-col gap-1">
                                   {detail.interviews.map((iv) => (
                                     <li key={iv.id} className="text-xs">
                                       {iv.interviewerName ?? "—"}
                                       {iv.rating && ` · ${iv.rating}/5`}
-                                      {iv.notes && <span className="text-gray-400"> — {iv.notes}</span>}
+                                      {iv.notes && <span className="text-gray-400 dark:text-gray-500"> — {iv.notes}</span>}
                                     </li>
                                   ))}
                                 </ul>
@@ -358,7 +358,7 @@ export default function RecruitingPage() {
                             </div>
 
                             {c.hiredWorkerId ? (
-                              <p className="text-sm text-success-700">
+                              <p className="text-sm text-success-700 dark:text-success-500">
                                 {t("alreadyHired")}{" "}
                                 <Link href={`/team/${c.hiredWorkerId}`} className="font-medium underline">
                                   {t("viewWorkerProfile")}
@@ -366,7 +366,7 @@ export default function RecruitingPage() {
                               </p>
                             ) : (
                               c.stage !== "rejected" && (
-                                <div className="flex flex-wrap items-end gap-2 border-t border-gray-100 pt-3">
+                                <div className="flex flex-wrap items-end gap-2 border-t border-gray-100 dark:border-gray-700 pt-3">
                                   <input
                                     placeholder={t("rolePlaceholder")}
                                     className="input w-auto"

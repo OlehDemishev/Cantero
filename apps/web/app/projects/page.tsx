@@ -78,7 +78,7 @@ export default function ProjectsPage() {
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="card lg:col-span-1">
-          <h2 className="mb-4 text-sm font-semibold text-gray-700">{t("newProject")}</h2>
+          <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("newProject")}</h2>
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             <input
               required
@@ -137,18 +137,18 @@ export default function ProjectsPage() {
           </div>
 
           {!projects ? (
-            <p className="text-gray-500">{tc("loading")}</p>
+            <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
           ) : projects.length === 0 ? (
-            <p className="text-gray-500">{t("empty")}</p>
+            <p className="text-gray-500 dark:text-gray-400">{t("empty")}</p>
           ) : filtered.length === 0 ? (
-            <p className="text-gray-500">{t("noMatches")}</p>
+            <p className="text-gray-500 dark:text-gray-400">{t("noMatches")}</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {filtered.map((p) => (
                 <li key={p.id}>
                   <a href={`/projects/${p.id}`} className="card block hover:border-gray-400">
                     <div className="font-medium">{p.name}</div>
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
                       {p.client?.name ?? t("noClient")} {p.address ? `· ${p.address}` : ""}
                     </div>
                   </a>

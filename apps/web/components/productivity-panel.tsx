@@ -76,7 +76,7 @@ export function ProductivityPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
         {!creating && (
           <button onClick={() => setCreating(true)} className="btn-secondary px-3 py-1 text-xs">
             {t("newLog")}
@@ -88,7 +88,7 @@ export function ProductivityPanel({ projectId }: { projectId: string }) {
         <form onSubmit={submit} className="card mb-4 flex flex-col gap-3">
           <div className="flex gap-3">
             <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("costCode")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("costCode")}</span>
               <select
                 className="input"
                 value={form.costCodeId}
@@ -103,7 +103,7 @@ export function ProductivityPanel({ projectId }: { projectId: string }) {
               </select>
             </label>
             <label className="flex w-40 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("workDate")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("workDate")}</span>
               <input
                 required
                 type="date"
@@ -115,7 +115,7 @@ export function ProductivityPanel({ projectId }: { projectId: string }) {
           </div>
           <div className="flex gap-3">
             <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("quantityCompleted")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("quantityCompleted")}</span>
               <input
                 required
                 type="number"
@@ -127,11 +127,11 @@ export function ProductivityPanel({ projectId }: { projectId: string }) {
               />
             </label>
             <label className="flex w-28 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("unit")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("unit")}</span>
               <input required className="input" value={form.unit} onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))} />
             </label>
             <label className="flex w-32 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("laborHours")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("laborHours")}</span>
               <input
                 required
                 type="number"
@@ -144,11 +144,11 @@ export function ProductivityPanel({ projectId }: { projectId: string }) {
             </label>
           </div>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("crewName")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("crewName")}</span>
             <input className="input" value={form.crewName} onChange={(e) => setForm((f) => ({ ...f, crewName: e.target.value }))} />
           </label>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("notes")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("notes")}</span>
             <textarea rows={2} className="input" value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
           </label>
           <div className="flex gap-2">
@@ -163,9 +163,9 @@ export function ProductivityPanel({ projectId }: { projectId: string }) {
       )}
 
       {logs === null ? (
-        <p className="text-sm text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
       ) : logs.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noLogs")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noLogs")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {logs.map((log) => {
@@ -175,19 +175,19 @@ export function ProductivityPanel({ projectId }: { projectId: string }) {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-900">
+                      <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
                         {log.quantityCompleted} {log.unit}
                       </span>
-                      {log.costCode && <span className="text-xs text-gray-500">{log.costCode.code}</span>}
+                      {log.costCode && <span className="text-xs text-gray-500 dark:text-gray-400">{log.costCode.code}</span>}
                     </div>
-                    <p className="mt-1 text-xs text-gray-500">
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                       {t("logSummary", { hours: log.laborHours, date: formatDate(new Date(log.workDate)) })}
                       {log.crewName ? ` — ${log.crewName}` : ""}
                     </p>
-                    {log.notes && <p className="mt-1 text-xs text-gray-500">{log.notes}</p>}
+                    {log.notes && <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{log.notes}</p>}
                   </div>
                   {hoursPerUnit !== null && (
-                    <span className="shrink-0 text-xs font-medium tabular-nums text-gray-500">
+                    <span className="shrink-0 text-xs font-medium tabular-nums text-gray-500 dark:text-gray-400">
                       {t("hoursPerUnit", { rate: hoursPerUnit.toFixed(3), unit: log.unit })}
                     </span>
                   )}

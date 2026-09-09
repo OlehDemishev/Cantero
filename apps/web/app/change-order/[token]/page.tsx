@@ -79,43 +79,43 @@ export default function PublicChangeOrderPage({ params }: { params: Promise<{ to
 
   if (error) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 px-6 py-12">
-        <p className="text-sm text-gray-500">{error}</p>
+      <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
+        <p className="text-sm text-gray-500 dark:text-gray-400">{error}</p>
       </main>
     );
   }
 
   if (!changeOrder) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 px-6 py-12">
-        <p className="text-sm text-gray-500">{tc("loading")}</p>
+      <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
+        <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
       </main>
     );
   }
 
   return (
-    <main className="flex min-h-screen justify-center bg-gray-50 px-6 py-12">
+    <main className="flex min-h-screen justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
       <div className="w-full max-w-2xl">
         <div className="mb-6 flex items-center gap-2">
           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500 text-sm font-semibold text-white">
             C
           </span>
-          <span className="text-lg font-semibold tracking-tight text-gray-900">{changeOrder.companyName}</span>
+          <span className="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-50">{changeOrder.companyName}</span>
         </div>
 
         <div className="card">
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
+          <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">
             {t("changeOrderFor", { estimateName: changeOrder.estimateName })}
           </p>
-          <h1 className="mt-1 text-xl font-semibold text-gray-900">
+          <h1 className="mt-1 text-xl font-semibold text-gray-900 dark:text-gray-50">
             CO-{changeOrder.number} — {changeOrder.title}
           </h1>
-          {changeOrder.description && <p className="mt-1 text-sm text-gray-500">{changeOrder.description}</p>}
+          {changeOrder.description && <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{changeOrder.description}</p>}
 
           <div className="overflow-x-auto">
           <table className="mt-6 w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 text-left text-gray-500">
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
                 <th className="py-2">{t("rateItem")}</th>
                 <th>{t("quantity")}</th>
                 <th className="text-right">{t("lineTotal")}</th>
@@ -123,7 +123,7 @@ export default function PublicChangeOrderPage({ params }: { params: Promise<{ to
             </thead>
             <tbody>
               {changeOrder.lines.map((l) => (
-                <tr key={l.id} className="border-b border-gray-100">
+                <tr key={l.id} className="border-b border-gray-100 dark:border-gray-700">
                   <td className="py-2">{l.description}</td>
                   <td>
                     {l.quantity} {l.unit}
@@ -139,24 +139,24 @@ export default function PublicChangeOrderPage({ params }: { params: Promise<{ to
 
           <dl className="mt-4 flex flex-col gap-1.5 text-sm">
             <div className="flex justify-between">
-              <dt className="text-gray-500">{t("subtotal")}</dt>
+              <dt className="text-gray-500 dark:text-gray-400">{t("subtotal")}</dt>
               <dd>
                 {changeOrder.subtotal} {changeOrder.currency}
               </dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-gray-500">{t("markupAmount")}</dt>
+              <dt className="text-gray-500 dark:text-gray-400">{t("markupAmount")}</dt>
               <dd>
                 {changeOrder.markupAmount} {changeOrder.currency}
               </dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-gray-500">{t("taxAmount")}</dt>
+              <dt className="text-gray-500 dark:text-gray-400">{t("taxAmount")}</dt>
               <dd>
                 {changeOrder.taxAmount} {changeOrder.currency}
               </dd>
             </div>
-            <div className="flex justify-between border-t border-gray-200 pt-2 font-semibold">
+            <div className="flex justify-between border-t border-gray-200 dark:border-gray-700 pt-2 font-semibold">
               <dt>{t("grandTotal")}</dt>
               <dd>
                 {changeOrder.grandTotal} {changeOrder.currency}
@@ -165,21 +165,21 @@ export default function PublicChangeOrderPage({ params }: { params: Promise<{ to
           </dl>
 
           {changeOrder.scheduleImpactDays !== null && (
-            <p className="mt-3 text-sm text-gray-600">
+            <p className="mt-3 text-sm text-gray-600 dark:text-gray-300">
               {t("scheduleImpact")}: {changeOrder.scheduleImpactDays >= 0 ? "+" : ""}
               {changeOrder.scheduleImpactDays} {t("days")}
             </p>
           )}
 
           {changeOrder.clientDecision === "pending" ? (
-            <div className="mt-6 border-t border-gray-100 pt-4">
+            <div className="mt-6 border-t border-gray-100 dark:border-gray-700 pt-4">
               <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700">{t("clientNoteOptional")}</span>
+                <span className="font-medium text-gray-700 dark:text-gray-200">{t("clientNoteOptional")}</span>
                 <textarea rows={2} className="input" value={note} onChange={(e) => setNote(e.target.value)} />
               </label>
 
               <div className="mt-4 flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700">{t("signerNameLabel")}</span>
+                <span className="font-medium text-gray-700 dark:text-gray-200">{t("signerNameLabel")}</span>
                 <input
                   className="input"
                   placeholder={t("signerNamePlaceholder")}
@@ -188,7 +188,7 @@ export default function PublicChangeOrderPage({ params }: { params: Promise<{ to
                 />
               </div>
               <div className="mt-3 flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700">{t("signHere")}</span>
+                <span className="font-medium text-gray-700 dark:text-gray-200">{t("signHere")}</span>
                 <SignaturePad onChange={setSignatureDataUrl} clearLabel={t("clearSignature")} />
               </div>
               {signatureError && <p className="mt-2 text-xs text-error-600">{signatureError}</p>}
@@ -206,8 +206,8 @@ export default function PublicChangeOrderPage({ params }: { params: Promise<{ to
             <div
               className={`mt-6 rounded-lg border-t px-4 py-3 text-sm ${
                 changeOrder.clientDecision === "approved"
-                  ? "border-success-200 bg-success-50 text-success-700"
-                  : "border-error-200 bg-error-50 text-error-700"
+                  ? "border-success-200 bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
+                  : "border-error-200 bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500"
               }`}
             >
               {changeOrder.clientDecision === "approved" ? t("clientDecisionThanksApproved") : t("clientDecisionThanksRejected")}

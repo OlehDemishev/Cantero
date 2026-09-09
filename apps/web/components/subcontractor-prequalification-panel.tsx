@@ -21,9 +21,9 @@ interface Prequalification {
 }
 
 const STATUS_STYLES: Record<PrequalificationStatus, string> = {
-  pending: "bg-warning-50 text-warning-700",
-  approved: "bg-success-50 text-success-700",
-  rejected: "bg-error-50 text-error-700",
+  pending: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
+  approved: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
+  rejected: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
 };
 
 export function SubcontractorPrequalificationPanel({ subcontractorId }: { subcontractorId: string }) {
@@ -86,19 +86,19 @@ export function SubcontractorPrequalificationPanel({ subcontractorId }: { subcon
   }
 
   return (
-    <div className="border-t border-gray-100 pt-3">
+    <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
       <div className="mb-1.5 flex items-center justify-between">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">{t("title")}</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("title")}</h3>
         {!adding && (
           <button onClick={() => setAdding(true)} className="btn-secondary px-2 py-0.5 text-xs">
             {t("startCycle")}
           </button>
         )}
       </div>
-      <p className="mb-2 text-xs text-gray-400">{t("hint")}</p>
+      <p className="mb-2 text-xs text-gray-400 dark:text-gray-500">{t("hint")}</p>
 
       {adding && (
-        <form onSubmit={create} className="mb-3 flex flex-col gap-2 rounded-md border border-gray-200 p-2">
+        <form onSubmit={create} className="mb-3 flex flex-col gap-2 rounded-md border border-gray-200 dark:border-gray-700 p-2">
           <div className="flex flex-wrap gap-2">
             <input
               placeholder={t("licenseNumberPlaceholder")}
@@ -149,9 +149,9 @@ export function SubcontractorPrequalificationPanel({ subcontractorId }: { subcon
       )}
 
       {!cycles ? (
-        <p className="text-xs text-gray-400">{tc("loading")}</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>
       ) : cycles.length === 0 ? (
-        <p className="text-xs text-gray-400">{t("noCycles")}</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500">{t("noCycles")}</p>
       ) : (
         <ul className="flex flex-col gap-1.5">
           {cycles.map((c) => (
@@ -165,7 +165,7 @@ export function SubcontractorPrequalificationPanel({ subcontractorId }: { subcon
                 <span className={`rounded-full px-2 py-0.5 font-medium ${STATUS_STYLES[c.status]}`}>{t(`status_${c.status}`)}</span>
               </div>
               {c.status === "approved" && c.expiresAt && (
-                <p className="mt-0.5 text-gray-400">
+                <p className="mt-0.5 text-gray-400 dark:text-gray-500">
                   {t("expiresOn", { date: formatDate(new Date(c.expiresAt)) })}
                 </p>
               )}
@@ -196,12 +196,12 @@ export function SubcontractorPrequalificationPanel({ subcontractorId }: { subcon
                     <button onClick={() => decide(c.id, "approved")} disabled={busy} className="btn-primary px-2 py-0.5 text-xs">
                       {t("approve")}
                     </button>
-                    <button onClick={() => decide(c.id, "rejected")} disabled={busy} className="text-error-700 hover:underline">
+                    <button onClick={() => decide(c.id, "rejected")} disabled={busy} className="text-error-700 dark:text-error-500 hover:underline">
                       {t("reject")}
                     </button>
                   </div>
                 ) : (
-                  <button onClick={() => setDecidingId(c.id)} className="mt-1 text-brand-700 hover:underline">
+                  <button onClick={() => setDecidingId(c.id)} className="mt-1 text-brand-700 dark:text-brand-400 hover:underline">
                     {t("decide")}
                   </button>
                 ))}

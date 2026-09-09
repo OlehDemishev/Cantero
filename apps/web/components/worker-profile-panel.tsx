@@ -149,7 +149,7 @@ export function WorkerProfilePanel({ workerId, currency, onChanged }: { workerId
           value={form.role}
           onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
         />
-        <label className="text-xs text-gray-500">
+        <label className="text-xs text-gray-500 dark:text-gray-400">
           {t("hourlyCost")} ({currency})
           <input
             type="number"
@@ -159,7 +159,7 @@ export function WorkerProfilePanel({ workerId, currency, onChanged }: { workerId
             onChange={(e) => setForm((f) => ({ ...f, hourlyCost: e.target.value }))}
           />
         </label>
-        <label className="text-xs text-gray-500">
+        <label className="text-xs text-gray-500 dark:text-gray-400">
           {t("payrollEmployeeId")}
           <input
             placeholder={t("payrollEmployeeIdPlaceholder")}
@@ -168,7 +168,7 @@ export function WorkerProfilePanel({ workerId, currency, onChanged }: { workerId
             onChange={(e) => setForm((f) => ({ ...f, payrollEmployeeId: e.target.value }))}
           />
         </label>
-        <label className="text-xs text-gray-500">
+        <label className="text-xs text-gray-500 dark:text-gray-400">
           {t("wageClassification")}
           <select
             className="input mt-1"
@@ -183,11 +183,11 @@ export function WorkerProfilePanel({ workerId, currency, onChanged }: { workerId
             ))}
           </select>
         </label>
-        <label className="flex items-center gap-2 text-xs text-gray-500">
+        <label className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
           <input type="checkbox" checked={form.isApprentice} onChange={(e) => setForm((f) => ({ ...f, isApprentice: e.target.checked }))} />
           {t("isApprentice")}
         </label>
-        <label className="text-xs text-gray-500">
+        <label className="text-xs text-gray-500 dark:text-gray-400">
           {t("phone")}
           <input
             type="tel"
@@ -197,7 +197,7 @@ export function WorkerProfilePanel({ workerId, currency, onChanged }: { workerId
             onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
           />
         </label>
-        <label className="text-xs text-gray-500">
+        <label className="text-xs text-gray-500 dark:text-gray-400">
           {t("preferredLocale")}
           <select
             className="input mt-1"
@@ -216,19 +216,19 @@ export function WorkerProfilePanel({ workerId, currency, onChanged }: { workerId
           <button type="submit" disabled={busy} className="btn-primary">
             {tc("save")}
           </button>
-          {saved && <span className="text-xs text-success-700">{tc("saved")}</span>}
+          {saved && <span className="text-xs text-success-700 dark:text-success-500">{tc("saved")}</span>}
         </div>
       </form>
       <button onClick={toggleActive} disabled={busy} className="btn-secondary mt-3 w-full">
         {worker.active ? t("deactivate") : t("reactivate")}
       </button>
 
-      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700">{t("kioskPin")}</h2>
-      <p className="mb-2 text-xs text-gray-500">{t("kioskPinHint")}</p>
+      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("kioskPin")}</h2>
+      <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">{t("kioskPinHint")}</p>
       {worker.hasClockInPin ? (
         <div className="flex items-center justify-between">
-          <span className="text-xs text-success-700">{t("kioskPinSet")}</span>
-          <button onClick={clearClockInPin} disabled={pinBusy} className="text-xs text-error-700 hover:underline">
+          <span className="text-xs text-success-700 dark:text-success-500">{t("kioskPinSet")}</span>
+          <button onClick={clearClockInPin} disabled={pinBusy} className="text-xs text-error-700 dark:text-error-500 hover:underline">
             {t("kioskPinClear")}
           </button>
         </div>
@@ -248,7 +248,7 @@ export function WorkerProfilePanel({ workerId, currency, onChanged }: { workerId
           </button>
         </form>
       )}
-      {pinError && <p className="mt-1 text-xs text-error-700">{pinError}</p>}
+      {pinError && <p className="mt-1 text-xs text-error-700 dark:text-error-500">{pinError}</p>}
     </>
   );
 }

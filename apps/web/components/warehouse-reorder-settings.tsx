@@ -123,12 +123,12 @@ export function WarehouseReorderSettings() {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("reorderSettings")}</h2>
-      <p className="mb-3 text-xs text-gray-500">{t("reorderSettingsHint")}</p>
+      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("reorderSettings")}</h2>
+      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("reorderSettingsHint")}</p>
       <div className="overflow-x-auto">
       <table className="w-full border-collapse text-sm">
         <thead>
-          <tr className="border-b border-gray-200 text-left text-gray-500">
+          <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
             <th className="py-2">{t("material")}</th>
             <th>{t("reorderThreshold")}</th>
             <th>{t("reorderQuantity")}</th>
@@ -141,7 +141,7 @@ export function WarehouseReorderSettings() {
             const draft = drafts[m.id] ?? { reorderThreshold: "", reorderQuantity: "", preferredSupplierId: "" };
             return (
               <Fragment key={m.id}>
-              <tr className="border-b border-gray-100">
+              <tr className="border-b border-gray-100 dark:border-gray-700">
                 <td className="py-2">
                   <button type="button" onClick={() => toggleExpand(m.id, m.barcode)} className="text-left hover:underline">
                     {m.name} ({m.code})
@@ -189,14 +189,14 @@ export function WarehouseReorderSettings() {
                   <button onClick={() => save(m.id)} disabled={savingId === m.id} className="btn-secondary px-3 py-1 text-xs">
                     {tc("save")}
                   </button>
-                  {savedId === m.id && <span className="ml-2 text-xs text-success-700">{tc("saved")}</span>}
+                  {savedId === m.id && <span className="ml-2 text-xs text-success-700 dark:text-success-500">{tc("saved")}</span>}
                 </td>
               </tr>
               {expandedId === m.id && (
-                <tr className="border-b border-gray-100 bg-gray-50">
+                <tr className="border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
                   <td colSpan={5} className="py-3">
                     <div className="mb-4 flex items-end gap-2">
-                      <label className="flex flex-col gap-1 text-xs text-gray-500">
+                      <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
                         {t("barcode")}
                         <input className="input w-40" value={barcodeDraft} onChange={(e) => setBarcodeDraft(e.target.value)} />
                       </label>
@@ -206,21 +206,21 @@ export function WarehouseReorderSettings() {
                     </div>
                     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                       <div>
-                        <div className="mb-2 text-xs font-semibold text-gray-500">{t("priceHistory")}</div>
+                        <div className="mb-2 text-xs font-semibold text-gray-500 dark:text-gray-400">{t("priceHistory")}</div>
                         {!priceHistory ? (
-                          <p className="text-xs text-gray-400">{tc("loading")}</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>
                         ) : priceHistory.length <= 1 ? (
-                          <p className="text-xs text-gray-400">{t("noPriceHistory")}</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">{t("noPriceHistory")}</p>
                         ) : (
                           <div className="overflow-x-auto">
                           <table className="w-full text-xs">
                             <tbody>
                               {priceHistory.map((p, i) => (
-                                <tr key={i} className="border-b border-gray-200">
-                                  <td className="py-1 text-gray-500">
+                                <tr key={i} className="border-b border-gray-200 dark:border-gray-700">
+                                  <td className="py-1 text-gray-500 dark:text-gray-400">
                                     {p.source === "catalog" ? t("currentPrice") : formatDate(new Date(p.date))}
                                   </td>
-                                  <td className="text-gray-500">{p.supplierName}</td>
+                                  <td className="text-gray-500 dark:text-gray-400">{p.supplierName}</td>
                                   <td className="text-right font-medium">{p.unitPrice}</td>
                                 </tr>
                               ))}
@@ -230,16 +230,16 @@ export function WarehouseReorderSettings() {
                         )}
                       </div>
                       <div>
-                        <div className="mb-2 text-xs font-semibold text-gray-500">{t("supplierComparison")}</div>
+                        <div className="mb-2 text-xs font-semibold text-gray-500 dark:text-gray-400">{t("supplierComparison")}</div>
                         {!supplierPrices ? (
-                          <p className="text-xs text-gray-400">{tc("loading")}</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>
                         ) : supplierPrices.length === 0 ? (
-                          <p className="text-xs text-gray-400">{t("noSupplierPrices")}</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">{t("noSupplierPrices")}</p>
                         ) : (
                           <div className="overflow-x-auto">
                           <table className="w-full text-xs">
                             <thead>
-                              <tr className="text-left text-gray-400">
+                              <tr className="text-left text-gray-400 dark:text-gray-500">
                                 <th className="py-1 font-normal">{tc("name")}</th>
                                 <th className="font-normal">{t("latestPrice")}</th>
                                 <th className="font-normal">{t("avgPrice")}</th>
@@ -247,14 +247,14 @@ export function WarehouseReorderSettings() {
                             </thead>
                             <tbody>
                               {supplierPrices.map((s, i) => (
-                                <tr key={s.supplierId} className="border-b border-gray-200">
-                                  <td className={`py-1 ${i === 0 ? "font-medium text-success-700" : "text-gray-700"}`}>
+                                <tr key={s.supplierId} className="border-b border-gray-200 dark:border-gray-700">
+                                  <td className={`py-1 ${i === 0 ? "font-medium text-success-700 dark:text-success-500" : "text-gray-700 dark:text-gray-200"}`}>
                                     {s.supplierName}
                                   </td>
-                                  <td className={i === 0 ? "font-medium text-success-700" : "text-gray-700"}>
+                                  <td className={i === 0 ? "font-medium text-success-700 dark:text-success-500" : "text-gray-700 dark:text-gray-200"}>
                                     {s.latestUnitPrice}
                                   </td>
-                                  <td className="text-gray-500">{s.averageUnitPrice}</td>
+                                  <td className="text-gray-500 dark:text-gray-400">{s.averageUnitPrice}</td>
                                 </tr>
                               ))}
                             </tbody>

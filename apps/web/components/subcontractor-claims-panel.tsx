@@ -36,14 +36,14 @@ interface DefaultNotice {
 }
 
 const BACKCHARGE_STATUS_STYLES: Record<SubcontractorBackchargeStatus, string> = {
-  pending: "bg-gray-100 text-gray-600",
-  deducted: "bg-success-50 text-success-700",
-  waived: "bg-warning-50 text-warning-700",
+  pending: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
+  deducted: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
+  waived: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
 };
 const NOTICE_STATUS_STYLES: Record<SubcontractorDefaultNoticeStatus, string> = {
-  issued: "bg-error-50 text-error-700",
-  cured: "bg-success-50 text-success-700",
-  terminated: "bg-gray-100 text-gray-600",
+  issued: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
+  cured: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
+  terminated: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
 };
 
 export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
@@ -137,7 +137,7 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700">{t("backchargesTitle")}</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("backchargesTitle")}</h2>
         {!creatingBackcharge && (
           <button onClick={() => setCreatingBackcharge(true)} className="btn-secondary px-3 py-1 text-xs">
             {t("newBackcharge")}
@@ -148,7 +148,7 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
       {creatingBackcharge && (
         <form onSubmit={submitBackcharge} className="card mb-4 flex flex-col gap-3">
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("subcontractor")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("subcontractor")}</span>
             <select
               className="input"
               value={backchargeForm.subcontractorId}
@@ -162,7 +162,7 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
             </select>
           </label>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("description")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("description")}</span>
             <textarea
               required
               rows={2}
@@ -172,7 +172,7 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
             />
           </label>
           <label className="flex w-40 flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("amount")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("amount")}</span>
             <input
               required
               type="number"
@@ -185,7 +185,7 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
           </label>
           {warrantyClaims.length > 0 && (
             <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("linkedWarrantyClaim")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("linkedWarrantyClaim")}</span>
               <select
                 className="input"
                 value={backchargeForm.warrantyClaimId}
@@ -212,9 +212,9 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
       )}
 
       {backcharges === null ? (
-        <p className="text-sm text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
       ) : backcharges.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noBackcharges")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noBackcharges")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {backcharges.map((b) => (
@@ -222,16 +222,16 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-900">{b.subcontractor.name}</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{b.subcontractor.name}</span>
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${BACKCHARGE_STATUS_STYLES[b.status]}`}>
                       {t(b.status)}
                     </span>
                   </div>
-                  <p className="mt-1 text-xs text-gray-500">{b.description}</p>
-                  {b.warrantyClaim && <p className="mt-1 text-xs text-gray-400">{t("recoveryFor", { title: b.warrantyClaim.title })}</p>}
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{b.description}</p>
+                  {b.warrantyClaim && <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{t("recoveryFor", { title: b.warrantyClaim.title })}</p>}
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-2">
-                  <span className="text-sm font-semibold tabular-nums text-gray-900">{money(b.amount)}</span>
+                  <span className="text-sm font-semibold tabular-nums text-gray-900 dark:text-gray-50">{money(b.amount)}</span>
                   {b.status === "pending" && (
                     <div className="flex gap-1.5">
                       <button onClick={() => resolveBackcharge(b.id, "deduct")} className="btn-secondary px-2.5 py-1 text-xs">
@@ -250,7 +250,7 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
       )}
 
       <div className="mb-3 mt-8 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700">{t("defaultNoticesTitle")}</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("defaultNoticesTitle")}</h2>
         {!creatingNotice && (
           <button onClick={() => setCreatingNotice(true)} className="btn-secondary px-3 py-1 text-xs">
             {t("newDefaultNotice")}
@@ -261,7 +261,7 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
       {creatingNotice && (
         <form onSubmit={submitNotice} className="card mb-4 flex flex-col gap-3">
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("subcontractor")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("subcontractor")}</span>
             <select
               className="input"
               value={noticeForm.subcontractorId}
@@ -275,11 +275,11 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
             </select>
           </label>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("noticeTitleField")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("noticeTitleField")}</span>
             <input required className="input" value={noticeForm.title} onChange={(e) => setNoticeForm((f) => ({ ...f, title: e.target.value }))} />
           </label>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("description")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("description")}</span>
             <textarea
               required
               rows={3}
@@ -289,7 +289,7 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
             />
           </label>
           <label className="flex w-40 flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("curePeriodDays")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("curePeriodDays")}</span>
             <input
               type="number"
               min="1"
@@ -310,9 +310,9 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
       )}
 
       {notices === null ? (
-        <p className="text-sm text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
       ) : notices.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noDefaultNotices")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noDefaultNotices")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {notices.map((n) => (
@@ -320,13 +320,13 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-900">{n.title}</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{n.title}</span>
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${NOTICE_STATUS_STYLES[n.status]}`}>{t(n.status)}</span>
                   </div>
-                  <p className="mt-1 text-xs text-gray-500">{n.subcontractor.name}</p>
-                  <p className="mt-1 text-xs text-gray-500">{n.description}</p>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{n.subcontractor.name}</p>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{n.description}</p>
                   {n.cureDeadline && (
-                    <p className="mt-1.5 text-xs text-gray-500">{t("cureDeadline", { date: formatDate(new Date(n.cureDeadline)) })}</p>
+                    <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">{t("cureDeadline", { date: formatDate(new Date(n.cureDeadline)) })}</p>
                   )}
                 </div>
                 {n.status === "issued" && (

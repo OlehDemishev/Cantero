@@ -24,9 +24,9 @@ interface Allowance {
 }
 
 const STATUS_STYLES: Record<AllowanceStatus, string> = {
-  active: "bg-gray-100 text-gray-600",
-  exceeded: "bg-error-50 text-error-700",
-  closed: "bg-success-50 text-success-700",
+  active: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
+  exceeded: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
+  closed: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
 };
 
 export function AllowancesPanel({ projectId }: { projectId: string }) {
@@ -98,7 +98,7 @@ export function AllowancesPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
         {!creating && (
           <button onClick={() => setCreating(true)} className="btn-secondary px-3 py-1 text-xs">
             {t("newAllowance")}
@@ -109,11 +109,11 @@ export function AllowancesPanel({ projectId }: { projectId: string }) {
       {creating && (
         <form onSubmit={submit} className="card mb-4 flex flex-col gap-3">
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("name")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("name")}</span>
             <input required className="input" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
           </label>
           <label className="flex w-48 flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("budgetedAmount")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("budgetedAmount")}</span>
             <input
               required
               type="number"
@@ -125,7 +125,7 @@ export function AllowancesPanel({ projectId }: { projectId: string }) {
             />
           </label>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("notes")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("notes")}</span>
             <textarea rows={2} className="input" value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
           </label>
           <div className="flex gap-2">
@@ -140,9 +140,9 @@ export function AllowancesPanel({ projectId }: { projectId: string }) {
       )}
 
       {allowances === null ? (
-        <p className="text-sm text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
       ) : allowances.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noAllowances")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noAllowances")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {allowances.map((a) => {
@@ -153,13 +153,13 @@ export function AllowancesPanel({ projectId }: { projectId: string }) {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-900">{a.name}</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{a.name}</span>
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[a.status]}`}>{t(a.status)}</span>
                     </div>
-                    <p className="mt-1 text-xs text-gray-500">
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                       {t("spentOfBudget", { spent: money(spent), budget: money(a.budgetedAmount) })}
                     </p>
-                    {a.notes && <p className="mt-1 text-xs text-gray-500">{a.notes}</p>}
+                    {a.notes && <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{a.notes}</p>}
                   </div>
                   {a.status !== "closed" && (
                     <button onClick={() => close(a.id)} className="btn-secondary shrink-0 px-2.5 py-1 text-xs">
@@ -169,9 +169,9 @@ export function AllowancesPanel({ projectId }: { projectId: string }) {
                 </div>
 
                 {a.charges.length > 0 && (
-                  <ul className="mt-3 flex flex-col gap-1 border-t border-gray-100 pt-3">
+                  <ul className="mt-3 flex flex-col gap-1 border-t border-gray-100 dark:border-gray-700 pt-3">
                     {a.charges.map((c) => (
-                      <li key={c.id} className="flex items-center justify-between text-xs text-gray-600">
+                      <li key={c.id} className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-300">
                         <span>{c.description}</span>
                         <span className="font-medium tabular-nums">{money(c.amount)}</span>
                       </li>
@@ -183,10 +183,10 @@ export function AllowancesPanel({ projectId }: { projectId: string }) {
                   (chargingId === a.id ? (
                     <form
                       onSubmit={(e) => submitCharge(e, a.id)}
-                      className="mt-3 flex items-end gap-2 border-t border-gray-100 pt-3"
+                      className="mt-3 flex items-end gap-2 border-t border-gray-100 dark:border-gray-700 pt-3"
                     >
                       <label className="flex flex-1 flex-col gap-1 text-xs">
-                        <span className="font-medium text-gray-700">{t("chargeDescription")}</span>
+                        <span className="font-medium text-gray-700 dark:text-gray-200">{t("chargeDescription")}</span>
                         <input
                           required
                           className="input py-1 text-xs"
@@ -195,7 +195,7 @@ export function AllowancesPanel({ projectId }: { projectId: string }) {
                         />
                       </label>
                       <label className="flex w-28 flex-col gap-1 text-xs">
-                        <span className="font-medium text-gray-700">{t("chargeAmount")}</span>
+                        <span className="font-medium text-gray-700 dark:text-gray-200">{t("chargeAmount")}</span>
                         <input
                           required
                           type="number"
@@ -214,7 +214,7 @@ export function AllowancesPanel({ projectId }: { projectId: string }) {
                       </button>
                     </form>
                   ) : (
-                    <div className="mt-3 border-t border-gray-100 pt-3">
+                    <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-3">
                       <button onClick={() => setChargingId(a.id)} className="btn-secondary px-2.5 py-1 text-xs">
                         {t("addCharge")}
                       </button>

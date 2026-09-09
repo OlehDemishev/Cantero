@@ -46,14 +46,14 @@ export function GeofenceViolationsPanel() {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("title")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
       <div className="card">
         <div className="mb-3 flex flex-wrap items-end gap-2">
-          <label className="flex flex-col gap-1 text-xs text-gray-500">
+          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
             {t("from")}
             <input type="date" className="input py-1 text-xs" value={from} onChange={(e) => setFrom(e.target.value)} />
           </label>
-          <label className="flex flex-col gap-1 text-xs text-gray-500">
+          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
             {t("to")}
             <input type="date" className="input py-1 text-xs" value={to} onChange={(e) => setTo(e.target.value)} />
           </label>
@@ -66,12 +66,12 @@ export function GeofenceViolationsPanel() {
         </div>
 
         {violations.length === 0 ? (
-          <p className="text-sm text-gray-400">{t("empty")}</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500">{t("empty")}</p>
         ) : (
           <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 text-left text-gray-500">
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
                 <th className="py-1.5">{t("date")}</th>
                 <th>{t("worker")}</th>
                 <th>{t("project")}</th>
@@ -81,12 +81,12 @@ export function GeofenceViolationsPanel() {
             </thead>
             <tbody>
               {violations.map((v) => (
-                <tr key={v.id} className="border-b border-gray-100">
-                  <td className="py-1.5 text-xs text-gray-500">{v.date.slice(0, 10)}</td>
+                <tr key={v.id} className="border-b border-gray-100 dark:border-gray-700">
+                  <td className="py-1.5 text-xs text-gray-500 dark:text-gray-400">{v.date.slice(0, 10)}</td>
                   <td>{v.workerName}</td>
-                  <td className="text-xs text-gray-500">{v.projectName}</td>
+                  <td className="text-xs text-gray-500 dark:text-gray-400">{v.projectName}</td>
                   <td>{v.hours}</td>
-                  <td className="text-xs text-gray-500">{v.distanceFromSiteMeters !== null ? `${v.distanceFromSiteMeters} m` : "—"}</td>
+                  <td className="text-xs text-gray-500 dark:text-gray-400">{v.distanceFromSiteMeters !== null ? `${v.distanceFromSiteMeters} m` : "—"}</td>
                 </tr>
               ))}
             </tbody>

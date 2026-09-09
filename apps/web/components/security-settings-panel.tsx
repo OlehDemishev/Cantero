@@ -75,11 +75,11 @@ export function SecuritySettingsPanel({ canManage }: { canManage: boolean }) {
 
   return (
     <section className="card">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("title")}</h2>
-      <p className="mb-4 text-xs text-gray-500">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
 
       <form onSubmit={save} className="flex flex-col gap-4">
-        <label className="flex flex-col gap-1 text-xs text-gray-500">
+        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           <span className="flex items-center gap-1.5">
             {t("sessionTimeout")}
             <HelpTooltip text={t("sessionTimeoutTooltip")} />
@@ -95,10 +95,10 @@ export function SecuritySettingsPanel({ canManage }: { canManage: boolean }) {
           />
         </label>
 
-        <div className="border-t border-gray-100 pt-4">
-          <p className="mb-2 text-xs font-medium text-gray-700">{t("passwordPolicy")}</p>
+        <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
+          <p className="mb-2 text-xs font-medium text-gray-700 dark:text-gray-200">{t("passwordPolicy")}</p>
           <div className="flex flex-wrap items-end gap-3">
-            <label className="flex flex-col gap-1 text-xs text-gray-500">
+            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
               {t("passwordMinLength")}
               <input
                 type="number"
@@ -109,7 +109,7 @@ export function SecuritySettingsPanel({ canManage }: { canManage: boolean }) {
                 onChange={(e) => setForm((f) => ({ ...f, passwordMinLength: e.target.value }))}
               />
             </label>
-            <label className="flex items-center gap-2 pb-2 text-xs text-gray-700">
+            <label className="flex items-center gap-2 pb-2 text-xs text-gray-700 dark:text-gray-200">
               <input
                 type="checkbox"
                 checked={form.passwordRequireSymbol}
@@ -120,14 +120,14 @@ export function SecuritySettingsPanel({ canManage }: { canManage: boolean }) {
           </div>
         </div>
 
-        <div className="border-t border-gray-100 pt-4">
-          <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-gray-700">
+        <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
+          <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-gray-700 dark:text-gray-200">
             {t("hideCostData")}
             <HelpTooltip text={t("hideCostDataTooltip")} />
           </p>
           <div className="flex flex-wrap gap-3">
             {COST_HIDABLE_ROLES.map((role) => (
-              <label key={role} className="flex items-center gap-1.5 text-xs text-gray-700">
+              <label key={role} className="flex items-center gap-1.5 text-xs text-gray-700 dark:text-gray-200">
                 <input
                   type="checkbox"
                   checked={form.hideCostDataFromRoles.includes(role)}
@@ -143,7 +143,7 @@ export function SecuritySettingsPanel({ canManage }: { canManage: boolean }) {
           <button type="submit" disabled={busy} className="btn-secondary self-start">
             {tc("save")}
           </button>
-          {saved && <span className="text-xs text-success-700">{tc("saved")}</span>}
+          {saved && <span className="text-xs text-success-700 dark:text-success-500">{tc("saved")}</span>}
         </div>
       </form>
     </section>

@@ -39,11 +39,11 @@ interface TMTicket {
 }
 
 const TICKET_STATUS_STYLES: Record<TMTicketStatus, string> = {
-  draft: "bg-gray-100 text-gray-600",
-  submitted: "bg-gray-100 text-gray-600",
-  approved: "bg-success-50 text-success-700",
-  rejected: "bg-error-50 text-error-700",
-  disputed: "bg-warning-50 text-warning-700",
+  draft: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
+  submitted: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
+  approved: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
+  rejected: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
+  disputed: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
 };
 
 export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
@@ -181,7 +181,7 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700">{t("unitPriceTitle")}</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("unitPriceTitle")}</h2>
         {!creatingItem && (
           <button onClick={() => setCreatingItem(true)} className="btn-secondary px-3 py-1 text-xs">
             {t("newUnitPriceItem")}
@@ -192,7 +192,7 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
       {creatingItem && (
         <form onSubmit={submitItem} className="card mb-4 flex flex-col gap-3">
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("description")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("description")}</span>
             <input
               required
               className="input"
@@ -202,11 +202,11 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
           </label>
           <div className="flex gap-3">
             <label className="flex w-28 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("unit")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("unit")}</span>
               <input required className="input" value={itemForm.unit} onChange={(e) => setItemForm((f) => ({ ...f, unit: e.target.value }))} />
             </label>
             <label className="flex w-40 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("contractUnitPrice")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("contractUnitPrice")}</span>
               <input
                 required
                 type="number"
@@ -218,7 +218,7 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
               />
             </label>
             <label className="flex w-40 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("estimatedQuantity")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("estimatedQuantity")}</span>
               <input
                 type="number"
                 min="0"
@@ -241,9 +241,9 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
       )}
 
       {items === null ? (
-        <p className="text-sm text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
       ) : items.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noUnitPriceItems")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noUnitPriceItems")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {items.map((item) => {
@@ -255,21 +255,21 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
               <li key={item.id} className="card">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <span className="text-sm font-medium text-gray-900">{item.description}</span>
-                    <p className="mt-1 text-xs text-gray-500">
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{item.description}</span>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                       {t("installedAtPrice", { installed, unit: item.unit, price: money(item.contractUnitPrice) })}
                     </p>
                     {variance !== null && (
-                      <p className="mt-1 text-xs text-gray-500">{t("varianceFromEstimate", { variance, unit: item.unit })}</p>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t("varianceFromEstimate", { variance, unit: item.unit })}</p>
                     )}
                   </div>
-                  <span className="shrink-0 text-sm font-semibold tabular-nums text-gray-900">{money(billed)}</span>
+                  <span className="shrink-0 text-sm font-semibold tabular-nums text-gray-900 dark:text-gray-50">{money(billed)}</span>
                 </div>
 
                 {item.measurements.length > 0 && (
-                  <ul className="mt-3 flex flex-col gap-1 border-t border-gray-100 pt-3">
+                  <ul className="mt-3 flex flex-col gap-1 border-t border-gray-100 dark:border-gray-700 pt-3">
                     {item.measurements.map((m) => (
-                      <li key={m.id} className="flex items-center justify-between text-xs text-gray-600">
+                      <li key={m.id} className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-300">
                         <span>
                           {m.measuredQuantity} {item.unit} — {m.measuredByName}
                         </span>
@@ -280,9 +280,9 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
                 )}
 
                 {measuringId === item.id ? (
-                  <form onSubmit={(e) => submitMeasurement(e, item.id)} className="mt-3 flex items-end gap-2 border-t border-gray-100 pt-3">
+                  <form onSubmit={(e) => submitMeasurement(e, item.id)} className="mt-3 flex items-end gap-2 border-t border-gray-100 dark:border-gray-700 pt-3">
                     <label className="flex w-32 flex-col gap-1 text-xs">
-                      <span className="font-medium text-gray-700">{t("measuredQuantity")}</span>
+                      <span className="font-medium text-gray-700 dark:text-gray-200">{t("measuredQuantity")}</span>
                       <input
                         required
                         type="number"
@@ -294,7 +294,7 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
                       />
                     </label>
                     <label className="flex flex-1 flex-col gap-1 text-xs">
-                      <span className="font-medium text-gray-700">{t("measuredByName")}</span>
+                      <span className="font-medium text-gray-700 dark:text-gray-200">{t("measuredByName")}</span>
                       <input
                         required
                         className="input py-1 text-xs"
@@ -310,7 +310,7 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
                     </button>
                   </form>
                 ) : (
-                  <div className="mt-3 border-t border-gray-100 pt-3">
+                  <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-3">
                     <button onClick={() => setMeasuringId(item.id)} className="btn-secondary px-2.5 py-1 text-xs">
                       {t("addMeasurement")}
                     </button>
@@ -323,7 +323,7 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
       )}
 
       <div className="mb-3 mt-8 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700">{t("tmTicketsTitle")}</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("tmTicketsTitle")}</h2>
         {!creatingTicket && (
           <button onClick={() => setCreatingTicket(true)} className="btn-secondary px-3 py-1 text-xs">
             {t("newTMTicket")}
@@ -334,7 +334,7 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
       {creatingTicket && (
         <form onSubmit={submitTicket} className="card mb-4 flex flex-col gap-3">
           <label className="flex w-40 flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("workDate")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("workDate")}</span>
             <input
               required
               type="date"
@@ -344,7 +344,7 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
             />
           </label>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("description")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("description")}</span>
             <textarea
               required
               rows={2}
@@ -355,7 +355,7 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
           </label>
           <div className="flex gap-3">
             <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("laborCost")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("laborCost")}</span>
               <input
                 type="number"
                 min="0"
@@ -366,7 +366,7 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
               />
             </label>
             <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("equipmentCost")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("equipmentCost")}</span>
               <input
                 type="number"
                 min="0"
@@ -377,7 +377,7 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
               />
             </label>
             <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("materialCost")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("materialCost")}</span>
               <input
                 type="number"
                 min="0"
@@ -400,9 +400,9 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
       )}
 
       {tickets === null ? (
-        <p className="text-sm text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
       ) : tickets.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noTMTickets")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noTMTickets")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {tickets.map((ticket) => {
@@ -412,32 +412,32 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-900">{t("ticketNumber", { number: ticket.ticketNumber })}</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{t("ticketNumber", { number: ticket.ticketNumber })}</span>
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${TICKET_STATUS_STYLES[ticket.status]}`}>
                         {t(ticket.status)}
                       </span>
                     </div>
-                    <p className="mt-1 text-xs text-gray-500">{formatDate(new Date(ticket.workDate))}</p>
-                    <p className="mt-1 text-xs text-gray-500">{ticket.description}</p>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{formatDate(new Date(ticket.workDate))}</p>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{ticket.description}</p>
                     {ticket.ownerSignerName && ticket.signedAt && (
-                      <p className="mt-1.5 text-xs text-gray-500">
+                      <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
                         {t("signedBy", { name: ticket.ownerSignerName, date: formatDate(new Date(ticket.signedAt)) })}
                       </p>
                     )}
                     {ticket.status === "disputed" && ticket.disputeReason && (
-                      <p className="mt-1.5 text-xs text-warning-700">{t("disputeReasonLabel", { reason: ticket.disputeReason })}</p>
+                      <p className="mt-1.5 text-xs text-warning-700 dark:text-warning-500">{t("disputeReasonLabel", { reason: ticket.disputeReason })}</p>
                     )}
-                    {ticket.revisionCount > 0 && <p className="mt-1 text-xs text-gray-400">{t("revisionCount", { count: ticket.revisionCount })}</p>}
+                    {ticket.revisionCount > 0 && <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{t("revisionCount", { count: ticket.revisionCount })}</p>}
                   </div>
-                  <span className="shrink-0 text-sm font-semibold tabular-nums text-gray-900">{money(total)}</span>
+                  <span className="shrink-0 text-sm font-semibold tabular-nums text-gray-900 dark:text-gray-50">{money(total)}</span>
                 </div>
 
                 {ticket.status === "draft" &&
                   (decidingId === ticket.id ? (
-                    <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 pt-3">
+                    <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 dark:border-gray-700 pt-3">
                       <div className="flex items-end gap-2">
                         <label className="flex flex-1 flex-col gap-1 text-xs">
-                          <span className="font-medium text-gray-700">{t("ownerSignerName")}</span>
+                          <span className="font-medium text-gray-700 dark:text-gray-200">{t("ownerSignerName")}</span>
                           <input
                             required
                             className="input py-1 text-xs"
@@ -479,7 +479,7 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
                       {disputingId === ticket.id && (
                         <div className="flex items-end gap-2">
                           <label className="flex flex-1 flex-col gap-1 text-xs">
-                            <span className="font-medium text-gray-700">{t("disputeReasonPlaceholder")}</span>
+                            <span className="font-medium text-gray-700 dark:text-gray-200">{t("disputeReasonPlaceholder")}</span>
                             <input
                               required
                               className="input py-1 text-xs"
@@ -498,7 +498,7 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
                       )}
                     </div>
                   ) : (
-                    <div className="mt-3 border-t border-gray-100 pt-3">
+                    <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-3">
                       <button onClick={() => setDecidingId(ticket.id)} className="btn-secondary px-2.5 py-1 text-xs">
                         {t("decide")}
                       </button>
@@ -507,10 +507,10 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
 
                 {ticket.status === "disputed" &&
                   (revisingId === ticket.id ? (
-                    <div className="mt-3 flex items-end gap-2 border-t border-gray-100 pt-3">
+                    <div className="mt-3 flex items-end gap-2 border-t border-gray-100 dark:border-gray-700 pt-3">
                       {(["laborCost", "equipmentCost", "materialCost"] as const).map((field) => (
                         <label key={field} className="flex flex-1 flex-col gap-1 text-xs">
-                          <span className="font-medium text-gray-700">{t(field)}</span>
+                          <span className="font-medium text-gray-700 dark:text-gray-200">{t(field)}</span>
                           <input
                             type="number"
                             min="0"
@@ -532,7 +532,7 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
                       </button>
                     </div>
                   ) : (
-                    <div className="mt-3 border-t border-gray-100 pt-3">
+                    <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-3">
                       <button onClick={() => setRevisingId(ticket.id)} className="btn-secondary px-2.5 py-1 text-xs">
                         {t("reviseAndResubmit")}
                       </button>

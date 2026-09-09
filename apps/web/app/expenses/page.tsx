@@ -28,9 +28,9 @@ interface Project {
 }
 
 const STATUS_STYLES: Record<ExpenseStatus, string> = {
-  pending: "bg-warning-50 text-warning-700",
-  approved: "bg-success-50 text-success-700",
-  rejected: "bg-error-50 text-error-700",
+  pending: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
+  approved: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
+  rejected: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
 };
 
 export default function ExpensesPage() {
@@ -93,10 +93,10 @@ export default function ExpensesPage() {
   return (
     <AuthenticatedShell>
       <h1 className="text-2xl font-semibold">{t("title")}</h1>
-      <p className="mt-1 text-sm text-gray-500">{t("subtitle")}</p>
+      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("subtitle")}</p>
 
       {totalPending > 0 && (
-        <p className="mt-3 text-sm text-warning-700">{t("pendingTotal", { amount: totalPending.toFixed(2), currency })}</p>
+        <p className="mt-3 text-sm text-warning-700 dark:text-warning-500">{t("pendingTotal", { amount: totalPending.toFixed(2), currency })}</p>
       )}
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -128,9 +128,9 @@ export default function ExpensesPage() {
 
       <div className="mt-4">
         {expenses === null ? (
-          <p className="text-sm text-gray-400">{tc("loading")}</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
         ) : expenses.length === 0 ? (
-          <p className="text-sm text-gray-400">{t("empty")}</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500">{t("empty")}</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {expenses.map((e) => (
@@ -138,42 +138,42 @@ export default function ExpensesPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-900">
+                      <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
                         {e.amount} {currency}
                       </span>
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[e.status]}`}>{t(e.status)}</span>
-                      <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                      <span className="rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs text-gray-600 dark:text-gray-300">
                         {EXPENSE_CATEGORIES.includes(e.category as never) ? t(e.category) : e.category}
                       </span>
                       {e.anomaly.isAnomaly && (
                         <span
-                          className="rounded-full bg-error-50 px-2 py-0.5 text-xs font-medium text-error-700"
+                          className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-error-700 dark:text-error-500"
                           title={t("anomalyHint", { average: e.anomaly.historicalAverage ?? 0, currency })}
                         >
                           {t("anomaly", { percent: e.anomaly.deviationPercent ?? 0 })}
                         </span>
                       )}
                     </div>
-                    <div className="mt-1 text-xs text-gray-500">
-                      <Link href={`/team/${e.worker.id}`} className="text-brand-700 hover:underline">
+                    <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      <Link href={`/team/${e.worker.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
                         {e.worker.name}
                       </Link>{" "}
                       ·{" "}
-                      <Link href={`/projects/${e.project.id}`} className="text-brand-700 hover:underline">
+                      <Link href={`/projects/${e.project.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
                         {e.project.name}
                       </Link>{" "}
                       · {formatDate(new Date(e.incurredAt))}
                     </div>
-                    {e.description && <div className="mt-1 text-xs text-gray-600">{e.description}</div>}
+                    {e.description && <div className="mt-1 text-xs text-gray-600 dark:text-gray-300">{e.description}</div>}
                     {e.rejectedReason && (
-                      <div className="mt-1 text-xs text-error-700">
+                      <div className="mt-1 text-xs text-error-700 dark:text-error-500">
                         {t("rejectedReasonLabel")}: {e.rejectedReason}
                       </div>
                     )}
                   </div>
                   <div className="flex flex-none flex-col items-end gap-1.5">
                     {e.receiptStorageKey && (
-                      <button onClick={() => viewReceipt(e.id)} className="text-xs text-brand-700 hover:underline">
+                      <button onClick={() => viewReceipt(e.id)} className="text-xs text-brand-700 dark:text-brand-400 hover:underline">
                         {t("viewReceipt")}
                       </button>
                     )}
@@ -194,7 +194,7 @@ export default function ExpensesPage() {
                   </div>
                 </div>
                 {rejectingId === e.id && (
-                  <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-2">
+                  <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-gray-100 dark:border-gray-700 pt-2">
                     <input
                       className="input flex-1"
                       placeholder={t("rejectReasonPlaceholder")}

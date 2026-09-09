@@ -76,14 +76,14 @@ export function ScheduleBaselinePanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
         {!adding && (
           <button onClick={() => setAdding(true)} className="btn-secondary px-2.5 py-1 text-xs">
             {t("newBaseline")}
           </button>
         )}
       </div>
-      <p className="mb-3 text-xs text-gray-500">{t("hint")}</p>
+      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
 
       {adding && (
         <form onSubmit={create} className="card mb-3 flex flex-wrap items-end gap-2">
@@ -98,9 +98,9 @@ export function ScheduleBaselinePanel({ projectId }: { projectId: string }) {
       )}
 
       {!baselines ? (
-        <p className="text-sm text-gray-500">{tc("loading")}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
       ) : baselines.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noBaselines")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noBaselines")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {baselines.map((b) => {
@@ -109,17 +109,17 @@ export function ScheduleBaselinePanel({ projectId }: { projectId: string }) {
             return (
               <li key={b.id} className="card">
                 <button onClick={() => toggleExpand(b.id)} className="flex w-full items-center justify-between text-left">
-                  <span className="text-sm font-medium text-gray-900">{b.name}</span>
-                  <span className="text-xs text-gray-400">{t("createdBy", { name: b.createdByName, date: fmt(b.createdAt) })}</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{b.name}</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">{t("createdBy", { name: b.createdByName, date: fmt(b.createdAt) })}</span>
                 </button>
 
-                {expanded && !result && <p className="mt-3 text-xs text-gray-400">{tc("loading")}</p>}
+                {expanded && !result && <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>}
 
                 {expanded && result && (
-                  <div className="mt-3 overflow-x-auto border-t border-gray-100 pt-3">
+                  <div className="mt-3 overflow-x-auto border-t border-gray-100 dark:border-gray-700 pt-3">
                     <table className="w-full min-w-[560px] border-collapse text-sm">
                       <thead>
-                        <tr className="border-b border-gray-200 text-left text-xs text-gray-500">
+                        <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-xs text-gray-500 dark:text-gray-400">
                           <th className="py-1">{tc("name")}</th>
                           <th>{t("baselineDates")}</th>
                           <th>{t("currentDates")}</th>
@@ -128,26 +128,26 @@ export function ScheduleBaselinePanel({ projectId }: { projectId: string }) {
                       </thead>
                       <tbody>
                         {result.tasks.map((task) => (
-                          <tr key={task.taskId} className="border-b border-gray-100">
+                          <tr key={task.taskId} className="border-b border-gray-100 dark:border-gray-700">
                             <td className="py-1.5">
                               {task.name}
-                              {task.status === "removed" && <span className="ml-1.5 text-xs text-gray-400">({t("taskRemoved")})</span>}
+                              {task.status === "removed" && <span className="ml-1.5 text-xs text-gray-400 dark:text-gray-500">({t("taskRemoved")})</span>}
                             </td>
-                            <td className="text-xs text-gray-500">
+                            <td className="text-xs text-gray-500 dark:text-gray-400">
                               {fmt(task.baselineStartDate)} – {fmt(task.baselineDueDate)}
                             </td>
-                            <td className="text-xs text-gray-500">
+                            <td className="text-xs text-gray-500 dark:text-gray-400">
                               {fmt(task.currentStartDate)} – {fmt(task.currentDueDate)}
                             </td>
                             <td
                               className={`text-right text-xs font-medium tabular-nums ${
                                 task.slippageDays === null
-                                  ? "text-gray-400"
+                                  ? "text-gray-400 dark:text-gray-500"
                                   : task.slippageDays > 0
                                     ? "text-error-600"
                                     : task.slippageDays < 0
-                                      ? "text-success-700"
-                                      : "text-gray-500"
+                                      ? "text-success-700 dark:text-success-500"
+                                      : "text-gray-500 dark:text-gray-400"
                               }`}
                             >
                               {task.slippageDays === null

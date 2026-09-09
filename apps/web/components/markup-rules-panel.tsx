@@ -47,13 +47,13 @@ export function MarkupRulesPanel() {
 
   return (
     <section className="card">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("title")}</h2>
-      <p className="mb-4 text-xs text-gray-500">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
 
       {!rules ? (
-        <p className="text-gray-500">{tc("loading")}</p>
+        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
       ) : rules.length === 0 ? (
-        <p className="mb-4 text-sm text-gray-400">{t("noRules")}</p>
+        <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">{t("noRules")}</p>
       ) : (
         <ul className="mb-4 flex flex-col gap-1.5">
           {rules.map((r) => (
@@ -61,7 +61,7 @@ export function MarkupRulesPanel() {
               <span className="text-gray-700 dark:text-gray-300">
                 {t(`costType_${r.costType}`)} — {Number(r.markupPercent).toFixed(2)}%
               </span>
-              <button onClick={() => remove(r.id)} className="text-gray-400 hover:text-error-600">
+              <button onClick={() => remove(r.id)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
                 ×
               </button>
             </li>

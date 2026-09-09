@@ -26,16 +26,16 @@ export function TriagePanel() {
 
   return (
     <div className="mt-8">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("triageTitle")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("triageTitle")}</h2>
       <ul className="flex flex-col gap-2">
         {items.slice(0, 8).map((item) => (
           <li key={`${item.kind}-${item.id}`}>
             <a href={item.link} className="card flex items-center justify-between hover:border-gray-400">
               <div>
                 <span className="font-medium">{item.title}</span>
-                <span className="ml-2 text-sm text-gray-500">{item.projectName}</span>
+                <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">{item.projectName}</span>
               </div>
-              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{item.score}</span>
+              <span className="rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs text-gray-600 dark:text-gray-300">{item.score}</span>
             </a>
           </li>
         ))}

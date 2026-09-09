@@ -25,10 +25,10 @@ interface DrawRequest {
 }
 
 const STATUS_STYLES: Record<DrawRequestStatus, string> = {
-  draft: "bg-gray-100 text-gray-600",
-  submitted: "bg-brand-50 text-brand-700",
-  under_review: "bg-warning-50 text-warning-700",
-  approved: "bg-success-50 text-success-700",
+  draft: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
+  submitted: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
+  under_review: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
+  approved: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
   funded: "bg-success-600 text-white",
 };
 
@@ -100,19 +100,19 @@ export function DrawRequestsPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-8">
       <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
         {!creating && eligibleInvoices.length > 0 && (
           <button onClick={() => setCreating(true)} className="btn-secondary px-3 py-1 text-xs">
             {t("newDraw")}
           </button>
         )}
       </div>
-      <p className="mb-3 text-xs text-gray-500">{t("hint")}</p>
+      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
 
       {creating && (
         <form onSubmit={submitCreate} className="card mb-4 flex flex-col gap-3">
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("invoice")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("invoice")}</span>
             <select
               required
               className="input"
@@ -129,7 +129,7 @@ export function DrawRequestsPanel({ projectId }: { projectId: string }) {
           </label>
           <div className="flex flex-wrap gap-3">
             <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("periodStart")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("periodStart")}</span>
               <input
                 type="date"
                 required
@@ -139,7 +139,7 @@ export function DrawRequestsPanel({ projectId }: { projectId: string }) {
               />
             </label>
             <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("periodEnd")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("periodEnd")}</span>
               <input
                 type="date"
                 required
@@ -149,7 +149,7 @@ export function DrawRequestsPanel({ projectId }: { projectId: string }) {
               />
             </label>
             <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("lenderName")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("lenderName")}</span>
               <input
                 className="input"
                 value={form.lenderName}
@@ -157,7 +157,7 @@ export function DrawRequestsPanel({ projectId }: { projectId: string }) {
               />
             </label>
             <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("lenderContactEmail")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("lenderContactEmail")}</span>
               <input
                 type="email"
                 className="input"
@@ -167,7 +167,7 @@ export function DrawRequestsPanel({ projectId }: { projectId: string }) {
             </label>
           </div>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("notes")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("notes")}</span>
             <textarea
               rows={2}
               className="input"
@@ -187,7 +187,7 @@ export function DrawRequestsPanel({ projectId }: { projectId: string }) {
       )}
 
       {draws.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noDraws")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noDraws")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {draws.map((draw) => (
@@ -199,11 +199,11 @@ export function DrawRequestsPanel({ projectId }: { projectId: string }) {
                     {t(`status_${draw.status}`)}
                   </span>
                 </div>
-                <span className="text-sm font-medium tabular-nums text-gray-700">
+                <span className="text-sm font-medium tabular-nums text-gray-700 dark:text-gray-200">
                   {draw.invoice.total} {currency}
                 </span>
               </div>
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 {formatDate(new Date(draw.periodStart))} – {formatDate(new Date(draw.periodEnd))}
                 {draw.lenderName ? ` · ${draw.lenderName}` : ""}
               </p>

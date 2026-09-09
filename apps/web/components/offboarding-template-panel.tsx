@@ -56,8 +56,8 @@ export function OffboardingTemplatePanel() {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("offboardingTemplate")}</h2>
-      <p className="mb-4 text-sm text-gray-500">{t("offboardingTemplateHint")}</p>
+      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("offboardingTemplate")}</h2>
+      <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">{t("offboardingTemplateHint")}</p>
 
       <form onSubmit={handleSubmit} className="flex max-w-md gap-2">
         <input
@@ -71,18 +71,18 @@ export function OffboardingTemplatePanel() {
           {t("addOffboardingTask")}
         </button>
       </form>
-      {error && <p className="mt-1.5 text-xs text-error-700">{error}</p>}
+      {error && <p className="mt-1.5 text-xs text-error-700 dark:text-error-500">{error}</p>}
 
       <ul className="mt-4 flex max-w-md flex-col gap-1.5">
         {items === null ? (
-          <p className="text-sm text-gray-400">{tc("loading")}</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
         ) : items.length === 0 ? (
-          <p className="text-sm text-gray-400">—</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500">—</p>
         ) : (
           items.map((item) => (
             <li key={item.id} className="card flex items-center justify-between text-sm">
               <span>{item.title}</span>
-              <button onClick={() => remove(item.id)} disabled={busy} className="text-xs text-error-700 hover:underline">
+              <button onClick={() => remove(item.id)} disabled={busy} className="text-xs text-error-700 dark:text-error-500 hover:underline">
                 {tc("delete")}
               </button>
             </li>

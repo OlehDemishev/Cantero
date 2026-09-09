@@ -82,9 +82,9 @@ export default function DashboardPage() {
 function StatCard({ label, value, sub, warn }: { label: string; value: string | number; sub?: string; warn?: boolean }) {
   return (
     <div className="card">
-      <div className="text-xs font-medium uppercase tracking-wide text-gray-500">{label}</div>
-      <div className={`mt-1 text-xl font-semibold ${warn ? "text-amber-600" : "text-gray-900"}`}>{value}</div>
-      {sub && <div className="mt-0.5 text-xs text-gray-400">{sub}</div>}
+      <div className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">{label}</div>
+      <div className={`mt-1 text-xl font-semibold ${warn ? "text-amber-600" : "text-gray-900 dark:text-gray-50"}`}>{value}</div>
+      {sub && <div className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{sub}</div>}
     </div>
   );
 }
@@ -92,8 +92,8 @@ function StatCard({ label, value, sub, warn }: { label: string; value: string | 
 function SummaryCard({ href, label }: { href: string; label: string }) {
   return (
     <a href={href} className="card block hover:border-gray-400">
-      <div className="text-sm font-medium text-gray-500">{label}</div>
-      <div className="mt-2 text-gray-900">→</div>
+      <div className="text-sm font-medium text-gray-500 dark:text-gray-400">{label}</div>
+      <div className="mt-2 text-gray-900 dark:text-gray-50">→</div>
     </a>
   );
 }

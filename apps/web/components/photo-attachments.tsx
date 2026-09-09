@@ -113,13 +113,13 @@ export function PhotoAttachments({
             key={d.id}
             type="button"
             onClick={() => setViewingId(d.id)}
-            className="block h-16 w-16 overflow-hidden rounded-md border border-gray-200 bg-gray-50"
+            className="block h-16 w-16 overflow-hidden rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700"
           >
             {previews[d.id] ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={previews[d.id]} alt={d.name} className="h-full w-full object-cover" />
             ) : (
-              <span className="flex h-full w-full items-center justify-center text-[10px] text-gray-400">…</span>
+              <span className="flex h-full w-full items-center justify-center text-[10px] text-gray-400 dark:text-gray-500">…</span>
             )}
           </button>
         ))}
@@ -134,7 +134,7 @@ export function PhotoAttachments({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
-        <span className="text-xs font-medium text-gray-700">{t("title")}</span>
+        <span className="text-xs font-medium text-gray-700 dark:text-gray-200">{t("title")}</span>
         {beforeAfter ? (
           <>
             <button type="button" onClick={() => triggerUpload("gallery_before")} disabled={busy} className="btn-secondary px-2 py-0.5 text-xs">
@@ -152,20 +152,20 @@ export function PhotoAttachments({
         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
       </div>
       {docs === null ? null : docs.length === 0 ? (
-        <p className="text-xs text-gray-400">{t("noPhotos")}</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500">{t("noPhotos")}</p>
       ) : beforeAfter ? (
         <div className="flex flex-wrap gap-4">
           <div className="flex flex-col gap-1.5">
-            <span className="text-[11px] font-medium uppercase tracking-wide text-gray-400">{t("before")}</span>
-            {beforeDocs.length === 0 ? <p className="text-xs text-gray-400">{t("noPhotos")}</p> : renderGrid(beforeDocs)}
+            <span className="text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{t("before")}</span>
+            {beforeDocs.length === 0 ? <p className="text-xs text-gray-400 dark:text-gray-500">{t("noPhotos")}</p> : renderGrid(beforeDocs)}
           </div>
           <div className="flex flex-col gap-1.5">
-            <span className="text-[11px] font-medium uppercase tracking-wide text-gray-400">{t("after")}</span>
-            {afterDocs.length === 0 ? <p className="text-xs text-gray-400">{t("noPhotos")}</p> : renderGrid(afterDocs)}
+            <span className="text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{t("after")}</span>
+            {afterDocs.length === 0 ? <p className="text-xs text-gray-400 dark:text-gray-500">{t("noPhotos")}</p> : renderGrid(afterDocs)}
           </div>
           {otherDocs.length > 0 && (
             <div className="flex flex-col gap-1.5">
-              <span className="text-[11px] font-medium uppercase tracking-wide text-gray-400">{t("title")}</span>
+              <span className="text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{t("title")}</span>
               {renderGrid(otherDocs)}
             </div>
           )}
@@ -274,7 +274,7 @@ function PhotoMarkupModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
-      <div className="max-h-full max-w-3xl overflow-auto rounded-lg bg-white p-3" onClick={(e) => e.stopPropagation()}>
+      <div className="max-h-full max-w-3xl overflow-auto rounded-lg bg-white dark:bg-gray-800 p-3" onClick={(e) => e.stopPropagation()}>
         <div className="relative inline-block">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img ref={imgRef} src={imageUrl} alt="" className="max-h-[70vh] max-w-full" onLoad={setupCanvas} />

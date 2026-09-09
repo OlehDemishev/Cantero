@@ -41,7 +41,7 @@ export function ProjectMapPanel() {
   const withCoords = projects.filter((p): p is Project & { geofenceLat: number; geofenceLng: number } => p.geofenceLat !== null && p.geofenceLng !== null);
 
   if (withCoords.length === 0) {
-    return <p className="mt-4 text-sm text-gray-400">{t("noProjectCoordinates")}</p>;
+    return <p className="mt-4 text-sm text-gray-400 dark:text-gray-500">{t("noProjectCoordinates")}</p>;
   }
 
   const center: [number, number] = [withCoords[0].geofenceLat, withCoords[0].geofenceLng];
@@ -53,10 +53,10 @@ export function ProjectMapPanel() {
         {withCoords.map((p) => (
           <Marker key={p.id} position={[p.geofenceLat, p.geofenceLng]} icon={markerIcon}>
             <Popup>
-              <a href={`/projects/${p.id}`} className="font-medium text-brand-700 hover:underline">
+              <a href={`/projects/${p.id}`} className="font-medium text-brand-700 dark:text-brand-400 hover:underline">
                 {p.name}
               </a>
-              {p.address && <div className="mt-0.5 text-xs text-gray-500">{p.address}</div>}
+              {p.address && <div className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{p.address}</div>}
             </Popup>
           </Marker>
         ))}

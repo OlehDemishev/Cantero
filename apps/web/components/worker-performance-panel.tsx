@@ -66,18 +66,18 @@ export function WorkerPerformancePanel({ workerId }: { workerId: string }) {
 
   return (
     <>
-      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700">{tp("goals")}</h2>
+      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">{tp("goals")}</h2>
       {performanceGoals === null ? (
-        <p className="text-sm text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
       ) : performanceGoals.length === 0 ? (
-        <p className="text-sm text-gray-400">{tp("noGoals")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{tp("noGoals")}</p>
       ) : (
         <ul className="mb-3 flex flex-col gap-1.5">
           {performanceGoals.map((goal) => (
             <li key={goal.id} className="card text-sm">
               <div className="flex items-center justify-between">
-                <span className={goal.completedAt ? "text-gray-400 line-through" : "text-gray-900"}>{goal.title}</span>
-                <span className="text-xs text-gray-400">{goal.progressPercent}%</span>
+                <span className={goal.completedAt ? "text-gray-400 dark:text-gray-500 line-through" : "text-gray-900 dark:text-gray-50"}>{goal.title}</span>
+                <span className="text-xs text-gray-400 dark:text-gray-500">{goal.progressPercent}%</span>
               </div>
               <input
                 type="range"
@@ -116,13 +116,13 @@ export function WorkerPerformancePanel({ workerId }: { workerId: string }) {
 
       {performanceReviews !== null && performanceReviews.length > 0 && (
         <>
-          <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700">{tp("reviewHistory")}</h2>
+          <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">{tp("reviewHistory")}</h2>
           <ul className="flex flex-col gap-1.5">
             {performanceReviews.map((r) => (
               <li key={r.id} className="card text-sm">
                 <div className="flex items-center justify-between">
                   <span>{r.cycle.name}</span>
-                  {r.rating && <span className="text-xs font-medium text-gray-500">{tp(`rating_${r.rating}`)}</span>}
+                  {r.rating && <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{tp(`rating_${r.rating}`)}</span>}
                 </div>
               </li>
             ))}

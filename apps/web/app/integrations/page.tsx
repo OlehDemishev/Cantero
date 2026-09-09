@@ -119,7 +119,7 @@ export default function IntegrationsPage() {
   return (
     <AuthenticatedShell>
       <h1 className="text-2xl font-semibold">{t("title")}</h1>
-      <p className="mt-2 text-sm text-gray-500">{t("hint")}</p>
+      <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{t("hint")}</p>
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {cards.map((card) => (
@@ -129,15 +129,15 @@ export default function IntegrationsPage() {
               {card.status !== "loading" && (
                 <span
                   className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
-                    card.status === "connected" ? "bg-success-50 text-success-700" : "bg-gray-100 text-gray-500"
+                    card.status === "connected" ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
                   }`}
                 >
                   {card.status === "connected" ? t("connected") : t("notConnected")}
                 </span>
               )}
             </div>
-            <p className="text-xs text-gray-500">{t(card.descriptionKey)}</p>
-            {card.detail && <p className="text-xs font-medium text-gray-600">{card.detail}</p>}
+            <p className="text-xs text-gray-500 dark:text-gray-400">{t(card.descriptionKey)}</p>
+            {card.detail && <p className="text-xs font-medium text-gray-600 dark:text-gray-300">{card.detail}</p>}
           </a>
         ))}
       </div>

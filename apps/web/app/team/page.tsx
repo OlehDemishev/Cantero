@@ -78,7 +78,7 @@ export default function TeamPage() {
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="card lg:col-span-1">
-          <h2 className="mb-4 text-sm font-semibold text-gray-700">{t("newWorker")}</h2>
+          <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("newWorker")}</h2>
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             <input
               required
@@ -93,7 +93,7 @@ export default function TeamPage() {
               value={form.role}
               onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
             />
-            <label className="text-xs text-gray-500">
+            <label className="text-xs text-gray-500 dark:text-gray-400">
               {t("hourlyCost")} ({me?.company.currency})
               <input
                 type="number"
@@ -111,19 +111,19 @@ export default function TeamPage() {
 
         <div className="lg:col-span-2">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-700">{t("workers")}</h2>
-            <label className="flex items-center gap-2 text-xs text-gray-500">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("workers")}</h2>
+            <label className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
               <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} />
               {t("showInactive")}
             </label>
           </div>
           {!visibleWorkers ? (
-            <p className="text-gray-500">{tc("loading")}</p>
+            <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
           ) : (
             <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 text-left text-gray-500">
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
                   <th className="py-2">{tc("name")}</th>
                   <th>{t("role")}</th>
                   <th>{t("hourlyCost")}</th>
@@ -133,9 +133,9 @@ export default function TeamPage() {
               </thead>
               <tbody>
                 {visibleWorkers.map((w) => (
-                  <tr key={w.id} className="border-b border-gray-100">
+                  <tr key={w.id} className="border-b border-gray-100 dark:border-gray-700">
                     <td className="py-2">
-                      <a href={`/team/${w.id}`} className="font-medium text-brand-700 hover:underline">
+                      <a href={`/team/${w.id}`} className="font-medium text-brand-700 dark:text-brand-400 hover:underline">
                         {w.name}
                       </a>
                     </td>
@@ -148,9 +148,9 @@ export default function TeamPage() {
                     )}
                     <td>
                       {w.active ? (
-                        <span className="text-xs text-success-700">{t("active")}</span>
+                        <span className="text-xs text-success-700 dark:text-success-500">{t("active")}</span>
                       ) : (
-                        <span className="text-xs text-gray-400">{t("inactive")}</span>
+                        <span className="text-xs text-gray-400 dark:text-gray-500">{t("inactive")}</span>
                       )}
                     </td>
                   </tr>
@@ -160,16 +160,16 @@ export default function TeamPage() {
             </div>
           )}
 
-          <h2 className="mb-3 mt-10 text-sm font-semibold text-gray-700">{t("laborCostReport")}</h2>
+          <h2 className="mb-3 mt-10 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("laborCostReport")}</h2>
           {!report ? (
-            <p className="text-gray-500">{tc("loading")}</p>
+            <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
           ) : report.byWorker.length === 0 ? (
-            <p className="text-sm text-gray-400">{t("noLaborCost")}</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noLaborCost")}</p>
           ) : (
             <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 text-left text-gray-500">
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
                   <th className="py-2">{tc("name")}</th>
                   <th>{t("role")}</th>
                   <th className="text-right">{t("hours")}</th>
@@ -178,9 +178,9 @@ export default function TeamPage() {
               </thead>
               <tbody>
                 {report.byWorker.map((r) => (
-                  <tr key={r.workerId} className="border-b border-gray-100">
+                  <tr key={r.workerId} className="border-b border-gray-100 dark:border-gray-700">
                     <td className="py-2">
-                      <a href={`/team/${r.workerId}`} className="text-brand-700 hover:underline">
+                      <a href={`/team/${r.workerId}`} className="text-brand-700 dark:text-brand-400 hover:underline">
                         {r.workerName}
                       </a>
                     </td>
@@ -193,7 +193,7 @@ export default function TeamPage() {
                 ))}
               </tbody>
               <tfoot>
-                <tr className="border-t border-gray-200 font-medium">
+                <tr className="border-t border-gray-200 dark:border-gray-700 font-medium">
                   <td className="py-2" colSpan={2}>
                     {t("total")}
                   </td>

@@ -67,8 +67,8 @@ export function TaxJurisdictionsPanel() {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("jurisdictionsTitle")}</h2>
-      <p className="mb-4 text-sm text-gray-500">{t("jurisdictionsHint")}</p>
+      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("jurisdictionsTitle")}</h2>
+      <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">{t("jurisdictionsHint")}</p>
 
       <form onSubmit={createJurisdiction} className="mb-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
         <input
@@ -98,9 +98,9 @@ export function TaxJurisdictionsPanel() {
       </form>
 
       {jurisdictions === null ? (
-        <p className="text-sm text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
       ) : jurisdictions.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noJurisdictions")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noJurisdictions")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {jurisdictions.map((j) => {
@@ -108,10 +108,10 @@ export function TaxJurisdictionsPanel() {
             return (
               <li key={j.id} className="card">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium text-gray-900">
-                    {j.name} <span className="text-xs text-gray-400">({j.region ? `${j.region}, ` : ""}{j.country})</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-50">
+                    {j.name} <span className="text-xs text-gray-400 dark:text-gray-500">({j.region ? `${j.region}, ` : ""}{j.country})</span>
                   </span>
-                  <span className="text-xs text-gray-500">{currentRate ? `${currentRate.ratePercent}%` : t("noRateSet")}</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">{currentRate ? `${currentRate.ratePercent}%` : t("noRateSet")}</span>
                 </div>
                 <div className="mt-2 flex flex-wrap items-end gap-2">
                   <input

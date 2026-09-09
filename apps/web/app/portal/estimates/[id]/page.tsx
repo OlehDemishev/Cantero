@@ -100,40 +100,40 @@ export default function PortalEstimatePage({ params }: { params: Promise<{ id: s
 
   if (error) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 px-6 py-12">
-        <p className="text-sm text-gray-500">{error}</p>
+      <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
+        <p className="text-sm text-gray-500 dark:text-gray-400">{error}</p>
       </main>
     );
   }
   if (!estimate) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 px-6 py-12">
-        <p className="text-sm text-gray-500">{t("loading")}</p>
+      <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
+        <p className="text-sm text-gray-500 dark:text-gray-400">{t("loading")}</p>
       </main>
     );
   }
 
   return (
-    <main className="flex min-h-screen justify-center bg-gray-50 px-6 py-12">
+    <main className="flex min-h-screen justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
       <div className="w-full max-w-2xl">
-        <a href="/portal" className="mb-4 inline-block text-xs text-gray-500 hover:underline">
+        <a href="/portal" className="mb-4 inline-block text-xs text-gray-500 dark:text-gray-400 hover:underline">
           ← {estimate.companyName}
         </a>
         <div className="card">
-          <h1 className="text-xl font-semibold text-gray-900">
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">
             {estimate.name}
             {estimate.variantLabel && (
-              <span className="ml-2 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700 align-middle">
+              <span className="ml-2 rounded-full bg-brand-50 dark:bg-brand-500/15 px-2 py-0.5 text-xs font-medium text-brand-700 dark:text-brand-400 align-middle">
                 {estimate.variantLabel}
               </span>
             )}
           </h1>
-          {estimate.projectName && <p className="mt-1 text-sm text-gray-500">{estimate.projectName}</p>}
+          {estimate.projectName && <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{estimate.projectName}</p>}
 
           <div className="mt-6 overflow-x-auto">
             <table className="w-full min-w-[420px] border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 text-left text-gray-500">
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
                   <th className="py-2">{te("rateItem")}</th>
                   <th>{te("quantity")}</th>
                   <th className="text-right">{te("lineTotal")}</th>
@@ -141,7 +141,7 @@ export default function PortalEstimatePage({ params }: { params: Promise<{ id: s
               </thead>
               <tbody>
                 {estimate.lines.map((l) => (
-                  <tr key={l.id} className="border-b border-gray-100">
+                  <tr key={l.id} className="border-b border-gray-100 dark:border-gray-700">
                     <td className="py-2">{l.description}</td>
                     <td>
                       {l.quantity} {l.unit}
@@ -157,24 +157,24 @@ export default function PortalEstimatePage({ params }: { params: Promise<{ id: s
 
           <dl className="mt-4 flex flex-col gap-1.5 text-sm">
             <div className="flex justify-between">
-              <dt className="text-gray-500">{te("subtotal")}</dt>
+              <dt className="text-gray-500 dark:text-gray-400">{te("subtotal")}</dt>
               <dd>
                 {estimate.subtotal} {estimate.currency}
               </dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-gray-500">{te("markupAmount")}</dt>
+              <dt className="text-gray-500 dark:text-gray-400">{te("markupAmount")}</dt>
               <dd>
                 {estimate.markupAmount} {estimate.currency}
               </dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-gray-500">{te("taxAmount")}</dt>
+              <dt className="text-gray-500 dark:text-gray-400">{te("taxAmount")}</dt>
               <dd>
                 {estimate.taxAmount} {estimate.currency}
               </dd>
             </div>
-            <div className="flex justify-between border-t border-gray-200 pt-2 font-semibold">
+            <div className="flex justify-between border-t border-gray-200 dark:border-gray-700 pt-2 font-semibold">
               <dt>{te("grandTotal")}</dt>
               <dd>
                 {estimate.grandTotal} {estimate.currency}
@@ -183,14 +183,14 @@ export default function PortalEstimatePage({ params }: { params: Promise<{ id: s
           </dl>
 
           {estimate.clientDecision === "pending" ? (
-            <div className="mt-6 border-t border-gray-100 pt-4">
+            <div className="mt-6 border-t border-gray-100 dark:border-gray-700 pt-4">
               <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700">{te("clientNoteOptional")}</span>
+                <span className="font-medium text-gray-700 dark:text-gray-200">{te("clientNoteOptional")}</span>
                 <textarea rows={2} className="input" value={note} onChange={(e) => setNote(e.target.value)} />
               </label>
 
               <div className="mt-4 flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700">{te("signerNameLabel")}</span>
+                <span className="font-medium text-gray-700 dark:text-gray-200">{te("signerNameLabel")}</span>
                 <input
                   className="input"
                   placeholder={te("signerNamePlaceholder")}
@@ -199,7 +199,7 @@ export default function PortalEstimatePage({ params }: { params: Promise<{ id: s
                 />
               </div>
               <div className="mt-3 flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700">{te("signHere")}</span>
+                <span className="font-medium text-gray-700 dark:text-gray-200">{te("signHere")}</span>
                 <SignaturePad onChange={setSignatureDataUrl} clearLabel={te("clearSignature")} />
               </div>
               {signatureError && <p className="mt-2 text-xs text-error-600">{signatureError}</p>}
@@ -217,8 +217,8 @@ export default function PortalEstimatePage({ params }: { params: Promise<{ id: s
             <div
               className={`mt-6 rounded-lg border-t px-4 py-3 text-sm ${
                 estimate.clientDecision === "approved"
-                  ? "border-success-200 bg-success-50 text-success-700"
-                  : "border-error-200 bg-error-50 text-error-700"
+                  ? "border-success-200 bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
+                  : "border-error-200 bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500"
               }`}
             >
               {estimate.clientDecision === "approved" ? te("clientDecisionThanksApproved") : te("clientDecisionThanksRejected")}
@@ -227,7 +227,7 @@ export default function PortalEstimatePage({ params }: { params: Promise<{ id: s
               )}
               {estimate.signerName && (
                 <div className="mt-2 flex items-center gap-2">
-                  {signatureUrl && <img src={signatureUrl} alt={te("signature")} className="h-8 rounded border border-white/50 bg-white px-1" />}
+                  {signatureUrl && <img src={signatureUrl} alt={te("signature")} className="h-8 rounded border border-white/50 bg-white dark:bg-gray-800 px-1" />}
                   <span className="text-xs opacity-75">{te("signedBy", { name: estimate.signerName })}</span>
                 </div>
               )}

@@ -34,55 +34,55 @@ export function InvoiceAgingReportPanel({ currency }: { currency: string }) {
 
   return (
     <>
-      <h2 className="mb-3 mt-10 text-sm font-semibold text-gray-700">{t("invoiceAging")}</h2>
+      <h2 className="mb-3 mt-10 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("invoiceAging")}</h2>
       {!aging ? (
-        <p className="text-gray-500">{tc("loading")}</p>
+        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             <div className="card">
-              <div className="text-xs text-gray-500">{t("totalOutstanding")}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{t("totalOutstanding")}</div>
               <div className="mt-1 text-lg font-semibold">
                 {aging.totalOutstanding} {currency}
               </div>
             </div>
             <div className="card">
-              <div className="text-xs text-gray-500">{t("dso")}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{t("dso")}</div>
               <div className="mt-1 text-lg font-semibold">{aging.dso ?? "—"}</div>
             </div>
             <div className="card">
-              <div className="text-xs text-gray-500">{t("bucketCurrent")}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{t("bucketCurrent")}</div>
               <div className="mt-1 text-sm font-semibold">
                 {aging.buckets.current} {currency}
               </div>
             </div>
             <div className="card">
-              <div className="text-xs text-gray-500">{t("bucket1to30")}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{t("bucket1to30")}</div>
               <div className="mt-1 text-sm font-semibold">
                 {aging.buckets.days1to30} {currency}
               </div>
             </div>
             <div className="card">
-              <div className="text-xs text-gray-500">{t("bucket31to90")}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{t("bucket31to90")}</div>
               <div className="mt-1 text-sm font-semibold">
                 {round2(aging.buckets.days31to60 + aging.buckets.days61to90)} {currency}
               </div>
             </div>
             <div className="card">
-              <div className="text-xs text-gray-500">{t("bucket90plus")}</div>
-              <div className="mt-1 text-sm font-semibold text-error-700">
+              <div className="text-xs text-gray-500 dark:text-gray-400">{t("bucket90plus")}</div>
+              <div className="mt-1 text-sm font-semibold text-error-700 dark:text-error-500">
                 {aging.buckets.days90plus} {currency}
               </div>
             </div>
           </div>
 
           {aging.invoices.length === 0 ? (
-            <p className="mt-4 text-sm text-gray-400">{t("noOutstanding")}</p>
+            <p className="mt-4 text-sm text-gray-400 dark:text-gray-500">{t("noOutstanding")}</p>
           ) : (
             <div className="mt-4 overflow-x-auto">
               <table className="w-full min-w-[560px] border-collapse text-sm">
                 <thead>
-                  <tr className="border-b border-gray-200 text-left text-gray-500">
+                  <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
                     <th className="py-2">{t("invoiceNumber")}</th>
                     <th>{t("client")}</th>
                     <th className="text-right">{t("outstanding")}</th>
@@ -91,9 +91,9 @@ export function InvoiceAgingReportPanel({ currency }: { currency: string }) {
                 </thead>
                 <tbody>
                   {aging.invoices.map((inv) => (
-                    <tr key={inv.invoiceId} className="border-b border-gray-100">
+                    <tr key={inv.invoiceId} className="border-b border-gray-100 dark:border-gray-700">
                       <td className="py-2">
-                        <a href={`/invoices/${inv.invoiceId}`} className="text-brand-700 hover:underline">
+                        <a href={`/invoices/${inv.invoiceId}`} className="text-brand-700 dark:text-brand-400 hover:underline">
                           {inv.number}
                         </a>
                       </td>
@@ -101,7 +101,7 @@ export function InvoiceAgingReportPanel({ currency }: { currency: string }) {
                       <td className="text-right">
                         {inv.outstanding} {currency}
                       </td>
-                      <td className={`text-right ${inv.daysOverdue !== null && inv.daysOverdue > 0 ? "text-error-700" : ""}`}>
+                      <td className={`text-right ${inv.daysOverdue !== null && inv.daysOverdue > 0 ? "text-error-700 dark:text-error-500" : ""}`}>
                         {inv.daysOverdue !== null && inv.daysOverdue > 0 ? inv.daysOverdue : "—"}
                       </td>
                     </tr>

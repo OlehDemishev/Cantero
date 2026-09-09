@@ -197,15 +197,15 @@ export function TakeoffPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-8">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("title")}</h2>
-      <p className="mb-3 text-xs text-gray-500">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
         {takeoffs.map((tk) => (
           <button
             key={tk.id}
             onClick={() => selectTakeoff(tk.id)}
-            className={`rounded-full px-3 py-1 text-xs font-medium ${selectedId === tk.id ? "bg-brand-500 text-white" : "bg-gray-100 text-gray-600"}`}
+            className={`rounded-full px-3 py-1 text-xs font-medium ${selectedId === tk.id ? "bg-brand-500 text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"}`}
           >
             {tk.name}
           </button>
@@ -227,7 +227,7 @@ export function TakeoffPanel({ projectId }: { projectId: string }) {
       {detail && imageUrl && (
         <div className="card">
           {mode === "calibrate" && (
-            <div className="mb-3 rounded-lg border border-warning-200 bg-warning-50 p-3 text-xs text-warning-700">
+            <div className="mb-3 rounded-lg border border-warning-200 bg-warning-50 dark:bg-warning-500/15 p-3 text-xs text-warning-700 dark:text-warning-500">
               {currentPoints.length < 2 ? (
                 t("calibrateHint")
               ) : (
@@ -273,9 +273,9 @@ export function TakeoffPanel({ projectId }: { projectId: string }) {
           )}
 
           {(mode === "length" || mode === "area") && (
-            <div className="mb-3 flex flex-wrap items-end gap-2 rounded-lg border border-gray-100 p-3">
-              <span className="text-xs text-gray-500">{t(mode === "length" ? "lengthHint" : "areaHint")}</span>
-              <label className="flex flex-col gap-1 text-xs text-gray-500">
+            <div className="mb-3 flex flex-wrap items-end gap-2 rounded-lg border border-gray-100 dark:border-gray-700 p-3">
+              <span className="text-xs text-gray-500 dark:text-gray-400">{t(mode === "length" ? "lengthHint" : "areaHint")}</span>
+              <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
                 {t("label")}
                 <input
                   className="input w-40"
@@ -283,7 +283,7 @@ export function TakeoffPanel({ projectId }: { projectId: string }) {
                   onChange={(e) => setMeasurementForm((f) => ({ ...f, label: e.target.value }))}
                 />
               </label>
-              <label className="flex flex-col gap-1 text-xs text-gray-500">
+              <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
                 {t("linkedRateItem")}
                 <select
                   className="input"
@@ -344,11 +344,11 @@ export function TakeoffPanel({ projectId }: { projectId: string }) {
 
           <ul className="mt-4 flex flex-col gap-2">
             {detail.measurements.map((m) => (
-              <li key={m.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-100 px-3 py-2 text-sm">
+              <li key={m.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-100 dark:border-gray-700 px-3 py-2 text-sm">
                 <span className="flex items-center gap-2">
                   <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: MEASUREMENT_COLORS[m.type] }} />
                   <span className="font-medium text-gray-800 dark:text-white/90">{m.label}</span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
                     {Number(m.value).toFixed(2)} {m.unit}
                   </span>
                 </span>
@@ -370,7 +370,7 @@ export function TakeoffPanel({ projectId }: { projectId: string }) {
                           </button>
                         </>
                       ) : (
-                        <button onClick={() => setAddToEstimateFor(m.id)} className="text-xs text-brand-700 hover:underline">
+                        <button onClick={() => setAddToEstimateFor(m.id)} className="text-xs text-brand-700 dark:text-brand-400 hover:underline">
                           {t("addToEstimate")}
                         </button>
                       )}

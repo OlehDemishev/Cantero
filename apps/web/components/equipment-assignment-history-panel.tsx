@@ -28,14 +28,14 @@ export function EquipmentAssignmentHistoryPanel({ equipmentId }: { equipmentId: 
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("assignmentHistory")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("assignmentHistory")}</h2>
       {!assignments || assignments.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noAssignments")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noAssignments")}</p>
       ) : (
         <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-gray-200 text-left text-gray-500">
+            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
               <th className="py-2">{tc("name")}</th>
               <th>{t("checkedOutAt")}</th>
               <th>{t("checkedInAt")}</th>
@@ -43,14 +43,14 @@ export function EquipmentAssignmentHistoryPanel({ equipmentId }: { equipmentId: 
           </thead>
           <tbody>
             {assignments.map((a) => (
-              <tr key={a.id} className="border-b border-gray-100">
+              <tr key={a.id} className="border-b border-gray-100 dark:border-gray-700">
                 <td className="py-2">
                   {a.worker ? (
-                    <Link href={`/team/${a.worker.id}`} className="text-brand-700 hover:underline">
+                    <Link href={`/team/${a.worker.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
                       {a.worker.name}
                     </Link>
                   ) : a.project ? (
-                    <Link href={`/projects/${a.project.id}`} className="text-brand-700 hover:underline">
+                    <Link href={`/projects/${a.project.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
                       {a.project.name}
                     </Link>
                   ) : (
@@ -60,7 +60,7 @@ export function EquipmentAssignmentHistoryPanel({ equipmentId }: { equipmentId: 
                 <td>
                   {formatDateTime(new Date(a.checkedOutAt))}
                   {a.checkOutWithinGeofence === false && (
-                    <span className="ml-1 rounded-full bg-warning-50 px-1.5 py-0.5 text-[10px] font-medium text-warning-700">
+                    <span className="ml-1 rounded-full bg-warning-50 dark:bg-warning-500/15 px-1.5 py-0.5 text-[10px] font-medium text-warning-700 dark:text-warning-500">
                       {t("offSite")}
                     </span>
                   )}
@@ -68,7 +68,7 @@ export function EquipmentAssignmentHistoryPanel({ equipmentId }: { equipmentId: 
                 <td>
                   {a.checkedInAt ? formatDateTime(new Date(a.checkedInAt)) : t("stillOut")}
                   {a.checkInWithinGeofence === false && (
-                    <span className="ml-1 rounded-full bg-warning-50 px-1.5 py-0.5 text-[10px] font-medium text-warning-700">
+                    <span className="ml-1 rounded-full bg-warning-50 dark:bg-warning-500/15 px-1.5 py-0.5 text-[10px] font-medium text-warning-700 dark:text-warning-500">
                       {t("offSite")}
                     </span>
                   )}

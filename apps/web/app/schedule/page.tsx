@@ -76,7 +76,7 @@ export default function SchedulePage() {
   return (
     <AuthenticatedShell>
       <h1 className="text-2xl font-semibold">{t("title")}</h1>
-      <p className="mt-2 text-sm text-gray-500">{t("hint")}</p>
+      <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{t("hint")}</p>
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
         {projects.map((p) => (
@@ -84,7 +84,7 @@ export default function SchedulePage() {
             key={p.id}
             onClick={() => toggle(p.id)}
             className={`rounded-full px-3 py-1 text-xs font-medium ${
-              selected.has(p.id) ? "bg-brand-500 text-white" : "bg-gray-100 text-gray-600"
+              selected.has(p.id) ? "bg-brand-500 text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
             }`}
           >
             {p.name}
@@ -95,7 +95,7 @@ export default function SchedulePage() {
         </button>
       </div>
 
-      <div className="mt-3 flex items-center gap-4 text-xs text-gray-500">
+      <div className="mt-3 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
         <span className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full ring-2 ring-error-600" /> {t("criticalPath")}
         </span>
@@ -105,9 +105,9 @@ export default function SchedulePage() {
       </div>
 
       {loading ? (
-        <p className="mt-6 text-sm text-gray-400">{tc("loading")}</p>
+        <p className="mt-6 text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
       ) : !schedules ? (
-        <p className="mt-6 text-sm text-gray-400">{t("selectProjects")}</p>
+        <p className="mt-6 text-sm text-gray-400 dark:text-gray-500">{t("selectProjects")}</p>
       ) : (
         <div className="mt-6 flex flex-col gap-8">
           {schedules.map((s) => (
@@ -131,12 +131,12 @@ function ProjectScheduleSection({ schedule }: { schedule: ProjectSchedule }) {
   if (dates.length === 0) {
     return (
       <div>
-        <h2 className="mb-2 text-sm font-semibold text-gray-700">
-        <Link href={`/projects/${schedule.projectId}`} className="text-brand-700 hover:underline">
+        <h2 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
+        <Link href={`/projects/${schedule.projectId}`} className="text-brand-700 dark:text-brand-400 hover:underline">
           {schedule.projectName}
         </Link>
       </h2>
-        <p className="text-xs text-gray-400">{t("noScheduledTasks")}</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500">{t("noScheduledTasks")}</p>
       </div>
     );
   }
@@ -148,12 +148,12 @@ function ProjectScheduleSection({ schedule }: { schedule: ProjectSchedule }) {
 
   return (
     <div>
-      <h2 className="mb-2 text-sm font-semibold text-gray-700">
-        <Link href={`/projects/${schedule.projectId}`} className="text-brand-700 hover:underline">
+      <h2 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
+        <Link href={`/projects/${schedule.projectId}`} className="text-brand-700 dark:text-brand-400 hover:underline">
           {schedule.projectName}
         </Link>
       </h2>
-      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white p-4">
+      <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
         <div className="relative flex flex-col gap-2" style={{ minWidth: 480 }}>
           {schedule.milestones
             .filter((m) => m.dueDate)
@@ -170,8 +170,8 @@ function ProjectScheduleSection({ schedule }: { schedule: ProjectSchedule }) {
             const right = pct(new Date(task.dueDate!).getTime());
             return (
               <div key={task.id} className="flex items-center gap-3">
-                <div className="w-36 flex-none truncate text-xs text-gray-600">{task.name}</div>
-                <div className="relative h-6 min-w-[300px] flex-1 rounded bg-gray-100">
+                <div className="w-36 flex-none truncate text-xs text-gray-600 dark:text-gray-300">{task.name}</div>
+                <div className="relative h-6 min-w-[300px] flex-1 rounded bg-gray-100 dark:bg-gray-700">
                   <div
                     className={`absolute h-6 rounded ${STATUS_STYLES[task.status]} ${task.isCritical ? "ring-2 ring-error-600" : ""}`}
                     style={{ left: `${left}%`, width: `${Math.max(right - left, 2)}%` }}

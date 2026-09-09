@@ -153,30 +153,30 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("board")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("board")}</h2>
       <DndContext sensors={dndSensors} onDragEnd={handleDragEnd}>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {STATUSES.map((status) => (
           <DroppableColumn key={status} id={status}>
-            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{t(status)}</div>
+            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t(status)}</div>
             <div className="flex flex-col gap-2">
               {(tasks ?? []).filter((task) => task.status === status).map((task) => (
                 <DraggableTaskCard key={task.id} id={task.id}>
                   <div className="flex items-center gap-1.5">
                     <span className="text-sm font-medium">{task.name}</span>
                     {criticalTaskIds.has(task.id) && (
-                      <span className="rounded-full bg-error-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-error-700">
+                      <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-error-700 dark:text-error-500">
                         {t("critical")}
                       </span>
                     )}
                     {task.isOutdoorWork && (
-                      <span className="rounded-full bg-brand-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-700">
+                      <span className="rounded-full bg-brand-50 dark:bg-brand-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-700 dark:text-brand-400">
                         {t("outdoorWork")}
                       </span>
                     )}
                   </div>
                   {(task.startDate || task.dueDate) && (
-                    <div className="mt-1 text-xs text-gray-500">
+                    <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                       {task.startDate ? formatDate(new Date(task.startDate)) : "…"}
                       {" → "}
                       {task.dueDate ? formatDate(new Date(task.dueDate)) : "…"}
@@ -185,10 +185,10 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
                   {task.predecessorLinks.length > 0 && (
                     <ul className="mt-1.5 flex flex-col gap-0.5">
                       {task.predecessorLinks.map((link) => (
-                        <li key={link.id} className="flex items-center gap-1 text-xs text-gray-500">
+                        <li key={link.id} className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                           {t("dependsOn")}: {link.predecessor.name} ({t(`depType_${link.type}`)}
                           {link.lagDays !== 0 ? `${link.lagDays > 0 ? "+" : ""}${link.lagDays}d` : ""})
-                          <button onClick={() => removeDependency(link.id)} className="text-gray-400 hover:text-error-600">
+                          <button onClick={() => removeDependency(link.id)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
                             ×
                           </button>
                         </li>
@@ -213,7 +213,7 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
                   </div>
 
                   {depEditorTaskId === task.id && (
-                    <div className="mt-2 flex flex-col gap-1.5 border-t border-gray-100 pt-2">
+                    <div className="mt-2 flex flex-col gap-1.5 border-t border-gray-100 dark:border-gray-700 pt-2">
                       <select
                         className="input py-1 text-xs"
                         value={depForm.predecessorId}
@@ -255,7 +255,7 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
                   )}
 
                   {commentsTaskId === task.id && (
-                    <div className="mt-2 border-t border-gray-100 pt-2">
+                    <div className="mt-2 border-t border-gray-100 dark:border-gray-700 pt-2">
                       <CommentsThread param="taskId" entityId={task.id} />
                     </div>
                   )}
@@ -275,7 +275,7 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
           value={taskForm.name}
           onChange={(e) => setTaskForm((f) => ({ ...f, name: e.target.value }))}
         />
-        <label className="text-xs text-gray-500">
+        <label className="text-xs text-gray-500 dark:text-gray-400">
           {t("startDate")}
           <input
             type="date"
@@ -284,7 +284,7 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
             onChange={(e) => setTaskForm((f) => ({ ...f, startDate: e.target.value }))}
           />
         </label>
-        <label className="text-xs text-gray-500">
+        <label className="text-xs text-gray-500 dark:text-gray-400">
           {t("dueDate")}
           <input
             type="date"
@@ -293,7 +293,7 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
             onChange={(e) => setTaskForm((f) => ({ ...f, dueDate: e.target.value }))}
           />
         </label>
-        <label className="flex items-center gap-1.5 text-xs text-gray-500">
+        <label className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
           <input
             type="checkbox"
             checked={taskForm.isOutdoorWork}
@@ -306,8 +306,8 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
         </button>
       </form>
 
-      <h2 className="mb-3 mt-10 text-sm font-semibold text-gray-700">{t("gantt")}</h2>
-      <p className="mb-2 text-xs text-gray-400">{t("ganttDragHint")}</p>
+      <h2 className="mb-3 mt-10 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("gantt")}</h2>
+      <p className="mb-2 text-xs text-gray-400 dark:text-gray-500">{t("ganttDragHint")}</p>
       <GanttChart
         tasks={tasks ?? []}
         milestones={milestones ?? []}
@@ -316,12 +316,12 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
         onTaskDatesChange={changeTaskDates}
       />
 
-      <h2 className="mb-3 mt-10 text-sm font-semibold text-gray-700">{t("milestones")}</h2>
+      <h2 className="mb-3 mt-10 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("milestones")}</h2>
       <ul className="flex flex-col gap-2">
         {(milestones ?? []).map((m) => (
           <li key={m.id} className="card flex items-center justify-between">
             <span className="text-sm font-medium">{m.name}</span>
-            <span className="text-xs text-gray-500">{m.dueDate ? formatDate(new Date(m.dueDate)) : "—"}</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">{m.dueDate ? formatDate(new Date(m.dueDate)) : "—"}</span>
           </li>
         ))}
       </ul>
@@ -381,7 +381,7 @@ function GanttChart({
   const datedMilestones = milestones.filter((m) => m.dueDate);
 
   if (datedTasks.length === 0 && datedMilestones.length === 0) {
-    return <p className="text-sm text-gray-400">{emptyLabel}</p>;
+    return <p className="text-sm text-gray-400 dark:text-gray-500">{emptyLabel}</p>;
   }
 
   const now = new Date();
@@ -462,17 +462,17 @@ function GanttChart({
   }
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4">
+    <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
       {criticalTaskIds.size > 0 && (
-        <div className="mb-3 flex items-center gap-1.5 text-xs text-gray-500">
+        <div className="mb-3 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
           <span className="inline-block h-2.5 w-2.5 rounded-sm bg-error-500" /> {t("criticalPathLegend")}
         </div>
       )}
       <div className="flex items-center gap-3">
         <div className="w-32 flex-none" />
-        <div className="relative h-5 flex-1 text-[10px] text-gray-400">
+        <div className="relative h-5 flex-1 text-[10px] text-gray-400 dark:text-gray-500">
           {weekTicks.map((tick) => (
-            <div key={tick} className="absolute -translate-x-1/2 border-l border-gray-100 pl-1" style={{ left: `${pct(tick)}%`, height: "100%" }}>
+            <div key={tick} className="absolute -translate-x-1/2 border-l border-gray-100 dark:border-gray-700 pl-1" style={{ left: `${pct(tick)}%`, height: "100%" }}>
               {formatDateWithOptions(tick, { month: "short", day: "numeric" })}
             </div>
           ))}
@@ -488,14 +488,14 @@ function GanttChart({
           const critical = criticalTaskIds.has(task.id);
           return (
             <div key={task.id} className="flex items-center gap-3">
-              <div className="w-32 flex-none truncate text-xs text-gray-600" title={task.name}>
+              <div className="w-32 flex-none truncate text-xs text-gray-600 dark:text-gray-300" title={task.name}>
                 {task.name}
               </div>
               <div
                 ref={(el) => {
                   trackRefs.current[task.id] = el;
                 }}
-                className="relative h-5 flex-1 rounded bg-gray-100"
+                className="relative h-5 flex-1 rounded bg-gray-100 dark:bg-gray-700"
               >
                 <div className="pointer-events-none absolute inset-y-0 border-l border-brand-400" style={{ left: `${pct(now.getTime())}%` }} />
                 <div
@@ -520,7 +520,7 @@ function GanttChart({
           const at = pct(new Date(m.dueDate!).getTime());
           return (
             <div key={m.id} className="flex items-center gap-3">
-              <div className="w-32 flex-none truncate text-xs text-gray-600">◆ {m.name}</div>
+              <div className="w-32 flex-none truncate text-xs text-gray-600 dark:text-gray-300">◆ {m.name}</div>
               <div className="relative h-5 flex-1">
                 <div className="absolute h-3 w-3 -translate-x-1/2 rotate-45 bg-gray-900" style={{ left: `${at}%`, top: "4px" }} />
               </div>
@@ -537,7 +537,7 @@ function DroppableColumn({ id, children }: { id: string; children: React.ReactNo
   return (
     <div
       ref={setNodeRef}
-      className={`rounded-lg border p-3 transition-colors ${isOver ? "border-brand-400 bg-brand-50/40" : "border-gray-200 bg-gray-50"}`}
+      className={`rounded-lg border p-3 transition-colors ${isOver ? "border-brand-400 bg-brand-50/40" : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700"}`}
     >
       {children}
     </div>

@@ -127,7 +127,7 @@ export function EstimateRevisionHistoryPanel({
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("revisionHistory")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("revisionHistory")}</h2>
       <ul className="flex flex-col gap-2">
         {revisions.map((rev) => (
           <li key={rev.id}>
@@ -140,7 +140,7 @@ export function EstimateRevisionHistoryPanel({
               <span className="text-sm font-medium">
                 {t("version")} {rev.versionNumber}
               </span>
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-gray-500 dark:text-gray-400">
                 {formatDate(new Date(rev.createdAt))} · {rev.grandTotal} {currency}
               </span>
             </button>
@@ -148,17 +148,17 @@ export function EstimateRevisionHistoryPanel({
         ))}
       </ul>
 
-      {loadingRevision && <p className="mt-3 text-sm text-gray-400">{tc("loading")}</p>}
+      {loadingRevision && <p className="mt-3 text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>}
 
       {comparison && selectedRevision && (
         <div className="mt-4">
-          <h3 className="mb-2 text-xs font-semibold text-gray-500">
+          <h3 className="mb-2 text-xs font-semibold text-gray-500 dark:text-gray-400">
             {t("compareToCurrent", { version: selectedRevision.versionNumber })}
           </h3>
           <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 text-left text-gray-500">
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
                 <th className="py-1">{t("rateItem")}</th>
                 <th>{t("version")} {selectedRevision.versionNumber}</th>
                 <th>{tc("status")}</th>
@@ -167,7 +167,7 @@ export function EstimateRevisionHistoryPanel({
             </thead>
             <tbody>
               {comparison.map((row) => (
-                <tr key={row.code} className="border-b border-gray-100">
+                <tr key={row.code} className="border-b border-gray-100 dark:border-gray-700">
                   <td className="py-1">{row.name}</td>
                   <td className={row.kind === "removed" ? "text-error-600" : ""}>
                     {row.revQuantity !== null ? `${row.revQuantity} ${row.unit} · ${row.revTotal} ${currency}` : "—"}
@@ -176,18 +176,18 @@ export function EstimateRevisionHistoryPanel({
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                         row.kind === "added"
-                          ? "bg-success-50 text-success-700"
+                          ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
                           : row.kind === "removed"
-                            ? "bg-error-50 text-error-700"
+                            ? "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500"
                             : row.kind === "changed"
-                              ? "bg-warning-50 text-warning-700"
-                              : "bg-gray-100 text-gray-500"
+                              ? "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500"
+                              : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
                       }`}
                     >
                       {t(row.kind)}
                     </span>
                   </td>
-                  <td className={row.kind === "added" ? "text-success-700" : ""}>
+                  <td className={row.kind === "added" ? "text-success-700 dark:text-success-500" : ""}>
                     {row.curQuantity !== null ? `${row.curQuantity} ${row.unit} · ${row.curTotal} ${currency}` : "—"}
                   </td>
                 </tr>

@@ -48,13 +48,13 @@ export function CertificateAttachment({ param, entityId }: { param: CertificateA
   if (doc === undefined) return null;
 
   return doc ? (
-    <button onClick={view} className="text-brand-700 hover:underline">
+    <button onClick={view} className="text-brand-700 dark:text-brand-400 hover:underline">
       {t("viewCertificate")}
     </button>
   ) : (
     <>
       <input ref={inputRef} type="file" accept="application/pdf,image/*" className="hidden" onChange={handleFile} />
-      <button type="button" onClick={() => inputRef.current?.click()} disabled={busy} className="text-gray-400 hover:text-brand-700">
+      <button type="button" onClick={() => inputRef.current?.click()} disabled={busy} className="text-gray-400 dark:text-gray-500 hover:text-brand-700">
         {busy ? t("uploading") : t("uploadCertificate")}
       </button>
     </>

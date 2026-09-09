@@ -79,11 +79,11 @@ export function GeofencePanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("title")}</h2>
-      <p className="mb-3 text-xs text-gray-500">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
 
       {isSet && (
-        <p className="mb-2 text-xs text-success-700">
+        <p className="mb-2 text-xs text-success-700 dark:text-success-500">
           {t("activeSummary", { lat: project.geofenceLat!.toFixed(5), lng: project.geofenceLng!.toFixed(5), radius: project.geofenceRadiusMeters! })}
         </p>
       )}
@@ -91,7 +91,7 @@ export function GeofencePanel({ projectId }: { projectId: string }) {
       {error && <p className="mb-2 text-xs text-error-600">{error}</p>}
 
       <form onSubmit={save} className="flex flex-wrap items-end gap-2">
-        <label className="flex flex-col gap-1 text-xs text-gray-500">
+        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {t("lat")}
           <input
             type="number"
@@ -102,7 +102,7 @@ export function GeofencePanel({ projectId }: { projectId: string }) {
             onChange={(e) => setForm((f) => ({ ...f, lat: e.target.value }))}
           />
         </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500">
+        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {t("lng")}
           <input
             type="number"
@@ -113,7 +113,7 @@ export function GeofencePanel({ projectId }: { projectId: string }) {
             onChange={(e) => setForm((f) => ({ ...f, lng: e.target.value }))}
           />
         </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500">
+        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {t("radiusMeters")}
           <input
             type="number"

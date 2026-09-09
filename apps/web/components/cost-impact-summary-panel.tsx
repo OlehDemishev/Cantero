@@ -35,12 +35,12 @@ export function CostImpactSummaryPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("title")}</h2>
-      <p className="mb-3 text-xs text-gray-500">{t("hint", { count: summary.unconfirmedCount })}</p>
+      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint", { count: summary.unconfirmedCount })}</p>
       <div className="card overflow-x-auto">
         <table className="w-full min-w-[480px] border-collapse text-sm">
           <thead>
-            <tr className="border-b border-gray-200 text-left text-gray-500">
+            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
               <th className="py-2">{t("source")}</th>
               <th>{t("item")}</th>
               <th className="text-right">{t("amount")}</th>
@@ -49,17 +49,17 @@ export function CostImpactSummaryPanel({ projectId }: { projectId: string }) {
           </thead>
           <tbody>
             {summary.rows.map((row) => (
-              <tr key={`${row.type}-${row.id}`} className="border-b border-gray-100">
-                <td className="py-1.5 text-xs uppercase tracking-wide text-gray-400">{t(row.type)}</td>
+              <tr key={`${row.type}-${row.id}`} className="border-b border-gray-100 dark:border-gray-700">
+                <td className="py-1.5 text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500">{t(row.type)}</td>
                 <td>{row.label}</td>
                 <td className="text-right tabular-nums">
                   {row.bestAmount} {currency}
                 </td>
                 <td className="text-right">
                   {row.confirmedAmount !== null ? (
-                    <span className="rounded-full bg-success-50 px-2 py-0.5 text-xs font-medium text-success-700">{t("confirmed")}</span>
+                    <span className="rounded-full bg-success-50 dark:bg-success-500/15 px-2 py-0.5 text-xs font-medium text-success-700 dark:text-success-500">{t("confirmed")}</span>
                   ) : (
-                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">{t("estimated")}</span>
+                    <span className="rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs font-medium text-gray-500 dark:text-gray-400">{t("estimated")}</span>
                   )}
                 </td>
               </tr>

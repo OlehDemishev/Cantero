@@ -83,25 +83,25 @@ export function ProgressBillingPanel({ estimateId, currency }: { estimateId: str
   const hasDraws = summary.invoices.some((i) => !i.isRetainageRelease);
 
   return (
-    <div className="mt-6 border-t border-gray-100 pt-4">
-      <h3 className="mb-1 text-sm font-semibold text-gray-700">{t("title")}</h3>
-      <p className="mb-3 text-xs text-gray-500">{t("hint")}</p>
+    <div className="mt-6 border-t border-gray-100 dark:border-gray-700 pt-4">
+      <h3 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h3>
+      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
 
       {hasDraws && (
         <div className="mb-3 flex flex-col gap-2 text-sm">
-          <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
             <div className="h-full rounded-full bg-brand-500" style={{ width: `${Math.min(summary.percentBilled, 100)}%` }} />
           </div>
-          <div className="flex justify-between text-xs text-gray-500">
+          <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
             <span>{t("percentBilled", { percent: summary.percentBilled })}</span>
             <span>
               {t("billedOfContract", { billed: summary.totalBilledGross.toFixed(2), total: summary.contractTotal.toFixed(2), currency })}
             </span>
           </div>
           {summary.totalRetainageHeld > 0 && (
-            <div className="flex justify-between text-xs text-gray-500">
+            <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
               <span>{t("retainageHeld")}</span>
-              <span className="font-medium text-gray-700">
+              <span className="font-medium text-gray-700 dark:text-gray-200">
                 {summary.totalRetainageHeld.toFixed(2)} {currency}
               </span>
             </div>
@@ -109,15 +109,15 @@ export function ProgressBillingPanel({ estimateId, currency }: { estimateId: str
           <ul className="mt-1 flex flex-col gap-1">
             {summary.invoices.map((draw) => (
               <li key={draw.id} className="flex items-center justify-between text-xs">
-                <a href={`/invoices/${draw.id}`} className="text-brand-700 hover:underline">
+                <a href={`/invoices/${draw.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
                   {draw.number}
                 </a>
-                <span className="text-gray-500">
+                <span className="text-gray-500 dark:text-gray-400">
                   {draw.isRetainageRelease
                     ? t("retainageReleaseLabel")
                     : t("drawLabel", { percent: draw.percentComplete ?? 0 })}
                 </span>
-                <span className="tabular-nums text-gray-700">
+                <span className="tabular-nums text-gray-700 dark:text-gray-200">
                   {draw.total.toFixed(2)} {currency}
                 </span>
               </li>
@@ -130,7 +130,7 @@ export function ProgressBillingPanel({ estimateId, currency }: { estimateId: str
 
       {summary.percentBilled < 100 && (
         <form onSubmit={generateDraw} className="flex items-end gap-2">
-          <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500">
+          <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
             {t("percentComplete")}
             <input
               type="number"
@@ -143,7 +143,7 @@ export function ProgressBillingPanel({ estimateId, currency }: { estimateId: str
               onChange={(e) => setForm((f) => ({ ...f, percentComplete: e.target.value }))}
             />
           </label>
-          <label className="flex w-24 flex-col gap-1 text-xs text-gray-500">
+          <label className="flex w-24 flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
             {t("retainagePercent")}
             <input
               type="number"
@@ -162,7 +162,7 @@ export function ProgressBillingPanel({ estimateId, currency }: { estimateId: str
       )}
 
       {summary.retainageReleasedTotal > 0 && (
-        <p className="mt-2 text-xs text-success-700">
+        <p className="mt-2 text-xs text-success-700 dark:text-success-500">
           {t("retainageReleasedSoFar", { amount: summary.retainageReleasedTotal.toFixed(2), currency })}
         </p>
       )}
@@ -173,12 +173,12 @@ export function ProgressBillingPanel({ estimateId, currency }: { estimateId: str
             {t("releaseRetainage", { amount: summary.retainageRemaining.toFixed(2), currency })}
           </button>
           {!releasingPartial ? (
-            <button onClick={() => setReleasingPartial(true)} className="self-start text-xs text-brand-700 hover:underline">
+            <button onClick={() => setReleasingPartial(true)} className="self-start text-xs text-brand-700 dark:text-brand-400 hover:underline">
               {t("releasePartialInstead")}
             </button>
           ) : (
             <div className="flex items-end gap-2">
-              <label className="flex w-32 flex-col gap-1 text-xs text-gray-500">
+              <label className="flex w-32 flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
                 {t("partialAmount")}
                 <input
                   type="number"
@@ -197,7 +197,7 @@ export function ProgressBillingPanel({ estimateId, currency }: { estimateId: str
               >
                 {t("releasePartial")}
               </button>
-              <button onClick={() => setReleasingPartial(false)} className="text-xs text-gray-500 hover:underline">
+              <button onClick={() => setReleasingPartial(false)} className="text-xs text-gray-500 dark:text-gray-400 hover:underline">
                 {t("cancel")}
               </button>
             </div>

@@ -302,16 +302,16 @@ export function DrawingSheetViewer({ sheetId }: { sheetId: string }) {
     loadPins();
   }
 
-  if (!sheet) return <p className="text-gray-500">{tc("loading")}</p>;
+  if (!sheet) return <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>;
 
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="text-sm font-semibold text-gray-700">
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
             {sheet.sheetNumber} {sheet.title && `— ${sheet.title}`}
           </h2>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-500 dark:text-gray-400">
             {sheet.discipline ?? t("noDiscipline")} {sheet.revision && `· ${t("revision")} ${sheet.revision}`}
           </p>
         </div>
@@ -352,7 +352,7 @@ export function DrawingSheetViewer({ sheetId }: { sheetId: string }) {
         />
       </div>
 
-      {busy && <p className="mt-1 text-xs text-gray-400">{tc("loading")}</p>}
+      {busy && <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>}
 
       {pinDraft && (
         <div className="mt-3 flex flex-wrap items-end gap-2 rounded-md border border-gray-200 p-2 text-xs dark:border-gray-800">
@@ -392,14 +392,14 @@ export function DrawingSheetViewer({ sheetId }: { sheetId: string }) {
       )}
 
       {annotations && annotations.length > 0 && (
-        <ul className="mt-3 flex flex-col gap-1 text-xs text-gray-500">
+        <ul className="mt-3 flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {annotations.map((a) => (
             <li key={a.id} className="flex items-center justify-between">
               <span>
                 {t(`tool_${a.type}`)} — {a.authorName}
                 {a.text && `: "${a.text}"`}
               </span>
-              <button onClick={() => deleteAnnotation(a.id)} className="text-gray-400 hover:text-error-600">
+              <button onClick={() => deleteAnnotation(a.id)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
                 ×
               </button>
             </li>
@@ -408,7 +408,7 @@ export function DrawingSheetViewer({ sheetId }: { sheetId: string }) {
       )}
 
       {pins.length > 0 && (
-        <ul className="mt-3 flex flex-col gap-1 text-xs text-gray-500">
+        <ul className="mt-3 flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {pins.map((p) => (
             <li key={p.id}>📍 {p.label}</li>
           ))}

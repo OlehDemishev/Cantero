@@ -189,20 +189,20 @@ export default function BankReconciliationPage() {
           <CsvImportButton endpoint="/bank-transactions/import" label={ti("importBankTransactions")} onDone={load} />
         </div>
       </div>
-      <p className="mt-2 text-sm text-gray-500">{t("hint")}</p>
+      <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{t("hint")}</p>
 
       {showRules && (
         <div className="card mt-4">
           <div className="mb-1 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-700">{t("categorizationRules")}</h2>
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("categorizationRules")}</h2>
             <div className="flex items-center gap-2">
               <button onClick={applyRules} disabled={busy} className="btn-secondary px-3 py-1 text-xs">
                 {t("applyRulesNow")}
               </button>
-              {applyResult && <span className="text-xs text-success-700">{t("applyRulesResult", { count: applyResult.categorized })}</span>}
+              {applyResult && <span className="text-xs text-success-700 dark:text-success-500">{t("applyRulesResult", { count: applyResult.categorized })}</span>}
             </div>
           </div>
-          <p className="mb-3 text-xs text-gray-500">{t("categorizationRulesHint")}</p>
+          <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("categorizationRulesHint")}</p>
 
           <form onSubmit={createRule} className="flex flex-wrap items-end gap-2">
             <input
@@ -231,7 +231,7 @@ export default function BankReconciliationPage() {
             <ul className="mt-3 flex flex-col gap-1.5">
               {rules.map((r) => (
                 <li key={r.id} className="flex items-center justify-between text-xs">
-                  <span className="text-gray-700">
+                  <span className="text-gray-700 dark:text-gray-200">
                     &ldquo;{r.pattern}&rdquo; → <span className="font-medium">{te(r.category)}</span>
                   </span>
                   <button onClick={() => deleteRule(r.id)} disabled={busy} className="text-error-600 hover:underline">
@@ -260,9 +260,9 @@ export default function BankReconciliationPage() {
       </div>
 
       {!transactions ? (
-        <p className="mt-6 text-gray-500">{tc("loading")}</p>
+        <p className="mt-6 text-gray-500 dark:text-gray-400">{tc("loading")}</p>
       ) : transactions.length === 0 ? (
-        <p className="mt-6 text-sm text-gray-400">{t("noTransactions")}</p>
+        <p className="mt-6 text-sm text-gray-400 dark:text-gray-500">{t("noTransactions")}</p>
       ) : (
         <ul className="mt-6 flex flex-col gap-2">
           {transactions.map((tx) => {
@@ -271,16 +271,16 @@ export default function BankReconciliationPage() {
               <li key={tx.id} className="card">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <div className="text-sm font-medium text-gray-900">{tx.description}</div>
-                    <div className="text-xs text-gray-500">{formatDate(new Date(tx.date))}</div>
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-50">{tx.description}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">{formatDate(new Date(tx.date))}</div>
                   </div>
-                  <div className={`text-sm font-semibold ${Number(tx.amount) < 0 ? "text-error-700" : "text-success-700"}`}>
+                  <div className={`text-sm font-semibold ${Number(tx.amount) < 0 ? "text-error-700 dark:text-error-500" : "text-success-700 dark:text-success-500"}`}>
                     {tx.amount} {currency}
                   </div>
                 </div>
 
                 <div className="mt-1.5 flex items-center gap-2">
-                  <span className="text-xs text-gray-400">{t("category")}</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">{t("category")}</span>
                   <select
                     className="input w-auto py-0.5 text-xs"
                     value={tx.category ?? ""}
@@ -296,11 +296,11 @@ export default function BankReconciliationPage() {
                 </div>
 
                 {tx.reconciled ? (
-                  <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+                  <div className="mt-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                     <span>
                       {t("matchedTo")}{" "}
                       {tx.matchedInvoice ? (
-                        <Link href={`/invoices/${tx.matchedInvoice.id}`} className="text-brand-700 hover:underline">
+                        <Link href={`/invoices/${tx.matchedInvoice.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
                           {tx.matchedInvoice.number}
                         </Link>
                       ) : tx.matchedExpense ? (
@@ -309,21 +309,21 @@ export default function BankReconciliationPage() {
                         "—"
                       )}
                     </span>
-                    <button onClick={() => unmatch(tx.id)} disabled={busy} className="text-error-700 hover:underline">
+                    <button onClick={() => unmatch(tx.id)} disabled={busy} className="text-error-700 dark:text-error-500 hover:underline">
                       {t("unmatch")}
                     </button>
                   </div>
                 ) : (
                   <div className="mt-2 flex flex-col gap-2">
                     {(suggestions[tx.id] ?? []).length > 0 && (
-                      <div className="flex flex-wrap items-center gap-2 rounded-lg bg-brand-50 px-2.5 py-1.5">
-                        <span className="text-xs font-medium text-brand-700">{t("suggestedMatch")}</span>
+                      <div className="flex flex-wrap items-center gap-2 rounded-lg bg-brand-50 dark:bg-brand-500/15 px-2.5 py-1.5">
+                        <span className="text-xs font-medium text-brand-700 dark:text-brand-400">{t("suggestedMatch")}</span>
                         {(suggestions[tx.id] ?? []).map((c) => (
                           <button
                             key={`${c.type}-${c.id}`}
                             onClick={() => matchSuggested(tx.id, c)}
                             disabled={busy}
-                            className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-brand-700 shadow-theme-xs hover:bg-brand-100"
+                            className="rounded-full bg-white dark:bg-gray-800 px-2.5 py-1 text-xs font-medium text-brand-700 dark:text-brand-400 shadow-theme-xs hover:bg-brand-100"
                           >
                             {c.label} {c.exact ? "" : `(${t("approxMatch")})`}
                           </button>

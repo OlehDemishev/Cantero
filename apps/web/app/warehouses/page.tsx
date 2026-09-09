@@ -62,7 +62,7 @@ export default function WarehousesPage() {
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="card lg:col-span-1 h-fit">
-          <h2 className="mb-4 text-sm font-semibold text-gray-700">{t("newWarehouse")}</h2>
+          <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("newWarehouse")}</h2>
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             <input
               required
@@ -84,14 +84,14 @@ export default function WarehousesPage() {
 
           {warehouses && warehouses.length > 0 && (
             <div className="mt-6">
-              <div className="mb-2 text-xs font-semibold text-gray-500">{t("title")}</div>
+              <div className="mb-2 text-xs font-semibold text-gray-500 dark:text-gray-400">{t("title")}</div>
               <ul className="flex flex-col gap-1">
                 {warehouses.map((w) => (
                   <li key={w.id}>
                     <button
                       onClick={() => setSelected(w.id)}
                       className={`w-full rounded-md px-3 py-2 text-left text-sm ${
-                        selected === w.id ? "bg-gray-900 text-white" : "hover:bg-gray-100"
+                        selected === w.id ? "bg-gray-900 text-white" : "hover:bg-gray-100 dark:hover:bg-white/5"
                       }`}
                     >
                       {w.name}
@@ -105,9 +105,9 @@ export default function WarehousesPage() {
 
         <div className="lg:col-span-2">
           {!warehouses ? (
-            <p className="text-gray-500">{tc("loading")}</p>
+            <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
           ) : warehouses.length === 0 ? (
-            <p className="text-gray-500">{t("empty")}</p>
+            <p className="text-gray-500 dark:text-gray-400">{t("empty")}</p>
           ) : selected ? (
             <WarehouseDetail warehouseId={selected} allWarehouses={warehouses} />
           ) : null}

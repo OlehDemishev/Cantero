@@ -39,12 +39,12 @@ export function FixedAssetRegisterPanel() {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("title")}</h2>
-      <p className="mb-3 text-xs text-gray-500">{t("description")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("description")}</p>
       <div className="card overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-gray-200 text-left text-gray-500">
+            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
               <th className="py-1.5">{t("asset")}</th>
               <th>{t("purchaseCost")}</th>
               <th>{t("accumulatedDepreciation")}</th>
@@ -54,12 +54,12 @@ export function FixedAssetRegisterPanel() {
           </thead>
           <tbody>
             {entries.map((e) => (
-              <tr key={e.id} className="border-b border-gray-100">
+              <tr key={e.id} className="border-b border-gray-100 dark:border-gray-700">
                 <td className="py-1.5">
-                  <a href={`/equipment/${e.id}`} className="font-medium text-gray-900 hover:underline">
+                  <a href={`/equipment/${e.id}`} className="font-medium text-gray-900 dark:text-gray-50 hover:underline">
                     {e.name}
                   </a>
-                  <span className="ml-1 text-xs text-gray-400">{e.category}</span>
+                  <span className="ml-1 text-xs text-gray-400 dark:text-gray-500">{e.category}</span>
                 </td>
                 <td>
                   {e.purchaseCost} {currency}
@@ -68,13 +68,13 @@ export function FixedAssetRegisterPanel() {
                 <td className="font-medium">{e.depreciation ? `${e.depreciation.bookValue} ${currency}` : "—"}</td>
                 <td>
                   {e.disposal ? (
-                    <span className="rounded-full bg-error-50 px-2 py-0.5 text-xs font-medium text-error-700">
+                    <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-error-700 dark:text-error-500">
                       {t("disposed", { date: formatDate(new Date(e.disposal.disposedAt)) })}
                     </span>
                   ) : e.depreciation ? (
-                    <span className="rounded-full bg-success-50 px-2 py-0.5 text-xs font-medium text-success-700">{t("tracked")}</span>
+                    <span className="rounded-full bg-success-50 dark:bg-success-500/15 px-2 py-0.5 text-xs font-medium text-success-700 dark:text-success-500">{t("tracked")}</span>
                   ) : (
-                    <span className="text-xs text-gray-400">{t("noSchedule")}</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500">{t("noSchedule")}</span>
                   )}
                 </td>
               </tr>

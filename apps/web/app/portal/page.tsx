@@ -231,14 +231,14 @@ export default function PortalDashboardPage() {
 
   if (!me) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 px-6 py-12">
-        <p className="text-sm text-gray-500">{t("loading")}</p>
+      <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
+        <p className="text-sm text-gray-500 dark:text-gray-400">{t("loading")}</p>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 px-6 py-10">
+    <main className="min-h-screen bg-gray-50 dark:bg-gray-700 px-6 py-10">
       <div className="mx-auto w-full max-w-3xl">
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -246,8 +246,8 @@ export default function PortalDashboardPage() {
               C
             </span>
             <div>
-              <p className="text-sm font-semibold text-gray-900">{me.companyName}</p>
-              <p className="text-xs text-gray-500">{t("welcome", { name: me.name })}</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-gray-50">{me.companyName}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{t("welcome", { name: me.name })}</p>
             </div>
           </div>
           <button onClick={logout} className="btn-secondary px-3 py-1.5 text-xs">
@@ -257,12 +257,12 @@ export default function PortalDashboardPage() {
 
         {projects && projects.length > 0 && (
           <section className="card mb-6">
-            <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("projects")}</h2>
+            <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("projects")}</h2>
             <ul className="flex flex-col gap-2">
               {projects.map((p) => (
                 <li key={p.id} className="flex items-center justify-between">
-                  <span className="text-sm text-gray-800">{p.name}</span>
-                  <a href={`/portal/projects/${p.id}/messages`} className="text-xs text-brand-700 hover:underline">
+                  <span className="text-sm text-gray-800 dark:text-gray-100">{p.name}</span>
+                  <a href={`/portal/projects/${p.id}/messages`} className="text-xs text-brand-700 dark:text-brand-400 hover:underline">
                     {t("messages")}
                   </a>
                 </li>
@@ -273,33 +273,33 @@ export default function PortalDashboardPage() {
 
         {projects && projects.some((p) => p.progress.taskPercent !== null || p.progress.budgetPercent !== null) && (
           <section className="card mb-6">
-            <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("projectProgress")}</h2>
+            <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("projectProgress")}</h2>
             <ul className="flex flex-col gap-4">
               {projects
                 .filter((p) => p.progress.taskPercent !== null || p.progress.budgetPercent !== null)
                 .map((p) => (
                   <li key={p.id}>
-                    <p className="mb-2 text-sm font-medium text-gray-800">{p.name}</p>
+                    <p className="mb-2 text-sm font-medium text-gray-800 dark:text-gray-100">{p.name}</p>
                     {p.progress.taskPercent !== null && (
                       <div className="mb-2">
-                        <div className="mb-1 flex justify-between text-xs text-gray-500">
+                        <div className="mb-1 flex justify-between text-xs text-gray-500 dark:text-gray-400">
                           <span>{t("tasksComplete")}</span>
                           <span>
                             {p.progress.tasksDone}/{p.progress.tasksTotal} · {p.progress.taskPercent}%
                           </span>
                         </div>
-                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
                           <div className="h-full rounded-full bg-brand-500" style={{ width: `${p.progress.taskPercent}%` }} />
                         </div>
                       </div>
                     )}
                     {p.progress.budgetPercent !== null && (
                       <div>
-                        <div className="mb-1 flex justify-between text-xs text-gray-500">
+                        <div className="mb-1 flex justify-between text-xs text-gray-500 dark:text-gray-400">
                           <span>{t("budgetPaid")}</span>
                           <span>{p.progress.budgetPercent}%</span>
                         </div>
-                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
                           <div
                             className="h-full rounded-full bg-success-500"
                             style={{ width: `${Math.min(p.progress.budgetPercent, 100)}%` }}
@@ -314,33 +314,33 @@ export default function PortalDashboardPage() {
         )}
 
         <section className="card">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("estimates")}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("estimates")}</h2>
           {!estimates || estimates.length === 0 ? (
-            <p className="text-sm text-gray-400">{t("noEstimates")}</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noEstimates")}</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {estimates.map((e) => (
                 <li key={e.id}>
                   <a
                     href={`/portal/estimates/${e.id}`}
-                    className="flex items-center justify-between rounded-md border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50"
+                    className="flex items-center justify-between rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-white/5"
                   >
                     <span>
                       {e.name}
                       {e.variantLabel && <span className="ml-2 text-xs text-brand-600">{e.variantLabel}</span>}
-                      <span className="ml-2 text-xs text-gray-400">{e.project?.name}</span>
+                      <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">{e.project?.name}</span>
                     </span>
                     <span className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
                         {e.grandTotal} {me.currency}
                       </span>
                       <span
                         className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                           e.clientDecision === "approved"
-                            ? "bg-success-50 text-success-700"
+                            ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
                             : e.clientDecision === "rejected"
-                              ? "bg-error-50 text-error-700"
-                              : "bg-warning-50 text-warning-700"
+                              ? "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500"
+                              : "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500"
                         }`}
                       >
                         {te(`clientDecision_${e.clientDecision}`)}
@@ -354,32 +354,32 @@ export default function PortalDashboardPage() {
         </section>
 
         <section className="card mt-6">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("changeOrders")}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("changeOrders")}</h2>
           {!changeOrders || changeOrders.length === 0 ? (
-            <p className="text-sm text-gray-400">{t("noChangeOrders")}</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noChangeOrders")}</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {changeOrders.map((co) => (
                 <li key={co.id}>
                   <a
                     href={`/portal/change-orders/${co.id}`}
-                    className="flex items-center justify-between rounded-md border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50"
+                    className="flex items-center justify-between rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-white/5"
                   >
                     <span>
                       CO-{co.number} — {co.title}
-                      <span className="ml-2 text-xs text-gray-400">{co.estimate.name}</span>
+                      <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">{co.estimate.name}</span>
                     </span>
                     <span className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
                         {co.grandTotal} {me.currency}
                       </span>
                       <span
                         className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                           co.clientDecision === "approved"
-                            ? "bg-success-50 text-success-700"
+                            ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
                             : co.clientDecision === "rejected"
-                              ? "bg-error-50 text-error-700"
-                              : "bg-warning-50 text-warning-700"
+                              ? "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500"
+                              : "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500"
                         }`}
                       >
                         {te(`clientDecision_${co.clientDecision}`)}
@@ -393,28 +393,28 @@ export default function PortalDashboardPage() {
         </section>
 
         <section className="card mt-6">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("invoices")}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("invoices")}</h2>
           {!invoices || invoices.length === 0 ? (
-            <p className="text-sm text-gray-400">{t("noInvoices")}</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noInvoices")}</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {invoices.map((inv) => (
                 <li key={inv.id}>
                   <a
                     href={`/portal/invoices/${inv.id}`}
-                    className="flex items-center justify-between rounded-md border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50"
+                    className="flex items-center justify-between rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-white/5"
                   >
                     <span>
                       {inv.number}
-                      <span className="ml-2 text-xs text-gray-400">{inv.project.name}</span>
+                      <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">{inv.project.name}</span>
                     </span>
                     <span className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
                         {inv.total} {me.currency}
                       </span>
                       <span
                         className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          inv.status === "paid" ? "bg-success-50 text-success-700" : "bg-gray-100 text-gray-600"
+                          inv.status === "paid" ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                         }`}
                       >
                         {ti(inv.status)}
@@ -428,10 +428,10 @@ export default function PortalDashboardPage() {
         </section>
 
         <section className="card mt-6">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("paymentMethod")}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("paymentMethod")}</h2>
           {me.savedCardLast4 ? (
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-700">
+              <span className="text-sm text-gray-700 dark:text-gray-200">
                 {t("cardOnFile", { brand: me.savedCardBrand ?? "", last4: me.savedCardLast4 })}
               </span>
               <button onClick={removeCard} disabled={paymentMethodBusy} className="btn-secondary px-2 py-1 text-xs">
@@ -440,7 +440,7 @@ export default function PortalDashboardPage() {
             </div>
           ) : (
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-500">{t("noCardOnFile")}</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">{t("noCardOnFile")}</span>
               <button onClick={saveCard} disabled={paymentMethodBusy} className="btn-secondary px-2 py-1 text-xs">
                 {t("saveCard")}
               </button>
@@ -449,27 +449,27 @@ export default function PortalDashboardPage() {
         </section>
 
         <section className="card mt-6">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("warranty")}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("warranty")}</h2>
           {!warrantyClaims || warrantyClaims.length === 0 ? (
-            <p className="text-sm text-gray-400">{t("noWarrantyClaims")}</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noWarrantyClaims")}</p>
           ) : (
             <ul className="mb-4 flex flex-col gap-2">
               {warrantyClaims.map((claim) => (
-                <li key={claim.id} className="flex items-center justify-between rounded-md border border-gray-200 px-3 py-2 text-sm">
+                <li key={claim.id} className="flex items-center justify-between rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm">
                   <span>
                     {claim.title}
-                    <span className="ml-2 text-xs text-gray-400">{claim.project.name}</span>
-                    {claim.location && <span className="ml-2 text-xs text-gray-400">— {claim.location}</span>}
+                    <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">{claim.project.name}</span>
+                    {claim.location && <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">— {claim.location}</span>}
                   </span>
                   <span
                     className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                       claim.status === "resolved"
-                        ? "bg-success-50 text-success-700"
+                        ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
                         : claim.status === "denied"
-                          ? "bg-error-50 text-error-700"
+                          ? "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500"
                           : claim.status === "in_progress"
-                            ? "bg-brand-50 text-brand-700"
-                            : "bg-gray-100 text-gray-600"
+                            ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400"
+                            : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                     }`}
                   >
                     {t(`claimStatus_${claim.status}`)}
@@ -480,10 +480,10 @@ export default function PortalDashboardPage() {
           )}
 
           {!projects || projects.filter((p) => p.isUnderWarranty).length === 0 ? (
-            <p className="text-sm text-gray-400">{t("noProjectsUnderWarranty")}</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noProjectsUnderWarranty")}</p>
           ) : (
             <form onSubmit={submitClaim} className="flex flex-col gap-2">
-              <label className="text-xs text-gray-500">
+              <label className="text-xs text-gray-500 dark:text-gray-400">
                 {t("project")}
                 <select
                   className="input mt-1"
@@ -522,40 +522,40 @@ export default function PortalDashboardPage() {
               <button type="submit" disabled={claimBusy} className="btn-primary self-start">
                 {t("submitClaim")}
               </button>
-              {claimMessage && <p className="text-xs text-gray-600">{claimMessage}</p>}
+              {claimMessage && <p className="text-xs text-gray-600 dark:text-gray-300">{claimMessage}</p>}
             </form>
           )}
         </section>
 
         <section className="card mt-6">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("changeRequests")}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("changeRequests")}</h2>
           {!changeRequests || changeRequests.length === 0 ? (
-            <p className="mb-4 text-sm text-gray-400">{t("noChangeRequests")}</p>
+            <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">{t("noChangeRequests")}</p>
           ) : (
             <ul className="mb-4 flex flex-col gap-2">
               {changeRequests.map((request) => (
-                <li key={request.id} className="rounded-md border border-gray-200 px-3 py-2 text-sm">
+                <li key={request.id} className="rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm">
                   <div className="flex items-center justify-between">
                     <span>
                       {request.title}
-                      <span className="ml-2 text-xs text-gray-400">{request.project.name}</span>
+                      <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">{request.project.name}</span>
                     </span>
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                         request.status === "converted"
-                          ? "bg-success-50 text-success-700"
+                          ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
                           : request.status === "declined"
-                            ? "bg-error-50 text-error-700"
+                            ? "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500"
                             : request.status === "under_review"
-                              ? "bg-brand-50 text-brand-700"
-                              : "bg-gray-100 text-gray-600"
+                              ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400"
+                              : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                       }`}
                     >
                       {t(`changeRequestStatus_${request.status}`)}
                     </span>
                   </div>
                   {request.status === "declined" && request.reviewNote && (
-                    <p className="mt-1 text-xs text-gray-500">{t("declineReason", { note: request.reviewNote })}</p>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t("declineReason", { note: request.reviewNote })}</p>
                   )}
                 </li>
               ))}
@@ -563,10 +563,10 @@ export default function PortalDashboardPage() {
           )}
 
           {!projects || projects.length === 0 ? (
-            <p className="text-sm text-gray-400">{t("noProjects")}</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noProjects")}</p>
           ) : (
             <form onSubmit={submitChangeRequest} className="flex flex-col gap-2">
-              <label className="text-xs text-gray-500">
+              <label className="text-xs text-gray-500 dark:text-gray-400">
                 {t("project")}
                 <select
                   className="input mt-1"
@@ -598,34 +598,34 @@ export default function PortalDashboardPage() {
               <button type="submit" disabled={changeRequestBusy} className="btn-primary self-start">
                 {t("submitChangeRequest")}
               </button>
-              {changeRequestMessage && <p className="text-xs text-gray-600">{changeRequestMessage}</p>}
+              {changeRequestMessage && <p className="text-xs text-gray-600 dark:text-gray-300">{changeRequestMessage}</p>}
             </form>
           )}
         </section>
 
         <section className="card mt-6">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("myTickets")}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("myTickets")}</h2>
           {!tickets || tickets.length === 0 ? (
-            <p className="mb-4 text-sm text-gray-400">{t("noTickets")}</p>
+            <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">{t("noTickets")}</p>
           ) : (
             <ul className="mb-4 flex flex-col gap-2">
               {tickets.map((ticket) => (
                 <li key={ticket.id}>
                   <a
                     href={`/portal/tickets/${ticket.id}`}
-                    className="flex items-center justify-between rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-brand-300"
+                    className="flex items-center justify-between rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm hover:border-brand-300"
                   >
                     <span>
                       {ticket.subject}
-                      <span className="ml-2 text-xs text-gray-400">{formatDate(new Date(ticket.createdAt))}</span>
+                      <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">{formatDate(new Date(ticket.createdAt))}</span>
                     </span>
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                         ticket.status === "resolved" || ticket.status === "closed"
-                          ? "bg-success-50 text-success-700"
+                          ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
                           : ticket.status === "waiting_on_customer"
-                            ? "bg-warning-50 text-warning-700"
-                            : "bg-brand-50 text-brand-700"
+                            ? "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500"
+                            : "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400"
                       }`}
                     >
                       {t(`ticketStatus_${ticket.status}`)}

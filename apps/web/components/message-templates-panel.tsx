@@ -58,20 +58,20 @@ export function MessageTemplatesPanel() {
 
   return (
     <div className="mt-8">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("title")}</h2>
-      <p className="mb-3 text-xs text-gray-500">{t("description")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("description")}</p>
       <div className="flex flex-col gap-3">
         {templates.map((entry) => (
           <div key={entry.key} className="card">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-800">{t(`key_${entry.key}`)}</span>
+              <span className="text-sm font-medium text-gray-800 dark:text-gray-100">{t(`key_${entry.key}`)}</span>
               {entry.customBody !== null && (
-                <button onClick={() => reset(entry.key)} disabled={busyKey === entry.key} className="text-xs text-gray-400 hover:text-error-700">
+                <button onClick={() => reset(entry.key)} disabled={busyKey === entry.key} className="text-xs text-gray-400 dark:text-gray-500 hover:text-error-700">
                   {t("resetToDefault")}
                 </button>
               )}
             </div>
-            <p className="mt-1 text-xs text-gray-400">
+            <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
               {t("placeholders")}: {entry.placeholders.map((p) => `{{${p}}}`).join(", ")}
             </p>
             <textarea
@@ -85,12 +85,12 @@ export function MessageTemplatesPanel() {
                 {t("save")}
               </button>
               {entry.customBody !== null && entry.updatedByName && (
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-gray-400 dark:text-gray-500">
                   {t("customizedBy", { name: entry.updatedByName })}
                 </span>
               )}
             </div>
-            {errorKey?.key === entry.key && <p className="mt-1 text-xs text-error-700">{errorKey.message}</p>}
+            {errorKey?.key === entry.key && <p className="mt-1 text-xs text-error-700 dark:text-error-500">{errorKey.message}</p>}
           </div>
         ))}
       </div>

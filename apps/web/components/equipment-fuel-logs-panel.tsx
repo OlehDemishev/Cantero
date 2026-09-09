@@ -73,12 +73,12 @@ export function EquipmentFuelLogsPanel({ equipmentId, currency }: { equipmentId:
 
   return (
     <section className="card">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("fuelLogs")}</h2>
-      <p className="mb-3 text-xs text-gray-500">{t("fuelLogsHint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("fuelLogs")}</h2>
+      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("fuelLogsHint")}</p>
       {costPerHour && (
         <p className="mb-3 text-sm text-gray-700 dark:text-gray-300">
           {t("costPerHour")}: {costPerHour.costPerHour !== null ? `${costPerHour.costPerHour} ${currency}/${t("hoursAbbr")}` : "—"}
-          <span className="ml-2 text-xs text-gray-400">
+          <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
             ({t("totalCost")}: {costPerHour.totalCost} {currency})
           </span>
         </p>
@@ -89,7 +89,7 @@ export function EquipmentFuelLogsPanel({ equipmentId, currency }: { equipmentId:
             {t("tco")}: {tco.totalCost} {currency}
           </span>
           {tco.totalCost > 0 && (
-            <span className="ml-2 text-xs text-gray-400">
+            <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
               ({t("tcoBreakdown", {
                 fuel: tco.fuelSharePercent ?? 0,
                 maintenance: tco.maintenanceSharePercent ?? 0,
@@ -100,20 +100,20 @@ export function EquipmentFuelLogsPanel({ equipmentId, currency }: { equipmentId:
         </div>
       )}
       {!fuelLogs || fuelLogs.length === 0 ? (
-        <p className="mb-3 text-sm text-gray-400">{t("noFuelLogs")}</p>
+        <p className="mb-3 text-sm text-gray-400 dark:text-gray-500">{t("noFuelLogs")}</p>
       ) : (
         <ul className="mb-3 flex flex-col gap-2">
           {fuelLogs.map((f) => (
-            <li key={f.id} className="border-b border-gray-100 pb-2 text-sm">
+            <li key={f.id} className="border-b border-gray-100 dark:border-gray-700 pb-2 text-sm">
               <div className="flex justify-between">
                 <span>{f.quantity}</span>
                 {f.cost && (
-                  <span className="text-gray-500">
+                  <span className="text-gray-500 dark:text-gray-400">
                     {f.cost} {currency}
                   </span>
                 )}
               </div>
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-gray-400 dark:text-gray-500">
                 {formatDate(new Date(f.filledAt))}
                 {f.supplier && ` · ${f.supplier.name}`}
                 {f.meterHours && ` · ${f.meterHours}${t("hoursAbbr")}`}

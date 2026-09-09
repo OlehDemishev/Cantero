@@ -117,24 +117,24 @@ export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("title")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
       {!costs ? (
-        <p className="text-sm text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
       ) : costs.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noCosts")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noCosts")}</p>
       ) : (
         <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <tbody>
             {costs.map((c) => (
-              <tr key={c.id} className="border-b border-gray-100">
+              <tr key={c.id} className="border-b border-gray-100 dark:border-gray-700">
                 <td className="py-1.5">{c.description}</td>
-                <td className="text-gray-500">{c.subcontractor.name}</td>
-                <td className="text-gray-500">{c.dueDate ? formatDate(new Date(c.dueDate)) : "—"}</td>
+                <td className="text-gray-500 dark:text-gray-400">{c.subcontractor.name}</td>
+                <td className="text-gray-500 dark:text-gray-400">{c.dueDate ? formatDate(new Date(c.dueDate)) : "—"}</td>
                 <td>
                   <span
                     className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                      c.paid ? "bg-success-50 text-success-700" : "bg-gray-100 text-gray-500"
+                      c.paid ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
                     }`}
                   >
                     {c.paid ? t("paid") : t("unpaid")}
@@ -153,7 +153,7 @@ export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
                 <td className="text-right">
                   {!c.lienWaiver ? (
                     <div className="flex items-center justify-end gap-1.5">
-                      <label className="flex items-center gap-1 text-xs text-gray-500">
+                      <label className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                         <input
                           type="checkbox"
                           checked={!!finalFlags[c.id]}
@@ -170,7 +170,7 @@ export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
                       {t("downloadWaiver")}
                     </button>
                   ) : (
-                    <span className="rounded-full bg-warning-50 px-2 py-0.5 text-xs font-medium text-warning-700">
+                    <span className="rounded-full bg-warning-50 dark:bg-warning-500/15 px-2 py-0.5 text-xs font-medium text-warning-700 dark:text-warning-500">
                       {t("waiverAwaitingSignature")}
                     </span>
                   )}

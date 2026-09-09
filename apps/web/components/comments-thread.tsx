@@ -82,18 +82,18 @@ export function CommentsThread({ param, entityId }: { param: CommentParam; entit
 
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-xs font-medium text-gray-700">{t("title")}</span>
+      <span className="text-xs font-medium text-gray-700 dark:text-gray-200">{t("title")}</span>
       {comments === null ? null : comments.length === 0 ? (
-        <p className="text-xs text-gray-400">{t("noComments")}</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500">{t("noComments")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {comments.map((c) => (
-            <li key={c.id} className="rounded-md bg-gray-50 px-3 py-2 text-xs">
+            <li key={c.id} className="rounded-md bg-gray-50 dark:bg-gray-700 px-3 py-2 text-xs">
               <div className="flex items-center justify-between">
-                <span className="font-medium text-gray-900">{c.authorName}</span>
-                <span className="text-gray-400">{formatDateTime(new Date(c.createdAt))}</span>
+                <span className="font-medium text-gray-900 dark:text-gray-50">{c.authorName}</span>
+                <span className="text-gray-400 dark:text-gray-500">{formatDateTime(new Date(c.createdAt))}</span>
               </div>
-              <p className="mt-1 whitespace-pre-wrap text-gray-700">{c.content}</p>
+              <p className="mt-1 whitespace-pre-wrap text-gray-700 dark:text-gray-200">{c.content}</p>
             </li>
           ))}
         </ul>

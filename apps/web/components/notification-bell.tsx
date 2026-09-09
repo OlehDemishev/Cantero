@@ -121,20 +121,20 @@ export function NotificationBell() {
           <div className="flex items-center justify-between px-2 py-1.5">
             <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t("title")}</span>
             {data && data.notifications.some((n) => !n.read) && (
-              <button onClick={markAllRead} className="text-xs text-brand-700 hover:underline">
+              <button onClick={markAllRead} className="text-xs text-brand-700 dark:text-brand-400 hover:underline">
                 {t("markAllRead")}
               </button>
             )}
           </div>
           {!data ? (
-            <p className="px-2 py-3 text-sm text-gray-400">{t("loading")}</p>
+            <p className="px-2 py-3 text-sm text-gray-400 dark:text-gray-500">{t("loading")}</p>
           ) : data.notifications.length === 0 ? (
-            <p className="px-2 py-3 text-sm text-gray-400">{t("empty")}</p>
+            <p className="px-2 py-3 text-sm text-gray-400 dark:text-gray-500">{t("empty")}</p>
           ) : (
             <div className="flex flex-col gap-2">
               {grouped.map((g) => (
                 <div key={g.type}>
-                  <div className="px-2 pb-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                  <div className="px-2 pb-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
                     {t(`type_${g.type}`)}
                   </div>
                   <ul className="flex flex-col gap-0.5">
@@ -157,7 +157,7 @@ export function NotificationBell() {
                           <button
                             onClick={() => markRead(n.key)}
                             title={t("markRead")}
-                            className="mt-2 flex-shrink-0 text-xs text-gray-400 hover:text-brand-700"
+                            className="mt-2 flex-shrink-0 text-xs text-gray-400 dark:text-gray-500 hover:text-brand-700"
                           >
                             ✓
                           </button>

@@ -38,7 +38,7 @@ export function WorkerTrainingPanel({ workerId }: { workerId: string }) {
 
   return (
     <>
-      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700">{t("trainingHistory")}</h2>
+      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("trainingHistory")}</h2>
       {trainingEnrollments.length === 0 ? (
         <EmptyState message={t("noTrainingEnrollments")} cta={{ label: t("enrollInTraining"), href: "/settings?tab=templates" }} />
       ) : (
@@ -47,7 +47,7 @@ export function WorkerTrainingPanel({ workerId }: { workerId: string }) {
           <li key={en.id} className="card flex items-center justify-between gap-2 text-sm">
             <span>{en.course.title}</span>
             {en.status === "completed" ? (
-              <span className="rounded-full bg-success-50 px-2 py-0.5 text-xs font-medium text-success-700">
+              <span className="rounded-full bg-success-50 dark:bg-success-500/15 px-2 py-0.5 text-xs font-medium text-success-700 dark:text-success-500">
                 {en.completedAt ? formatDate(new Date(en.completedAt)) : t("markComplete")}
               </span>
             ) : (

@@ -56,15 +56,15 @@ export function SavedViewsBar<T extends object>({
       {views && views.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {views.map((v) => (
-            <span key={v.id} className="flex items-center gap-1 rounded-full border border-gray-200 px-2 py-1 text-xs">
-              <button type="button" onClick={() => onApply(v.filters)} className="text-brand-700 hover:underline">
+            <span key={v.id} className="flex items-center gap-1 rounded-full border border-gray-200 dark:border-gray-700 px-2 py-1 text-xs">
+              <button type="button" onClick={() => onApply(v.filters)} className="text-brand-700 dark:text-brand-400 hover:underline">
                 {v.name}
               </button>
               <button
                 type="button"
                 onClick={() => remove(v.id)}
                 aria-label={t("removeView")}
-                className="text-gray-400 hover:text-error-600"
+                className="text-gray-400 dark:text-gray-500 hover:text-error-600"
               >
                 ×
               </button>

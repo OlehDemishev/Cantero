@@ -12,9 +12,9 @@ interface Health {
 }
 
 const bandClass: Record<Band, string> = {
-  good: "bg-success-50 text-success-700",
+  good: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
   watch: "bg-amber-50 text-amber-700",
-  at_risk: "bg-error-50 text-error-700",
+  at_risk: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
 };
 
 export function ProjectHealthBadge({ projectId }: { projectId: string }) {
@@ -33,7 +33,7 @@ export function ProjectHealthBadge({ projectId }: { projectId: string }) {
         {t(`health_${health.band}`)} · {health.score}
       </span>
       {health.factors.length > 0 && (
-        <span className="pointer-events-none absolute left-0 top-full z-10 mt-1 hidden w-56 rounded border border-gray-200 bg-white p-2 text-xs text-gray-600 shadow-lg group-hover:block">
+        <span className="pointer-events-none absolute left-0 top-full z-10 mt-1 hidden w-56 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-2 text-xs text-gray-600 dark:text-gray-300 shadow-lg group-hover:block">
           {health.factors.map((f) => (
             <div key={f.label}>{f.label}</div>
           ))}

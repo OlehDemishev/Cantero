@@ -62,22 +62,22 @@ export function DrawingSheetsPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("title")}</h2>
-      <p className="mb-3 text-xs text-gray-500">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
 
       {!sheets ? (
-        <p className="text-gray-500">{tc("loading")}</p>
+        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
       ) : sheets.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noSheets")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noSheets")}</p>
       ) : (
         <ul className="mb-4 flex flex-col gap-1.5">
           {sheets.map((s) => (
             <li key={s.id} className="flex items-center justify-between text-sm">
-              <a href={`/drawings/${s.id}`} className="text-brand-700 hover:underline">
-                {s.sheetNumber} {s.title && `— ${s.title}`} {s.discipline && <span className="text-gray-400">({s.discipline})</span>}
-                {s.revision && <span className="text-gray-400"> · {t("revision")} {s.revision}</span>}
+              <a href={`/drawings/${s.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
+                {s.sheetNumber} {s.title && `— ${s.title}`} {s.discipline && <span className="text-gray-400 dark:text-gray-500">({s.discipline})</span>}
+                {s.revision && <span className="text-gray-400 dark:text-gray-500"> · {t("revision")} {s.revision}</span>}
               </a>
-              <button onClick={() => remove(s.id)} className="text-gray-400 hover:text-error-600">
+              <button onClick={() => remove(s.id)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
                 ×
               </button>
             </li>

@@ -103,26 +103,26 @@ export function SubcontractorAssignmentsPanel({ projectId }: { projectId: string
 
   return (
     <div className="mt-10">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("assignmentsTitle")}</h2>
-      <p className="mb-3 text-xs text-gray-500">{t("assignmentsHint")}</p>
-      {error && <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("assignmentsTitle")}</h2>
+      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("assignmentsHint")}</p>
+      {error && <p className="mb-3 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{error}</p>}
 
       {!assignmentsBySubcontractor ? (
-        <p className="text-sm text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
       ) : onThisProject.length === 0 ? (
-        <p className="mb-4 text-sm text-gray-400">{t("noAssignedSubcontractors")}</p>
+        <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">{t("noAssignedSubcontractors")}</p>
       ) : (
         <ul className="mb-4 flex flex-col gap-2">
           {onThisProject.map(({ subcontractor, assignment }) => (
             <li
               key={subcontractor.id}
-              className="flex items-center justify-between rounded-md border border-gray-200 px-3 py-2 text-sm"
+              className="flex items-center justify-between rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm"
             >
               <span>
                 {subcontractor.name}
-                {subcontractor.email && <span className="ml-2 text-xs text-gray-400">{subcontractor.email}</span>}
+                {subcontractor.email && <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">{subcontractor.email}</span>}
                 {assignment.startDate && assignment.endDate && (
-                  <span className="ml-2 text-xs text-gray-400">
+                  <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
                     {formatDate(new Date(assignment.startDate))} – {formatDate(new Date(assignment.endDate))}
                   </span>
                 )}
@@ -162,11 +162,11 @@ export function SubcontractorAssignmentsPanel({ projectId }: { projectId: string
             />
           </>
         )}
-        <label className="flex flex-col gap-1 text-xs text-gray-500">
+        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {t("startDate")}
           <input type="date" className="input w-auto" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
         </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500">
+        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {t("endDate")}
           <input
             type="date"

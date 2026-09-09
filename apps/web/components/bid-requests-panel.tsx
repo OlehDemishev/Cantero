@@ -60,9 +60,9 @@ interface Leveling {
 }
 
 const STATUS_STYLES: Record<BidRequestStatus, string> = {
-  open: "bg-brand-50 text-brand-700",
-  awarded: "bg-success-50 text-success-700",
-  cancelled: "bg-gray-100 text-gray-500",
+  open: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
+  awarded: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
+  cancelled: "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400",
 };
 
 export function BidRequestsPanel({ projectId }: { projectId: string }) {
@@ -218,7 +218,7 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
         {!creating && (
           <button onClick={() => setCreating(true)} className="btn-secondary px-3 py-1 text-xs">
             {t("newBidRequest")}
@@ -229,11 +229,11 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
       {creating && (
         <form onSubmit={submit} className="card mb-4 flex flex-col gap-3">
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("scopeTitle")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("scopeTitle")}</span>
             <input required className="input" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
           </label>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{tc("description")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{tc("description")}</span>
             <textarea
               rows={2}
               className="input"
@@ -242,7 +242,7 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
             />
           </label>
           <label className="flex w-auto flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("dueDate")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("dueDate")}</span>
             <input
               type="date"
               className="input"
@@ -251,13 +251,13 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
             />
           </label>
           <div className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("inviteSubcontractors")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("inviteSubcontractors")}</span>
             {subcontractors.length === 0 ? (
-              <p className="text-xs text-gray-400">{t("noSubcontractors")}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">{t("noSubcontractors")}</p>
             ) : (
               <div className="flex flex-wrap gap-2">
                 {subcontractors.map((s) => (
-                  <label key={s.id} className="flex items-center gap-1.5 rounded-md border border-gray-200 px-2 py-1 text-xs">
+                  <label key={s.id} className="flex items-center gap-1.5 rounded-md border border-gray-200 dark:border-gray-700 px-2 py-1 text-xs">
                     <input type="checkbox" checked={form.subcontractorIds.has(s.id)} onChange={() => toggleSub(s.id)} />
                     {s.name}
                   </label>
@@ -278,9 +278,9 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
       )}
 
       {requests === null ? (
-        <p className="text-sm text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
       ) : requests.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noBidRequests")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noBidRequests")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {requests.map((r) => {
@@ -291,26 +291,26 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
               <li key={r.id} className="card">
                 <button onClick={() => toggleExpand(r.id)} className="flex w-full items-center justify-between text-left">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-900">{r.title}</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{r.title}</span>
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[r.status]}`}>{t(r.status)}</span>
                   </div>
-                  <span className="text-xs text-gray-400">{t("bidCount", { count: r.bids.length, total: r.invites.length })}</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">{t("bidCount", { count: r.bids.length, total: r.invites.length })}</span>
                 </button>
 
-                {expanded && !d && <p className="mt-3 text-xs text-gray-400">{tc("loading")}</p>}
+                {expanded && !d && <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>}
 
                 {d && (
-                  <div className="mt-3 flex flex-col gap-3 border-t border-gray-100 pt-3 text-sm">
-                    {d.description && <p className="text-gray-600">{d.description}</p>}
+                  <div className="mt-3 flex flex-col gap-3 border-t border-gray-100 dark:border-gray-700 pt-3 text-sm">
+                    {d.description && <p className="text-gray-600 dark:text-gray-300">{d.description}</p>}
                     {error && <p className="text-xs text-error-600">{error}</p>}
 
                     <div>
-                      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("scoringCriteria")}</p>
+                      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("scoringCriteria")}</p>
                       <div className="flex flex-wrap gap-1.5">
                         {d.criteria.map((c) => (
-                          <span key={c.id} className="flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
+                          <span key={c.id} className="flex items-center gap-1 rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs text-gray-700 dark:text-gray-200">
                             {c.label} ({c.weight})
-                            <button onClick={() => removeCriterion(r.id, c.id)} className="text-gray-400 hover:text-error-700">
+                            <button onClick={() => removeCriterion(r.id, c.id)} className="text-gray-400 dark:text-gray-500 hover:text-error-700">
                               ×
                             </button>
                           </span>
@@ -340,7 +340,7 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                     <div className="overflow-x-auto">
                     <table className="w-full border-collapse text-sm">
                       <thead>
-                        <tr className="border-b border-gray-200 text-left text-xs text-gray-500">
+                        <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-xs text-gray-500 dark:text-gray-400">
                           <th className="py-1">{t("subcontractor")}</th>
                           <th className="text-right">{t("amount")}</th>
                           {d.criteria.map((c) => (
@@ -358,10 +358,10 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                           const dBid = d.bids.find((b) => b.subcontractor.id === inv.subcontractor.id);
                           const scoresByCriterion = Object.fromEntries((dBid?.scores ?? []).map((s) => [s.criterionId, s.score]));
                           return (
-                            <tr key={inv.subcontractor.id} className="border-b border-gray-100">
+                            <tr key={inv.subcontractor.id} className="border-b border-gray-100 dark:border-gray-700">
                               <td className="py-1">{inv.subcontractor.name}</td>
                               <td className="text-right font-medium tabular-nums">
-                                {bid ? `${bid.amount} ${currency}` : <span className="text-gray-400">{t("noBidYet")}</span>}
+                                {bid ? `${bid.amount} ${currency}` : <span className="text-gray-400 dark:text-gray-500">{t("noBidYet")}</span>}
                               </td>
                               {d.criteria.map((c) => (
                                 <td key={c.id} className="px-1 text-center">
@@ -385,12 +385,12 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                                   )}
                                 </td>
                               ))}
-                              <td className="text-right text-xs font-medium text-gray-700">
+                              <td className="text-right text-xs font-medium text-gray-700 dark:text-gray-200">
                                 {dBid?.weightedScore ?? "—"}
                               </td>
                               <td className="pl-2 text-right">
                                 {bid?.isAwarded && (
-                                  <span className="rounded-full bg-success-50 px-2 py-0.5 text-xs font-medium text-success-700">
+                                  <span className="rounded-full bg-success-50 dark:bg-success-500/15 px-2 py-0.5 text-xs font-medium text-success-700 dark:text-success-500">
                                     {t("awarded")}
                                   </span>
                                 )}
@@ -420,16 +420,16 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                     </div>
 
                     {showLeveling && (
-                      <div className="border-t border-gray-100 pt-3">
+                      <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
                         {!leveling ? (
-                          <p className="text-xs text-gray-400">{tc("loading")}</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>
                         ) : leveling.scopeItems.length === 0 ? (
-                          <p className="text-xs text-gray-400">{t("noLevelingData")}</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">{t("noLevelingData")}</p>
                         ) : (
                           <div className="overflow-x-auto">
                             <table className="w-full min-w-[480px] border-collapse text-xs">
                               <thead>
-                                <tr className="border-b border-gray-200 text-left text-gray-500">
+                                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
                                   <th className="py-1">{t("scopeItem")}</th>
                                   {leveling.bids.map((b) => (
                                     <th key={b.id} className="px-1 text-right">
@@ -440,7 +440,7 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                               </thead>
                               <tbody>
                                 {leveling.scopeItems.map((row) => (
-                                  <tr key={row.description} className="border-b border-gray-100">
+                                  <tr key={row.description} className="border-b border-gray-100 dark:border-gray-700">
                                     <td className="py-1">{row.description}</td>
                                     {leveling.bids.map((b) => {
                                       const cell = row.byBid[b.id];
@@ -449,7 +449,7 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                                           {!cell ? (
                                             <span className="text-gray-300">{t("notMentioned")}</span>
                                           ) : (
-                                            <span className={cell.included ? "text-gray-900" : "text-error-600 line-through"}>
+                                            <span className={cell.included ? "text-gray-900 dark:text-gray-50" : "text-error-600 line-through"}>
                                               {cell.amount} {currency}
                                             </span>
                                           )}

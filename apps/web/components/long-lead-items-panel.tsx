@@ -26,12 +26,12 @@ interface LongLeadItem extends LongLeadRisk {
 
 const STATUSES: LongLeadItemStatus[] = ["tracking", "ordered", "in_fabrication", "shipped", "delivered"];
 const RISK_STYLES: Record<LongLeadRisk["risk"], string> = {
-  delivered_on_time: "bg-success-50 text-success-700",
-  delivered_late: "bg-error-50 text-error-700",
-  on_track: "bg-success-50 text-success-700",
-  at_risk: "bg-warning-50 text-warning-700",
-  critical: "bg-error-50 text-error-700",
-  unscheduled: "bg-gray-100 text-gray-500",
+  delivered_on_time: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
+  delivered_late: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
+  on_track: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
+  at_risk: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
+  critical: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
+  unscheduled: "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400",
 };
 
 const EMPTY_FORM = { description: "", supplierId: "", requiredOnSiteDate: "", expectedDeliveryDate: "" };
@@ -92,24 +92,24 @@ export function LongLeadItemsPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
         {!creating && (
           <button onClick={() => setCreating(true)} className="btn-secondary px-3 py-1 text-xs">
             {t("newItem")}
           </button>
         )}
       </div>
-      <p className="mb-3 text-xs text-gray-500">{t("hint")}</p>
+      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
 
       {creating && (
         <form onSubmit={submit} className="card mb-4 flex flex-col gap-3">
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("description")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("description")}</span>
             <input required className="input" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
           </label>
           <div className="flex flex-wrap gap-3">
             <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("supplier")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("supplier")}</span>
               <select className="input" value={form.supplierId} onChange={(e) => setForm((f) => ({ ...f, supplierId: e.target.value }))}>
                 <option value="">—</option>
                 {suppliers.map((s) => (
@@ -120,7 +120,7 @@ export function LongLeadItemsPanel({ projectId }: { projectId: string }) {
               </select>
             </label>
             <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("requiredOnSiteDate")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("requiredOnSiteDate")}</span>
               <input
                 type="date"
                 className="input"
@@ -129,7 +129,7 @@ export function LongLeadItemsPanel({ projectId }: { projectId: string }) {
               />
             </label>
             <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("expectedDeliveryDate")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("expectedDeliveryDate")}</span>
               <input
                 type="date"
                 className="input"
@@ -150,7 +150,7 @@ export function LongLeadItemsPanel({ projectId }: { projectId: string }) {
       )}
 
       {items.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noItems")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noItems")}</p>
       ) : (
         <div className="card overflow-x-auto">
           <table className="w-full min-w-[820px] border-collapse text-sm">

@@ -69,18 +69,18 @@ export function FranchisePanel() {
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("franchise")}</h2>
-      <p className="mb-4 text-xs text-gray-500">{t("franchiseHint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("franchise")}</h2>
+      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("franchiseHint")}</p>
 
       {franchiseError && <p className="mb-3 text-xs text-red-600">{franchiseError}</p>}
 
       {franchiseOverview && franchiseOverview.branches.length > 0 ? (
         <>
-          <p className="mb-2 text-xs text-gray-500">{t("reportingIn", { currency: franchiseOverview.reportingCurrency ?? "" })}</p>
+          <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">{t("reportingIn", { currency: franchiseOverview.reportingCurrency ?? "" })}</p>
           <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 text-left text-gray-500">
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
                 <th className="py-2">{tc("name")}</th>
                 <th className="py-2">{t("branchRevenue")}</th>
                 <th className="py-2">{t("branchCost")}</th>
@@ -91,12 +91,12 @@ export function FranchisePanel() {
             </thead>
             <tbody>
               {franchiseOverview.branches.map((b) => (
-                <tr key={b.companyId} className="border-b border-gray-100">
+                <tr key={b.companyId} className="border-b border-gray-100 dark:border-gray-700">
                   <td className="py-2">{b.name}</td>
                   <td className="py-2">
                     {b.revenueConverted.toFixed(2)} {franchiseOverview.reportingCurrency}
                     {b.currency !== franchiseOverview.reportingCurrency && (
-                      <span className="ml-1 text-xs text-gray-400">
+                      <span className="ml-1 text-xs text-gray-400 dark:text-gray-500">
                         ({b.revenue.toFixed(2)} {b.currency})
                       </span>
                     )}
@@ -104,7 +104,7 @@ export function FranchisePanel() {
                   <td className="py-2">
                     {b.costConverted.toFixed(2)} {franchiseOverview.reportingCurrency}
                   </td>
-                  <td className={`py-2 font-medium ${b.marginConverted >= 0 ? "text-success-700" : "text-error-700"}`}>
+                  <td className={`py-2 font-medium ${b.marginConverted >= 0 ? "text-success-700 dark:text-success-500" : "text-error-700 dark:text-error-500"}`}>
                     {b.marginConverted.toFixed(2)} {franchiseOverview.reportingCurrency}
                   </td>
                   <td className="py-2">{b.projectCount}</td>
@@ -112,7 +112,7 @@ export function FranchisePanel() {
                 </tr>
               ))}
               {franchiseOverview.totals && (
-                <tr className="font-medium text-gray-700">
+                <tr className="font-medium text-gray-700 dark:text-gray-200">
                   <td className="py-2">{t("total")}</td>
                   <td className="py-2">
                     {franchiseOverview.totals.revenue.toFixed(2)} {franchiseOverview.reportingCurrency}
@@ -120,7 +120,7 @@ export function FranchisePanel() {
                   <td className="py-2">
                     {franchiseOverview.totals.cost.toFixed(2)} {franchiseOverview.reportingCurrency}
                   </td>
-                  <td className={franchiseOverview.totals.margin >= 0 ? "py-2 text-success-700" : "py-2 text-error-700"}>
+                  <td className={franchiseOverview.totals.margin >= 0 ? "py-2 text-success-700 dark:text-success-500" : "py-2 text-error-700 dark:text-error-500"}>
                     {franchiseOverview.totals.margin.toFixed(2)} {franchiseOverview.reportingCurrency}
                   </td>
                   <td className="py-2">{franchiseOverview.totals.projectCount}</td>
@@ -138,11 +138,11 @@ export function FranchisePanel() {
               {t("generateLinkCode")}
             </button>
             {franchiseLinkCode && (
-              <p className="mt-2 font-mono text-xs text-gray-700">{franchiseLinkCode}</p>
+              <p className="mt-2 font-mono text-xs text-gray-700 dark:text-gray-200">{franchiseLinkCode}</p>
             )}
           </div>
           <form onSubmit={linkToParentCompany} className="flex items-end gap-2">
-            <label className="text-xs text-gray-500">
+            <label className="text-xs text-gray-500 dark:text-gray-400">
               {t("linkToParentCode")}
               <input
                 type="text"

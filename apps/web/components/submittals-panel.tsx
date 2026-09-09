@@ -30,12 +30,12 @@ interface Submittal {
 }
 
 const STATUS_STYLES: Record<SubmittalStatus, string> = {
-  draft: "bg-gray-100 text-gray-600",
-  submitted: "bg-brand-50 text-brand-700",
-  approved: "bg-success-50 text-success-700",
-  approved_as_noted: "bg-success-50 text-success-700",
-  revise_and_resubmit: "bg-warning-50 text-warning-700",
-  rejected: "bg-error-50 text-error-700",
+  draft: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
+  submitted: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
+  approved: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
+  approved_as_noted: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
+  revise_and_resubmit: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
+  rejected: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
 };
 
 const EMPTY_FORM = { title: "", specSection: "", dueDate: "" };
@@ -126,7 +126,7 @@ export function SubmittalsPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
         {!creating && (
           <button onClick={() => setCreating(true)} className="btn-secondary px-3 py-1 text-xs">
             {t("newSubmittal")}
@@ -137,7 +137,7 @@ export function SubmittalsPanel({ projectId }: { projectId: string }) {
       {creating && (
         <form onSubmit={submit} className="card mb-4 flex flex-col gap-3">
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("submittalTitle")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("submittalTitle")}</span>
             <input
               required
               className="input"
@@ -148,7 +148,7 @@ export function SubmittalsPanel({ projectId }: { projectId: string }) {
           </label>
           <div className="flex gap-3">
             <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("specSection")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("specSection")}</span>
               <input
                 className="input"
                 placeholder="09 30 00"
@@ -157,7 +157,7 @@ export function SubmittalsPanel({ projectId }: { projectId: string }) {
               />
             </label>
             <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("dueDate")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("dueDate")}</span>
               <input
                 type="date"
                 className="input"
@@ -178,21 +178,21 @@ export function SubmittalsPanel({ projectId }: { projectId: string }) {
       )}
 
       {bulk.result && (
-        <div className="mb-3 flex items-center justify-between rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-600">
+        <div className="mb-3 flex items-center justify-between rounded-md bg-gray-50 dark:bg-gray-700 px-3 py-2 text-xs text-gray-600 dark:text-gray-300">
           <span>{tb("resultSummary", { succeeded: bulk.result.succeeded, failed: bulk.result.failed.length })}</span>
-          <button onClick={bulk.dismissResult} className="text-gray-400 hover:text-gray-600">
+          <button onClick={bulk.dismissResult} className="text-gray-400 dark:text-gray-500 hover:text-gray-600">
             ×
           </button>
         </div>
       )}
 
       {items === null ? (
-        <p className="text-sm text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
       ) : items.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noItems")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noItems")}</p>
       ) : (
         <>
-          <div className="mb-2 flex items-center gap-3 text-xs text-gray-500">
+          <div className="mb-2 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
             <label className="flex items-center gap-1.5">
               <input
                 type="checkbox"
@@ -236,20 +236,20 @@ export function SubmittalsPanel({ projectId }: { projectId: string }) {
                   >
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono text-gray-400">
+                        <span className="text-xs font-mono text-gray-400 dark:text-gray-500">
                           {item.number}
                           {item.revision > 0 ? ` rev.${item.revision}` : ""}
                         </span>
-                        <span className="text-sm font-medium text-gray-900">{item.title}</span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{item.title}</span>
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-1.5">
                         <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[item.status]}`}>
                           {t(item.status)}
                         </span>
-                        {item.specSection && <span className="text-xs text-gray-500">{item.specSection}</span>}
-                        {item.dueDate && <span className="text-xs text-gray-500">{formatDate(new Date(item.dueDate))}</span>}
+                        {item.specSection && <span className="text-xs text-gray-500 dark:text-gray-400">{item.specSection}</span>}
+                        {item.dueDate && <span className="text-xs text-gray-500 dark:text-gray-400">{formatDate(new Date(item.dueDate))}</span>}
                         {item.escalatedAt && (
-                          <span className="rounded-full bg-error-50 px-2 py-0.5 text-xs font-medium text-error-700">{t("escalated")}</span>
+                          <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-error-700 dark:text-error-500">{t("escalated")}</span>
                         )}
                       </div>
                     </div>
@@ -257,17 +257,17 @@ export function SubmittalsPanel({ projectId }: { projectId: string }) {
                 </div>
 
                 {expanded && (
-                  <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 pt-3 text-sm">
+                  <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 dark:border-gray-700 pt-3 text-sm">
                     {(historyById[item.id]?.length ?? 0) > 1 && (
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
                         {t("history")}: {historyById[item.id].map((h) => `rev.${h.revision} — ${t(h.status)}`).join(", ")}
                       </p>
                     )}
                     {item.reviewComments && (
                       <p>
-                        <span className="font-medium text-gray-700">{t("reviewComments")}: </span>
+                        <span className="font-medium text-gray-700 dark:text-gray-200">{t("reviewComments")}: </span>
                         {item.reviewComments}
-                        {item.reviewedByName && <span className="text-xs text-gray-400"> — {item.reviewedByName}</span>}
+                        {item.reviewedByName && <span className="text-xs text-gray-400 dark:text-gray-500"> — {item.reviewedByName}</span>}
                       </p>
                     )}
 

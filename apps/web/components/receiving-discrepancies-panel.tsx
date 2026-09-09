@@ -40,30 +40,30 @@ export function ReceivingDiscrepanciesPanel() {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("discrepanciesTitle")}</h2>
-      <p className="mb-3 text-xs text-gray-500">{t("discrepanciesHint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("discrepanciesTitle")}</h2>
+      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("discrepanciesHint")}</p>
       {!discrepancies ? (
-        <p className="text-sm text-gray-500">{tc("loading")}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
       ) : discrepancies.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noDiscrepancies")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noDiscrepancies")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {discrepancies.map((d) => (
             <li key={d.id} className="card">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-900">
+                <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
                   {t(`discrepancyType_${d.type}`)} · {d.purchaseOrderLine.materialCatalogItem.code} × {d.quantity}
                 </span>
                 <span
                   className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                    d.resolution === "pending" ? "bg-warning-50 text-warning-700" : "bg-success-50 text-success-700"
+                    d.resolution === "pending" ? "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500" : "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
                   }`}
                 >
                   {t(`resolution_${d.resolution}`)}
                 </span>
               </div>
-              <p className="mt-1 text-xs text-gray-400">{d.purchaseOrder.supplier.name}</p>
-              {d.resolutionNotes && <p className="mt-1 text-xs text-gray-500">{d.resolutionNotes}</p>}
+              <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{d.purchaseOrder.supplier.name}</p>
+              {d.resolutionNotes && <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{d.resolutionNotes}</p>}
               {d.resolution === "pending" &&
                 (resolvingId === d.id ? (
                   <div className="mt-2 flex flex-wrap items-center gap-2">

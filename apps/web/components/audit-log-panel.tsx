@@ -69,15 +69,15 @@ export function AuditLogPanel() {
   return (
     <section className="card lg:col-span-2">
       <div className="mb-1 flex items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold text-gray-700">{t("auditLog")}</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("auditLog")}</h2>
         <button onClick={exportAuditLog} disabled={auditExportBusy} className="btn-secondary px-2.5 py-1 text-xs">
           {t("exportCsv")}
         </button>
       </div>
-      <p className="mb-4 text-xs text-gray-500">{t("auditLogHint")}</p>
+      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("auditLogHint")}</p>
 
       <div className="mb-4 flex flex-wrap items-end gap-2">
-        <label className="flex flex-col gap-1 text-xs text-gray-500">
+        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {t("auditFilterDateFrom")}
           <input
             type="date"
@@ -86,7 +86,7 @@ export function AuditLogPanel() {
             onChange={(e) => setAuditFilter((f) => ({ ...f, dateFrom: e.target.value }))}
           />
         </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500">
+        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {t("auditFilterDateTo")}
           <input
             type="date"
@@ -95,7 +95,7 @@ export function AuditLogPanel() {
             onChange={(e) => setAuditFilter((f) => ({ ...f, dateTo: e.target.value }))}
           />
         </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500">
+        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {t("auditFilterEntityType")}
           <input
             className="input"
@@ -104,7 +104,7 @@ export function AuditLogPanel() {
             onChange={(e) => setAuditFilter((f) => ({ ...f, entityType: e.target.value }))}
           />
         </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500">
+        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {t("auditFilterAction")}
           <input
             className="input"
@@ -119,19 +119,19 @@ export function AuditLogPanel() {
       </div>
 
       {!auditLog ? (
-        <p className="text-gray-500">{tc("loading")}</p>
+        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
       ) : auditLog.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noAuditLog")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noAuditLog")}</p>
       ) : (
         <>
           <ul className="flex max-h-96 flex-col gap-2 overflow-y-auto">
             {auditLog.map((entry) => (
-              <li key={entry.id} className="flex items-start justify-between border-b border-gray-100 pb-2 text-sm">
+              <li key={entry.id} className="flex items-start justify-between border-b border-gray-100 dark:border-gray-700 pb-2 text-sm">
                 <div>
-                  <span className="font-medium text-gray-800">{entry.actorName}</span>{" "}
-                  <span className="text-gray-600">{entry.summary}</span>
+                  <span className="font-medium text-gray-800 dark:text-gray-100">{entry.actorName}</span>{" "}
+                  <span className="text-gray-600 dark:text-gray-300">{entry.summary}</span>
                 </div>
-                <span className="shrink-0 pl-3 text-xs text-gray-400">
+                <span className="shrink-0 pl-3 text-xs text-gray-400 dark:text-gray-500">
                   {formatDateTime(new Date(entry.createdAt))}
                 </span>
               </li>

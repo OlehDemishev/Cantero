@@ -106,50 +106,50 @@ export function LookAheadPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-8">
       <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700">{t("lookAhead")}</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("lookAhead")}</h2>
         {ppc && ppc.ppcPercent !== null && (
-          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">{t("ppc", { percent: ppc.ppcPercent })}</span>
+          <span className="rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-300">{t("ppc", { percent: ppc.ppcPercent })}</span>
         )}
       </div>
-      <p className="mb-3 text-xs text-gray-500">{t("lookAheadHint")}</p>
+      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("lookAheadHint")}</p>
 
       {!tasks ? (
-        <p className="text-sm text-gray-400">…</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">…</p>
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {Array.from({ length: WEEK_COUNT }, (_, weekIndex) => {
             const weekTasks = tasks.filter((task) => task.weekIndex === weekIndex);
             return (
               <div key={weekIndex} className="card">
-                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
                   {t("lookAheadWeek", { week: weekIndex + 1 })}
                 </h3>
                 {weekTasks.length === 0 ? (
-                  <p className="text-xs text-gray-400">{t("lookAheadNoTasks")}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">{t("lookAheadNoTasks")}</p>
                 ) : (
                   <ul className="flex flex-col gap-2">
                     {weekTasks.map((task) => {
                       const commitment = latestCommitment(task.id);
                       return (
-                        <li key={task.id} className="rounded-lg border border-gray-100 px-2.5 py-2 text-sm">
+                        <li key={task.id} className="rounded-lg border border-gray-100 dark:border-gray-700 px-2.5 py-2 text-sm">
                           <div className="flex items-center justify-between gap-2">
                             <span className="font-medium text-gray-800 dark:text-white/90">{task.name}</span>
                             <span
                               className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
-                                task.ready ? "bg-success-50 text-success-700" : "bg-warning-50 text-warning-700"
+                                task.ready ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500"
                               }`}
                             >
                               {task.ready ? t("lookAheadReady") : t("lookAheadBlocked")}
                             </span>
                           </div>
                           {task.startDate && (
-                            <p className="mt-0.5 text-xs text-gray-400">
+                            <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
                               {formatDate(new Date(task.startDate))}
                               {task.dueDate && ` – ${formatDate(new Date(task.dueDate))}`}
                             </p>
                           )}
                           {!task.ready && task.blockedByTaskNames.length > 0 && (
-                            <p className="mt-1 text-xs text-warning-700">
+                            <p className="mt-1 text-xs text-warning-700 dark:text-warning-500">
                               {t("lookAheadBlockedBy", { names: task.blockedByTaskNames.join(", ") })}
                             </p>
                           )}
@@ -161,7 +161,7 @@ export function LookAheadPanel({ projectId }: { projectId: string }) {
                           )}
                           {commitment && commitment.status === "committed" && resolvingId !== commitment.id && (
                             <div className="mt-2 flex items-center gap-1.5">
-                              <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700">{t("committed")}</span>
+                              <span className="rounded-full bg-brand-50 dark:bg-brand-500/15 px-2 py-0.5 text-xs font-medium text-brand-700 dark:text-brand-400">{t("committed")}</span>
                               <button onClick={() => resolve(commitment.id, "completed")} disabled={busy} className="btn-secondary px-2 py-0.5 text-xs">
                                 {t("markCompleted")}
                               </button>
@@ -188,12 +188,12 @@ export function LookAheadPanel({ projectId }: { projectId: string }) {
                             </div>
                           )}
                           {commitment && commitment.status === "completed" && (
-                            <span className="mt-2 inline-block rounded-full bg-success-50 px-2 py-0.5 text-xs font-medium text-success-700">
+                            <span className="mt-2 inline-block rounded-full bg-success-50 dark:bg-success-500/15 px-2 py-0.5 text-xs font-medium text-success-700 dark:text-success-500">
                               {t("completed")}
                             </span>
                           )}
                           {commitment && commitment.status === "missed" && (
-                            <p className="mt-2 text-xs text-error-700">{t("missedWithReason", { reason: commitment.varianceReason ?? "" })}</p>
+                            <p className="mt-2 text-xs text-error-700 dark:text-error-500">{t("missedWithReason", { reason: commitment.varianceReason ?? "" })}</p>
                           )}
                         </li>
                       );

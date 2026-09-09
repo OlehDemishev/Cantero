@@ -71,14 +71,14 @@ export function ApiKeysPanel() {
 
   return (
     <section id="api-keys" className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("apiKeys")}</h2>
-      <p className="mb-4 text-xs text-gray-500">{t("apiKeysHint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("apiKeys")}</h2>
+      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("apiKeysHint")}</p>
 
       {createdKey && (
-        <div className="mb-4 rounded-md border border-warning-200 bg-warning-50 px-3 py-2">
-          <p className="text-xs text-warning-700">{t("apiKeyShownOnce")}</p>
+        <div className="mb-4 rounded-md border border-warning-200 bg-warning-50 dark:bg-warning-500/15 px-3 py-2">
+          <p className="text-xs text-warning-700 dark:text-warning-500">{t("apiKeyShownOnce")}</p>
           <div className="mt-2 flex items-center gap-2">
-            <code className="flex-1 truncate rounded bg-white px-2 py-1 text-xs">{createdKey}</code>
+            <code className="flex-1 truncate rounded bg-white dark:bg-gray-800 px-2 py-1 text-xs">{createdKey}</code>
             <button onClick={copyApiKey} className="btn-secondary shrink-0 px-3 py-1 text-xs">
               {keyCopied ? tc("saved") : t("copyKey")}
             </button>
@@ -87,12 +87,12 @@ export function ApiKeysPanel() {
       )}
 
       {!apiKeys || apiKeys.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noApiKeys")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noApiKeys")}</p>
       ) : (
         <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-gray-200 text-left text-gray-500">
+            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
               <th className="py-2">{tc("name")}</th>
               <th>{t("apiKeyPrefix")}</th>
               <th>{t("apiKeyScopes")}</th>
@@ -103,12 +103,12 @@ export function ApiKeysPanel() {
           </thead>
           <tbody>
             {apiKeys.map((k) => (
-              <tr key={k.id} className="border-b border-gray-100">
+              <tr key={k.id} className="border-b border-gray-100 dark:border-gray-700">
                 <td className="py-2">{k.name}</td>
-                <td className="font-mono text-xs text-gray-500">{k.keyPrefix}…</td>
-                <td className="text-xs text-gray-500">{k.scopes.length > 0 ? k.scopes.join(", ") : t("apiKeyUnrestricted")}</td>
-                <td className="text-xs text-gray-500">{k.expiresAt ? formatDate(new Date(k.expiresAt)) : "—"}</td>
-                <td className="text-xs text-gray-500">
+                <td className="font-mono text-xs text-gray-500 dark:text-gray-400">{k.keyPrefix}…</td>
+                <td className="text-xs text-gray-500 dark:text-gray-400">{k.scopes.length > 0 ? k.scopes.join(", ") : t("apiKeyUnrestricted")}</td>
+                <td className="text-xs text-gray-500 dark:text-gray-400">{k.expiresAt ? formatDate(new Date(k.expiresAt)) : "—"}</td>
+                <td className="text-xs text-gray-500 dark:text-gray-400">
                   {k.revokedAt
                     ? t("apiKeyRevoked")
                     : k.lastUsedAt
@@ -138,7 +138,7 @@ export function ApiKeysPanel() {
             value={newKeyName}
             onChange={(e) => setNewKeyName(e.target.value)}
           />
-          <label className="text-xs text-gray-500">
+          <label className="text-xs text-gray-500 dark:text-gray-400">
             {t("apiKeyExpires")}
             <input
               type="date"
@@ -152,12 +152,12 @@ export function ApiKeysPanel() {
           </button>
         </div>
         <div className="flex flex-wrap gap-2">
-          <span className="text-xs text-gray-500">{t("apiKeyScopesHint")}</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">{t("apiKeyScopesHint")}</span>
           {API_KEY_SCOPES.map((scope) => (
             <label
               key={scope}
               className={`cursor-pointer rounded-full border px-2.5 py-0.5 text-xs ${
-                newKeyScopes.includes(scope) ? "border-brand-500 bg-brand-50 text-brand-700" : "border-gray-200 text-gray-600"
+                newKeyScopes.includes(scope) ? "border-brand-500 dark:border-brand-400 bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400" : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300"
               }`}
             >
               <input

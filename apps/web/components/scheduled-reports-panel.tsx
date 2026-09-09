@@ -79,7 +79,7 @@ export function ScheduledReportsPanel() {
 
   return (
     <>
-      <h2 className="mb-3 mt-10 text-sm font-semibold text-gray-700">{t("scheduledReports")}</h2>
+      <h2 className="mb-3 mt-10 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("scheduledReports")}</h2>
       <div className="card max-w-xl">
         <form onSubmit={createScheduledReport} className="flex flex-col gap-3">
           <input
@@ -91,7 +91,7 @@ export function ScheduledReportsPanel() {
           />
           <div className="flex gap-3">
             <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("reportType")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("reportType")}</span>
               <select
                 className="input"
                 value={scheduleForm.reportType}
@@ -105,7 +105,7 @@ export function ScheduledReportsPanel() {
               </select>
             </label>
             <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("frequency")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("frequency")}</span>
               <select
                 className="input"
                 value={scheduleForm.frequency}
@@ -120,7 +120,7 @@ export function ScheduledReportsPanel() {
             </label>
           </div>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("recipientEmails")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("recipientEmails")}</span>
             <input
               required
               placeholder={t("recipientEmailsPlaceholder")}
@@ -136,9 +136,9 @@ export function ScheduledReportsPanel() {
       </div>
 
       {!scheduledReports ? (
-        <p className="mt-4 text-gray-500">{tc("loading")}</p>
+        <p className="mt-4 text-gray-500 dark:text-gray-400">{tc("loading")}</p>
       ) : scheduledReports.length === 0 ? (
-        <p className="mt-4 text-sm text-gray-400">{t("noScheduledReports")}</p>
+        <p className="mt-4 text-sm text-gray-400 dark:text-gray-500">{t("noScheduledReports")}</p>
       ) : (
         <ul className="mt-4 flex flex-col gap-2">
           {scheduledReports.map((report) => (
@@ -146,23 +146,23 @@ export function ScheduledReportsPanel() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-900">{report.name}</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{report.name}</span>
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        report.active ? "bg-success-50 text-success-700" : "bg-gray-100 text-gray-500"
+                        report.active ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
                       }`}
                     >
                       {report.active ? t("active") : t("paused")}
                     </span>
                   </div>
-                  <div className="mt-1 text-xs text-gray-500">
+                  <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                     {t(`reportType_${report.reportType}`)} · {t(`frequency_${report.frequency}`)} · {report.recipientEmails.join(", ")}
                   </div>
-                  <div className="mt-1 text-xs text-gray-400">
+                  <div className="mt-1 text-xs text-gray-400 dark:text-gray-500">
                     {t("nextRun", { date: formatDate(new Date(report.nextRunAt)) })}
                     {report.lastSentAt && ` · ${t("lastSent", { date: formatDate(new Date(report.lastSentAt)) })}`}
                   </div>
-                  {sentNowId === report.id && <p className="mt-1 text-xs text-success-700">{t("sentNowConfirmation")}</p>}
+                  {sentNowId === report.id && <p className="mt-1 text-xs text-success-700 dark:text-success-500">{t("sentNowConfirmation")}</p>}
                 </div>
                 <div className="flex flex-none flex-col gap-1.5">
                   <button onClick={() => sendScheduledReportNow(report.id)} className="btn-secondary px-2.5 py-1 text-xs">
@@ -171,7 +171,7 @@ export function ScheduledReportsPanel() {
                   <button onClick={() => toggleScheduledReportActive(report)} className="btn-secondary px-2.5 py-1 text-xs">
                     {report.active ? t("pause") : t("resume")}
                   </button>
-                  <button onClick={() => deleteScheduledReport(report.id)} className="text-xs text-gray-400 hover:text-error-600">
+                  <button onClick={() => deleteScheduledReport(report.id)} className="text-xs text-gray-400 dark:text-gray-500 hover:text-error-600">
                     {tc("delete")}
                   </button>
                 </div>

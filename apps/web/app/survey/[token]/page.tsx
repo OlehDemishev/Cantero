@@ -35,23 +35,23 @@ export default function NpsSurveyPage({ params }: { params: Promise<{ token: str
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-50 px-6 py-12">
+    <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex items-center justify-center gap-2">
           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500 text-sm font-semibold text-white">
             C
           </span>
-          <span className="text-lg font-semibold tracking-tight text-gray-900">Cantero</span>
+          <span className="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-50">Cantero</span>
         </div>
 
         <div className="card">
-          <h1 className="text-xl font-semibold text-gray-900">{t("title")}</h1>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">{t("title")}</h1>
 
           {done ? (
-            <p className="mt-4 text-sm text-gray-600">{t("thanks")}</p>
+            <p className="mt-4 text-sm text-gray-600 dark:text-gray-300">{t("thanks")}</p>
           ) : (
             <>
-              {error && <p className="mt-4 rounded-lg bg-error-50 px-3 py-2 text-sm text-error-700">{error}</p>}
+              {error && <p className="mt-4 rounded-lg bg-error-50 dark:bg-error-500/15 px-3 py-2 text-sm text-error-700 dark:text-error-500">{error}</p>}
               <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
                 <div>
                   <div className="grid grid-cols-11 gap-1">
@@ -61,7 +61,7 @@ export default function NpsSurveyPage({ params }: { params: Promise<{ token: str
                         type="button"
                         onClick={() => setScore(n)}
                         className={`flex h-8 items-center justify-center rounded-md text-xs font-medium ${
-                          n === score ? "bg-brand-500 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                          n === score ? "bg-brand-500 text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200"
                         }`}
                         aria-label={t("scoreLabel", { n })}
                       >
@@ -69,13 +69,13 @@ export default function NpsSurveyPage({ params }: { params: Promise<{ token: str
                       </button>
                     ))}
                   </div>
-                  <div className="mt-1 flex justify-between text-[10px] text-gray-400">
+                  <div className="mt-1 flex justify-between text-[10px] text-gray-400 dark:text-gray-500">
                     <span>{t("notLikely")}</span>
                     <span>{t("veryLikely")}</span>
                   </div>
                 </div>
                 <label className="flex flex-col gap-1.5 text-sm">
-                  <span className="font-medium text-gray-700">{t("comment")}</span>
+                  <span className="font-medium text-gray-700 dark:text-gray-200">{t("comment")}</span>
                   <textarea className="input h-24" value={comment} onChange={(e) => setComment(e.target.value)} />
                 </label>
                 <button type="submit" disabled={submitting || score === null} className="btn-primary mt-2">

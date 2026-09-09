@@ -21,7 +21,7 @@ export default function DrawingSheetPage({ params }: { params: Promise<{ id: str
   return (
     <AuthenticatedShell>
       {projectId && (
-        <a href={`/projects/${projectId}`} className="text-sm text-gray-500 hover:underline">
+        <a href={`/projects/${projectId}`} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">
           ← {t("title")}
         </a>
       )}

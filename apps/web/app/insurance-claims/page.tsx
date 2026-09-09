@@ -38,12 +38,12 @@ interface Project {
 }
 
 const STATUS_STYLES: Record<InsuranceClaimStatus, string> = {
-  filed: "bg-gray-100 text-gray-600",
-  under_review: "bg-warning-50 text-warning-700",
-  approved: "bg-brand-50 text-brand-700",
-  denied: "bg-error-50 text-error-700",
-  settled: "bg-success-50 text-success-700",
-  closed: "bg-gray-100 text-gray-400",
+  filed: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
+  under_review: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
+  approved: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
+  denied: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
+  settled: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
+  closed: "bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500",
 };
 
 const emptyForm = {
@@ -177,7 +177,7 @@ export default function InsuranceClaimsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">{t("title")}</h1>
-          <p className="text-sm text-gray-500">{t("subtitle")}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t("subtitle")}</p>
         </div>
         <div className="flex gap-2">
           <button onClick={exportCsv} className="btn-secondary">
@@ -190,7 +190,7 @@ export default function InsuranceClaimsPage() {
       </div>
 
       {claims && claims.length > 0 && (
-        <p className="mt-2 text-sm font-medium text-gray-700">{t("openTotal", { amount: openTotal.toFixed(2), currency })}</p>
+        <p className="mt-2 text-sm font-medium text-gray-700 dark:text-gray-200">{t("openTotal", { amount: openTotal.toFixed(2), currency })}</p>
       )}
 
       {creating && (
@@ -310,31 +310,31 @@ export default function InsuranceClaimsPage() {
       </div>
 
       {!claims ? (
-        <p className="mt-4 text-sm text-gray-400">{tc("loading")}</p>
+        <p className="mt-4 text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
       ) : claims.length === 0 ? (
-        <p className="mt-4 text-sm text-gray-400">{t("empty")}</p>
+        <p className="mt-4 text-sm text-gray-400 dark:text-gray-500">{t("empty")}</p>
       ) : (
         <ul className="mt-4 flex flex-col gap-2">
           {claims.map((claim) => (
             <li key={claim.id} className="card">
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="font-medium text-gray-900">{claim.insurerName}</span>
-                  <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{t(`type_${claim.claimType}`)}</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-50">{claim.insurerName}</span>
+                  <span className="ml-2 rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs text-gray-600 dark:text-gray-300">{t(`type_${claim.claimType}`)}</span>
                   <span className={`ml-2 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[claim.status]}`}>
                     {t(`status_${claim.status}`)}
                   </span>
                 </div>
                 <button
                   onClick={() => setExpandedId(expandedId === claim.id ? null : claim.id)}
-                  className="text-xs text-brand-700 hover:underline"
+                  className="text-xs text-brand-700 dark:text-brand-400 hover:underline"
                 >
                   {expandedId === claim.id ? tc("close") : t("details")}
                 </button>
               </div>
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 {claim.project ? (
-                  <Link href={`/projects/${claim.project.id}`} className="text-brand-700 hover:underline">
+                  <Link href={`/projects/${claim.project.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
                     {claim.project.name}
                   </Link>
                 ) : (
@@ -343,11 +343,11 @@ export default function InsuranceClaimsPage() {
                 · {formatDate(new Date(claim.dateFiled))}
                 {claim.claimAmount && ` · ${claim.claimAmount} ${currency}`}
               </p>
-              <p className="mt-1 text-sm text-gray-700">{claim.description}</p>
+              <p className="mt-1 text-sm text-gray-700 dark:text-gray-200">{claim.description}</p>
 
               {expandedId === claim.id && (
-                <div className="mt-3 border-t border-gray-100 pt-3">
-                  <dl className="grid grid-cols-2 gap-2 text-xs text-gray-600 sm:grid-cols-4">
+                <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-3">
+                  <dl className="grid grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-300 sm:grid-cols-4">
                     {claim.claimNumber && <Row label={t("claimNumber")} value={claim.claimNumber} />}
                     {claim.policyNumber && <Row label={t("policyNumber")} value={claim.policyNumber} />}
                     {claim.adjusterName && <Row label={t("adjusterName")} value={claim.adjusterName} />}
@@ -371,7 +371,7 @@ export default function InsuranceClaimsPage() {
 
                   {claim.status !== "settled" && claim.status !== "closed" && claim.status !== "denied" && (
                     <form onSubmit={(e) => submitSettle(claim, e)} className="mt-2 flex flex-wrap items-end gap-2">
-                      <label className="flex flex-col gap-1 text-xs text-gray-500">
+                      <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
                         {t("settledAmount")}
                         <input
                           type="number"
@@ -382,7 +382,7 @@ export default function InsuranceClaimsPage() {
                           onChange={(e) => setSettleForm((f) => ({ ...f, settledAmount: e.target.value }))}
                         />
                       </label>
-                      <label className="flex flex-col gap-1 text-xs text-gray-500">
+                      <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
                         {t("settledAt")}
                         <input
                           type="date"
@@ -413,8 +413,8 @@ export default function InsuranceClaimsPage() {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-gray-400">{label}</dt>
-      <dd className="font-medium text-gray-700">{value}</dd>
+      <dt className="text-gray-400 dark:text-gray-500">{label}</dt>
+      <dd className="font-medium text-gray-700 dark:text-gray-200">{value}</dd>
     </div>
   );
 }

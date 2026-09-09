@@ -34,8 +34,8 @@ export function ReferralProgramPanel() {
 
   return (
     <section className="card">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("title")}</h2>
-      <p className="mb-4 text-xs text-gray-500">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
 
       <div className="flex items-center gap-2">
         <input readOnly className="input flex-1 text-xs" value={link} />
@@ -44,7 +44,7 @@ export function ReferralProgramPanel() {
         </button>
       </div>
 
-      {stats && <p className="mt-3 text-sm text-gray-600">{t("referredCount", { count: stats.referredCount })}</p>}
+      {stats && <p className="mt-3 text-sm text-gray-600 dark:text-gray-300">{t("referredCount", { count: stats.referredCount })}</p>}
     </section>
   );
 }

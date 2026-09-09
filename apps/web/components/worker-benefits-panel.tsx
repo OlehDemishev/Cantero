@@ -40,7 +40,7 @@ export function WorkerBenefitsPanel({ workerId }: { workerId: string }) {
 
   return (
     <>
-      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700">{tb("title")}</h2>
+      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">{tb("title")}</h2>
       {benefitEnrollments.length === 0 ? (
         <EmptyState message={t("noBenefitEnrollments")} cta={{ label: t("enrollInBenefits"), href: "/benefits" }} />
       ) : (
@@ -49,11 +49,11 @@ export function WorkerBenefitsPanel({ workerId }: { workerId: string }) {
           <li key={en.id} className="card text-sm">
             <div className="flex items-center justify-between">
               <span>
-                {en.plan.name} <span className="text-xs text-gray-400">({en.tier.name})</span>
+                {en.plan.name} <span className="text-xs text-gray-400 dark:text-gray-500">({en.tier.name})</span>
               </span>
               <span
                 className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                  en.status === "active" ? "bg-success-50 text-success-700" : "bg-gray-100 text-gray-600"
+                  en.status === "active" ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                 }`}
               >
                 {tb(`enrollmentStatus_${en.status}`)}
@@ -61,10 +61,10 @@ export function WorkerBenefitsPanel({ workerId }: { workerId: string }) {
             </div>
             {en.status === "active" && (
               <div className="mt-1.5 flex gap-2">
-                <button onClick={() => updateEnrollmentStatus(en.id, "waived")} disabled={benefitsBusy} className="text-xs text-gray-500 hover:underline">
+                <button onClick={() => updateEnrollmentStatus(en.id, "waived")} disabled={benefitsBusy} className="text-xs text-gray-500 dark:text-gray-400 hover:underline">
                   {tb("waive")}
                 </button>
-                <button onClick={() => updateEnrollmentStatus(en.id, "terminated")} disabled={benefitsBusy} className="text-xs text-error-700 hover:underline">
+                <button onClick={() => updateEnrollmentStatus(en.id, "terminated")} disabled={benefitsBusy} className="text-xs text-error-700 dark:text-error-500 hover:underline">
                   {tb("terminate")}
                 </button>
               </div>

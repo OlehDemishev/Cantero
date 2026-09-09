@@ -65,23 +65,23 @@ export function CustomFieldsSettingsPanel({ canManage }: { canManage: boolean })
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("title")}</h2>
-      <p className="mb-4 text-xs text-gray-500">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
 
       {!fields ? (
-        <p className="text-gray-500">{tc("loading")}</p>
+        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
       ) : fields.length === 0 ? (
-        <p className="mb-4 text-sm text-gray-400">{t("noFields")}</p>
+        <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">{t("noFields")}</p>
       ) : (
         <div className="overflow-x-auto">
         <table className="mb-4 w-full border-collapse text-sm">
           <tbody>
             {fields.map((f) => (
-              <tr key={f.id} className="border-b border-gray-100">
+              <tr key={f.id} className="border-b border-gray-100 dark:border-gray-700">
                 <td className="py-1.5">{f.name}</td>
-                <td className="text-gray-500">{t(`entityType_${f.entityType}`)}</td>
-                <td className="text-gray-500">{t(`fieldType_${f.type}`)}</td>
-                <td className="text-gray-400">{f.type === "select" ? f.options.join(", ") : ""}</td>
+                <td className="text-gray-500 dark:text-gray-400">{t(`entityType_${f.entityType}`)}</td>
+                <td className="text-gray-500 dark:text-gray-400">{t(`fieldType_${f.type}`)}</td>
+                <td className="text-gray-400 dark:text-gray-500">{f.type === "select" ? f.options.join(", ") : ""}</td>
                 {canManage && (
                   <td className="text-right">
                     <button onClick={() => remove(f.id)} className="text-xs text-error-600 hover:underline">
@@ -97,8 +97,8 @@ export function CustomFieldsSettingsPanel({ canManage }: { canManage: boolean })
       )}
 
       {canManage && (
-        <form onSubmit={submit} className="flex flex-wrap items-end gap-2 border-t border-gray-100 pt-4">
-          <label className="flex flex-col gap-1 text-xs text-gray-500">
+        <form onSubmit={submit} className="flex flex-wrap items-end gap-2 border-t border-gray-100 dark:border-gray-700 pt-4">
+          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
             {t("entityType")}
             <select
               className="input w-auto"
@@ -112,7 +112,7 @@ export function CustomFieldsSettingsPanel({ canManage }: { canManage: boolean })
               ))}
             </select>
           </label>
-          <label className="flex flex-col gap-1 text-xs text-gray-500">
+          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
             {tc("name")}
             <input
               required
@@ -121,7 +121,7 @@ export function CustomFieldsSettingsPanel({ canManage }: { canManage: boolean })
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
             />
           </label>
-          <label className="flex flex-col gap-1 text-xs text-gray-500">
+          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
             {t("fieldType")}
             <select
               className="input w-auto"
@@ -136,7 +136,7 @@ export function CustomFieldsSettingsPanel({ canManage }: { canManage: boolean })
             </select>
           </label>
           {form.type === "select" && (
-            <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500">
+            <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
               {t("optionsCommaSeparated")}
               <input
                 required

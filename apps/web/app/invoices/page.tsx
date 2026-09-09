@@ -199,14 +199,14 @@ export default function InvoicesPage() {
 
       <div className="mt-6">
         {!invoices ? (
-          <p className="text-gray-500">{tc("loading")}</p>
+          <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
         ) : invoices.length === 0 ? (
-          <p className="text-gray-500">—</p>
+          <p className="text-gray-500 dark:text-gray-400">—</p>
         ) : (
           <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 text-left text-gray-500">
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
                 <th className="py-2">{t("number")}</th>
                 <th>{tc("name")}</th>
                 <th>{tc("status")}</th>
@@ -215,18 +215,18 @@ export default function InvoicesPage() {
             </thead>
             <tbody>
               {invoices.map((inv) => (
-                <tr key={inv.id} className="cursor-pointer border-b border-gray-100 hover:bg-gray-50">
+                <tr key={inv.id} className="cursor-pointer border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-white/5">
                   <td className="py-2">
                     <a href={`/invoices/${inv.id}`} className="block">
                       {inv.number}
                     </a>
                   </td>
                   <td>
-                    <Link href={`/clients/${inv.client.id}`} className="text-brand-700 hover:underline">
+                    <Link href={`/clients/${inv.client.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
                       {inv.client.name}
                     </Link>{" "}
                     ·{" "}
-                    <Link href={`/projects/${inv.project.id}`} className="text-brand-700 hover:underline">
+                    <Link href={`/projects/${inv.project.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
                       {inv.project.name}
                     </Link>
                   </td>
@@ -243,37 +243,37 @@ export default function InvoicesPage() {
       </div>
 
       <div className="mt-10">
-        <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("recurring")}</h2>
-        <p className="mb-4 text-xs text-gray-500">{t("recurringHint")}</p>
-        {recurringError && <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{recurringError}</p>}
+        <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("recurring")}</h2>
+        <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("recurringHint")}</p>
+        {recurringError && <p className="mb-3 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{recurringError}</p>}
 
         {!recurring || recurring.length === 0 ? (
-          <p className="mb-4 text-sm text-gray-400">{t("noRecurring")}</p>
+          <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">{t("noRecurring")}</p>
         ) : (
           <div className="mb-6 flex flex-col gap-2">
             {recurring.map((r) => (
-              <div key={r.id} className="rounded-lg border border-gray-200 p-3">
+              <div key={r.id} className="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
                 <div className="flex items-center justify-between gap-2">
                   <div>
-                    <span className="text-sm font-medium text-gray-900">{r.name}</span>
-                    <span className="ml-2 text-xs text-gray-500">
-                      <Link href={`/clients/${r.client.id}`} className="text-brand-700 hover:underline">
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{r.name}</span>
+                    <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                      <Link href={`/clients/${r.client.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
                         {r.client.name}
                       </Link>{" "}
                       ·{" "}
-                      <Link href={`/projects/${r.project.id}`} className="text-brand-700 hover:underline">
+                      <Link href={`/projects/${r.project.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
                         {r.project.name}
                       </Link>{" "}
                       · {t(`frequency_${r.frequency}`)}
                     </span>
                   </div>
                   <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${r.active ? "bg-success-50 text-success-700" : "bg-gray-100 text-gray-500"}`}
+                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${r.active ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"}`}
                   >
                     {r.active ? t("active") : t("paused")}
                   </span>
                 </div>
-                <p className="mt-1 text-xs text-gray-400">
+                <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
                   {t("nextRun")}: {new Date(r.nextRunDate).toLocaleDateString(locale)}
                   {r.lastGeneratedAt && ` · ${t("lastGenerated")}: ${new Date(r.lastGeneratedAt).toLocaleDateString(locale)}`}
                   {r.endDate && ` · ${t("endDate")}: ${new Date(r.endDate).toLocaleDateString(locale)}`}
@@ -292,7 +292,7 @@ export default function InvoicesPage() {
                   <button onClick={() => deleteRecurring(r.id)} className="btn-secondary px-2 py-1 text-xs">
                     {tc("delete")}
                   </button>
-                  <label className="ml-auto flex items-center gap-1.5 text-xs text-gray-600">
+                  <label className="ml-auto flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300">
                     <input type="checkbox" checked={r.autopayEnabled} onChange={() => toggleAutopay(r)} />
                     {t("autopay")}
                   </label>
@@ -302,7 +302,7 @@ export default function InvoicesPage() {
           </div>
         )}
 
-        <form onSubmit={createRecurring} className="rounded-lg border border-gray-200 p-4">
+        <form onSubmit={createRecurring} className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <input
               required
@@ -348,7 +348,7 @@ export default function InvoicesPage() {
                 </option>
               ))}
             </select>
-            <label className="flex flex-col gap-1 text-xs text-gray-500">
+            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
               {t("startDate")}
               <input
                 required
@@ -358,7 +358,7 @@ export default function InvoicesPage() {
                 onChange={(e) => setRecurringForm((f) => ({ ...f, startDate: e.target.value }))}
               />
             </label>
-            <label className="flex flex-col gap-1 text-xs text-gray-500">
+            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
               {t("endDateOptional")}
               <input
                 type="date"
@@ -367,7 +367,7 @@ export default function InvoicesPage() {
                 onChange={(e) => setRecurringForm((f) => ({ ...f, endDate: e.target.value }))}
               />
             </label>
-            <label className="flex flex-col gap-1 text-xs text-gray-500">
+            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
               {t("taxPercent")}
               <input
                 type="number"
@@ -428,8 +428,8 @@ export default function InvoicesPage() {
       </div>
 
       <a href="/reports" className="card mt-10 block hover:border-gray-400">
-        <div className="text-sm font-medium text-gray-700">{t("cashFlowForecastLink")}</div>
-        <div className="mt-1 text-gray-900">→</div>
+        <div className="text-sm font-medium text-gray-700 dark:text-gray-200">{t("cashFlowForecastLink")}</div>
+        <div className="mt-1 text-gray-900 dark:text-gray-50">→</div>
       </a>
     </AuthenticatedShell>
   );

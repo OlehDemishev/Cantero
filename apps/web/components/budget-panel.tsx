@@ -104,15 +104,15 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
   if (budget.estimatesCount === 0) {
     return (
       <div className="mt-10">
-        <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("title")}</h2>
-        <p className="text-sm text-gray-400">{t("noApprovedEstimates")}</p>
+        <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noApprovedEstimates")}</p>
       </div>
     );
   }
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("title")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <BudgetCard
           title={t("materialsCost")}
@@ -148,7 +148,7 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
             rows={[
               [t("actual"), money(budget.subcontractorCostActual)],
               ...(budget.subcontractorCostUnpaid > 0
-                ? ([[t("unpaid"), money(budget.subcontractorCostUnpaid), "text-warning-700"]] as [
+                ? ([[t("unpaid"), money(budget.subcontractorCostUnpaid), "text-warning-700 dark:text-warning-500"]] as [
                     string,
                     string,
                     string,
@@ -164,7 +164,7 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
             ...(budget.budgetRevisionsTotal !== 0
               ? ([
                   [t("budgetRevisionsTotal"), `${budget.budgetRevisionsTotal >= 0 ? "+" : ""}${money(budget.budgetRevisionsTotal)}`],
-                  [t("revisedBudgetTotal"), money(budget.revisedBudgetTotal), "font-medium text-gray-900"],
+                  [t("revisedBudgetTotal"), money(budget.revisedBudgetTotal), "font-medium text-gray-900 dark:text-gray-50"],
                 ] as [string, string, string?][])
               : []),
             [t("invoicedTotal"), money(budget.invoicedTotal)],
@@ -181,7 +181,7 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
               [
                 t("contingencyRemaining"),
                 money(budget.contingencyRemaining),
-                (budget.contingencyRemaining ?? 0) < 0 ? "text-red-600 font-medium" : "font-medium text-gray-900",
+                (budget.contingencyRemaining ?? 0) < 0 ? "text-red-600 font-medium" : "font-medium text-gray-900 dark:text-gray-50",
               ],
             ]}
           />
@@ -190,7 +190,7 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
 
       <div className="mt-4">
         <div className="mb-2 flex items-center justify-between">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">{t("revisionLog")}</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("revisionLog")}</h3>
           {!addingRevision && (
             <button onClick={() => setAddingRevision(true)} className="btn-secondary px-2.5 py-1 text-xs">
               {t("addRevision")}
@@ -230,20 +230,20 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
         )}
 
         {budget.revisions.length === 0 ? (
-          <p className="text-sm text-gray-400">{t("noRevisions")}</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500">{t("noRevisions")}</p>
         ) : (
           <ul className="flex flex-col gap-1.5">
             {budget.revisions.map((r) => (
-              <li key={r.id} className="rounded-md border border-gray-200 px-3 py-2 text-sm">
+              <li key={r.id} className="rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className={`font-medium ${Number(r.amount) >= 0 ? "text-success-700" : "text-error-700"}`}>
+                  <span className={`font-medium ${Number(r.amount) >= 0 ? "text-success-700 dark:text-success-500" : "text-error-700 dark:text-error-500"}`}>
                     {Number(r.amount) >= 0 ? "+" : ""}
                     {money(r.amount)}
                   </span>
-                  <span className="text-xs text-gray-400">{formatDate(new Date(r.createdAt))}</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">{formatDate(new Date(r.createdAt))}</span>
                 </div>
-                <p className="mt-0.5 text-xs text-gray-500">{r.reason}</p>
-                <p className="mt-0.5 text-xs text-gray-400">{r.createdByName}</p>
+                <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{r.reason}</p>
+                <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{r.createdByName}</p>
               </li>
             ))}
           </ul>
@@ -253,7 +253,7 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
       {budget.contingencyAmount !== null && (
         <div className="mt-4">
           <div className="mb-2 flex items-center justify-between">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">{t("contingencyDrawLog")}</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("contingencyDrawLog")}</h3>
             {!addingDraw && (
               <button onClick={() => setAddingDraw(true)} className="btn-secondary px-2.5 py-1 text-xs">
                 {t("addDraw")}
@@ -294,17 +294,17 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
           )}
 
           {budget.contingencyDraws.length === 0 ? (
-            <p className="text-sm text-gray-400">{t("noDraws")}</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noDraws")}</p>
           ) : (
             <ul className="flex flex-col gap-1.5">
               {budget.contingencyDraws.map((d) => (
-                <li key={d.id} className="rounded-md border border-gray-200 px-3 py-2 text-sm">
+                <li key={d.id} className="rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm">
                   <div className="flex items-center justify-between">
-                    <span className="font-medium text-error-700">-{money(d.amount)}</span>
-                    <span className="text-xs text-gray-400">{formatDate(new Date(d.createdAt))}</span>
+                    <span className="font-medium text-error-700 dark:text-error-500">-{money(d.amount)}</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500">{formatDate(new Date(d.createdAt))}</span>
                   </div>
-                  <p className="mt-0.5 text-xs text-gray-500">{d.reason}</p>
-                  <p className="mt-0.5 text-xs text-gray-400">{d.createdByName}</p>
+                  <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{d.reason}</p>
+                  <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{d.createdByName}</p>
                 </li>
               ))}
             </ul>
@@ -318,11 +318,11 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
 function BudgetCard({ title, rows }: { title: string; rows: [string, string, string?][] }) {
   return (
     <div className="card">
-      <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{title}</div>
+      <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{title}</div>
       <dl className="flex flex-col gap-1 text-sm">
         {rows.map(([label, value, colorClass]) => (
           <div key={label} className="flex justify-between">
-            <dt className="text-gray-500">{label}</dt>
+            <dt className="text-gray-500 dark:text-gray-400">{label}</dt>
             <dd className={colorClass}>{value}</dd>
           </div>
         ))}

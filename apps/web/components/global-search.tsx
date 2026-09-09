@@ -91,7 +91,7 @@ export function GlobalSearch() {
   return (
     <div className="relative w-full max-w-sm" ref={containerRef}>
       <div className="relative">
-        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">
           <SearchIcon width={16} height={16} />
         </span>
         <input
@@ -107,7 +107,7 @@ export function GlobalSearch() {
       {open && (
         <div className="absolute left-0 top-full z-40 mt-2 max-h-96 w-full min-w-[320px] overflow-y-auto rounded-xl border border-gray-200 bg-white p-2 shadow-theme-md dark:border-gray-800 dark:bg-gray-900">
           {!results || results.length === 0 ? (
-            <p className="px-2 py-3 text-sm text-gray-400">{t("noResults")}</p>
+            <p className="px-2 py-3 text-sm text-gray-400 dark:text-gray-500">{t("noResults")}</p>
           ) : (
             <ul className="flex flex-col gap-0.5">
               {results.map((r, i) => (

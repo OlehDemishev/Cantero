@@ -120,7 +120,7 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
         {!showForm && (
           <button onClick={startCreate} className="btn-secondary px-3 py-1 text-xs">
             {t("newLog")}
@@ -132,7 +132,7 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
         <form onSubmit={submit} className="card mb-4 flex flex-col gap-3">
           {!editingId && (
             <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("date")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("date")}</span>
               <input
                 type="date"
                 required
@@ -144,7 +144,7 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
           )}
           <div className="flex gap-3">
             <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("weather")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("weather")}</span>
               <select
                 className="input"
                 value={form.weatherCondition}
@@ -159,7 +159,7 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
               </select>
             </label>
             <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("weatherNotes")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("weatherNotes")}</span>
               <input
                 className="input"
                 placeholder={t("weatherNotesPlaceholder")}
@@ -168,7 +168,7 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
               />
             </label>
             <label className="flex w-40 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("weatherDelayHours")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("weatherDelayHours")}</span>
               <input
                 type="number"
                 min="0"
@@ -182,7 +182,7 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
           </div>
           <div className="flex gap-3">
             <label className="flex w-32 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("crewCount")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("crewCount")}</span>
               <input
                 type="number"
                 min="0"
@@ -192,7 +192,7 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
               />
             </label>
             <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("crewNotes")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("crewNotes")}</span>
               <input
                 className="input"
                 placeholder={t("crewNotesPlaceholder")}
@@ -202,7 +202,7 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
             </label>
           </div>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="flex items-center gap-2 font-medium text-gray-700">
+            <span className="flex items-center gap-2 font-medium text-gray-700 dark:text-gray-200">
               {t("workPerformed")}
               <VoiceInputButton
                 onTranscript={(text) => setForm((f) => ({ ...f, workPerformed: f.workPerformed ? `${f.workPerformed} ${text}` : text }))}
@@ -217,7 +217,7 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
             />
           </label>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("delays")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("delays")}</span>
             <textarea
               rows={2}
               className="input"
@@ -227,7 +227,7 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
             />
           </label>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("notes")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("notes")}</span>
             <textarea
               rows={2}
               className="input"
@@ -248,9 +248,9 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
       )}
 
       {logs === null ? (
-        <p className="text-sm text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
       ) : logs.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noLogs")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noLogs")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {logs.map((log) => {
@@ -262,56 +262,56 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
                   className="flex w-full items-center justify-between text-left"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-gray-900">
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
                       {formatDate(new Date(log.date))}
                     </span>
                     {log.weatherCondition && (
-                      <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                      <span className="rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs text-gray-600 dark:text-gray-300">
                         {t(`weather_${log.weatherCondition}`)}
                       </span>
                     )}
                     {log.delays && (
-                      <span className="rounded-full bg-warning-50 px-2 py-0.5 text-xs font-medium text-warning-700">
+                      <span className="rounded-full bg-warning-50 dark:bg-warning-500/15 px-2 py-0.5 text-xs font-medium text-warning-700 dark:text-warning-500">
                         {t("hasDelays")}
                       </span>
                     )}
                     {!!log.weatherDelayHours && (
-                      <span className="rounded-full bg-warning-50 px-2 py-0.5 text-xs font-medium text-warning-700">
+                      <span className="rounded-full bg-warning-50 dark:bg-warning-500/15 px-2 py-0.5 text-xs font-medium text-warning-700 dark:text-warning-500">
                         {t("weatherDelayBadge", { hours: log.weatherDelayHours })}
                       </span>
                     )}
                   </div>
-                  <span className="text-xs text-gray-400">{log.authorName}</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">{log.authorName}</span>
                 </button>
-                <p className="mt-1.5 truncate text-xs text-gray-500">{log.workPerformed}</p>
+                <p className="mt-1.5 truncate text-xs text-gray-500 dark:text-gray-400">{log.workPerformed}</p>
                 {expanded && (
-                  <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 pt-3 text-sm">
+                  <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 dark:border-gray-700 pt-3 text-sm">
                     {log.crewCount !== null && (
                       <p>
-                        <span className="font-medium text-gray-700">{t("crewCount")}: </span>
+                        <span className="font-medium text-gray-700 dark:text-gray-200">{t("crewCount")}: </span>
                         {log.crewCount}
                         {log.crewNotes ? ` — ${log.crewNotes}` : ""}
                       </p>
                     )}
                     {log.weatherNotes && (
                       <p>
-                        <span className="font-medium text-gray-700">{t("weatherNotes")}: </span>
+                        <span className="font-medium text-gray-700 dark:text-gray-200">{t("weatherNotes")}: </span>
                         {log.weatherNotes}
                       </p>
                     )}
                     <p>
-                      <span className="font-medium text-gray-700">{t("workPerformed")}: </span>
+                      <span className="font-medium text-gray-700 dark:text-gray-200">{t("workPerformed")}: </span>
                       {log.workPerformed}
                     </p>
                     {log.delays && (
                       <p>
-                        <span className="font-medium text-gray-700">{t("delays")}: </span>
+                        <span className="font-medium text-gray-700 dark:text-gray-200">{t("delays")}: </span>
                         {log.delays}
                       </p>
                     )}
                     {log.notes && (
                       <p>
-                        <span className="font-medium text-gray-700">{t("notes")}: </span>
+                        <span className="font-medium text-gray-700 dark:text-gray-200">{t("notes")}: </span>
                         {log.notes}
                       </p>
                     )}

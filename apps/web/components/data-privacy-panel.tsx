@@ -68,31 +68,31 @@ export function DataPrivacyPanel({ canManage }: { canManage: boolean }) {
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("title")}</h2>
-      <p className="mb-4 text-xs text-gray-500">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
 
       <div className="flex flex-col gap-4">
         <div>
-          <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("exportTitle")}</h3>
-          <p className="mb-2 text-sm text-gray-600">{t("exportHint")}</p>
+          <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("exportTitle")}</h3>
+          <p className="mb-2 text-sm text-gray-600 dark:text-gray-300">{t("exportHint")}</p>
           <button onClick={exportData} disabled={exporting} className="btn-secondary px-3 py-1 text-xs">
             {exporting ? t("exporting") : t("exportButton")}
           </button>
         </div>
 
-        <div className="border-t border-gray-100 pt-4">
-          <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("operationalExportTitle")}</h3>
-          <p className="mb-2 text-sm text-gray-600">{t("operationalExportHint")}</p>
+        <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
+          <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("operationalExportTitle")}</h3>
+          <p className="mb-2 text-sm text-gray-600 dark:text-gray-300">{t("operationalExportHint")}</p>
           <button onClick={exportOperationalData} disabled={exportingOperational} className="btn-secondary px-3 py-1 text-xs">
             {exportingOperational ? t("exporting") : t("operationalExportButton")}
           </button>
         </div>
 
-        <div className="border-t border-gray-100 pt-4">
-          <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("deletionTitle")}</h3>
+        <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
+          <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("deletionTitle")}</h3>
           {company.deletionRequestedAt ? (
               <>
-                <p className="mb-2 text-sm text-error-700">
+                <p className="mb-2 text-sm text-error-700 dark:text-error-500">
                   {t("deletionPending", { date: formatDate(new Date(company.deletionRequestedAt)) })}
                 </p>
                 <button onClick={cancelRequest} disabled={busy} className="btn-secondary px-3 py-1 text-xs">
@@ -101,7 +101,7 @@ export function DataPrivacyPanel({ canManage }: { canManage: boolean }) {
               </>
             ) : (
               <>
-                <p className="mb-2 text-sm text-gray-600">{t("deletionHint")}</p>
+                <p className="mb-2 text-sm text-gray-600 dark:text-gray-300">{t("deletionHint")}</p>
                 <button onClick={requestDeletion} disabled={busy} className="btn-secondary px-3 py-1 text-xs text-error-600">
                   {t("requestDeletion")}
                 </button>

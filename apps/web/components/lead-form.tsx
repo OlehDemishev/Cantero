@@ -46,35 +46,35 @@ export function LeadForm({ token }: { token: string }) {
 
   if (info === undefined) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 px-6 py-12">
-        <p className="text-sm text-gray-500">{t("loading")}</p>
+      <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
+        <p className="text-sm text-gray-500 dark:text-gray-400">{t("loading")}</p>
       </main>
     );
   }
 
   if (info === null) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 px-6 py-12">
-        <p className="max-w-sm text-center text-sm text-gray-500">{t("formNotFound")}</p>
+      <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
+        <p className="max-w-sm text-center text-sm text-gray-500 dark:text-gray-400">{t("formNotFound")}</p>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 px-6 py-12">
+    <main className="min-h-screen bg-gray-50 dark:bg-gray-700 px-6 py-12">
       <div className="mx-auto flex max-w-3xl flex-col items-center">
         {info.hasLogo && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={`${API_URL}/public/leads/${token}/logo`} alt={info.companyName} className="mb-4 h-14 w-auto" />
         )}
-        <h1 className="text-2xl font-semibold text-gray-900" style={info.brandColor ? { color: info.brandColor } : undefined}>
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-50" style={info.brandColor ? { color: info.brandColor } : undefined}>
           {info.companyName}
         </h1>
 
         {info.photos.length > 0 && (
           <div className="mt-8 grid w-full grid-cols-2 gap-2 sm:grid-cols-3">
             {info.photos.map((photo) => (
-              <div key={photo.id} className="group relative aspect-square overflow-hidden rounded-lg bg-gray-100">
+              <div key={photo.id} className="group relative aspect-square overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-700">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={`${API_URL}/public/leads/${token}/photo/${photo.id}`}
@@ -94,11 +94,11 @@ export function LeadForm({ token }: { token: string }) {
 
       <div className="mx-auto mt-8 w-full max-w-sm">
         <div className="card">
-          <h2 className="text-xl font-semibold text-gray-900">{t("formTitle", { company: info.companyName })}</h2>
-          <p className="mt-1 text-sm text-gray-500">{t("formHint")}</p>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-50">{t("formTitle", { company: info.companyName })}</h2>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("formHint")}</p>
 
           {submitted ? (
-            <p className="mt-4 rounded-lg border border-success-200 bg-success-50 px-4 py-3 text-sm text-success-700">
+            <p className="mt-4 rounded-lg border border-success-200 bg-success-50 dark:bg-success-500/15 px-4 py-3 text-sm text-success-700 dark:text-success-500">
               {t("thankYou")}
             </p>
           ) : (

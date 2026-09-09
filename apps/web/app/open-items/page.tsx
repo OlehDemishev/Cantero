@@ -87,11 +87,11 @@ export default function OpenItemsPage() {
   return (
     <AuthenticatedShell>
       <h1 className="text-2xl font-semibold">{t("title")}</h1>
-      <p className="mt-1 text-sm text-gray-500">{t("subtitle")}</p>
+      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("subtitle")}</p>
       {projectIdFilter && (
-        <p className="mt-1 text-xs text-gray-400">
+        <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
           {t("filteredByProject", { project: projectNameFilter ?? projectIdFilter })}{" "}
-          <button onClick={() => router.replace(`/open-items?tab=${activeTab}`)} className="text-brand-700 hover:underline">
+          <button onClick={() => router.replace(`/open-items?tab=${activeTab}`)} className="text-brand-700 dark:text-brand-400 hover:underline">
             {t("clearFilter")}
           </button>
         </p>
@@ -102,14 +102,14 @@ export default function OpenItemsPage() {
       {activeTab === "rfis" && (
         <div className="mt-4">
           {rfis === null ? (
-            <p className="text-sm text-gray-400">{tc("loading")}</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
           ) : rfis.length === 0 ? (
-            <p className="text-sm text-gray-400">{t("noOpenRfis")}</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noOpenRfis")}</p>
           ) : (
             <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 text-left text-gray-500">
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
                   <th className="py-2">{t("project")}</th>
                   <th>{t("number")}</th>
                   <th>{t("subject")}</th>
@@ -120,13 +120,13 @@ export default function OpenItemsPage() {
               </thead>
               <tbody>
                 {rfis.map((r) => (
-                  <tr key={r.id} className="border-b border-gray-100">
+                  <tr key={r.id} className="border-b border-gray-100 dark:border-gray-700">
                     <td className="py-2">
-                      <a href={projectLink(r.project.id, "rfi", r.id, "quality")} className="text-brand-700 hover:underline">
+                      <a href={projectLink(r.project.id, "rfi", r.id, "quality")} className="text-brand-700 dark:text-brand-400 hover:underline">
                         {r.project.name}
                       </a>
                     </td>
-                    <td className="font-mono text-xs text-gray-400">{r.number}</td>
+                    <td className="font-mono text-xs text-gray-400 dark:text-gray-500">{r.number}</td>
                     <td>{r.subject}</td>
                     <td>{r.status}</td>
                     <td>{r.priority}</td>
@@ -143,14 +143,14 @@ export default function OpenItemsPage() {
       {activeTab === "punchList" && (
         <div className="mt-4">
           {punchList === null ? (
-            <p className="text-sm text-gray-400">{tc("loading")}</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
           ) : punchList.length === 0 ? (
-            <p className="text-sm text-gray-400">{t("noOpenPunchList")}</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noOpenPunchList")}</p>
           ) : (
             <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 text-left text-gray-500">
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
                   <th className="py-2">{t("project")}</th>
                   <th>{t("itemTitle")}</th>
                   <th>{t("status")}</th>
@@ -159,9 +159,9 @@ export default function OpenItemsPage() {
               </thead>
               <tbody>
                 {punchList.map((p) => (
-                  <tr key={p.id} className="border-b border-gray-100">
+                  <tr key={p.id} className="border-b border-gray-100 dark:border-gray-700">
                     <td className="py-2">
-                      <a href={projectLink(p.project.id, "punch_list", p.id, "quality")} className="text-brand-700 hover:underline">
+                      <a href={projectLink(p.project.id, "punch_list", p.id, "quality")} className="text-brand-700 dark:text-brand-400 hover:underline">
                         {p.project.name}
                       </a>
                     </td>
@@ -180,14 +180,14 @@ export default function OpenItemsPage() {
       {activeTab === "submittals" && (
         <div className="mt-4">
           {submittals === null ? (
-            <p className="text-sm text-gray-400">{tc("loading")}</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
           ) : submittals.length === 0 ? (
-            <p className="text-sm text-gray-400">{t("noPendingSubmittals")}</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noPendingSubmittals")}</p>
           ) : (
             <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 text-left text-gray-500">
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
                   <th className="py-2">{t("project")}</th>
                   <th>{t("number")}</th>
                   <th>{t("itemTitle")}</th>
@@ -196,13 +196,13 @@ export default function OpenItemsPage() {
               </thead>
               <tbody>
                 {submittals.map((s) => (
-                  <tr key={s.id} className="border-b border-gray-100">
+                  <tr key={s.id} className="border-b border-gray-100 dark:border-gray-700">
                     <td className="py-2">
-                      <a href={projectLink(s.project.id, "submittal", s.id, "quality")} className="text-brand-700 hover:underline">
+                      <a href={projectLink(s.project.id, "submittal", s.id, "quality")} className="text-brand-700 dark:text-brand-400 hover:underline">
                         {s.project.name}
                       </a>
                     </td>
-                    <td className="font-mono text-xs text-gray-400">{s.number}</td>
+                    <td className="font-mono text-xs text-gray-400 dark:text-gray-500">{s.number}</td>
                     <td>{s.title}</td>
                     <td>{s.dueDate ? formatDate(new Date(s.dueDate)) : "—"}</td>
                   </tr>

@@ -46,12 +46,12 @@ export function EstimateVariantsPanel({ estimateId, currency }: { estimateId: st
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("variants")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("variants")}</h2>
       {variants && variants.length > 1 && (
         <div className="overflow-x-auto">
         <table className="mb-4 w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-gray-200 text-left text-gray-500">
+            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
               <th className="py-2">{t("variantOption")}</th>
               <th>{tc("status")}</th>
               <th>{t("clientDecision_label")}</th>
@@ -60,12 +60,12 @@ export function EstimateVariantsPanel({ estimateId, currency }: { estimateId: st
           </thead>
           <tbody>
             {variants.map((v) => (
-              <tr key={v.id} className={`border-b border-gray-100 ${v.id === estimateId ? "bg-gray-50" : ""}`}>
+              <tr key={v.id} className={`border-b border-gray-100 dark:border-gray-700 ${v.id === estimateId ? "bg-gray-50 dark:bg-gray-700" : ""}`}>
                 <td className="py-2">
                   {v.id === estimateId ? (
                     <span className="font-medium">{v.variantLabel ?? v.name}</span>
                   ) : (
-                    <a href={`/estimates/${v.id}`} className="text-brand-700 hover:underline">
+                    <a href={`/estimates/${v.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
                       {v.variantLabel ?? v.name}
                     </a>
                   )}

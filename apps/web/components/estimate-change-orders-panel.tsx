@@ -175,32 +175,32 @@ export function EstimateChangeOrdersPanel({
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("changeOrders")}</h2>
-      <p className="mb-4 text-xs text-gray-500">{t("changeOrdersHint")}</p>
+      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("changeOrders")}</h2>
+      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("changeOrdersHint")}</p>
 
       {changeOrders && changeOrders.length > 0 && (
         <div className="mb-6 flex flex-col gap-4">
           {changeOrders.map((co) => {
             const line = coLineForm[co.id] ?? { rateCatalogItemId: rateItems[0]?.id ?? "", quantity: "1" };
             return (
-              <div key={co.id} className="rounded-lg border border-gray-200 p-4">
+              <div key={co.id} className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-900">
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
                     CO-{co.number} — {co.title}
                   </span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
                     {co.status === "approved" ? t("approved") : co.status === "pending_approval" ? t("pendingApproval") : t("draft")}
                     {co.sentAt && ` · ${t(`clientDecision_${co.clientDecision}`)}`}
                   </span>
                 </div>
-                {co.description && <p className="mt-1 text-xs text-gray-500">{co.description}</p>}
+                {co.description && <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{co.description}</p>}
 
                 {co.status === "pending_approval" && me?.company.changeOrderRequiredApprovalCount && (
-                  <div className="mt-2 rounded-lg border border-warning-200 bg-warning-50 px-3 py-2">
-                    <p className="text-xs text-warning-700">
+                  <div className="mt-2 rounded-lg border border-warning-200 bg-warning-50 dark:bg-warning-500/15 px-3 py-2">
+                    <p className="text-xs text-warning-700 dark:text-warning-500">
                       {t("approvalProgress", { count: co.approvals.length, required: me.company.changeOrderRequiredApprovalCount })}
                     </p>
-                    <p className="mt-0.5 text-xs text-warning-700">{co.approvals.map((a) => a.actorName).join(", ")}</p>
+                    <p className="mt-0.5 text-xs text-warning-700 dark:text-warning-500">{co.approvals.map((a) => a.actorName).join(", ")}</p>
                   </div>
                 )}
 
@@ -209,7 +209,7 @@ export function EstimateChangeOrdersPanel({
                   <table className="mt-3 w-full border-collapse text-xs">
                     <tbody>
                       {co.lines.map((l) => (
-                        <tr key={l.id} className="border-b border-gray-100">
+                        <tr key={l.id} className="border-b border-gray-100 dark:border-gray-700">
                           <td className="py-1">{l.rateCatalogItem.name}</td>
                           <td>
                             {l.quantity} {l.rateCatalogItem.unit}
@@ -227,14 +227,14 @@ export function EstimateChangeOrdersPanel({
                   {t("grandTotal")}: {co.grandTotal} {currency}
                 </p>
                 {co.scheduleImpactDays !== null && (
-                  <p className="mt-1 text-right text-xs text-gray-500">
+                  <p className="mt-1 text-right text-xs text-gray-500 dark:text-gray-400">
                     {t("scheduleImpact")}: {co.scheduleImpactDays >= 0 ? "+" : ""}
                     {co.scheduleImpactDays} {t("days")}
                   </p>
                 )}
 
                 {co.status === "draft" && (
-                  <div className="mt-3 flex items-end gap-2 border-t border-gray-100 pt-3">
+                  <div className="mt-3 flex items-end gap-2 border-t border-gray-100 dark:border-gray-700 pt-3">
                     <select
                       className="input"
                       value={line.rateCatalogItemId}
@@ -295,7 +295,7 @@ export function EstimateChangeOrdersPanel({
                 )}
 
                 {co.status === "pending_approval" && (
-                  <div className="mt-3 border-t border-gray-100 pt-3">
+                  <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-3">
                     <button
                       type="button"
                       onClick={() => approveChangeOrder(co.id)}
@@ -319,7 +319,7 @@ export function EstimateChangeOrdersPanel({
                 )}
 
                 {co.sentAt && co.clientAccessToken && (
-                  <div className="mt-3 border-t border-gray-100 pt-3">
+                  <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-3">
                     <div className="flex items-center gap-2">
                       <input
                         readOnly
@@ -335,7 +335,7 @@ export function EstimateChangeOrdersPanel({
                       </button>
                     </div>
                     {coEmailSentTo[co.id] !== undefined && (
-                      <p className="mt-2 text-xs text-gray-500">
+                      <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                         {coEmailSentTo[co.id]
                           ? tc("emailedTo", { email: coEmailSentTo[co.id] as string })
                           : tc("noClientEmail")}
@@ -355,12 +355,12 @@ export function EstimateChangeOrdersPanel({
                 )}
 
                 {co.clientDecision === "approved" && co.signerName && (
-                  <div className="mt-3 flex items-center gap-2 border-t border-gray-100 pt-3 text-xs text-gray-600">
+                  <div className="mt-3 flex items-center gap-2 border-t border-gray-100 dark:border-gray-700 pt-3 text-xs text-gray-600 dark:text-gray-300">
                     {coSignatureUrls[co.id] && (
                       <img
                         src={coSignatureUrls[co.id]}
                         alt={t("signature")}
-                        className="h-6 rounded border border-gray-200 bg-white px-1"
+                        className="h-6 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-1"
                       />
                     )}
                     <span>

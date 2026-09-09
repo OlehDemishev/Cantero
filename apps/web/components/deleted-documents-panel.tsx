@@ -41,19 +41,19 @@ export function DeletedDocumentsPanel() {
 
   return (
     <div className="card">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("deletedDocuments")}</h2>
-      <p className="mb-4 text-xs text-gray-500">{t("deletedDocumentsHint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("deletedDocuments")}</h2>
+      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("deletedDocumentsHint")}</p>
       {!documents ? (
-        <p className="text-sm text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
       ) : documents.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noDeletedDocuments")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noDeletedDocuments")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {documents.map((d) => (
-            <li key={d.id} className="flex items-center justify-between gap-3 border-b border-gray-100 pb-2 text-sm last:border-0">
+            <li key={d.id} className="flex items-center justify-between gap-3 border-b border-gray-100 dark:border-gray-700 pb-2 text-sm last:border-0">
               <div className="min-w-0">
-                <p className="truncate font-medium text-gray-800">{d.name}</p>
-                <p className="text-xs text-gray-400">
+                <p className="truncate font-medium text-gray-800 dark:text-gray-100">{d.name}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">
                   {d.project ? `${d.project.name} · ` : ""}
                   {d.uploadedBy ? `${t("uploadedBy", { name: d.uploadedBy.name })} · ` : ""}
                   {t("deletedAt", { date: formatDateTime(d.deletedAt) })}

@@ -43,7 +43,7 @@ export function CrewSmsBroadcastPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-8">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("title")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
       <div className="card">
         <form onSubmit={handleSend} className="flex flex-col gap-2">
           <textarea
@@ -54,20 +54,20 @@ export function CrewSmsBroadcastPanel({ projectId }: { projectId: string }) {
             onChange={(e) => setMessage(e.target.value)}
           />
           <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-400">{message.length}/480</span>
+            <span className="text-xs text-gray-400 dark:text-gray-500">{message.length}/480</span>
             <button type="submit" disabled={busy || !message.trim()} className="btn-primary px-3 py-1.5 text-xs">
               {busy ? t("sending") : t("send")}
             </button>
           </div>
         </form>
-        {error && <p className="mt-2 text-xs text-error-700">{error}</p>}
+        {error && <p className="mt-2 text-xs text-error-700 dark:text-error-500">{error}</p>}
 
         {log && log.length > 0 && (
-          <ul className="mt-4 flex flex-col gap-2 border-t border-gray-100 pt-3">
+          <ul className="mt-4 flex flex-col gap-2 border-t border-gray-100 dark:border-gray-700 pt-3">
             {log.map((b) => (
-              <li key={b.id} className="text-xs text-gray-500">
-                <span className="text-gray-700">{b.message}</span>
-                <span className="ml-1 text-gray-400">
+              <li key={b.id} className="text-xs text-gray-500 dark:text-gray-400">
+                <span className="text-gray-700 dark:text-gray-200">{b.message}</span>
+                <span className="ml-1 text-gray-400 dark:text-gray-500">
                   — {t("recipientCount", { count: b.recipientCount })}, {b.sentByName}
                 </span>
               </li>

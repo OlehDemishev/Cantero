@@ -72,8 +72,8 @@ export function BenefitPlansPanel() {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("plansTitle")}</h2>
-      <p className="mb-4 text-sm text-gray-500">{t("plansHint")}</p>
+      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("plansTitle")}</h2>
+      <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">{t("plansHint")}</p>
 
       <form onSubmit={createPlan} className="mb-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
         <input
@@ -102,21 +102,21 @@ export function BenefitPlansPanel() {
       </form>
 
       {plans === null ? (
-        <p className="text-sm text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
       ) : plans.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noPlans")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noPlans")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {plans.map((plan) => (
             <li key={plan.id} className="card">
               <div className="flex items-center justify-between text-sm">
-                <span className="font-medium text-gray-900">
-                  {plan.name} <span className="text-xs text-gray-400">({t(`planType_${plan.type}`)}{plan.carrier ? ` · ${plan.carrier}` : ""})</span>
+                <span className="font-medium text-gray-900 dark:text-gray-50">
+                  {plan.name} <span className="text-xs text-gray-400 dark:text-gray-500">({t(`planType_${plan.type}`)}{plan.carrier ? ` · ${plan.carrier}` : ""})</span>
                 </span>
-                <span className="text-xs text-gray-500">{t("enrolledCount", { count: plan._count.enrollments })}</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{t("enrolledCount", { count: plan._count.enrollments })}</span>
               </div>
               {plan.tiers.length > 0 && (
-                <ul className="mt-2 flex flex-col gap-0.5 text-xs text-gray-500">
+                <ul className="mt-2 flex flex-col gap-0.5 text-xs text-gray-500 dark:text-gray-400">
                   {plan.tiers.map((tier) => (
                     <li key={tier.id}>
                       {tier.name}: {t("employerCost")} {tier.monthlyEmployerCost} {currency} / {t("employeeCost")} {tier.monthlyEmployeeCost} {currency}

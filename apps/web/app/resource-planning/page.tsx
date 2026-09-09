@@ -197,14 +197,14 @@ export default function ResourcePlanningPage() {
   return (
     <AuthenticatedShell>
       <h1 className="text-2xl font-semibold">{t("title")}</h1>
-      <p className="mt-1 text-sm text-gray-500">{t("subtitle")}</p>
+      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("subtitle")}</p>
 
       <div className="mt-6 card max-w-xl">
-        <h2 className="mb-4 text-sm font-semibold text-gray-700">{t("newAssignment")}</h2>
+        <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("newAssignment")}</h2>
         <form onSubmit={submit} className="flex flex-col gap-3">
           <div className="flex gap-3">
             <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("resourceType")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("resourceType")}</span>
               <select
                 className="input"
                 value={form.resourceType}
@@ -215,7 +215,7 @@ export default function ResourcePlanningPage() {
               </select>
             </label>
             <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{form.resourceType === "worker" ? t("worker") : t("equipment")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{form.resourceType === "worker" ? t("worker") : t("equipment")}</span>
               <select className="input" value={form.resourceId} onChange={(e) => setForm((f) => ({ ...f, resourceId: e.target.value }))}>
                 {resourceOptions.map((r) => (
                   <option key={r.id} value={r.id}>
@@ -226,7 +226,7 @@ export default function ResourcePlanningPage() {
             </label>
           </div>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("project")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("project")}</span>
             <select
               className="input"
               value={form.projectId}
@@ -241,7 +241,7 @@ export default function ResourcePlanningPage() {
           </label>
           {projectTasks.length > 0 && (
             <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("task")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("task")}</span>
               <select className="input" value={form.taskId} onChange={(e) => setForm((f) => ({ ...f, taskId: e.target.value }))}>
                 <option value="">{t("wholeProject")}</option>
                 {projectTasks.map((task) => (
@@ -254,7 +254,7 @@ export default function ResourcePlanningPage() {
           )}
           <div className="flex gap-3">
             <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("startDate")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("startDate")}</span>
               <input
                 required
                 type="date"
@@ -264,7 +264,7 @@ export default function ResourcePlanningPage() {
               />
             </label>
             <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("endDate")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("endDate")}</span>
               <input
                 required
                 type="date"
@@ -275,7 +275,7 @@ export default function ResourcePlanningPage() {
             </label>
           </div>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("note")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("note")}</span>
             <input className="input" value={form.note} onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))} />
           </label>
           <button type="submit" disabled={busy} className="btn-primary self-start">
@@ -284,7 +284,7 @@ export default function ResourcePlanningPage() {
         </form>
 
         {newAssignmentConflicts && newAssignmentConflicts.length > 0 && (
-          <div className="mt-3 rounded-md border border-error-200 bg-error-25 p-3 text-xs text-error-700">
+          <div className="mt-3 rounded-md border border-error-200 bg-error-25 p-3 text-xs text-error-700 dark:text-error-500">
             <p className="font-medium">{t("newAssignmentConflict", { count: newAssignmentConflicts.length })}</p>
             <ul className="mt-1 flex flex-col gap-0.5">
               {newAssignmentConflicts.map((c) => (
@@ -298,15 +298,15 @@ export default function ResourcePlanningPage() {
       </div>
 
       {!calendar ? (
-        <p className="mt-8 text-gray-500">{tc("loading")}</p>
+        <p className="mt-8 text-gray-500 dark:text-gray-400">{tc("loading")}</p>
       ) : (
         <>
           {calendar.conflicts.length > 0 && (
             <div className="mt-8">
-              <h2 className="mb-3 text-sm font-semibold text-error-700">{t("conflictsDetected", { count: calendar.conflicts.length })}</h2>
+              <h2 className="mb-3 text-sm font-semibold text-error-700 dark:text-error-500">{t("conflictsDetected", { count: calendar.conflicts.length })}</h2>
               <ul className="flex flex-col gap-2">
                 {calendar.conflicts.map((c, i) => (
-                  <li key={i} className="rounded-md border border-error-200 bg-error-25 px-3 py-2 text-sm text-error-700">
+                  <li key={i} className="rounded-md border border-error-200 bg-error-25 px-3 py-2 text-sm text-error-700 dark:text-error-500">
                     <span className="font-medium">{c.resourceName}</span> — {c.projectAName} × {c.projectBName}:{" "}
                     {formatDate(new Date(c.overlapStart))} – {formatDate(new Date(c.overlapEnd))}
                   </li>
@@ -315,14 +315,14 @@ export default function ResourcePlanningPage() {
             </div>
           )}
 
-          <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700">{t("calendar")}</h2>
+          <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("calendar")}</h2>
           {calendar.resources.every((r) => r.assignments.length === 0) ? (
-            <p className="text-sm text-gray-400">{t("noAssignments")}</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noAssignments")}</p>
           ) : (
             <Timeline calendar={calendar} />
           )}
 
-          <h2 className="mb-3 mt-10 text-sm font-semibold text-gray-700">{t("allAssignments")}</h2>
+          <h2 className="mb-3 mt-10 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("allAssignments")}</h2>
           <div className="flex flex-col gap-2">
             {calendar.resources
               .filter((r) => r.assignments.length > 0)
@@ -332,11 +332,11 @@ export default function ResourcePlanningPage() {
                 return (
                   <div key={resourceKey} className="card">
                     <div className="flex items-center justify-between">
-                      <div className="text-sm font-medium text-gray-900">
-                        <Link href={`/${r.resourceType === "worker" ? "team" : "equipment"}/${r.resourceId}`} className="text-brand-700 hover:underline">
+                      <div className="text-sm font-medium text-gray-900 dark:text-gray-50">
+                        <Link href={`/${r.resourceType === "worker" ? "team" : "equipment"}/${r.resourceId}`} className="text-brand-700 dark:text-brand-400 hover:underline">
                           {r.resourceName}
                         </Link>{" "}
-                        <span className="text-xs text-gray-400">({t(r.resourceType)})</span>
+                        <span className="text-xs text-gray-400 dark:text-gray-500">({t(r.resourceType)})</span>
                       </div>
                       {hasConflict && (
                         <button
@@ -350,23 +350,23 @@ export default function ResourcePlanningPage() {
                     </div>
                     <ul className="mt-2 flex flex-col gap-1.5">
                       {r.assignments.map((a) => (
-                        <li key={a.id} className="flex items-center justify-between text-xs text-gray-600">
+                        <li key={a.id} className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-300">
                           <span>
-                            <Link href={`/projects/${a.projectId}`} className="text-brand-700 hover:underline">
+                            <Link href={`/projects/${a.projectId}`} className="text-brand-700 dark:text-brand-400 hover:underline">
                               {a.projectName}
                             </Link>
-                            {a.taskName && <span className="text-gray-400"> / {a.taskName}</span>} —{" "}
+                            {a.taskName && <span className="text-gray-400 dark:text-gray-500"> / {a.taskName}</span>} —{" "}
                             {formatDate(new Date(a.startDate))} – {formatDate(new Date(a.endDate))}
-                            {a.note && <span className="text-gray-400"> · {a.note}</span>}
+                            {a.note && <span className="text-gray-400 dark:text-gray-500"> · {a.note}</span>}
                           </span>
-                          <button onClick={() => removeAssignment(a.id)} className="text-gray-400 hover:text-error-600">
+                          <button onClick={() => removeAssignment(a.id)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
                             ×
                           </button>
                         </li>
                       ))}
                     </ul>
                     {leveledMoves && leveledMoves.resourceKey === resourceKey && (
-                      <div className="mt-2 rounded-md bg-success-50 px-2.5 py-1.5 text-xs text-success-700">
+                      <div className="mt-2 rounded-md bg-success-50 dark:bg-success-500/15 px-2.5 py-1.5 text-xs text-success-700 dark:text-success-500">
                         {leveledMoves.moves.length === 0
                           ? t("levelNoChanges")
                           : t("leveledMoves", { count: leveledMoves.moves.length })}
@@ -377,12 +377,12 @@ export default function ResourcePlanningPage() {
               })}
           </div>
 
-          <h2 className="mb-3 mt-10 text-sm font-semibold text-gray-700">{t("workloadHeatmap")}</h2>
-          <p className="mb-3 text-xs text-gray-400">{t("workloadHeatmapHint")}</p>
+          <h2 className="mb-3 mt-10 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("workloadHeatmap")}</h2>
+          <p className="mb-3 text-xs text-gray-400 dark:text-gray-500">{t("workloadHeatmapHint")}</p>
           {!heatmap ? (
-            <p className="text-sm text-gray-400">{tc("loading")}</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
           ) : heatmap.length === 0 ? (
-            <p className="text-sm text-gray-400">{t("noAssignments")}</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noAssignments")}</p>
           ) : (
             <WorkloadHeatmap rows={heatmap} />
           )}
@@ -403,13 +403,13 @@ function WorkloadHeatmap({ rows }: { rows: HeatmapRow[] }) {
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white p-4">
+    <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
       <table className="border-collapse text-xs">
         <thead>
           <tr>
-            <th className="sticky left-0 bg-white pr-3 text-left font-medium text-gray-500">{t("worker")}</th>
+            <th className="sticky left-0 bg-white dark:bg-gray-800 pr-3 text-left font-medium text-gray-500 dark:text-gray-400">{t("worker")}</th>
             {allDates.map((date) => (
-              <th key={date} className="px-1 py-1 text-center font-normal text-gray-400">
+              <th key={date} className="px-1 py-1 text-center font-normal text-gray-400 dark:text-gray-500">
                 {formatDateWithOptions(date, { day: "numeric", month: "numeric" })}
               </th>
             ))}
@@ -418,11 +418,11 @@ function WorkloadHeatmap({ rows }: { rows: HeatmapRow[] }) {
         <tbody>
           {rows.map((row) => (
             <tr key={row.workerId}>
-              <td className="sticky left-0 bg-white pr-3 py-1 font-medium text-gray-700">{row.workerName}</td>
+              <td className="sticky left-0 bg-white dark:bg-gray-800 pr-3 py-1 font-medium text-gray-700 dark:text-gray-200">{row.workerName}</td>
               {allDates.map((date) => {
                 const cell = cellFor(row, date);
                 const hours = cell?.hours ?? 0;
-                const bg = !cell ? "bg-gray-50" : cell.overallocated ? "bg-error-500" : hours >= 8 ? "bg-brand-500" : hours > 0 ? "bg-brand-200" : "bg-gray-50";
+                const bg = !cell ? "bg-gray-50 dark:bg-gray-700" : cell.overallocated ? "bg-error-500" : hours >= 8 ? "bg-brand-500" : hours > 0 ? "bg-brand-200" : "bg-gray-50 dark:bg-gray-700";
                 return (
                   <td key={date} className="p-0.5">
                     <div
@@ -449,7 +449,7 @@ function Timeline({ calendar }: { calendar: Calendar }) {
   const conflictedIds = new Set(calendar.conflicts.flatMap((c) => [c.assignmentAId, c.assignmentBId]));
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white p-4">
+    <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
       <div className="flex flex-col gap-2">
         {calendar.resources
           .filter((r) => r.assignments.length > 0)
@@ -457,11 +457,11 @@ function Timeline({ calendar }: { calendar: Calendar }) {
             <div key={`${r.resourceType}-${r.resourceId}`} className="flex items-center gap-3">
               <Link
                 href={`/${r.resourceType === "worker" ? "team" : "equipment"}/${r.resourceId}`}
-                className="w-36 flex-none truncate text-xs text-brand-700 hover:underline"
+                className="w-36 flex-none truncate text-xs text-brand-700 dark:text-brand-400 hover:underline"
               >
                 {r.resourceName}
               </Link>
-              <div className="relative h-6 min-w-[420px] flex-1 rounded bg-gray-100">
+              <div className="relative h-6 min-w-[420px] flex-1 rounded bg-gray-100 dark:bg-gray-700">
                 {r.assignments.map((a) => {
                   const left = pct(new Date(a.startDate).getTime());
                   const right = pct(new Date(a.endDate).getTime());

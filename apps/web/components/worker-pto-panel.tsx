@@ -29,7 +29,7 @@ export function WorkerPtoPanel({ workerId, onChanged }: { workerId: string; onCh
 
   return (
     <>
-      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700">{t("ptoBalance")}</h2>
+      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("ptoBalance")}</h2>
       <form onSubmit={adjustPto} className="card flex flex-col gap-2">
         <input
           required

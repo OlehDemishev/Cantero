@@ -81,21 +81,21 @@ export function BillingPlanPanel({ isManager }: { isManager: boolean }) {
 
   return (
     <section id="billing" className="card">
-      <h2 className="mb-4 text-sm font-semibold text-gray-700">{t("plan")}</h2>
-      {error && <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("plan")}</h2>
+      {error && <p className="mb-3 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{error}</p>}
       <div className="flex flex-col gap-2">
         {plans.map((plan) => {
           const isCurrent = subscription?.plan.code === plan.code;
           return (
             <div
               key={plan.id}
-              className={`flex items-center justify-between rounded-md border px-3 py-2 ${isCurrent ? "border-gray-900 bg-gray-50" : "border-gray-200"}`}
+              className={`flex items-center justify-between rounded-md border px-3 py-2 ${isCurrent ? "border-gray-900 bg-gray-50 dark:bg-gray-700" : "border-gray-200 dark:border-gray-700"}`}
             >
               <div>
                 <div className="text-sm font-medium">
                   {plan.name} {isCurrent && `· ${t("currentPlan")}`}
                 </div>
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-gray-500 dark:text-gray-400">
                   {plan.pricePerSeat} {plan.currency} / seat / mo
                 </div>
               </div>
@@ -110,14 +110,14 @@ export function BillingPlanPanel({ isManager }: { isManager: boolean }) {
       </div>
 
       {subscription && memberCount !== null && (
-        <p className="mt-3 text-xs text-gray-500">
+        <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
           {t("seatsUsed", { used: memberCount, total: subscription.seats })}
         </p>
       )}
 
       {isManager && (
         <form onSubmit={updateSeats} className="mt-4 flex items-end gap-2">
-          <label className="text-xs text-gray-500">
+          <label className="text-xs text-gray-500 dark:text-gray-400">
             {t("seats")}
             <input
               type="number"

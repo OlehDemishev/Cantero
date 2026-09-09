@@ -30,10 +30,10 @@ interface DraftSigner {
 }
 
 const STATUS_STYLES: Record<SignatureRequestStatus, string> = {
-  draft: "bg-gray-100 text-gray-500",
-  sent: "bg-warning-50 text-warning-700",
-  completed: "bg-success-50 text-success-700",
-  voided: "bg-error-50 text-error-700",
+  draft: "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400",
+  sent: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
+  completed: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
+  voided: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
 };
 
 export function SignatureRequestsPanel({ documents }: { documents: DocumentOption[] }) {
@@ -104,7 +104,7 @@ export function SignatureRequestsPanel({ documents }: { documents: DocumentOptio
   return (
     <div className="mt-8">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
         {!creating && (
           <button onClick={() => setCreating(true)} className="btn-secondary px-3 py-1 text-xs">
             {t("newRequest")}
@@ -115,11 +115,11 @@ export function SignatureRequestsPanel({ documents }: { documents: DocumentOptio
       {creating && (
         <form onSubmit={submit} className="card mb-4 flex flex-col gap-3">
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("requestTitle")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("requestTitle")}</span>
             <input required className="input" value={title} onChange={(e) => setTitle(e.target.value)} />
           </label>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("document")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("document")}</span>
             <select required className="input" value={documentId} onChange={(e) => setDocumentId(e.target.value)}>
               <option value="">{t("selectDocument")}</option>
               {documents.map((d) => (
@@ -130,10 +130,10 @@ export function SignatureRequestsPanel({ documents }: { documents: DocumentOptio
             </select>
           </label>
           <div className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-gray-700">{t("signersInOrder")}</span>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{t("signersInOrder")}</span>
             {signers.map((s, i) => (
               <div key={i} className="flex items-center gap-2">
-                <span className="w-5 text-xs text-gray-400">{i + 1}.</span>
+                <span className="w-5 text-xs text-gray-400 dark:text-gray-500">{i + 1}.</span>
                 <input
                   required
                   className="input flex-1"
@@ -150,7 +150,7 @@ export function SignatureRequestsPanel({ documents }: { documents: DocumentOptio
                   onChange={(e) => setSigners((arr) => arr.map((row, j) => (j === i ? { ...row, email: e.target.value } : row)))}
                 />
                 {signers.length > 1 && (
-                  <button type="button" onClick={() => removeSignerRow(i)} className="text-xs text-gray-400 hover:text-error-700">
+                  <button type="button" onClick={() => removeSignerRow(i)} className="text-xs text-gray-400 dark:text-gray-500 hover:text-error-700">
                     ×
                   </button>
                 )}
@@ -172,19 +172,19 @@ export function SignatureRequestsPanel({ documents }: { documents: DocumentOptio
       )}
 
       {requests === null ? (
-        <p className="text-sm text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
       ) : requests.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noRequests")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noRequests")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {requests.map((r) => (
             <li key={r.id} className="card">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-900">{r.title}</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{r.title}</span>
                 <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[r.status]}`}>{t(r.status)}</span>
               </div>
-              <p className="mt-1 text-xs text-gray-400">{r.document.name}</p>
-              <ul className="mt-2 flex flex-col gap-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{r.document.name}</p>
+              <ul className="mt-2 flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
                 {r.signers
                   .slice()
                   .sort((a, b) => a.order - b.order)
@@ -193,9 +193,9 @@ export function SignatureRequestsPanel({ documents }: { documents: DocumentOptio
                       <span>{s.order}.</span>
                       <span>{s.name}</span>
                       {s.signedAt ? (
-                        <span className="text-success-700">{t("signedOn", { date: formatDate(new Date(s.signedAt)) })}</span>
+                        <span className="text-success-700 dark:text-success-500">{t("signedOn", { date: formatDate(new Date(s.signedAt)) })}</span>
                       ) : (
-                        <span className="text-gray-400">{t("notSigned")}</span>
+                        <span className="text-gray-400 dark:text-gray-500">{t("notSigned")}</span>
                       )}
                     </li>
                   ))}

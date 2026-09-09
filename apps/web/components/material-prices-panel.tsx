@@ -82,40 +82,40 @@ export function MaterialPricesPanel() {
 
   return (
     <div className="mt-8">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("title")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
 
       {changes && changes.length > 0 && (
         <div className="card mb-4">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("recentChanges")}</h3>
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("recentChanges")}</h3>
           <ul className="flex flex-col gap-2">
             {changes.map((c) => {
               const pct = Number(c.changePercent);
               return (
                 <li key={c.id} className="text-sm">
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-900">{c.materialCatalogItem.name}</span>
-                    <span className={`text-xs font-medium ${pct > 0 ? "text-error-700" : "text-success-700"}`}>
+                    <span className="text-gray-900 dark:text-gray-50">{c.materialCatalogItem.name}</span>
+                    <span className={`text-xs font-medium ${pct > 0 ? "text-error-700 dark:text-error-500" : "text-success-700 dark:text-success-500"}`}>
                       {pct > 0 ? "+" : ""}
                       {pct}% ({c.oldPrice} → {c.newPrice} {currency})
                     </span>
                   </div>
-                  <button onClick={() => toggleAffected(c.materialCatalogItem.id)} className="text-xs text-brand-700 hover:underline">
+                  <button onClick={() => toggleAffected(c.materialCatalogItem.id)} className="text-xs text-brand-700 dark:text-brand-400 hover:underline">
                     {affectedFor === c.materialCatalogItem.id ? tc("close") : t("showAffectedEstimates")}
                   </button>
                   {affectedFor === c.materialCatalogItem.id && (
-                    <div className="mt-1 rounded-lg bg-gray-50 p-2">
+                    <div className="mt-1 rounded-lg bg-gray-50 dark:bg-gray-700 p-2">
                       {!affected ? (
-                        <p className="text-xs text-gray-400">{tc("loading")}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>
                       ) : affected.length === 0 ? (
-                        <p className="text-xs text-gray-400">{t("noAffectedEstimates")}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">{t("noAffectedEstimates")}</p>
                       ) : (
                         <ul className="flex flex-col gap-1">
                           {affected.map((e) => (
                             <li key={e.id} className="text-xs">
-                              <a href={`/estimates/${e.id}`} className="text-brand-700 hover:underline">
+                              <a href={`/estimates/${e.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
                                 {e.name}
                               </a>
-                              {e.project && <span className="text-gray-400"> — {e.project.name}</span>}
+                              {e.project && <span className="text-gray-400 dark:text-gray-500"> — {e.project.name}</span>}
                             </li>
                           ))}
                         </ul>
@@ -133,7 +133,7 @@ export function MaterialPricesPanel() {
         <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-gray-200 text-left text-gray-500">
+            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
               <th className="py-1.5">{t("code")}</th>
               <th>{tc("name")}</th>
               <th>{t("unit")}</th>
@@ -143,10 +143,10 @@ export function MaterialPricesPanel() {
           </thead>
           <tbody>
             {materials.map((m) => (
-              <tr key={m.id} className="border-b border-gray-100">
-                <td className="py-1.5 text-xs text-gray-500">{m.code}</td>
+              <tr key={m.id} className="border-b border-gray-100 dark:border-gray-700">
+                <td className="py-1.5 text-xs text-gray-500 dark:text-gray-400">{m.code}</td>
                 <td>{m.name}</td>
-                <td className="text-xs text-gray-500">{m.unit}</td>
+                <td className="text-xs text-gray-500 dark:text-gray-400">{m.unit}</td>
                 <td>
                   {editingId === m.id ? (
                     <form onSubmit={(e) => savePrice(m.id, e)} className="flex items-center gap-1">
@@ -162,7 +162,7 @@ export function MaterialPricesPanel() {
                       <button type="submit" disabled={busy} className="btn-secondary px-2 py-0.5 text-xs">
                         {tc("save")}
                       </button>
-                      <button type="button" onClick={() => setEditingId(null)} className="text-xs text-gray-400">
+                      <button type="button" onClick={() => setEditingId(null)} className="text-xs text-gray-400 dark:text-gray-500">
                         {tc("cancel")}
                       </button>
                     </form>
@@ -174,7 +174,7 @@ export function MaterialPricesPanel() {
                 </td>
                 <td>
                   {editingId !== m.id && (
-                    <button onClick={() => startEdit(m)} className="text-xs text-brand-700 hover:underline">
+                    <button onClick={() => startEdit(m)} className="text-xs text-brand-700 dark:text-brand-400 hover:underline">
                       {tc("edit")}
                     </button>
                   )}

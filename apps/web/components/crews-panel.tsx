@@ -132,7 +132,7 @@ export function CrewsPanel({ workers, projects }: { workers: Worker[]; projects:
   return (
     <div className="mt-10">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700">{t("crews")}</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("crews")}</h2>
         {!creating && (
           <button onClick={() => setCreating(true)} className="btn-secondary px-3 py-1 text-xs">
             {t("newCrew")}
@@ -143,14 +143,14 @@ export function CrewsPanel({ workers, projects }: { workers: Worker[]; projects:
       {creating && (
         <form onSubmit={createCrew} className="card mb-4 flex flex-col gap-3">
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{tc("name")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{tc("name")}</span>
             <input required className="input" value={newCrewName} onChange={(e) => setNewCrewName(e.target.value)} />
           </label>
           <div>
-            <span className="text-sm font-medium text-gray-700">{t("members")}</span>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{t("members")}</span>
             <div className="mt-1.5 flex flex-wrap gap-2">
               {workers.map((w) => (
-                <label key={w.id} className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-2 py-1 text-xs">
+                <label key={w.id} className="flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-gray-700 px-2 py-1 text-xs">
                   <input type="checkbox" checked={newCrewWorkerIds.has(w.id)} onChange={() => toggleNewCrewWorker(w.id)} />
                   {w.name}
                 </label>
@@ -169,15 +169,15 @@ export function CrewsPanel({ workers, projects }: { workers: Worker[]; projects:
       )}
 
       {crews.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noCrews")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noCrews")}</p>
       ) : (
         <>
           <ul className="mb-6 flex flex-col gap-2">
             {crews.map((crew) => (
               <li key={crew.id} className="card flex items-center justify-between">
                 <div>
-                  <div className="text-sm font-medium text-gray-900">{crew.name}</div>
-                  <div className="text-xs text-gray-500">{crew.members.map((m) => m.worker.name).join(", ") || "—"}</div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-gray-50">{crew.name}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{crew.members.map((m) => m.worker.name).join(", ") || "—"}</div>
                 </div>
                 <button onClick={() => deleteCrew(crew.id)} className="text-xs text-error-600 hover:underline">
                   {tc("delete")}
@@ -187,10 +187,10 @@ export function CrewsPanel({ workers, projects }: { workers: Worker[]; projects:
           </ul>
 
           <form onSubmit={assignCrew} className="card flex flex-col gap-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">{t("assignCrew")}</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("assignCrew")}</h3>
             <div className="flex flex-wrap gap-3">
               <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700">{t("crews")}</span>
+                <span className="font-medium text-gray-700 dark:text-gray-200">{t("crews")}</span>
                 <select className="input" value={assignForm.crewId} onChange={(e) => setAssignForm((f) => ({ ...f, crewId: e.target.value }))}>
                   {crews.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -200,7 +200,7 @@ export function CrewsPanel({ workers, projects }: { workers: Worker[]; projects:
                 </select>
               </label>
               <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700">{t("project")}</span>
+                <span className="font-medium text-gray-700 dark:text-gray-200">{t("project")}</span>
                 <select className="input" value={assignForm.projectId} onChange={(e) => setAssignForm((f) => ({ ...f, projectId: e.target.value, taskId: "" }))}>
                   {projects.map((p) => (
                     <option key={p.id} value={p.id}>
@@ -211,7 +211,7 @@ export function CrewsPanel({ workers, projects }: { workers: Worker[]; projects:
               </label>
               {assignTasks.length > 0 && (
                 <label className="flex flex-col gap-1.5 text-sm">
-                  <span className="font-medium text-gray-700">{t("task")}</span>
+                  <span className="font-medium text-gray-700 dark:text-gray-200">{t("task")}</span>
                   <select className="input" value={assignForm.taskId} onChange={(e) => setAssignForm((f) => ({ ...f, taskId: e.target.value }))}>
                     <option value="">—</option>
                     {assignTasks.map((task) => (
@@ -225,11 +225,11 @@ export function CrewsPanel({ workers, projects }: { workers: Worker[]; projects:
             </div>
             <div className="flex gap-3">
               <label className="flex flex-1 flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700">{t("startDate")}</span>
+                <span className="font-medium text-gray-700 dark:text-gray-200">{t("startDate")}</span>
                 <input required type="date" className="input" value={assignForm.startDate} onChange={(e) => setAssignForm((f) => ({ ...f, startDate: e.target.value }))} />
               </label>
               <label className="flex flex-1 flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700">{t("endDate")}</span>
+                <span className="font-medium text-gray-700 dark:text-gray-200">{t("endDate")}</span>
                 <input required type="date" className="input" value={assignForm.endDate} onChange={(e) => setAssignForm((f) => ({ ...f, endDate: e.target.value }))} />
               </label>
             </div>
@@ -237,7 +237,7 @@ export function CrewsPanel({ workers, projects }: { workers: Worker[]; projects:
               {t("assignCrew")}
             </button>
             {assignConflicts && assignConflicts.length > 0 && (
-              <p className="text-xs text-warning-700">
+              <p className="text-xs text-warning-700 dark:text-warning-500">
                 {t("conflictsDetected", { count: assignConflicts.length })}
               </p>
             )}

@@ -54,8 +54,8 @@ export function MarketingCampaignsPanel() {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("campaignsTitle")}</h2>
-      <p className="mb-4 text-sm text-gray-500">{t("campaignsHint")}</p>
+      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("campaignsTitle")}</h2>
+      <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">{t("campaignsHint")}</p>
 
       <form onSubmit={createCampaign} className="mb-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
         <input
@@ -72,7 +72,7 @@ export function MarketingCampaignsPanel() {
           value={form.channel}
           onChange={(e) => setForm((f) => ({ ...f, channel: e.target.value }))}
         />
-        <label className="flex flex-col gap-1 text-xs text-gray-500">
+        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {t("spend")}
           <input
             type="number"
@@ -89,17 +89,17 @@ export function MarketingCampaignsPanel() {
       </form>
 
       {campaigns === null ? (
-        <p className="text-sm text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
       ) : campaigns.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noCampaigns")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noCampaigns")}</p>
       ) : (
         <ul className="flex flex-col gap-1.5">
           {campaigns.map((c) => (
             <li key={c.id} className="card flex items-center justify-between text-sm">
               <span>
-                {c.name} <span className="text-xs text-gray-400">({c.channel})</span>
+                {c.name} <span className="text-xs text-gray-400 dark:text-gray-500">({c.channel})</span>
               </span>
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-gray-500 dark:text-gray-400">
                 {c.spend && `${c.spend} ${currency} · `}
                 {t("leadsCount", { count: c._count.clients })}
               </span>

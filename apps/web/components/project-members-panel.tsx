@@ -85,31 +85,31 @@ export function ProjectMembersPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-8">
-      <h2 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-gray-700">
+      <h2 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-gray-700 dark:text-gray-200">
         {t("title")}
         <HelpTooltip text={t("tooltip")} />
       </h2>
       <div className="card">
-        <label className="flex items-start gap-2 text-sm text-gray-700">
+        <label className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-200">
           <input type="checkbox" className="mt-0.5" checked={project?.restrictedToMembers ?? false} onChange={toggleRestricted} disabled={busy} />
           <span>
-            <span className="font-medium text-gray-700">{t("restrictToggle")}</span>
-            <span className="mt-0.5 block text-xs text-gray-500">{t("restrictToggleHint")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("restrictToggle")}</span>
+            <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">{t("restrictToggleHint")}</span>
           </span>
         </label>
 
         {project?.restrictedToMembers && (
-          <div className="mt-4 border-t border-gray-100 pt-4">
+          <div className="mt-4 border-t border-gray-100 dark:border-gray-700 pt-4">
             {!members || members.length === 0 ? (
-              <p className="text-sm text-gray-400">{t("noMembers")}</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500">{t("noMembers")}</p>
             ) : (
               <ul className="flex flex-col gap-1.5">
                 {members.map((m) => (
                   <li key={m.id} className="flex items-center justify-between text-sm">
-                    <span className="text-gray-700">
-                      {m.user.name} <span className="text-gray-400">({m.user.email})</span>
+                    <span className="text-gray-700 dark:text-gray-200">
+                      {m.user.name} <span className="text-gray-400 dark:text-gray-500">({m.user.email})</span>
                     </span>
-                    <button onClick={() => removeMember(m.userId)} className="text-gray-400 hover:text-error-600">
+                    <button onClick={() => removeMember(m.userId)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
                       ×
                     </button>
                   </li>

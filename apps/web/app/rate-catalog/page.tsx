@@ -222,9 +222,9 @@ export default function RateCatalogPage() {
       </div>
 
       {pendingNotice && (
-        <div className="mt-3 flex items-center justify-between rounded-md bg-warning-50 px-3 py-2 text-xs text-warning-700">
+        <div className="mt-3 flex items-center justify-between rounded-md bg-warning-50 dark:bg-warning-500/15 px-3 py-2 text-xs text-warning-700 dark:text-warning-500">
           <span>{pendingNotice}</span>
-          <button onClick={() => setPendingNotice(null)} className="text-warning-700 hover:underline">
+          <button onClick={() => setPendingNotice(null)} className="text-warning-700 dark:text-warning-500 hover:underline">
             {tc("close")}
           </button>
         </div>
@@ -232,21 +232,21 @@ export default function RateCatalogPage() {
 
       {pendingChanges.length > 0 && (
         <div className="card mt-4">
-          <h2 className="mb-2 text-sm font-semibold text-gray-700">{t("pendingChanges")}</h2>
-          <p className="mb-3 text-xs text-gray-500">{t("pendingChangesHint")}</p>
+          <h2 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("pendingChanges")}</h2>
+          <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("pendingChangesHint")}</p>
           <ul className="flex flex-col gap-2">
             {pendingChanges.map((pc) => (
-              <li key={pc.id} className="flex items-center justify-between rounded-md border border-gray-200 px-3 py-2 text-sm">
+              <li key={pc.id} className="flex items-center justify-between rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm">
                 <div>
-                  <span className="font-medium text-gray-900">
+                  <span className="font-medium text-gray-900 dark:text-gray-50">
                     {pc.rateCatalogItem.code} — {pc.name ?? pc.rateCatalogItem.name}
                   </span>
                   {pc.laborHoursPerUnit !== null && (
-                    <span className="ml-2 text-xs text-gray-500">
+                    <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
                       {t("laborHoursChange", { from: pc.rateCatalogItem.laborHoursPerUnit, to: pc.laborHoursPerUnit })}
                     </span>
                   )}
-                  <p className="text-xs text-gray-400">{t("proposedBy", { name: pc.proposedByName, date: formatDate(new Date(pc.proposedAt)) })}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">{t("proposedBy", { name: pc.proposedByName, date: formatDate(new Date(pc.proposedAt)) })}</p>
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => approvePendingChange(pc.id)} className="btn-primary px-2.5 py-1 text-xs">
@@ -265,13 +265,13 @@ export default function RateCatalogPage() {
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <button
           onClick={() => setActiveCatalogId("all")}
-          className={`rounded-full px-3 py-1 text-xs font-medium ${activeCatalogId === "all" ? "bg-brand-500 text-white" : "bg-gray-100 text-gray-600"}`}
+          className={`rounded-full px-3 py-1 text-xs font-medium ${activeCatalogId === "all" ? "bg-brand-500 text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"}`}
         >
           {t("allCatalogs")}
         </button>
         <button
           onClick={() => setActiveCatalogId("uncategorized")}
-          className={`rounded-full px-3 py-1 text-xs font-medium ${activeCatalogId === "uncategorized" ? "bg-brand-500 text-white" : "bg-gray-100 text-gray-600"}`}
+          className={`rounded-full px-3 py-1 text-xs font-medium ${activeCatalogId === "uncategorized" ? "bg-brand-500 text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"}`}
         >
           {t("uncategorized")}
         </button>
@@ -279,7 +279,7 @@ export default function RateCatalogPage() {
           <button
             key={c.id}
             onClick={() => setActiveCatalogId(c.id)}
-            className={`rounded-full px-3 py-1 text-xs font-medium ${activeCatalogId === c.id ? "bg-brand-500 text-white" : "bg-gray-100 text-gray-600"}`}
+            className={`rounded-full px-3 py-1 text-xs font-medium ${activeCatalogId === c.id ? "bg-brand-500 text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"}`}
           >
             {c.name}
           </button>
@@ -299,7 +299,7 @@ export default function RateCatalogPage() {
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="card lg:col-span-1">
-          <h2 className="mb-4 text-sm font-semibold text-gray-700">{tc("create")}</h2>
+          <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{tc("create")}</h2>
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             <input
               required
@@ -322,7 +322,7 @@ export default function RateCatalogPage() {
               value={form.unit}
               onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}
             />
-            <label className="text-xs text-gray-500">
+            <label className="text-xs text-gray-500 dark:text-gray-400">
               {t("laborHours")}
               <input
                 required
@@ -333,7 +333,7 @@ export default function RateCatalogPage() {
                 onChange={(e) => setForm((f) => ({ ...f, laborHoursPerUnit: e.target.value }))}
               />
             </label>
-            <label className="text-xs text-gray-500">
+            <label className="text-xs text-gray-500 dark:text-gray-400">
               {t("catalog")}
               <select
                 className="input mt-1"
@@ -349,7 +349,7 @@ export default function RateCatalogPage() {
               </select>
             </label>
 
-            <label className="text-xs text-gray-500">
+            <label className="text-xs text-gray-500 dark:text-gray-400">
               {t("formula")}
               <input
                 placeholder={t("formulaPlaceholder")}
@@ -359,7 +359,7 @@ export default function RateCatalogPage() {
               />
             </label>
             {form.formula && (
-              <label className="text-xs text-gray-500">
+              <label className="text-xs text-gray-500 dark:text-gray-400">
                 {t("formulaParams")}
                 <input
                   placeholder={t("formulaParamsPlaceholder")}
@@ -371,7 +371,7 @@ export default function RateCatalogPage() {
             )}
 
             <div className="mt-2 flex items-center justify-between">
-              <span className="text-xs font-semibold text-gray-500">{t("materials")}</span>
+              <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{t("materials")}</span>
               <button type="button" onClick={addLine} className="btn-secondary px-2 py-1 text-xs">
                 +
               </button>
@@ -411,12 +411,12 @@ export default function RateCatalogPage() {
 
         <div className="lg:col-span-2">
           {!visibleItems ? (
-            <p className="text-gray-500">{tc("loading")}</p>
+            <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
           ) : (
             <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 text-left text-gray-500">
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
                   <th className="py-2">{t("code")}</th>
                   <th>{tc("name")}</th>
                   <th>{t("unit")}</th>
@@ -429,7 +429,7 @@ export default function RateCatalogPage() {
               <tbody>
                 {visibleItems.map((item) =>
                   editingId === item.id ? (
-                    <tr key={item.id} className="border-b border-gray-100 bg-gray-50">
+                    <tr key={item.id} className="border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
                       <td className="py-2 font-mono text-xs">{item.code}</td>
                       <td>
                         <input className="input py-1 text-xs" value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} />
@@ -471,36 +471,36 @@ export default function RateCatalogPage() {
                     </tr>
                   ) : (
                     <Fragment key={item.id}>
-                      <tr className="border-b border-gray-100">
+                      <tr className="border-b border-gray-100 dark:border-gray-700">
                         <td className="py-2 font-mono text-xs">{item.code}</td>
                         <td>
                           {item.name}
-                          {item.formula && <span className="ml-1 rounded-full bg-brand-50 px-1.5 py-0.5 text-[10px] text-brand-700">ƒ</span>}
+                          {item.formula && <span className="ml-1 rounded-full bg-brand-50 dark:bg-brand-500/15 px-1.5 py-0.5 text-[10px] text-brand-700 dark:text-brand-400">ƒ</span>}
                         </td>
                         <td>{item.unit}</td>
                         <td>{item.laborHoursPerUnit}</td>
-                        <td className="text-xs text-gray-500">{item.catalogId ? catalogNameById[item.catalogId] : t("uncategorized")}</td>
-                        <td className="text-xs text-gray-500">{item.materials.map((m) => m.materialCatalogItem.code).join(", ")}</td>
+                        <td className="text-xs text-gray-500 dark:text-gray-400">{item.catalogId ? catalogNameById[item.catalogId] : t("uncategorized")}</td>
+                        <td className="text-xs text-gray-500 dark:text-gray-400">{item.materials.map((m) => m.materialCatalogItem.code).join(", ")}</td>
                         <td className="whitespace-nowrap text-right">
-                          <button onClick={() => startEdit(item)} className="text-xs text-brand-700 hover:underline">
+                          <button onClick={() => startEdit(item)} className="text-xs text-brand-700 dark:text-brand-400 hover:underline">
                             {tc("edit")}
                           </button>{" "}
-                          <button onClick={() => toggleHistory(item.id)} className="text-xs text-brand-700 hover:underline">
+                          <button onClick={() => toggleHistory(item.id)} className="text-xs text-brand-700 dark:text-brand-400 hover:underline">
                             {t("history")}
                           </button>
                         </td>
                       </tr>
                       {historyForId === item.id && (
-                        <tr className="border-b border-gray-100 bg-gray-50">
+                        <tr className="border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
                           <td colSpan={7} className="py-2">
                             {!history ? (
-                              <span className="text-xs text-gray-400">{tc("loading")}</span>
+                              <span className="text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</span>
                             ) : history.length === 0 ? (
-                              <span className="text-xs text-gray-400">{t("noHistory")}</span>
+                              <span className="text-xs text-gray-400 dark:text-gray-500">{t("noHistory")}</span>
                             ) : (
                               <ul className="flex flex-col gap-1">
                                 {history.map((rev) => (
-                                  <li key={rev.id} className="text-xs text-gray-500">
+                                  <li key={rev.id} className="text-xs text-gray-500 dark:text-gray-400">
                                     {formatDateTime(new Date(rev.createdAt))} — {rev.name} ({rev.laborHoursPerUnit} {t("laborHours").toLowerCase()}) —{" "}
                                     {rev.changedByName}
                                   </li>

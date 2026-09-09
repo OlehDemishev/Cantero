@@ -100,17 +100,17 @@ export default function HazmatPage() {
           </button>
         )}
       </div>
-      <p className="mt-1 text-sm text-gray-500">{t("hint")}</p>
+      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("hint")}</p>
 
       {stale && stale.length > 0 && (
         <div className="card mt-4">
-          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-warning-700">{t("staleSdsTitle")}</h2>
+          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-warning-700 dark:text-warning-500">{t("staleSdsTitle")}</h2>
           <ul className="flex flex-col gap-1 text-sm">
             {stale.map((s) => (
-              <li key={s.id} className="text-gray-700">
+              <li key={s.id} className="text-gray-700 dark:text-gray-200">
                 {s.name}
-                {s.manufacturer && <span className="text-gray-400"> · {s.manufacturer}</span>}
-                <span className="ml-1.5 text-xs text-warning-700">
+                {s.manufacturer && <span className="text-gray-400 dark:text-gray-500"> · {s.manufacturer}</span>}
+                <span className="ml-1.5 text-xs text-warning-700 dark:text-warning-500">
                   {s.latestRevisionDate ? t("lastRevised", { date: formatDate(new Date(s.latestRevisionDate)) }) : t("noSdsOnFile")}
                 </span>
               </li>
@@ -162,9 +162,9 @@ export default function HazmatPage() {
 
       <div className="mt-4">
         {!filtered ? (
-          <p className="text-gray-500">{tc("loading")}</p>
+          <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
         ) : filtered.length === 0 ? (
-          <p className="text-gray-500">{t("noMaterials")}</p>
+          <p className="text-gray-500 dark:text-gray-400">{t("noMaterials")}</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {filtered.map((m) => {
@@ -173,22 +173,22 @@ export default function HazmatPage() {
               return (
                 <li key={m.id} className="card">
                   <button onClick={() => setExpandedId(expanded ? null : m.id)} className="flex w-full items-center justify-between text-left">
-                    <span className="text-sm font-medium text-gray-900">
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
                       {m.name}
-                      {m.manufacturer && <span className="ml-1.5 text-xs text-gray-400">({m.manufacturer})</span>}
+                      {m.manufacturer && <span className="ml-1.5 text-xs text-gray-400 dark:text-gray-500">({m.manufacturer})</span>}
                     </span>
                     {latest?.revisionDate && (
-                      <span className="text-xs text-gray-400">{t("lastRevised", { date: formatDate(new Date(latest.revisionDate)) })}</span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500">{t("lastRevised", { date: formatDate(new Date(latest.revisionDate)) })}</span>
                     )}
                   </button>
-                  {m.casNumber && <p className="mt-0.5 text-xs text-gray-400">CAS {m.casNumber}</p>}
+                  {m.casNumber && <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">CAS {m.casNumber}</p>}
                   {m.projectInventory.length > 0 && (
-                    <p className="mt-0.5 text-xs text-gray-500">
+                    <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
                       {t("onSiteAt")}:{" "}
                       {m.projectInventory.map((entry, i) => (
                         <span key={entry.id}>
                           {i > 0 && ", "}
-                          <Link href={`/projects/${entry.project.id}`} className="text-brand-700 hover:underline">
+                          <Link href={`/projects/${entry.project.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
                             {entry.project.name}
                           </Link>
                         </span>
@@ -197,7 +197,7 @@ export default function HazmatPage() {
                   )}
 
                   {expanded && (
-                    <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 pt-3">
+                    <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 dark:border-gray-700 pt-3">
                       <div className="flex flex-wrap items-end gap-2">
                         <input
                           placeholder={t("versionPlaceholder")}

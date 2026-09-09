@@ -83,15 +83,15 @@ export default function PortalInvoicePage({ params }: { params: Promise<{ id: st
 
   if (error) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 px-6 py-12">
-        <p className="text-sm text-gray-500">{error}</p>
+      <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
+        <p className="text-sm text-gray-500 dark:text-gray-400">{error}</p>
       </main>
     );
   }
   if (!invoice) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 px-6 py-12">
-        <p className="text-sm text-gray-500">{t("loading")}</p>
+      <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
+        <p className="text-sm text-gray-500 dark:text-gray-400">{t("loading")}</p>
       </main>
     );
   }
@@ -111,35 +111,35 @@ export default function PortalInvoicePage({ params }: { params: Promise<{ id: st
   ).rows;
 
   return (
-    <main className="flex min-h-screen justify-center bg-gray-50 px-6 py-12">
+    <main className="flex min-h-screen justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
       <div className="w-full max-w-2xl">
-        <a href="/portal" className="mb-4 inline-block text-xs text-gray-500 hover:underline">
+        <a href="/portal" className="mb-4 inline-block text-xs text-gray-500 dark:text-gray-400 hover:underline">
           ← {t("back")}
         </a>
         <div className="card">
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-semibold text-gray-900">{invoice.number}</h1>
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">{invoice.number}</h1>
             <span
               className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                invoice.status === "paid" ? "bg-success-50 text-success-700" : "bg-gray-100 text-gray-600"
+                invoice.status === "paid" ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
               }`}
             >
               {ti(invoice.status)}
             </span>
           </div>
-          <p className="mt-1 text-sm text-gray-500">{invoice.project.name}</p>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{invoice.project.name}</p>
 
           <div className="mt-6 overflow-x-auto">
             <table className="w-full min-w-[300px] border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 text-left text-gray-500">
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
                   <th className="py-2">{t("description")}</th>
                   <th>{ti("total")}</th>
                 </tr>
               </thead>
               <tbody>
                 {invoice.lines.map((l) => (
-                  <tr key={l.id} className="border-b border-gray-100">
+                  <tr key={l.id} className="border-b border-gray-100 dark:border-gray-700">
                     <td className="py-2">{l.description}</td>
                     <td>{l.lineTotal}</td>
                   </tr>
@@ -150,14 +150,14 @@ export default function PortalInvoicePage({ params }: { params: Promise<{ id: st
 
           <dl className="mt-4 flex flex-col gap-1.5 text-sm">
             <div className="flex justify-between">
-              <dt className="text-gray-500">{ti("total")}</dt>
+              <dt className="text-gray-500 dark:text-gray-400">{ti("total")}</dt>
               <dd className="font-semibold">{invoice.total}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-gray-500">{ti("paidTotal")}</dt>
+              <dt className="text-gray-500 dark:text-gray-400">{ti("paidTotal")}</dt>
               <dd>{paidTotal}</dd>
             </div>
-            <div className="flex justify-between border-t border-gray-200 pt-2 font-semibold">
+            <div className="flex justify-between border-t border-gray-200 dark:border-gray-700 pt-2 font-semibold">
               <dt>{ti("balanceDue")}</dt>
               <dd>{balanceDue}</dd>
             </div>
@@ -165,22 +165,22 @@ export default function PortalInvoicePage({ params }: { params: Promise<{ id: st
 
           {installmentRows.length > 0 && (
             <>
-              <h2 className="mb-2 mt-6 text-sm font-semibold text-gray-700">{ti("paymentPlan")}</h2>
+              <h2 className="mb-2 mt-6 text-sm font-semibold text-gray-700 dark:text-gray-200">{ti("paymentPlan")}</h2>
               <div className="overflow-x-auto">
               <table className="w-full min-w-[420px] border-collapse text-sm">
                 <tbody>
                   {installmentRows.map((inst) => (
-                    <tr key={inst.id} className="border-b border-gray-100">
+                    <tr key={inst.id} className="border-b border-gray-100 dark:border-gray-700">
                       <td className="py-1.5">{inst.label}</td>
-                      <td className="text-gray-500">{inst.dueDate ? formatDate(new Date(inst.dueDate)) : "—"}</td>
+                      <td className="text-gray-500 dark:text-gray-400">{inst.dueDate ? formatDate(new Date(inst.dueDate)) : "—"}</td>
                       <td>
                         <span
                           className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                             inst.fulfilled
-                              ? "bg-success-50 text-success-700"
+                              ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
                               : inst.partial
-                                ? "bg-warning-50 text-warning-700"
-                                : "bg-gray-100 text-gray-500"
+                                ? "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500"
+                                : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
                           }`}
                         >
                           {inst.fulfilled ? ti("fulfilled") : inst.partial ? ti("partial") : ti("pending")}
@@ -210,7 +210,7 @@ export default function PortalInvoicePage({ params }: { params: Promise<{ id: st
         </div>
 
         {invoice.status === "sent" && balanceDue > 0 && (
-          <div className="sticky bottom-0 mt-4 border-t border-gray-200 bg-gray-50 py-3">
+          <div className="sticky bottom-0 mt-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 py-3">
             <button onClick={() => payNow()} disabled={payBusy} className="btn-primary w-full">
               {t("payNow")} ({balanceDue})
             </button>

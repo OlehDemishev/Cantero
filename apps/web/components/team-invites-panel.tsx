@@ -48,15 +48,15 @@ export function TeamInvitesPanel() {
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("invites")}</h2>
-      <p className="mb-4 text-xs text-gray-500">{t("inviteEmailHint")}</p>
-      {error && <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("invites")}</h2>
+      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("inviteEmailHint")}</p>
+      {error && <p className="mb-3 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{error}</p>}
       {!invites || invites.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noInvites")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noInvites")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {invites.map((inv) => (
-            <li key={inv.id} className="flex items-center justify-between rounded-md border border-gray-200 px-3 py-2">
+            <li key={inv.id} className="flex items-center justify-between rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2">
               <span className="text-sm">
                 {inv.email} · {t(inv.role)}
               </span>

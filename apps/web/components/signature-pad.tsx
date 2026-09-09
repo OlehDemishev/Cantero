@@ -69,7 +69,7 @@ export function SignaturePad({ onChange, clearLabel }: SignaturePadProps) {
         ref={canvasRef}
         width={500}
         height={150}
-        className="w-full touch-none rounded-md border border-gray-200 bg-white"
+        className="w-full touch-none rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
         onPointerDown={start}
         onPointerMove={move}
         onPointerUp={end}

@@ -90,7 +90,7 @@ export function SafetyScorecardPanel() {
   return (
     <div className="mt-10">
       <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold text-gray-700">{t("safetyScorecard")}</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("safetyScorecard")}</h2>
         <div className="flex items-center gap-2">
           <select className="input w-auto py-1 text-xs" value={year} onChange={(e) => setYear(Number(e.target.value))}>
             {Array.from({ length: 5 }, (_, i) => CURRENT_YEAR - i).map((y) => (
@@ -104,28 +104,28 @@ export function SafetyScorecardPanel() {
           </button>
         </div>
       </div>
-      <p className="mb-3 text-xs text-gray-500">{t("safetyScorecardHint")}</p>
+      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("safetyScorecardHint")}</p>
 
       {!scorecard ? (
-        <p className="text-sm text-gray-400">…</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">…</p>
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div className="card">
-              <div className="text-xs text-gray-500">{t("companyTrir")}</div>
-              <div className="mt-1 text-lg font-semibold text-gray-900">{scorecard.companyTrir ?? "—"}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{t("companyTrir")}</div>
+              <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-50">{scorecard.companyTrir ?? "—"}</div>
             </div>
             <div className="card">
-              <div className="text-xs text-gray-500">{t("totalIncidents")}</div>
-              <div className="mt-1 text-lg font-semibold text-gray-900">{scorecard.totalIncidents}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{t("totalIncidents")}</div>
+              <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-50">{scorecard.totalIncidents}</div>
             </div>
             <div className="card">
-              <div className="text-xs text-gray-500">{t("recordableCases")}</div>
-              <div className="mt-1 text-lg font-semibold text-warning-700">{scorecard.recordableCount}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{t("recordableCases")}</div>
+              <div className="mt-1 text-lg font-semibold text-warning-700 dark:text-warning-500">{scorecard.recordableCount}</div>
             </div>
             <div className="card">
-              <div className="text-xs text-gray-500">{t("totalHoursWorked")}</div>
-              <div className="mt-1 text-lg font-semibold text-gray-900">{scorecard.totalHours}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{t("totalHoursWorked")}</div>
+              <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-50">{scorecard.totalHours}</div>
             </div>
           </div>
 
@@ -146,7 +146,7 @@ export function SafetyScorecardPanel() {
             <div className="overflow-x-auto">
             <table className="mt-4 w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 text-left text-gray-500">
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
                   <th className="py-2">{t("project")}</th>
                   <th className="text-right">{t("totalIncidents")}</th>
                   <th className="text-right">{t("recordableCases")}</th>
@@ -156,7 +156,7 @@ export function SafetyScorecardPanel() {
               </thead>
               <tbody>
                 {scorecard.projects.map((p) => (
-                  <tr key={p.projectId} className="border-b border-gray-100">
+                  <tr key={p.projectId} className="border-b border-gray-100 dark:border-gray-700">
                     <td className="py-2">{p.projectName ?? "—"}</td>
                     <td className="text-right">{p.totalIncidents}</td>
                     <td className="text-right">{p.recordableCount}</td>
@@ -173,20 +173,20 @@ export function SafetyScorecardPanel() {
 
       {nearMiss && (
         <div className="mt-8">
-          <h3 className="mb-1 text-sm font-semibold text-gray-700">{t("nearMissAnalytics")}</h3>
-          <p className="mb-3 text-xs text-gray-500">{t("nearMissAnalyticsHint")}</p>
+          <h3 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("nearMissAnalytics")}</h3>
+          <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("nearMissAnalyticsHint")}</p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <div className="card">
-              <div className="text-xs text-gray-500">{t("totalNearMiss")}</div>
-              <div className="mt-1 text-lg font-semibold text-gray-900">{nearMiss.totalNearMiss}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{t("totalNearMiss")}</div>
+              <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-50">{nearMiss.totalNearMiss}</div>
             </div>
             <div className="card">
-              <div className="text-xs text-gray-500">{t("recordableCases")}</div>
-              <div className="mt-1 text-lg font-semibold text-warning-700">{nearMiss.totalRecordable}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{t("recordableCases")}</div>
+              <div className="mt-1 text-lg font-semibold text-warning-700 dark:text-warning-500">{nearMiss.totalRecordable}</div>
             </div>
             <div className="card">
-              <div className="text-xs text-gray-500">{t("nearMissRatio")}</div>
-              <div className="mt-1 text-lg font-semibold text-gray-900">{nearMiss.ratio ?? "—"}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{t("nearMissRatio")}</div>
+              <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-50">{nearMiss.ratio ?? "—"}</div>
             </div>
           </div>
 
@@ -194,7 +194,7 @@ export function SafetyScorecardPanel() {
             <div className="overflow-x-auto">
             <table className="mt-4 w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 text-left text-gray-500">
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
                   <th className="py-2">{t("project")}</th>
                   <th className="text-right">{t("totalNearMiss")}</th>
                   <th className="text-right">{t("recordableCases")}</th>
@@ -203,7 +203,7 @@ export function SafetyScorecardPanel() {
               </thead>
               <tbody>
                 {nearMiss.projects.map((p) => (
-                  <tr key={p.projectId} className="border-b border-gray-100">
+                  <tr key={p.projectId} className="border-b border-gray-100 dark:border-gray-700">
                     <td className="py-2">{p.projectName}</td>
                     <td className="text-right">{p.nearMissCount}</td>
                     <td className="text-right">{p.recordableCount}</td>
@@ -219,24 +219,24 @@ export function SafetyScorecardPanel() {
 
       {training && (
         <div className="mt-8">
-          <h3 className="mb-1 text-sm font-semibold text-gray-700">{t("trainingCompliance")}</h3>
-          <p className="mb-3 text-xs text-gray-500">{t("trainingComplianceHint", { days: training.lookbackDays })}</p>
+          <h3 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("trainingCompliance")}</h3>
+          <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("trainingComplianceHint", { days: training.lookbackDays })}</p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <div className="card">
-              <div className="text-xs text-gray-500">{t("completionRate")}</div>
-              <div className="mt-1 text-lg font-semibold text-gray-900">
+              <div className="text-xs text-gray-500 dark:text-gray-400">{t("completionRate")}</div>
+              <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-50">
                 {training.completionRate !== null ? `${training.completionRate}%` : "—"}
               </div>
             </div>
             <div className="card">
-              <div className="text-xs text-gray-500">{t("compliantWorkers")}</div>
-              <div className="mt-1 text-lg font-semibold text-success-700">
+              <div className="text-xs text-gray-500 dark:text-gray-400">{t("compliantWorkers")}</div>
+              <div className="mt-1 text-lg font-semibold text-success-700 dark:text-success-500">
                 {training.compliantCount} / {training.totalActiveWorkers}
               </div>
             </div>
             <div className="card">
-              <div className="text-xs text-gray-500">{t("overdueWorkers")}</div>
-              <div className="mt-1 text-lg font-semibold text-warning-700">{training.overdueWorkers.length}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{t("overdueWorkers")}</div>
+              <div className="mt-1 text-lg font-semibold text-warning-700 dark:text-warning-500">{training.overdueWorkers.length}</div>
             </div>
           </div>
 
@@ -244,16 +244,16 @@ export function SafetyScorecardPanel() {
             <div className="overflow-x-auto">
             <table className="mt-4 w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 text-left text-gray-500">
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
                   <th className="py-2">{t("worker")}</th>
                   <th className="text-right">{t("lastTrainingAt")}</th>
                 </tr>
               </thead>
               <tbody>
                 {training.overdueWorkers.map((w) => (
-                  <tr key={w.workerId} className="border-b border-gray-100">
+                  <tr key={w.workerId} className="border-b border-gray-100 dark:border-gray-700">
                     <td className="py-2">{w.workerName}</td>
-                    <td className="text-right text-warning-700">
+                    <td className="text-right text-warning-700 dark:text-warning-500">
                       {w.lastTrainingAt ? formatDate(new Date(w.lastTrainingAt)) : t("neverTrained")}
                     </td>
                   </tr>

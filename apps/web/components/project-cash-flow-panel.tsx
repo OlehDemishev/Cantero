@@ -35,29 +35,29 @@ export function ProjectCashFlowPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-8">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("cashFlowForecast")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("cashFlowForecast")}</h2>
       <div className="grid grid-cols-3 gap-3">
         <div className="card">
-          <div className="text-xs text-gray-500">{t("projectedInflow")}</div>
-          <div className="mt-1 text-lg font-semibold text-success-700">
+          <div className="text-xs text-gray-500 dark:text-gray-400">{t("projectedInflow")}</div>
+          <div className="mt-1 text-lg font-semibold text-success-700 dark:text-success-500">
             {cashFlow.totals.inflow} {currency}
           </div>
         </div>
         <div className="card">
-          <div className="text-xs text-gray-500">{t("projectedOutflow")}</div>
-          <div className="mt-1 text-lg font-semibold text-error-700">
+          <div className="text-xs text-gray-500 dark:text-gray-400">{t("projectedOutflow")}</div>
+          <div className="mt-1 text-lg font-semibold text-error-700 dark:text-error-500">
             {cashFlow.totals.outflow} {currency}
           </div>
         </div>
         <div className="card">
-          <div className="text-xs text-gray-500">{t("projectedNet")}</div>
-          <div className={`mt-1 text-lg font-semibold ${cashFlow.totals.net < 0 ? "text-error-700" : "text-success-700"}`}>
+          <div className="text-xs text-gray-500 dark:text-gray-400">{t("projectedNet")}</div>
+          <div className={`mt-1 text-lg font-semibold ${cashFlow.totals.net < 0 ? "text-error-700 dark:text-error-500" : "text-success-700 dark:text-success-500"}`}>
             {cashFlow.totals.net} {currency}
           </div>
         </div>
       </div>
 
-      <div className="mt-4 overflow-x-auto rounded-lg border border-gray-200 bg-white p-4">
+      <div className="mt-4 overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
         <div className="flex items-end gap-2" style={{ minWidth: cashFlow.weeks.length * 40 }}>
           {cashFlow.weeks.map((w, i) => (
             <div key={w.weekStart} className="flex flex-1 flex-col items-center gap-1">
@@ -65,7 +65,7 @@ export function ProjectCashFlowPanel({ projectId }: { projectId: string }) {
                 <div className="w-2.5 rounded-t bg-success-500" style={{ height: `${(w.inflow / maxVal) * 100}%` }} title={`${t("inflow")}: ${w.inflow} ${currency}`} />
                 <div className="w-2.5 rounded-t bg-error-500" style={{ height: `${(w.outflow / maxVal) * 100}%` }} title={`${t("outflow")}: ${w.outflow} ${currency}`} />
               </div>
-              <span className="text-[10px] text-gray-400">{t("weekLabel", { n: i + 1 })}</span>
+              <span className="text-[10px] text-gray-400 dark:text-gray-500">{t("weekLabel", { n: i + 1 })}</span>
             </div>
           ))}
         </div>

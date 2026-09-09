@@ -33,21 +33,21 @@ export function DiversitySpendPanel() {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("title")}</h2>
-      <p className="mb-3 text-xs text-gray-500">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <div className="card">
-          <div className="text-xs text-gray-500">{t("totalSpend")}</div>
-          <div className="mt-1 text-lg font-semibold tabular-nums text-gray-900">{money(report.totalSpend)}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">{t("totalSpend")}</div>
+          <div className="mt-1 text-lg font-semibold tabular-nums text-gray-900 dark:text-gray-50">{money(report.totalSpend)}</div>
         </div>
         <div className="card">
-          <div className="text-xs text-gray-500">{t("certifiedSpend")}</div>
-          <div className="mt-1 text-lg font-semibold tabular-nums text-gray-900">{money(report.certifiedSpend)}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">{t("certifiedSpend")}</div>
+          <div className="mt-1 text-lg font-semibold tabular-nums text-gray-900 dark:text-gray-50">{money(report.certifiedSpend)}</div>
         </div>
         <div className="card">
-          <div className="text-xs text-gray-500">{t("certifiedShare")}</div>
-          <div className="mt-1 text-lg font-semibold tabular-nums text-gray-900">{report.certifiedSharePercent}%</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">{t("certifiedShare")}</div>
+          <div className="mt-1 text-lg font-semibold tabular-nums text-gray-900 dark:text-gray-50">{report.certifiedSharePercent}%</div>
         </div>
       </div>
 
@@ -55,15 +55,15 @@ export function DiversitySpendPanel() {
         <div className="card mt-3 overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 text-left text-gray-500">
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
                 <th className="py-1.5">{t("category")}</th>
                 <th className="text-right">{t("spend")}</th>
               </tr>
             </thead>
             <tbody>
               {report.byCategory.map((row) => (
-                <tr key={row.category} className="border-b border-gray-100">
-                  <td className="py-1.5 font-medium text-gray-900">{t(`category_${row.category}`)}</td>
+                <tr key={row.category} className="border-b border-gray-100 dark:border-gray-700">
+                  <td className="py-1.5 font-medium text-gray-900 dark:text-gray-50">{t(`category_${row.category}`)}</td>
                   <td className="text-right tabular-nums">{money(row.spend)}</td>
                 </tr>
               ))}

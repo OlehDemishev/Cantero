@@ -81,7 +81,7 @@ export function ClientTaxPanel({ clientId }: { clientId: string }) {
 
   return (
     <div className="mt-6 card max-w-md">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700">{tt("clientTaxTitle")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{tt("clientTaxTitle")}</h2>
       <form onSubmit={saveTaxJurisdiction} className="flex items-center gap-2">
         <select className="input flex-1" value={taxJurisdictionId} onChange={(e) => setTaxJurisdictionId(e.target.value)}>
           <option value="">{tt("noJurisdictionAssigned")}</option>
@@ -96,7 +96,7 @@ export function ClientTaxPanel({ clientId }: { clientId: string }) {
         </button>
       </form>
       {taxSaveMessage && (
-        <p className={`mt-1.5 text-xs ${taxSaveMessage.error ? "text-error-700" : "text-success-700"}`}>{taxSaveMessage.text}</p>
+        <p className={`mt-1.5 text-xs ${taxSaveMessage.error ? "text-error-700 dark:text-error-500" : "text-success-700 dark:text-success-500"}`}>{taxSaveMessage.text}</p>
       )}
       {taxJurisdictions.length === 0 && (
         <div className="mt-1.5">
@@ -104,17 +104,17 @@ export function ClientTaxPanel({ clientId }: { clientId: string }) {
         </div>
       )}
 
-      <h3 className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-gray-500">{tt("exemptionCertificates")}</h3>
+      <h3 className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{tt("exemptionCertificates")}</h3>
       {exemptionCertificates === null ? (
-        <p className="text-xs text-gray-400">{tc("loading")}</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>
       ) : exemptionCertificates.length === 0 ? (
-        <p className="text-xs text-gray-400">{tt("noExemptionCertificates")}</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500">{tt("noExemptionCertificates")}</p>
       ) : (
         <ul className="mb-2 flex flex-col gap-1">
           {exemptionCertificates.map((cert) => (
-            <li key={cert.id} className="text-xs text-gray-600">
+            <li key={cert.id} className="text-xs text-gray-600 dark:text-gray-300">
               {cert.certificateNumber}
-              {cert.expiresAt && <span className="text-gray-400"> — {tt("expiresOn", { date: formatDate(new Date(cert.expiresAt)) })}</span>}
+              {cert.expiresAt && <span className="text-gray-400 dark:text-gray-500"> — {tt("expiresOn", { date: formatDate(new Date(cert.expiresAt)) })}</span>}
             </li>
           ))}
         </ul>

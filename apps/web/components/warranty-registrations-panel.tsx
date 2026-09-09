@@ -59,14 +59,14 @@ export function WarrantyRegistrationsPanel({ projectId }: { projectId: string })
   return (
     <div className="mt-10">
       <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
         {!adding && (
           <button onClick={() => setAdding(true)} className="btn-secondary px-2.5 py-1 text-xs">
             {t("registerWarranty")}
           </button>
         )}
       </div>
-      <p className="mb-3 text-xs text-gray-500">{t("hint")}</p>
+      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
 
       {adding && (
         <form onSubmit={create} className="card mb-3 flex flex-wrap items-end gap-2">
@@ -99,7 +99,7 @@ export function WarrantyRegistrationsPanel({ projectId }: { projectId: string })
             value={form.termMonths}
             onChange={(e) => setForm((f) => ({ ...f, termMonths: e.target.value }))}
           />
-          <label className="flex flex-col gap-1 text-xs text-gray-500">
+          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
             {t("startDate")}
             <input required type="date" className="input" value={form.startDate} onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))} />
           </label>
@@ -113,9 +113,9 @@ export function WarrantyRegistrationsPanel({ projectId }: { projectId: string })
       )}
 
       {!registrations ? (
-        <p className="text-sm text-gray-500">{tc("loading")}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
       ) : registrations.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noRegistrations")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noRegistrations")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {registrations.map((r) => {
@@ -123,15 +123,15 @@ export function WarrantyRegistrationsPanel({ projectId }: { projectId: string })
             return (
               <li key={r.id} className="card">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-900">
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
                     {r.scope}
-                    {r.manufacturer && <span className="ml-1.5 text-xs text-gray-400">({r.manufacturer})</span>}
+                    {r.manufacturer && <span className="ml-1.5 text-xs text-gray-400 dark:text-gray-500">({r.manufacturer})</span>}
                   </span>
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${expired ? "bg-error-50 text-error-700" : "bg-success-50 text-success-700"}`}>
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${expired ? "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500" : "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"}`}>
                     {expired ? t("expired") : t("underWarranty")}
                   </span>
                 </div>
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   {t(`coverage_${r.coverageType}`)} · {t("expiresOn", { date: formatDate(new Date(r.expirationDate)) })}
                 </p>
               </li>

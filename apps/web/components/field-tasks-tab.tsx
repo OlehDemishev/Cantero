@@ -20,9 +20,9 @@ interface Task {
 function StatusBadge({ status }: { status: TaskStatus }) {
   const ts = useTranslations("scheduling");
   const styles: Record<TaskStatus, string> = {
-    planned: "bg-gray-100 text-gray-600",
-    in_progress: "bg-warning-50 text-warning-700",
-    done: "bg-success-50 text-success-700",
+    planned: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
+    in_progress: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
+    done: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
   };
   return <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${styles[status]}`}>{ts(status)}</span>;
 }
@@ -69,9 +69,9 @@ export function TasksTab({ projectId }: { projectId: string }) {
     }
   }
 
-  if (error) return <p className="text-sm text-gray-400">{t("offline")}</p>;
-  if (!tasks) return <p className="text-sm text-gray-400">{tc("loading")}</p>;
-  if (tasks.length === 0) return <p className="text-sm text-gray-400">{t("noTasks")}</p>;
+  if (error) return <p className="text-sm text-gray-400 dark:text-gray-500">{t("offline")}</p>;
+  if (!tasks) return <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>;
+  if (tasks.length === 0) return <p className="text-sm text-gray-400 dark:text-gray-500">{t("noTasks")}</p>;
 
   return (
     <div>
@@ -81,12 +81,12 @@ export function TasksTab({ projectId }: { projectId: string }) {
           <FieldMessage type="error" text={actionError} />
         </div>
       )}
-      <p className="mb-3 text-xs text-gray-500">{t("tapToAdvance")}</p>
+      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("tapToAdvance")}</p>
       <ul className="flex flex-col gap-2">
         {tasks.map((task) => (
           <li key={task.id}>
             <button onClick={() => advance(task)} className="card flex w-full items-center justify-between text-left">
-              <span className="text-sm font-medium text-gray-900">{task.name}</span>
+              <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{task.name}</span>
               <StatusBadge status={task.status} />
             </button>
           </li>

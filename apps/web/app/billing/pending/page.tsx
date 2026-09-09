@@ -37,8 +37,8 @@ export default function BillingPendingPage() {
   return (
     <Centered>
       <h1 className="text-2xl font-semibold">{t("title")}</h1>
-      <p className="mt-2 max-w-sm text-sm text-gray-600">{t("subtitle")}</p>
-      {error && <p className="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      <p className="mt-2 max-w-sm text-sm text-gray-600 dark:text-gray-300">{t("subtitle")}</p>
+      {error && <p className="mt-4 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{error}</p>}
       <button onClick={startCheckout} disabled={starting} className="btn-primary mt-6">
         {starting ? tc("loading") : t("checkoutButton")}
       </button>

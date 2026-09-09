@@ -28,27 +28,27 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-50 px-6 py-12">
+    <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex items-center justify-center gap-2">
           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500 text-sm font-semibold text-white">
             C
           </span>
-          <span className="text-lg font-semibold tracking-tight text-gray-900">Cantero</span>
+          <span className="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-50">Cantero</span>
         </div>
 
         <div className="card">
-          <h1 className="text-xl font-semibold text-gray-900">{t("forgotPasswordTitle")}</h1>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">{t("forgotPasswordTitle")}</h1>
 
           {sent ? (
-            <p className="mt-4 text-sm text-gray-600">{t("forgotPasswordSent")}</p>
+            <p className="mt-4 text-sm text-gray-600 dark:text-gray-300">{t("forgotPasswordSent")}</p>
           ) : (
             <>
-              <p className="mt-2 text-sm text-gray-500">{t("forgotPasswordHint")}</p>
-              {error && <p className="mt-4 rounded-lg bg-error-50 px-3 py-2 text-sm text-error-700">{error}</p>}
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{t("forgotPasswordHint")}</p>
+              {error && <p className="mt-4 rounded-lg bg-error-50 dark:bg-error-500/15 px-3 py-2 text-sm text-error-700 dark:text-error-500">{error}</p>}
               <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
                 <label className="flex flex-col gap-1.5 text-sm">
-                  <span className="font-medium text-gray-700">{tc("email")}</span>
+                  <span className="font-medium text-gray-700 dark:text-gray-200">{tc("email")}</span>
                   <input required type="email" className="input" value={email} onChange={(e) => setEmail(e.target.value)} />
                 </label>
                 <button type="submit" disabled={submitting} className="btn-primary mt-2">
@@ -59,8 +59,8 @@ export default function ForgotPasswordPage() {
           )}
         </div>
 
-        <p className="mt-6 text-center text-sm text-gray-600">
-          <a href="/login" className="font-medium text-brand-500 hover:text-brand-600">
+        <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-300">
+          <a href="/login" className="font-medium text-brand-500 dark:text-brand-400 hover:text-brand-600">
             {t("backToLogin")}
           </a>
         </p>

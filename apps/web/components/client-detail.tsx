@@ -105,27 +105,27 @@ export function ClientDetail({ clientId }: { clientId: string }) {
   if (!client) {
     return (
       <AuthenticatedShell>
-        <p className="text-gray-500">{tc("loading")}</p>
+        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
       </AuthenticatedShell>
     );
   }
 
   return (
     <AuthenticatedShell>
-      <button onClick={() => goBack(router, "/clients")} className="text-sm text-gray-500 hover:underline">
+      <button onClick={() => goBack(router, "/clients")} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">
         ← {t("title")}
       </button>
       <div className="mt-2 flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{client.name}</h1>
-        <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-medium text-brand-700">{t(client.stage)}</span>
+        <span className="rounded-full bg-brand-50 dark:bg-brand-500/15 px-3 py-1 text-xs font-medium text-brand-700 dark:text-brand-400">{t(client.stage)}</span>
       </div>
-      <p className="text-sm text-gray-500">{client.email ?? client.phone ?? "—"}</p>
+      <p className="text-sm text-gray-500 dark:text-gray-400">{client.email ?? client.phone ?? "—"}</p>
       {client.estimatedValue != null && (
-        <p className="mt-1 text-sm font-medium text-gray-700">
+        <p className="mt-1 text-sm font-medium text-gray-700 dark:text-gray-200">
           {t("estimatedValue")}: {client.estimatedValue} {currency}
         </p>
       )}
-      {client.owner && <p className="text-xs text-gray-400">{t("ownedBy", { name: client.owner.name })}</p>}
+      {client.owner && <p className="text-xs text-gray-400 dark:text-gray-500">{t("ownedBy", { name: client.owner.name })}</p>}
       {client.stage === "lost" && client.lostReason && (
         <p className="mt-1 text-xs text-error-600">
           {t("lostReason")}: {client.lostReason}
@@ -174,7 +174,7 @@ export function ClientDetail({ clientId }: { clientId: string }) {
               {tc("cancel")}
             </button>
           </div>
-          {convertError && <p className="text-xs text-error-700">{convertError}</p>}
+          {convertError && <p className="text-xs text-error-700 dark:text-error-500">{convertError}</p>}
         </form>
       ) : (
         <div className="mt-4 flex flex-wrap gap-1">

@@ -304,13 +304,13 @@ export function SubcontractorListItem({
     <li className="card">
       <button onClick={toggleExpand} className="flex w-full items-center justify-between text-left">
         <div>
-          <span className="text-sm font-medium text-gray-900">{s.name}</span>
-          {s.email && <span className="ml-2 text-xs text-gray-400">{s.email}</span>}
+          <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{s.name}</span>
+          {s.email && <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">{s.email}</span>}
         </div>
         {expanded && compliance && (
           <span
             className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-              compliance.compliant ? "bg-success-50 text-success-700" : "bg-error-50 text-error-700"
+              compliance.compliant ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500"
             }`}
           >
             {compliance.compliant ? t("compliant") : t("nonCompliant")}
@@ -319,19 +319,19 @@ export function SubcontractorListItem({
       </button>
 
       {expanded && (
-        <div className="mt-3 flex flex-col gap-3 border-t border-gray-100 pt-3">
+        <div className="mt-3 flex flex-col gap-3 border-t border-gray-100 dark:border-gray-700 pt-3">
           {compliance && (
             <ul className="flex flex-col gap-1">
               {compliance.requirements.map((r) => (
                 <li key={r.type} className="flex items-center justify-between text-xs">
-                  <span className="text-gray-600">{t(r.type)}</span>
+                  <span className="text-gray-600 dark:text-gray-300">{t(r.type)}</span>
                   <span
                     className={
                       r.status === "valid"
-                        ? "text-success-700"
+                        ? "text-success-700 dark:text-success-500"
                         : r.status === "expired"
-                          ? "text-error-700"
-                          : "text-gray-400"
+                          ? "text-error-700 dark:text-error-500"
+                          : "text-gray-400 dark:text-gray-500"
                     }
                   >
                     {r.status === "valid" && r.expiresAt
@@ -346,11 +346,11 @@ export function SubcontractorListItem({
           )}
 
           <div>
-            <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("documents")}</h3>
+            <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("documents")}</h3>
             {documents === null ? (
-              <p className="text-xs text-gray-400">{tc("loading")}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>
             ) : documents.length === 0 ? (
-              <p className="text-xs text-gray-400">{t("noDocuments")}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">{t("noDocuments")}</p>
             ) : (
               <ul className="flex flex-col gap-1.5">
                 {documents.map((doc) => {
@@ -358,15 +358,15 @@ export function SubcontractorListItem({
                   return (
                     <li key={doc.id} className="flex items-center justify-between text-xs">
                       <span>
-                        <span className="text-gray-500">{t(doc.type)}</span> — {doc.name}
+                        <span className="text-gray-500 dark:text-gray-400">{t(doc.type)}</span> — {doc.name}
                         {" · "}
-                        <span className={expired ? "text-error-700" : "text-gray-500"}>
+                        <span className={expired ? "text-error-700 dark:text-error-500" : "text-gray-500 dark:text-gray-400"}>
                           {formatDate(new Date(doc.expiresAt))}
                         </span>
                       </span>
                       <span className="flex items-center gap-2">
                         <CertificateAttachment param="subcontractorDocumentId" entityId={doc.id} />
-                        <button onClick={() => removeDocument(doc.id)} className="text-gray-400 hover:text-error-600">
+                        <button onClick={() => removeDocument(doc.id)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
                           ×
                         </button>
                       </span>
@@ -408,21 +408,21 @@ export function SubcontractorListItem({
             </button>
           </form>
 
-          <div className="border-t border-gray-100 pt-3">
-            <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("projects")}</h3>
+          <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+            <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("projects")}</h3>
             {assignments === null ? (
-              <p className="text-xs text-gray-400">{tc("loading")}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>
             ) : assignments.length === 0 ? (
-              <p className="text-xs text-gray-400">{t("noAssignedProjects")}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">{t("noAssignedProjects")}</p>
             ) : (
               <ul className="flex flex-col gap-1">
                 {assignments.map((a) => (
                   <li key={a.id} className="text-xs">
-                    <Link href={`/projects/${a.project.id}`} className="text-brand-700 hover:underline">
+                    <Link href={`/projects/${a.project.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
                       {a.project.name}
                     </Link>
                     {a.startDate && (
-                      <span className="text-gray-400">
+                      <span className="text-gray-400 dark:text-gray-500">
                         {" "}
                         · {formatDate(new Date(a.startDate))}
                         {a.endDate && ` – ${formatDate(new Date(a.endDate))}`}
@@ -434,32 +434,32 @@ export function SubcontractorListItem({
             )}
           </div>
 
-          <div className="border-t border-gray-100 pt-3">
-            <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("costsAcrossProjects")}</h3>
+          <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+            <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("costsAcrossProjects")}</h3>
             {costs === null ? (
-              <p className="text-xs text-gray-400">{tc("loading")}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>
             ) : costs.length === 0 ? (
-              <p className="text-xs text-gray-400">{t("noCostsYet")}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">{t("noCostsYet")}</p>
             ) : (
               <ul className="flex flex-col gap-1">
                 {costs.map((c) => (
                   <li key={c.id} className="flex items-center justify-between text-xs">
                     <span>
-                      <Link href={`/projects/${c.project.id}`} className="text-brand-700 hover:underline">
+                      <Link href={`/projects/${c.project.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
                         {c.project.name}
                       </Link>
-                      <span className="text-gray-500"> — {c.description}</span>
+                      <span className="text-gray-500 dark:text-gray-400"> — {c.description}</span>
                     </span>
-                    <span className={c.paid ? "text-success-700" : "text-gray-500"}>{c.amount}</span>
+                    <span className={c.paid ? "text-success-700 dark:text-success-500" : "text-gray-500 dark:text-gray-400"}>{c.amount}</span>
                   </li>
                 ))}
               </ul>
             )}
           </div>
 
-          <div className="border-t border-gray-100 pt-3">
-            <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("prequalification")}</h3>
-            <p className="mb-2 text-xs text-gray-500">{t("prequalificationHint")}</p>
+          <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+            <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("prequalification")}</h3>
+            <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">{t("prequalificationHint")}</p>
             <form onSubmit={saveProfile} className="flex flex-col gap-2">
               <input
                 placeholder={t("specializationPlaceholder")}
@@ -503,7 +503,7 @@ export function SubcontractorListItem({
               </button>
             </form>
             <div className="mt-2 flex items-center gap-2">
-              <label className="flex items-center gap-1.5 text-xs text-gray-700">
+              <label className="flex items-center gap-1.5 text-xs text-gray-700 dark:text-gray-200">
                 <input
                   type="checkbox"
                   checked={s.publicListed}
@@ -520,12 +520,12 @@ export function SubcontractorListItem({
             </div>
           </div>
 
-          <div className="border-t border-gray-100 pt-3">
-            <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("diversityCertifications")}</h3>
-            <p className="mb-2 text-xs text-gray-500">{t("diversityCertificationsHint")}</p>
+          <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+            <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("diversityCertifications")}</h3>
+            <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">{t("diversityCertificationsHint")}</p>
             <div className="mb-2 flex flex-wrap gap-3">
               {SUBCONTRACTOR_DIVERSITY_CATEGORIES.map((category) => (
-                <label key={category} className="flex items-center gap-1.5 text-xs text-gray-700">
+                <label key={category} className="flex items-center gap-1.5 text-xs text-gray-700 dark:text-gray-200">
                   <input
                     type="checkbox"
                     checked={diversityForm.categories.includes(category)}
@@ -536,7 +536,7 @@ export function SubcontractorListItem({
               ))}
             </div>
             <div className="flex flex-wrap items-end gap-2">
-              <label className="flex flex-col gap-1 text-xs text-gray-500">
+              <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
                 {t("diversityCertificationExpiresAt")}
                 <input
                   type="date"
@@ -553,24 +553,24 @@ export function SubcontractorListItem({
 
           <SubcontractorPrequalificationPanel subcontractorId={s.id} />
 
-          <div className="border-t border-gray-100 pt-3">
-            <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("scorecard")}</h3>
+          <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+            <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("scorecard")}</h3>
             {scorecard && (
               <div className="mb-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
                 <div>
-                  <div className="text-gray-500">{t("averageRating")}</div>
+                  <div className="text-gray-500 dark:text-gray-400">{t("averageRating")}</div>
                   <div className="font-semibold">{scorecard.averageRating ?? "—"}</div>
                 </div>
                 <div>
-                  <div className="text-gray-500">{t("onTimePercent")}</div>
+                  <div className="text-gray-500 dark:text-gray-400">{t("onTimePercent")}</div>
                   <div className="font-semibold">{scorecard.onTimePercent !== null ? `${scorecard.onTimePercent}%` : "—"}</div>
                 </div>
                 <div>
-                  <div className="text-gray-500">{t("wouldHireAgainPercent")}</div>
+                  <div className="text-gray-500 dark:text-gray-400">{t("wouldHireAgainPercent")}</div>
                   <div className="font-semibold">{scorecard.wouldHireAgainPercent !== null ? `${scorecard.wouldHireAgainPercent}%` : "—"}</div>
                 </div>
                 <div>
-                  <div className="text-gray-500">{t("reviewCount")}</div>
+                  <div className="text-gray-500 dark:text-gray-400">{t("reviewCount")}</div>
                   <div className="font-semibold">{scorecard.reviewCount}</div>
                 </div>
               </div>
@@ -579,17 +579,17 @@ export function SubcontractorListItem({
             {reviews && reviews.length > 0 && (
               <ul className="mb-3 flex flex-col gap-1.5">
                 {reviews.map((r) => (
-                  <li key={r.id} className="text-xs text-gray-600">
+                  <li key={r.id} className="text-xs text-gray-600 dark:text-gray-300">
                     <span className="font-medium">{"★".repeat(r.rating)}</span> — {r.reviewedByName},{" "}
                     {formatDate(new Date(r.createdAt))}
-                    {r.comments && <span className="text-gray-500"> · {r.comments}</span>}
+                    {r.comments && <span className="text-gray-500 dark:text-gray-400"> · {r.comments}</span>}
                   </li>
                 ))}
               </ul>
             )}
 
             <form onSubmit={addReview} className="flex flex-wrap items-end gap-2">
-              <label className="flex flex-col gap-1 text-xs text-gray-500">
+              <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
                 {t("rating")}
                 <select
                   className="input w-auto"
@@ -603,7 +603,7 @@ export function SubcontractorListItem({
                   ))}
                 </select>
               </label>
-              <label className="flex flex-col gap-1 text-xs text-gray-500">
+              <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
                 {t("onTime")}
                 <select className="input w-auto" value={reviewForm.onTime} onChange={(e) => setReviewForm((f) => ({ ...f, onTime: e.target.value }))}>
                   <option value="">—</option>
@@ -611,7 +611,7 @@ export function SubcontractorListItem({
                   <option value="no">{tc("no")}</option>
                 </select>
               </label>
-              <label className="flex flex-col gap-1 text-xs text-gray-500">
+              <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
                 {t("wouldHireAgain")}
                 <select
                   className="input w-auto"
@@ -623,7 +623,7 @@ export function SubcontractorListItem({
                   <option value="no">{tc("no")}</option>
                 </select>
               </label>
-              <label className="flex flex-col gap-1 text-xs text-gray-500">
+              <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
                 {t("safetyIncidents")}
                 <input
                   type="number"
@@ -633,7 +633,7 @@ export function SubcontractorListItem({
                   onChange={(e) => setReviewForm((f) => ({ ...f, safetyIncidents: e.target.value }))}
                 />
               </label>
-              <label className="flex flex-col gap-1 text-xs text-gray-500">
+              <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
                 {t("reworkCount")}
                 <input
                   type="number"
@@ -656,9 +656,9 @@ export function SubcontractorListItem({
           </div>
 
           {isUsCompany && (
-            <div className="border-t border-gray-100 pt-3">
-              <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("taxProfile")}</h3>
-              <p className="mb-2 text-xs text-gray-500">{t("taxProfileHint")}</p>
+            <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+              <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("taxProfile")}</h3>
+              <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">{t("taxProfileHint")}</p>
               <form onSubmit={saveTaxProfile} className="flex flex-col gap-2">
                 <input
                   placeholder={t("taxIdPlaceholder")}
@@ -684,16 +684,16 @@ export function SubcontractorListItem({
                 </button>
               </form>
 
-              <h3 className="mb-1.5 mt-4 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("payments")}</h3>
+              <h3 className="mb-1.5 mt-4 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("payments")}</h3>
               {payments === null ? (
-                <p className="text-xs text-gray-400">{tc("loading")}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>
               ) : payments.length === 0 ? (
-                <p className="mb-2 text-xs text-gray-400">{t("noPayments")}</p>
+                <p className="mb-2 text-xs text-gray-400 dark:text-gray-500">{t("noPayments")}</p>
               ) : (
                 <ul className="mb-2 flex flex-col gap-1">
                   {payments.map((p) => (
                     <li key={p.id} className="flex items-center justify-between text-xs">
-                      <span className="text-gray-500">
+                      <span className="text-gray-500 dark:text-gray-400">
                         {formatDate(new Date(p.paidAt))}
                         {p.note && ` · ${p.note}`}
                       </span>

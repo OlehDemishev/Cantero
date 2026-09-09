@@ -119,7 +119,7 @@ export function MeetingsPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
         <div className="flex items-center gap-1.5">
           {!creating && (
             <button onClick={() => setCreating(true)} className="btn-secondary px-3 py-1 text-xs">
@@ -133,12 +133,12 @@ export function MeetingsPanel({ projectId }: { projectId: string }) {
       {creating && (
         <form onSubmit={submit} className="card mb-4 flex flex-col gap-3">
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("meetingTitle")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("meetingTitle")}</span>
             <input required className="input" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
           </label>
           <div className="flex flex-wrap gap-3">
             <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("meetingDate")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("meetingDate")}</span>
               <input
                 required
                 type="date"
@@ -148,12 +148,12 @@ export function MeetingsPanel({ projectId }: { projectId: string }) {
               />
             </label>
             <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("location")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("location")}</span>
               <input className="input" value={form.location} onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))} />
             </label>
           </div>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("attendees")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("attendees")}</span>
             <input
               placeholder={t("attendeesPlaceholder")}
               className="input"
@@ -162,7 +162,7 @@ export function MeetingsPanel({ projectId }: { projectId: string }) {
             />
           </label>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("notes")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("notes")}</span>
             <textarea rows={3} className="input" value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
           </label>
           <div className="flex gap-2">
@@ -178,7 +178,7 @@ export function MeetingsPanel({ projectId }: { projectId: string }) {
 
       {openItems.length > 0 && (
         <div className="card mb-4">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("openActionItems")}</h3>
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("openActionItems")}</h3>
           <ul className="flex flex-col gap-1.5">
             {openItems.map((item) => (
               <OpenActionItemRow key={item.id} item={item} onResolve={resolveActionItem} t={t} />
@@ -188,9 +188,9 @@ export function MeetingsPanel({ projectId }: { projectId: string }) {
       )}
 
       {items === null ? (
-        <p className="text-sm text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
       ) : items.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noItems")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noItems")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {items.map((meeting) => {
@@ -207,13 +207,13 @@ export function MeetingsPanel({ projectId }: { projectId: string }) {
                   <button onClick={() => setExpandedId(expanded ? null : meeting.id)} className="flex w-full items-start justify-between gap-3 text-left">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono text-gray-400">#{meeting.number}</span>
-                        <span className="text-sm font-medium text-gray-900">{meeting.title}</span>
+                        <span className="text-xs font-mono text-gray-400 dark:text-gray-500">#{meeting.number}</span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{meeting.title}</span>
                       </div>
-                      <div className="mt-1 text-xs text-gray-500">{formatDate(new Date(meeting.meetingDate))}</div>
+                      <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">{formatDate(new Date(meeting.meetingDate))}</div>
                     </div>
                   {meeting.actionItems.filter((a) => a.status === "open").length > 0 && (
-                    <span className="rounded-full bg-warning-50 px-2 py-0.5 text-xs font-medium text-warning-700">
+                    <span className="rounded-full bg-warning-50 dark:bg-warning-500/15 px-2 py-0.5 text-xs font-medium text-warning-700 dark:text-warning-500">
                       {t("openCount", { count: meeting.actionItems.filter((a) => a.status === "open").length })}
                     </span>
                   )}
@@ -221,42 +221,42 @@ export function MeetingsPanel({ projectId }: { projectId: string }) {
                 </div>
 
                 {expanded && (
-                  <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 pt-3 text-sm">
+                  <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 dark:border-gray-700 pt-3 text-sm">
                     {meeting.location && (
                       <p>
-                        <span className="font-medium text-gray-700">{t("location")}: </span>
+                        <span className="font-medium text-gray-700 dark:text-gray-200">{t("location")}: </span>
                         {meeting.location}
                       </p>
                     )}
                     {meeting.attendees.length > 0 && (
                       <p>
-                        <span className="font-medium text-gray-700">{t("attendees")}: </span>
+                        <span className="font-medium text-gray-700 dark:text-gray-200">{t("attendees")}: </span>
                         {meeting.attendees.join(", ")}
                       </p>
                     )}
                     {meeting.notes && (
                       <p>
-                        <span className="font-medium text-gray-700">{t("notes")}: </span>
+                        <span className="font-medium text-gray-700 dark:text-gray-200">{t("notes")}: </span>
                         {meeting.notes}
                       </p>
                     )}
 
                     <div className="mt-1">
-                      <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("actionItems")}</h4>
+                      <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("actionItems")}</h4>
                       {meeting.actionItems.length === 0 ? (
-                        <p className="text-xs text-gray-400">{t("noActionItems")}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">{t("noActionItems")}</p>
                       ) : (
                         <ul className="flex flex-col gap-1.5">
                           {meeting.actionItems.map((item) => (
-                            <li key={item.id} className="flex items-center justify-between gap-2 rounded-md border border-gray-200 px-2.5 py-1.5 text-xs">
+                            <li key={item.id} className="flex items-center justify-between gap-2 rounded-md border border-gray-200 dark:border-gray-700 px-2.5 py-1.5 text-xs">
                               <div>
-                                <span className={item.status === "done" ? "text-gray-400 line-through" : "text-gray-700"}>{item.description}</span>
-                                <span className="ml-1.5 text-gray-400">— {item.ownerName}</span>
+                                <span className={item.status === "done" ? "text-gray-400 dark:text-gray-500 line-through" : "text-gray-700 dark:text-gray-200"}>{item.description}</span>
+                                <span className="ml-1.5 text-gray-400 dark:text-gray-500">— {item.ownerName}</span>
                               </div>
                               {item.status === "open" ? (
                                 <ResolveButton itemId={item.id} onResolve={resolveActionItem} t={t} />
                               ) : (
-                                <span className="text-success-700">{t("resolvedBy", { name: item.resolvedByName ?? "" })}</span>
+                                <span className="text-success-700 dark:text-success-500">{t("resolvedBy", { name: item.resolvedByName ?? "" })}</span>
                               )}
                             </li>
                           ))}
@@ -340,10 +340,10 @@ function OpenActionItemRow({
   t: ReturnType<typeof useTranslations>;
 }) {
   return (
-    <li className="flex items-center justify-between gap-2 rounded-md border border-gray-200 px-2.5 py-1.5 text-xs">
+    <li className="flex items-center justify-between gap-2 rounded-md border border-gray-200 dark:border-gray-700 px-2.5 py-1.5 text-xs">
       <div>
-        <span className="text-gray-700">{item.description}</span>
-        <span className="ml-1.5 text-gray-400">
+        <span className="text-gray-700 dark:text-gray-200">{item.description}</span>
+        <span className="ml-1.5 text-gray-400 dark:text-gray-500">
           — {item.ownerName} · {t("fromMeeting", { number: item.meeting.number, title: item.meeting.title })}
         </span>
       </div>

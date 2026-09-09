@@ -61,15 +61,15 @@ export function WeatherDelayReportPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-8">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("weatherDelayReport")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("weatherDelayReport")}</h2>
       <div className="card">
-        <p className="text-sm text-gray-700">
+        <p className="text-sm text-gray-700 dark:text-gray-200">
           {t("weatherDelayTotal", { hours: report.totalHours, days: report.suggestedShiftDays })}
         </p>
         <div className="overflow-x-auto">
         <table className="mt-3 w-full border-collapse text-xs">
           <thead>
-            <tr className="border-b border-gray-200 text-left text-gray-500">
+            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
               <th className="py-1.5">{t("date")}</th>
               <th>{t("weather")}</th>
               <th>{t("weatherDelayHours")}</th>
@@ -78,11 +78,11 @@ export function WeatherDelayReportPanel({ projectId }: { projectId: string }) {
           </thead>
           <tbody>
             {report.entries.map((e) => (
-              <tr key={e.id} className="border-b border-gray-100">
+              <tr key={e.id} className="border-b border-gray-100 dark:border-gray-700">
                 <td className="py-1.5">{formatDate(new Date(e.date))}</td>
                 <td>{e.weatherCondition ? t(`weather_${e.weatherCondition}`) : "—"}</td>
                 <td>{e.weatherDelayHours}</td>
-                <td className="text-gray-500">{e.weatherNotes ?? ""}</td>
+                <td className="text-gray-500 dark:text-gray-400">{e.weatherNotes ?? ""}</td>
               </tr>
             ))}
           </tbody>
@@ -95,8 +95,8 @@ export function WeatherDelayReportPanel({ projectId }: { projectId: string }) {
           </button>
         </div>
 
-        <form onSubmit={shiftSchedule} className="mt-4 flex flex-wrap items-end gap-2 border-t border-gray-100 pt-3">
-          <label className="flex flex-col gap-1 text-xs text-gray-500">
+        <form onSubmit={shiftSchedule} className="mt-4 flex flex-wrap items-end gap-2 border-t border-gray-100 dark:border-gray-700 pt-3">
+          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
             {t("shiftScheduleDays")}
             <input
               type="number"
@@ -111,12 +111,12 @@ export function WeatherDelayReportPanel({ projectId }: { projectId: string }) {
             {t("shiftSchedule")}
           </button>
           {shiftResult && (
-            <span className="text-xs text-success-700">
+            <span className="text-xs text-success-700 dark:text-success-500">
               {t("shiftScheduleResult", { tasks: shiftResult.shiftedTasks, milestones: shiftResult.shiftedMilestones })}
             </span>
           )}
         </form>
-        <p className="mt-2 text-xs text-gray-400">{t("shiftScheduleHint")}</p>
+        <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">{t("shiftScheduleHint")}</p>
       </div>
     </div>
   );

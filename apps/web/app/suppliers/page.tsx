@@ -181,7 +181,7 @@ export default function SuppliersPage() {
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="card lg:col-span-1">
-          <h2 className="mb-4 text-sm font-semibold text-gray-700">{t("newSupplier")}</h2>
+          <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("newSupplier")}</h2>
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             <input
               required
@@ -211,7 +211,7 @@ export default function SuppliersPage() {
 
         <div className="lg:col-span-2">
           {!suppliers ? (
-            <p className="text-gray-500">{tc("loading")}</p>
+            <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {suppliers.map((s) => {
@@ -219,42 +219,42 @@ export default function SuppliersPage() {
                 return (
                   <li key={s.id} className="card cursor-pointer" onClick={() => toggleExpand(s.id)}>
                     <div className="font-medium">{s.name}</div>
-                    <div className="text-sm text-gray-500">{s.email ?? s.phone ?? "—"}</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">{s.email ?? s.phone ?? "—"}</div>
                     {expandedId === s.id && (
-                      <div className="mt-3 border-t border-gray-100 pt-3" onClick={(e) => e.stopPropagation()}>
+                      <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-3" onClick={(e) => e.stopPropagation()}>
                         <div className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
                           {!card ? (
-                            <span className="text-gray-400">{tc("loading")}</span>
+                            <span className="text-gray-400 dark:text-gray-500">{tc("loading")}</span>
                           ) : (
                             <>
                               <div>
-                                <div className="text-gray-400">{t("totalOrders")}</div>
+                                <div className="text-gray-400 dark:text-gray-500">{t("totalOrders")}</div>
                                 <div className="font-medium">{card.totalOrders}</div>
                               </div>
                               <div>
-                                <div className="text-gray-400">{t("onTimeRate")}</div>
+                                <div className="text-gray-400 dark:text-gray-500">{t("onTimeRate")}</div>
                                 <div className="font-medium">{card.onTimeRate !== null ? `${Math.round(card.onTimeRate * 100)}%` : "—"}</div>
                               </div>
                               <div>
-                                <div className="text-gray-400">{t("averageDelay")}</div>
+                                <div className="text-gray-400 dark:text-gray-500">{t("averageDelay")}</div>
                                 <div className="font-medium">{card.averageDelayDays !== null ? `${card.averageDelayDays.toFixed(1)}d` : "—"}</div>
                               </div>
                               <div>
-                                <div className="text-gray-400">{t("totalSpend")}</div>
+                                <div className="text-gray-400 dark:text-gray-500">{t("totalSpend")}</div>
                                 <div className="font-medium">{card.totalSpend}</div>
                               </div>
                               <div>
-                                <div className="text-gray-400">{t("averageRating")}</div>
+                                <div className="text-gray-400 dark:text-gray-500">{t("averageRating")}</div>
                                 <div className="font-medium">{card.averageRating ?? "—"}</div>
                               </div>
                               <div>
-                                <div className="text-gray-400">{t("wouldReorderPercent")}</div>
+                                <div className="text-gray-400 dark:text-gray-500">{t("wouldReorderPercent")}</div>
                                 <div className="font-medium">{card.wouldReorderPercent !== null ? `${card.wouldReorderPercent}%` : "—"}</div>
                               </div>
                               <div>
-                                <div className="text-gray-400">{t("priceVariance")}</div>
+                                <div className="text-gray-400 dark:text-gray-500">{t("priceVariance")}</div>
                                 <div
-                                  className={`font-medium ${card.averagePriceVariancePercent !== null && card.averagePriceVariancePercent > 0 ? "text-error-600" : card.averagePriceVariancePercent !== null && card.averagePriceVariancePercent < 0 ? "text-success-700" : ""}`}
+                                  className={`font-medium ${card.averagePriceVariancePercent !== null && card.averagePriceVariancePercent > 0 ? "text-error-600" : card.averagePriceVariancePercent !== null && card.averagePriceVariancePercent < 0 ? "text-success-700 dark:text-success-500" : ""}`}
                                 >
                                   {card.averagePriceVariancePercent !== null ? `${card.averagePriceVariancePercent > 0 ? "+" : ""}${card.averagePriceVariancePercent}%` : "—"}
                                 </div>
@@ -263,24 +263,24 @@ export default function SuppliersPage() {
                           )}
                         </div>
 
-                        <div className="mt-3 border-t border-gray-100 pt-3">
+                        <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-3">
                           <div className="mb-1.5 flex items-center justify-between">
-                            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">{t("purchaseOrders")}</h3>
-                            <Link href="/purchase-orders" className="text-xs text-brand-700 hover:underline">
+                            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("purchaseOrders")}</h3>
+                            <Link href="/purchase-orders" className="text-xs text-brand-700 dark:text-brand-400 hover:underline">
                               {t("viewAllPurchaseOrders")}
                             </Link>
                           </div>
                           {purchaseOrders === null ? (
-                            <p className="text-xs text-gray-400">{tc("loading")}</p>
+                            <p className="text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>
                           ) : purchaseOrders.length === 0 ? (
-                            <p className="text-xs text-gray-400">{t("noPurchaseOrdersYet")}</p>
+                            <p className="text-xs text-gray-400 dark:text-gray-500">{t("noPurchaseOrdersYet")}</p>
                           ) : (
                             <ul className="flex flex-col gap-1">
                               {purchaseOrders.map((po) => {
                                 const total = po.lines.reduce((sum, l) => sum + Number(l.quantity) * Number(l.unitPrice), 0);
                                 return (
                                   <li key={po.id} className="flex items-center justify-between text-xs">
-                                    <span className="text-gray-500">{formatDate(new Date(po.createdAt))}</span>
+                                    <span className="text-gray-500 dark:text-gray-400">{formatDate(new Date(po.createdAt))}</span>
                                     <span>{t(po.status)}</span>
                                     <span className="font-medium">{total.toFixed(2)}</span>
                                   </li>
@@ -290,12 +290,12 @@ export default function SuppliersPage() {
                           )}
                         </div>
 
-                        <div className="mt-3 border-t border-gray-100 pt-3">
-                          <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("coiDocuments")}</h3>
+                        <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-3">
+                          <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("coiDocuments")}</h3>
                           {documents === null ? (
-                            <p className="text-xs text-gray-400">{tc("loading")}</p>
+                            <p className="text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>
                           ) : documents.length === 0 ? (
-                            <p className="text-xs text-gray-400">{t("noCoiDocuments")}</p>
+                            <p className="text-xs text-gray-400 dark:text-gray-500">{t("noCoiDocuments")}</p>
                           ) : (
                             <ul className="mb-2 flex flex-col gap-1.5">
                               {documents.map((doc) => {
@@ -303,15 +303,15 @@ export default function SuppliersPage() {
                                 return (
                                   <li key={doc.id} className="flex items-center justify-between text-xs">
                                     <span>
-                                      <span className="text-gray-500">{t(doc.type)}</span> — {doc.name}
+                                      <span className="text-gray-500 dark:text-gray-400">{t(doc.type)}</span> — {doc.name}
                                       {" · "}
-                                      <span className={expired ? "text-error-700" : "text-gray-500"}>
+                                      <span className={expired ? "text-error-700 dark:text-error-500" : "text-gray-500 dark:text-gray-400"}>
                                         {formatDate(new Date(doc.expiresAt))}
                                       </span>
                                     </span>
                                     <span className="flex items-center gap-2">
                                       <CertificateAttachment param="supplierDocumentId" entityId={doc.id} />
-                                      <button onClick={() => removeDocument(s.id, doc.id)} className="text-gray-400 hover:text-error-600">
+                                      <button onClick={() => removeDocument(s.id, doc.id)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
                                         ×
                                       </button>
                                     </span>
@@ -352,21 +352,21 @@ export default function SuppliersPage() {
                           </form>
                         </div>
 
-                        <div className="mt-3 border-t border-gray-100 pt-3">
-                          <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("reviews")}</h3>
+                        <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-3">
+                          <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("reviews")}</h3>
                           {reviews && reviews.length > 0 && (
                             <ul className="mb-2 flex flex-col gap-1.5">
                               {reviews.map((r) => (
-                                <li key={r.id} className="text-xs text-gray-600">
+                                <li key={r.id} className="text-xs text-gray-600 dark:text-gray-300">
                                   <span className="font-medium">{"★".repeat(r.rating)}</span> — {r.reviewedByName},{" "}
                                   {formatDate(new Date(r.createdAt))}
-                                  {r.comments && <span className="text-gray-500"> · {r.comments}</span>}
+                                  {r.comments && <span className="text-gray-500 dark:text-gray-400"> · {r.comments}</span>}
                                 </li>
                               ))}
                             </ul>
                           )}
                           <form onSubmit={(e) => addReview(e, s.id)} className="flex flex-wrap items-end gap-2">
-                            <label className="flex flex-col gap-1 text-xs text-gray-500">
+                            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
                               {t("rating")}
                               <select
                                 className="input w-auto"
@@ -380,7 +380,7 @@ export default function SuppliersPage() {
                                 ))}
                               </select>
                             </label>
-                            <label className="flex flex-col gap-1 text-xs text-gray-500">
+                            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
                               {t("wouldReorder")}
                               <select
                                 className="input w-auto"
@@ -404,15 +404,15 @@ export default function SuppliersPage() {
                           </form>
                         </div>
 
-                        <div className="mt-3 border-t border-gray-100 pt-3">
-                          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("catalogSync")}</p>
-                          <p className="mb-2 text-xs text-gray-500">{t("catalogSyncHint")}</p>
+                        <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-3">
+                          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("catalogSync")}</p>
+                          <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">{t("catalogSyncHint")}</p>
                           <label className="btn-secondary inline-block cursor-pointer px-2.5 py-1 text-xs">
                             {syncBusy ? tc("loading") : t("uploadCatalogCsv")}
                             <input type="file" accept=".csv" className="hidden" disabled={syncBusy} onChange={(e) => syncCatalog(e, s.id)} />
                           </label>
                           {syncResult && (
-                            <p className="mt-2 text-xs text-gray-600">
+                            <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">
                               {t("catalogSyncResult", { updated: syncResult.created, skipped: syncResult.skipped })}
                             </p>
                           )}

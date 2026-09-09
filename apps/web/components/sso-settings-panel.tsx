@@ -73,11 +73,11 @@ export function SsoSettingsPanel({ canManage }: { canManage: boolean }) {
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("title")}</h2>
-      <p className="mb-4 text-xs text-gray-500">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
 
       {isConfigured && (
-        <p className="mb-3 text-sm text-success-700">{t("activeSummary", { domain: config.ssoDomain! })}</p>
+        <p className="mb-3 text-sm text-success-700 dark:text-success-500">{t("activeSummary", { domain: config.ssoDomain! })}</p>
       )}
 
       <button onClick={downloadMetadata} className="btn-secondary mb-4 px-3 py-1 text-xs">
@@ -87,7 +87,7 @@ export function SsoSettingsPanel({ canManage }: { canManage: boolean }) {
       {canManage && (
         <form onSubmit={save} className="flex flex-col gap-3">
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("domain")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("domain")}</span>
             <input
               required
               placeholder="acme.com"
@@ -97,7 +97,7 @@ export function SsoSettingsPanel({ canManage }: { canManage: boolean }) {
             />
           </label>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("entryPoint")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("entryPoint")}</span>
             <input
               required
               placeholder="https://idp.example.com/sso/saml"
@@ -107,7 +107,7 @@ export function SsoSettingsPanel({ canManage }: { canManage: boolean }) {
             />
           </label>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("issuer")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("issuer")}</span>
             <input
               required
               placeholder={t("issuerPlaceholder")}
@@ -117,7 +117,7 @@ export function SsoSettingsPanel({ canManage }: { canManage: boolean }) {
             />
           </label>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("cert")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("cert")}</span>
             <textarea
               required
               rows={5}

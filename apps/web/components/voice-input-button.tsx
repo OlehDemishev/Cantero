@@ -75,7 +75,7 @@ export function VoiceInputButton({ onTranscript, locale }: { onTranscript: (text
       aria-label={t(listening ? "voiceInputStop" : "voiceInputStart")}
       title={t(listening ? "voiceInputStop" : "voiceInputStart")}
       className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
-        listening ? "animate-pulse bg-error-500 text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+        listening ? "animate-pulse bg-error-500 text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200"
       }`}
     >
       <MicIcon width={14} height={14} />

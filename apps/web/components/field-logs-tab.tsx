@@ -80,14 +80,14 @@ export function LogsTab({ projectId }: { projectId: string }) {
     }
   }
 
-  if (!loaded) return <p className="text-sm text-gray-400">{tc("loading")}</p>;
+  if (!loaded) return <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>;
 
   return (
     <form onSubmit={submit} className="card flex flex-col gap-3">
       <CachedNote cachedAt={cachedAt} />
-      <p className="text-xs text-gray-500">{formatDate(new Date())}</p>
+      <p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(new Date())}</p>
       <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-gray-700">{td("weather")}</span>
+        <span className="font-medium text-gray-700 dark:text-gray-200">{td("weather")}</span>
         <select
           className="input"
           value={form.weatherCondition}
@@ -102,7 +102,7 @@ export function LogsTab({ projectId }: { projectId: string }) {
         </select>
       </label>
       <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-gray-700">{td("crewCount")}</span>
+        <span className="font-medium text-gray-700 dark:text-gray-200">{td("crewCount")}</span>
         <input
           type="number"
           min="0"
@@ -112,7 +112,7 @@ export function LogsTab({ projectId }: { projectId: string }) {
         />
       </label>
       <label className="flex flex-col gap-1.5 text-sm">
-        <span className="flex items-center gap-2 font-medium text-gray-700">
+        <span className="flex items-center gap-2 font-medium text-gray-700 dark:text-gray-200">
           {td("workPerformed")}
           <VoiceInputButton
             onTranscript={(text) => setForm((f) => ({ ...f, workPerformed: f.workPerformed ? `${f.workPerformed} ${text}` : text }))}
@@ -127,7 +127,7 @@ export function LogsTab({ projectId }: { projectId: string }) {
         />
       </label>
       <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-gray-700">{td("delays")}</span>
+        <span className="font-medium text-gray-700 dark:text-gray-200">{td("delays")}</span>
         <textarea
           rows={2}
           className="input"

@@ -30,17 +30,17 @@ const PERMIT_STATUSES: PermitStatus[] = ["draft", "submitted", "approved", "reje
 const INSPECTION_RESULTS: InspectionResult[] = ["pending", "passed", "failed", "cancelled"];
 
 const STATUS_STYLES: Record<PermitStatus, string> = {
-  draft: "bg-gray-100 text-gray-600",
-  submitted: "bg-warning-50 text-warning-700",
-  approved: "bg-success-50 text-success-700",
-  rejected: "bg-error-50 text-error-700",
-  expired: "bg-error-50 text-error-700",
+  draft: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
+  submitted: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
+  approved: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
+  rejected: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
+  expired: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
 };
 const RESULT_STYLES: Record<InspectionResult, string> = {
-  pending: "text-gray-500",
-  passed: "text-success-700",
-  failed: "text-error-700",
-  cancelled: "text-gray-400",
+  pending: "text-gray-500 dark:text-gray-400",
+  passed: "text-success-700 dark:text-success-500",
+  failed: "text-error-700 dark:text-error-500",
+  cancelled: "text-gray-400 dark:text-gray-500",
 };
 
 export function PermitsPanel({ projectId }: { projectId: string }) {
@@ -144,13 +144,13 @@ export function PermitsPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("title")}</h2>
-      <p className="mb-3 text-xs text-gray-500">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
 
       {!permits ? (
-        <p className="text-gray-500">{tc("loading")}</p>
+        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
       ) : permits.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noPermits")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noPermits")}</p>
       ) : (
         <ul className="mb-4 flex flex-col gap-2">
           {permits.map((p) => {
@@ -158,15 +158,15 @@ export function PermitsPanel({ projectId }: { projectId: string }) {
             return (
               <li key={p.id} className="card">
                 <button onClick={() => toggleExpand(p.id)} className="flex w-full items-center justify-between text-left">
-                  <span className="text-sm font-medium text-gray-900">
-                    {p.permitType} {p.permitNumber && <span className="text-gray-400">({p.permitNumber})</span>}
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
+                    {p.permitType} {p.permitNumber && <span className="text-gray-400 dark:text-gray-500">({p.permitNumber})</span>}
                   </span>
                   <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[p.status]}`}>{t(`status_${p.status}`)}</span>
                 </button>
 
                 {expanded && (
-                  <div className="mt-3 flex flex-col gap-3 border-t border-gray-100 pt-3">
-                    <div className="text-xs text-gray-500">
+                  <div className="mt-3 flex flex-col gap-3 border-t border-gray-100 dark:border-gray-700 pt-3">
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
                       {p.authorityName && <div>{t("authority")}: {p.authorityName}</div>}
                       {p.expiresAt && <div>{t("expires")}: {formatDate(new Date(p.expiresAt))}</div>}
                     </div>
@@ -182,34 +182,34 @@ export function PermitsPanel({ projectId }: { projectId: string }) {
                           {t(`status_${s}`)}
                         </button>
                       ))}
-                      <button onClick={() => deletePermit(p.id)} className="text-xs text-gray-400 hover:text-error-600">
+                      <button onClick={() => deletePermit(p.id)} className="text-xs text-gray-400 dark:text-gray-500 hover:text-error-600">
                         {tc("delete")}
                       </button>
                     </div>
 
                     <div>
-                      <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("inspections")}</h3>
+                      <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("inspections")}</h3>
                       {!inspections ? (
-                        <p className="text-xs text-gray-400">{tc("loading")}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>
                       ) : inspections.length === 0 ? (
-                        <p className="text-xs text-gray-400">{t("noInspections")}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">{t("noInspections")}</p>
                       ) : (
                         <ul className="mb-2 flex flex-col gap-1.5">
                           {inspections.map((i) => (
                             <li key={i.id} className="flex items-center justify-between text-xs">
                               <span>
                                 {i.inspectionType}
-                                {i.scheduledDate && <span className="text-gray-400"> · {formatDate(new Date(i.scheduledDate))}</span>}
-                                {i.inspectorName && <span className="text-gray-400"> · {i.inspectorName}</span>}
+                                {i.scheduledDate && <span className="text-gray-400 dark:text-gray-500"> · {formatDate(new Date(i.scheduledDate))}</span>}
+                                {i.inspectorName && <span className="text-gray-400 dark:text-gray-500"> · {i.inspectorName}</span>}
                               </span>
                               <span className="flex items-center gap-1.5">
                                 <span className={RESULT_STYLES[i.result]}>{t(`result_${i.result}`)}</span>
                                 {i.result === "pending" && (
                                   <>
-                                    <button onClick={() => recordResult(p.id, i.id, "passed")} className="text-success-700 hover:underline">
+                                    <button onClick={() => recordResult(p.id, i.id, "passed")} className="text-success-700 dark:text-success-500 hover:underline">
                                       {t("result_passed")}
                                     </button>
-                                    <button onClick={() => recordResult(p.id, i.id, "failed")} className="text-error-700 hover:underline">
+                                    <button onClick={() => recordResult(p.id, i.id, "failed")} className="text-error-700 dark:text-error-500 hover:underline">
                                       {t("result_failed")}
                                     </button>
                                   </>
@@ -272,7 +272,7 @@ export function PermitsPanel({ projectId }: { projectId: string }) {
           value={permitForm.authorityName}
           onChange={(e) => setPermitForm((f) => ({ ...f, authorityName: e.target.value }))}
         />
-        <label className="flex flex-col gap-1 text-xs text-gray-500">
+        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {t("expires")}
           <input
             type="date"

@@ -53,11 +53,11 @@ export function CustomFieldsValuesPanel({ entityType, entityId }: { entityType: 
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("title")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
       <form onSubmit={save} className="card flex flex-wrap items-end gap-3">
         {fields.map((f) => (
           <label key={f.fieldId} className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{f.name}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{f.name}</span>
             {f.type === "boolean" ? (
               <input
                 type="checkbox"
@@ -91,7 +91,7 @@ export function CustomFieldsValuesPanel({ entityType, entityId }: { entityType: 
         <button type="submit" disabled={busy} className="btn-secondary">
           {tc("save")}
         </button>
-        {saved && <span className="text-xs text-success-700">{tc("saved")}</span>}
+        {saved && <span className="text-xs text-success-700 dark:text-success-500">{tc("saved")}</span>}
       </form>
     </div>
   );

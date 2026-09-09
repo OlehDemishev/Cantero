@@ -151,8 +151,8 @@ export function CertifiedPayrollPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("title")}</h2>
-      <p className="mb-3 text-xs text-gray-500">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
 
       <form onSubmit={savePublicWork} className="mb-4 flex flex-wrap items-end gap-3">
         <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
@@ -164,7 +164,7 @@ export function CertifiedPayrollPanel({ projectId }: { projectId: string }) {
           {t("isPublicWork")}
         </label>
         {publicWorkForm.isPublicWork && (
-          <label className="flex flex-col gap-1 text-xs text-gray-500">
+          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
             {t("contractNumber")}
             <input
               className="input w-48"
@@ -183,7 +183,7 @@ export function CertifiedPayrollPanel({ projectId }: { projectId: string }) {
       {project.isPublicWork && (
         <>
           <div className="mb-4 flex flex-wrap items-end gap-2 border-t border-gray-100 pt-3 dark:border-gray-800">
-            <label className="flex flex-col gap-1 text-xs text-gray-500">
+            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
               {t("weekEndingDate")}
               <input type="date" className="input w-40" value={weekEndingDate} onChange={(e) => setWeekEndingDate(e.target.value)} />
             </label>
@@ -205,18 +205,18 @@ export function CertifiedPayrollPanel({ projectId }: { projectId: string }) {
                   {preview.apprenticeRatioViolations
                     .filter((v) => !v.compliant)
                     .map((v) => (
-                      <li key={v.trade} className="rounded-md bg-error-50 px-2.5 py-1.5 text-xs text-error-700">
+                      <li key={v.trade} className="rounded-md bg-error-50 dark:bg-error-500/15 px-2.5 py-1.5 text-xs text-error-700 dark:text-error-500">
                         {t("apprenticeRatioViolation", { trade: v.trade, apprenticeCount: v.apprenticeCount, maxAllowed: v.maxAllowedApprentices, ratio: v.ratio })}
                       </li>
                     ))}
                 </ul>
               )}
               {preview.lines.length === 0 ? (
-                <p className="text-sm text-gray-400">{t("noHoursThisWeek")}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t("noHoursThisWeek")}</p>
               ) : (
                 <table className="min-w-[640px] text-sm">
                   <thead>
-                    <tr className="text-left text-xs text-gray-400">
+                    <tr className="text-left text-xs text-gray-400 dark:text-gray-500">
                       <th className="pb-1 pr-3">{t("employee")}</th>
                       <th className="pb-1 pr-3">{t("classification")}</th>
                       <th className="pb-1 pr-3">{t("regularHours")}</th>
@@ -230,17 +230,17 @@ export function CertifiedPayrollPanel({ projectId }: { projectId: string }) {
                     {preview.lines.map((line) => (
                       <tr key={line.workerId} className="border-t border-gray-100 dark:border-gray-800">
                         <td className="py-1 pr-3">{line.workerName}</td>
-                        <td className="py-1 pr-3 text-gray-500">
+                        <td className="py-1 pr-3 text-gray-500 dark:text-gray-400">
                           {line.trade ?? t("unclassified")}
-                          {line.isApprentice && <span className="ml-1 rounded-full bg-brand-50 px-1.5 py-0.5 text-xs text-brand-700">{t("apprentice")}</span>}
+                          {line.isApprentice && <span className="ml-1 rounded-full bg-brand-50 dark:bg-brand-500/15 px-1.5 py-0.5 text-xs text-brand-700 dark:text-brand-400">{t("apprentice")}</span>}
                         </td>
                         <td className="py-1 pr-3">{line.regularHours.toFixed(2)}</td>
                         <td className="py-1 pr-3">{line.overtimeHours.toFixed(2)}</td>
                         <td className="py-1 pr-3">{line.ratePerHour !== null ? line.ratePerHour.toFixed(2) : "—"}</td>
-                        <td className="py-1 pr-3 text-gray-500">
+                        <td className="py-1 pr-3 text-gray-500 dark:text-gray-400">
                           {line.fringeRate.toFixed(2)}
                           {line.fringeBreakdown.length > 0 && (
-                            <span className="ml-1 text-xs text-gray-400" title={line.fringeBreakdown.map((f) => `${f.name}: ${f.amount.toFixed(2)}`).join(", ")}>
+                            <span className="ml-1 text-xs text-gray-400 dark:text-gray-500" title={line.fringeBreakdown.map((f) => `${f.name}: ${f.amount.toFixed(2)}`).join(", ")}>
                               ({line.fringeBreakdown.length})
                             </span>
                           )}
@@ -261,9 +261,9 @@ export function CertifiedPayrollPanel({ projectId }: { projectId: string }) {
           )}
 
           {!reports ? (
-            <p className="text-gray-500">{tc("loading")}</p>
+            <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
           ) : reports.length === 0 ? (
-            <p className="text-sm text-gray-400">{t("noReports")}</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noReports")}</p>
           ) : (
             <ul className="flex flex-col gap-2 border-t border-gray-100 pt-3 dark:border-gray-800">
               {reports.map((r) => (
@@ -274,7 +274,7 @@ export function CertifiedPayrollPanel({ projectId }: { projectId: string }) {
                   </span>
                   <span className="flex items-center gap-2">
                     {r.statementSignedAt ? (
-                      <span className="text-xs text-success-700">{t("signedBy", { name: r.statementSignerName ?? "" })}</span>
+                      <span className="text-xs text-success-700 dark:text-success-500">{t("signedBy", { name: r.statementSignerName ?? "" })}</span>
                     ) : signingId === r.id ? (
                       <>
                         <input

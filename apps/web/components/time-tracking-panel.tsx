@@ -98,23 +98,23 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700">{t("timeEntries")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("timeEntries")}</h2>
       {!entries ? (
-        <p className="text-sm text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
       ) : entries.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noTimeEntries")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noTimeEntries")}</p>
       ) : (
         <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <tbody>
             {entries.map((entry) => (
-              <tr key={entry.id} className="border-b border-gray-100">
+              <tr key={entry.id} className="border-b border-gray-100 dark:border-gray-700">
                 <td className="py-1">{formatDate(new Date(entry.date))}</td>
                 <td>{entry.worker.name}</td>
                 <td>{entry.task?.name ?? "—"}</td>
                 <td>
                   {entry.withinGeofence === false && (
-                    <span className="rounded-full bg-warning-50 px-2 py-0.5 text-xs font-medium text-warning-700">
+                    <span className="rounded-full bg-warning-50 dark:bg-warning-500/15 px-2 py-0.5 text-xs font-medium text-warning-700 dark:text-warning-500">
                       {t("outsideGeofence")}
                     </span>
                   )}
@@ -136,18 +136,18 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
                 </td>
                 <td className="py-1 pl-2 text-right text-xs">
                   {editingId === entry.id ? (
-                    <button onClick={() => saveEdit(entry.id)} disabled={busy} className="text-brand-700 hover:underline">
+                    <button onClick={() => saveEdit(entry.id)} disabled={busy} className="text-brand-700 dark:text-brand-400 hover:underline">
                       {tc("save")}
                     </button>
                   ) : (
-                    <button onClick={() => startEdit(entry)} disabled={busy} className="text-brand-700 hover:underline">
+                    <button onClick={() => startEdit(entry)} disabled={busy} className="text-brand-700 dark:text-brand-400 hover:underline">
                       {tc("edit")}
                     </button>
                   )}
                   <button
                     onClick={() => deleteEntry(entry.id)}
                     disabled={busy}
-                    className="ml-2 text-error-700 hover:underline"
+                    className="ml-2 text-error-700 dark:text-error-500 hover:underline"
                   >
                     {tc("delete")}
                   </button>

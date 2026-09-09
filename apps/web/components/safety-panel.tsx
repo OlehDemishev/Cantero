@@ -47,10 +47,10 @@ interface Jha {
 }
 
 const SEVERITY_STYLES: Record<IncidentSeverity, string> = {
-  near_miss: "bg-gray-100 text-gray-600",
-  first_aid: "bg-brand-50 text-brand-700",
-  medical_treatment: "bg-warning-50 text-warning-700",
-  lost_time_injury: "bg-error-50 text-error-700",
+  near_miss: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
+  first_aid: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
+  medical_treatment: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
+  lost_time_injury: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
   fatality: "bg-error-600 text-white",
 };
 
@@ -212,12 +212,12 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
         <PrintButton />
       </div>
 
       <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">{t("incidents")}</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("incidents")}</h3>
         {!creatingIncident && (
           <div className="flex gap-2">
             <button
@@ -239,10 +239,10 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
 
       {creatingIncident && (
         <form onSubmit={submitIncident} className="card mb-4 flex flex-col gap-3">
-          {quickNearMiss && <p className="text-xs text-gray-500">{t("quickNearMissHint")}</p>}
+          {quickNearMiss && <p className="text-xs text-gray-500 dark:text-gray-400">{t("quickNearMissHint")}</p>}
           <div className="flex flex-wrap gap-3">
             <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("occurredAt")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("occurredAt")}</span>
               <input
                 type="date"
                 required
@@ -253,7 +253,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
             </label>
             {!quickNearMiss && (
               <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700">{t("severity")}</span>
+                <span className="font-medium text-gray-700 dark:text-gray-200">{t("severity")}</span>
                 <select
                   className="input"
                   value={incidentForm.severity}
@@ -268,7 +268,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
               </label>
             )}
             <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("location")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("location")}</span>
               <input
                 className="input"
                 value={incidentForm.location}
@@ -277,7 +277,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
             </label>
           </div>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("description")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("description")}</span>
             <textarea
               required
               rows={2}
@@ -289,7 +289,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
           {!quickNearMiss && (
             <>
               <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700">{t("involvedPersons")}</span>
+                <span className="font-medium text-gray-700 dark:text-gray-200">{t("involvedPersons")}</span>
                 <input
                   className="input"
                   placeholder={t("involvedPersonsPlaceholder")}
@@ -298,7 +298,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
                 />
               </label>
               <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700">{t("correctiveActions")}</span>
+                <span className="font-medium text-gray-700 dark:text-gray-200">{t("correctiveActions")}</span>
                 <textarea
                   rows={2}
                   className="input"
@@ -312,12 +312,12 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
                   checked={incidentForm.oshaRecordable}
                   onChange={(e) => setIncidentForm((f) => ({ ...f, oshaRecordable: e.target.checked }))}
                 />
-                <span className="font-medium text-gray-700">{t("oshaRecordable")}</span>
+                <span className="font-medium text-gray-700 dark:text-gray-200">{t("oshaRecordable")}</span>
               </label>
               {incidentForm.oshaRecordable && (
-                <div className="flex flex-wrap gap-3 rounded-lg border border-gray-100 p-3">
+                <div className="flex flex-wrap gap-3 rounded-lg border border-gray-100 dark:border-gray-700 p-3">
                   <label className="flex flex-col gap-1.5 text-sm">
-                    <span className="font-medium text-gray-700">{t("oshaCaseType")}</span>
+                    <span className="font-medium text-gray-700 dark:text-gray-200">{t("oshaCaseType")}</span>
                     <select
                       className="input"
                       value={incidentForm.oshaCaseType}
@@ -331,7 +331,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
                     </select>
                   </label>
                   <label className="flex flex-col gap-1.5 text-sm">
-                    <span className="font-medium text-gray-700">{t("daysAwayFromWork")}</span>
+                    <span className="font-medium text-gray-700 dark:text-gray-200">{t("daysAwayFromWork")}</span>
                     <input
                       type="number"
                       min="0"
@@ -341,7 +341,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
                     />
                   </label>
                   <label className="flex flex-col gap-1.5 text-sm">
-                    <span className="font-medium text-gray-700">{t("daysJobTransferOrRestriction")}</span>
+                    <span className="font-medium text-gray-700 dark:text-gray-200">{t("daysJobTransferOrRestriction")}</span>
                     <input
                       type="number"
                       min="0"
@@ -374,9 +374,9 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
       )}
 
       {incidents === null ? (
-        <p className="text-sm text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
       ) : incidents.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noIncidents")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noIncidents")}</p>
       ) : (
         <ul className="mb-6 flex flex-col gap-2">
           {incidents.map((item) => (
@@ -385,17 +385,17 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
                 <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${SEVERITY_STYLES[item.severity]}`}>
                   {t(`severity_${item.severity}`)}
                 </span>
-                <span className="text-xs text-gray-500">{formatDate(new Date(item.occurredAt))}</span>
-                {item.location && <span className="text-xs text-gray-500">· {item.location}</span>}
+                <span className="text-xs text-gray-500 dark:text-gray-400">{formatDate(new Date(item.occurredAt))}</span>
+                {item.location && <span className="text-xs text-gray-500 dark:text-gray-400">· {item.location}</span>}
                 {item.oshaRecordable && (
-                  <span className="rounded-full bg-error-50 px-2 py-0.5 text-xs font-medium text-error-700">
+                  <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-error-700 dark:text-error-500">
                     {t("oshaRecordable")}
                   </span>
                 )}
               </div>
-              <p className="mt-1.5 text-sm text-gray-900">{item.description}</p>
+              <p className="mt-1.5 text-sm text-gray-900 dark:text-gray-50">{item.description}</p>
               {item.oshaRecordable && (item.oshaCaseType || item.daysAwayFromWork || item.daysJobTransferOrRestriction) && (
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   {item.oshaCaseType && t(`oshaCaseType_${item.oshaCaseType}`)}
                   {item.daysAwayFromWork ? ` · ${t("daysAwayFromWork")}: ${item.daysAwayFromWork}` : ""}
                   {item.daysJobTransferOrRestriction
@@ -404,12 +404,12 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
                 </p>
               )}
               {item.involvedPersons && (
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   {t("involvedPersons")}: {item.involvedPersons}
                 </p>
               )}
               {item.correctiveActions && (
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   {t("correctiveActions")}: {item.correctiveActions}
                 </p>
               )}
@@ -417,10 +417,10 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
                 <PhotoAttachments param="incidentReportId" entityId={item.id} />
               </div>
               <div className="mt-1 flex items-center justify-between">
-                <p className="text-xs text-gray-400">{item.reportedByName}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">{item.reportedByName}</p>
                 <a
                   href={`/insurance-claims?projectId=${projectId}&incidentReportId=${item.id}`}
-                  className="text-xs text-brand-700 hover:underline"
+                  className="text-xs text-brand-700 dark:text-brand-400 hover:underline"
                 >
                   {t("fileInsuranceClaim")}
                 </a>
@@ -431,7 +431,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
       )}
 
       <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">{t("briefings")}</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("briefings")}</h3>
         {!creatingBriefing && (
           <button onClick={() => setCreatingBriefing(true)} className="btn-secondary px-3 py-1 text-xs">
             {t("newBriefing")}
@@ -447,7 +447,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
           />
           <div className="flex gap-3">
             <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("topic")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("topic")}</span>
               <input
                 required
                 className="input"
@@ -457,7 +457,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
               />
             </label>
             <label className="flex w-40 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("date")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("date")}</span>
               <input
                 type="date"
                 required
@@ -468,7 +468,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
             </label>
           </div>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("notes")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("notes")}</span>
             <textarea
               rows={2}
               className="input"
@@ -477,15 +477,15 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
             />
           </label>
           <div className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("attendees")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("attendees")}</span>
             <div className="flex flex-wrap gap-2">
               {workers.map((w) => (
                 <label
                   key={w.id}
                   className={`cursor-pointer rounded-full border px-3 py-1 text-xs ${
                     briefingForm.attendeeWorkerIds.includes(w.id)
-                      ? "border-brand-500 bg-brand-50 text-brand-700"
-                      : "border-gray-200 text-gray-600"
+                      ? "border-brand-500 dark:border-brand-400 bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400"
+                      : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300"
                   }`}
                 >
                   <input type="checkbox" className="hidden" checked={briefingForm.attendeeWorkerIds.includes(w.id)} onChange={() => toggleAttendee(w.id)} />
@@ -506,30 +506,30 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
       )}
 
       {briefings === null ? (
-        <p className="text-sm text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
       ) : briefings.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noBriefings")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noBriefings")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {briefings.map((item) => (
             <li key={item.id} className="card">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-900">{item.topic}</span>
-                <span className="text-xs text-gray-500">{formatDate(new Date(item.date))}</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{item.topic}</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{formatDate(new Date(item.date))}</span>
               </div>
-              {item.notes && <p className="mt-1 text-xs text-gray-500">{item.notes}</p>}
-              <p className="mt-1.5 text-xs text-gray-500">
+              {item.notes && <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{item.notes}</p>}
+              <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
                 {t("attendeeCount", { count: item.attendees.length })}
                 {item.attendees.length > 0 && ": " + item.attendees.map((a) => a.worker.name).join(", ")}
               </p>
-              <p className="mt-1 text-xs text-gray-400">{item.conductedByName}</p>
+              <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{item.conductedByName}</p>
             </li>
           ))}
         </ul>
       )}
 
       <div className="mb-2 mt-6 flex items-center justify-between">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">{t("jhaTitle")}</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("jhaTitle")}</h3>
         {!creatingJha && (
           <button onClick={() => setCreatingJha(true)} className="btn-secondary px-3 py-1 text-xs">
             {t("newJha")}
@@ -547,7 +547,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
           />
           <div className="flex gap-3">
             <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("taskDescription")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("taskDescription")}</span>
               <input
                 required
                 className="input"
@@ -557,7 +557,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
               />
             </label>
             <label className="flex w-40 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">{t("date")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("date")}</span>
               <input
                 type="date"
                 required
@@ -568,7 +568,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
             </label>
           </div>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("hazards")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("hazards")}</span>
             <textarea
               required
               rows={2}
@@ -579,7 +579,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
             />
           </label>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("controlMeasures")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("controlMeasures")}</span>
             <textarea
               required
               rows={2}
@@ -590,7 +590,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
             />
           </label>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("requiredPpe")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("requiredPpe")}</span>
             <input
               className="input"
               placeholder={t("requiredPpePlaceholder")}
@@ -599,15 +599,15 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
             />
           </label>
           <div className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700">{t("acknowledgedBy")}</span>
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("acknowledgedBy")}</span>
             <div className="flex flex-wrap gap-2">
               {workers.map((w) => (
                 <label
                   key={w.id}
                   className={`cursor-pointer rounded-full border px-3 py-1 text-xs ${
                     jhaForm.acknowledgedWorkerIds.includes(w.id)
-                      ? "border-brand-500 bg-brand-50 text-brand-700"
-                      : "border-gray-200 text-gray-600"
+                      ? "border-brand-500 dark:border-brand-400 bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400"
+                      : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300"
                   }`}
                 >
                   <input
@@ -633,9 +633,9 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
       )}
 
       {jhas === null ? (
-        <p className="text-sm text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
       ) : jhas.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noJhas")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noJhas")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {jhas.map((item) => {
@@ -644,21 +644,21 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
             return (
               <li key={item.id} className="card">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-gray-900">{item.taskDescription}</span>
-                  <span className="text-xs text-gray-500">{formatDate(new Date(item.date))}</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{item.taskDescription}</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">{formatDate(new Date(item.date))}</span>
                 </div>
-                <p className="mt-1.5 text-xs text-gray-500">
-                  <span className="font-medium text-gray-700">{t("hazards")}:</span> {item.hazards}
+                <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                  <span className="font-medium text-gray-700 dark:text-gray-200">{t("hazards")}:</span> {item.hazards}
                 </p>
-                <p className="mt-1 text-xs text-gray-500">
-                  <span className="font-medium text-gray-700">{t("controlMeasures")}:</span> {item.controlMeasures}
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  <span className="font-medium text-gray-700 dark:text-gray-200">{t("controlMeasures")}:</span> {item.controlMeasures}
                 </p>
                 {item.requiredPpe && (
-                  <p className="mt-1 text-xs text-gray-500">
-                    <span className="font-medium text-gray-700">{t("requiredPpe")}:</span> {item.requiredPpe}
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    <span className="font-medium text-gray-700 dark:text-gray-200">{t("requiredPpe")}:</span> {item.requiredPpe}
                   </p>
                 )}
-                <p className="mt-1.5 text-xs text-gray-500">
+                <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
                   {t("acknowledgedCount", { count: item.acknowledgments.length })}
                   {item.acknowledgments.length > 0 && ": " + item.acknowledgments.map((a) => a.worker.name).join(", ")}
                 </p>
@@ -675,7 +675,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
                     ))}
                   </div>
                 )}
-                <p className="mt-1 text-xs text-gray-400">{item.conductedByName}</p>
+                <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{item.conductedByName}</p>
               </li>
             );
           })}

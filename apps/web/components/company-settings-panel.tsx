@@ -264,11 +264,11 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
 
   return (
     <section className="card">
-      <h2 className="mb-4 text-sm font-semibold text-gray-700">{t("company")}</h2>
-      {!isManager && <p className="mb-3 text-xs text-gray-500">{t("companySettingsManagerOnlyHint")}</p>}
-      {error && <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("company")}</h2>
+      {!isManager && <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("companySettingsManagerOnlyHint")}</p>}
+      {error && <p className="mb-3 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{error}</p>}
       <form onSubmit={saveCompany} className="flex flex-col gap-3">
-        <label className="text-xs text-gray-500">
+        <label className="text-xs text-gray-500 dark:text-gray-400">
           {t("companyName")}
           <input
             required
@@ -278,7 +278,7 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
             disabled={!isManager}
           />
         </label>
-        <label className="text-xs text-gray-500">
+        <label className="text-xs text-gray-500 dark:text-gray-400">
           {t("language")}
           <select
             className="input mt-1"
@@ -293,12 +293,12 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
             ))}
           </select>
         </label>
-        <div className="border-t border-gray-100 pt-3">
-          <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-gray-700">
+        <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+          <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-gray-700 dark:text-gray-200">
             {t("eInvoicing")}
             <HelpTooltip text={t("eInvoicingTooltip")} />
           </p>
-          <p className="mb-2 text-xs text-gray-500">{t("eInvoicingHint")}</p>
+          <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">{t("eInvoicingHint")}</p>
           <div className="flex flex-col gap-2">
             <input
               className="input"
@@ -341,14 +341,14 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
             </div>
           </div>
         </div>
-        <div className="border-t border-gray-100 pt-3">
-          <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-gray-700">
+        <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+          <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-gray-700 dark:text-gray-200">
             {t("approvalChains")}
             <HelpTooltip text={t("approvalChainsTooltip")} />
           </p>
-          <p className="mb-2 text-xs text-gray-500">{t("approvalChainsHint")}</p>
+          <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">{t("approvalChainsHint")}</p>
           <div className="flex gap-2">
-            <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500">
+            <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
               {t("approvalThreshold")}
               <input
                 type="number"
@@ -361,7 +361,7 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
                 disabled={!isManager}
               />
             </label>
-            <label className="flex w-28 flex-col gap-1 text-xs text-gray-500">
+            <label className="flex w-28 flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
               {t("requiredApprovals")}
               <input
                 type="number"
@@ -375,11 +375,11 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
             </label>
           </div>
         </div>
-        <div className="border-t border-gray-100 pt-3">
-          <p className="mb-2 text-xs font-medium text-gray-700">{t("changeOrderApprovalChains")}</p>
-          <p className="mb-2 text-xs text-gray-500">{t("changeOrderApprovalChainsHint")}</p>
+        <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+          <p className="mb-2 text-xs font-medium text-gray-700 dark:text-gray-200">{t("changeOrderApprovalChains")}</p>
+          <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">{t("changeOrderApprovalChainsHint")}</p>
           <div className="flex gap-2">
-            <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500">
+            <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
               {t("approvalThreshold")}
               <input
                 type="number"
@@ -392,7 +392,7 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
                 disabled={!isManager}
               />
             </label>
-            <label className="flex w-28 flex-col gap-1 text-xs text-gray-500">
+            <label className="flex w-28 flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
               {t("requiredApprovals")}
               <input
                 type="number"
@@ -406,8 +406,8 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
             </label>
           </div>
         </div>
-        <div className="border-t border-gray-100 pt-3">
-          <label className="flex w-40 flex-col gap-1 text-xs text-gray-500">
+        <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+          <label className="flex w-40 flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
             {t("budgetAlertThreshold")}
             <input
               type="number"
@@ -419,11 +419,11 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
               disabled={!isManager}
             />
           </label>
-          <p className="mt-1 text-xs text-gray-500">{t("budgetAlertThresholdHint")}</p>
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t("budgetAlertThresholdHint")}</p>
         </div>
-        <div className="border-t border-gray-100 pt-3">
+        <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
           <div className="flex gap-2">
-            <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500">
+            <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
               {t("defaultPaymentTermsDays")}
               <input
                 type="number"
@@ -435,7 +435,7 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
                 disabled={!isManager}
               />
             </label>
-            <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500">
+            <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
               {t("lateFeePercentPerMonth")}
               <input
                 type="number"
@@ -450,13 +450,13 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
               />
             </label>
           </div>
-          <p className="mt-1 text-xs text-gray-500">{t("lateFeeHint")}</p>
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t("lateFeeHint")}</p>
         </div>
-        <div className="border-t border-gray-100 pt-3">
-          <p className="mb-2 text-xs font-medium text-gray-700">{t("laborBurden")}</p>
-          <p className="mb-2 text-xs text-gray-500">{t("laborBurdenHint")}</p>
+        <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+          <p className="mb-2 text-xs font-medium text-gray-700 dark:text-gray-200">{t("laborBurden")}</p>
+          <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">{t("laborBurdenHint")}</p>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <label className="flex flex-col gap-1 text-xs text-gray-500">
+            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
               {t("payrollTaxBurdenPercent")}
               <input
                 type="number"
@@ -469,7 +469,7 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
                 disabled={!isManager}
               />
             </label>
-            <label className="flex flex-col gap-1 text-xs text-gray-500">
+            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
               {t("workersCompBurdenPercent")}
               <input
                 type="number"
@@ -482,7 +482,7 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
                 disabled={!isManager}
               />
             </label>
-            <label className="flex flex-col gap-1 text-xs text-gray-500">
+            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
               {t("benefitsBurdenPercent")}
               <input
                 type="number"
@@ -495,7 +495,7 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
                 disabled={!isManager}
               />
             </label>
-            <label className="flex flex-col gap-1 text-xs text-gray-500">
+            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
               {t("otherBurdenPercent")}
               <input
                 type="number"
@@ -510,10 +510,10 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
             </label>
           </div>
         </div>
-        <div className="border-t border-gray-100 pt-3">
-          <p className="mb-2 text-xs font-medium text-gray-700">{t("subcontractorSafetyGate")}</p>
-          <p className="mb-2 text-xs text-gray-500">{t("subcontractorSafetyGateHint")}</p>
-          <label className="mb-2 flex items-center gap-2 text-xs text-gray-700">
+        <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+          <p className="mb-2 text-xs font-medium text-gray-700 dark:text-gray-200">{t("subcontractorSafetyGate")}</p>
+          <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">{t("subcontractorSafetyGateHint")}</p>
+          <label className="mb-2 flex items-center gap-2 text-xs text-gray-700 dark:text-gray-200">
             <input
               type="checkbox"
               checked={companyForm.requireSubcontractorPrequalification}
@@ -522,7 +522,7 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
             />
             {t("requireSubcontractorPrequalification")}
           </label>
-          <label className="flex w-48 flex-col gap-1 text-xs text-gray-500">
+          <label className="flex w-48 flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
             {t("subcontractorEmrThreshold")}
             <input
               type="number"
@@ -538,11 +538,11 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
           </label>
         </div>
         <CompanyHolidaysPanel canManage={isManager} />
-        <div className="border-t border-gray-100 pt-3">
-          <p className="mb-2 text-xs font-medium text-gray-700">{t("slaEscalation")}</p>
-          <p className="mb-2 text-xs text-gray-500">{t("slaEscalationHint")}</p>
+        <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+          <p className="mb-2 text-xs font-medium text-gray-700 dark:text-gray-200">{t("slaEscalation")}</p>
+          <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">{t("slaEscalationHint")}</p>
           <div className="flex gap-2">
-            <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500">
+            <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
               {t("rfiSlaDays")}
               <input
                 type="number"
@@ -555,7 +555,7 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
                 disabled={!isManager}
               />
             </label>
-            <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500">
+            <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
               {t("punchListSlaDays")}
               <input
                 type="number"
@@ -569,7 +569,7 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
               />
             </label>
           </div>
-          <label className="mt-3 flex items-start gap-2 text-xs text-gray-700">
+          <label className="mt-3 flex items-start gap-2 text-xs text-gray-700 dark:text-gray-200">
             <input
               type="checkbox"
               className="mt-0.5"
@@ -578,13 +578,13 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
               disabled={!isManager}
             />
             <span>
-              <span className="font-medium text-gray-700">{t("submittalEscalationEnabled")}</span>
-              <span className="mt-0.5 block text-gray-500">{t("submittalEscalationEnabledHint")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("submittalEscalationEnabled")}</span>
+              <span className="mt-0.5 block text-gray-500 dark:text-gray-400">{t("submittalEscalationEnabledHint")}</span>
             </span>
           </label>
         </div>
-        <div className="border-t border-gray-100 pt-3">
-          <label className="flex flex-col gap-1 text-xs text-gray-500">
+        <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
             {t("inventoryCostingMethod")}
             <select
               className="input w-auto"
@@ -596,10 +596,10 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
               <option value="fifo">{t("costingMethod_fifo")}</option>
             </select>
           </label>
-          <p className="mt-1 text-xs text-gray-500">{t("inventoryCostingMethodHint")}</p>
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t("inventoryCostingMethodHint")}</p>
         </div>
-        <div className="border-t border-gray-100 pt-3">
-          <label className="flex w-48 flex-col gap-1 text-xs text-gray-500">
+        <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+          <label className="flex w-48 flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
             {t("rateCatalogApprovalThresholdPercent")}
             <input
               type="number"
@@ -612,10 +612,10 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
               disabled={!isManager}
             />
           </label>
-          <p className="mt-1 text-xs text-gray-500">{t("rateCatalogApprovalThresholdPercentHint")}</p>
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t("rateCatalogApprovalThresholdPercentHint")}</p>
         </div>
-        <div className="border-t border-gray-100 pt-3">
-          <label className="flex items-start gap-2 text-xs text-gray-700">
+        <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+          <label className="flex items-start gap-2 text-xs text-gray-700 dark:text-gray-200">
             <input
               type="checkbox"
               className="mt-0.5"
@@ -624,13 +624,13 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
               disabled={!isManager}
             />
             <span>
-              <span className="font-medium text-gray-700">{t("npsDetractorFollowUpEnabled")}</span>
-              <span className="mt-0.5 block text-gray-500">{t("npsDetractorFollowUpEnabledHint")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("npsDetractorFollowUpEnabled")}</span>
+              <span className="mt-0.5 block text-gray-500 dark:text-gray-400">{t("npsDetractorFollowUpEnabledHint")}</span>
             </span>
           </label>
         </div>
-        <div className="border-t border-gray-100 pt-3">
-          <label className="flex items-start gap-2 text-xs text-gray-700">
+        <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+          <label className="flex items-start gap-2 text-xs text-gray-700 dark:text-gray-200">
             <input
               type="checkbox"
               className="mt-0.5"
@@ -639,13 +639,13 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
               disabled={!isManager}
             />
             <span>
-              <span className="font-medium text-gray-700">{t("invoiceReminders")}</span>
-              <span className="mt-0.5 block text-gray-500">{t("invoiceRemindersHint")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("invoiceReminders")}</span>
+              <span className="mt-0.5 block text-gray-500 dark:text-gray-400">{t("invoiceRemindersHint")}</span>
             </span>
           </label>
         </div>
-        <div className="border-t border-gray-100 pt-3">
-          <label className="flex items-start gap-2 text-xs text-gray-700">
+        <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+          <label className="flex items-start gap-2 text-xs text-gray-700 dark:text-gray-200">
             <input
               type="checkbox"
               className="mt-0.5"
@@ -654,13 +654,13 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
               disabled={!isManager}
             />
             <span>
-              <span className="font-medium text-gray-700">{t("estimateReminders")}</span>
-              <span className="mt-0.5 block text-gray-500">{t("estimateRemindersHint")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("estimateReminders")}</span>
+              <span className="mt-0.5 block text-gray-500 dark:text-gray-400">{t("estimateRemindersHint")}</span>
             </span>
           </label>
         </div>
-        <div className="border-t border-gray-100 pt-3">
-          <label className="flex items-start gap-2 text-xs text-gray-700">
+        <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+          <label className="flex items-start gap-2 text-xs text-gray-700 dark:text-gray-200">
             <input
               type="checkbox"
               className="mt-0.5"
@@ -669,13 +669,13 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
               disabled={!isManager}
             />
             <span>
-              <span className="font-medium text-gray-700">{t("changeOrderReminders")}</span>
-              <span className="mt-0.5 block text-gray-500">{t("changeOrderRemindersHint")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("changeOrderReminders")}</span>
+              <span className="mt-0.5 block text-gray-500 dark:text-gray-400">{t("changeOrderRemindersHint")}</span>
             </span>
           </label>
         </div>
-        <div className="border-t border-gray-100 pt-3">
-          <label className="flex items-start gap-2 text-xs text-gray-700">
+        <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+          <label className="flex items-start gap-2 text-xs text-gray-700 dark:text-gray-200">
             <input
               type="checkbox"
               className="mt-0.5"
@@ -684,8 +684,8 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
               disabled={!isManager}
             />
             <span>
-              <span className="font-medium text-gray-700">{t("enpsSurveys")}</span>
-              <span className="mt-0.5 block text-gray-500">{t("enpsSurveysHint")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("enpsSurveys")}</span>
+              <span className="mt-0.5 block text-gray-500 dark:text-gray-400">{t("enpsSurveysHint")}</span>
             </span>
           </label>
           {companyForm.enpsSurveysEnabled && (
@@ -694,8 +694,8 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
             </button>
           )}
         </div>
-        <div className="border-t border-gray-100 pt-3">
-          <label className="flex items-start gap-2 text-xs text-gray-700">
+        <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+          <label className="flex items-start gap-2 text-xs text-gray-700 dark:text-gray-200">
             <input
               type="checkbox"
               className="mt-0.5"
@@ -704,13 +704,13 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
               disabled={!isManager}
             />
             <span>
-              <span className="font-medium text-gray-700">{t("workerSmsNotifications")}</span>
-              <span className="mt-0.5 block text-gray-500">{t("workerSmsNotificationsHint")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("workerSmsNotifications")}</span>
+              <span className="mt-0.5 block text-gray-500 dark:text-gray-400">{t("workerSmsNotificationsHint")}</span>
             </span>
           </label>
         </div>
-        <div className="border-t border-gray-100 pt-3">
-          <label className="flex items-start gap-2 text-xs text-gray-700">
+        <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+          <label className="flex items-start gap-2 text-xs text-gray-700 dark:text-gray-200">
             <input
               type="checkbox"
               className="mt-0.5"
@@ -719,15 +719,15 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
               disabled={!isManager}
             />
             <span>
-              <span className="font-medium text-gray-700">{t("leadFollowUp")}</span>
-              <span className="mt-0.5 block text-gray-500">{t("leadFollowUpHint")}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{t("leadFollowUp")}</span>
+              <span className="mt-0.5 block text-gray-500 dark:text-gray-400">{t("leadFollowUpHint")}</span>
             </span>
           </label>
         </div>
-        <div className="border-t border-gray-100 pt-3">
-          <label className="flex flex-col gap-1 text-xs text-gray-700">
-            <span className="font-medium text-gray-700">{t("reviewRequestUrl")}</span>
-            <span className="text-gray-500">{t("reviewRequestUrlHint")}</span>
+        <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+          <label className="flex flex-col gap-1 text-xs text-gray-700 dark:text-gray-200">
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("reviewRequestUrl")}</span>
+            <span className="text-gray-500 dark:text-gray-400">{t("reviewRequestUrlHint")}</span>
             <input
               type="url"
               className="input mt-1"
@@ -738,10 +738,10 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
             />
           </label>
         </div>
-        <div className="border-t border-gray-100 pt-3">
-          <label className="flex flex-col gap-1 text-xs text-gray-700">
-            <span className="font-medium text-gray-700">{t("reportingCurrency")}</span>
-            <span className="text-gray-500">{t("reportingCurrencyHint")}</span>
+        <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+          <label className="flex flex-col gap-1 text-xs text-gray-700 dark:text-gray-200">
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("reportingCurrency")}</span>
+            <span className="text-gray-500 dark:text-gray-400">{t("reportingCurrencyHint")}</span>
             <select
               className="input mt-1"
               value={companyForm.reportingCurrency}
@@ -764,17 +764,17 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
         )}
       </form>
 
-      <div className="mt-6 border-t border-gray-100 pt-4">
-        <h3 className="mb-1 text-sm font-semibold text-gray-700">{t("branding")}</h3>
-        <p className="mb-3 text-xs text-gray-500">{t("brandingHint")}</p>
-        {logoError && <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{logoError}</p>}
+      <div className="mt-6 border-t border-gray-100 dark:border-gray-700 pt-4">
+        <h3 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("branding")}</h3>
+        <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("brandingHint")}</p>
+        {logoError && <p className="mb-3 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{logoError}</p>}
         <div className="flex flex-col gap-3">
-          <label className="text-xs text-gray-500">
+          <label className="text-xs text-gray-500 dark:text-gray-400">
             {t("brandColor")}
             <div className="mt-1 flex items-center gap-2">
               <input
                 type="color"
-                className="h-9 w-14 cursor-pointer rounded border border-gray-200"
+                className="h-9 w-14 cursor-pointer rounded border border-gray-200 dark:border-gray-700"
                 value={companyForm.brandColor ?? "#465fff"}
                 onChange={(e) => setCompanyForm((f) => ({ ...f, brandColor: e.target.value }))}
                 disabled={!isManager}
@@ -792,9 +792,9 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
           </label>
           <div className="flex items-center gap-3">
             {logoUrl ? (
-              <img src={logoUrl} alt={t("logo")} className="h-12 max-w-[120px] rounded border border-gray-200 object-contain" />
+              <img src={logoUrl} alt={t("logo")} className="h-12 max-w-[120px] rounded border border-gray-200 dark:border-gray-700 object-contain" />
             ) : (
-              <span className="text-xs text-gray-400">{t("noLogo")}</span>
+              <span className="text-xs text-gray-400 dark:text-gray-500">{t("noLogo")}</span>
             )}
             {isManager && (
               <label className="btn-secondary cursor-pointer px-3 py-1 text-xs">

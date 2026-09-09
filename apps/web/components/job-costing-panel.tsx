@@ -106,8 +106,8 @@ export function JobCostingPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-8">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("title")}</h2>
-      <p className="mb-3 text-xs text-gray-500">{t("hint", { percent: report.percentComplete })}</p>
+      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint", { percent: report.percentComplete })}</p>
       <div className="card overflow-x-auto">
         <table className="w-full min-w-[720px] border-collapse text-sm">
           <thead>
@@ -125,7 +125,7 @@ export function JobCostingPanel({ projectId }: { projectId: string }) {
             {report.rows.map((row) => (
               <tr key={row.code} className="border-b border-gray-100 dark:border-gray-800/60">
                 <td className="py-1.5">
-                  <span className="font-mono text-xs text-gray-400">{row.code}</span> {row.name}
+                  <span className="font-mono text-xs text-gray-400 dark:text-gray-500">{row.code}</span> {row.name}
                 </td>
                 <td className="text-right">
                   {row.estimated.toFixed(2)} {currency}
@@ -136,13 +136,13 @@ export function JobCostingPanel({ projectId }: { projectId: string }) {
                 <td className="text-right">
                   {row.actual.toFixed(2)} {currency}
                 </td>
-                <td className={`text-right font-medium ${row.variance < 0 ? "text-error-600" : "text-success-700"}`}>
+                <td className={`text-right font-medium ${row.variance < 0 ? "text-error-600" : "text-success-700 dark:text-success-500"}`}>
                   {row.variance.toFixed(2)} {currency}
                 </td>
                 <td className="text-right">
                   {row.estimateAtCompletion.toFixed(2)} {currency}
                 </td>
-                <td className={`text-right font-medium ${row.varianceAtCompletion < 0 ? "text-error-600" : "text-success-700"}`}>
+                <td className={`text-right font-medium ${row.varianceAtCompletion < 0 ? "text-error-600" : "text-success-700 dark:text-success-500"}`}>
                   {row.varianceAtCompletion.toFixed(2)} {currency}
                 </td>
               </tr>
@@ -160,13 +160,13 @@ export function JobCostingPanel({ projectId }: { projectId: string }) {
               <td className="pt-2 text-right">
                 {report.totals.actual.toFixed(2)} {currency}
               </td>
-              <td className={`pt-2 text-right ${report.totals.variance < 0 ? "text-error-600" : "text-success-700"}`}>
+              <td className={`pt-2 text-right ${report.totals.variance < 0 ? "text-error-600" : "text-success-700 dark:text-success-500"}`}>
                 {report.totals.variance.toFixed(2)} {currency}
               </td>
               <td className="pt-2 text-right">
                 {report.totals.estimateAtCompletion.toFixed(2)} {currency}
               </td>
-              <td className={`pt-2 text-right ${report.totals.varianceAtCompletion < 0 ? "text-error-600" : "text-success-700"}`}>
+              <td className={`pt-2 text-right ${report.totals.varianceAtCompletion < 0 ? "text-error-600" : "text-success-700 dark:text-success-500"}`}>
                 {report.totals.varianceAtCompletion.toFixed(2)} {currency}
               </td>
             </tr>
@@ -176,7 +176,7 @@ export function JobCostingPanel({ projectId }: { projectId: string }) {
 
       {history && history.some((m) => m.actual > 0 || m.committed > 0) && (
         <div className="mt-4">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{t("burnDown")}</h3>
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("burnDown")}</h3>
           <div className="card h-56 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={history}>
@@ -194,7 +194,7 @@ export function JobCostingPanel({ projectId }: { projectId: string }) {
       {costCodes.length >= 2 && (
         <div className="mt-4">
           <div className="mb-2 flex items-center justify-between">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">{t("budgetTransfers")}</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("budgetTransfers")}</h3>
             {!transferring && (
               <button onClick={() => setTransferring(true)} className="btn-secondary px-2.5 py-1 text-xs">
                 {t("transferBudget")}
@@ -271,19 +271,19 @@ export function JobCostingPanel({ projectId }: { projectId: string }) {
           )}
 
           {report.transfers.length === 0 ? (
-            <p className="text-sm text-gray-400">{t("noTransfers")}</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noTransfers")}</p>
           ) : (
             <ul className="flex flex-col gap-1.5">
               {report.transfers.map((tr) => (
-                <li key={tr.id} className="rounded-md border border-gray-200 px-3 py-2 text-sm">
+                <li key={tr.id} className="rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm">
                   <div className="flex items-center justify-between">
-                    <span className="font-medium text-gray-900">
+                    <span className="font-medium text-gray-900 dark:text-gray-50">
                       {t("transferLogEntry", { amount: `${tr.amount.toFixed(2)} ${currency}`, from: tr.fromCode, to: tr.toCode })}
                     </span>
-                    <span className="text-xs text-gray-400">{formatDate(new Date(tr.createdAt))}</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500">{formatDate(new Date(tr.createdAt))}</span>
                   </div>
-                  <p className="mt-0.5 text-xs text-gray-500">{tr.reason}</p>
-                  <p className="mt-0.5 text-xs text-gray-400">{tr.createdByName}</p>
+                  <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{tr.reason}</p>
+                  <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{tr.createdByName}</p>
                 </li>
               ))}
             </ul>

@@ -42,9 +42,9 @@ interface DebtServiceSummary {
 }
 
 const STATUS_STYLES: Record<LoanStatus, string> = {
-  active: "bg-brand-50 text-brand-700",
-  paid_off: "bg-success-50 text-success-700",
-  defaulted: "bg-error-50 text-error-700",
+  active: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
+  paid_off: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
+  defaulted: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
 };
 
 export default function LoansPage() {
@@ -135,18 +135,18 @@ export default function LoansPage() {
       {summary && summary.activeLoanCount > 0 && (
         <div className="card mt-4 grid grid-cols-3 gap-3 max-w-lg">
           <div>
-            <div className="text-xs text-gray-500">{t("activeLoans")}</div>
-            <div className="mt-1 text-lg font-semibold text-gray-900">{summary.activeLoanCount}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">{t("activeLoans")}</div>
+            <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-50">{summary.activeLoanCount}</div>
           </div>
           <div>
-            <div className="text-xs text-gray-500">{t("outstandingPrincipal")}</div>
-            <div className="mt-1 text-lg font-semibold text-gray-900">
+            <div className="text-xs text-gray-500 dark:text-gray-400">{t("outstandingPrincipal")}</div>
+            <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-50">
               {summary.outstandingPrincipal} {currency}
             </div>
           </div>
           <div>
-            <div className="text-xs text-gray-500">{t("upcomingDebtService", { months: summary.monthsAhead })}</div>
-            <div className="mt-1 text-lg font-semibold text-gray-900">
+            <div className="text-xs text-gray-500 dark:text-gray-400">{t("upcomingDebtService", { months: summary.monthsAhead })}</div>
+            <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-50">
               {summary.upcomingDebtService} {currency}
             </div>
           </div>
@@ -201,7 +201,7 @@ export default function LoansPage() {
               onChange={(e) => setForm((f) => ({ ...f, termMonths: e.target.value }))}
             />
           </div>
-          <label className="text-xs text-gray-500">
+          <label className="text-xs text-gray-500 dark:text-gray-400">
             {t("startDate")}
             <input required type="date" className="input mt-1" value={form.startDate} onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))} />
           </label>
@@ -218,9 +218,9 @@ export default function LoansPage() {
 
       <div className="mt-6">
         {!loans ? (
-          <p className="text-gray-500">{tc("loading")}</p>
+          <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
         ) : loans.length === 0 ? (
-          <p className="text-gray-500">{t("noLoans")}</p>
+          <p className="text-gray-500 dark:text-gray-400">{t("noLoans")}</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {loans.map((loan) => {
@@ -234,20 +234,20 @@ export default function LoansPage() {
                     onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && toggleExpand(loan.id)}
                     className="flex w-full cursor-pointer items-center justify-between text-left"
                   >
-                    <span className="text-sm font-medium text-gray-900">
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
                       {loan.lenderName}
                       {loan.equipment && (
                         <Link
                           href={`/equipment/${loan.equipment.id}`}
                           onClick={(e) => e.stopPropagation()}
-                          className="ml-1.5 text-xs text-brand-700 hover:underline"
+                          className="ml-1.5 text-xs text-brand-700 dark:text-brand-400 hover:underline"
                         >
                           ({loan.equipment.name})
                         </Link>
                       )}
                     </span>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
                         {loan.principal} {currency} · {loan.interestRatePercent}% · {loan.termMonths}mo
                       </span>
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[loan.status]}`}>{t(`status_${loan.status}`)}</span>
@@ -255,10 +255,10 @@ export default function LoansPage() {
                   </div>
 
                   {expanded && detail && detail.id === loan.id && (
-                    <div className="mt-3 overflow-x-auto border-t border-gray-100 pt-3">
+                    <div className="mt-3 overflow-x-auto border-t border-gray-100 dark:border-gray-700 pt-3">
                       <table className="w-full border-collapse text-sm">
                         <thead>
-                          <tr className="border-b border-gray-200 text-left text-gray-500">
+                          <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
                             <th className="py-1.5">{t("dueDate")}</th>
                             <th>{t("principalPortion")}</th>
                             <th>{t("interestPortion")}</th>
@@ -267,7 +267,7 @@ export default function LoansPage() {
                         </thead>
                         <tbody>
                           {detail.payments.map((p) => (
-                            <tr key={p.id} className="border-b border-gray-100">
+                            <tr key={p.id} className="border-b border-gray-100 dark:border-gray-700">
                               <td className="py-1.5">{formatDate(new Date(p.dueDate))}</td>
                               <td>
                                 {p.principalPortion} {currency}
@@ -277,7 +277,7 @@ export default function LoansPage() {
                               </td>
                               <td>
                                 {p.paidAt ? (
-                                  <span className="text-success-700">{t("paidOn", { date: formatDate(new Date(p.paidAt)) })}</span>
+                                  <span className="text-success-700 dark:text-success-500">{t("paidOn", { date: formatDate(new Date(p.paidAt)) })}</span>
                                 ) : (
                                   <button
                                     onClick={() => recordPayment(loan.id, p.id, p.principalPortion, p.interestPortion)}

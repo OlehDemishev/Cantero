@@ -97,9 +97,9 @@ export function NotificationPreferencesPanel() {
     <>
       {pushStatus !== "unsupported" && (
         <section className="card mt-6">
-          <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("pushNotifications")}</h2>
-          <p className="mb-4 text-xs text-gray-500">{t("pushNotificationsHint")}</p>
-          {pushError && <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{pushError}</p>}
+          <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("pushNotifications")}</h2>
+          <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("pushNotificationsHint")}</p>
+          {pushError && <p className="mb-3 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{pushError}</p>}
           <div className="flex items-center gap-3">
             <button
               onClick={togglePush}
@@ -118,8 +118,8 @@ export function NotificationPreferencesPanel() {
       )}
 
       <section className="card mt-6">
-        <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("emailDigest")}</h2>
-        <p className="mb-4 text-xs text-gray-500">{t("emailDigestHint")}</p>
+        <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("emailDigest")}</h2>
+        <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("emailDigestHint")}</p>
         <div className="flex items-center gap-3">
           <select
             className="input w-auto"
@@ -136,11 +136,11 @@ export function NotificationPreferencesPanel() {
       </section>
 
       <section className="card mt-6">
-        <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("mutedNotificationTypes")}</h2>
-        <p className="mb-4 text-xs text-gray-500">{t("mutedNotificationTypesHint")}</p>
+        <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("mutedNotificationTypes")}</h2>
+        <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("mutedNotificationTypesHint")}</p>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {NOTIFICATION_TYPES.map((type) => (
-            <label key={type} className="flex items-center gap-2 text-sm text-gray-700">
+            <label key={type} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
               <input
                 type="checkbox"
                 checked={!mutedTypes.includes(type)}

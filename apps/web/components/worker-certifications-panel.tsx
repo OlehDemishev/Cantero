@@ -48,11 +48,11 @@ export function WorkerCertificationsPanel({ workerId }: { workerId: string }) {
 
   return (
     <>
-      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700">{t("certifications")}</h2>
+      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("certifications")}</h2>
       {certifications === null ? (
-        <p className="text-sm text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
       ) : certifications.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noCertifications")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noCertifications")}</p>
       ) : (
         <ul className="flex flex-col gap-1.5">
           {certifications.map((cert) => {
@@ -62,11 +62,11 @@ export function WorkerCertificationsPanel({ workerId }: { workerId: string }) {
                 <span>
                   {cert.name}
                   {" — "}
-                  <span className={expired ? "text-error-700" : "text-gray-500"}>
+                  <span className={expired ? "text-error-700 dark:text-error-500" : "text-gray-500 dark:text-gray-400"}>
                     {formatDate(new Date(cert.expiresAt))}
                   </span>
                 </span>
-                <button onClick={() => removeCertification(cert.id)} className="text-gray-400 hover:text-error-600">
+                <button onClick={() => removeCertification(cert.id)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
                   ×
                 </button>
               </li>

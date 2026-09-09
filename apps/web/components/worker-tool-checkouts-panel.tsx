@@ -34,9 +34,9 @@ export function WorkerToolCheckoutsPanel({ workerId, currency }: { workerId: str
   return (
     <>
       <div className="mb-3 mt-8 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700">{tt("checkedOutTools")}</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{tt("checkedOutTools")}</h2>
         {toolLiability && toolLiability.totalCharged > 0 && (
-          <span className="text-xs font-medium text-error-700">
+          <span className="text-xs font-medium text-error-700 dark:text-error-500">
             {tt("totalCharged", { amount: toolLiability.totalCharged, currency })}
           </span>
         )}
@@ -49,18 +49,18 @@ export function WorkerToolCheckoutsPanel({ workerId, currency }: { workerId: str
           <li key={co.id} className="card text-sm">
             <div className="flex items-center justify-between">
               <span>
-                {co.item.name} <span className="text-xs text-gray-400">× {co.quantity}</span>
+                {co.item.name} <span className="text-xs text-gray-400 dark:text-gray-500">× {co.quantity}</span>
               </span>
               <span
                 className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                  !co.returnedAt ? "bg-warning-50 text-warning-700" : "bg-gray-100 text-gray-600"
+                  !co.returnedAt ? "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                 }`}
               >
                 {!co.returnedAt ? tt("stillOut") : tt(`condition_${co.returnCondition}`)}
               </span>
             </div>
             {co.chargeAmount && (
-              <p className="mt-1 text-xs text-error-700">
+              <p className="mt-1 text-xs text-error-700 dark:text-error-500">
                 {tt("chargeAmountLabel", { amount: co.chargeAmount, currency })}
               </p>
             )}

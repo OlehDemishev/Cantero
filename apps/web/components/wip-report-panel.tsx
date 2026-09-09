@@ -51,22 +51,22 @@ export function WipReportPanel({ currency }: { currency: string }) {
     <>
       <div className="mb-3 mt-10 flex items-center justify-between">
         <div>
-          <h2 className="text-sm font-semibold text-gray-700">{t("wipReport")}</h2>
-          <p className="mt-1 text-xs text-gray-500">{t("wipReportHint")}</p>
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("wipReport")}</h2>
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t("wipReportHint")}</p>
         </div>
         <button onClick={downloadWipPdf} disabled={wipExporting} className="btn-secondary shrink-0 px-3 py-1.5 text-xs">
           {wipExporting ? tc("loading") : t("downloadWipPdf")}
         </button>
       </div>
       {!wip ? (
-        <p className="text-gray-500">{tc("loading")}</p>
+        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
       ) : wip.rows.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noProjects")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noProjects")}</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[860px] border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 text-left text-gray-500">
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
                 <th className="py-2">{t("project")}</th>
                 <th className="text-right">{t("contractValue")}</th>
                 <th className="text-right">{t("costsIncurredToDate")}</th>
@@ -78,9 +78,9 @@ export function WipReportPanel({ currency }: { currency: string }) {
             </thead>
             <tbody>
               {wip.rows.map((row) => (
-                <tr key={row.projectId} className="border-b border-gray-100">
+                <tr key={row.projectId} className="border-b border-gray-100 dark:border-gray-700">
                   <td className="py-2">
-                    <a href={`/projects/${row.projectId}`} className="text-brand-700 hover:underline">
+                    <a href={`/projects/${row.projectId}`} className="text-brand-700 dark:text-brand-400 hover:underline">
                       {row.projectName}
                     </a>
                   </td>
@@ -101,10 +101,10 @@ export function WipReportPanel({ currency }: { currency: string }) {
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                         row.status === "overbilled"
-                          ? "bg-warning-50 text-warning-700"
+                          ? "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500"
                           : row.status === "underbilled"
-                            ? "bg-brand-50 text-brand-700"
-                            : "bg-gray-100 text-gray-500"
+                            ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400"
+                            : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
                       }`}
                     >
                       {row.overUnderBilling} {currency}

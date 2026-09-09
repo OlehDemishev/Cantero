@@ -28,15 +28,15 @@ export function EquipmentRentalHistoryPanel({ equipmentId, currency }: { equipme
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700">{t("rentalHistory")}</h2>
-      <p className="mb-3 text-xs text-gray-500">{t("rentalHistoryHint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("rentalHistory")}</h2>
+      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("rentalHistoryHint")}</p>
       {!rentals || rentals.length === 0 ? (
-        <p className="text-sm text-gray-400">{t("noRentals")}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noRentals")}</p>
       ) : (
         <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-gray-200 text-left text-gray-500">
+            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
               <th className="py-2">{t("renter")}</th>
               <th>{t("dailyRate")}</th>
               <th>{t("rentalStart")}</th>
@@ -46,11 +46,11 @@ export function EquipmentRentalHistoryPanel({ equipmentId, currency }: { equipme
           </thead>
           <tbody>
             {rentals.map((r) => (
-              <tr key={r.id} className="border-b border-gray-100">
+              <tr key={r.id} className="border-b border-gray-100 dark:border-gray-700">
                 <td className="py-2">
                   {r.renterName}
                   {!r.actualReturnDate && (
-                    <span className="ml-1.5 rounded-full bg-brand-50 px-1.5 py-0.5 text-[10px] font-medium text-brand-700">
+                    <span className="ml-1.5 rounded-full bg-brand-50 dark:bg-brand-500/15 px-1.5 py-0.5 text-[10px] font-medium text-brand-700 dark:text-brand-400">
                       {t("rentalActive")}
                     </span>
                   )}
