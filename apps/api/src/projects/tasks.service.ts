@@ -17,6 +17,14 @@ const LOOK_AHEAD_INCLUDE = {
   predecessorLinks: { include: { predecessor: { select: { id: true, name: true, status: true } } } },
 } as const;
 
+/** Not cursor-paginated like most other list endpoints: the scheduling panel needs every task in
+ * the project at once to render dependency links, the Gantt view, and critical-path highlighting
+ * — a truncated page would silently break those, not just show fewer rows. Growth here is bounded
+ * by project scope rather than company lifetime (a schedule realistically has dozens to a few
+ * hundred tasks), so this cap exists only as a backstop against a pathological outlier, not as a
+ * page size a user is expected to hit. */
+const TASKS_QUERY_CAP = 5000;
+
 @Injectable()
 export class TasksService {
   constructor(
@@ -30,6 +38,7 @@ export class TasksService {
       where: { projectId },
       include: INCLUDE_DEPENDENCIES,
       orderBy: [{ sortOrder: "asc" }, { startDate: "asc" }],
+      take: TASKS_QUERY_CAP,
     });
   }
 
@@ -50,6 +59,7 @@ export class TasksService {
 
     return this.prisma.task.create({
       data: {
+        companyId,
         projectId: input.projectId,
         name: input.name,
         estimateLineId: input.estimateLineId,

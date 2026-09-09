@@ -387,6 +387,8 @@ model Company {
   rateCatalogItems                RateCatalogItem[]
   assemblies                      Assembly[]
   projects                        Project[]
+  tasks                           Task[]
+  outboxEvents                    OutboxEvent[]
   clients                         Client[]
   estimates                       Estimate[]
   invoices                        Invoice[]
@@ -617,6 +619,11 @@ model WebhookEndpoint {
 model WebhookDelivery {
   id                String   @id @default(uuid())
   webhookEndpointId String
+  /// Set when this delivery was produced by the OutboxProcessor — null for older rows and for
+  /// notifyChat (Slack/Teams) deliveries, which aren't outbox-backed. Paired with
+  /// webhookEndpointId in a unique constraint so a retried outbox job can tell it already
+  /// delivered to this endpoint and skip re-sending instead of double-posting.
+  outboxEventId     String?
   event             String
   success           Boolean
   statusCode        Int?
@@ -624,9 +631,45 @@ model WebhookDelivery {
   createdAt         DateTime @default(now())
 
   endpoint WebhookEndpoint @relation(fields: [webhookEndpointId], references: [id], onDelete: Cascade)
+  outboxEvent OutboxEvent? @relation(fields: [outboxEventId], references: [id], onDelete: SetNull)
 
+  @@unique([outboxEventId, webhookEndpointId])
   @@index([webhookEndpointId, createdAt])
   @@map("webhook_deliveries")
+}
+
+enum OutboxEventStatus {
+  pending
+  processing
+  delivered
+  failed
+}
+
+/// Transactional outbox for webhook delivery: callers write a row here in the SAME
+/// prisma.$transaction() as the business event that triggers it (see OutboxService.enqueue), so
+/// a process crash after commit still leaves a durable pending event — nothing is lost the way a
+/// bare fire-and-forget WebhooksService.trigger() call could lose it. A separate polling
+/// BullMQ worker (OutboxProcessor) picks up pending rows and delivers them with retry/backoff.
+/// See AUDIT-2026-09-07.md "Доставка интеграций ненадёжна".
+model OutboxEvent {
+  id            String            @id @default(uuid())
+  companyId     String
+  /// Event name, e.g. "invoice.sent" — matched against WebhookEndpoint.events at delivery time.
+  event         String
+  payload       Json
+  status        OutboxEventStatus @default(pending)
+  attempts      Int               @default(0)
+  lastError     String?
+  nextAttemptAt DateTime          @default(now())
+  createdAt     DateTime          @default(now())
+  deliveredAt   DateTime?
+
+  company    Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  deliveries WebhookDelivery[]
+
+  @@index([status, nextAttemptAt])
+  @@index([companyId, createdAt])
+  @@map("outbox_events")
 }
 
 model User {
@@ -1648,6 +1691,7 @@ model Supplier {
   vendorBills                 VendorBill[]
   longLeadItems               LongLeadItem[]
 
+  @@unique([id, companyId])
   @@index([companyId])
   @@map("suppliers")
 }
@@ -1812,7 +1856,9 @@ model PurchaseOrder {
   supplierEta    DateTime?
   supplierNote   String?
 
-  supplier               Supplier               @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  /// Composite FK (not just supplierId) so the DB rejects a PO pointing at a supplier belonging
+  /// to a different company — see AUDIT-2026-09-07.md "составные FK".
+  supplier               Supplier               @relation(fields: [supplierId, companyId], references: [id, companyId], onDelete: Restrict)
   lines                  PurchaseOrderLine[]
   vendorBills            VendorBill[]
   receivingDiscrepancies ReceivingDiscrepancy[]
@@ -2054,6 +2100,7 @@ model Project {
   longLeadItems               LongLeadItem[]
   costCodeBudgetTransfers     CostCodeBudgetTransfer[]
 
+  @@unique([id, companyId])
   @@index([companyId])
   @@map("projects")
 }
@@ -2253,6 +2300,7 @@ model ProjectMember {
 
 model Task {
   id             String     @id @default(uuid())
+  companyId      String
   projectId      String
   estimateLineId String?
   name           String
@@ -2264,7 +2312,10 @@ model Task {
   /// weather-risk notification can flag it when the forecast for its startDate turns bad.
   isOutdoorWork  Boolean    @default(false)
 
-  project             Project                        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  company             Company                        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  /// Composite FK (not just projectId) so the DB itself rejects a task pointing at a project
+  /// belonging to a different company — see AUDIT-2026-09-07.md's "составные FK" recommendation.
+  project             Project                        @relation(fields: [projectId, companyId], references: [id, companyId], onDelete: Cascade)
   estimateLine        EstimateLine?                  @relation(fields: [estimateLineId], references: [id], onDelete: SetNull)
   timeEntries         TimeEntry[]
   /// Dependencies where this task is the successor (i.e. what this task waits on).
@@ -2277,6 +2328,7 @@ model Task {
   scenarioOverrides   ScheduleScenarioTaskOverride[]
   commitments         TaskCommitment[]
 
+  @@index([companyId])
   @@index([projectId])
   @@map("tasks")
 }
@@ -2662,8 +2714,10 @@ model Invoice {
   lastLateFeeAccrualAt       DateTime?
 
   company          Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  project          Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  client           Client               @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  /// Composite FKs (not just projectId/clientId) so the DB rejects an invoice pointing at a
+  /// project or client belonging to a different company — see AUDIT-2026-09-07.md "составные FK".
+  project          Project              @relation(fields: [projectId, companyId], references: [id, companyId], onDelete: Cascade)
+  client           Client               @relation(fields: [clientId, companyId], references: [id, companyId], onDelete: Restrict)
   estimate         Estimate?            @relation(fields: [estimateId], references: [id], onDelete: SetNull)
   recurringInvoice RecurringInvoice?    @relation(fields: [recurringInvoiceId], references: [id], onDelete: SetNull)
   taxJurisdiction  TaxJurisdiction?     @relation(fields: [taxJurisdictionId], references: [id], onDelete: SetNull)
@@ -4247,6 +4301,7 @@ model Client {
   taxExemptCertificates TaxExemptionCertificate[]
   changeRequests        ClientChangeRequest[]
 
+  @@unique([id, companyId])
   @@index([companyId])
   @@index([ownerWorkerId])
   @@index([referredByClientId])

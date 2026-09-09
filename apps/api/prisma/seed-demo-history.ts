@@ -576,9 +576,9 @@ async function seedHotelProjectDepth(base: Base) {
 
   await prisma.task.createMany({
     data: [
-      { projectId: base.projectHotel.id, name: "Оздоблювальні роботи 1-го поверху", status: "in_progress", startDate: daysFromNow(-25), dueDate: daysFromNow(10) },
-      { projectId: base.projectHotel.id, name: "Оздоблювальні роботи 2-го поверху", status: "planned", startDate: daysFromNow(11), dueDate: daysFromNow(40) },
-      { projectId: base.projectHotel.id, name: "Фінальне прибирання та здача", status: "planned", startDate: daysFromNow(55), dueDate: daysFromNow(60) },
+      { companyId: base.companyId, projectId: base.projectHotel.id, name: "Оздоблювальні роботи 1-го поверху", status: "in_progress", startDate: daysFromNow(-25), dueDate: daysFromNow(10) },
+      { companyId: base.companyId, projectId: base.projectHotel.id, name: "Оздоблювальні роботи 2-го поверху", status: "planned", startDate: daysFromNow(11), dueDate: daysFromNow(40) },
+      { companyId: base.companyId, projectId: base.projectHotel.id, name: "Фінальне прибирання та здача", status: "planned", startDate: daysFromNow(55), dueDate: daysFromNow(60) },
     ],
   });
 

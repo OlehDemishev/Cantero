@@ -431,10 +431,18 @@ async function seedUkrainianShowcase(base: SeedCompanyResult) {
 
   // ---------- Tasks, daily log, punch list, RFI ----------
   const taskDemo = await prisma.task.create({
-    data: { projectId: projectHotel.id, name: "Демонтажні роботи", status: "done", startDate: daysFromNow(-20), dueDate: daysFromNow(-10) },
+    data: {
+      companyId,
+      projectId: projectHotel.id,
+      name: "Демонтажні роботи",
+      status: "done",
+      startDate: daysFromNow(-20),
+      dueDate: daysFromNow(-10),
+    },
   });
   await prisma.task.create({
     data: {
+      companyId,
       projectId: projectHotel.id,
       name: "Фундаментні та бетонні роботи",
       status: "in_progress",
@@ -444,6 +452,7 @@ async function seedUkrainianShowcase(base: SeedCompanyResult) {
   });
   await prisma.task.create({
     data: {
+      companyId,
       projectId: projectHotel.id,
       name: "Покрівельні роботи",
       status: "planned",
