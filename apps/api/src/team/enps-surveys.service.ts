@@ -7,7 +7,7 @@ import type { Locale, SubmitEnpsSurveyInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { SmsService } from "../common/sms/sms.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 import { ENPS_SURVEYS_QUEUE } from "../common/queue/queue.module";
 import { bucketEnpsTrendByMonth } from "./enps-trend-bucket";
 
@@ -40,7 +40,7 @@ export class EnpsSurveysService implements OnModuleInit {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly sms: SmsService,
-    private readonly webhooks: WebhooksService,
+    private readonly outbox: OutboxService,
     private readonly config: ConfigService,
     @InjectQueue(ENPS_SURVEYS_QUEUE) private readonly queue: Queue,
   ) {}
@@ -100,14 +100,17 @@ export class EnpsSurveysService implements OnModuleInit {
     if (!survey) throw new NotFoundException("Survey link not found");
     if (survey.respondedAt) throw new BadRequestException("This survey has already been submitted");
 
-    const updated = await this.prisma.enpsSurvey.update({
-      where: { id: survey.id },
-      data: { score: input.score, comment: input.comment, respondedAt: new Date() },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.enpsSurvey.update({
+        where: { id: survey.id },
+        data: { score: input.score, comment: input.comment, respondedAt: new Date() },
+      });
+      await this.outbox.enqueue(tx, survey.companyId, "enps_survey.responded", { score: input.score, comment: input.comment ?? null });
+      return updated;
     });
-
-    this.webhooks.trigger(survey.companyId, "enps_survey.responded", { score: input.score, comment: input.comment ?? null });
     return updated;
   }
+
 
   /** Same standard NPS formula as NpsSurveysService.trend, aggregate only — no per-worker
    * breakdown, so a respondent is never identifiable from this view. */

@@ -2,7 +2,7 @@ import { Test } from "@nestjs/testing";
 import { MaterialCatalogService } from "./material-catalog.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService } from "../common/audit/audit.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 
 const COMPANY_A = "company-a";
 const ACTOR = { userId: "user-1", name: "Estimator" };
@@ -14,9 +14,10 @@ describe("MaterialCatalogService — price changes", () => {
     materialPriceChange: { create: jest.Mock; findMany: jest.Mock };
     rateCatalogItemMaterial: { findMany: jest.Mock };
     estimate: { findMany: jest.Mock };
+    $transaction: jest.Mock;
   };
   let audit: { record: jest.Mock };
-  let webhooks: { trigger: jest.Mock };
+  let outbox: { enqueue: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -24,16 +25,17 @@ describe("MaterialCatalogService — price changes", () => {
       materialPriceChange: { create: jest.fn(), findMany: jest.fn() },
       rateCatalogItemMaterial: { findMany: jest.fn() },
       estimate: { findMany: jest.fn() },
+      $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
     };
     audit = { record: jest.fn() };
-    webhooks = { trigger: jest.fn() };
+    outbox = { enqueue: jest.fn() };
 
     const module = await Test.createTestingModule({
       providers: [
         MaterialCatalogService,
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: audit },
-        { provide: WebhooksService, useValue: webhooks },
+        { provide: OutboxService, useValue: outbox },
       ],
     }).compile();
 
@@ -51,7 +53,7 @@ describe("MaterialCatalogService — price changes", () => {
         expect.objectContaining({ where: { id: "mat-1" }, data: { defaultUnitPrice: 10.5 } }),
       );
       expect(prisma.materialPriceChange.create).not.toHaveBeenCalled();
-      expect(webhooks.trigger).not.toHaveBeenCalled();
+      expect(outbox.enqueue).not.toHaveBeenCalled();
     });
 
     it("logs a change record, audits, and fires a webhook for a significant price swing", async () => {
@@ -65,7 +67,8 @@ describe("MaterialCatalogService — price changes", () => {
         data: { companyId: COMPANY_A, materialCatalogItemId: "mat-1", oldPrice: 10, newPrice: 13, changePercent: 30, changedByUserId: "user-1", changedByName: "Estimator" },
       });
       expect(audit.record).toHaveBeenCalled();
-      expect(webhooks.trigger).toHaveBeenCalledWith(
+      expect(outbox.enqueue).toHaveBeenCalledWith(
+        prisma,
         COMPANY_A,
         "material.price_changed",
         expect.objectContaining({ materialCatalogItemId: "mat-1", changePercent: 30 }),

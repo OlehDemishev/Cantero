@@ -3,7 +3,7 @@ import { Test } from "@nestjs/testing";
 import { SubmittalsService } from "./submittals.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService } from "../common/audit/audit.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 
 const COMPANY_A = "company-a";
 const ACTOR = { userId: "user-1", name: "PM" };
@@ -13,24 +13,26 @@ describe("SubmittalsService", () => {
   let prisma: {
     project: { findFirst: jest.Mock };
     submittal: { findFirst: jest.Mock; count: jest.Mock; create: jest.Mock; update: jest.Mock };
+    $transaction: jest.Mock;
   };
   let audit: { record: jest.Mock };
-  let webhooks: { trigger: jest.Mock };
+  let outbox: { enqueue: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
       project: { findFirst: jest.fn() },
       submittal: { findFirst: jest.fn(), count: jest.fn(), create: jest.fn(), update: jest.fn() },
+      $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
     };
     audit = { record: jest.fn() };
-    webhooks = { trigger: jest.fn() };
+    outbox = { enqueue: jest.fn() };
 
     const module = await Test.createTestingModule({
       providers: [
         SubmittalsService,
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: audit },
-        { provide: WebhooksService, useValue: webhooks },
+        { provide: OutboxService, useValue: outbox },
       ],
     }).compile();
 
@@ -82,7 +84,7 @@ describe("SubmittalsService", () => {
 
       await service.review(COMPANY_A, ACTOR, "s-1", { decision: "approved_as_noted" });
 
-      expect(webhooks.trigger).toHaveBeenCalledWith(COMPANY_A, "submittal.approved", expect.objectContaining({ submittalId: "s-1" }));
+      expect(outbox.enqueue).toHaveBeenCalledWith(prisma, COMPANY_A, "submittal.approved", expect.objectContaining({ submittalId: "s-1" }));
     });
 
     it("maps a revise-and-resubmit decision to submittal.revise_requested", async () => {
@@ -91,7 +93,7 @@ describe("SubmittalsService", () => {
 
       await service.review(COMPANY_A, ACTOR, "s-1", { decision: "revise_and_resubmit" });
 
-      expect(webhooks.trigger).toHaveBeenCalledWith(COMPANY_A, "submittal.revise_requested", expect.objectContaining({ submittalId: "s-1" }));
+      expect(outbox.enqueue).toHaveBeenCalledWith(prisma, COMPANY_A, "submittal.revise_requested", expect.objectContaining({ submittalId: "s-1" }));
     });
   });
 

@@ -2,7 +2,7 @@ import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { SupplierPortalService } from "./supplier-portal.service";
 import { PrismaService } from "../common/prisma/prisma.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 
 const SUPPLIER_A = { supplierId: "supplier-a", companyId: "company-a" };
 
@@ -10,20 +10,22 @@ describe("SupplierPortalService", () => {
   let service: SupplierPortalService;
   let prisma: {
     purchaseOrder: { findFirst: jest.Mock; update: jest.Mock };
+    $transaction: jest.Mock;
   };
-  let webhooks: { trigger: jest.Mock };
+  let outbox: { enqueue: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
       purchaseOrder: { findFirst: jest.fn(), update: jest.fn() },
+      $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
     };
-    webhooks = { trigger: jest.fn() };
+    outbox = { enqueue: jest.fn() };
 
     const module = await Test.createTestingModule({
       providers: [
         SupplierPortalService,
         { provide: PrismaService, useValue: prisma },
-        { provide: WebhooksService, useValue: webhooks },
+        { provide: OutboxService, useValue: outbox },
       ],
     }).compile();
 
@@ -64,7 +66,7 @@ describe("SupplierPortalService", () => {
           data: expect.objectContaining({ supplierEta: new Date("2026-10-01T00:00:00.000Z"), supplierNote: "Shipping Monday" }),
         }),
       );
-      expect(webhooks.trigger).toHaveBeenCalledWith("company-a", "purchase_order.acknowledged", { purchaseOrderId: "po-1" });
+      expect(outbox.enqueue).toHaveBeenCalledWith(prisma, "company-a", "purchase_order.acknowledged", { purchaseOrderId: "po-1" });
     });
   });
 });

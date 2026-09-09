@@ -18,6 +18,7 @@ import {
   PERMIT_EXPIRING_QUEUE,
   CHANGE_ORDER_REMINDERS_QUEUE,
   ENPS_SURVEYS_QUEUE,
+  OUTBOX_QUEUE,
 } from "./queue.module";
 
 /**
@@ -25,9 +26,9 @@ import {
  * flags, ...) previously had zero failure reporting: a thrown error inside a job handler just
  * left that job marked "failed" in Redis, with nothing surfacing to a human anywhere. One
  * BullMQ `QueueEvents` listener per queue, attached centrally here instead of 14 individual
- * try/catch blocks copy-pasted into each processor, reports every job failure to Sentry — a new
- * queue registered later in queue.module.ts inherits this automatically by being added to the
- * list in onModuleInit() below, rather than needing its own error handling remembered.
+ * try/catch blocks copy-pasted into each processor, reports every job failure to Sentry.
+ * NOTE: this does NOT happen automatically — a queue registered in queue.module.ts still has to
+ * be added to the allQueueNames list below by hand, or its failures go unreported silently.
  */
 @Injectable()
 export class QueueFailureReporterService implements OnModuleInit, OnModuleDestroy {
@@ -60,6 +61,7 @@ export class QueueFailureReporterService implements OnModuleInit, OnModuleDestro
       PERMIT_EXPIRING_QUEUE,
       CHANGE_ORDER_REMINDERS_QUEUE,
       ENPS_SURVEYS_QUEUE,
+      OUTBOX_QUEUE,
     ];
     for (const queueName of allQueueNames) {
       const events = new QueueEvents(queueName, {

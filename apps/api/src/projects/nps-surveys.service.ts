@@ -5,7 +5,7 @@ import type { SubmitNpsSurveyInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 import { MessageTemplatesService } from "../message-templates/message-templates.service";
 
 const PROMOTER_MIN_SCORE = 9;
@@ -19,7 +19,7 @@ export class NpsSurveysService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly mail: MailService,
-    private readonly webhooks: WebhooksService,
+    private readonly outbox: OutboxService,
     private readonly config: ConfigService,
     private readonly messageTemplates: MessageTemplatesService,
   ) {}
@@ -67,21 +67,23 @@ export class NpsSurveysService {
     if (!survey) throw new NotFoundException("Survey link not found");
     if (survey.respondedAt) throw new BadRequestException("This survey has already been submitted");
 
-    const updated = await this.prisma.npsSurvey.update({
-      where: { id: survey.id },
-      data: { score: input.score, comment: input.comment, respondedAt: new Date() },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.npsSurvey.update({
+        where: { id: survey.id },
+        data: { score: input.score, comment: input.comment, respondedAt: new Date() },
+      });
+      await this.outbox.enqueue(tx, survey.companyId, "nps_survey.responded", {
+        projectId: survey.projectId,
+        projectName: survey.project.name,
+        score: input.score,
+        comment: input.comment ?? null,
+      });
+      return updated;
     });
 
     if (input.score <= DETRACTOR_MAX_SCORE) {
       await this.createDetractorFollowUp(survey.companyId, survey.project, updated);
     }
-
-    this.webhooks.trigger(survey.companyId, "nps_survey.responded", {
-      projectId: survey.projectId,
-      projectName: survey.project.name,
-      score: input.score,
-      comment: input.comment ?? null,
-    });
 
     return updated;
   }
@@ -103,6 +105,7 @@ export class NpsSurveysService {
     const maxSort = await this.prisma.task.aggregate({ where: { projectId: project.id }, _max: { sortOrder: true } });
     await this.prisma.task.create({
       data: {
+        companyId,
         projectId: project.id,
         name: `Follow up on low NPS score (${survey.score}/10)${project.client ? ` from ${project.client.name}` : ""}`,
         dueDate: new Date(Date.now() + DETRACTOR_FOLLOWUP_DUE_DAYS * DAY_MS),

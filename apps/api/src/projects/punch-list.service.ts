@@ -8,7 +8,7 @@ import type {
 } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 import { PdfService } from "../common/pdf/pdf.service";
 import { StorageService } from "../common/storage/storage.service";
 import { ProjectAccessService } from "../common/project-access/project-access.service";
@@ -18,7 +18,7 @@ export class PunchListService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
-    private readonly webhooks: WebhooksService,
+    private readonly outbox: OutboxService,
     private readonly pdf: PdfService,
     private readonly storage: StorageService,
     private readonly projectAccess: ProjectAccessService,
@@ -127,13 +127,16 @@ export class PunchListService {
     const item = await this.get(companyId, id, userId, role);
     if (item.status !== "open") throw new BadRequestException(`Item is already ${item.status}`);
 
-    const updated = await this.prisma.punchListItem.update({
-      where: { id: item.id },
-      data: { status: "resolved", resolvedAt: new Date(), resolvedByUserId: actor.userId, resolvedByName: actor.name },
-      include: { assignee: { select: { id: true, name: true } }, assigneeSubcontractor: { select: { id: true, name: true } } },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.punchListItem.update({
+        where: { id: item.id },
+        data: { status: "resolved", resolvedAt: new Date(), resolvedByUserId: actor.userId, resolvedByName: actor.name },
+        include: { assignee: { select: { id: true, name: true } }, assigneeSubcontractor: { select: { id: true, name: true } } },
+      });
+      await this.outbox.enqueue(tx, companyId, "punch_list.resolved", { punchListItemId: item.id, title: item.title });
+      return updated;
     });
     this.audit.record(companyId, actor, "punch_list.resolved", "PunchListItem", item.id, `Marked "${item.title}" resolved`);
-    this.webhooks.trigger(companyId, "punch_list.resolved", { punchListItemId: item.id, title: item.title });
     return updated;
   }
 
@@ -141,13 +144,16 @@ export class PunchListService {
     const item = await this.get(companyId, id, userId, role);
     if (item.status !== "resolved") throw new BadRequestException("Only a resolved item can be verified");
 
-    const updated = await this.prisma.punchListItem.update({
-      where: { id: item.id },
-      data: { status: "verified", verifiedAt: new Date(), verifiedByUserId: actor.userId, verifiedByName: actor.name },
-      include: { assignee: { select: { id: true, name: true } }, assigneeSubcontractor: { select: { id: true, name: true } } },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.punchListItem.update({
+        where: { id: item.id },
+        data: { status: "verified", verifiedAt: new Date(), verifiedByUserId: actor.userId, verifiedByName: actor.name },
+        include: { assignee: { select: { id: true, name: true } }, assigneeSubcontractor: { select: { id: true, name: true } } },
+      });
+      await this.outbox.enqueue(tx, companyId, "punch_list.verified", { punchListItemId: item.id, title: item.title });
+      return updated;
     });
     this.audit.record(companyId, actor, "punch_list.verified", "PunchListItem", item.id, `Verified fix for "${item.title}"`);
-    this.webhooks.trigger(companyId, "punch_list.verified", { punchListItemId: item.id, title: item.title });
     return updated;
   }
 

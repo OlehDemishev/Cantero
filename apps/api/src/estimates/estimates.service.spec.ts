@@ -7,7 +7,7 @@ import { PdfService } from "../common/pdf/pdf.service";
 import { StorageService } from "../common/storage/storage.service";
 import { AuditService } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 
 const COMPANY_A = "company-a";
 const OTHER_COMPANY_ESTIMATE = {
@@ -43,7 +43,7 @@ describe("EstimatesService — currency resolution", () => {
         { provide: AuditService, useValue: { record: jest.fn(), list: jest.fn() } },
         { provide: ConfigService, useValue: { get: jest.fn(), getOrThrow: jest.fn() } },
         { provide: MailService, useValue: { send: jest.fn() } },
-        { provide: WebhooksService, useValue: { trigger: jest.fn() } },
+        { provide: OutboxService, useValue: { enqueue: jest.fn() } },
       ],
     }).compile();
 
@@ -121,7 +121,7 @@ describe("EstimatesService — hideCostDataFromRoles", () => {
         { provide: AuditService, useValue: { record: jest.fn(), list: jest.fn() } },
         { provide: ConfigService, useValue: { get: jest.fn(), getOrThrow: jest.fn() } },
         { provide: MailService, useValue: { send: jest.fn() } },
-        { provide: WebhooksService, useValue: { trigger: jest.fn() } },
+        { provide: OutboxService, useValue: { enqueue: jest.fn() } },
       ],
     }).compile();
 
@@ -183,6 +183,7 @@ describe("EstimatesService — cross-tenant isolation", () => {
     project: { findFirst: jest.Mock };
     rateCatalogItem: { findFirst: jest.Mock };
     estimateLine: { create: jest.Mock };
+    $transaction: jest.Mock;
   };
 
   beforeEach(async () => {
@@ -191,6 +192,7 @@ describe("EstimatesService — cross-tenant isolation", () => {
       project: { findFirst: jest.fn() },
       rateCatalogItem: { findFirst: jest.fn() },
       estimateLine: { create: jest.fn() },
+      $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
     };
 
     const module = await Test.createTestingModule({
@@ -202,7 +204,7 @@ describe("EstimatesService — cross-tenant isolation", () => {
         { provide: AuditService, useValue: { record: jest.fn(), list: jest.fn() } },
         { provide: ConfigService, useValue: { get: jest.fn(), getOrThrow: jest.fn() } },
         { provide: MailService, useValue: { send: jest.fn() } },
-        { provide: WebhooksService, useValue: { trigger: jest.fn() } },
+        { provide: OutboxService, useValue: { enqueue: jest.fn() } },
       ],
     }).compile();
 
@@ -338,7 +340,7 @@ describe("EstimatesService — approval chains", () => {
         { provide: AuditService, useValue: { record: jest.fn(), list: jest.fn() } },
         { provide: ConfigService, useValue: { get: jest.fn(), getOrThrow: jest.fn() } },
         { provide: MailService, useValue: { send: jest.fn() } },
-        { provide: WebhooksService, useValue: { trigger: jest.fn() } },
+        { provide: OutboxService, useValue: { enqueue: jest.fn() } },
       ],
     }).compile();
 
@@ -421,7 +423,7 @@ describe("EstimatesService.suggestedLines", () => {
         { provide: AuditService, useValue: { record: jest.fn(), list: jest.fn() } },
         { provide: ConfigService, useValue: { get: jest.fn(), getOrThrow: jest.fn() } },
         { provide: MailService, useValue: { send: jest.fn() } },
-        { provide: WebhooksService, useValue: { trigger: jest.fn() } },
+        { provide: OutboxService, useValue: { enqueue: jest.fn() } },
       ],
     }).compile();
 
@@ -490,7 +492,7 @@ describe("EstimatesService.addAssemblyToEstimate", () => {
         { provide: AuditService, useValue: { record: jest.fn(), list: jest.fn() } },
         { provide: ConfigService, useValue: { get: jest.fn(), getOrThrow: jest.fn() } },
         { provide: MailService, useValue: { send: jest.fn() } },
-        { provide: WebhooksService, useValue: { trigger: jest.fn() } },
+        { provide: OutboxService, useValue: { enqueue: jest.fn() } },
       ],
     }).compile();
 
@@ -553,7 +555,7 @@ describe("EstimatesService.diffRevisions", () => {
         { provide: AuditService, useValue: { record: jest.fn(), list: jest.fn() } },
         { provide: ConfigService, useValue: { get: jest.fn(), getOrThrow: jest.fn() } },
         { provide: MailService, useValue: { send: jest.fn() } },
-        { provide: WebhooksService, useValue: { trigger: jest.fn() } },
+        { provide: OutboxService, useValue: { enqueue: jest.fn() } },
       ],
     }).compile();
 
@@ -596,6 +598,7 @@ describe("EstimatesService.declineOnBehalfOfClient", () => {
   let service: EstimatesService;
   let prisma: {
     estimate: { findFirst: jest.Mock; update: jest.Mock; updateMany: jest.Mock };
+    $transaction: jest.Mock;
   };
   let audit: { record: jest.Mock };
   const ACTOR = { userId: "user-1", name: "Jordan Reyes" };
@@ -603,6 +606,7 @@ describe("EstimatesService.declineOnBehalfOfClient", () => {
   beforeEach(async () => {
     prisma = {
       estimate: { findFirst: jest.fn(), update: jest.fn(), updateMany: jest.fn() },
+      $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
     };
     audit = { record: jest.fn() };
 
@@ -615,7 +619,7 @@ describe("EstimatesService.declineOnBehalfOfClient", () => {
         { provide: AuditService, useValue: audit },
         { provide: ConfigService, useValue: { get: jest.fn(), getOrThrow: jest.fn() } },
         { provide: MailService, useValue: { send: jest.fn() } },
-        { provide: WebhooksService, useValue: { trigger: jest.fn() } },
+        { provide: OutboxService, useValue: { enqueue: jest.fn() } },
       ],
     }).compile();
 

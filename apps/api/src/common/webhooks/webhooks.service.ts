@@ -103,7 +103,7 @@ export class WebhooksService {
       .findMany({ where: { companyId, active: true, events: { has: event } } })
       .then((endpoints) => {
         for (const endpoint of endpoints) {
-          this.deliver(endpoint.id, endpoint.url, endpoint.secret, event, payload).catch((err) => Sentry.captureException(err));
+          this.deliverToEndpoint(endpoint, event, payload).catch((err) => Sentry.captureException(err));
         }
       })
       .catch((err) => Sentry.captureException(err));
@@ -114,7 +114,7 @@ export class WebhooksService {
   /** Posts the same event that just fired to whichever chat webhooks the company has
    * configured — same simple `{"text": "..."}` payload shape both Slack and (legacy) Microsoft
    * Teams incoming webhooks accept, so one formatter covers both without per-provider branching. */
-  private async notifyChat(companyId: string, event: WebhookEvent, payload: Record<string, unknown>): Promise<void> {
+  async notifyChat(companyId: string, event: WebhookEvent, payload: Record<string, unknown>): Promise<void> {
     const company = await this.prisma.company.findUnique({
       where: { id: companyId },
       select: { slackWebhookUrl: true, teamsWebhookUrl: true },
@@ -141,13 +141,18 @@ export class WebhooksService {
     }
   }
 
-  private async deliver(
-    endpointId: string,
-    url: string,
-    secret: string,
+  /** Delivers one event to one endpoint and records the outcome. Shared by the legacy
+   * fire-and-forget trigger() path and OutboxProcessor's durable-retry path — outboxEventId is
+   * set only for the latter, so a retried delivery can be told apart from a fresh one (see the
+   * unique constraint on WebhookDelivery(outboxEventId, webhookEndpointId)). Returns whether the
+   * delivery succeeded so the outbox processor can decide whether to retry. */
+  async deliverToEndpoint(
+    endpoint: { id: string; url: string; secret: string },
     event: string,
     payload: Record<string, unknown>,
-  ): Promise<void> {
+    outboxEventId?: string,
+  ): Promise<boolean> {
+    const { id: endpointId, url, secret } = endpoint;
     const body = JSON.stringify({ event, data: payload, timestamp: new Date().toISOString() });
     const signature = createHmac("sha256", secret).update(body).digest("hex");
 
@@ -188,8 +193,40 @@ export class WebhooksService {
     await this.prisma.webhookEndpoint
       .update({ where: { id: endpointId }, data: { lastDeliveryAt: new Date(), lastDeliveryStatus: success ? "success" : "failed" } })
       .catch((err) => Sentry.captureException(err));
-    await this.prisma.webhookDelivery
-      .create({ data: { webhookEndpointId: endpointId, event, success, statusCode, error } })
-      .catch((err) => Sentry.captureException(err));
+
+    // Outbox path: one WebhookDelivery row per (outboxEvent, endpoint) — a retry updates the same
+    // row's outcome rather than inserting a second one (which the unique constraint would reject
+    // anyway). Legacy trigger() path (outboxEventId undefined -> stored as NULL) keeps inserting a
+    // fresh log row per attempt, since NULLs don't collide against the unique index.
+    if (outboxEventId) {
+      await this.prisma.webhookDelivery
+        .upsert({
+          where: { outboxEventId_webhookEndpointId: { outboxEventId, webhookEndpointId: endpointId } },
+          create: { webhookEndpointId: endpointId, outboxEventId, event, success, statusCode, error },
+          update: { success, statusCode, error, createdAt: new Date() },
+        })
+        .catch((err) => Sentry.captureException(err));
+    } else {
+      await this.prisma.webhookDelivery
+        .create({ data: { webhookEndpointId: endpointId, event, success, statusCode, error } })
+        .catch((err) => Sentry.captureException(err));
+    }
+
+    return success;
+  }
+
+  /** Endpoints currently subscribed to an event, for OutboxProcessor to fan an outbox row out to. */
+  findActiveEndpoints(companyId: string, event: string) {
+    return this.prisma.webhookEndpoint.findMany({ where: { companyId, active: true, events: { has: event } } });
+  }
+
+  /** Whether this outbox event was already successfully delivered to this endpoint on a prior
+   * processing pass — lets a retry skip endpoints that already succeeded while still retrying
+   * ones that previously failed (which have a WebhookDelivery row too, just with success: false). */
+  async alreadyDelivered(outboxEventId: string, webhookEndpointId: string): Promise<boolean> {
+    const existing = await this.prisma.webhookDelivery.findUnique({
+      where: { outboxEventId_webhookEndpointId: { outboxEventId, webhookEndpointId } },
+    });
+    return existing?.success === true;
   }
 }

@@ -6,7 +6,7 @@ import { PrismaService } from "../common/prisma/prisma.service";
 import { StorageService } from "../common/storage/storage.service";
 import { MailService } from "../common/mail/mail.service";
 import { AuditService } from "../common/audit/audit.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 
 const COMPANY_A = "company-a";
 const ACTOR = { userId: "user-1", name: "Ana" };
@@ -35,10 +35,11 @@ describe("SignatureRequestsService", () => {
     signatureRequest: { findFirst: jest.Mock; create: jest.Mock; update: jest.Mock };
     signatureRequestSigner: { findUnique: jest.Mock; update: jest.Mock };
     company: { findUniqueOrThrow: jest.Mock };
+    $transaction: jest.Mock;
   };
   let storage: { save: jest.Mock; read: jest.Mock };
   let mail: { send: jest.Mock };
-  let webhooks: { trigger: jest.Mock };
+  let outbox: { enqueue: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -46,10 +47,11 @@ describe("SignatureRequestsService", () => {
       signatureRequest: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
       signatureRequestSigner: { findUnique: jest.fn(), update: jest.fn() },
       company: { findUniqueOrThrow: jest.fn().mockResolvedValue({ name: "Acme Co" }) },
+      $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
     };
     storage = { save: jest.fn().mockResolvedValue({ storageKey: "sig-key" }), read: jest.fn() };
     mail = { send: jest.fn() };
-    webhooks = { trigger: jest.fn() };
+    outbox = { enqueue: jest.fn() };
 
     const module = await Test.createTestingModule({
       providers: [
@@ -59,7 +61,7 @@ describe("SignatureRequestsService", () => {
         { provide: MailService, useValue: mail },
         { provide: ConfigService, useValue: { get: () => undefined } },
         { provide: AuditService, useValue: { record: jest.fn() } },
-        { provide: WebhooksService, useValue: webhooks },
+        { provide: OutboxService, useValue: outbox },
       ],
     }).compile();
 
@@ -147,7 +149,7 @@ describe("SignatureRequestsService", () => {
       );
       expect(mail.send).toHaveBeenCalledWith(expect.objectContaining({ to: "bob@example.com" }));
       expect(prisma.signatureRequest.update).not.toHaveBeenCalled();
-      expect(webhooks.trigger).not.toHaveBeenCalled();
+      expect(outbox.enqueue).not.toHaveBeenCalled();
     });
 
     it("marks the request completed once the last signer signs", async () => {
@@ -165,7 +167,7 @@ describe("SignatureRequestsService", () => {
         where: { id: "req-1" },
         data: expect.objectContaining({ status: "completed" }),
       });
-      expect(webhooks.trigger).toHaveBeenCalledWith(COMPANY_A, "signature_request.completed", { signatureRequestId: "req-1" });
+      expect(outbox.enqueue).toHaveBeenCalledWith(prisma, COMPANY_A, "signature_request.completed", { signatureRequestId: "req-1" });
     });
   });
 

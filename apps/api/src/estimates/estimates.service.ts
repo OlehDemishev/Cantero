@@ -18,7 +18,7 @@ import { StorageService } from "../common/storage/storage.service";
 import { decodePngDataUrl } from "../common/signature";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 import { documentPdfLabels } from "../common/pdf/pdf-labels";
 import { estimateSentEmail } from "../common/mail/client-mail-templates";
 import {
@@ -48,7 +48,7 @@ export class EstimatesService {
     private readonly audit: AuditService,
     private readonly config: ConfigService,
     private readonly mail: MailService,
-    private readonly webhooks: WebhooksService,
+    private readonly outbox: OutboxService,
   ) {}
 
   async list(companyId: string, role?: string) {
@@ -408,18 +408,21 @@ export class EstimatesService {
     if (estimate.status !== "approved") {
       throw new BadRequestException("Only an approved estimate can be sent to the client");
     }
-    const updated = await this.prisma.estimate.update({
-      where: { id: estimateId },
-      data: {
-        clientAccessToken: randomBytes(24).toString("hex"),
-        sentAt: new Date(),
-        clientDecision: "pending",
-        decisionAt: null,
-        clientDecisionNote: null,
-      },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.estimate.update({
+        where: { id: estimateId },
+        data: {
+          clientAccessToken: randomBytes(24).toString("hex"),
+          sentAt: new Date(),
+          clientDecision: "pending",
+          decisionAt: null,
+          clientDecisionNote: null,
+        },
+      });
+      await this.outbox.enqueue(tx, companyId, "estimate.sent", { estimateId, name: estimate.name });
+      return updated;
     });
     this.audit.record(companyId, actor, "estimate.sent", "Estimate", estimateId, `Sent estimate "${estimate.name}" to client for review`);
-    this.webhooks.trigger(companyId, "estimate.sent", { estimateId, name: estimate.name });
 
     const client = estimate.project?.clientId
       ? await this.prisma.client.findUnique({ where: { id: estimate.project.clientId } })
@@ -539,42 +542,53 @@ export class EstimatesService {
       signatureImageKey = stored.storageKey;
     }
 
-    const updated = await this.prisma.estimate.update({
-      where: { id: estimate.id },
-      data: {
-        clientDecision: input.decision,
-        decisionAt: new Date(),
-        clientDecisionNote: input.note,
-        counterOfferAmount: input.decision === "countered" ? input.counterOfferAmount : undefined,
-        signerName: input.decision === "approved" ? input.signerName : undefined,
-        signatureImageKey,
-        signedIp: input.decision === "approved" ? signerIp : undefined,
-      },
-    });
-
-    if (input.decision === "approved") {
-      const rootId = estimate.variantOfId ?? estimate.id;
-      await this.prisma.estimate.updateMany({
-        where: {
-          companyId: estimate.companyId,
-          id: { not: estimate.id },
-          OR: [{ id: rootId }, { variantOfId: rootId }],
-          clientDecision: "pending",
-        },
-        data: {
-          clientDecision: "rejected",
-          decisionAt: new Date(),
-          clientDecisionNote: "Auto-declined — a sibling variant was approved",
-        },
-      });
-    }
-
     const webhookEvent =
       input.decision === "approved"
         ? "estimate.client_approved"
         : input.decision === "countered"
           ? "estimate.client_countered"
           : "estimate.client_rejected";
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.estimate.update({
+        where: { id: estimate.id },
+        data: {
+          clientDecision: input.decision,
+          decisionAt: new Date(),
+          clientDecisionNote: input.note,
+          counterOfferAmount: input.decision === "countered" ? input.counterOfferAmount : undefined,
+          signerName: input.decision === "approved" ? input.signerName : undefined,
+          signatureImageKey,
+          signedIp: input.decision === "approved" ? signerIp : undefined,
+        },
+      });
+
+      if (input.decision === "approved") {
+        const rootId = estimate.variantOfId ?? estimate.id;
+        await tx.estimate.updateMany({
+          where: {
+            companyId: estimate.companyId,
+            id: { not: estimate.id },
+            OR: [{ id: rootId }, { variantOfId: rootId }],
+            clientDecision: "pending",
+          },
+          data: {
+            clientDecision: "rejected",
+            decisionAt: new Date(),
+            clientDecisionNote: "Auto-declined — a sibling variant was approved",
+          },
+        });
+      }
+
+      await this.outbox.enqueue(tx, estimate.companyId, webhookEvent, {
+        estimateId: estimate.id,
+        name: estimate.name,
+        decision: input.decision,
+        counterOfferAmount: input.decision === "countered" ? input.counterOfferAmount : undefined,
+      });
+
+      return updated;
+    });
 
     this.audit.record(
       estimate.companyId,
@@ -586,12 +600,6 @@ export class EstimatesService {
         ? `${recordedBy.name} recorded that the client ${input.decision} estimate "${estimate.name}" outside the portal — "${input.note}"`
         : `Client ${input.decision} estimate "${estimate.name}"${input.note ? ` — "${input.note}"` : ""}`,
     );
-    this.webhooks.trigger(estimate.companyId, webhookEvent, {
-      estimateId: estimate.id,
-      name: estimate.name,
-      decision: input.decision,
-      counterOfferAmount: input.decision === "countered" ? input.counterOfferAmount : undefined,
-    });
 
     return { clientDecision: updated.clientDecision };
   }

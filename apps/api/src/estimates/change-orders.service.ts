@@ -15,7 +15,7 @@ import { StorageService } from "../common/storage/storage.service";
 import { decodePngDataUrl } from "../common/signature";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 import { calculateEstimate, type EstimateLineInput, type MaterialPrice, type RateItemForCalc } from "./estimate-calc";
 import { calculateTieredMarkup } from "./tiered-markup";
 import { calculateChangeOrderProfitability } from "./change-order-profitability";
@@ -37,7 +37,7 @@ export class ChangeOrdersService {
     private readonly audit: AuditService,
     private readonly config: ConfigService,
     private readonly mail: MailService,
-    private readonly webhooks: WebhooksService,
+    private readonly outbox: OutboxService,
   ) {}
 
   list(companyId: string, estimateId: string) {
@@ -230,15 +230,19 @@ export class ChangeOrdersService {
       include: { project: true },
     });
 
-    const updated = await this.prisma.changeOrder.update({
-      where: { id: changeOrderId },
-      data: {
-        clientAccessToken: randomBytes(24).toString("hex"),
-        sentAt: new Date(),
-        clientDecision: "pending",
-        decisionAt: null,
-        clientDecisionNote: null,
-      },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.changeOrder.update({
+        where: { id: changeOrderId },
+        data: {
+          clientAccessToken: randomBytes(24).toString("hex"),
+          sentAt: new Date(),
+          clientDecision: "pending",
+          decisionAt: null,
+          clientDecisionNote: null,
+        },
+      });
+      await this.outbox.enqueue(tx, companyId, "change_order.sent", { changeOrderId, title: changeOrder.title });
+      return updated;
     });
     this.audit.record(
       companyId,
@@ -248,7 +252,6 @@ export class ChangeOrdersService {
       changeOrderId,
       `Sent change order CO-${changeOrder.number} "${changeOrder.title}" to client for review`,
     );
-    this.webhooks.trigger(companyId, "change_order.sent", { changeOrderId, title: changeOrder.title });
 
     const client = estimate.project?.clientId
       ? await this.prisma.client.findUnique({ where: { id: estimate.project.clientId } })
@@ -347,16 +350,25 @@ export class ChangeOrdersService {
       signatureImageKey = stored.storageKey;
     }
 
-    const updated = await this.prisma.changeOrder.update({
-      where: { id: changeOrder.id },
-      data: {
-        clientDecision: input.decision,
-        decisionAt: new Date(),
-        clientDecisionNote: input.note,
-        signerName: input.decision === "approved" ? input.signerName : undefined,
-        signatureImageKey,
-        signedIp: input.decision === "approved" ? signerIp : undefined,
-      },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.changeOrder.update({
+        where: { id: changeOrder.id },
+        data: {
+          clientDecision: input.decision,
+          decisionAt: new Date(),
+          clientDecisionNote: input.note,
+          signerName: input.decision === "approved" ? input.signerName : undefined,
+          signatureImageKey,
+          signedIp: input.decision === "approved" ? signerIp : undefined,
+        },
+      });
+      await this.outbox.enqueue(
+        tx,
+        changeOrder.companyId,
+        input.decision === "approved" ? "change_order.client_approved" : "change_order.client_rejected",
+        { changeOrderId: changeOrder.id, title: changeOrder.title, decision: input.decision },
+      );
+      return updated;
     });
 
     this.audit.record(
@@ -368,11 +380,6 @@ export class ChangeOrdersService {
       recordedBy
         ? `${recordedBy.name} recorded that the client ${input.decision} change order CO-${changeOrder.number} "${changeOrder.title}" outside the portal — "${input.note}"`
         : `Client ${input.decision} change order CO-${changeOrder.number} "${changeOrder.title}"${input.note ? ` — "${input.note}"` : ""}`,
-    );
-    this.webhooks.trigger(
-      changeOrder.companyId,
-      input.decision === "approved" ? "change_order.client_approved" : "change_order.client_rejected",
-      { changeOrderId: changeOrder.id, title: changeOrder.title, decision: input.decision },
     );
 
     return { clientDecision: updated.clientDecision };

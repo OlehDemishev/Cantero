@@ -14,7 +14,7 @@ import {
 import { PrismaService } from "../common/prisma/prisma.service";
 import { parseCsvRecords } from "../common/csv";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 import { ProjectsService } from "../projects/projects.service";
 
 @Injectable()
@@ -22,7 +22,7 @@ export class ClientsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
-    private readonly webhooks: WebhooksService,
+    private readonly outbox: OutboxService,
     private readonly projects: ProjectsService,
   ) {}
 
@@ -85,25 +85,26 @@ export class ClientsService {
     const client = await this.get(companyId, id);
     if (client.stage === input.stage) throw new BadRequestException(`Client is already in stage "${input.stage}"`);
 
-    const updated = await this.prisma.client.update({
-      where: { id: client.id },
-      data: {
-        stage: input.stage,
-        wonAt: input.stage === "won" ? new Date() : null,
-        lostAt: input.stage === "lost" ? new Date() : null,
-        lostReason: input.stage === "lost" ? input.lostReason : null,
-      },
-      include: { owner: { select: { id: true, name: true } } },
-    });
-    await this.prisma.clientStageHistory.create({
-      data: { companyId, clientId: client.id, fromStage: client.stage, toStage: input.stage },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.client.update({
+        where: { id: client.id },
+        data: {
+          stage: input.stage,
+          wonAt: input.stage === "won" ? new Date() : null,
+          lostAt: input.stage === "lost" ? new Date() : null,
+          lostReason: input.stage === "lost" ? input.lostReason : null,
+        },
+        include: { owner: { select: { id: true, name: true } } },
+      });
+      await tx.clientStageHistory.create({
+        data: { companyId, clientId: client.id, fromStage: client.stage, toStage: input.stage },
+      });
+      if (input.stage === "won") await this.outbox.enqueue(tx, companyId, "client.won", { clientId: client.id, name: client.name });
+      if (input.stage === "lost") await this.outbox.enqueue(tx, companyId, "client.lost", { clientId: client.id, name: client.name });
+      return updated;
     });
     this.audit.record(companyId, actor, "client.stage_changed", "Client", client.id, `Moved "${client.name}" to ${input.stage}`);
-    if (input.stage === "won") {
-      this.webhooks.trigger(companyId, "client.won", { clientId: client.id, name: client.name });
-      if (client.referredByClientId) await this.markReferralRewardPending(companyId, client.referredByClientId);
-    }
-    if (input.stage === "lost") this.webhooks.trigger(companyId, "client.lost", { clientId: client.id, name: client.name });
+    if (input.stage === "won" && client.referredByClientId) await this.markReferralRewardPending(companyId, client.referredByClientId);
     return updated;
   }
 

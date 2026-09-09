@@ -10,7 +10,7 @@ import type {
 import { PrismaService } from "../common/prisma/prisma.service";
 import { parseCsvRecords } from "../common/csv";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 import { calculatePriceChangePercent, isSignificantPriceChange, round2 } from "./price-change";
 
 @Injectable()
@@ -18,7 +18,7 @@ export class MaterialCatalogService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
-    private readonly webhooks: WebhooksService,
+    private readonly outbox: OutboxService,
   ) {}
 
   list(companyId: string) {
@@ -116,16 +116,24 @@ export class MaterialCatalogService {
     const newPrice = input.defaultUnitPrice;
     const changePercent = calculatePriceChangePercent(oldPrice, newPrice);
 
-    const updated = await this.prisma.materialCatalogItem.update({
-      where: { id },
-      data: { defaultUnitPrice: newPrice },
-      include: { preferredSupplier: true },
+    const significant = isSignificantPriceChange(changePercent);
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.materialCatalogItem.update({
+        where: { id },
+        data: { defaultUnitPrice: newPrice },
+        include: { preferredSupplier: true },
+      });
+
+      if (significant) {
+        const change = await tx.materialPriceChange.create({
+          data: { companyId, materialCatalogItemId: id, oldPrice, newPrice, changePercent, changedByUserId: actor.userId, changedByName: actor.name },
+        });
+        await this.outbox.enqueue(tx, companyId, "material.price_changed", { materialCatalogItemId: id, changeId: change.id, changePercent, oldPrice, newPrice });
+      }
+      return updated;
     });
 
-    if (isSignificantPriceChange(changePercent)) {
-      const change = await this.prisma.materialPriceChange.create({
-        data: { companyId, materialCatalogItemId: id, oldPrice, newPrice, changePercent, changedByUserId: actor.userId, changedByName: actor.name },
-      });
+    if (significant) {
       this.audit.record(
         companyId,
         actor,
@@ -134,7 +142,6 @@ export class MaterialCatalogService {
         id,
         `"${item.name}" price ${changePercent > 0 ? "rose" : "fell"} ${Math.abs(changePercent)}% (${oldPrice} → ${newPrice})`,
       );
-      this.webhooks.trigger(companyId, "material.price_changed", { materialCatalogItemId: id, changeId: change.id, changePercent, oldPrice, newPrice });
     }
 
     return updated;

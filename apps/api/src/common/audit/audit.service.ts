@@ -1,6 +1,10 @@
 import { Injectable } from "@nestjs/common";
+import * as Sentry from "@sentry/node";
 import { PrismaService } from "../prisma/prisma.service";
 import { toCsv } from "../csv";
+
+const AUDIT_WRITE_MAX_ATTEMPTS = 3;
+const AUDIT_WRITE_RETRY_DELAY_MS = 200;
 
 export interface AuditActor {
   userId?: string;
@@ -16,9 +20,13 @@ export interface AuditLogFilter {
 }
 
 /**
- * Best-effort, fire-and-forget logging: an audit write failing must never
- * break the business action it's describing, so errors are swallowed here
- * rather than propagated.
+ * Best-effort, fire-and-forget logging: an audit write failing must never break the business
+ * action it's describing, so record() never throws or is awaited by its callers. It's not a
+ * transactional outbox (a process crash between the business write and this call still loses
+ * the audit row — see AUDIT-2026-09-07.md's "AuditService также подавляет ошибки", which flagged
+ * exactly that residual gap as future work) — but a transient failure (a momentary connection
+ * blip, not a crash) is retried a few times here before being given up on, instead of vanishing
+ * silently on the first hiccup.
  */
 @Injectable()
 export class AuditService {
@@ -33,8 +41,8 @@ export class AuditService {
     summary: string,
     metadata?: Record<string, unknown>,
   ): void {
-    this.prisma.auditLog
-      .create({
+    const write = () =>
+      this.prisma.auditLog.create({
         data: {
           companyId,
           actorUserId: actor.userId,
@@ -45,8 +53,18 @@ export class AuditService {
           summary,
           metadata: metadata as never,
         },
-      })
-      .catch(() => {});
+      });
+    this.writeWithRetry(write);
+  }
+
+  private writeWithRetry(write: () => Promise<unknown>, attempt = 1): void {
+    write().catch((err) => {
+      if (attempt >= AUDIT_WRITE_MAX_ATTEMPTS) {
+        Sentry.captureException(err);
+        return;
+      }
+      setTimeout(() => this.writeWithRetry(write, attempt + 1), AUDIT_WRITE_RETRY_DELAY_MS * attempt);
+    });
   }
 
   list(companyId: string, take: number, cursor?: string, filter?: AuditLogFilter) {

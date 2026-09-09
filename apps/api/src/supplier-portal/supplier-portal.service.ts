@@ -1,14 +1,14 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import type { AcknowledgePurchaseOrderInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 import type { PortalSupplierContext } from "./supplier-portal-jwt.service";
 
 @Injectable()
 export class SupplierPortalService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly webhooks: WebhooksService,
+    private readonly outbox: OutboxService,
   ) {}
 
   async me(supplier: PortalSupplierContext) {
@@ -44,16 +44,19 @@ export class SupplierPortalService {
     if (po.status === "draft") throw new BadRequestException("This order has not been placed yet");
     if (po.acknowledgedAt) throw new BadRequestException("This order has already been acknowledged");
 
-    const updated = await this.prisma.purchaseOrder.update({
-      where: { id },
-      data: {
-        acknowledgedAt: new Date(),
-        supplierEta: input.eta ? new Date(input.eta) : undefined,
-        supplierNote: input.note,
-      },
-      include: { lines: { include: { materialCatalogItem: { select: { name: true, unit: true } } } } },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.purchaseOrder.update({
+        where: { id },
+        data: {
+          acknowledgedAt: new Date(),
+          supplierEta: input.eta ? new Date(input.eta) : undefined,
+          supplierNote: input.note,
+        },
+        include: { lines: { include: { materialCatalogItem: { select: { name: true, unit: true } } } } },
+      });
+      await this.outbox.enqueue(tx, supplier.companyId, "purchase_order.acknowledged", { purchaseOrderId: id });
+      return updated;
     });
-    this.webhooks.trigger(supplier.companyId, "purchase_order.acknowledged", { purchaseOrderId: id });
     return updated;
   }
 }

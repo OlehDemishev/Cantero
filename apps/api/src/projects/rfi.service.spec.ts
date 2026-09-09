@@ -3,7 +3,7 @@ import { Test } from "@nestjs/testing";
 import { RfiService } from "./rfi.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService } from "../common/audit/audit.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 import { ProjectAccessService } from "../common/project-access/project-access.service";
 
 const COMPANY_A = "company-a";
@@ -17,9 +17,10 @@ describe("RfiService", () => {
     rfi: { findFirst: jest.Mock; findMany: jest.Mock; count: jest.Mock; create: jest.Mock; update: jest.Mock };
     changeOrder: { findFirst: jest.Mock };
     punchListItem: { findMany: jest.Mock };
+    $transaction: jest.Mock;
   };
   let audit: { record: jest.Mock };
-  let webhooks: { trigger: jest.Mock };
+  let outbox: { enqueue: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -27,16 +28,17 @@ describe("RfiService", () => {
       rfi: { findFirst: jest.fn(), findMany: jest.fn(), count: jest.fn(), create: jest.fn(), update: jest.fn() },
       changeOrder: { findFirst: jest.fn() },
       punchListItem: { findMany: jest.fn() },
+      $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
     };
     audit = { record: jest.fn() };
-    webhooks = { trigger: jest.fn() };
+    outbox = { enqueue: jest.fn() };
 
     const module = await Test.createTestingModule({
       providers: [
         RfiService,
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: audit },
-        { provide: WebhooksService, useValue: webhooks },
+        { provide: OutboxService, useValue: outbox },
         { provide: ProjectAccessService, useValue: projectAccessStub },
       ],
     }).compile();
@@ -81,7 +83,7 @@ describe("RfiService", () => {
 
       await service.answer(COMPANY_A, ACTOR, "rfi-1", { answer: "Inward" });
 
-      expect(webhooks.trigger).toHaveBeenCalledWith(COMPANY_A, "rfi.answered", expect.objectContaining({ rfiId: "rfi-1", number: "RFI-001" }));
+      expect(outbox.enqueue).toHaveBeenCalledWith(prisma, COMPANY_A, "rfi.answered", expect.objectContaining({ rfiId: "rfi-1", number: "RFI-001" }));
     });
   });
 
@@ -100,7 +102,7 @@ describe("RfiService", () => {
       await service.close(COMPANY_A, ACTOR, "rfi-1");
 
       expect(prisma.rfi.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: "closed" }) }));
-      expect(webhooks.trigger).toHaveBeenCalledWith(COMPANY_A, "rfi.closed", expect.objectContaining({ rfiId: "rfi-1" }));
+      expect(outbox.enqueue).toHaveBeenCalledWith(prisma, COMPANY_A, "rfi.closed", expect.objectContaining({ rfiId: "rfi-1" }));
     });
   });
 

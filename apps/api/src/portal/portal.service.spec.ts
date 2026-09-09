@@ -4,7 +4,7 @@ import { PrismaService } from "../common/prisma/prisma.service";
 import { EstimatesService } from "../estimates/estimates.service";
 import { ChangeOrdersService } from "../estimates/change-orders.service";
 import { InvoicesService } from "../finance/invoices.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 import { BillingService } from "../billing/billing.service";
 import { ClientPaymentMethodsService } from "../finance/client-payment-methods.service";
 
@@ -35,7 +35,7 @@ describe("PortalService.listProjects — progress", () => {
         { provide: EstimatesService, useValue: {} },
         { provide: ChangeOrdersService, useValue: {} },
         { provide: InvoicesService, useValue: {} },
-        { provide: WebhooksService, useValue: {} },
+        { provide: OutboxService, useValue: {} },
         { provide: BillingService, useValue: {} },
         { provide: ClientPaymentMethodsService, useValue: {} },
       ],
@@ -90,16 +90,18 @@ describe("PortalService — change requests", () => {
     project: { findFirst: jest.Mock };
     client: { findUniqueOrThrow: jest.Mock };
     clientChangeRequest: { findMany: jest.Mock; create: jest.Mock };
+    $transaction: jest.Mock;
   };
-  let webhooks: { trigger: jest.Mock };
+  let outbox: { enqueue: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
       project: { findFirst: jest.fn() },
       client: { findUniqueOrThrow: jest.fn() },
       clientChangeRequest: { findMany: jest.fn(), create: jest.fn() },
+      $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
     };
-    webhooks = { trigger: jest.fn() };
+    outbox = { enqueue: jest.fn() };
 
     const module = await Test.createTestingModule({
       providers: [
@@ -108,7 +110,7 @@ describe("PortalService — change requests", () => {
         { provide: EstimatesService, useValue: {} },
         { provide: ChangeOrdersService, useValue: {} },
         { provide: InvoicesService, useValue: {} },
-        { provide: WebhooksService, useValue: webhooks },
+        { provide: OutboxService, useValue: outbox },
         { provide: BillingService, useValue: {} },
         { provide: ClientPaymentMethodsService, useValue: {} },
       ],
@@ -136,7 +138,7 @@ describe("PortalService — change requests", () => {
       expect(prisma.clientChangeRequest.create).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ submittedByName: "Jane Homeowner" }) }),
       );
-      expect(webhooks.trigger).toHaveBeenCalledWith(COMPANY_A, "client_change_request.submitted", expect.any(Object));
+      expect(outbox.enqueue).toHaveBeenCalledWith(prisma, COMPANY_A, "client_change_request.submitted", expect.any(Object));
     });
   });
 

@@ -11,7 +11,7 @@ import { EstimatesService } from "../estimates/estimates.service";
 import { ChangeOrdersService } from "../estimates/change-orders.service";
 import { InvoicesService } from "../finance/invoices.service";
 import { ClientPaymentMethodsService } from "../finance/client-payment-methods.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 import { BillingService } from "../billing/billing.service";
 import type { PortalClientContext } from "./portal-jwt.service";
 
@@ -29,7 +29,7 @@ export class PortalService {
     private readonly estimates: EstimatesService,
     private readonly changeOrders: ChangeOrdersService,
     private readonly invoices: InvoicesService,
-    private readonly webhooks: WebhooksService,
+    private readonly outbox: OutboxService,
     private readonly billing: BillingService,
     private readonly clientPaymentMethods: ClientPaymentMethodsService,
   ) {}
@@ -275,23 +275,25 @@ export class PortalService {
     }
 
     const clientRecord = await this.prisma.client.findUniqueOrThrow({ where: { id: client.clientId } });
-    const claim = await this.prisma.warrantyClaim.create({
-      data: {
-        companyId: client.companyId,
-        projectId: input.projectId,
-        title: input.title,
-        description: input.description,
-        location: input.location,
-        submittedByClientId: client.clientId,
-        submittedByName: clientRecord.name,
-      },
+    return this.prisma.$transaction(async (tx) => {
+      const claim = await tx.warrantyClaim.create({
+        data: {
+          companyId: client.companyId,
+          projectId: input.projectId,
+          title: input.title,
+          description: input.description,
+          location: input.location,
+          submittedByClientId: client.clientId,
+          submittedByName: clientRecord.name,
+        },
+      });
+      await this.outbox.enqueue(tx, client.companyId, "warranty_claim.submitted", {
+        warrantyClaimId: claim.id,
+        title: claim.title,
+        projectId: project.id,
+      });
+      return claim;
     });
-    this.webhooks.trigger(client.companyId, "warranty_claim.submitted", {
-      warrantyClaimId: claim.id,
-      title: claim.title,
-      projectId: project.id,
-    });
-    return claim;
   }
 
   listChangeRequests(client: PortalClientContext) {
@@ -309,22 +311,24 @@ export class PortalService {
     if (!project) throw new NotFoundException("Project not found");
 
     const clientRecord = await this.prisma.client.findUniqueOrThrow({ where: { id: client.clientId } });
-    const request = await this.prisma.clientChangeRequest.create({
-      data: {
-        companyId: client.companyId,
-        projectId: input.projectId,
-        submittedByClientId: client.clientId,
-        submittedByName: clientRecord.name,
-        title: input.title,
-        description: input.description,
-      },
+    return this.prisma.$transaction(async (tx) => {
+      const request = await tx.clientChangeRequest.create({
+        data: {
+          companyId: client.companyId,
+          projectId: input.projectId,
+          submittedByClientId: client.clientId,
+          submittedByName: clientRecord.name,
+          title: input.title,
+          description: input.description,
+        },
+      });
+      await this.outbox.enqueue(tx, client.companyId, "client_change_request.submitted", {
+        clientChangeRequestId: request.id,
+        title: request.title,
+        projectId: project.id,
+      });
+      return request;
     });
-    this.webhooks.trigger(client.companyId, "client_change_request.submitted", {
-      clientChangeRequestId: request.id,
-      title: request.title,
-      projectId: project.id,
-    });
-    return request;
   }
 
   private async findClientEstimate(client: PortalClientContext, id: string) {

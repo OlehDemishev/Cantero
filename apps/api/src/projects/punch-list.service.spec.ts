@@ -3,7 +3,7 @@ import { Test } from "@nestjs/testing";
 import { PunchListService } from "./punch-list.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService } from "../common/audit/audit.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 import { PdfService } from "../common/pdf/pdf.service";
 import { StorageService } from "../common/storage/storage.service";
 import { ProjectAccessService } from "../common/project-access/project-access.service";
@@ -20,9 +20,10 @@ describe("PunchListService", () => {
     subcontractor: { findFirst: jest.Mock };
     punchListItem: { findFirst: jest.Mock; create: jest.Mock; update: jest.Mock; findMany: jest.Mock };
     changeOrder: { findFirst: jest.Mock };
+    $transaction: jest.Mock;
   };
   let audit: { record: jest.Mock };
-  let webhooks: { trigger: jest.Mock };
+  let outbox: { enqueue: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -31,16 +32,17 @@ describe("PunchListService", () => {
       subcontractor: { findFirst: jest.fn() },
       punchListItem: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn(), findMany: jest.fn() },
       changeOrder: { findFirst: jest.fn() },
+      $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
     };
     audit = { record: jest.fn() };
-    webhooks = { trigger: jest.fn() };
+    outbox = { enqueue: jest.fn() };
 
     const module = await Test.createTestingModule({
       providers: [
         PunchListService,
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: audit },
-        { provide: WebhooksService, useValue: webhooks },
+        { provide: OutboxService, useValue: outbox },
         { provide: PdfService, useValue: { render: jest.fn(), renderTextDocument: jest.fn() } },
         { provide: StorageService, useValue: { read: jest.fn() } },
         { provide: ProjectAccessService, useValue: projectAccessStub },
@@ -133,7 +135,7 @@ describe("PunchListService", () => {
         }),
       );
       expect(audit.record).toHaveBeenCalled();
-      expect(webhooks.trigger).toHaveBeenCalledWith(COMPANY_A, "punch_list.verified", expect.objectContaining({ punchListItemId: "item-1" }));
+      expect(outbox.enqueue).toHaveBeenCalledWith(prisma, COMPANY_A, "punch_list.verified", expect.objectContaining({ punchListItemId: "item-1" }));
     });
   });
 

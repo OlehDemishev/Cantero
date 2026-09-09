@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import type { CreateInsuranceClaimInput, UpdateInsuranceClaimInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 import { toCsv } from "../common/csv";
 
 @Injectable()
@@ -10,7 +10,7 @@ export class InsuranceClaimsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
-    private readonly webhooks: WebhooksService,
+    private readonly outbox: OutboxService,
   ) {}
 
   list(companyId: string, projectId?: string) {
@@ -37,24 +37,28 @@ export class InsuranceClaimsService {
       if (!incident) throw new NotFoundException("Incident report not found");
     }
 
-    const claim = await this.prisma.insuranceClaim.create({
-      data: {
-        companyId,
-        projectId: input.projectId,
-        incidentReportId: input.incidentReportId,
-        claimType: input.claimType,
-        claimNumber: input.claimNumber,
-        insurerName: input.insurerName,
-        policyNumber: input.policyNumber,
-        dateFiled: new Date(input.dateFiled),
-        description: input.description,
-        adjusterName: input.adjusterName,
-        adjusterContact: input.adjusterContact,
-        claimAmount: input.claimAmount,
-        createdByUserId: actor.userId,
-        createdByName: actor.name,
-      },
-      include: { project: { select: { id: true, name: true } } },
+    const claim = await this.prisma.$transaction(async (tx) => {
+      const claim = await tx.insuranceClaim.create({
+        data: {
+          companyId,
+          projectId: input.projectId,
+          incidentReportId: input.incidentReportId,
+          claimType: input.claimType,
+          claimNumber: input.claimNumber,
+          insurerName: input.insurerName,
+          policyNumber: input.policyNumber,
+          dateFiled: new Date(input.dateFiled),
+          description: input.description,
+          adjusterName: input.adjusterName,
+          adjusterContact: input.adjusterContact,
+          claimAmount: input.claimAmount,
+          createdByUserId: actor.userId,
+          createdByName: actor.name,
+        },
+        include: { project: { select: { id: true, name: true } } },
+      });
+      await this.outbox.enqueue(tx, companyId, "insurance_claim.filed", { claimId: claim.id, claimType: claim.claimType, projectId: input.projectId });
+      return claim;
     });
     this.audit.record(
       companyId,
@@ -64,39 +68,42 @@ export class InsuranceClaimsService {
       claim.id,
       `Filed a ${input.claimType.replace(/_/g, " ")} claim with ${input.insurerName}`,
     );
-    this.webhooks.trigger(companyId, "insurance_claim.filed", { claimId: claim.id, claimType: claim.claimType, projectId: input.projectId });
     return claim;
   }
 
   async update(companyId: string, actor: AuditActor, id: string, input: UpdateInsuranceClaimInput) {
     const claim = await this.get(companyId, id);
-    const updated = await this.prisma.insuranceClaim.update({
-      where: { id: claim.id },
-      data: {
-        status: input.status,
-        claimNumber: input.claimNumber,
-        insurerName: input.insurerName,
-        policyNumber: input.policyNumber,
-        description: input.description,
-        adjusterName: input.adjusterName,
-        adjusterContact: input.adjusterContact,
-        claimAmount: input.claimAmount,
-        settledAmount: input.settledAmount,
-        settledAt: input.settledAt === undefined ? undefined : input.settledAt ? new Date(input.settledAt) : null,
-        notes: input.notes,
-      },
-      include: { project: { select: { id: true, name: true } } },
+    const statusChanged = !!input.status && input.status !== claim.status;
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.insuranceClaim.update({
+        where: { id: claim.id },
+        data: {
+          status: input.status,
+          claimNumber: input.claimNumber,
+          insurerName: input.insurerName,
+          policyNumber: input.policyNumber,
+          description: input.description,
+          adjusterName: input.adjusterName,
+          adjusterContact: input.adjusterContact,
+          claimAmount: input.claimAmount,
+          settledAmount: input.settledAmount,
+          settledAt: input.settledAt === undefined ? undefined : input.settledAt ? new Date(input.settledAt) : null,
+          notes: input.notes,
+        },
+        include: { project: { select: { id: true, name: true } } },
+      });
+      if (statusChanged) await this.outbox.enqueue(tx, companyId, "insurance_claim.status_changed", { claimId: claim.id, status: input.status });
+      return updated;
     });
-    if (input.status && input.status !== claim.status) {
+    if (statusChanged) {
       this.audit.record(
         companyId,
         actor,
         "insurance_claim.status_changed",
         "InsuranceClaim",
         claim.id,
-        `Insurance claim moved to "${input.status.replace(/_/g, " ")}"`,
+        `Insurance claim moved to "${input.status!.replace(/_/g, " ")}"`,
       );
-      this.webhooks.trigger(companyId, "insurance_claim.status_changed", { claimId: claim.id, status: input.status });
     }
     return updated;
   }

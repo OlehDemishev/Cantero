@@ -3,7 +3,7 @@ import { Test } from "@nestjs/testing";
 import { InsuranceClaimsService } from "./insurance-claims.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService } from "../common/audit/audit.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 
 const COMPANY_A = "company-a";
 const ACTOR = { userId: "user-1", name: "Owner" };
@@ -14,25 +14,27 @@ describe("InsuranceClaimsService", () => {
     project: { findFirst: jest.Mock };
     incidentReport: { findFirst: jest.Mock };
     insuranceClaim: { findFirst: jest.Mock; create: jest.Mock; update: jest.Mock; findMany: jest.Mock };
+    $transaction: jest.Mock;
   };
   let audit: { record: jest.Mock };
-  let webhooks: { trigger: jest.Mock };
+  let outbox: { enqueue: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
       project: { findFirst: jest.fn() },
       incidentReport: { findFirst: jest.fn() },
       insuranceClaim: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn(), findMany: jest.fn() },
+      $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
     };
     audit = { record: jest.fn() };
-    webhooks = { trigger: jest.fn() };
+    outbox = { enqueue: jest.fn() };
 
     const module = await Test.createTestingModule({
       providers: [
         InsuranceClaimsService,
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: audit },
-        { provide: WebhooksService, useValue: webhooks },
+        { provide: OutboxService, useValue: outbox },
       ],
     }).compile();
 
@@ -105,7 +107,7 @@ describe("InsuranceClaimsService", () => {
         }),
       );
       expect(audit.record).toHaveBeenCalled();
-      expect(webhooks.trigger).toHaveBeenCalledWith(COMPANY_A, "insurance_claim.filed", expect.objectContaining({ claimId: "claim-1" }));
+      expect(outbox.enqueue).toHaveBeenCalledWith(prisma, COMPANY_A, "insurance_claim.filed", expect.objectContaining({ claimId: "claim-1" }));
     });
   });
 
@@ -131,7 +133,8 @@ describe("InsuranceClaimsService", () => {
         "claim-1",
         expect.stringContaining("under review"),
       );
-      expect(webhooks.trigger).toHaveBeenCalledWith(
+      expect(outbox.enqueue).toHaveBeenCalledWith(
+        prisma,
         COMPANY_A,
         "insurance_claim.status_changed",
         expect.objectContaining({ status: "under_review" }),
@@ -145,7 +148,7 @@ describe("InsuranceClaimsService", () => {
       await service.update(COMPANY_A, ACTOR, "claim-1", { status: "filed" });
 
       expect(audit.record).not.toHaveBeenCalled();
-      expect(webhooks.trigger).not.toHaveBeenCalled();
+      expect(outbox.enqueue).not.toHaveBeenCalled();
     });
 
     it("clears settledAt when explicitly set to null but leaves it untouched when omitted", async () => {

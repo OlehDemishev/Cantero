@@ -24,12 +24,12 @@ describe("QueueFailureReporterService", () => {
   it("attaches a 'failed' listener to every registered queue on init", () => {
     service.onModuleInit();
 
-    // Tied to the real registered-queue count (14 today) rather than "at least one" — a queue
+    // Tied to the real registered-queue count (15 today) rather than "at least one" — a queue
     // added to queue.module.ts without being added to ALL_QUEUE_NAMES here would silently regress
     // back to unreported failures, and this test would still pass if it only checked ">= 1".
     const { QueueEvents } = jest.requireMock("bullmq") as { QueueEvents: jest.Mock };
-    expect(QueueEvents).toHaveBeenCalledTimes(14);
-    expect(mockOn).toHaveBeenCalledTimes(14);
+    expect(QueueEvents).toHaveBeenCalledTimes(15);
+    expect(mockOn).toHaveBeenCalledTimes(15);
     expect(mockOn).toHaveBeenCalledWith("failed", expect.any(Function));
   });
 
@@ -48,6 +48,6 @@ describe("QueueFailureReporterService", () => {
   it("closes every listener on module destroy", async () => {
     service.onModuleInit();
     await service.onModuleDestroy();
-    expect(mockClose).toHaveBeenCalledTimes(14);
+    expect(mockClose).toHaveBeenCalledTimes(15);
   });
 });

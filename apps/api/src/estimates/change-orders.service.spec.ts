@@ -7,7 +7,7 @@ import { PdfService } from "../common/pdf/pdf.service";
 import { StorageService } from "../common/storage/storage.service";
 import { AuditService } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 
 const COMPANY_A = "company-a";
 
@@ -35,7 +35,12 @@ describe("ChangeOrdersService", () => {
       materialCatalogItem: { findMany: jest.fn().mockResolvedValue([]) },
       markupRule: { findMany: jest.fn().mockResolvedValue([]) },
       company: { findUniqueOrThrow: jest.fn() },
-      $transaction: jest.fn((ops) => Promise.all(ops)),
+      // Supports both the array form (prisma.$transaction([op1, op2])) already used elsewhere in
+      // this service and the callback form (prisma.$transaction(async tx => {...})) used by the
+      // outbox-enqueueing send()/applyDecision() paths.
+      $transaction: jest.fn((arg: unknown) =>
+        typeof arg === "function" ? (arg as (tx: unknown) => unknown)(prisma) : Promise.all(arg as Promise<unknown>[]),
+      ),
     };
 
     const module = await Test.createTestingModule({
@@ -47,7 +52,7 @@ describe("ChangeOrdersService", () => {
         { provide: AuditService, useValue: { record: jest.fn(), list: jest.fn() } },
         { provide: ConfigService, useValue: { get: jest.fn(), getOrThrow: jest.fn() } },
         { provide: MailService, useValue: { send: jest.fn() } },
-        { provide: WebhooksService, useValue: { trigger: jest.fn() } },
+        { provide: OutboxService, useValue: { enqueue: jest.fn() } },
       ],
     }).compile();
 

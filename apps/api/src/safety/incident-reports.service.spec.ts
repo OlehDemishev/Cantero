@@ -3,7 +3,7 @@ import { Test } from "@nestjs/testing";
 import { IncidentReportsService } from "./incident-reports.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService } from "../common/audit/audit.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 import { PdfService } from "../common/pdf/pdf.service";
 import { StorageService } from "../common/storage/storage.service";
 import { ProjectAccessService } from "../common/project-access/project-access.service";
@@ -17,24 +17,26 @@ describe("IncidentReportsService", () => {
   let prisma: {
     project: { findFirst: jest.Mock };
     incidentReport: { findFirst: jest.Mock; create: jest.Mock; update: jest.Mock; findMany: jest.Mock };
+    $transaction: jest.Mock;
   };
   let audit: { record: jest.Mock };
-  let webhooks: { trigger: jest.Mock };
+  let outbox: { enqueue: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
       project: { findFirst: jest.fn() },
       incidentReport: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn(), findMany: jest.fn() },
+      $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
     };
     audit = { record: jest.fn() };
-    webhooks = { trigger: jest.fn() };
+    outbox = { enqueue: jest.fn() };
 
     const module = await Test.createTestingModule({
       providers: [
         IncidentReportsService,
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: audit },
-        { provide: WebhooksService, useValue: webhooks },
+        { provide: OutboxService, useValue: outbox },
         { provide: PdfService, useValue: { render: jest.fn(), renderTextDocument: jest.fn() } },
         { provide: StorageService, useValue: { read: jest.fn() } },
         { provide: ProjectAccessService, useValue: projectAccessStub },
@@ -85,7 +87,8 @@ describe("IncidentReportsService", () => {
         }),
       );
       expect(audit.record).toHaveBeenCalled();
-      expect(webhooks.trigger).toHaveBeenCalledWith(
+      expect(outbox.enqueue).toHaveBeenCalledWith(
+        prisma,
         COMPANY_A,
         "safety_incident.logged",
         expect.objectContaining({ incidentId: "incident-1", severity: "first_aid" }),

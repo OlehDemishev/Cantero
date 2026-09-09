@@ -3,7 +3,7 @@ import { Test } from "@nestjs/testing";
 import { WarrantyClaimsService } from "./warranty-claims.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService } from "../common/audit/audit.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 
 const COMPANY_A = "company-a";
 const ACTOR = { userId: "user-1", name: "Office Manager" };
@@ -14,25 +14,27 @@ describe("WarrantyClaimsService", () => {
     project: { findFirst: jest.Mock };
     worker: { findFirst: jest.Mock };
     warrantyClaim: { findFirst: jest.Mock; create: jest.Mock; update: jest.Mock };
+    $transaction: jest.Mock;
   };
   let audit: { record: jest.Mock };
-  let webhooks: { trigger: jest.Mock };
+  let outbox: { enqueue: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
       project: { findFirst: jest.fn() },
       worker: { findFirst: jest.fn() },
       warrantyClaim: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
+      $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
     };
     audit = { record: jest.fn() };
-    webhooks = { trigger: jest.fn() };
+    outbox = { enqueue: jest.fn() };
 
     const module = await Test.createTestingModule({
       providers: [
         WarrantyClaimsService,
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: audit },
-        { provide: WebhooksService, useValue: webhooks },
+        { provide: OutboxService, useValue: outbox },
       ],
     }).compile();
 
@@ -65,7 +67,8 @@ describe("WarrantyClaimsService", () => {
 
       await service.create(COMPANY_A, ACTOR, { projectId: "project-1", title: "Cracked grout" });
 
-      expect(webhooks.trigger).toHaveBeenCalledWith(
+      expect(outbox.enqueue).toHaveBeenCalledWith(
+        prisma,
         COMPANY_A,
         "warranty_claim.submitted",
         expect.objectContaining({ warrantyClaimId: "claim-1", projectId: "project-1" }),
@@ -99,7 +102,7 @@ describe("WarrantyClaimsService", () => {
       expect(prisma.warrantyClaim.update).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ status: "resolved", resolutionNotes: "Re-grouted", repairCost: 800 }) }),
       );
-      expect(webhooks.trigger).toHaveBeenCalledWith(COMPANY_A, "warranty_claim.resolved", expect.objectContaining({ warrantyClaimId: "claim-1" }));
+      expect(outbox.enqueue).toHaveBeenCalledWith(prisma, COMPANY_A, "warranty_claim.resolved", expect.objectContaining({ warrantyClaimId: "claim-1" }));
     });
   });
 
@@ -117,7 +120,7 @@ describe("WarrantyClaimsService", () => {
 
       await service.deny(COMPANY_A, ACTOR, "claim-1", { denialReason: "Normal wear, not covered" });
 
-      expect(webhooks.trigger).toHaveBeenCalledWith(COMPANY_A, "warranty_claim.denied", expect.objectContaining({ warrantyClaimId: "claim-1" }));
+      expect(outbox.enqueue).toHaveBeenCalledWith(prisma, COMPANY_A, "warranty_claim.denied", expect.objectContaining({ warrantyClaimId: "claim-1" }));
     });
   });
 

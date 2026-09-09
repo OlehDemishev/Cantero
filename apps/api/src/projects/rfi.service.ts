@@ -11,7 +11,7 @@ import type {
 } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 import { ProjectAccessService } from "../common/project-access/project-access.service";
 import { calculateCostImpactSummary, type CostImpactSourceItem } from "./cost-impact-summary";
 import { calculateRfiAnalytics } from "./rfi-analytics";
@@ -21,7 +21,7 @@ export class RfiService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
-    private readonly webhooks: WebhooksService,
+    private readonly outbox: OutboxService,
     private readonly projectAccess: ProjectAccessService,
   ) {}
 
@@ -133,12 +133,15 @@ export class RfiService {
     const rfi = await this.get(companyId, id, userId, role);
     if (rfi.status === "closed") throw new BadRequestException("RFI is closed — reopen it before answering");
 
-    const updated = await this.prisma.rfi.update({
-      where: { id: rfi.id },
-      data: { status: "answered", answer: input.answer, answeredAt: new Date(), answeredByUserId: actor.userId, answeredByName: actor.name },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.rfi.update({
+        where: { id: rfi.id },
+        data: { status: "answered", answer: input.answer, answeredAt: new Date(), answeredByUserId: actor.userId, answeredByName: actor.name },
+      });
+      await this.outbox.enqueue(tx, companyId, "rfi.answered", { rfiId: rfi.id, number: rfi.number, subject: rfi.subject });
+      return updated;
     });
     this.audit.record(companyId, actor, "rfi.answered", "Rfi", rfi.id, `Answered ${rfi.number}: ${rfi.subject}`);
-    this.webhooks.trigger(companyId, "rfi.answered", { rfiId: rfi.id, number: rfi.number, subject: rfi.subject });
     return updated;
   }
 
@@ -146,12 +149,15 @@ export class RfiService {
     const rfi = await this.get(companyId, id, userId, role);
     if (rfi.status === "closed") throw new BadRequestException("RFI is already closed");
 
-    const updated = await this.prisma.rfi.update({
-      where: { id: rfi.id },
-      data: { status: "closed", closedAt: new Date(), closedByUserId: actor.userId, closedByName: actor.name },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.rfi.update({
+        where: { id: rfi.id },
+        data: { status: "closed", closedAt: new Date(), closedByUserId: actor.userId, closedByName: actor.name },
+      });
+      await this.outbox.enqueue(tx, companyId, "rfi.closed", { rfiId: rfi.id, number: rfi.number, subject: rfi.subject });
+      return updated;
     });
     this.audit.record(companyId, actor, "rfi.closed", "Rfi", rfi.id, `Closed ${rfi.number}: ${rfi.subject}`);
-    this.webhooks.trigger(companyId, "rfi.closed", { rfiId: rfi.id, number: rfi.number, subject: rfi.subject });
     return updated;
   }
 

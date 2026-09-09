@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import type { BulkActionResult, CreateSubmittalInput, ReviewSubmittalInput, UpdateSubmittalInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 import type { WebhookEvent } from "@cantero/shared";
 
 const REVIEW_DECISION_WEBHOOK_EVENT: Record<string, WebhookEvent> = {
@@ -17,7 +17,7 @@ export class SubmittalsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
-    private readonly webhooks: WebhooksService,
+    private readonly outbox: OutboxService,
   ) {}
 
   /** Latest revision per chain, same convention as Document versioning. */
@@ -111,15 +111,24 @@ export class SubmittalsService {
     const submittal = await this.findOrThrow(companyId, id);
     if (submittal.status !== "submitted") throw new BadRequestException("Only a submitted item can be reviewed");
 
-    const updated = await this.prisma.submittal.update({
-      where: { id: submittal.id },
-      data: {
-        status: input.decision,
-        reviewedAt: new Date(),
-        reviewedByUserId: actor.userId,
-        reviewedByName: actor.name,
-        reviewComments: input.comments,
-      },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.submittal.update({
+        where: { id: submittal.id },
+        data: {
+          status: input.decision,
+          reviewedAt: new Date(),
+          reviewedByUserId: actor.userId,
+          reviewedByName: actor.name,
+          reviewComments: input.comments,
+        },
+      });
+      await this.outbox.enqueue(tx, companyId, REVIEW_DECISION_WEBHOOK_EVENT[input.decision], {
+        submittalId: submittal.id,
+        number: submittal.number,
+        revision: submittal.revision,
+        decision: input.decision,
+      });
+      return updated;
     });
     this.audit.record(
       companyId,
@@ -129,12 +138,6 @@ export class SubmittalsService {
       submittal.id,
       `Reviewed ${submittal.number} rev.${submittal.revision}: ${input.decision.replace(/_/g, " ")}`,
     );
-    this.webhooks.trigger(companyId, REVIEW_DECISION_WEBHOOK_EVENT[input.decision], {
-      submittalId: submittal.id,
-      number: submittal.number,
-      revision: submittal.revision,
-      decision: input.decision,
-    });
     return updated;
   }
 

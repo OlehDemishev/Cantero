@@ -7,7 +7,7 @@ import { StorageService } from "../common/storage/storage.service";
 import { MailService } from "../common/mail/mail.service";
 import { decodePngDataUrl } from "../common/signature";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 
 @Injectable()
 export class SignatureRequestsService {
@@ -17,7 +17,7 @@ export class SignatureRequestsService {
     private readonly mail: MailService,
     private readonly config: ConfigService,
     private readonly audit: AuditService,
-    private readonly webhooks: WebhooksService,
+    private readonly outbox: OutboxService,
   ) {}
 
   list(companyId: string) {
@@ -125,12 +125,14 @@ export class SignatureRequestsService {
 
     const remaining = orderedSigners.filter((s) => s.id !== signer.id && !s.signedAt).sort((a, b) => a.order - b.order);
     if (remaining.length === 0) {
-      await this.prisma.signatureRequest.update({
-        where: { id: signer.signatureRequestId },
-        data: { status: "completed", completedAt: signedAt },
-      });
-      this.webhooks.trigger(signer.signatureRequest.companyId, "signature_request.completed", {
-        signatureRequestId: signer.signatureRequestId,
+      await this.prisma.$transaction(async (tx) => {
+        await tx.signatureRequest.update({
+          where: { id: signer.signatureRequestId },
+          data: { status: "completed", completedAt: signedAt },
+        });
+        await this.outbox.enqueue(tx, signer.signatureRequest.companyId, "signature_request.completed", {
+          signatureRequestId: signer.signatureRequestId,
+        });
       });
       this.audit.record(
         signer.signatureRequest.companyId,

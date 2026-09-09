@@ -3,7 +3,7 @@ import { Test } from "@nestjs/testing";
 import { LeadsService } from "./leads.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService } from "../common/audit/audit.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 import { StorageService } from "../common/storage/storage.service";
 
 const COMPANY_A = "company-a";
@@ -15,9 +15,10 @@ describe("LeadsService", () => {
     company: { update: jest.Mock; findUnique: jest.Mock };
     client: { create: jest.Mock };
     document: { findMany: jest.Mock; findFirst: jest.Mock };
+    $transaction: jest.Mock;
   };
   let audit: { record: jest.Mock };
-  let webhooks: { trigger: jest.Mock };
+  let outbox: { enqueue: jest.Mock };
   let storage: { read: jest.Mock };
 
   beforeEach(async () => {
@@ -25,9 +26,10 @@ describe("LeadsService", () => {
       company: { update: jest.fn(), findUnique: jest.fn() },
       client: { create: jest.fn() },
       document: { findMany: jest.fn(), findFirst: jest.fn() },
+      $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
     };
     audit = { record: jest.fn() };
-    webhooks = { trigger: jest.fn() };
+    outbox = { enqueue: jest.fn() };
     storage = { read: jest.fn() };
 
     const module = await Test.createTestingModule({
@@ -35,7 +37,7 @@ describe("LeadsService", () => {
         LeadsService,
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: audit },
-        { provide: WebhooksService, useValue: webhooks },
+        { provide: OutboxService, useValue: outbox },
         { provide: StorageService, useValue: storage },
       ],
     }).compile();
@@ -63,7 +65,7 @@ describe("LeadsService", () => {
           data: expect.objectContaining({ companyId: COMPANY_A, name: "Jane Doe", email: "jane@example.com", notes: "Need a quote" }),
         }),
       );
-      expect(webhooks.trigger).toHaveBeenCalledWith(COMPANY_A, "client.lead_captured", expect.objectContaining({ clientId: "client-1" }));
+      expect(outbox.enqueue).toHaveBeenCalledWith(prisma, COMPANY_A, "client.lead_captured", expect.objectContaining({ clientId: "client-1" }));
     });
 
     it("silently drops a submission with a filled honeypot, without creating a client or firing a webhook", async () => {
@@ -73,7 +75,7 @@ describe("LeadsService", () => {
 
       expect(result).toEqual({ ok: true });
       expect(prisma.client.create).not.toHaveBeenCalled();
-      expect(webhooks.trigger).not.toHaveBeenCalled();
+      expect(outbox.enqueue).not.toHaveBeenCalled();
     });
   });
 

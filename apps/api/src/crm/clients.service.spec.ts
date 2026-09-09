@@ -3,7 +3,7 @@ import { Test } from "@nestjs/testing";
 import { ClientsService } from "./clients.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService } from "../common/audit/audit.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 import { ProjectsService } from "../projects/projects.service";
 
 const COMPANY_A = "company-a";
@@ -15,9 +15,10 @@ describe("ClientsService", () => {
     client: { findFirst: jest.Mock; findMany: jest.Mock; create: jest.Mock; update: jest.Mock };
     worker: { findFirst: jest.Mock };
     clientStageHistory: { create: jest.Mock; findMany: jest.Mock };
+    $transaction: jest.Mock;
   };
   let audit: { record: jest.Mock };
-  let webhooks: { trigger: jest.Mock };
+  let outbox: { enqueue: jest.Mock };
   let projects: { create: jest.Mock };
 
   beforeEach(async () => {
@@ -25,9 +26,10 @@ describe("ClientsService", () => {
       client: { findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn() },
       worker: { findFirst: jest.fn() },
       clientStageHistory: { create: jest.fn(), findMany: jest.fn() },
+      $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
     };
     audit = { record: jest.fn() };
-    webhooks = { trigger: jest.fn() };
+    outbox = { enqueue: jest.fn() };
     projects = { create: jest.fn() };
 
     const module = await Test.createTestingModule({
@@ -35,7 +37,7 @@ describe("ClientsService", () => {
         ClientsService,
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: audit },
-        { provide: WebhooksService, useValue: webhooks },
+        { provide: OutboxService, useValue: outbox },
         { provide: ProjectsService, useValue: projects },
       ],
     }).compile();
@@ -100,7 +102,7 @@ describe("ClientsService", () => {
           data: expect.objectContaining({ stage: "won", wonAt: expect.any(Date), lostAt: null, lostReason: null }),
         }),
       );
-      expect(webhooks.trigger).toHaveBeenCalledWith(COMPANY_A, "client.won", expect.objectContaining({ clientId: "c-1" }));
+      expect(outbox.enqueue).toHaveBeenCalledWith(prisma, COMPANY_A, "client.won", expect.objectContaining({ clientId: "c-1" }));
     });
 
     it("sets lostAt/lostReason and triggers the client.lost webhook when moved to lost", async () => {
@@ -114,7 +116,7 @@ describe("ClientsService", () => {
           data: expect.objectContaining({ stage: "lost", lostAt: expect.any(Date), lostReason: "Went with a competitor", wonAt: null }),
         }),
       );
-      expect(webhooks.trigger).toHaveBeenCalledWith(COMPANY_A, "client.lost", expect.objectContaining({ clientId: "c-1" }));
+      expect(outbox.enqueue).toHaveBeenCalledWith(prisma, COMPANY_A, "client.lost", expect.objectContaining({ clientId: "c-1" }));
     });
 
     it("clears wonAt/lostAt/lostReason when a won client is reopened to another stage", async () => {

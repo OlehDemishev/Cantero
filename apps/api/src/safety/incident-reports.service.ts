@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import type { CreateIncidentReportInput, UpdateIncidentReportInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 import { toCsv } from "../common/csv";
 import { PdfService } from "../common/pdf/pdf.service";
 import { StorageService } from "../common/storage/storage.service";
@@ -13,7 +13,7 @@ export class IncidentReportsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
-    private readonly webhooks: WebhooksService,
+    private readonly outbox: OutboxService,
     private readonly pdf: PdfService,
     private readonly storage: StorageService,
     private readonly projectAccess: ProjectAccessService,
@@ -34,23 +34,27 @@ export class IncidentReportsService {
   async create(companyId: string, actor: AuditActor, input: CreateIncidentReportInput) {
     const project = await this.assertProject(companyId, input.projectId);
 
-    const report = await this.prisma.incidentReport.create({
-      data: {
-        companyId,
-        projectId: input.projectId,
-        occurredAt: new Date(input.occurredAt),
-        severity: input.severity,
-        description: input.description,
-        location: input.location,
-        involvedPersons: input.involvedPersons,
-        correctiveActions: input.correctiveActions,
-        oshaRecordable: input.oshaRecordable,
-        oshaCaseType: input.oshaCaseType,
-        daysAwayFromWork: input.daysAwayFromWork,
-        daysJobTransferOrRestriction: input.daysJobTransferOrRestriction,
-        reportedByUserId: actor.userId,
-        reportedByName: actor.name,
-      },
+    const report = await this.prisma.$transaction(async (tx) => {
+      const report = await tx.incidentReport.create({
+        data: {
+          companyId,
+          projectId: input.projectId,
+          occurredAt: new Date(input.occurredAt),
+          severity: input.severity,
+          description: input.description,
+          location: input.location,
+          involvedPersons: input.involvedPersons,
+          correctiveActions: input.correctiveActions,
+          oshaRecordable: input.oshaRecordable,
+          oshaCaseType: input.oshaCaseType,
+          daysAwayFromWork: input.daysAwayFromWork,
+          daysJobTransferOrRestriction: input.daysJobTransferOrRestriction,
+          reportedByUserId: actor.userId,
+          reportedByName: actor.name,
+        },
+      });
+      await this.outbox.enqueue(tx, companyId, "safety_incident.logged", { incidentId: report.id, severity: report.severity, projectId: input.projectId });
+      return report;
     });
     this.audit.record(
       companyId,
@@ -60,7 +64,6 @@ export class IncidentReportsService {
       report.id,
       `Logged ${input.severity.replace(/_/g, " ")} incident on "${project.name}"`,
     );
-    this.webhooks.trigger(companyId, "safety_incident.logged", { incidentId: report.id, severity: report.severity, projectId: input.projectId });
     return report;
   }
 

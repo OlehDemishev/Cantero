@@ -3,7 +3,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import type { SubmitPublicLeadInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 import { StorageService } from "../common/storage/storage.service";
 
 const SHOWCASE_PHOTO_LIMIT = 12;
@@ -13,7 +13,7 @@ export class LeadsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
-    private readonly webhooks: WebhooksService,
+    private readonly outbox: OutboxService,
     private readonly storage: StorageService,
   ) {}
 
@@ -87,14 +87,18 @@ export class LeadsService {
 
     if (input.honeypot) return { ok: true };
 
-    const client = await this.prisma.client.create({
-      data: {
-        companyId: company.id,
-        name: input.name,
-        email: input.email,
-        phone: input.phone,
-        notes: input.message,
-      },
+    const client = await this.prisma.$transaction(async (tx) => {
+      const client = await tx.client.create({
+        data: {
+          companyId: company.id,
+          name: input.name,
+          email: input.email,
+          phone: input.phone,
+          notes: input.message,
+        },
+      });
+      await this.outbox.enqueue(tx, company.id, "client.lead_captured", { clientId: client.id, name: client.name });
+      return client;
     });
     this.audit.record(
       company.id,
@@ -104,7 +108,6 @@ export class LeadsService {
       client.id,
       `New lead from the website: "${input.name}"`,
     );
-    this.webhooks.trigger(company.id, "client.lead_captured", { clientId: client.id, name: client.name });
     return { ok: true };
   }
 }

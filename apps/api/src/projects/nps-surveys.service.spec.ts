@@ -5,7 +5,7 @@ import { NpsSurveysService } from "./nps-surveys.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 import { MessageTemplatesService } from "../message-templates/message-templates.service";
 
 const COMPANY_A = "company-a";
@@ -19,9 +19,10 @@ describe("NpsSurveysService", () => {
     company: { findUniqueOrThrow: jest.Mock };
     task: { aggregate: jest.Mock; create: jest.Mock };
     membership: { findMany: jest.Mock };
+    $transaction: jest.Mock;
   };
   let mail: { send: jest.Mock };
-  let webhooks: { trigger: jest.Mock };
+  let outbox: { enqueue: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -30,9 +31,10 @@ describe("NpsSurveysService", () => {
       company: { findUniqueOrThrow: jest.fn() },
       task: { aggregate: jest.fn().mockResolvedValue({ _max: { sortOrder: 0 } }), create: jest.fn() },
       membership: { findMany: jest.fn().mockResolvedValue([{ user: { email: "owner@example.com" } }]) },
+      $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
     };
     mail = { send: jest.fn() };
-    webhooks = { trigger: jest.fn() };
+    outbox = { enqueue: jest.fn() };
 
     const module = await Test.createTestingModule({
       providers: [
@@ -40,7 +42,7 @@ describe("NpsSurveysService", () => {
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: { record: jest.fn() } },
         { provide: MailService, useValue: mail },
-        { provide: WebhooksService, useValue: webhooks },
+        { provide: OutboxService, useValue: outbox },
         { provide: ConfigService, useValue: { get: () => undefined } },
         { provide: MessageTemplatesService, useValue: { render: jest.fn().mockResolvedValue(null) } },
       ],
@@ -106,7 +108,7 @@ describe("NpsSurveysService", () => {
       expect(prisma.npsSurvey.update).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ score: 9, comment: "Great work" }) }),
       );
-      expect(webhooks.trigger).toHaveBeenCalledWith(COMPANY_A, "nps_survey.responded", expect.objectContaining({ score: 9 }));
+      expect(outbox.enqueue).toHaveBeenCalledWith(prisma, COMPANY_A, "nps_survey.responded", expect.objectContaining({ score: 9 }));
     });
 
     it("does nothing extra for a detractor score when npsDetractorFollowUpEnabled is off", async () => {

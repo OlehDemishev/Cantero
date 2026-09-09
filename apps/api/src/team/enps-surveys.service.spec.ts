@@ -6,7 +6,7 @@ import { EnpsSurveysService } from "./enps-surveys.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService } from "../common/audit/audit.service";
 import { SmsService } from "../common/sms/sms.service";
-import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { OutboxService } from "../common/webhooks/outbox.service";
 import { ENPS_SURVEYS_QUEUE } from "../common/queue/queue.module";
 
 const COMPANY_A = "company-a";
@@ -18,18 +18,20 @@ describe("EnpsSurveysService", () => {
     company: { findMany: jest.Mock; findUniqueOrThrow: jest.Mock; update: jest.Mock };
     worker: { findMany: jest.Mock };
     enpsSurvey: { create: jest.Mock; findUnique: jest.Mock; update: jest.Mock; findMany: jest.Mock };
+    $transaction: jest.Mock;
   };
   let sms: { send: jest.Mock };
-  let webhooks: { trigger: jest.Mock };
+  let outbox: { enqueue: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
       company: { findMany: jest.fn(), findUniqueOrThrow: jest.fn(), update: jest.fn() },
       worker: { findMany: jest.fn() },
       enpsSurvey: { create: jest.fn(), findUnique: jest.fn(), update: jest.fn(), findMany: jest.fn() },
+      $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
     };
     sms = { send: jest.fn() };
-    webhooks = { trigger: jest.fn() };
+    outbox = { enqueue: jest.fn() };
 
     const module = await Test.createTestingModule({
       providers: [
@@ -37,7 +39,7 @@ describe("EnpsSurveysService", () => {
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: { record: jest.fn() } },
         { provide: SmsService, useValue: sms },
-        { provide: WebhooksService, useValue: webhooks },
+        { provide: OutboxService, useValue: outbox },
         { provide: ConfigService, useValue: { get: () => undefined } },
         { provide: getQueueToken(ENPS_SURVEYS_QUEUE), useValue: { add: jest.fn() } },
       ],
@@ -120,8 +122,8 @@ describe("EnpsSurveysService", () => {
 
       await service.submit("tok", { score: 9, comment: "Great team" });
 
-      expect(webhooks.trigger).toHaveBeenCalledWith(COMPANY_A, "enps_survey.responded", { score: 9, comment: "Great team" });
-      const webhookPayload = webhooks.trigger.mock.calls[0][2];
+      expect(outbox.enqueue).toHaveBeenCalledWith(prisma, COMPANY_A, "enps_survey.responded", { score: 9, comment: "Great team" });
+      const webhookPayload = outbox.enqueue.mock.calls[0][3];
       expect(webhookPayload).not.toHaveProperty("workerId");
     });
   });
