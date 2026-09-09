@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { AuthModule } from "../auth/auth.module";
 import { CompanyController } from "./company.controller";
 import { CompanyService } from "./company.service";
 import { MembersController } from "./members.controller";
@@ -25,6 +26,7 @@ import { CompanyHolidaysController } from "./company-holidays.controller";
 import { CompanyHolidaysService } from "./company-holidays.service";
 
 @Module({
+  imports: [AuthModule],
   controllers: [
     CompanyController,
     MembersController,

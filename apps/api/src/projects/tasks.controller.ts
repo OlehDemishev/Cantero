@@ -72,7 +72,7 @@ export class TasksController {
     @Param("id") id: string,
     @Body(new ZodValidationPipe(updateTaskSchema)) body: UpdateTaskInput,
   ) {
-    return this.service.update(user.companyId, id, body);
+    return this.service.update(user.companyId, id, body, user.userId, user.role);
   }
 
   @Post(":id/dependencies")
@@ -81,12 +81,12 @@ export class TasksController {
     @Param("id") id: string,
     @Body(new ZodValidationPipe(createTaskDependencySchema)) body: CreateTaskDependencyInput,
   ) {
-    return this.service.addDependency(user.companyId, id, body);
+    return this.service.addDependency(user.companyId, id, body, user.userId, user.role);
   }
 
   @Delete("dependencies/:dependencyId")
   removeDependency(@CurrentUser() user: AuthUser, @Param("dependencyId") dependencyId: string) {
-    return this.service.removeDependency(user.companyId, dependencyId);
+    return this.service.removeDependency(user.companyId, dependencyId, user.userId, user.role);
   }
 
   @Post(":id/commitments")
@@ -95,7 +95,7 @@ export class TasksController {
     @Param("id") id: string,
     @Body(new ZodValidationPipe(createTaskCommitmentSchema)) body: CreateTaskCommitmentInput,
   ) {
-    return this.service.commitTask(user.companyId, user.name, id, body);
+    return this.service.commitTask(user.companyId, user.name, id, body, user.userId, user.role);
   }
 
   @Post("commitments/:id/resolve")
@@ -104,6 +104,6 @@ export class TasksController {
     @Param("id") id: string,
     @Body(new ZodValidationPipe(resolveTaskCommitmentSchema)) body: ResolveTaskCommitmentInput,
   ) {
-    return this.service.resolveCommitment(user.companyId, id, body);
+    return this.service.resolveCommitment(user.companyId, id, body, user.userId, user.role);
   }
 }

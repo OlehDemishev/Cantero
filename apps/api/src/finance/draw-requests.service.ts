@@ -5,6 +5,7 @@ import { PrismaService } from "../common/prisma/prisma.service";
 import { PdfService } from "../common/pdf/pdf.service";
 import { StorageService } from "../common/storage/storage.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
+import { ProjectAccessService } from "../common/project-access/project-access.service";
 import { AiaBillingService } from "./aia-billing.service";
 
 const STATUS_TIMESTAMP_FIELD: Partial<Record<DrawRequestStatus, "submittedAt" | "approvedAt" | "fundedAt">> = {
@@ -28,6 +29,7 @@ export class DrawRequestsService {
     private readonly storage: StorageService,
     private readonly audit: AuditService,
     private readonly aiaBilling: AiaBillingService,
+    private readonly projectAccess: ProjectAccessService,
   ) {}
 
   list(companyId: string, projectId?: string) {
@@ -38,9 +40,10 @@ export class DrawRequestsService {
     });
   }
 
-  async get(companyId: string, id: string) {
+  async get(companyId: string, id: string, userId?: string, role?: string) {
     const draw = await this.prisma.drawRequest.findFirst({ where: { id, companyId }, include: { invoice: true } });
     if (!draw) throw new NotFoundException("Draw request not found");
+    await this.projectAccess.assertAccess(companyId, draw.projectId, userId, role);
     return draw;
   }
 
@@ -77,8 +80,8 @@ export class DrawRequestsService {
     return draw;
   }
 
-  async updateStatus(companyId: string, actor: AuditActor, id: string, status: DrawRequestStatus) {
-    const draw = await this.get(companyId, id);
+  async updateStatus(companyId: string, actor: AuditActor, id: string, status: DrawRequestStatus, userId?: string, role?: string) {
+    const draw = await this.get(companyId, id, userId, role);
     const timestampField = STATUS_TIMESTAMP_FIELD[status];
 
     const updated = await this.prisma.drawRequest.update({
@@ -96,12 +99,13 @@ export class DrawRequestsService {
    * documents (photos, invoice scans) attached directly to the draw's invoice — same archiver
    * pattern as ProjectCloseoutService.buildPackage, different source data.
    */
-  async buildPackage(companyId: string, id: string): Promise<Buffer> {
+  async buildPackage(companyId: string, id: string, userId?: string, role?: string): Promise<Buffer> {
     const draw = await this.prisma.drawRequest.findFirst({
       where: { id, companyId },
       include: { invoice: { include: { project: true, client: true } } },
     });
     if (!draw) throw new NotFoundException("Draw request not found");
+    await this.projectAccess.assertAccess(companyId, draw.projectId, userId, role);
 
     const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
     const [lienWaivers, invoiceDocuments] = await Promise.all([

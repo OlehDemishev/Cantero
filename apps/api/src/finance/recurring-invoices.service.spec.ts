@@ -1,5 +1,6 @@
 import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
+import { Prisma } from "@prisma/client";
 import { RecurringInvoicesService } from "./recurring-invoices.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService } from "../common/audit/audit.service";
@@ -14,11 +15,12 @@ const COMPANY_A = "company-a";
 describe("RecurringInvoicesService", () => {
   let service: RecurringInvoicesService;
   let prisma: {
-    project: { findFirst: jest.Mock };
+    project: { findFirst: jest.Mock; findUniqueOrThrow: jest.Mock };
     client: { findFirst: jest.Mock; findUniqueOrThrow: jest.Mock };
+    company: { findUniqueOrThrow: jest.Mock };
     recurringInvoice: { create: jest.Mock; findFirst: jest.Mock; update: jest.Mock; delete: jest.Mock; findMany: jest.Mock };
     recurringInvoiceLine: { deleteMany: jest.Mock; createMany: jest.Mock };
-    invoice: { count: jest.Mock; create: jest.Mock };
+    invoice: { count: jest.Mock; create: jest.Mock; findFirstOrThrow: jest.Mock };
     $transaction: jest.Mock;
   };
   let invoices: { send: jest.Mock; recordPayment: jest.Mock };
@@ -26,12 +28,15 @@ describe("RecurringInvoicesService", () => {
 
   beforeEach(async () => {
     prisma = {
-      project: { findFirst: jest.fn() },
+      project: { findFirst: jest.fn(), findUniqueOrThrow: jest.fn().mockResolvedValue({ currency: null }) },
       client: { findFirst: jest.fn(), findUniqueOrThrow: jest.fn() },
+      company: { findUniqueOrThrow: jest.fn().mockResolvedValue({ currency: "EUR" }) },
       recurringInvoice: { create: jest.fn(), findFirst: jest.fn(), update: jest.fn(), delete: jest.fn(), findMany: jest.fn() },
       recurringInvoiceLine: { deleteMany: jest.fn(), createMany: jest.fn() },
-      invoice: { count: jest.fn(), create: jest.fn() },
-      $transaction: jest.fn((ops) => Promise.all(ops)),
+      invoice: { count: jest.fn(), create: jest.fn(), findFirstOrThrow: jest.fn() },
+      $transaction: jest.fn((opsOrCallback) =>
+        typeof opsOrCallback === "function" ? opsOrCallback(prisma) : Promise.all(opsOrCallback),
+      ),
     };
     invoices = { send: jest.fn(), recordPayment: jest.fn() };
     clientPaymentMethods = { chargeOffSession: jest.fn() };
@@ -162,9 +167,71 @@ describe("RecurringInvoicesService", () => {
 
       expect(prisma.invoice.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ recurringInvoiceId: "rec-1", status: "draft", total: 1000 }),
+          data: expect.objectContaining({ recurringInvoiceId: "rec-1", status: "draft", total: 1000, currency: "EUR" }),
         }),
       );
+      expect(result).toEqual({ generated: 1 });
+    });
+
+    it("generates in the project's own currency when it overrides the company default", async () => {
+      prisma.recurringInvoice.findMany.mockResolvedValue([
+        {
+          id: "rec-1",
+          companyId: COMPANY_A,
+          projectId: "project-1",
+          clientId: "client-1",
+          frequency: "monthly",
+          taxPercent: 0,
+          nextRunDate: new Date("2026-06-01T00:00:00.000Z"),
+          endDate: null,
+          lines: [{ description: "Retainer", quantity: 1, unitPrice: 1000 }],
+        },
+      ]);
+      prisma.project.findUniqueOrThrow.mockResolvedValue({ currency: "USD" });
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ currency: "EUR" });
+      prisma.invoice.count.mockResolvedValue(0);
+      prisma.invoice.create.mockResolvedValue({ id: "inv-1", number: "INV-0001" });
+
+      await service.runDuePass();
+
+      expect(prisma.invoice.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ currency: "USD" }) }),
+      );
+    });
+
+    it("recovers without duplicating when this billing period was already generated (retry after a crash)", async () => {
+      const nextRunDate = new Date("2026-06-01T00:00:00.000Z");
+      prisma.recurringInvoice.findMany.mockResolvedValue([
+        {
+          id: "rec-1",
+          companyId: COMPANY_A,
+          projectId: "project-1",
+          clientId: "client-1",
+          frequency: "monthly",
+          taxPercent: 0,
+          nextRunDate,
+          endDate: null,
+          lines: [{ description: "Retainer", quantity: 1, unitPrice: 1000 }],
+        },
+      ]);
+      prisma.invoice.count.mockResolvedValue(0);
+      const clashError = new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+        code: "P2002",
+        clientVersion: "5.22.0",
+        meta: { target: ["recurringInvoiceId", "recurringBillingPeriod"] },
+      });
+      prisma.invoice.create.mockRejectedValue(clashError);
+      const existingInvoice = { id: "inv-existing", number: "INV-0001", recurringBillingPeriod: nextRunDate };
+      prisma.invoice.findFirstOrThrow.mockResolvedValue(existingInvoice);
+
+      const result = await service.runDuePass();
+
+      expect(prisma.invoice.findFirstOrThrow).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { recurringInvoiceId: "rec-1", recurringBillingPeriod: nextRunDate } }),
+      );
+      // No second invoice.create beyond the one that clashed, and no webhook/autopay re-fired —
+      // that already happened on whichever attempt actually created this invoice.
+      expect(prisma.invoice.create).toHaveBeenCalledTimes(1);
       expect(result).toEqual({ generated: 1 });
     });
 

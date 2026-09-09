@@ -95,4 +95,34 @@ describe("WebhooksService.trigger", () => {
 
     expect(Sentry.captureException).not.toHaveBeenCalled();
   });
+
+  it("does not follow a redirect from a customer endpoint — recorded as a failed delivery instead", async () => {
+    // Without this, an endpoint that was public when registered could later (or immediately, if
+    // malicious) answer with a 3xx pointing at a private/internal address, and a plain fetch()
+    // would follow it there — bypassing assertPublicWebhookUrl's save-time check entirely.
+    prisma.webhookEndpoint.findMany.mockResolvedValue([{ id: "ep-1", url: "https://example.com/hook", secret: "s3cr3t" }]);
+    const fetchMock = jest.fn().mockResolvedValue({ type: "opaqueredirect", ok: false, status: 0 });
+    global.fetch = fetchMock as never;
+
+    service.trigger(COMPANY_A, "invoice.sent", {});
+    await flush();
+    await flush();
+
+    expect(fetchMock).toHaveBeenCalledWith("https://example.com/hook", expect.objectContaining({ redirect: "manual" }));
+    expect(prisma.webhookDelivery.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ success: false, error: expect.stringContaining("redirect") }) }),
+    );
+  });
+
+  it("does not follow a redirect from a chat (Slack/Teams) webhook either", async () => {
+    prisma.webhookEndpoint.findMany.mockResolvedValue([]);
+    prisma.company.findUnique.mockResolvedValue({ slackWebhookUrl: "https://hooks.slack.com/services/x", teamsWebhookUrl: null });
+    const fetchMock = jest.fn().mockResolvedValue({ type: "opaqueredirect", ok: false, status: 0 });
+    global.fetch = fetchMock as never;
+
+    service.trigger(COMPANY_A, "invoice.sent", {});
+    await flush();
+
+    expect(fetchMock).toHaveBeenCalledWith("https://hooks.slack.com/services/x", expect.objectContaining({ redirect: "manual" }));
+  });
 });

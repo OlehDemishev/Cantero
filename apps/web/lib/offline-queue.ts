@@ -7,6 +7,11 @@ import { resetStateInEffect } from "./effect-reset";
 
 export interface QueuedMutation {
   id: number;
+  /** Stable across every attempt (the first, immediate try and every later retry/flush) — sent
+   * as the Idempotency-Key header so the server can recognize a resend of the same logical
+   * mutation (e.g. after the response to an already-committed write was lost) instead of applying
+   * it twice. Generated once, at the very first attempt, in submitOrQueue()/submitOrQueueUpload(). */
+  mutationId: string;
   kind: string;
   path: string;
   method: "POST" | "PATCH";
@@ -23,6 +28,12 @@ export interface QueuedMutation {
 }
 
 const QUEUE_CHANGED_EVENT = "cantero-offline-queue-changed";
+/** Web Locks API name coordinating flushQueue() across every tab of this origin — see flushQueue(). */
+const FLUSH_LOCK_NAME = "cantero-offline-flush";
+
+function newMutationId(): string {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
 
 /** Lets every mounted useOfflineQueue() instance react to a mutation queued or flushed anywhere in the tree. */
 function notifyQueueChanged(): void {
@@ -30,18 +41,30 @@ function notifyQueueChanged(): void {
 }
 
 /** Queues a mutation for later delivery. Call this only when a request has already failed due to being offline. */
-export async function queueMutation(kind: string, path: string, method: "POST" | "PATCH", body: unknown): Promise<void> {
+export async function queueMutation(
+  kind: string,
+  path: string,
+  method: "POST" | "PATCH",
+  body: unknown,
+  mutationId: string = newMutationId(),
+): Promise<void> {
   await withStore(MUTATIONS_STORE, "readwrite", (store) =>
-    store.add({ kind, path, method, body, createdAt: Date.now() } as QueuedMutation),
+    store.add({ mutationId, kind, path, method, body, createdAt: Date.now() } as QueuedMutation),
   );
   notifyQueueChanged();
 }
 
 /** Queues a file upload for later delivery (e.g. an expense receipt photo taken while offline) — same
  * "only call after a real network failure" contract as queueMutation. */
-export async function queueFileUpload(kind: string, path: string, file: Blob, fileName: string): Promise<void> {
+export async function queueFileUpload(
+  kind: string,
+  path: string,
+  file: Blob,
+  fileName: string,
+  mutationId: string = newMutationId(),
+): Promise<void> {
   await withStore(MUTATIONS_STORE, "readwrite", (store) =>
-    store.add({ kind, path, method: "POST", body: null, file, fileName, createdAt: Date.now() } as QueuedMutation),
+    store.add({ mutationId, kind, path, method: "POST", body: null, file, fileName, createdAt: Date.now() } as QueuedMutation),
   );
   notifyQueueChanged();
 }
@@ -75,9 +98,9 @@ export async function retryQueued(id: number): Promise<{ ok: boolean; error?: st
   if (!item) return { ok: false, error: "Not found" };
   try {
     if (item.file) {
-      await apiUpload(item.path, new File([item.file], item.fileName ?? "upload", { type: item.file.type }));
+      await apiUpload(item.path, new File([item.file], item.fileName ?? "upload", { type: item.file.type }), item.mutationId);
     } else {
-      await apiFetch(item.path, { method: item.method, body: JSON.stringify(item.body) });
+      await apiFetch(item.path, { method: item.method, body: JSON.stringify(item.body), headers: { "Idempotency-Key": item.mutationId } });
     }
     await removeQueued(item.id);
     return { ok: true };
@@ -99,15 +122,20 @@ export async function submitOrQueue<T = unknown>(
   method: "POST" | "PATCH",
   body: unknown,
 ): Promise<{ queued: boolean; data?: T }> {
+  // Generated before the first attempt and reused if this ends up queued, so a retry (or the
+  // original request's own response arriving late) is recognizable server-side as the same
+  // mutation — including the case this very attempt actually succeeded but its response was lost
+  // to the same network failure that's about to look like "offline" below.
+  const mutationId = newMutationId();
   try {
-    const data = await apiFetch<T>(path, { method, body: JSON.stringify(body) });
+    const data = await apiFetch<T>(path, { method, body: JSON.stringify(body), headers: { "Idempotency-Key": mutationId } });
     return { queued: false, data };
   } catch (err) {
     if (err instanceof TypeError) {
       // fetch() throws a plain TypeError for network failures (offline, DNS, etc.) —
       // ApiError means the server responded and rejected the request, which should
       // surface to the user immediately rather than being silently queued.
-      await queueMutation(kind, path, method, body);
+      await queueMutation(kind, path, method, body, mutationId);
       return { queued: true };
     }
     throw err;
@@ -121,12 +149,13 @@ export async function submitOrQueueUpload<T = unknown>(
   path: string,
   file: File,
 ): Promise<{ queued: boolean; data?: T }> {
+  const mutationId = newMutationId();
   try {
-    const data = await apiUpload<T>(path, file);
+    const data = await apiUpload<T>(path, file, mutationId);
     return { queued: false, data };
   } catch (err) {
     if (err instanceof TypeError) {
-      await queueFileUpload(kind, path, file, file.name);
+      await queueFileUpload(kind, path, file, file.name, mutationId);
       return { queued: true };
     }
     throw err;
@@ -141,13 +170,18 @@ let flushInFlight: Promise<{ flushed: number; failed: number; remaining: number 
  * edited or deleted elsewhere, a validation error, etc.) is a genuine conflict, not a connectivity
  * problem: that item is marked failed and skipped, so it doesn't block every mutation queued after
  * it. Already-failed items are skipped without retrying — the user resolves them explicitly.
- * Guarded against concurrent calls (e.g. React StrictMode double-mounting useOfflineQueue, or multiple
- * mounted instances of it) — without this, two overlapping passes could each read the same queued item
- * before either had deleted it, submitting it to the server twice.
+ *
+ * Guarded two ways against a mutation being submitted twice: `flushInFlight` covers concurrent
+ * calls within this one JS context (e.g. React StrictMode double-mounting useOfflineQueue), and
+ * the Web Locks request below covers the same race across every other tab/window of this origin —
+ * IndexedDB is shared per-origin, not per-tab, so two tabs each running their own flush could
+ * otherwise both read the same queued item before either had deleted it. Each item's own
+ * Idempotency-Key (see submitOrQueue) is the last line of defense if both guards are somehow lost
+ * (e.g. a lock-unaware older tab from a stale service worker).
  */
 export async function flushQueue(): Promise<{ flushed: number; failed: number; remaining: number }> {
   if (flushInFlight) return flushInFlight;
-  flushInFlight = (async () => {
+  flushInFlight = runWithFlushLock(async () => {
     const items = await listQueued();
     let flushed = 0;
     let failed = 0;
@@ -158,9 +192,9 @@ export async function flushQueue(): Promise<{ flushed: number; failed: number; r
       }
       try {
         if (item.file) {
-          await apiUpload(item.path, new File([item.file], item.fileName ?? "upload", { type: item.file.type }));
+          await apiUpload(item.path, new File([item.file], item.fileName ?? "upload", { type: item.file.type }), item.mutationId);
         } else {
-          await apiFetch(item.path, { method: item.method, body: JSON.stringify(item.body) });
+          await apiFetch(item.path, { method: item.method, body: JSON.stringify(item.body), headers: { "Idempotency-Key": item.mutationId } });
         }
         await removeQueued(item.id);
         flushed++;
@@ -175,12 +209,21 @@ export async function flushQueue(): Promise<{ flushed: number; failed: number; r
     }
     const remaining = (await listQueued()).length;
     return { flushed, failed, remaining };
-  })();
+  });
   try {
     return await flushInFlight;
   } finally {
     flushInFlight = null;
   }
+}
+
+/** Runs `fn` under a cross-tab exclusive lock when the Web Locks API is available, falling back to
+ * running it directly (no cross-tab protection, but still correct within this tab) on a browser
+ * that lacks it — Safari added support in 2022, but this must never be the reason offline sync
+ * stops working on an older one. */
+function runWithFlushLock<T>(fn: () => Promise<T>): Promise<T> {
+  if (typeof navigator === "undefined" || !("locks" in navigator)) return fn();
+  return navigator.locks.request(FLUSH_LOCK_NAME, fn) as Promise<T>;
 }
 
 export function useOfflineQueue() {

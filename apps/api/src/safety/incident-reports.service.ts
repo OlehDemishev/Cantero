@@ -6,6 +6,7 @@ import { WebhooksService } from "../common/webhooks/webhooks.service";
 import { toCsv } from "../common/csv";
 import { PdfService } from "../common/pdf/pdf.service";
 import { StorageService } from "../common/storage/storage.service";
+import { ProjectAccessService } from "../common/project-access/project-access.service";
 
 @Injectable()
 export class IncidentReportsService {
@@ -15,6 +16,7 @@ export class IncidentReportsService {
     private readonly webhooks: WebhooksService,
     private readonly pdf: PdfService,
     private readonly storage: StorageService,
+    private readonly projectAccess: ProjectAccessService,
   ) {}
 
   async listForProject(companyId: string, projectId: string) {
@@ -22,9 +24,10 @@ export class IncidentReportsService {
     return this.prisma.incidentReport.findMany({ where: { projectId }, orderBy: { occurredAt: "desc" } });
   }
 
-  async get(companyId: string, id: string) {
+  async get(companyId: string, id: string, userId?: string, role?: string) {
     const report = await this.prisma.incidentReport.findFirst({ where: { id, companyId } });
     if (!report) throw new NotFoundException("Incident report not found");
+    await this.projectAccess.assertAccess(companyId, report.projectId, userId, role);
     return report;
   }
 
@@ -61,8 +64,8 @@ export class IncidentReportsService {
     return report;
   }
 
-  async update(companyId: string, id: string, input: UpdateIncidentReportInput) {
-    const report = await this.get(companyId, id);
+  async update(companyId: string, id: string, input: UpdateIncidentReportInput, userId?: string, role?: string) {
+    const report = await this.get(companyId, id, userId, role);
     return this.prisma.incidentReport.update({
       where: { id: report.id },
       data: {
@@ -131,9 +134,10 @@ export class IncidentReportsService {
   }
 
   /** A narrative-style incident report handout — free-form body rather than a line-item table, since a single incident's description/corrective-actions read better as prose than as table cells. */
-  async generatePdf(companyId: string, id: string): Promise<Buffer> {
+  async generatePdf(companyId: string, id: string, userId?: string, role?: string): Promise<Buffer> {
     const report = await this.prisma.incidentReport.findFirst({ where: { id, companyId }, include: { project: { select: { name: true } } } });
     if (!report) throw new NotFoundException("Incident report not found");
+    await this.projectAccess.assertAccess(companyId, report.projectId, userId, role);
     const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
     const logoBuffer = company.logoStorageKey ? await this.storage.read(company.logoStorageKey).catch(() => undefined) : undefined;
 

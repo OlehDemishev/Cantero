@@ -710,8 +710,9 @@ export class EstimatesService {
     return calculateEstimate(lines, rateItemsById, materialPricesById, options);
   }
 
-  async generatePdf(companyId: string, estimateId: string): Promise<Buffer> {
+  async generatePdf(companyId: string, estimateId: string, role?: string): Promise<Buffer> {
     const estimate = await this.findOrThrow(companyId, estimateId);
+    const hideCostData = await this.shouldHideCostData(companyId, role);
     const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
     const rateItems = await this.prisma.rateCatalogItem.findMany({
       where: { id: { in: estimate.lines.map((l) => l.rateCatalogItemId) }, companyId },
@@ -732,28 +733,30 @@ export class EstimatesService {
         { label: labels.status, value: estimate.status },
         { label: labels.currency, value: estimate.currency },
       ],
-      tableHeader: [labels.item, labels.qty, labels.unit, labels.materialsTotal, labels.laborTotal, labels.lineTotal],
+      tableHeader: hideCostData
+        ? [labels.item, labels.qty, labels.unit, labels.lineTotal]
+        : [labels.item, labels.qty, labels.unit, labels.materialsTotal, labels.laborTotal, labels.lineTotal],
       tableRows: estimate.lines.map((line) => {
         const rateItem = rateItemsById[line.rateCatalogItemId];
-        return {
-          cells: [
-            rateItem?.name ?? line.rateCatalogItemId,
-            line.quantity.toString(),
-            rateItem?.unit ?? "",
-            line.materialsCost.toString(),
-            line.laborCost.toString(),
-            line.lineTotal.toString(),
-          ],
-        };
+        const cells = [rateItem?.name ?? line.rateCatalogItemId, line.quantity.toString(), rateItem?.unit ?? ""];
+        if (!hideCostData) cells.push(line.materialsCost.toString(), line.laborCost.toString());
+        cells.push(line.lineTotal.toString());
+        return { cells };
       }),
-      totals: [
-        { label: labels.materialsTotal, value: `${estimate.materialsCostTotal} ${estimate.currency}` },
-        { label: labels.laborTotal, value: `${estimate.laborCostTotal} ${estimate.currency}` },
-        { label: labels.subtotal, value: `${estimate.subtotal} ${estimate.currency}` },
-        { label: `${labels.markup} (${estimate.markupPercent}%)`, value: `${estimate.markupAmount} ${estimate.currency}` },
-        { label: `${labels.tax} (${estimate.taxPercent}%)`, value: `${estimate.taxAmount} ${estimate.currency}` },
-        { label: labels.grandTotal, value: `${estimate.grandTotal} ${estimate.currency}`, emphasize: true },
-      ],
+      totals: hideCostData
+        ? [
+            { label: labels.subtotal, value: `${estimate.subtotal} ${estimate.currency}` },
+            { label: `${labels.tax} (${estimate.taxPercent}%)`, value: `${estimate.taxAmount} ${estimate.currency}` },
+            { label: labels.grandTotal, value: `${estimate.grandTotal} ${estimate.currency}`, emphasize: true },
+          ]
+        : [
+            { label: labels.materialsTotal, value: `${estimate.materialsCostTotal} ${estimate.currency}` },
+            { label: labels.laborTotal, value: `${estimate.laborCostTotal} ${estimate.currency}` },
+            { label: labels.subtotal, value: `${estimate.subtotal} ${estimate.currency}` },
+            { label: `${labels.markup} (${estimate.markupPercent}%)`, value: `${estimate.markupAmount} ${estimate.currency}` },
+            { label: `${labels.tax} (${estimate.taxPercent}%)`, value: `${estimate.taxAmount} ${estimate.currency}` },
+            { label: labels.grandTotal, value: `${estimate.grandTotal} ${estimate.currency}`, emphasize: true },
+          ],
       branding: { logoBuffer, accentColor: company.brandColor ?? undefined },
       signature:
         estimate.clientDecision === "approved" && estimate.signerName && estimate.decisionAt

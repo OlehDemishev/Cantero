@@ -168,7 +168,7 @@ export class EstimatesController {
   @Get(":id/pdf")
   @Header("Content-Type", "application/pdf")
   async pdf(@CurrentUser() user: AuthUser, @Param("id") id: string) {
-    const buffer = await this.service.generatePdf(user.companyId, id);
+    const buffer = await this.service.generatePdf(user.companyId, id, user.role);
     return new StreamableFile(buffer);
   }
 

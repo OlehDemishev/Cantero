@@ -39,7 +39,7 @@ export class PunchListController {
 
   @Get(":id")
   get(@CurrentUser() user: AuthUser, @Param("id") id: string) {
-    return this.service.get(user.companyId, id);
+    return this.service.get(user.companyId, id, user.userId, user.role);
   }
 
   @Post()
@@ -53,12 +53,12 @@ export class PunchListController {
     @Param("id") id: string,
     @Body(new ZodValidationPipe(updatePunchListItemSchema)) body: UpdatePunchListItemInput,
   ) {
-    return this.service.update(user.companyId, { userId: user.userId, name: user.name }, id, body);
+    return this.service.update(user.companyId, { userId: user.userId, name: user.name }, id, body, user.userId, user.role);
   }
 
   @Patch(":id/pin")
   setPin(@CurrentUser() user: AuthUser, @Param("id") id: string, @Body(new ZodValidationPipe(setDrawingPinSchema)) body: SetDrawingPinInput) {
-    return this.service.setPin(user.companyId, id, body);
+    return this.service.setPin(user.companyId, id, body, user.userId, user.role);
   }
 
   @Patch(":id/change-order")
@@ -67,33 +67,33 @@ export class PunchListController {
     @Param("id") id: string,
     @Body(new ZodValidationPipe(linkPunchListChangeOrderSchema)) body: LinkPunchListChangeOrderInput,
   ) {
-    return this.service.linkChangeOrder(user.companyId, id, body);
+    return this.service.linkChangeOrder(user.companyId, id, body, user.userId, user.role);
   }
 
   // Registered ahead of ":id/resolve" and ":id/verify" — those are structurally the same
   // two-segment pattern, so route order decides which one "bulk/resolve" actually hits.
   @Post("bulk/resolve")
   bulkResolve(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(bulkActionIdsSchema)) body: BulkActionIdsInput) {
-    return this.service.bulkResolve(user.companyId, { userId: user.userId, name: user.name }, body.ids);
+    return this.service.bulkResolve(user.companyId, { userId: user.userId, name: user.name }, body.ids, user.userId, user.role);
   }
 
   @Post("bulk/verify")
   bulkVerify(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(bulkActionIdsSchema)) body: BulkActionIdsInput) {
-    return this.service.bulkVerify(user.companyId, { userId: user.userId, name: user.name }, body.ids);
+    return this.service.bulkVerify(user.companyId, { userId: user.userId, name: user.name }, body.ids, user.userId, user.role);
   }
 
   @Post(":id/resolve")
   resolve(@CurrentUser() user: AuthUser, @Param("id") id: string) {
-    return this.service.resolve(user.companyId, { userId: user.userId, name: user.name }, id);
+    return this.service.resolve(user.companyId, { userId: user.userId, name: user.name }, id, user.userId, user.role);
   }
 
   @Post(":id/verify")
   verify(@CurrentUser() user: AuthUser, @Param("id") id: string) {
-    return this.service.verify(user.companyId, { userId: user.userId, name: user.name }, id);
+    return this.service.verify(user.companyId, { userId: user.userId, name: user.name }, id, user.userId, user.role);
   }
 
   @Post(":id/reopen")
   reopen(@CurrentUser() user: AuthUser, @Param("id") id: string) {
-    return this.service.reopen(user.companyId, { userId: user.userId, name: user.name }, id);
+    return this.service.reopen(user.companyId, { userId: user.userId, name: user.name }, id, user.userId, user.role);
   }
 }

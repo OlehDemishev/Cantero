@@ -95,12 +95,22 @@ const NAV_ITEMS = [
 export function AuthenticatedShell({ children }: { children: React.ReactNode }) {
   const tc = useTranslations("common");
   const router = useRouter();
-  const { data, loading } = useMe();
+  const { data, loading, unauthorized } = useMe();
   const { isExpanded, isMobileOpen } = useSidebar();
 
   useEffect(() => {
     if (!getToken()) router.replace("/login");
   }, [router]);
+
+  useEffect(() => {
+    // A stored token that the API now rejects (expired, or from a database that's since been
+    // reset) leaves `getToken()` above satisfied forever — without this, the page sits on the
+    // loading state indefinitely instead of bouncing back to sign-in.
+    if (unauthorized) {
+      clearToken();
+      router.replace("/login");
+    }
+  }, [unauthorized, router]);
 
   useEffect(() => {
     if (data && data.subscriptionStatus !== "active") router.replace("/billing/pending");

@@ -14,6 +14,7 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
+import { MAX_UPLOAD_BYTES } from "../common/upload-limits";
 import { updateDocumentTagsSchema, type AuthUser, type Locale, type UpdateDocumentTagsInput } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
@@ -46,26 +47,31 @@ export class DocumentsController {
     @Query("search") search?: string,
     @Query("tag") tag?: string,
   ) {
-    return this.service.list(user.companyId, {
-      projectId,
-      invoiceId,
-      punchListItemId,
-      dailyLogId,
-      incidentReportId,
-      warrantyClaimId,
-      subcontractorDocumentId,
-      deficiencyId,
-      permitId,
-      safetyBriefingId,
-      supplierDocumentId,
-      companyDocumentId,
-      insuranceClaimId,
-      rfiId,
-      safetyDataSheetId,
-      category,
-      search,
-      tag,
-    });
+    return this.service.list(
+      user.companyId,
+      {
+        projectId,
+        invoiceId,
+        punchListItemId,
+        dailyLogId,
+        incidentReportId,
+        warrantyClaimId,
+        subcontractorDocumentId,
+        deficiencyId,
+        permitId,
+        safetyBriefingId,
+        supplierDocumentId,
+        companyDocumentId,
+        insuranceClaimId,
+        rfiId,
+        safetyDataSheetId,
+        category,
+        search,
+        tag,
+      },
+      user.userId,
+      user.role,
+    );
   }
 
   @Roles("owner", "admin")
@@ -81,7 +87,7 @@ export class DocumentsController {
   }
 
   @Post()
-  @UseInterceptors(FileInterceptor("file"))
+  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX_UPLOAD_BYTES } }))
   async upload(
     @CurrentUser() user: AuthUser,
     @UploadedFile() file: Express.Multer.File,
@@ -128,10 +134,10 @@ export class DocumentsController {
   }
 
   @Post(":id/replace")
-  @UseInterceptors(FileInterceptor("file"))
+  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX_UPLOAD_BYTES } }))
   async replace(@CurrentUser() user: AuthUser, @Param("id") id: string, @UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException("No file provided");
-    return this.service.replace(user.companyId, id, user.userId, file);
+    return this.service.replace(user.companyId, id, user.userId, file, user.userId, user.role);
   }
 
   @Patch(":id/tags")
@@ -140,24 +146,24 @@ export class DocumentsController {
     @Param("id") id: string,
     @Body(new ZodValidationPipe(updateDocumentTagsSchema)) body: UpdateDocumentTagsInput,
   ) {
-    return this.service.updateTags(user.companyId, id, body.tags);
+    return this.service.updateTags(user.companyId, id, body.tags, user.userId, user.role);
   }
 
   @Get(":id/versions")
   versions(@CurrentUser() user: AuthUser, @Param("id") id: string) {
-    return this.service.versions(user.companyId, id);
+    return this.service.versions(user.companyId, id, user.userId, user.role);
   }
 
   @Get(":id/download")
   @Header("Content-Type", "application/octet-stream")
   async download(@CurrentUser() user: AuthUser, @Param("id") id: string) {
-    const { buffer, name } = await this.service.download(user.companyId, id);
+    const { buffer, name } = await this.service.download(user.companyId, id, user.userId, user.role);
     return new StreamableFile(buffer, { disposition: `attachment; filename="${name}"` });
   }
 
   @Roles("owner", "admin")
   @Delete(":id")
   delete(@CurrentUser() user: AuthUser, @Param("id") id: string) {
-    return this.service.delete(user.companyId, { userId: user.userId, name: user.name }, id);
+    return this.service.delete(user.companyId, { userId: user.userId, name: user.name }, id, user.userId, user.role);
   }
 }

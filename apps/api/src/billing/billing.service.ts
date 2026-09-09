@@ -60,7 +60,6 @@ export class BillingService {
     }
     const amountToCharge = requestedAmount !== undefined ? Math.min(Math.max(requestedAmount, 0.01), balance) : balance;
 
-    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
     const webOrigin = this.config.get<string>("PORTAL_ORIGIN") ?? this.config.get<string>("WEB_ORIGIN") ?? "http://localhost:3000";
     const session = await this.stripe.checkout.sessions.create({
       mode: "payment",
@@ -68,7 +67,10 @@ export class BillingService {
       line_items: [
         {
           price_data: {
-            currency: company.currency.toLowerCase(),
+            // The invoice's own currency, never the company's default — an invoice can be issued
+            // in a different currency than the company (see Project.currency), and charging in
+            // the wrong one would collect the right *number* in the wrong money.
+            currency: invoice.currency.toLowerCase(),
             unit_amount: Math.round(amountToCharge * 100),
             product_data: { name: `Invoice ${invoice.number}` },
           },
@@ -226,7 +228,7 @@ export class BillingService {
     const amount = (session.amount_total ?? 0) / 100;
     if (amount <= 0) return;
 
-    await this.invoices.recordPayment(companyId, STRIPE_PAYMENT_ACTOR, invoiceId, { amount, method: "card" });
+    await this.invoices.recordPayment(companyId, STRIPE_PAYMENT_ACTOR, invoiceId, { amount, method: "card" }, session.id);
   }
 
   private async syncFromStripe(obj: Stripe.Subscription | Stripe.Checkout.Session): Promise<void> {

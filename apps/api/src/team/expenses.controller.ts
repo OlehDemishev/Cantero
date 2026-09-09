@@ -12,6 +12,7 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
+import { MAX_UPLOAD_BYTES } from "../common/upload-limits";
 import { createExpenseSchema, rejectExpenseSchema, type AuthUser, type CreateExpenseInput, type RejectExpenseInput } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
@@ -28,7 +29,7 @@ export class ExpensesController {
 
   // Declared before ":id/..." routes so this literal segment isn't swallowed as an expense id.
   @Post("scan-receipt")
-  @UseInterceptors(FileInterceptor("file"))
+  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX_UPLOAD_BYTES } }))
   scanReceipt(@UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException("No file provided");
     return this.ocr.extract(file.buffer);
@@ -53,7 +54,7 @@ export class ExpensesController {
   }
 
   @Post(":id/receipt")
-  @UseInterceptors(FileInterceptor("file"))
+  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX_UPLOAD_BYTES } }))
   uploadReceipt(@CurrentUser() user: AuthUser, @Param("id") id: string, @UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException("No file provided");
     return this.service.uploadReceipt(user.companyId, id, file);

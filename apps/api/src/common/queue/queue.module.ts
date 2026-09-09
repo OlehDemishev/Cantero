@@ -2,6 +2,7 @@ import { Global, Module } from "@nestjs/common";
 import { BullModule } from "@nestjs/bullmq";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import IORedis from "ioredis";
+import { QueueFailureReporterService } from "./queue-failure-reporter.service";
 
 export const STOCK_ALERTS_QUEUE = "stock-alerts";
 export const PUSH_CHECK_QUEUE = "push-check";
@@ -44,6 +45,7 @@ export const ENPS_SURVEYS_QUEUE = "enps-surveys";
     BullModule.registerQueue({ name: CHANGE_ORDER_REMINDERS_QUEUE }),
     BullModule.registerQueue({ name: ENPS_SURVEYS_QUEUE }),
   ],
+  providers: [QueueFailureReporterService],
   exports: [BullModule],
 })
 export class QueueModule {}

@@ -2617,6 +2617,11 @@ model Invoice {
   estimateId                 String?
   /// Set when a RecurringInvoice's scheduled pass generated this invoice — null for everything else.
   recurringInvoiceId         String?
+  /// Snapshot of RecurringInvoice.nextRunDate at the moment this invoice was generated — null for
+  /// a non-recurring invoice. Paired with recurringInvoiceId in a unique constraint so a retried
+  /// generation pass (e.g. after a crash between creating the invoice and advancing the schedule)
+  /// can't produce two invoices for the same billing period.
+  recurringBillingPeriod     DateTime?
   number                     String
   status                     InvoiceStatus @default(draft)
   subtotal                   Decimal       @db.Decimal(14, 2)
@@ -2647,6 +2652,14 @@ model Invoice {
   /// runs — kept independent of the client's current setting so an already-issued invoice's tax
   /// basis never silently shifts if the client's jurisdiction is edited later.
   taxJurisdictionId          String?
+  /// Running total of every "Late fee" line ever charged on this invoice — subtracted back out of
+  /// `total` when computing the principal balance a new late-fee accrual is based on, so charging
+  /// a fee never compounds onto a previously-charged fee. See InvoicesService.computeLateFeeAccrued.
+  lateFeeChargedTotal        Decimal       @default(0) @db.Decimal(14, 2)
+  /// When the late-fee clock was last reset by an actual charge — null means it hasn't been
+  /// charged yet, so accrual still starts from dueDate. Advancing this on every charge is what
+  /// makes each charge cover only the time since the last one, not the whole overdue period again.
+  lastLateFeeAccrualAt       DateTime?
 
   company          Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
   project          Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -2662,6 +2675,7 @@ model Invoice {
   drawRequest      DrawRequest?
 
   @@unique([companyId, number])
+  @@unique([recurringInvoiceId, recurringBillingPeriod])
   @@index([companyId])
   @@index([taxJurisdictionId])
   @@map("invoices")
@@ -2830,6 +2844,11 @@ model Payment {
   foreignAmount Decimal?  @db.Decimal(14, 2)
   exchangeRate  Decimal?  @db.Decimal(12, 6)
   fxGainLoss    Decimal?  @db.Decimal(14, 2)
+  /// Stripe Checkout Session id for a payment recorded from BillingService's webhook — unique so
+  /// a redelivered `checkout.session.completed` event (Stripe explicitly does not guarantee
+  /// exactly-once delivery) can't record the same payment twice. Null for a manually-recorded
+  /// (cash/check/ACH) payment.
+  stripeCheckoutSessionId String? @unique
 
   invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 

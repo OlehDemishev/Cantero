@@ -108,9 +108,14 @@ export type CreateInviteInput = z.infer<typeof createInviteSchema>;
 export const acceptInviteSchema = z.object({
   token: z.string().min(10),
   name: z.string().min(1).max(120),
-  password: z.string().min(8).max(200),
+  password: z.string().min(1).max(200),
 });
 export type AcceptInviteInput = z.infer<typeof acceptInviteSchema>;
+
+/** When the invited email already belongs to an existing account, accepting requires that
+ * account's real password — see InvitesService.accept. If that account also has 2FA active,
+ * the result is a challenge (same shape as LoginResult) rather than an access token. */
+export type AcceptInviteResult = { accessToken: string; companyId: string } | { requires2fa: true; challengeToken: string };
 
 export const changePlanSchema = z.object({
   planCode: z.enum(PLAN_IDS),

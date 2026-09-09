@@ -1,5 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Res, StreamableFile, UploadedFile, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
+import { MAX_UPLOAD_BYTES } from "../common/upload-limits";
 import type { Response } from "express";
 import {
   createDrawingSheetSchema,
@@ -21,7 +22,7 @@ export class DrawingSheetsController {
   }
 
   @Post("projects/:id/drawing-sheets")
-  @UseInterceptors(FileInterceptor("file"))
+  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX_UPLOAD_BYTES } }))
   upload(
     @CurrentUser() user: AuthUser,
     @Param("id") projectId: string,
@@ -46,7 +47,7 @@ export class DrawingSheetsController {
   }
 
   @Post("drawing-sheets/:id/supersede")
-  @UseInterceptors(FileInterceptor("file"))
+  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX_UPLOAD_BYTES } }))
   supersede(
     @CurrentUser() user: AuthUser,
     @Param("id") id: string,

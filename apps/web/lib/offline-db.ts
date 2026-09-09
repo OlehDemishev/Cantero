@@ -36,3 +36,15 @@ export async function withStore<T>(
     req.onerror = () => reject(req.error);
   });
 }
+
+/** Wipes every queued (unsynced) mutation and every cached API response — called when the signed-in
+ * account changes (see api-client.ts's setToken), so a device shared or reused across accounts
+ * never replays one account's queued writes, or shows one account's cached reads, under another's
+ * session. Best-effort: a failure here shouldn't block the login that triggered it. */
+export function clearOfflineData(): void {
+  try {
+    indexedDB.deleteDatabase(DB_NAME);
+  } catch {
+    // best-effort — a private-browsing context or a blocked store shouldn't break login
+  }
+}

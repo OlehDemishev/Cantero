@@ -11,6 +11,7 @@ import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { WebhooksService } from "../common/webhooks/webhooks.service";
 import { PdfService } from "../common/pdf/pdf.service";
 import { StorageService } from "../common/storage/storage.service";
+import { ProjectAccessService } from "../common/project-access/project-access.service";
 
 @Injectable()
 export class PunchListService {
@@ -20,6 +21,7 @@ export class PunchListService {
     private readonly webhooks: WebhooksService,
     private readonly pdf: PdfService,
     private readonly storage: StorageService,
+    private readonly projectAccess: ProjectAccessService,
   ) {}
 
   async listForProject(companyId: string, projectId: string) {
@@ -40,12 +42,13 @@ export class PunchListService {
     });
   }
 
-  async get(companyId: string, id: string) {
+  async get(companyId: string, id: string, userId?: string, role?: string) {
     const item = await this.prisma.punchListItem.findFirst({
       where: { id, companyId },
       include: { assignee: { select: { id: true, name: true } }, assigneeSubcontractor: { select: { id: true, name: true } } },
     });
     if (!item) throw new NotFoundException("Punch list item not found");
+    await this.projectAccess.assertAccess(companyId, item.projectId, userId, role);
     return item;
   }
 
@@ -75,8 +78,8 @@ export class PunchListService {
   }
 
   /** Same estimate-then-confirm-via-CO pattern as RfiService.linkChangeOrder(). */
-  async linkChangeOrder(companyId: string, id: string, input: LinkPunchListChangeOrderInput) {
-    const item = await this.get(companyId, id);
+  async linkChangeOrder(companyId: string, id: string, input: LinkPunchListChangeOrderInput, userId?: string, role?: string) {
+    const item = await this.get(companyId, id, userId, role);
     if (input.changeOrderId) {
       const changeOrder = await this.prisma.changeOrder.findFirst({ where: { id: input.changeOrderId, companyId } });
       if (!changeOrder) throw new NotFoundException("Change order not found");
@@ -88,8 +91,8 @@ export class PunchListService {
     });
   }
 
-  async setPin(companyId: string, id: string, input: SetDrawingPinInput) {
-    const item = await this.get(companyId, id);
+  async setPin(companyId: string, id: string, input: SetDrawingPinInput, userId?: string, role?: string) {
+    const item = await this.get(companyId, id, userId, role);
     if (input.drawingSheetId) {
       const sheet = await this.prisma.drawingSheet.findFirst({ where: { id: input.drawingSheetId, companyId } });
       if (!sheet) throw new NotFoundException("Drawing sheet not found");
@@ -100,8 +103,8 @@ export class PunchListService {
     });
   }
 
-  async update(companyId: string, actor: AuditActor, id: string, input: UpdatePunchListItemInput) {
-    const existing = await this.get(companyId, id);
+  async update(companyId: string, actor: AuditActor, id: string, input: UpdatePunchListItemInput, userId?: string, role?: string) {
+    const existing = await this.get(companyId, id, userId, role);
     if (input.assigneeWorkerId) await this.assertWorker(companyId, input.assigneeWorkerId);
     if (input.assigneeSubcontractorId) await this.assertSubcontractor(companyId, input.assigneeSubcontractorId);
 
@@ -120,8 +123,8 @@ export class PunchListService {
     });
   }
 
-  async resolve(companyId: string, actor: AuditActor, id: string) {
-    const item = await this.get(companyId, id);
+  async resolve(companyId: string, actor: AuditActor, id: string, userId?: string, role?: string) {
+    const item = await this.get(companyId, id, userId, role);
     if (item.status !== "open") throw new BadRequestException(`Item is already ${item.status}`);
 
     const updated = await this.prisma.punchListItem.update({
@@ -134,8 +137,8 @@ export class PunchListService {
     return updated;
   }
 
-  async verify(companyId: string, actor: AuditActor, id: string) {
-    const item = await this.get(companyId, id);
+  async verify(companyId: string, actor: AuditActor, id: string, userId?: string, role?: string) {
+    const item = await this.get(companyId, id, userId, role);
     if (item.status !== "resolved") throw new BadRequestException("Only a resolved item can be verified");
 
     const updated = await this.prisma.punchListItem.update({
@@ -148,8 +151,8 @@ export class PunchListService {
     return updated;
   }
 
-  async reopen(companyId: string, actor: AuditActor, id: string) {
-    const item = await this.get(companyId, id);
+  async reopen(companyId: string, actor: AuditActor, id: string, userId?: string, role?: string) {
+    const item = await this.get(companyId, id, userId, role);
     if (item.status === "open") throw new BadRequestException("Item is already open");
 
     const updated = await this.prisma.punchListItem.update({
@@ -170,12 +173,12 @@ export class PunchListService {
   }
 
   /** Each id is resolved independently via the same guarded resolve() — one bad id never blocks the rest. */
-  async bulkResolve(companyId: string, actor: AuditActor, ids: string[]): Promise<BulkActionResult> {
-    return this.bulkRun(ids, (id) => this.resolve(companyId, actor, id));
+  async bulkResolve(companyId: string, actor: AuditActor, ids: string[], userId?: string, role?: string): Promise<BulkActionResult> {
+    return this.bulkRun(ids, (id) => this.resolve(companyId, actor, id, userId, role));
   }
 
-  async bulkVerify(companyId: string, actor: AuditActor, ids: string[]): Promise<BulkActionResult> {
-    return this.bulkRun(ids, (id) => this.verify(companyId, actor, id));
+  async bulkVerify(companyId: string, actor: AuditActor, ids: string[], userId?: string, role?: string): Promise<BulkActionResult> {
+    return this.bulkRun(ids, (id) => this.verify(companyId, actor, id, userId, role));
   }
 
   private async bulkRun(ids: string[], run: (id: string) => Promise<unknown>): Promise<BulkActionResult> {

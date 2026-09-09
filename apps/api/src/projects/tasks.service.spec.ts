@@ -2,8 +2,10 @@ import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { TasksService } from "./tasks.service";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { ProjectAccessService } from "../common/project-access/project-access.service";
 
 const COMPANY_A = "company-a";
+const projectAccessStub = { assertAccess: jest.fn(), filterAccessible: jest.fn(async (rows: unknown[]) => rows) };
 
 describe("TasksService — dependencies", () => {
   let service: TasksService;
@@ -19,7 +21,11 @@ describe("TasksService — dependencies", () => {
     };
 
     const module = await Test.createTestingModule({
-      providers: [TasksService, { provide: PrismaService, useValue: prisma }],
+      providers: [
+        TasksService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: ProjectAccessService, useValue: projectAccessStub },
+      ],
     }).compile();
 
     service = module.get(TasksService);
@@ -123,7 +129,11 @@ describe("TasksService.getLookAhead", () => {
     };
 
     const module = await Test.createTestingModule({
-      providers: [TasksService, { provide: PrismaService, useValue: prisma }],
+      providers: [
+        TasksService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: ProjectAccessService, useValue: projectAccessStub },
+      ],
     }).compile();
 
     service = module.get(TasksService);
@@ -229,7 +239,11 @@ describe("TasksService.portfolioSchedule", () => {
     };
 
     const module = await Test.createTestingModule({
-      providers: [TasksService, { provide: PrismaService, useValue: prisma }],
+      providers: [
+        TasksService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: ProjectAccessService, useValue: projectAccessStub },
+      ],
     }).compile();
 
     service = module.get(TasksService);
@@ -296,7 +310,11 @@ describe("TasksService.shiftProjectSchedule", () => {
     };
 
     const module = await Test.createTestingModule({
-      providers: [TasksService, { provide: PrismaService, useValue: prisma }],
+      providers: [
+        TasksService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: ProjectAccessService, useValue: projectAccessStub },
+      ],
     }).compile();
 
     service = module.get(TasksService);
@@ -359,7 +377,11 @@ describe("TasksService — commitments / PPC", () => {
     };
 
     const module = await Test.createTestingModule({
-      providers: [TasksService, { provide: PrismaService, useValue: prisma }],
+      providers: [
+        TasksService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: ProjectAccessService, useValue: projectAccessStub },
+      ],
     }).compile();
 
     service = module.get(TasksService);
@@ -399,17 +421,17 @@ describe("TasksService — commitments / PPC", () => {
     });
 
     it("rejects resolving a commitment that's already resolved", async () => {
-      prisma.taskCommitment.findFirst.mockResolvedValue({ id: "commit-1", status: "completed" });
+      prisma.taskCommitment.findFirst.mockResolvedValue({ id: "commit-1", status: "completed", task: { projectId: "project-1" } });
       await expect(service.resolveCommitment(COMPANY_A, "commit-1", { status: "completed" })).rejects.toThrow(BadRequestException);
     });
 
     it("requires a variance reason when marking as missed", async () => {
-      prisma.taskCommitment.findFirst.mockResolvedValue({ id: "commit-1", status: "committed" });
+      prisma.taskCommitment.findFirst.mockResolvedValue({ id: "commit-1", status: "committed", task: { projectId: "project-1" } });
       await expect(service.resolveCommitment(COMPANY_A, "commit-1", { status: "missed" })).rejects.toThrow(BadRequestException);
     });
 
     it("resolves as completed", async () => {
-      prisma.taskCommitment.findFirst.mockResolvedValue({ id: "commit-1", status: "committed" });
+      prisma.taskCommitment.findFirst.mockResolvedValue({ id: "commit-1", status: "committed", task: { projectId: "project-1" } });
       prisma.taskCommitment.update.mockResolvedValue({ id: "commit-1", status: "completed" });
 
       const result = await service.resolveCommitment(COMPANY_A, "commit-1", { status: "completed" });

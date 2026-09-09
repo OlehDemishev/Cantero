@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { fetchCached } from "./offline-cache";
 import { resetStateInEffect } from "./effect-reset";
+import { ApiError } from "./api-client";
 
 export interface MeResponse {
   user: { id: string; email: string; name: string; role: string; totpEnabled: boolean };
@@ -33,12 +34,19 @@ export function useMe() {
   const [data, setData] = useState<MeResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // A 401 here means the stored token is invalid/expired (not just "offline" or "server hiccup") —
+  // AuthenticatedShell uses this to clear it and bounce to /login, since without it the page would
+  // otherwise sit on the loading state forever: `!getToken()` only catches a *missing* token.
+  const [unauthorized, setUnauthorized] = useState(false);
 
   const reload = useCallback(() => {
     setLoading(true);
     fetchCached<MeResponse>("me", "/me")
       .then(({ data }) => setData(data))
-      .catch((err) => setError(err.message))
+      .catch((err) => {
+        setError(err.message);
+        setUnauthorized(err instanceof ApiError && err.status === 401);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -46,5 +54,5 @@ export function useMe() {
     resetStateInEffect(reload);
   }, [reload]);
 
-  return { data, loading, error, reload };
+  return { data, loading, error, unauthorized, reload };
 }

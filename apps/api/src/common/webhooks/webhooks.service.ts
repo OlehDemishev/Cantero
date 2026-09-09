@@ -128,9 +128,16 @@ export class WebhooksService {
     const text = `*Cantero* — ${eventLabel(event)}${detail ? `\n${detail}` : ""}`;
 
     for (const url of [company.slackWebhookUrl, company.teamsWebhookUrl].filter((u): u is string => !!u)) {
-      fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) }).catch((err) =>
-        this.logger.warn(`Chat webhook delivery failed for company ${companyId}: ${(err as Error).message}`),
-      );
+      // redirect: "manual" — the URL was validated as public/non-private at save time, but a
+      // 3xx response could otherwise point this request at an internal address at delivery time
+      // without ever being re-checked. Not following it closes that gap; Slack/Teams endpoints
+      // don't redirect in normal operation anyway.
+      fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+        redirect: "manual",
+      }).catch((err) => this.logger.warn(`Chat webhook delivery failed for company ${companyId}: ${(err as Error).message}`));
     }
   }
 
@@ -152,15 +159,25 @@ export class WebhooksService {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), DELIVERY_TIMEOUT_MS);
       try {
+        // redirect: "manual" — assertPublicWebhookUrl only checks the URL at save time; without
+        // this, a since-compromised (or maliciously registered) endpoint could answer with a 3xx
+        // pointing at a private/internal address and this request would follow it there,
+        // bypassing that check entirely on every future delivery.
         const res = await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json", "X-Cantero-Event": event, "X-Cantero-Signature": signature },
           body,
           signal: controller.signal,
+          redirect: "manual",
         });
-        statusCode = res.status;
-        success = res.ok;
-        if (!success) error = `HTTP ${res.status}`;
+        if (res.type === "opaqueredirect") {
+          success = false;
+          error = "Endpoint responded with a redirect — redirects are not followed for webhook deliveries";
+        } else {
+          statusCode = res.status;
+          success = res.ok;
+          if (!success) error = `HTTP ${res.status}`;
+        }
       } finally {
         clearTimeout(timeout);
       }

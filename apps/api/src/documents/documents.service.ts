@@ -4,6 +4,7 @@ import { documentCategorySchema } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { StorageService } from "../common/storage/storage.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
+import { ProjectAccessService } from "../common/project-access/project-access.service";
 
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024; // 25MB — contracts/photos, not video
 
@@ -70,10 +71,14 @@ export class DocumentsService {
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
     private readonly audit: AuditService,
+    private readonly projectAccess: ProjectAccessService,
   ) {}
 
-  /** Latest version per chain, excluding soft-deleted documents. */
-  async list(companyId: string, filter: DocumentListFilter) {
+  /** Latest version per chain, excluding soft-deleted documents. `userId`/`role` narrow the
+   * result to documents whose project (if any) the caller may actually see — covers every filter
+   * combination (by rfiId, punchListItemId, ...), not just an explicit projectId filter, since a
+   * document attached to e.g. a restricted project's RFI is just as off-limits. */
+  async list(companyId: string, filter: DocumentListFilter, userId?: string, role?: string) {
     const category = filter.category ? documentCategorySchema.parse(filter.category) : undefined;
 
     const docs = await this.prisma.document.findMany({
@@ -110,7 +115,27 @@ export class DocumentsService {
       if (!existing || doc.version > existing.version) latestByChain.set(chainKey, doc);
     }
 
-    return Array.from(latestByChain.values()).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    const result = Array.from(latestByChain.values()).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return this.filterByProjectAccess(result, userId, role);
+  }
+
+  private async filterByProjectAccess<T extends { projectId: string | null }>(
+    docs: T[],
+    userId?: string,
+    role?: string,
+  ): Promise<T[]> {
+    if (!userId || !role || role === "owner" || role === "admin") return docs;
+
+    const projectIds = [...new Set(docs.map((d) => d.projectId).filter((id): id is string => !!id))];
+    if (projectIds.length === 0) return docs;
+
+    const projects = await this.prisma.project.findMany({
+      where: { id: { in: projectIds } },
+      select: { id: true, restrictedToMembers: true },
+    });
+    const accessible = await this.projectAccess.filterAccessible(projects, userId, role);
+    const accessibleIds = new Set(accessible.map((p) => p.id));
+    return docs.filter((d) => !d.projectId || accessibleIds.has(d.projectId));
   }
 
   /** Soft-deleted documents, most recently deleted first — lets an owner/admin undo a delete
@@ -233,8 +258,8 @@ export class DocumentsService {
     });
   }
 
-  async updateTags(companyId: string, id: string, tags: string[]) {
-    await this.findOrThrow(companyId, id);
+  async updateTags(companyId: string, id: string, tags: string[], userId?: string, role?: string) {
+    await this.findOrThrow(companyId, id, userId, role);
     return this.prisma.document.update({
       where: { id },
       data: { tags },
@@ -248,9 +273,11 @@ export class DocumentsService {
     id: string,
     uploadedByUserId: string,
     file: { originalname: string; mimetype: string; buffer: Buffer; size: number },
+    userId?: string,
+    role?: string,
   ) {
     this.validateFile(file);
-    const current = await this.findOrThrow(companyId, id);
+    const current = await this.findOrThrow(companyId, id, userId, role);
     const rootId = current.rootDocumentId ?? current.id;
 
     const stored = await this.storage.save(companyId, file.originalname, file.buffer);
@@ -288,8 +315,8 @@ export class DocumentsService {
   }
 
   /** Full version chain for a document, newest first. */
-  async versions(companyId: string, id: string) {
-    const current = await this.findOrThrow(companyId, id);
+  async versions(companyId: string, id: string, userId?: string, role?: string) {
+    const current = await this.findOrThrow(companyId, id, userId, role);
     const rootId = current.rootDocumentId ?? current.id;
     return this.prisma.document.findMany({
       where: { companyId, OR: [{ id: rootId }, { rootDocumentId: rootId }] },
@@ -298,23 +325,23 @@ export class DocumentsService {
     });
   }
 
-  async delete(companyId: string, actor: AuditActor, id: string) {
-    const doc = await this.findOrThrow(companyId, id);
+  async delete(companyId: string, actor: AuditActor, id: string, userId?: string, role?: string) {
+    const doc = await this.findOrThrow(companyId, id, userId, role);
     await this.prisma.document.update({ where: { id }, data: { deletedAt: new Date() } });
     this.audit.record(companyId, actor, "document.deleted", "Document", id, `Deleted document "${doc.name}"`);
     return { ok: true };
   }
 
-  async download(companyId: string, id: string): Promise<{ buffer: Buffer; name: string; mimeType: string }> {
-    const doc = await this.prisma.document.findFirst({ where: { id, companyId } });
-    if (!doc) throw new NotFoundException("Document not found");
+  async download(companyId: string, id: string, userId?: string, role?: string): Promise<{ buffer: Buffer; name: string; mimeType: string }> {
+    const doc = await this.findOrThrow(companyId, id, userId, role);
     const buffer = await this.storage.read(doc.storageKey);
     return { buffer, name: doc.name, mimeType: doc.mimeType };
   }
 
-  private async findOrThrow(companyId: string, id: string) {
+  private async findOrThrow(companyId: string, id: string, userId?: string, role?: string) {
     const doc = await this.prisma.document.findFirst({ where: { id, companyId } });
     if (!doc) throw new NotFoundException("Document not found");
+    if (doc.projectId) await this.projectAccess.assertAccess(companyId, doc.projectId, userId, role);
     return doc;
   }
 

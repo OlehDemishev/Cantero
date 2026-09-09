@@ -5,6 +5,7 @@ import { WeatherService } from "../weather/weather.service";
 import { AuditService } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
 import { MessageTemplatesService } from "../message-templates/message-templates.service";
+import { ProjectAccessService } from "../common/project-access/project-access.service";
 
 describe("ProjectsService.importCsv", () => {
   let service: ProjectsService;
@@ -24,6 +25,7 @@ describe("ProjectsService.importCsv", () => {
     const module = await Test.createTestingModule({
       providers: [
         ProjectsService,
+        ProjectAccessService,
         { provide: PrismaService, useValue: prisma },
         { provide: WeatherService, useValue: {} },
         { provide: AuditService, useValue: audit },
@@ -118,6 +120,7 @@ describe("ProjectsService.requestReview", () => {
     const module = await Test.createTestingModule({
       providers: [
         ProjectsService,
+        ProjectAccessService,
         { provide: PrismaService, useValue: prisma },
         { provide: WeatherService, useValue: {} },
         { provide: AuditService, useValue: audit },
@@ -179,6 +182,7 @@ describe("ProjectsService.gallery", () => {
     const module = await Test.createTestingModule({
       providers: [
         ProjectsService,
+        ProjectAccessService,
         { provide: PrismaService, useValue: prisma },
         { provide: WeatherService, useValue: {} },
         { provide: AuditService, useValue: { record: jest.fn() } },
@@ -230,6 +234,7 @@ describe("ProjectsService record-level permissions", () => {
     const module = await Test.createTestingModule({
       providers: [
         ProjectsService,
+        ProjectAccessService,
         { provide: PrismaService, useValue: prisma },
         { provide: WeatherService, useValue: {} },
         { provide: AuditService, useValue: audit },

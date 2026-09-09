@@ -21,7 +21,7 @@ export class DrawRequestsController {
 
   @Get(":id")
   get(@CurrentUser() user: AuthUser, @Param("id") id: string) {
-    return this.service.get(user.companyId, id);
+    return this.service.get(user.companyId, id, user.userId, user.role);
   }
 
   @Post()
@@ -35,13 +35,13 @@ export class DrawRequestsController {
     @Param("id") id: string,
     @Body(new ZodValidationPipe(updateDrawRequestStatusSchema)) body: UpdateDrawRequestStatusInput,
   ) {
-    return this.service.updateStatus(user.companyId, { userId: user.userId, name: user.name }, id, body.status);
+    return this.service.updateStatus(user.companyId, { userId: user.userId, name: user.name }, id, body.status, user.userId, user.role);
   }
 
   @Get(":id/package")
   @Header("Content-Type", "application/zip")
   async downloadPackage(@CurrentUser() user: AuthUser, @Param("id") id: string) {
-    const buffer = await this.service.buildPackage(user.companyId, id);
+    const buffer = await this.service.buildPackage(user.companyId, id, user.userId, user.role);
     return new StreamableFile(buffer, { disposition: `attachment; filename="draw-request-package.zip"` });
   }
 }

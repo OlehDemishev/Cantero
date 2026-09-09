@@ -94,9 +94,8 @@ describe("BillingService", () => {
     });
 
     it("creates a payment-mode checkout session for the outstanding balance", async () => {
-      prisma.invoice.findFirstOrThrow.mockResolvedValue({ id: "inv-1", status: "sent", total: "100", number: "INV-1" });
+      prisma.invoice.findFirstOrThrow.mockResolvedValue({ id: "inv-1", status: "sent", total: "100", number: "INV-1", currency: "EUR" });
       prisma.payment.aggregate.mockResolvedValue({ _sum: { amount: "40" } });
-      prisma.company.findUniqueOrThrow.mockResolvedValue({ currency: "EUR" });
       stripe.checkout.sessions.create.mockResolvedValue({ url: "https://checkout.stripe.com/x" });
 
       const result = await service.createInvoiceCheckoutSession(COMPANY_A, "inv-1", "c@x.com");
@@ -109,9 +108,8 @@ describe("BillingService", () => {
     });
 
     it("charges a requested installment amount instead of the full balance when it's smaller", async () => {
-      prisma.invoice.findFirstOrThrow.mockResolvedValue({ id: "inv-1", status: "sent", total: "100", number: "INV-1" });
+      prisma.invoice.findFirstOrThrow.mockResolvedValue({ id: "inv-1", status: "sent", total: "100", number: "INV-1", currency: "EUR" });
       prisma.payment.aggregate.mockResolvedValue({ _sum: { amount: "0" } });
-      prisma.company.findUniqueOrThrow.mockResolvedValue({ currency: "EUR" });
       stripe.checkout.sessions.create.mockResolvedValue({ url: "https://checkout.stripe.com/x" });
 
       await service.createInvoiceCheckoutSession(COMPANY_A, "inv-1", "c@x.com", 30);
@@ -121,9 +119,8 @@ describe("BillingService", () => {
     });
 
     it("caps a requested amount at the remaining balance rather than trusting it outright", async () => {
-      prisma.invoice.findFirstOrThrow.mockResolvedValue({ id: "inv-1", status: "sent", total: "100", number: "INV-1" });
+      prisma.invoice.findFirstOrThrow.mockResolvedValue({ id: "inv-1", status: "sent", total: "100", number: "INV-1", currency: "EUR" });
       prisma.payment.aggregate.mockResolvedValue({ _sum: { amount: "40" } });
-      prisma.company.findUniqueOrThrow.mockResolvedValue({ currency: "EUR" });
       stripe.checkout.sessions.create.mockResolvedValue({ url: "https://checkout.stripe.com/x" });
 
       await service.createInvoiceCheckoutSession(COMPANY_A, "inv-1", "c@x.com", 9999);
@@ -131,14 +128,30 @@ describe("BillingService", () => {
       const call = stripe.checkout.sessions.create.mock.calls[0][0];
       expect(call.line_items[0].price_data.unit_amount).toBe(6000); // capped at the (100-40) balance
     });
+
+    it("charges in the invoice's own currency even when it differs from the company's default", async () => {
+      // The audit's exact scenario: a USD invoice under a EUR-default company must not silently
+      // become a EUR charge for the same numeric amount.
+      prisma.invoice.findFirstOrThrow.mockResolvedValue({ id: "inv-1", status: "sent", total: "100", number: "INV-1", currency: "USD" });
+      prisma.payment.aggregate.mockResolvedValue({ _sum: { amount: "0" } });
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ currency: "EUR" });
+      stripe.checkout.sessions.create.mockResolvedValue({ url: "https://checkout.stripe.com/x" });
+
+      await service.createInvoiceCheckoutSession(COMPANY_A, "inv-1", "c@x.com");
+
+      const call = stripe.checkout.sessions.create.mock.calls[0][0];
+      expect(call.line_items[0].price_data.currency).toBe("usd");
+      expect(prisma.company.findUniqueOrThrow).not.toHaveBeenCalled();
+    });
   });
 
   describe("handleWebhookEvent — invoice payments", () => {
-    it("records a payment when a payment-mode checkout session completes", async () => {
+    it("records a payment when a payment-mode checkout session completes, passing the session id for dedup", async () => {
       await service.handleWebhookEvent({
         type: "checkout.session.completed",
         data: {
           object: {
+            id: "cs_test_abc123",
             mode: "payment",
             amount_total: 6000,
             metadata: { kind: "invoice_payment", companyId: COMPANY_A, invoiceId: "inv-1" },
@@ -151,6 +164,7 @@ describe("BillingService", () => {
         { userId: "stripe", name: "Online payment" },
         "inv-1",
         { amount: 60, method: "card" },
+        "cs_test_abc123",
       );
     });
 

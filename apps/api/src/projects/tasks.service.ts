@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import type { CreateTaskCommitmentInput, CreateTaskDependencyInput, CreateTaskInput, ResolveTaskCommitmentInput, UpdateTaskInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { ProjectAccessService } from "../common/project-access/project-access.service";
 import { computeCriticalPath, minSuccessorStart, type DependencyForCpm, type TaskForCpm } from "./critical-path";
 import { calculatePpc } from "./ppc";
 
@@ -18,7 +19,10 @@ const LOOK_AHEAD_INCLUDE = {
 
 @Injectable()
 export class TasksService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly projectAccess: ProjectAccessService,
+  ) {}
 
   async listForProject(companyId: string, projectId: string) {
     await this.assertProject(companyId, projectId);
@@ -58,11 +62,12 @@ export class TasksService {
     });
   }
 
-  async update(companyId: string, taskId: string, input: UpdateTaskInput) {
+  async update(companyId: string, taskId: string, input: UpdateTaskInput, userId?: string, role?: string) {
     const task = await this.prisma.task.findFirst({
       where: { id: taskId, project: { companyId } },
     });
     if (!task) throw new NotFoundException("Task not found");
+    await this.projectAccess.assertAccess(companyId, task.projectId, userId, role);
 
     const updated = await this.prisma.task.update({
       where: { id: taskId },
@@ -230,9 +235,10 @@ export class TasksService {
    * that ppcReport() measures against. One commitment per task per week (see the unique
    * constraint on TaskCommitment), so re-committing an already-committed week is rejected rather
    * than silently duplicated. */
-  async commitTask(companyId: string, committedByName: string, taskId: string, input: CreateTaskCommitmentInput) {
+  async commitTask(companyId: string, committedByName: string, taskId: string, input: CreateTaskCommitmentInput, userId?: string, role?: string) {
     const task = await this.prisma.task.findFirst({ where: { id: taskId, project: { companyId } } });
     if (!task) throw new NotFoundException("Task not found");
+    await this.projectAccess.assertAccess(companyId, task.projectId, userId, role);
 
     const weekStarting = new Date(input.weekStarting);
     const existing = await this.prisma.taskCommitment.findUnique({ where: { taskId_weekStarting: { taskId, weekStarting } } });
@@ -241,9 +247,13 @@ export class TasksService {
     return this.prisma.taskCommitment.create({ data: { companyId, taskId, weekStarting, committedByName } });
   }
 
-  async resolveCommitment(companyId: string, id: string, input: ResolveTaskCommitmentInput) {
-    const commitment = await this.prisma.taskCommitment.findFirst({ where: { id, companyId } });
+  async resolveCommitment(companyId: string, id: string, input: ResolveTaskCommitmentInput, userId?: string, role?: string) {
+    const commitment = await this.prisma.taskCommitment.findFirst({
+      where: { id, companyId },
+      include: { task: { select: { projectId: true } } },
+    });
     if (!commitment) throw new NotFoundException("Commitment not found");
+    await this.projectAccess.assertAccess(companyId, commitment.task.projectId, userId, role);
     if (commitment.status !== "committed") throw new BadRequestException("Only an open commitment can be resolved");
     if (input.status === "missed" && !input.varianceReason) {
       throw new BadRequestException("A variance reason is required when marking a commitment as missed");
@@ -284,9 +294,10 @@ export class TasksService {
     return { ...overall, byWeek };
   }
 
-  async addDependency(companyId: string, successorId: string, input: CreateTaskDependencyInput) {
+  async addDependency(companyId: string, successorId: string, input: CreateTaskDependencyInput, userId?: string, role?: string) {
     const successor = await this.prisma.task.findFirst({ where: { id: successorId, project: { companyId } } });
     if (!successor) throw new NotFoundException("Task not found");
+    await this.projectAccess.assertAccess(companyId, successor.projectId, userId, role);
     if (input.predecessorId === successorId) throw new BadRequestException("A task cannot depend on itself");
 
     const predecessor = await this.prisma.task.findFirst({ where: { id: input.predecessorId, projectId: successor.projectId } });
@@ -309,11 +320,13 @@ export class TasksService {
     return dependency;
   }
 
-  async removeDependency(companyId: string, dependencyId: string) {
+  async removeDependency(companyId: string, dependencyId: string, userId?: string, role?: string) {
     const dependency = await this.prisma.taskDependency.findFirst({
       where: { id: dependencyId, successor: { project: { companyId } } },
+      include: { successor: { select: { projectId: true } } },
     });
     if (!dependency) throw new NotFoundException("Dependency not found");
+    await this.projectAccess.assertAccess(companyId, dependency.successor.projectId, userId, role);
     await this.prisma.taskDependency.delete({ where: { id: dependencyId } });
   }
 

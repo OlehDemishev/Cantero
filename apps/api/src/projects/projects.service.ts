@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import type {
   CreateProjectInput,
   ImportResult,
@@ -10,6 +10,7 @@ import type {
   UpdateProjectWarrantyInput,
 } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { ProjectAccessService } from "../common/project-access/project-access.service";
 import { WeatherService } from "../weather/weather.service";
 import { parseCsvRecords } from "../common/csv";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
@@ -24,6 +25,7 @@ export class ProjectsService {
     private readonly audit: AuditService,
     private readonly mail: MailService,
     private readonly messageTemplates: MessageTemplatesService,
+    private readonly projectAccess: ProjectAccessService,
   ) {}
 
   /** Owner/admin always see every project. Everyone else sees a restricted project only if
@@ -37,17 +39,7 @@ export class ProjectsService {
     });
     // No userId/role means an internal/service-to-service caller (e.g. the public API, which is
     // already all-or-nothing per company) rather than a user-driven request — skip the narrowing.
-    if (!userId || !role || role === "owner" || role === "admin") return projects;
-
-    const restrictedIds = projects.filter((p) => p.restrictedToMembers).map((p) => p.id);
-    if (restrictedIds.length === 0) return projects;
-
-    const memberships = await this.prisma.projectMember.findMany({
-      where: { userId, projectId: { in: restrictedIds } },
-      select: { projectId: true },
-    });
-    const memberProjectIds = new Set(memberships.map((m) => m.projectId));
-    return projects.filter((p) => !p.restrictedToMembers || memberProjectIds.has(p.id));
+    return this.projectAccess.filterAccessible(projects, userId, role);
   }
 
   async get(companyId: string, id: string, userId?: string, role?: string) {
@@ -56,12 +48,7 @@ export class ProjectsService {
       include: { client: true },
     });
     if (!project) throw new NotFoundException("Project not found");
-    if (project.restrictedToMembers && userId && role && role !== "owner" && role !== "admin") {
-      const membership = await this.prisma.projectMember.findUnique({
-        where: { projectId_userId: { projectId: id, userId } },
-      });
-      if (!membership) throw new ForbiddenException("You don't have access to this project");
-    }
+    await this.projectAccess.assertAccess(companyId, id, userId, role);
     return project;
   }
 

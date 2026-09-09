@@ -22,6 +22,6 @@ import { SessionsController } from "./sessions.controller";
   ],
   controllers: [AuthController, TwoFactorController, SessionsController],
   providers: [AuthService, TwoFactorService, PasswordResetService],
-  exports: [AuthService],
+  exports: [AuthService, TwoFactorService],
 })
 export class AuthModule {}

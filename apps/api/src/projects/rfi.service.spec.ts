@@ -4,9 +4,11 @@ import { RfiService } from "./rfi.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService } from "../common/audit/audit.service";
 import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { ProjectAccessService } from "../common/project-access/project-access.service";
 
 const COMPANY_A = "company-a";
 const ACTOR = { userId: "user-1", name: "Site Manager" };
+const projectAccessStub = { assertAccess: jest.fn(), filterAccessible: jest.fn(async (rows: unknown[]) => rows) };
 
 describe("RfiService", () => {
   let service: RfiService;
@@ -35,6 +37,7 @@ describe("RfiService", () => {
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: audit },
         { provide: WebhooksService, useValue: webhooks },
+        { provide: ProjectAccessService, useValue: projectAccessStub },
       ],
     }).compile();
 
@@ -246,6 +249,23 @@ describe("RfiService", () => {
 
       expect(result.openCount).toBe(1);
       expect(result.ballInCourtBreakdown).toEqual([{ party: "client", count: 1 }]);
+    });
+  });
+
+  describe("get() — project access", () => {
+    it("checks project access for the RFI's own project when fetched by id", async () => {
+      prisma.rfi.findFirst.mockResolvedValue({ id: "rfi-1", projectId: "project-1", companyId: COMPANY_A });
+
+      await service.get(COMPANY_A, "rfi-1", "user-2", "worker");
+
+      expect(projectAccessStub.assertAccess).toHaveBeenCalledWith(COMPANY_A, "project-1", "user-2", "worker");
+    });
+
+    it("propagates a rejection from ProjectAccessService instead of returning the RFI", async () => {
+      prisma.rfi.findFirst.mockResolvedValue({ id: "rfi-1", projectId: "project-1", companyId: COMPANY_A });
+      projectAccessStub.assertAccess.mockRejectedValueOnce(new Error("no access"));
+
+      await expect(service.get(COMPANY_A, "rfi-1", "user-2", "worker")).rejects.toThrow("no access");
     });
   });
 });

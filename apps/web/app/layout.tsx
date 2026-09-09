@@ -5,6 +5,7 @@ import { getLocale, getMessages } from "next-intl/server";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { SidebarProvider } from "@/context/SidebarContext";
 import { PwaRegister } from "@/components/pwa-register";
+import { SentryInit } from "@/components/sentry-init";
 import { ToastProvider } from "@/components/ui/toast-provider";
 import "./globals.css";
 
@@ -36,6 +37,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
               <ToastProvider>
                 {children}
                 <PwaRegister />
+                <SentryInit />
               </ToastProvider>
             </SidebarProvider>
           </ThemeProvider>

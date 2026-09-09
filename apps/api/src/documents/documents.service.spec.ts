@@ -4,9 +4,11 @@ import { DocumentsService } from "./documents.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { StorageService } from "../common/storage/storage.service";
 import { AuditService } from "../common/audit/audit.service";
+import { ProjectAccessService } from "../common/project-access/project-access.service";
 
 const COMPANY_A = "company-a";
 const FILE = { originalname: "photo.jpg", mimetype: "image/jpeg", buffer: Buffer.from("x"), size: 1 };
+const projectAccessStub = { assertAccess: jest.fn(), filterAccessible: jest.fn(async (rows: unknown[]) => rows) };
 
 describe("DocumentsService.upload — field attachments", () => {
   let service: DocumentsService;
@@ -41,6 +43,7 @@ describe("DocumentsService.upload — field attachments", () => {
         { provide: PrismaService, useValue: prisma },
         { provide: StorageService, useValue: storage },
         { provide: AuditService, useValue: { record: jest.fn() } },
+        { provide: ProjectAccessService, useValue: projectAccessStub },
       ],
     }).compile();
 
@@ -126,6 +129,7 @@ describe("DocumentsService.updateTags / list tag filter", () => {
         { provide: PrismaService, useValue: prisma },
         { provide: StorageService, useValue: { save: jest.fn() } },
         { provide: AuditService, useValue: { record: jest.fn() } },
+        { provide: ProjectAccessService, useValue: projectAccessStub },
       ],
     }).compile();
 

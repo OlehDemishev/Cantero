@@ -12,6 +12,7 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
+import { MAX_LOGO_UPLOAD_BYTES } from "../common/upload-limits";
 import {
   linkToParentCompanySchema,
   setCustomPortalDomainSchema,
@@ -54,7 +55,7 @@ export class CompanyController {
 
   @Roles("owner", "admin")
   @Post("logo")
-  @UseInterceptors(FileInterceptor("file"))
+  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX_LOGO_UPLOAD_BYTES } }))
   async uploadLogo(@CurrentUser() user: AuthUser, @UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException("No file provided");
     return this.service.uploadLogo(user.companyId, { userId: user.userId, name: user.name }, file);

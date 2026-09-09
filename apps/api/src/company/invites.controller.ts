@@ -1,6 +1,14 @@
 import { Body, Controller, Delete, Get, Param, Post, Req } from "@nestjs/common";
 import type { Request } from "express";
-import { acceptInviteSchema, createInviteSchema, type AcceptInviteInput, type AuthUser, type CreateInviteInput } from "@cantero/shared";
+import {
+  acceptInviteSchema,
+  createInviteSchema,
+  verify2faSchema,
+  type AcceptInviteInput,
+  type AuthUser,
+  type CreateInviteInput,
+  type Verify2faInput,
+} from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Public } from "../common/decorators/public.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
@@ -39,5 +47,12 @@ export class InvitesController {
   @Post("invites/accept")
   accept(@Body(new ZodValidationPipe(acceptInviteSchema)) body: AcceptInviteInput, @Req() req: Request) {
     return this.service.accept(body, { userAgent: req.headers["user-agent"], ipAddress: req.ip });
+  }
+
+  /** Completes accept() when the invited email belongs to an existing account with 2FA active. */
+  @Public()
+  @Post("invites/accept/2fa")
+  acceptTwoFactor(@Body(new ZodValidationPipe(verify2faSchema)) body: Verify2faInput, @Req() req: Request) {
+    return this.service.completeAcceptAfterTwoFactor(body, { userAgent: req.headers["user-agent"], ipAddress: req.ip });
   }
 }

@@ -1,5 +1,6 @@
 import { BadRequestException, Body, Controller, Get, Header, Post, Query, Res, StreamableFile, UseGuards, UseInterceptors, UploadedFile } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
+import { MAX_UPLOAD_BYTES } from "../common/upload-limits";
 import { ApiOperation, ApiQuery, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import type { Response } from "express";
 import type { ApiKeyScope } from "@cantero/shared";
@@ -59,7 +60,7 @@ export class PublicApiController {
   @ApiOperation({ summary: "Bulk-create clients from CSV", description: "Requires the 'clients' key scope. Multipart form field: file." })
   @RequireScope("clients")
   @Post("clients/import")
-  @UseInterceptors(FileInterceptor("file"))
+  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX_UPLOAD_BYTES } }))
   async importClients(@ApiKeyCompanyId() companyId: string, @UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException("No file provided");
     return this.service.importClients(companyId, file.buffer.toString("utf-8"));
@@ -124,7 +125,7 @@ export class PublicApiController {
   @ApiOperation({ summary: "Bulk-create material catalog items from CSV", description: "Requires the 'materials' key scope. Multipart form field: file." })
   @RequireScope("materials")
   @Post("materials/import")
-  @UseInterceptors(FileInterceptor("file"))
+  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX_UPLOAD_BYTES } }))
   async importMaterials(@ApiKeyCompanyId() companyId: string, @UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException("No file provided");
     return this.service.importMaterials(companyId, file.buffer.toString("utf-8"));

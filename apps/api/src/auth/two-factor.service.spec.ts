@@ -43,12 +43,38 @@ describe("TwoFactorService", () => {
   });
 
   describe("setup", () => {
-    it("generates and stores a secret, returning an otpauth URL", async () => {
+    it("generates and stores a secret, returning an otpauth URL, when 2FA isn't active yet", async () => {
+      prisma.user.findUniqueOrThrow.mockResolvedValue({ totpEnabledAt: null });
+
       const result = await service.setup("user-1", "jane@example.com");
 
       expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: "user-1" }, data: { totpSecret: result.secret } });
       expect(result.otpauthUrl).toContain("otpauth://totp/");
       expect(result.otpauthUrl).toContain("Cantero");
+    });
+
+    it("rejects replacing an already-active authenticator without the current password", async () => {
+      prisma.user.findUniqueOrThrow.mockResolvedValue({ totpEnabledAt: new Date(), passwordHash: "irrelevant" });
+
+      await expect(service.setup("user-1", "jane@example.com")).rejects.toThrow(UnauthorizedException);
+      expect(prisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it("rejects replacing an already-active authenticator with the wrong password", async () => {
+      const passwordHash = await bcrypt.hash("correct", 10);
+      prisma.user.findUniqueOrThrow.mockResolvedValue({ totpEnabledAt: new Date(), passwordHash });
+
+      await expect(service.setup("user-1", "jane@example.com", "wrong")).rejects.toThrow(UnauthorizedException);
+      expect(prisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it("allows replacing an already-active authenticator with the correct password", async () => {
+      const passwordHash = await bcrypt.hash("correct", 10);
+      prisma.user.findUniqueOrThrow.mockResolvedValue({ totpEnabledAt: new Date(), passwordHash });
+
+      const result = await service.setup("user-1", "jane@example.com", "correct");
+
+      expect(result.otpauthUrl).toContain("otpauth://totp/");
     });
   });
 

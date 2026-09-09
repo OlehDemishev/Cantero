@@ -1,5 +1,6 @@
 import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Query, StreamableFile, UploadedFile, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
+import { MAX_UPLOAD_BYTES } from "../common/upload-limits";
 import {
   calibrateTakeoffSchema,
   createTakeoffMeasurementSchema,
@@ -32,7 +33,7 @@ export class TakeoffsController {
   }
 
   @Post()
-  @UseInterceptors(FileInterceptor("file"))
+  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX_UPLOAD_BYTES } }))
   async create(
     @CurrentUser() user: AuthUser,
     @UploadedFile() file: Express.Multer.File,

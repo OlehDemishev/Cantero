@@ -31,9 +31,19 @@ export class TwoFactorService {
   ) {}
 
   /** Generates a fresh secret and stashes it on the user, unconfirmed — 2FA only actually turns
-   * on once enable() verifies a code generated from it. Re-running this before enabling just
-   * overwrites the pending secret, which is fine: nothing depended on the old one yet. */
-  async setup(userId: string, email: string): Promise<{ secret: string; otpauthUrl: string }> {
+   * on once enable() verifies a code generated from it. Re-running this before first enabling
+   * just overwrites the pending secret, which is fine: nothing depended on the old one yet. Once
+   * 2FA is already active, replacing it is a sensitive action gated on the current password —
+   * otherwise anyone holding a valid access token (e.g. one obtained some other way) could
+   * silently swap out the real owner's authenticator. */
+  async setup(userId: string, email: string, currentPassword?: string): Promise<{ secret: string; otpauthUrl: string }> {
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    if (user.totpEnabledAt) {
+      if (!currentPassword || !(await bcrypt.compare(currentPassword, user.passwordHash))) {
+        throw new UnauthorizedException("Current password is required to replace an active authenticator");
+      }
+    }
+
     const secret = authenticator.generateSecret();
     await this.prisma.user.update({ where: { id: userId }, data: { totpSecret: secret } });
     const otpauthUrl = authenticator.keyuri(email, "Cantero", secret);
@@ -80,41 +90,55 @@ export class TwoFactorService {
       throw new UnauthorizedException("Invalid or expired challenge");
     }
 
-    const rateLimitKey = `2fa-verify:${userId}`;
-    this.rateLimiter.consume(rateLimitKey, VERIFY_LIMIT, VERIFY_WINDOW_MS);
+    const ok = await this.verifyCodeForUser(userId, code, "2fa-verify");
+    if (!ok) throw new UnauthorizedException("Invalid code");
 
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { memberships: { include: { customRole: true } } },
     });
-    if (!user || !user.totpSecret || !user.totpEnabledAt) throw new UnauthorizedException("2FA is not active on this account");
-
-    const totpOk = authenticator.verify({ token: code, secret: user.totpSecret });
-    if (!totpOk) {
-      const matchIndex = await this.findBackupCodeIndex(user.totpBackupCodes, code);
-      if (matchIndex === -1) throw new UnauthorizedException("Invalid code");
-      const remaining = [...user.totpBackupCodes];
-      remaining.splice(matchIndex, 1);
-      await this.prisma.user.update({ where: { id: userId }, data: { totpBackupCodes: remaining } });
-    }
-
-    this.rateLimiter.reset(rateLimitKey);
-
-    const membership = user.memberships[0];
+    const membership = user?.memberships[0];
     if (!membership) throw new UnauthorizedException("This account has no company membership");
 
     const accessToken = await this.authService.issueAccessToken(
       {
-        userId: user.id,
+        userId: userId,
         companyId: membership.companyId,
-        email: user.email,
-        name: user.name,
+        email: user!.email,
+        name: user!.name,
         role: membership.role,
         additionalRoles: membership.customRole?.basePermissions,
       },
       meta,
     );
     return { accessToken, companyId: membership.companyId };
+  }
+
+  /**
+   * Checks a TOTP or backup code (consumed on use) against a user's active 2FA, rate-limited per
+   * `rateLimitPrefix` + userId so this can back more than one challenge flow (login, invite
+   * acceptance, ...) without sharing a single limiter bucket between unrelated flows. Returns
+   * false rather than throwing on a bad code, invalid user, or inactive 2FA — the caller decides
+   * what that means for its own flow.
+   */
+  async verifyCodeForUser(userId: string, code: string, rateLimitPrefix: string): Promise<boolean> {
+    const rateLimitKey = `${rateLimitPrefix}:${userId}`;
+    this.rateLimiter.consume(rateLimitKey, VERIFY_LIMIT, VERIFY_WINDOW_MS);
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !user.totpSecret || !user.totpEnabledAt) return false;
+
+    const totpOk = authenticator.verify({ token: code, secret: user.totpSecret });
+    if (!totpOk) {
+      const matchIndex = await this.findBackupCodeIndex(user.totpBackupCodes, code);
+      if (matchIndex === -1) return false;
+      const remaining = [...user.totpBackupCodes];
+      remaining.splice(matchIndex, 1);
+      await this.prisma.user.update({ where: { id: userId }, data: { totpBackupCodes: remaining } });
+    }
+
+    this.rateLimiter.reset(rateLimitKey);
+    return true;
   }
 
   private async findBackupCodeIndex(hashedCodes: string[], candidate: string): Promise<number> {

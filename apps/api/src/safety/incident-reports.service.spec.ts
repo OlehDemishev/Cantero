@@ -6,9 +6,11 @@ import { AuditService } from "../common/audit/audit.service";
 import { WebhooksService } from "../common/webhooks/webhooks.service";
 import { PdfService } from "../common/pdf/pdf.service";
 import { StorageService } from "../common/storage/storage.service";
+import { ProjectAccessService } from "../common/project-access/project-access.service";
 
 const COMPANY_A = "company-a";
 const ACTOR = { userId: "user-1", name: "Foreman" };
+const projectAccessStub = { assertAccess: jest.fn(), filterAccessible: jest.fn(async (rows: unknown[]) => rows) };
 
 describe("IncidentReportsService", () => {
   let service: IncidentReportsService;
@@ -35,6 +37,7 @@ describe("IncidentReportsService", () => {
         { provide: WebhooksService, useValue: webhooks },
         { provide: PdfService, useValue: { render: jest.fn(), renderTextDocument: jest.fn() } },
         { provide: StorageService, useValue: { read: jest.fn() } },
+        { provide: ProjectAccessService, useValue: projectAccessStub },
       ],
     }).compile();
 
@@ -124,6 +127,23 @@ describe("IncidentReportsService", () => {
       expect(csv).toContain("Yes");
       expect(csv).toContain("injury");
       expect(csv).toContain("3");
+    });
+  });
+
+  describe("get() — project access", () => {
+    it("checks project access for the report's own project when fetched by id", async () => {
+      prisma.incidentReport.findFirst.mockResolvedValue({ id: "inc-1", projectId: "project-1", companyId: COMPANY_A });
+
+      await service.get(COMPANY_A, "inc-1", "user-2", "worker");
+
+      expect(projectAccessStub.assertAccess).toHaveBeenCalledWith(COMPANY_A, "project-1", "user-2", "worker");
+    });
+
+    it("propagates a rejection from ProjectAccessService instead of returning the report", async () => {
+      prisma.incidentReport.findFirst.mockResolvedValue({ id: "inc-1", projectId: "project-1", companyId: COMPANY_A });
+      projectAccessStub.assertAccess.mockRejectedValueOnce(new Error("no access"));
+
+      await expect(service.get(COMPANY_A, "inc-1", "user-2", "worker")).rejects.toThrow("no access");
     });
   });
 });

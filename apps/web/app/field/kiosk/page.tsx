@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { apiFetch, getToken } from "@/lib/api-client";
+import { ApiError, apiFetch, clearToken, getToken } from "@/lib/api-client";
 
 interface KioskWorker {
   id: string;
@@ -34,8 +34,18 @@ export default function KioskPage() {
       router.replace("/login");
       return;
     }
-    apiFetch<KioskWorker[]>("/workers/kiosk").then(setWorkers);
-    apiFetch<Project[]>("/projects").then(setProjects);
+    // A stored token the API now rejects (expired, or from a database that's since been reset)
+    // would otherwise leave `workers` null forever and this page stuck on its loading state.
+    function handleAuthFailure(err: unknown) {
+      if (err instanceof ApiError && err.status === 401) {
+        clearToken();
+        router.replace("/login");
+        return;
+      }
+      throw err;
+    }
+    apiFetch<KioskWorker[]>("/workers/kiosk").then(setWorkers).catch(handleAuthFailure);
+    apiFetch<Project[]>("/projects").then(setProjects).catch(handleAuthFailure);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -6,9 +6,11 @@ import { PdfService } from "../common/pdf/pdf.service";
 import { StorageService } from "../common/storage/storage.service";
 import { AuditService } from "../common/audit/audit.service";
 import { AiaBillingService } from "./aia-billing.service";
+import { ProjectAccessService } from "../common/project-access/project-access.service";
 
 const COMPANY_A = "company-a";
 const ACTOR = { userId: "user-1", name: "Office Manager" };
+const projectAccessStub = { assertAccess: jest.fn(), filterAccessible: jest.fn(async (rows: unknown[]) => rows) };
 
 describe("DrawRequestsService", () => {
   let service: DrawRequestsService;
@@ -43,6 +45,7 @@ describe("DrawRequestsService", () => {
         { provide: StorageService, useValue: { read: jest.fn().mockResolvedValue(Buffer.from("file")) } },
         { provide: AuditService, useValue: audit },
         { provide: AiaBillingService, useValue: aiaBilling },
+        { provide: ProjectAccessService, useValue: projectAccessStub },
       ],
     }).compile();
 
@@ -171,6 +174,29 @@ describe("DrawRequestsService", () => {
       prisma.drawRequest.findFirst.mockResolvedValue(null);
 
       await expect(service.buildPackage(COMPANY_A, "draw-1")).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe("project access", () => {
+    it("get() checks project access for the draw's own project", async () => {
+      prisma.drawRequest.findFirst.mockResolvedValue({ id: "draw-1", projectId: "project-1", companyId: COMPANY_A });
+
+      await service.get(COMPANY_A, "draw-1", "user-2", "worker");
+
+      expect(projectAccessStub.assertAccess).toHaveBeenCalledWith(COMPANY_A, "project-1", "user-2", "worker");
+    });
+
+    it("buildPackage() also checks project access before assembling the ZIP", async () => {
+      prisma.drawRequest.findFirst.mockResolvedValue({
+        id: "draw-1",
+        projectId: "project-1",
+        companyId: COMPANY_A,
+        invoice: { project: { name: "P" }, client: { name: "C" } },
+      });
+      projectAccessStub.assertAccess.mockRejectedValueOnce(new Error("no access"));
+
+      await expect(service.buildPackage(COMPANY_A, "draw-1", "user-2", "worker")).rejects.toThrow("no access");
+      expect(prisma.company.findUniqueOrThrow).not.toHaveBeenCalled();
     });
   });
 });

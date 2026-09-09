@@ -28,13 +28,13 @@ export class IncidentReportsController {
 
   @Get(":id")
   get(@CurrentUser() user: AuthUser, @Param("id") id: string) {
-    return this.service.get(user.companyId, id);
+    return this.service.get(user.companyId, id, user.userId, user.role);
   }
 
   @Get(":id/pdf")
   @Header("Content-Type", "application/pdf")
   async pdf(@CurrentUser() user: AuthUser, @Param("id") id: string) {
-    const buffer = await this.service.generatePdf(user.companyId, id);
+    const buffer = await this.service.generatePdf(user.companyId, id, user.userId, user.role);
     return new StreamableFile(buffer, { disposition: `attachment; filename="incident-report.pdf"` });
   }
 
@@ -49,6 +49,6 @@ export class IncidentReportsController {
     @Param("id") id: string,
     @Body(new ZodValidationPipe(updateIncidentReportSchema)) body: UpdateIncidentReportInput,
   ) {
-    return this.service.update(user.companyId, id, body);
+    return this.service.update(user.companyId, id, body, user.userId, user.role);
   }
 }

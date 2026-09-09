@@ -1,5 +1,6 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { Prisma } from "@prisma/client";
 import type { AddInstallmentInput, GenerateProgressInvoiceInput, RecordPaymentInput, ReleaseRetainageInput, UpdateInvoiceInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { PdfService } from "../common/pdf/pdf.service";
@@ -19,6 +20,8 @@ import { createInvoiceWithNumber } from "./invoice-numbering";
 
 @Injectable()
 export class InvoicesService {
+  private readonly logger = new Logger(InvoicesService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly pdfService: PdfService,
@@ -41,25 +44,36 @@ export class InvoicesService {
 
   /** Live-computed, never stored — a company's rate can change, and a settled invoice shouldn't
    * keep accruing, so this is recalculated on every read rather than cached. Only ever billed for
-   * real once chargeLateFee() adds it as an actual line. */
+   * real once chargeLateFee() adds it as an actual line. Accrues only from the last charge
+   * forward (or from dueDate if never charged), against the principal balance with previously
+   * charged late fees backed out — otherwise a second charge on the same day would recompute the
+   * fee over the whole overdue period again, and on a balance that already includes the first
+   * charge, compounding it. */
   private async computeLateFeeAccrued(
     companyId: string,
-    invoice: { status: string; dueDate: Date | null; total: unknown; payments: { amount: unknown }[] },
+    invoice: {
+      status: string;
+      dueDate: Date | null;
+      total: unknown;
+      lateFeeChargedTotal: unknown;
+      lastLateFeeAccrualAt: Date | null;
+      payments: { amount: unknown }[];
+    },
   ): Promise<number> {
     if (invoice.status !== "sent" || !invoice.dueDate) return 0;
     const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId }, select: { lateFeePercentPerMonth: true } });
     if (!company.lateFeePercentPerMonth) return 0;
 
     const paid = invoice.payments.reduce((sum, p) => sum + Number(p.amount), 0);
-    const outstanding = Number(invoice.total) - paid;
-    const overdue = daysOverdue(invoice.dueDate, new Date());
-    return calculateLateFee(outstanding, overdue, Number(company.lateFeePercentPerMonth));
+    const principalOutstanding = Number(invoice.total) - Number(invoice.lateFeeChargedTotal ?? 0) - paid;
+    const accrualStart = invoice.lastLateFeeAccrualAt ?? invoice.dueDate;
+    const overdue = daysOverdue(accrualStart, new Date());
+    return calculateLateFee(principalOutstanding, overdue, Number(company.lateFeePercentPerMonth));
   }
 
   /** Locks in the currently-accrued late fee as a real InvoiceLine, so it actually gets billed —
-   * chargeable multiple times as more time passes, each time adding only the newly-accrued
-   * portion since the last charge (computed the same way, against the balance excluding
-   * already-charged late-fee lines, so nothing double-counts). */
+   * chargeable again later as more time passes, each time adding only the newly-accrued portion
+   * since this charge. */
   async chargeLateFee(companyId: string, actor: AuditActor, id: string) {
     const invoice = await this.findOrThrow(companyId, id);
     const accrued = await this.computeLateFeeAccrued(companyId, invoice);
@@ -72,7 +86,7 @@ export class InvoicesService {
     });
     const updated = await this.prisma.invoice.update({
       where: { id },
-      data: { total: { increment: accrued } },
+      data: { total: { increment: accrued }, lateFeeChargedTotal: { increment: accrued }, lastLateFeeAccrualAt: new Date() },
       include: { lines: true, client: true, project: true, payments: true, installments: true },
     });
     this.audit.record(companyId, actor, "invoice.late_fee_charged", "Invoice", id, `Charged a ${accrued} late fee on invoice ${invoice.number}`);
@@ -135,7 +149,7 @@ export class InvoicesService {
     const estimate = await this.assertInvoiceableEstimate(companyId, estimateId);
 
     const lastDraw = await this.prisma.invoice.findFirst({
-      where: { companyId, estimateId, isRetainageRelease: false, percentComplete: { not: null } },
+      where: { companyId, estimateId, isRetainageRelease: false, percentComplete: { not: null }, status: { not: "void" } },
       orderBy: { percentComplete: "desc" },
     });
     const previousPercent = lastDraw ? Number(lastDraw.percentComplete) : 0;
@@ -322,8 +336,12 @@ export class InvoicesService {
   }
 
   /** Records a payment and re-derives invoice status from the running balance. A foreignPayment
-   * settles in a currency other than the invoice's own — see fx-settlement.ts. */
-  async recordPayment(companyId: string, actor: AuditActor, id: string, input: RecordPaymentInput) {
+   * settles in a currency other than the invoice's own — see fx-settlement.ts. `stripeCheckoutSessionId`
+   * is set only by BillingService's webhook handler (never from user-submitted input — it isn't
+   * part of RecordPaymentInput) and makes this idempotent against Stripe redelivering the same
+   * `checkout.session.completed` event: Stripe explicitly does not guarantee exactly-once
+   * delivery, and without this a redelivered event would credit the same payment twice. */
+  async recordPayment(companyId: string, actor: AuditActor, id: string, input: RecordPaymentInput, stripeCheckoutSessionId?: string) {
     const invoice = await this.findOrThrow(companyId, id);
     if (invoice.status === "draft") {
       throw new BadRequestException("Send the invoice before recording a payment against it");
@@ -350,9 +368,17 @@ export class InvoicesService {
       };
     }
 
-    await this.prisma.payment.create({
-      data: { invoiceId: id, amount, method: input.method, ...fxFields },
-    });
+    try {
+      await this.prisma.payment.create({
+        data: { invoiceId: id, amount, method: input.method, stripeCheckoutSessionId, ...fxFields },
+      });
+    } catch (err) {
+      if (stripeCheckoutSessionId && isDuplicateStripeSession(err)) {
+        this.logger.warn(`Stripe checkout session ${stripeCheckoutSessionId} already recorded on invoice ${id} — ignoring redelivered webhook`);
+        return this.findOrThrow(companyId, id);
+      }
+      throw err;
+    }
 
     const payments = await this.prisma.payment.findMany({ where: { invoiceId: id } });
     const paidTotal = payments.reduce((sum, p) => sum + Number(p.amount), 0);
@@ -611,4 +637,12 @@ export class InvoicesService {
     if (!invoice) throw new NotFoundException("Invoice not found");
     return invoice;
   }
+}
+
+function isDuplicateStripeSession(err: unknown): boolean {
+  return (
+    err instanceof Prisma.PrismaClientKnownRequestError &&
+    err.code === "P2002" &&
+    ((err.meta?.target as string[] | undefined)?.includes("stripeCheckoutSessionId") ?? false)
+  );
 }

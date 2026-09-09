@@ -34,6 +34,10 @@ function conditionFromWmoCode(code: number): WeatherCondition {
 @Injectable()
 export class WeatherService {
   private readonly logger = new Logger(WeatherService.name);
+  // In-memory, per-process — fine at today's single-instance scale (RateLimiterService/
+  // IdempotencyService make the same tradeoff, documented there). Multiple api replicas would each
+  // geocode independently rather than sharing a cache; only worth a shared store (Redis) if this
+  // ever needs to scale beyond one instance.
   private readonly geocodeCache = new Map<string, { coords: { lat: number; lon: number } | null; cachedAt: number }>();
 
   /** Best-effort: pulls the city out of a free-text "Street 9, 12345 City" address for geocoding, since street-level lookup isn't reliable via this API. */

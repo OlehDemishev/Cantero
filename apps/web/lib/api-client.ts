@@ -1,5 +1,12 @@
+import { clearOfflineData } from "./offline-db";
+
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
 const TOKEN_KEY = "cantero_token";
+/** Fingerprint of whose data is currently sitting in the offline IndexedDB store (see
+ * offline-db.ts) — deliberately NOT cleared on logout, only compared and overwritten on the next
+ * setToken(). That's what lets the same person log out and back in without losing their own
+ * still-unsynced offline work, while still catching a genuine account switch on a shared device. */
+const ACCOUNT_KEY = "cantero_account";
 
 /**
  * A plain function (not a hook) needs a way to reach the toast UI, which lives inside React —
@@ -17,7 +24,29 @@ export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
 }
 
+/** Reads the `userId` claim straight out of the JWT payload without verifying the signature —
+ * fine here, since this only ever feeds a client-side "is this the same person as before" check,
+ * never an authorization decision (the server independently verifies the token on every request). */
+function decodeUserId(token: string): string | null {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    return typeof payload?.userId === "string" ? payload.userId : null;
+  } catch {
+    return null;
+  }
+}
+
 export function setToken(token: string): void {
+  const previousUserId = localStorage.getItem(ACCOUNT_KEY);
+  const newUserId = decodeUserId(token);
+  if (newUserId && previousUserId && previousUserId !== newUserId) {
+    clearOfflineData();
+    // The service worker's own API response cache (public/sw.js) is keyed by request, not by
+    // account, and has no way to notice this switch on its own — tell it directly. No-op if no
+    // worker is controlling this page yet (nothing would be cached for it to serve anyway).
+    navigator.serviceWorker?.controller?.postMessage({ type: "CLEAR_API_CACHE" });
+  }
+  if (newUserId) localStorage.setItem(ACCOUNT_KEY, newUserId);
   localStorage.setItem(TOKEN_KEY, token);
 }
 
@@ -76,10 +105,11 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
 }
 
 /** Multipart upload — browser sets the Content-Type boundary itself, so no JSON header here. */
-export async function apiUpload<T>(path: string, file: File): Promise<T> {
+export async function apiUpload<T>(path: string, file: File, idempotencyKey?: string): Promise<T> {
   const token = getToken();
   const headers: Record<string, string> = {};
   if (token) headers.Authorization = `Bearer ${token}`;
+  if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
 
   const formData = new FormData();
   formData.append("file", file);

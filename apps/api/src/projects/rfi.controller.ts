@@ -51,7 +51,7 @@ export class RfiController {
 
   @Get(":id")
   get(@CurrentUser() user: AuthUser, @Param("id") id: string) {
-    return this.service.get(user.companyId, id);
+    return this.service.get(user.companyId, id, user.userId, user.role);
   }
 
   @Post()
@@ -61,7 +61,7 @@ export class RfiController {
 
   @Patch(":id")
   update(@CurrentUser() user: AuthUser, @Param("id") id: string, @Body(new ZodValidationPipe(updateRfiSchema)) body: UpdateRfiInput) {
-    return this.service.update(user.companyId, id, body);
+    return this.service.update(user.companyId, id, body, user.userId, user.role);
   }
 
   @Patch(":id/ball-in-court")
@@ -70,12 +70,12 @@ export class RfiController {
     @Param("id") id: string,
     @Body(new ZodValidationPipe(setRfiBallInCourtSchema)) body: SetRfiBallInCourtInput,
   ) {
-    return this.service.setBallInCourt(user.companyId, { userId: user.userId, name: user.name }, id, body);
+    return this.service.setBallInCourt(user.companyId, { userId: user.userId, name: user.name }, id, body, user.userId, user.role);
   }
 
   @Patch(":id/pin")
   setPin(@CurrentUser() user: AuthUser, @Param("id") id: string, @Body(new ZodValidationPipe(setDrawingPinSchema)) body: SetDrawingPinInput) {
-    return this.service.setPin(user.companyId, id, body);
+    return this.service.setPin(user.companyId, id, body, user.userId, user.role);
   }
 
   @Patch(":id/change-order")
@@ -84,12 +84,12 @@ export class RfiController {
     @Param("id") id: string,
     @Body(new ZodValidationPipe(linkCostImpactChangeOrderSchema)) body: LinkCostImpactChangeOrderInput,
   ) {
-    return this.service.linkChangeOrder(user.companyId, id, body);
+    return this.service.linkChangeOrder(user.companyId, id, body, user.userId, user.role);
   }
 
   @Post("bulk/close")
   bulkClose(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(bulkActionIdsSchema)) body: BulkActionIdsInput) {
-    return this.service.bulkClose(user.companyId, { userId: user.userId, name: user.name }, body.ids);
+    return this.service.bulkClose(user.companyId, { userId: user.userId, name: user.name }, body.ids, user.userId, user.role);
   }
 
   @Post(":id/answer")
@@ -98,16 +98,16 @@ export class RfiController {
     @Param("id") id: string,
     @Body(new ZodValidationPipe(answerRfiSchema)) body: AnswerRfiInput,
   ) {
-    return this.service.answer(user.companyId, { userId: user.userId, name: user.name }, id, body);
+    return this.service.answer(user.companyId, { userId: user.userId, name: user.name }, id, body, user.userId, user.role);
   }
 
   @Post(":id/close")
   close(@CurrentUser() user: AuthUser, @Param("id") id: string) {
-    return this.service.close(user.companyId, { userId: user.userId, name: user.name }, id);
+    return this.service.close(user.companyId, { userId: user.userId, name: user.name }, id, user.userId, user.role);
   }
 
   @Post(":id/reopen")
   reopen(@CurrentUser() user: AuthUser, @Param("id") id: string) {
-    return this.service.reopen(user.companyId, { userId: user.userId, name: user.name }, id);
+    return this.service.reopen(user.companyId, { userId: user.userId, name: user.name }, id, user.userId, user.role);
   }
 }

@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
-import { APP_GUARD } from "@nestjs/core";
+import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { PrismaModule } from "./common/prisma/prisma.module";
 import { PdfModule } from "./common/pdf/pdf.module";
 import { QueueModule } from "./common/queue/queue.module";
@@ -17,6 +17,10 @@ import { JwtAuthGuard } from "./common/guards/jwt-auth.guard";
 import { IpAllowlistGuard } from "./common/guards/ip-allowlist.guard";
 import { SubscriptionGuard } from "./common/guards/subscription.guard";
 import { RolesGuard } from "./common/guards/roles.guard";
+import { ProjectAccessGuard } from "./common/guards/project-access.guard";
+import { ProjectAccessModule } from "./common/project-access/project-access.module";
+import { IdempotencyModule } from "./common/idempotency/idempotency.module";
+import { IdempotencyInterceptor } from "./common/idempotency/idempotency.interceptor";
 import { AuthModule } from "./auth/auth.module";
 import { BillingModule } from "./billing/billing.module";
 import { MeModule } from "./me/me.module";
@@ -107,6 +111,8 @@ import { ClientChangeRequestsModule } from "./client-change-requests/client-chan
     StorageModule,
     AuditModule,
     RateLimiterModule,
+    ProjectAccessModule,
+    IdempotencyModule,
     HealthModule,
     MailModule,
     SmsModule,
@@ -198,7 +204,9 @@ import { ClientChangeRequestsModule } from "./client-change-requests/client-chan
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: IpAllowlistGuard },
     { provide: APP_GUARD, useClass: SubscriptionGuard },
+    { provide: APP_GUARD, useClass: ProjectAccessGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
+    { provide: APP_INTERCEPTOR, useClass: IdempotencyInterceptor },
   ],
 })
 export class AppModule {}

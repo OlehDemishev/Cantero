@@ -1,6 +1,7 @@
 import { Test } from "@nestjs/testing";
 import { ConfigService } from "@nestjs/config";
 import { BadRequestException, NotFoundException } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
 import { InvoicesService } from "./invoices.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { PdfService } from "../common/pdf/pdf.service";
@@ -16,10 +17,11 @@ const ACTOR = { userId: "user-1", name: "Accountant" };
 describe("InvoicesService — late fees & payment terms", () => {
   let service: InvoicesService;
   let prisma: {
-    invoice: { findFirst: jest.Mock; update: jest.Mock };
+    invoice: { findFirst: jest.Mock; update: jest.Mock; create: jest.Mock; count: jest.Mock };
     invoiceLine: { create: jest.Mock };
     company: { findUniqueOrThrow: jest.Mock };
     payment: { create: jest.Mock; findMany: jest.Mock };
+    estimate: { findFirst: jest.Mock };
   };
   let audit: { record: jest.Mock };
   let mail: { send: jest.Mock };
@@ -27,10 +29,11 @@ describe("InvoicesService — late fees & payment terms", () => {
 
   beforeEach(async () => {
     prisma = {
-      invoice: { findFirst: jest.fn(), update: jest.fn() },
+      invoice: { findFirst: jest.fn(), update: jest.fn(), create: jest.fn(), count: jest.fn().mockResolvedValue(0) },
       invoiceLine: { create: jest.fn() },
       company: { findUniqueOrThrow: jest.fn() },
       payment: { create: jest.fn(), findMany: jest.fn().mockResolvedValue([]) },
+      estimate: { findFirst: jest.fn() },
     };
     audit = { record: jest.fn() };
     mail = { send: jest.fn() };
@@ -113,6 +116,8 @@ describe("InvoicesService — late fees & payment terms", () => {
         status: "sent",
         dueDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
         total: 1000,
+        lateFeeChargedTotal: 0,
+        lastLateFeeAccrualAt: null,
         payments: [],
       });
       prisma.company.findUniqueOrThrow.mockResolvedValue({ lateFeePercentPerMonth: 1.5 });
@@ -124,8 +129,95 @@ describe("InvoicesService — late fees & payment terms", () => {
         data: { invoiceId: "inv-1", description: "Late fee", quantity: 1, unitPrice: 15, lineTotal: 15 },
       });
       expect(prisma.invoice.update).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { id: "inv-1" }, data: { total: { increment: 15 } } }),
+        expect.objectContaining({
+          where: { id: "inv-1" },
+          data: { total: { increment: 15 }, lateFeeChargedTotal: { increment: 15 }, lastLateFeeAccrualAt: expect.any(Date) },
+        }),
       );
+    });
+
+    it("does not compound: charging again the same day (no new overdue time) accrues nothing more", async () => {
+      // Reproduces the audit's exact scenario: $1000, 30 days overdue, 1%/month. First charge is
+      // 10.00; a second charge moments later (no new day passed) must accrue 0, not another 10.10
+      // computed off the whole period again and the already-charged fee.
+      const now = new Date();
+      prisma.invoice.findFirst.mockResolvedValue({
+        id: "inv-1",
+        number: "INV-0001",
+        status: "sent",
+        dueDate: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
+        total: 1010,
+        lateFeeChargedTotal: 10,
+        lastLateFeeAccrualAt: now,
+        payments: [],
+      });
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ lateFeePercentPerMonth: 1 });
+
+      await expect(service.chargeLateFee(COMPANY_A, ACTOR, "inv-1")).rejects.toThrow(BadRequestException);
+      expect(prisma.invoiceLine.create).not.toHaveBeenCalled();
+    });
+
+    it("accrues only the fee for the days since the last charge, on the principal balance", async () => {
+      // $1000 principal, first charge already took $10 (now total=1010, lateFeeChargedTotal=10,
+      // charged 30 days ago). A further 30 days have passed since that charge at 1%/month: the
+      // new accrual must be 1000 * 1% * 1 = 10, not (1010 - 10) * ... nor computed from dueDate again.
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      prisma.invoice.findFirst.mockResolvedValue({
+        id: "inv-1",
+        number: "INV-0001",
+        status: "sent",
+        dueDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
+        total: 1010,
+        lateFeeChargedTotal: 10,
+        lastLateFeeAccrualAt: thirtyDaysAgo,
+        payments: [],
+      });
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ lateFeePercentPerMonth: 1 });
+      prisma.invoice.update.mockResolvedValue({ id: "inv-1", total: 1020 });
+
+      await service.chargeLateFee(COMPANY_A, ACTOR, "inv-1");
+
+      expect(prisma.invoiceLine.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ unitPrice: 10, lineTotal: 10 }) }),
+      );
+    });
+  });
+
+  describe("generateProgressInvoice() — void draws don't count as the last draw", () => {
+    const ESTIMATE = {
+      id: "est-1",
+      grandTotal: 1000,
+      status: "approved",
+      project: { id: "proj-1", clientId: "client-1" },
+    };
+
+    it("bases the next draw on the last non-void draw, ignoring a voided one that billed further", async () => {
+      prisma.estimate.findFirst.mockResolvedValue(ESTIMATE);
+      // A 60% draw was voided; the real last draw still standing is 40%.
+      prisma.invoice.findFirst.mockResolvedValue({ percentComplete: 40 });
+      prisma.invoice.create.mockResolvedValue({ id: "inv-2", percentComplete: 50 });
+
+      await service.generateProgressInvoice(COMPANY_A, "est-1", { estimateId: "est-1", percentComplete: 50, retainagePercent: 0 });
+
+      expect(prisma.invoice.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ status: { not: "void" } }) }),
+      );
+      // 50% - 40% (not 50% - 60%, which would have gone negative/rejected) of 1000.
+      expect(prisma.invoice.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ subtotal: 100 }) }),
+      );
+    });
+
+    it("allows re-billing a percentage that was already invoiced once the draw covering it is void", async () => {
+      prisma.estimate.findFirst.mockResolvedValue(ESTIMATE);
+      // Simulates the exclusion actually taking effect: with the 60% draw voided and excluded,
+      // Prisma's own ordering would surface the next-highest non-void draw (40%) here.
+      prisma.invoice.findFirst.mockResolvedValue({ percentComplete: 40 });
+      prisma.invoice.create.mockResolvedValue({ id: "inv-2", percentComplete: 60 });
+
+      await expect(
+        service.generateProgressInvoice(COMPANY_A, "est-1", { estimateId: "est-1", percentComplete: 60, retainagePercent: 0 }),
+      ).resolves.toBeDefined();
     });
   });
 
@@ -309,6 +401,35 @@ describe("InvoicesService — late fees & payment terms", () => {
       prisma.invoice.findFirst.mockResolvedValue({ ...baseInvoice, status: "draft" });
       await expect(service.recordPayment(COMPANY_A, ACTOR, "inv-1", { amount: 100, method: "cash" })).rejects.toThrow(BadRequestException);
       expect(prisma.payment.create).not.toHaveBeenCalled();
+    });
+
+    it("ignores a redelivered Stripe webhook for a checkout session already recorded, instead of double-crediting it", async () => {
+      // Stripe explicitly does not guarantee exactly-once webhook delivery — a second delivery of
+      // the same checkout.session.completed event must not create a second Payment row.
+      prisma.invoice.findFirst.mockResolvedValue(baseInvoice);
+      const clashError = Object.assign(new Error("Unique constraint failed"), {
+        code: "P2002",
+        meta: { target: ["stripeCheckoutSessionId"] },
+      });
+      Object.setPrototypeOf(clashError, Prisma.PrismaClientKnownRequestError.prototype);
+      prisma.payment.create.mockRejectedValue(clashError);
+
+      const result = await service.recordPayment(COMPANY_A, ACTOR, "inv-1", { amount: 60, method: "card" }, "cs_test_abc123");
+
+      expect(result).toEqual(baseInvoice);
+      expect(prisma.invoice.update).not.toHaveBeenCalled();
+      expect(audit.record).not.toHaveBeenCalled();
+    });
+
+    it("stores the Stripe checkout session id on the payment when given one", async () => {
+      prisma.invoice.findFirst.mockResolvedValue(baseInvoice);
+      prisma.invoice.update.mockResolvedValue({ ...baseInvoice, status: "paid" });
+
+      await service.recordPayment(COMPANY_A, ACTOR, "inv-1", { amount: 1000, method: "card" }, "cs_test_abc123");
+
+      expect(prisma.payment.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ stripeCheckoutSessionId: "cs_test_abc123" }) }),
+      );
     });
   });
 });

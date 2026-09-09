@@ -12,6 +12,7 @@ import type {
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { WebhooksService } from "../common/webhooks/webhooks.service";
+import { ProjectAccessService } from "../common/project-access/project-access.service";
 import { calculateCostImpactSummary, type CostImpactSourceItem } from "./cost-impact-summary";
 import { calculateRfiAnalytics } from "./rfi-analytics";
 
@@ -21,6 +22,7 @@ export class RfiService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly webhooks: WebhooksService,
+    private readonly projectAccess: ProjectAccessService,
   ) {}
 
   async listForProject(companyId: string, projectId: string, ballInCourtParty?: BallInCourtParty) {
@@ -40,9 +42,10 @@ export class RfiService {
     });
   }
 
-  async get(companyId: string, id: string) {
+  async get(companyId: string, id: string, userId?: string, role?: string) {
     const rfi = await this.prisma.rfi.findFirst({ where: { id, companyId } });
     if (!rfi) throw new NotFoundException("RFI not found");
+    await this.projectAccess.assertAccess(companyId, rfi.projectId, userId, role);
     return rfi;
   }
 
@@ -72,8 +75,8 @@ export class RfiService {
     return rfi;
   }
 
-  async update(companyId: string, id: string, input: UpdateRfiInput) {
-    const rfi = await this.get(companyId, id);
+  async update(companyId: string, id: string, input: UpdateRfiInput, userId?: string, role?: string) {
+    const rfi = await this.get(companyId, id, userId, role);
     return this.prisma.rfi.update({
       where: { id: rfi.id },
       data: {
@@ -91,8 +94,8 @@ export class RfiService {
   /** Links this RFI to the change order raised as its consequence — turns its estimatedCostImpact
    * from a guess into a confirmed figure backed by an actual priced/approved change order. Pass
    * changeOrderId: null to unlink. */
-  async linkChangeOrder(companyId: string, id: string, input: LinkCostImpactChangeOrderInput) {
-    const rfi = await this.get(companyId, id);
+  async linkChangeOrder(companyId: string, id: string, input: LinkCostImpactChangeOrderInput, userId?: string, role?: string) {
+    const rfi = await this.get(companyId, id, userId, role);
     if (input.changeOrderId) {
       const changeOrder = await this.prisma.changeOrder.findFirst({ where: { id: input.changeOrderId, companyId } });
       if (!changeOrder) throw new NotFoundException("Change order not found");
@@ -100,8 +103,8 @@ export class RfiService {
     return this.prisma.rfi.update({ where: { id: rfi.id }, data: { changeOrderId: input.changeOrderId } });
   }
 
-  async setBallInCourt(companyId: string, actor: AuditActor, id: string, input: SetRfiBallInCourtInput) {
-    const rfi = await this.get(companyId, id);
+  async setBallInCourt(companyId: string, actor: AuditActor, id: string, input: SetRfiBallInCourtInput, userId?: string, role?: string) {
+    const rfi = await this.get(companyId, id, userId, role);
     const updated = await this.prisma.rfi.update({ where: { id: rfi.id }, data: { ballInCourtParty: input.ballInCourtParty } });
     this.audit.record(
       companyId,
@@ -114,8 +117,8 @@ export class RfiService {
     return updated;
   }
 
-  async setPin(companyId: string, id: string, input: SetDrawingPinInput) {
-    const rfi = await this.get(companyId, id);
+  async setPin(companyId: string, id: string, input: SetDrawingPinInput, userId?: string, role?: string) {
+    const rfi = await this.get(companyId, id, userId, role);
     if (input.drawingSheetId) {
       const sheet = await this.prisma.drawingSheet.findFirst({ where: { id: input.drawingSheetId, companyId } });
       if (!sheet) throw new NotFoundException("Drawing sheet not found");
@@ -126,8 +129,8 @@ export class RfiService {
     });
   }
 
-  async answer(companyId: string, actor: AuditActor, id: string, input: AnswerRfiInput) {
-    const rfi = await this.get(companyId, id);
+  async answer(companyId: string, actor: AuditActor, id: string, input: AnswerRfiInput, userId?: string, role?: string) {
+    const rfi = await this.get(companyId, id, userId, role);
     if (rfi.status === "closed") throw new BadRequestException("RFI is closed — reopen it before answering");
 
     const updated = await this.prisma.rfi.update({
@@ -139,8 +142,8 @@ export class RfiService {
     return updated;
   }
 
-  async close(companyId: string, actor: AuditActor, id: string) {
-    const rfi = await this.get(companyId, id);
+  async close(companyId: string, actor: AuditActor, id: string, userId?: string, role?: string) {
+    const rfi = await this.get(companyId, id, userId, role);
     if (rfi.status === "closed") throw new BadRequestException("RFI is already closed");
 
     const updated = await this.prisma.rfi.update({
@@ -152,8 +155,8 @@ export class RfiService {
     return updated;
   }
 
-  async reopen(companyId: string, actor: AuditActor, id: string) {
-    const rfi = await this.get(companyId, id);
+  async reopen(companyId: string, actor: AuditActor, id: string, userId?: string, role?: string) {
+    const rfi = await this.get(companyId, id, userId, role);
     if (rfi.status !== "closed") throw new BadRequestException("RFI is not closed");
 
     const updated = await this.prisma.rfi.update({
@@ -164,11 +167,11 @@ export class RfiService {
     return updated;
   }
 
-  async bulkClose(companyId: string, actor: AuditActor, ids: string[]): Promise<BulkActionResult> {
+  async bulkClose(companyId: string, actor: AuditActor, ids: string[], userId?: string, role?: string): Promise<BulkActionResult> {
     const result: BulkActionResult = { succeeded: 0, failed: [] };
     for (const id of ids) {
       try {
-        await this.close(companyId, actor, id);
+        await this.close(companyId, actor, id, userId, role);
         result.succeeded++;
       } catch (err) {
         result.failed.push({ id, message: err instanceof Error ? err.message : String(err) });

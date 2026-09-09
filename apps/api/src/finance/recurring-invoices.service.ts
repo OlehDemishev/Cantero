@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, Logger, NotFoundException, OnModuleInit } from "@nestjs/common";
 import { InjectQueue } from "@nestjs/bullmq";
 import type { Queue } from "bullmq";
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import type { CreateRecurringInvoiceInput, UpdateRecurringInvoiceInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
@@ -211,35 +211,69 @@ export class RecurringInvoicesService implements OnModuleInit {
       Number(recurring.taxPercent),
     );
 
-    const invoice = await createInvoiceWithNumber(this.prisma, recurring.companyId, (number) =>
-      this.prisma.invoice.create({
-        data: {
-          companyId: recurring.companyId,
-          projectId: recurring.projectId,
-          clientId: recurring.clientId,
-          recurringInvoiceId: recurring.id,
-          number,
-          status: "draft",
-          subtotal: calc.subtotal,
-          taxAmount: calc.taxAmount,
-          total: calc.total,
-          lines: {
-            create: calc.lines.map((l) => ({
-              description: l.description,
-              quantity: l.quantity,
-              unitPrice: l.unitPrice,
-              lineTotal: l.lineTotal,
-            })),
-          },
-        },
-        include: { lines: true, client: true, project: true },
-      }),
-    );
+    // project.currency overrides the company default when set — same resolution EstimatesService
+    // uses. Left unset here, Prisma's schema default (EUR) would silently apply instead, which
+    // for a non-EUR company/project quietly generates (and, with autopay, charges) the wrong
+    // currency.
+    const [project, company] = await Promise.all([
+      this.prisma.project.findUniqueOrThrow({ where: { id: recurring.projectId }, select: { currency: true } }),
+      this.prisma.company.findUniqueOrThrow({ where: { id: recurring.companyId }, select: { currency: true } }),
+    ]);
+    const currency = project.currency ?? company.currency;
 
-    await this.prisma.recurringInvoice.update({
-      where: { id: recurring.id },
-      data: { nextRunDate: advanceDate(recurring.nextRunDate, recurring.frequency), lastGeneratedAt: new Date() },
-    });
+    // billingPeriod pins this invoice to the schedule's current nextRunDate — paired with
+    // recurringInvoiceId in a unique constraint (see Invoice.recurringBillingPeriod) and created
+    // in the same transaction as advancing that schedule, so a crash or a second concurrent pass
+    // between the two can never produce two invoices for the same period.
+    const billingPeriod = recurring.nextRunDate;
+    let invoice: Prisma.InvoiceGetPayload<{ include: { lines: true; client: true; project: true } }>;
+    try {
+      invoice = await this.prisma.$transaction(async (tx) => {
+        const created = await createInvoiceWithNumber(tx, recurring.companyId, (number) =>
+          tx.invoice.create({
+            data: {
+              companyId: recurring.companyId,
+              projectId: recurring.projectId,
+              clientId: recurring.clientId,
+              recurringInvoiceId: recurring.id,
+              recurringBillingPeriod: billingPeriod,
+              number,
+              status: "draft",
+              currency,
+              subtotal: calc.subtotal,
+              taxAmount: calc.taxAmount,
+              total: calc.total,
+              lines: {
+                create: calc.lines.map((l) => ({
+                  description: l.description,
+                  quantity: l.quantity,
+                  unitPrice: l.unitPrice,
+                  lineTotal: l.lineTotal,
+                })),
+              },
+            },
+            include: { lines: true, client: true, project: true },
+          }),
+        );
+
+        await tx.recurringInvoice.update({
+          where: { id: recurring.id },
+          data: { nextRunDate: advanceDate(recurring.nextRunDate, recurring.frequency), lastGeneratedAt: new Date() },
+        });
+
+        return created;
+      });
+    } catch (err) {
+      if (!isBillingPeriodClash(err)) throw err;
+      // A previous attempt already generated this exact period (and, since the transaction above
+      // guards create+advance together, that attempt necessarily also advanced the schedule) —
+      // nothing left to do here, and no webhook/autopay to repeat.
+      this.logger.warn(`Recurring invoice ${recurring.id} already generated for period ${billingPeriod.toISOString()} — skipping`);
+      return this.prisma.invoice.findFirstOrThrow({
+        where: { recurringInvoiceId: recurring.id, recurringBillingPeriod: billingPeriod },
+        include: { lines: true, client: true, project: true },
+      });
+    }
 
     this.webhooks.trigger(recurring.companyId, "invoice.recurring_generated", {
       invoiceId: invoice.id,
@@ -277,4 +311,12 @@ export class RecurringInvoicesService implements OnModuleInit {
     if (!recurring) throw new NotFoundException("Recurring invoice not found");
     return recurring;
   }
+}
+
+function isBillingPeriodClash(err: unknown): boolean {
+  return (
+    err instanceof Prisma.PrismaClientKnownRequestError &&
+    err.code === "P2002" &&
+    ((err.meta?.target as string[] | undefined)?.includes("recurringBillingPeriod") ?? false)
+  );
 }

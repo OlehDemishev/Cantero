@@ -4,6 +4,7 @@ import { JwtService } from "@nestjs/jwt";
 import type { AuthUser } from "@cantero/shared";
 import { IS_PUBLIC_KEY } from "../decorators/public.decorator";
 import { SessionsService } from "../sessions/sessions.service";
+import { PrismaService } from "../prisma/prisma.service";
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -11,6 +12,7 @@ export class JwtAuthGuard implements CanActivate {
     private readonly jwtService: JwtService,
     private readonly reflector: Reflector,
     private readonly sessions: SessionsService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -41,7 +43,21 @@ export class JwtAuthGuard implements CanActivate {
     }
     if (payload.sid) this.sessions.touch(payload.sid);
 
-    request.user = payload;
+    // The token's own role/additionalRoles are a snapshot from whenever it was issued — up to 7
+    // days stale. A removed member or one whose role/custom-role changed since must be caught
+    // here, on every request, rather than only at next login: this re-reads the actual membership
+    // and overwrites the token's role claims with what's true right now.
+    const membership = await this.prisma.membership.findUnique({
+      where: { userId_companyId: { userId: payload.userId, companyId: payload.companyId } },
+      include: { customRole: true },
+    });
+    if (!membership) throw new UnauthorizedException("You're no longer a member of this company");
+
+    request.user = {
+      ...payload,
+      role: membership.role,
+      additionalRoles: membership.customRole?.basePermissions,
+    } satisfies AuthUser;
     return true;
   }
 }

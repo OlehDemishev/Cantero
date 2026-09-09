@@ -43,6 +43,12 @@ export const verify2faSchema = z.object({
 });
 export type Verify2faInput = z.infer<typeof verify2faSchema>;
 
+export const setup2faSchema = z.object({
+  /** Required only when 2FA is already active on the account — see TwoFactorService.setup. */
+  password: z.string().min(1).optional(),
+});
+export type Setup2faInput = z.infer<typeof setup2faSchema>;
+
 export const enable2faSchema = z.object({
   code: z.string().length(6),
 });

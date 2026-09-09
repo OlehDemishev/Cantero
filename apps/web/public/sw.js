@@ -95,6 +95,16 @@ self.addEventListener("fetch", (event) => {
   }
 });
 
+// The API cache is keyed by request (method+URL), not by account — it has no way to know on its
+// own that the signed-in user changed. api-client.ts's setToken() posts this message on a
+// detected account switch (same trigger that clears the IndexedDB offline store), so a device
+// reused across accounts never serves one account's cached API reads to another while offline.
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "CLEAR_API_CACHE") {
+    event.waitUntil(caches.delete(API_CACHE));
+  }
+});
+
 self.addEventListener("push", (event) => {
   let payload = { title: "Cantero", body: "You have a new notification.", url: "/dashboard" };
   if (event.data) {
