@@ -19,6 +19,7 @@ export const PERMIT_EXPIRING_QUEUE = "permit-expiring";
 export const CHANGE_ORDER_REMINDERS_QUEUE = "change-order-reminders";
 export const ENPS_SURVEYS_QUEUE = "enps-surveys";
 export const OUTBOX_QUEUE = "webhook-outbox";
+export const STOCK_LOT_EXPIRING_QUEUE = "stock-lot-expiring";
 
 @Global()
 @Module({
@@ -46,6 +47,7 @@ export const OUTBOX_QUEUE = "webhook-outbox";
     BullModule.registerQueue({ name: CHANGE_ORDER_REMINDERS_QUEUE }),
     BullModule.registerQueue({ name: ENPS_SURVEYS_QUEUE }),
     BullModule.registerQueue({ name: OUTBOX_QUEUE }),
+    BullModule.registerQueue({ name: STOCK_LOT_EXPIRING_QUEUE }),
   ],
   providers: [QueueFailureReporterService],
   exports: [BullModule],

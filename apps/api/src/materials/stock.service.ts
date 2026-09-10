@@ -7,6 +7,7 @@ import { PrismaService } from "../common/prisma/prisma.service";
 import { STOCK_ALERTS_QUEUE } from "../common/queue/queue.module";
 import type { LowStockCheckJob } from "./low-stock.processor";
 import { calculateFifoConsumption, calculateWeightedAverageCost } from "./inventory-costing";
+import { consumeLotsByExpiry, sortLotsByExpiry } from "./lot-tracking";
 import { runSerializable } from "../common/prisma/serializable-transaction";
 
 const DECREASING_TYPES = new Set(["issue", "write_off"]);
@@ -51,6 +52,10 @@ export class StockService {
       if (!project) throw new NotFoundException("Project not found");
     }
 
+    if (material.lotTracked && input.type === "receipt" && !input.lotNumber) {
+      throw new BadRequestException(`"${material.name}" is lot-tracked — a lot number is required to receive it`);
+    }
+
     const delta = DECREASING_TYPES.has(input.type) ? -input.quantity : input.quantity;
 
     const movement = await runSerializable(this.prisma, async (tx) => {
@@ -93,6 +98,28 @@ export class StockService {
           ...(costing.averageCostUpdate !== null ? { averageCost: costing.averageCostUpdate } : {}),
         },
       });
+
+      if (material.lotTracked) {
+        if (input.type === "receipt") {
+          const lotId = await this.creditLot(
+            tx,
+            companyId,
+            input.warehouseId,
+            input.materialCatalogItemId,
+            input.lotNumber!,
+            input.expiresAt ? new Date(input.expiresAt) : null,
+            input.quantity,
+            input.unitCost,
+          );
+          await tx.stockLotMovement.create({ data: { stockMovementId: movement.id, stockLotId: lotId, quantity: input.quantity } });
+        } else {
+          const touched = await this.debitLots(tx, input.warehouseId, input.materialCatalogItemId, input.quantity, input.lotId);
+          for (const t of touched) {
+            await tx.stockLotMovement.create({ data: { stockMovementId: movement.id, stockLotId: t.lotId, quantity: t.taken } });
+          }
+        }
+      }
+
       return movement;
     });
 
@@ -188,6 +215,79 @@ export class StockService {
   }
 
   /**
+   * Lot/batch tracking (MaterialCatalogItem.lotTracked) — independent of costing, see
+   * lot-tracking.ts and the StockLot/StockLotMovement schema comments. Consumes either one
+   * explicitly chosen lot (`explicitLotId`) or, by default, whichever lots cover the quantity
+   * nearest-expiry-first (FEFO). Same TOCTOU concern as computeSingleWarehouseCosting — always
+   * called with a transaction client inside runSerializable.
+   */
+  private async debitLots(
+    tx: Prisma.TransactionClient,
+    warehouseId: string,
+    materialCatalogItemId: string,
+    quantity: number,
+    explicitLotId: string | undefined,
+  ): Promise<{ lotId: string; lotNumber: string; expiresAt: Date | null; taken: number }[]> {
+    let candidates: { id: string; lotNumber: string; expiresAt: Date | null; receivedAt: Date; remainingQuantity: Prisma.Decimal }[];
+    if (explicitLotId) {
+      const lot = await tx.stockLot.findFirst({ where: { id: explicitLotId, warehouseId, materialCatalogItemId } });
+      if (!lot) throw new NotFoundException("Lot not found");
+      candidates = [lot];
+    } else {
+      const found = await tx.stockLot.findMany({ where: { warehouseId, materialCatalogItemId, remainingQuantity: { gt: 0 } } });
+      candidates = sortLotsByExpiry(found);
+    }
+
+    const result = consumeLotsByExpiry(
+      candidates.map((l) => ({ id: l.id, remainingQuantity: Number(l.remainingQuantity) })),
+      quantity,
+    );
+
+    const touched: { lotId: string; lotNumber: string; expiresAt: Date | null; taken: number }[] = [];
+    for (const u of result.updatedLots) {
+      const original = candidates.find((c) => c.id === u.id)!;
+      await tx.stockLot.update({ where: { id: u.id }, data: { remainingQuantity: u.remainingQuantity } });
+      touched.push({ lotId: u.id, lotNumber: original.lotNumber, expiresAt: original.expiresAt, taken: u.taken });
+    }
+    return touched;
+  }
+
+  /** Creates a new lot, or tops up the existing one with this lotNumber at this warehouse+material
+   * (lot numbers are only unique per warehouse+material, not globally — two warehouses can each
+   * have their own "LOT-42"). */
+  private async creditLot(
+    tx: Prisma.TransactionClient,
+    companyId: string,
+    warehouseId: string,
+    materialCatalogItemId: string,
+    lotNumber: string,
+    expiresAt: Date | null,
+    quantity: number,
+    unitCost?: number,
+  ): Promise<string> {
+    const lot = await tx.stockLot.upsert({
+      where: { warehouseId_materialCatalogItemId_lotNumber: { warehouseId, materialCatalogItemId, lotNumber } },
+      create: { companyId, warehouseId, materialCatalogItemId, lotNumber, expiresAt, initialQuantity: quantity, remainingQuantity: quantity, unitCost },
+      update: { initialQuantity: { increment: quantity }, remainingQuantity: { increment: quantity } },
+    });
+    return lot.id;
+  }
+
+  /** Lots for one material (optionally scoped to one warehouse), nearest-expiry-first — the
+   * near-expiry view and the source list for picking an explicit lotId on an issue/write-off. */
+  listLots(companyId: string, warehouseId?: string, materialCatalogItemId?: string) {
+    return this.prisma.stockLot.findMany({
+      where: {
+        companyId,
+        ...(warehouseId ? { warehouseId } : {}),
+        ...(materialCatalogItemId ? { materialCatalogItemId } : {}),
+      },
+      include: { materialCatalogItem: { select: { name: true, unit: true } }, warehouse: { select: { name: true } } },
+      orderBy: [{ expiresAt: "asc" }, { receivedAt: "asc" }],
+    });
+  }
+
+  /**
    * Moves stock between two of the company's own warehouses as a single atomic
    * operation: one `transfer` StockMovement row records both sides (warehouseId
    * debited, toWarehouseId credited), and both StockLevel rows update together —
@@ -246,6 +346,16 @@ export class StockService {
           ...(costing.destAverageCostUpdate !== null ? { averageCost: costing.destAverageCostUpdate } : {}),
         },
       });
+
+      if (material.lotTracked) {
+        const touched = await this.debitLots(tx, input.fromWarehouseId, input.materialCatalogItemId, input.quantity, input.lotId);
+        for (const t of touched) {
+          await tx.stockLotMovement.create({ data: { stockMovementId: movement.id, stockLotId: t.lotId, quantity: t.taken } });
+          const destLotId = await this.creditLot(tx, companyId, input.toWarehouseId, input.materialCatalogItemId, t.lotNumber, t.expiresAt, t.taken);
+          await tx.stockLotMovement.create({ data: { stockMovementId: movement.id, stockLotId: destLotId, quantity: t.taken } });
+        }
+      }
+
       return movement;
     });
 

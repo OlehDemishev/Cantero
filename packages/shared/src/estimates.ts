@@ -11,6 +11,7 @@ export const createMaterialCatalogItemSchema = z.object({
   greenCertified: z.boolean().default(false),
   greenCertificationBody: z.string().max(120).optional(),
   barcode: z.string().max(64).optional(),
+  lotTracked: z.boolean().default(false),
 });
 export type CreateMaterialCatalogItemInput = z.infer<typeof createMaterialCatalogItemSchema>;
 
@@ -18,6 +19,11 @@ export const updateMaterialBarcodeSchema = z.object({
   barcode: z.string().max(64).nullable(),
 });
 export type UpdateMaterialBarcodeInput = z.infer<typeof updateMaterialBarcodeSchema>;
+
+export const updateMaterialLotTrackedSchema = z.object({
+  lotTracked: z.boolean(),
+});
+export type UpdateMaterialLotTrackedInput = z.infer<typeof updateMaterialLotTrackedSchema>;
 
 export const setBinLocationSchema = z.object({
   warehouseId: z.string().uuid(),

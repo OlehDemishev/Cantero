@@ -23,6 +23,16 @@ export const recordStockMovementSchema = z.object({
   /// by the costing engine, not entered by hand). Omit to record the movement with no cost data,
   /// same as before this field existed.
   unitCost: z.number().nonnegative().optional(),
+  /// Required (enforced in StockService, not here — this schema doesn't know the material's
+  /// lotTracked flag) for a receipt against a lot-tracked material: identifies/creates the
+  /// StockLot this receipt lands in. Ignored for issue/write_off.
+  lotNumber: z.string().min(1).max(120).optional(),
+  /// Only meaningful alongside lotNumber on a receipt — shelf-life/expiry date for the new lot.
+  expiresAt: z.string().datetime().optional(),
+  /// For issue/write_off against a lot-tracked material: consume this specific lot instead of the
+  /// default nearest-expiry-first (FEFO) automatic selection across all of the material's lots at
+  /// this warehouse.
+  lotId: z.string().uuid().optional(),
 });
 export type RecordStockMovementInput = z.infer<typeof recordStockMovementSchema>;
 
@@ -32,6 +42,9 @@ export const transferStockSchema = z
     toWarehouseId: z.string().uuid(),
     materialCatalogItemId: z.string().uuid(),
     quantity: z.number().positive(),
+    /// For a lot-tracked material: consume this specific source lot instead of the default
+    /// nearest-expiry-first (FEFO) automatic selection.
+    lotId: z.string().uuid().optional(),
   })
   .refine((data) => data.fromWarehouseId !== data.toWarehouseId, {
     message: "fromWarehouseId and toWarehouseId must differ",

@@ -3,6 +3,7 @@ import type {
   CreateMaterialCatalogItemInput,
   ImportResult,
   UpdateMaterialBarcodeInput,
+  UpdateMaterialLotTrackedInput,
   UpdateMaterialPriceInput,
   UpdateMaterialReorderInput,
   UpdateMaterialSustainabilityInput,
@@ -195,6 +196,18 @@ export class MaterialCatalogService {
     return this.prisma.materialCatalogItem.update({
       where: { id },
       data: { barcode: input.barcode },
+      include: { preferredSupplier: true },
+    });
+  }
+
+  /** Toggles lot/batch tracking for this material — see MaterialCatalogItem.lotTracked. Turning it
+   * off doesn't retroactively delete any StockLot rows already created; it only stops requiring a
+   * lotNumber on future receipts and stops FEFO lot consumption on future issues. */
+  async updateLotTracked(companyId: string, id: string, input: UpdateMaterialLotTrackedInput) {
+    await this.get(companyId, id);
+    return this.prisma.materialCatalogItem.update({
+      where: { id },
+      data: { lotTracked: input.lotTracked },
       include: { preferredSupplier: true },
     });
   }

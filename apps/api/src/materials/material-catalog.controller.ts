@@ -4,12 +4,14 @@ import { MAX_UPLOAD_BYTES } from "../common/upload-limits";
 import {
   createMaterialCatalogItemSchema,
   updateMaterialBarcodeSchema,
+  updateMaterialLotTrackedSchema,
   updateMaterialPriceSchema,
   updateMaterialReorderSchema,
   updateMaterialSustainabilitySchema,
   type AuthUser,
   type CreateMaterialCatalogItemInput,
   type UpdateMaterialBarcodeInput,
+  type UpdateMaterialLotTrackedInput,
   type UpdateMaterialPriceInput,
   type UpdateMaterialReorderInput,
   type UpdateMaterialSustainabilityInput,
@@ -107,5 +109,14 @@ export class MaterialCatalogController {
     @Body(new ZodValidationPipe(updateMaterialBarcodeSchema)) body: UpdateMaterialBarcodeInput,
   ) {
     return this.service.updateBarcode(user.companyId, id, body);
+  }
+
+  @Patch(":id/lot-tracked")
+  updateLotTracked(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(updateMaterialLotTrackedSchema)) body: UpdateMaterialLotTrackedInput,
+  ) {
+    return this.service.updateLotTracked(user.companyId, id, body);
   }
 }

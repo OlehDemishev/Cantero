@@ -11,6 +11,7 @@ describe("ToolCribService", () => {
   let service: ToolCribService;
   let prisma: {
     toolCribItem: { findMany: jest.Mock; findFirst: jest.Mock; create: jest.Mock; update: jest.Mock };
+    toolCribUnit: { findMany: jest.Mock; findFirst: jest.Mock; createMany: jest.Mock; update: jest.Mock };
     toolCheckout: { findMany: jest.Mock; findFirst: jest.Mock; create: jest.Mock; update: jest.Mock };
     worker: { findFirst: jest.Mock };
     project: { findFirst: jest.Mock };
@@ -20,6 +21,7 @@ describe("ToolCribService", () => {
   beforeEach(async () => {
     prisma = {
       toolCribItem: { findMany: jest.fn(), findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
+      toolCribUnit: { findMany: jest.fn(), findFirst: jest.fn(), createMany: jest.fn(), update: jest.fn() },
       toolCheckout: { findMany: jest.fn(), findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
       worker: { findFirst: jest.fn() },
       project: { findFirst: jest.fn() },
@@ -137,6 +139,97 @@ describe("ToolCribService", () => {
 
       expect(result.totalCharged).toBe(39.75);
       expect(result.checkouts).toHaveLength(2);
+    });
+  });
+
+  describe("registerUnits()", () => {
+    it("rejects registering units on an item that isn't serial-tracked", async () => {
+      prisma.toolCribItem.findFirst.mockResolvedValue({ id: "item-1", name: "Hard hats", serialTracked: false });
+
+      await expect(service.registerUnits(COMPANY_A, ACTOR, "item-1", { serialNumbers: ["SN-1"] })).rejects.toThrow(BadRequestException);
+    });
+
+    it("creates one ToolCribUnit per serial number and bumps quantityOnHand by the count added", async () => {
+      prisma.toolCribItem.findFirst.mockResolvedValue({ id: "item-1", name: "Generator", serialTracked: true });
+      prisma.toolCribUnit.findMany.mockResolvedValue([]);
+      prisma.$transaction.mockResolvedValue([{ count: 2 }, { id: "item-1" }]);
+
+      await service.registerUnits(COMPANY_A, ACTOR, "item-1", { serialNumbers: ["SN-1", "SN-2"] });
+
+      expect(prisma.toolCribUnit.createMany).toHaveBeenCalledWith({
+        data: [
+          { companyId: COMPANY_A, toolCribItemId: "item-1", serialNumber: "SN-1" },
+          { companyId: COMPANY_A, toolCribItemId: "item-1", serialNumber: "SN-2" },
+        ],
+      });
+      expect(prisma.toolCribItem.update).toHaveBeenCalledWith({ where: { id: "item-1" }, data: { quantityOnHand: { increment: 2 } } });
+    });
+  });
+
+  describe("checkOut() — serial-tracked items", () => {
+    it("requires a unitId for a serial-tracked item", async () => {
+      prisma.toolCribItem.findFirst.mockResolvedValue({ id: "item-1", name: "Generator", serialTracked: true });
+      prisma.worker.findFirst.mockResolvedValue({ id: "worker-1", name: "Jane" });
+
+      await expect(service.checkOut(COMPANY_A, ACTOR, "item-1", { workerId: "worker-1" } as any)).rejects.toThrow(BadRequestException);
+    });
+
+    it("rejects checking out a unit that isn't available", async () => {
+      prisma.toolCribItem.findFirst.mockResolvedValue({ id: "item-1", name: "Generator", serialTracked: true });
+      prisma.worker.findFirst.mockResolvedValue({ id: "worker-1", name: "Jane" });
+      prisma.toolCribUnit.findFirst.mockResolvedValue({ id: "unit-1", serialNumber: "SN-1", status: "checked_out" });
+
+      await expect(service.checkOut(COMPANY_A, ACTOR, "item-1", { workerId: "worker-1", unitId: "unit-1" } as any)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it("checks out the specific unit: creates a checkout, marks the unit checked_out, decrements quantityOnHand by 1", async () => {
+      prisma.toolCribItem.findFirst.mockResolvedValue({ id: "item-1", name: "Generator", serialTracked: true });
+      prisma.worker.findFirst.mockResolvedValue({ id: "worker-1", name: "Jane" });
+      prisma.toolCribUnit.findFirst.mockResolvedValue({ id: "unit-1", serialNumber: "SN-1", status: "available" });
+      prisma.$transaction.mockResolvedValue([{ id: "checkout-1" }, { id: "unit-1", status: "checked_out" }, { id: "item-1" }]);
+
+      const result = await service.checkOut(COMPANY_A, ACTOR, "item-1", { workerId: "worker-1", unitId: "unit-1" } as any);
+
+      expect(result.id).toBe("checkout-1");
+      expect(prisma.toolCheckout.create).toHaveBeenCalledWith({
+        data: { companyId: COMPANY_A, itemId: "item-1", toolCribUnitId: "unit-1", workerId: "worker-1", projectId: undefined, quantity: 1, notes: undefined },
+      });
+    });
+  });
+
+  describe("checkIn() — serial-tracked checkouts", () => {
+    it("a good return frees the unit and restores quantityOnHand", async () => {
+      const checkout = { id: "checkout-1", returnedAt: null, quantity: 1, itemId: "item-1", toolCribUnitId: "unit-1", item: { name: "Generator" }, worker: { name: "Jane" } };
+      prisma.toolCheckout.findFirst.mockResolvedValue(checkout);
+      const tx = {
+        toolCheckout: { update: jest.fn().mockResolvedValue({ id: "checkout-1", returnedAt: new Date() }) },
+        toolCribUnit: { update: jest.fn().mockResolvedValue({}) },
+        toolCribItem: { update: jest.fn().mockResolvedValue({}) },
+      };
+      prisma.$transaction.mockImplementation(async (cb: any) => cb(tx));
+
+      await service.checkIn(COMPANY_A, ACTOR, "checkout-1", { returnCondition: "good" } as any);
+
+      expect(tx.toolCribUnit.update).toHaveBeenCalledWith({ where: { id: "unit-1" }, data: { status: "available" } });
+      expect(tx.toolCribItem.update).toHaveBeenCalledWith({ where: { id: "item-1" }, data: { quantityOnHand: { increment: 1 } } });
+    });
+
+    it("a lost unit is marked lost and never restores quantityOnHand", async () => {
+      const checkout = { id: "checkout-1", returnedAt: null, quantity: 1, itemId: "item-1", toolCribUnitId: "unit-1", item: { name: "Generator" }, worker: { name: "Jane" } };
+      prisma.toolCheckout.findFirst.mockResolvedValue(checkout);
+      const tx = {
+        toolCheckout: { update: jest.fn().mockResolvedValue({ id: "checkout-1", returnedAt: new Date() }) },
+        toolCribUnit: { update: jest.fn().mockResolvedValue({}) },
+        toolCribItem: { update: jest.fn() },
+      };
+      prisma.$transaction.mockImplementation(async (cb: any) => cb(tx));
+
+      await service.checkIn(COMPANY_A, ACTOR, "checkout-1", { returnCondition: "lost" } as any);
+
+      expect(tx.toolCribUnit.update).toHaveBeenCalledWith({ where: { id: "unit-1" }, data: { status: "lost" } });
+      expect(tx.toolCribItem.update).not.toHaveBeenCalled();
     });
   });
 });

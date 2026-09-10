@@ -399,6 +399,7 @@ model Company {
   estimates                       Estimate[]
   invoices                        Invoice[]
   warehouses                      Warehouse[]
+  stockLots                       StockLot[]
   suppliers                       Supplier[]
   workers                         Worker[]
   documents                       Document[]
@@ -517,6 +518,7 @@ model Company {
   lienNotices                     LienNotice[]
   mechanicsLienFilings            MechanicsLienFiling[]
   toolCribItems                   ToolCribItem[]
+  toolCribUnits                   ToolCribUnit[]
   toolCheckouts                   ToolCheckout[]
   stormwaterPermits               StormwaterPermit[]
   bmpInspections                  BmpInspection[]
@@ -636,8 +638,8 @@ model WebhookDelivery {
   error             String?
   createdAt         DateTime @default(now())
 
-  endpoint WebhookEndpoint @relation(fields: [webhookEndpointId], references: [id], onDelete: Cascade)
-  outboxEvent OutboxEvent? @relation(fields: [outboxEventId], references: [id], onDelete: SetNull)
+  endpoint    WebhookEndpoint @relation(fields: [webhookEndpointId], references: [id], onDelete: Cascade)
+  outboxEvent OutboxEvent?    @relation(fields: [outboxEventId], references: [id], onDelete: SetNull)
 
   @@unique([outboxEventId, webhookEndpointId])
   @@index([webhookEndpointId, createdAt])
@@ -890,6 +892,14 @@ model MaterialCatalogItem {
   /// Scan-to-identify code for receiving/counting workflows — unique per company when set, null
   /// means this item has no physical barcode assigned yet (most catalog items won't).
   barcode                String?
+  /// When true, receipts of this material require a lotNumber (and may carry an expiresAt) and
+  /// issues/write-offs/transfers-out consume tracked StockLot rows nearest-expiry-first — for
+  /// items where traceability/shelf-life matters (paint, chemicals, concrete admixtures). Most
+  /// catalog items leave this false and are never lot-tracked. Independent of
+  /// Company.inventoryCostingMethod — lots exist for traceability regardless of which costing
+  /// engine (FIFO cost layers vs weighted-average) is active, unlike InventoryCostLayer which only
+  /// populates under fifo.
+  lotTracked             Boolean  @default(false)
   createdAt              DateTime @default(now())
 
   company             Company                       @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -898,6 +908,7 @@ model MaterialCatalogItem {
   stockLevels         StockLevel[]
   stockMovements      StockMovement[]
   costLayers          InventoryCostLayer[]
+  stockLots           StockLot[]
   stockTransfers      StockTransfer[]
   purchaseOrderLines  PurchaseOrderLine[]
   requirementLines    EstimateMaterialRequirement[]
@@ -1521,6 +1532,7 @@ model Warehouse {
   incomingTransfers      StockMovement[]      @relation("TransferDestination")
   stockCounts            StockCount[]
   costLayers             InventoryCostLayer[]
+  stockLots              StockLot[]
   outgoingStockTransfers StockTransfer[]      @relation("StockTransferFrom")
   incomingStockTransfers StockTransfer[]      @relation("StockTransferTo")
 
@@ -1573,11 +1585,69 @@ model StockMovement {
   materialCatalogItem MaterialCatalogItem @relation(fields: [materialCatalogItemId], references: [id], onDelete: Restrict)
   project             Project?            @relation(fields: [projectId], references: [id], onDelete: SetNull)
   estimateLine        EstimateLine?       @relation(fields: [estimateLineId], references: [id], onDelete: SetNull)
+  lotMovements        StockLotMovement[]
 
   @@index([companyId])
   @@index([warehouseId])
   @@index([toWarehouseId])
   @@map("stock_movements")
+}
+
+/// A tracked batch/lot of a lot-tracked material (MaterialCatalogItem.lotTracked) at one
+/// warehouse — created by a receipt that supplies a lotNumber, consumed nearest-expiry-first
+/// (FEFO) by later issues/write-offs/transfers-out via StockLotConsumption rows (one movement can
+/// span several lots, same as InventoryCostLayer already can for FIFO costing). Deliberately
+/// independent of InventoryCostLayer/Company.inventoryCostingMethod: lot traceability and expiry
+/// matter regardless of which costing engine is active, whereas cost layers only exist under fifo.
+model StockLot {
+  id                    String    @id @default(uuid())
+  companyId             String
+  warehouseId           String
+  materialCatalogItemId String
+  lotNumber             String
+  expiresAt             DateTime?
+  receivedAt            DateTime  @default(now())
+  initialQuantity       Decimal   @db.Decimal(14, 4)
+  remainingQuantity     Decimal   @db.Decimal(14, 4)
+  /// Per-unit cost captured from the receipt that created this lot, if any — purely informational
+  /// (does not feed StockLevel.averageCost/InventoryCostLayer; those are maintained separately).
+  unitCost              Decimal?  @db.Decimal(12, 4)
+  /// Set once a near-expiry reminder has fired for this lot, so the daily pass (see
+  /// LotExpiringRemindersService) doesn't re-notify on every run.
+  expiringNotifiedAt    DateTime?
+  createdAt             DateTime  @default(now())
+
+  company             Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  warehouse           Warehouse           @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  materialCatalogItem MaterialCatalogItem @relation(fields: [materialCatalogItemId], references: [id], onDelete: Cascade)
+  movements           StockLotMovement[]
+
+  @@unique([warehouseId, materialCatalogItemId, lotNumber])
+  @@index([companyId])
+  @@index([warehouseId, materialCatalogItemId, expiresAt])
+  @@map("stock_lots")
+}
+
+/// Records exactly how much of one StockLot a given StockMovement touched — a receipt row means
+/// "this movement added quantity to this lot," an issue/write_off/transfer-out row means "this
+/// movement drew quantity from this lot." Split out into its own join table (rather than a single
+/// stockLotId on StockMovement) because one issue/write_off/transfer-out can be satisfied by
+/// draining more than one lot under FEFO, just as one FIFO issue can span several
+/// InventoryCostLayer rows — a receipt only ever touches one lot, but reuses the same table rather
+/// than a separate one-directional column, so "which lots did this movement touch" is always one
+/// query regardless of movement type.
+model StockLotMovement {
+  id              String  @id @default(uuid())
+  stockMovementId String
+  stockLotId      String
+  quantity        Decimal @db.Decimal(14, 4)
+
+  stockMovement StockMovement @relation(fields: [stockMovementId], references: [id], onDelete: Cascade)
+  stockLot      StockLot      @relation(fields: [stockLotId], references: [id], onDelete: Restrict)
+
+  @@index([stockMovementId])
+  @@index([stockLotId])
+  @@map("stock_lot_movements")
 }
 
 /// One FIFO cost lot: created by a costed receipt, consumed oldest-first by later issues/write-offs/
@@ -2886,13 +2956,13 @@ model TaxExemptionCertificate {
 }
 
 model Payment {
-  id            String    @id @default(uuid())
-  invoiceId     String
+  id                      String    @id @default(uuid())
+  invoiceId               String
   /// Always in the invoice's own currency — the amount actually credited against its balance.
   /// Equal to foreignAmount * exchangeRate when this was a foreign-currency settlement.
-  amount        Decimal   @db.Decimal(14, 2)
-  method        String
-  paidAt        DateTime  @default(now())
+  amount                  Decimal   @db.Decimal(14, 2)
+  method                  String
+  paidAt                  DateTime  @default(now())
   /// The remaining fields are null for an ordinary same-currency payment. Set together only when
   /// the client actually settled in a currency other than the invoice's — see FxSettlementService.
   /// currency: what the client paid in. foreignAmount: how much of it. exchangeRate: the rate
@@ -2900,15 +2970,15 @@ model Payment {
   /// what foreignAmount would have converted to at the company's current benchmark rate for that
   /// pair at record time — frozen then, so a later benchmark-rate change never retroactively
   /// rewrites a past payment's gain/loss. Positive means the settlement beat the benchmark rate.
-  currency      Currency?
-  foreignAmount Decimal?  @db.Decimal(14, 2)
-  exchangeRate  Decimal?  @db.Decimal(12, 6)
-  fxGainLoss    Decimal?  @db.Decimal(14, 2)
+  currency                Currency?
+  foreignAmount           Decimal?  @db.Decimal(14, 2)
+  exchangeRate            Decimal?  @db.Decimal(12, 6)
+  fxGainLoss              Decimal?  @db.Decimal(14, 2)
   /// Stripe Checkout Session id for a payment recorded from BillingService's webhook — unique so
   /// a redelivered `checkout.session.completed` event (Stripe explicitly does not guarantee
   /// exactly-once delivery) can't record the same payment twice. Null for a manually-recorded
   /// (cash/check/ACH) payment.
-  stripeCheckoutSessionId String? @unique
+  stripeCheckoutSessionId String?   @unique
 
   invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
@@ -3539,13 +3609,13 @@ model CostCode {
   code      String
   name      String
 
-  company                    Company                  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  estimateLines              EstimateLine[]
-  changeOrderLines           ChangeOrderLine[]
-  subcontractorCosts         SubcontractorCost[]
-  productivityLogs           ProductivityLog[]
-  budgetTransfersFrom        CostCodeBudgetTransfer[] @relation("CostCodeBudgetTransferFrom")
-  budgetTransfersTo          CostCodeBudgetTransfer[] @relation("CostCodeBudgetTransferTo")
+  company             Company                  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  estimateLines       EstimateLine[]
+  changeOrderLines    ChangeOrderLine[]
+  subcontractorCosts  SubcontractorCost[]
+  productivityLogs    ProductivityLog[]
+  budgetTransfersFrom CostCodeBudgetTransfer[] @relation("CostCodeBudgetTransferFrom")
+  budgetTransfersTo   CostCodeBudgetTransfer[] @relation("CostCodeBudgetTransferTo")
 
   @@unique([companyId, code])
   @@index([companyId])
@@ -5445,14 +5515,50 @@ model ToolCribItem {
   replacementCost Decimal? @db.Decimal(10, 2)
   parLevel        Int?
   quantityOnHand  Int      @default(0)
+  /// When true, individual physical units of this item are registered with their own serial
+  /// number (ToolCribUnit) and checked out/in by unit rather than by bulk quantity — for
+  /// high-value or individually-identifiable equipment (a specific generator, a specific total
+  /// station), as opposed to bulk consumables (hard hats, tape measures) where only the count
+  /// matters. quantityOnHand keeps meaning "how many available" either way (for serial-tracked
+  /// items it mirrors the count of units with status=available).
+  serialTracked   Boolean  @default(false)
   createdAt       DateTime @default(now())
 
   company            Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  units              ToolCribUnit[]
   checkouts          ToolCheckout[]
   calibrationRecords CalibrationRecord[]
 
   @@index([companyId])
   @@map("tool_crib_items")
+}
+
+enum ToolCribUnitStatus {
+  available
+  checked_out
+  damaged
+  lost
+  retired
+}
+
+/// One physical, individually-numbered unit of a serialTracked ToolCribItem — e.g. "Generator #3"
+/// under the "Generators" catalog item. Only exists for items with serialTracked=true; bulk items
+/// stay on ToolCribItem.quantityOnHand alone, same as before this model existed.
+model ToolCribUnit {
+  id             String             @id @default(uuid())
+  companyId      String
+  toolCribItemId String
+  serialNumber   String
+  status         ToolCribUnitStatus @default(available)
+  createdAt      DateTime           @default(now())
+
+  company      Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  toolCribItem ToolCribItem   @relation(fields: [toolCribItemId], references: [id], onDelete: Cascade)
+  checkouts    ToolCheckout[]
+
+  @@unique([toolCribItemId, serialNumber])
+  @@index([companyId])
+  @@map("tool_crib_units")
 }
 
 enum ToolCheckoutCondition {
@@ -5464,10 +5570,14 @@ enum ToolCheckoutCondition {
 /// One checkout of `quantity` units of an item to a worker — returnedAt: null means still out.
 /// returnCondition/chargeAmount are only set at check-in; a "lost" return never adds the quantity
 /// back to ToolCribItem.quantityOnHand (see ToolCribService.checkIn), unlike "good"/"damaged".
+/// For a serialTracked item, toolCribUnitId identifies which specific physical unit went out
+/// (quantity is always 1 in that case); for a bulk item it stays null and quantity carries the
+/// count, exactly as before serial tracking existed.
 model ToolCheckout {
   id              String                 @id @default(uuid())
   companyId       String
   itemId          String
+  toolCribUnitId  String?
   workerId        String
   projectId       String?
   quantity        Int                    @default(1)
@@ -5477,13 +5587,15 @@ model ToolCheckout {
   chargeAmount    Decimal?               @db.Decimal(10, 2)
   notes           String?
 
-  company Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  item    ToolCribItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  worker  Worker       @relation(fields: [workerId], references: [id], onDelete: Cascade)
-  project Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  item         ToolCribItem  @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  toolCribUnit ToolCribUnit? @relation(fields: [toolCribUnitId], references: [id], onDelete: SetNull)
+  worker       Worker        @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  project      Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
 
   @@index([companyId])
   @@index([itemId])
+  @@index([toolCribUnitId])
   @@index([workerId])
   @@index([projectId])
   @@map("tool_checkouts")

@@ -33,6 +33,15 @@ export class StockController {
     return this.service.inventoryValuation(user.companyId, warehouseId);
   }
 
+  @Get("lots")
+  lots(
+    @CurrentUser() user: AuthUser,
+    @Query("warehouseId") warehouseId?: string,
+    @Query("materialCatalogItemId") materialCatalogItemId?: string,
+  ) {
+    return this.service.listLots(user.companyId, warehouseId, materialCatalogItemId);
+  }
+
   @Post("movements")
   recordMovement(
     @CurrentUser() user: AuthUser,

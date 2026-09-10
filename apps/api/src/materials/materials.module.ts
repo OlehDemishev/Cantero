@@ -20,6 +20,8 @@ import { StockTransfersController } from "./stock-transfers.controller";
 import { StockTransfersService } from "./stock-transfers.service";
 import { LongLeadItemsController } from "./long-lead-items.controller";
 import { LongLeadItemsService } from "./long-lead-items.service";
+import { LotExpiringRemindersService } from "./lot-expiring-reminders.service";
+import { LotExpiringRemindersProcessor } from "./lot-expiring-reminders.processor";
 
 @Module({
   controllers: [
@@ -46,6 +48,8 @@ import { LongLeadItemsService } from "./long-lead-items.service";
     VendorBillsService,
     StockTransfersService,
     LongLeadItemsService,
+    LotExpiringRemindersService,
+    LotExpiringRemindersProcessor,
   ],
   exports: [MaterialCatalogService, StockService],
 })

@@ -3,10 +3,12 @@ import {
   checkInToolSchema,
   checkOutToolSchema,
   createToolCribItemSchema,
+  registerToolCribUnitsSchema,
   type AuthUser,
   type CheckInToolInput,
   type CheckOutToolInput,
   type CreateToolCribItemInput,
+  type RegisterToolCribUnitsInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
@@ -29,6 +31,20 @@ export class ToolCribController {
   @Get("tool-crib/low-par-level")
   lowParLevelItems(@CurrentUser() user: AuthUser) {
     return this.service.lowParLevelItems(user.companyId);
+  }
+
+  @Post("tool-crib/items/:id/units")
+  registerUnits(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(registerToolCribUnitsSchema)) body: RegisterToolCribUnitsInput,
+  ) {
+    return this.service.registerUnits(user.companyId, { userId: user.userId, name: user.name }, id, body);
+  }
+
+  @Get("tool-crib/items/:id/units")
+  listUnits(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.listUnits(user.companyId, id);
   }
 
   @Post("tool-crib/items/:id/check-out")

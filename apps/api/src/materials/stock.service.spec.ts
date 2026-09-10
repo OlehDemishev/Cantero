@@ -1,4 +1,4 @@
-import { NotFoundException } from "@nestjs/common";
+import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { Test } from "@nestjs/testing";
 import { getQueueToken } from "@nestjs/bullmq";
@@ -225,6 +225,123 @@ describe("StockService.transferStock", () => {
         where: { warehouseId_materialCatalogItemId: { warehouseId: "wh-2", materialCatalogItemId: "mat-1" } },
         update: { quantityOnHand: { increment: 5 }, averageCost: 5 },
       }),
+    );
+  });
+});
+
+describe("StockService.recordMovement — lot tracking", () => {
+  let service: StockService;
+  let prisma: {
+    warehouse: { findFirst: jest.Mock };
+    materialCatalogItem: { findFirst: jest.Mock };
+    company: { findUniqueOrThrow: jest.Mock };
+    stockLevel: { upsert: jest.Mock; findUnique: jest.Mock };
+    stockMovement: { create: jest.Mock };
+    stockLot: { upsert: jest.Mock; findFirst: jest.Mock; findMany: jest.Mock; update: jest.Mock };
+    stockLotMovement: { create: jest.Mock };
+    inventoryCostLayer: { create: jest.Mock; findMany: jest.Mock; update: jest.Mock; delete: jest.Mock };
+    $transaction: jest.Mock;
+  };
+
+  beforeEach(async () => {
+    prisma = {
+      warehouse: { findFirst: jest.fn().mockResolvedValue({ id: "wh-1" }) },
+      materialCatalogItem: { findFirst: jest.fn().mockResolvedValue({ id: "mat-1", name: "Epoxy Paint", lotTracked: true }) },
+      company: { findUniqueOrThrow: jest.fn().mockResolvedValue({ inventoryCostingMethod: "weighted_average" }) },
+      stockLevel: { upsert: jest.fn((args) => args), findUnique: jest.fn().mockResolvedValue(null) },
+      stockMovement: { create: jest.fn(() => ({ id: "movement-1" })) },
+      stockLot: { upsert: jest.fn(), findFirst: jest.fn(), findMany: jest.fn().mockResolvedValue([]), update: jest.fn() },
+      stockLotMovement: { create: jest.fn() },
+      inventoryCostLayer: { create: jest.fn(), findMany: jest.fn(), update: jest.fn(), delete: jest.fn() },
+      $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
+    };
+
+    const module = await Test.createTestingModule({
+      providers: [
+        StockService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: getQueueToken(STOCK_ALERTS_QUEUE), useValue: { add: jest.fn() } },
+      ],
+    }).compile();
+
+    service = module.get(StockService);
+  });
+
+  it("rejects a receipt against a lot-tracked material with no lotNumber", async () => {
+    await expect(
+      service.recordMovement(COMPANY_A, { warehouseId: "wh-1", materialCatalogItemId: "mat-1", type: "receipt", quantity: 10 }),
+    ).rejects.toThrow(BadRequestException);
+    expect(prisma.stockMovement.create).not.toHaveBeenCalled();
+  });
+
+  it("receipt: creates/tops up a StockLot and links it to the movement", async () => {
+    prisma.stockLot.upsert.mockResolvedValue({ id: "lot-1" });
+
+    await service.recordMovement(COMPANY_A, {
+      warehouseId: "wh-1",
+      materialCatalogItemId: "mat-1",
+      type: "receipt",
+      quantity: 10,
+      lotNumber: "LOT-1",
+      expiresAt: "2027-01-01T00:00:00.000Z",
+    });
+
+    expect(prisma.stockLot.upsert).toHaveBeenCalledWith({
+      where: { warehouseId_materialCatalogItemId_lotNumber: { warehouseId: "wh-1", materialCatalogItemId: "mat-1", lotNumber: "LOT-1" } },
+      create: expect.objectContaining({ lotNumber: "LOT-1", initialQuantity: 10, remainingQuantity: 10 }),
+      update: { initialQuantity: { increment: 10 }, remainingQuantity: { increment: 10 } },
+    });
+    expect(prisma.stockLotMovement.create).toHaveBeenCalledWith({ data: { stockMovementId: "movement-1", stockLotId: "lot-1", quantity: 10 } });
+  });
+
+  it("issue: consumes lots nearest-expiry-first (FEFO), splitting across more than one lot", async () => {
+    prisma.stockLot.findMany.mockResolvedValue([
+      { id: "lot-old", lotNumber: "A", expiresAt: new Date("2026-01-01"), receivedAt: new Date("2025-01-01"), remainingQuantity: "3" },
+      { id: "lot-new", lotNumber: "B", expiresAt: new Date("2026-06-01"), receivedAt: new Date("2025-02-01"), remainingQuantity: "10" },
+    ]);
+
+    await service.recordMovement(COMPANY_A, { warehouseId: "wh-1", materialCatalogItemId: "mat-1", type: "issue", quantity: 5 });
+
+    expect(prisma.stockLot.update).toHaveBeenCalledWith({ where: { id: "lot-old" }, data: { remainingQuantity: 0 } });
+    expect(prisma.stockLot.update).toHaveBeenCalledWith({ where: { id: "lot-new" }, data: { remainingQuantity: 8 } });
+    expect(prisma.stockLotMovement.create).toHaveBeenCalledWith({ data: { stockMovementId: "movement-1", stockLotId: "lot-old", quantity: 3 } });
+    expect(prisma.stockLotMovement.create).toHaveBeenCalledWith({ data: { stockMovementId: "movement-1", stockLotId: "lot-new", quantity: 2 } });
+  });
+
+  it("issue: consumes only the explicitly chosen lot when lotId is given", async () => {
+    prisma.stockLot.findFirst.mockResolvedValue({ id: "lot-x", lotNumber: "X", expiresAt: null, receivedAt: new Date(), remainingQuantity: "20" });
+
+    await service.recordMovement(COMPANY_A, { warehouseId: "wh-1", materialCatalogItemId: "mat-1", type: "issue", quantity: 5, lotId: "lot-x" });
+
+    expect(prisma.stockLot.findMany).not.toHaveBeenCalled();
+    expect(prisma.stockLot.update).toHaveBeenCalledWith({ where: { id: "lot-x" }, data: { remainingQuantity: 15 } });
+  });
+
+  it("throws when an explicit lotId doesn't exist at this warehouse", async () => {
+    prisma.stockLot.findFirst.mockResolvedValue(null);
+
+    await expect(
+      service.recordMovement(COMPANY_A, { warehouseId: "wh-1", materialCatalogItemId: "mat-1", type: "issue", quantity: 5, lotId: "missing" }),
+    ).rejects.toThrow(NotFoundException);
+  });
+});
+
+describe("StockService.listLots", () => {
+  it("scopes the query by company and, when given, warehouse/material", async () => {
+    const prisma = { stockLot: { findMany: jest.fn().mockResolvedValue([]) } };
+    const module = await Test.createTestingModule({
+      providers: [
+        StockService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: getQueueToken(STOCK_ALERTS_QUEUE), useValue: { add: jest.fn() } },
+      ],
+    }).compile();
+    const service = module.get(StockService);
+
+    await service.listLots(COMPANY_A, "wh-1", "mat-1");
+
+    expect(prisma.stockLot.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { companyId: COMPANY_A, warehouseId: "wh-1", materialCatalogItemId: "mat-1" } }),
     );
   });
 });
