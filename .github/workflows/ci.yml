@@ -72,3 +72,113 @@ jobs:
       - name: Lint
         run: pnpm --filter web lint
         continue-on-error: true
+
+  e2e:
+    name: E2E — critical path smoke test
+    runs-on: ubuntu-latest
+    # Unlike the two jobs above (mocked Prisma, no real connection needed), this one drives the
+    # actual app over HTTP end to end — it needs a real Postgres to seed and a real Redis for the
+    # API's BullMQ queues (REDIS_URL is a hard getOrThrow at boot, see queue.module.ts).
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: baugeld
+          POSTGRES_PASSWORD: baugeld
+          POSTGRES_DB: baugeld
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U baugeld"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: "postgresql://baugeld:baugeld@localhost:5432/baugeld?schema=public"
+      REDIS_URL: "redis://localhost:6379"
+      JWT_SECRET: "ci-only-placeholder"
+      PORTAL_JWT_SECRET: "ci-only-placeholder-2"
+      SUBCONTRACTOR_PORTAL_JWT_SECRET: "ci-only-placeholder-3"
+      SUPPLIER_PORTAL_JWT_SECRET: "ci-only-placeholder-4"
+      # Read via getOrThrow at request time, not at boot, and this suite never exercises Stripe
+      # checkout or web push — placeholders satisfy the throw without ever reaching a real API.
+      STRIPE_SECRET_KEY: "sk_test_ci_placeholder"
+      STRIPE_WEBHOOK_SECRET: "whsec_ci_placeholder"
+      # PushService validates the key pair's shape at boot (web-push rejects a public key that
+      # doesn't decode to 65 bytes) even though nothing in this suite sends a real push — so unlike
+      # the other placeholders above, this has to be a genuine (if otherwise unused) VAPID pair.
+      # Generated once with `npx web-push generate-vapid-keys`; never used for a real subscription.
+      VAPID_PUBLIC_KEY: "BJSI7u8e2QGQES1F9wPlznCHXmZC1R3GP5BdSsClfDHEslxCEpx9ZYVnfvCvvOWF6sLu4KssKfufNibC5WUcdtY"
+      VAPID_PRIVATE_KEY: "1Jk-Cbfep9lZhY6iBbAj0v8bjtkOFKbMF_tmRNvDRuA"
+      VAPID_SUBJECT: "mailto:ci@example.com"
+      NEXT_PUBLIC_API_URL: "http://localhost:4000/api"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build:shared
+
+      - name: Migrate + seed database
+        working-directory: apps/api
+        run: |
+          npx prisma migrate deploy
+          npx prisma generate
+          npx ts-node prisma/seed.ts
+
+      - name: Install Playwright browsers
+        working-directory: apps/e2e
+        run: npx playwright install --with-deps chromium
+
+      - name: Start API
+        working-directory: apps/api
+        run: |
+          nohup pnpm start:dev > /tmp/api.log 2>&1 &
+          disown
+
+      - name: Start web
+        working-directory: apps/web
+        run: |
+          nohup pnpm dev > /tmp/web.log 2>&1 &
+          disown
+
+      - name: Wait for both servers
+        run: |
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:4000/api/health > /dev/null && api_up=1 || api_up=0
+            curl -sf http://localhost:3000 > /dev/null && web_up=1 || web_up=0
+            if [ "$api_up" = "1" ] && [ "$web_up" = "1" ]; then exit 0; fi
+            sleep 2
+          done
+          echo "--- api.log ---"; cat /tmp/api.log
+          echo "--- web.log ---"; cat /tmp/web.log
+          echo "Servers did not become ready in time" >&2
+          exit 1
+
+      - name: Run E2E suite
+        working-directory: apps/e2e
+        run: pnpm e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/e2e/playwright-report/
+          retention-days: 14

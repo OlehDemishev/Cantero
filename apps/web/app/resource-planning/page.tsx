@@ -216,7 +216,15 @@ export default function ResourcePlanningPage() {
             </label>
             <label className="flex flex-1 flex-col gap-1.5 text-sm">
               <span className="font-medium text-gray-700 dark:text-gray-200">{form.resourceType === "worker" ? t("worker") : t("equipment")}</span>
-              <select className="input" value={form.resourceId} onChange={(e) => setForm((f) => ({ ...f, resourceId: e.target.value }))}>
+              <select
+                className="input"
+                value={form.resourceId}
+                disabled={resourceOptions.length === 0}
+                onChange={(e) => setForm((f) => ({ ...f, resourceId: e.target.value }))}
+              >
+                {resourceOptions.length === 0 && (
+                  <option value="">{form.resourceType === "worker" ? t("noWorkers") : t("noEquipment")}</option>
+                )}
                 {resourceOptions.map((r) => (
                   <option key={r.id} value={r.id}>
                     {r.name}
@@ -278,7 +286,7 @@ export default function ResourcePlanningPage() {
             <span className="font-medium text-gray-700 dark:text-gray-200">{t("note")}</span>
             <input className="input" value={form.note} onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))} />
           </label>
-          <button type="submit" disabled={busy} className="btn-primary self-start">
+          <button type="submit" disabled={busy || resourceOptions.length === 0} className="btn-primary self-start">
             {t("assign")}
           </button>
         </form>

@@ -83,7 +83,7 @@ export default function IntegrationsPage() {
       descriptionKey: "webhooksDescription",
       href: "/settings?tab=integrations",
       status: webhookCount === null ? "loading" : webhookCount > 0 ? "connected" : "not-connected",
-      detail: webhookCount !== null ? String(webhookCount) : undefined,
+      detail: webhookCount ? t("webhookCount", { count: webhookCount }) : undefined,
     },
     {
       id: "api-keys",
@@ -91,7 +91,7 @@ export default function IntegrationsPage() {
       descriptionKey: "apiKeysDescription",
       href: "/settings?tab=integrations",
       status: apiKeyCount === null ? "loading" : apiKeyCount > 0 ? "connected" : "not-connected",
-      detail: apiKeyCount !== null ? String(apiKeyCount) : undefined,
+      detail: apiKeyCount ? t("apiKeyCount", { count: apiKeyCount }) : undefined,
     },
     {
       id: "sso",
