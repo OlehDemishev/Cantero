@@ -202,7 +202,10 @@ export default function DocumentsPage() {
               ))}
             </select>
           </label>
-          <input ref={fileInputRef} type="file" onChange={handleFileChange} disabled={busy} className="text-sm" />
+          <input ref={fileInputRef} type="file" onChange={handleFileChange} className="hidden" />
+          <button type="button" onClick={() => fileInputRef.current?.click()} disabled={busy} className="btn-secondary">
+            {t("chooseFile")}
+          </button>
         </div>
       </div>
 

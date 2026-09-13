@@ -374,7 +374,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
               {!estimates ? (
                 <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
               ) : estimates.length === 0 ? (
-                <p className="text-gray-500 dark:text-gray-400">—</p>
+                <p className="text-gray-500 dark:text-gray-400">{t("noEstimatesForProject")}</p>
               ) : (
                 <ul className="flex flex-col gap-2">
                   {estimates.map((e) => (

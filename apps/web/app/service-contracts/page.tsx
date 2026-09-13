@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
+import { EmptyState } from "@/components/ui/empty-state";
+import { CloseIcon, ServiceContractsIcon } from "@/components/nav-icons";
 import { apiFetch } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
 
@@ -34,6 +36,7 @@ export default function ServiceContractsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [form, setForm] = useState({ projectId: "", clientId: "", title: "", frequencyMonths: "3", startDate: "" });
   const [submitting, setSubmitting] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
   function load() {
     apiFetch<ServiceContract[]>("/service-contracts").then(setContracts);
@@ -60,6 +63,7 @@ export default function ServiceContractsPage() {
         }),
       });
       setForm({ projectId: "", clientId: "", title: "", frequencyMonths: "3", startDate: "" });
+      setShowCreateForm(false);
       load();
     } finally {
       setSubmitting(false);
@@ -68,14 +72,32 @@ export default function ServiceContractsPage() {
 
   return (
     <AuthenticatedShell>
-      <h1 className="text-2xl font-semibold">{t("title")}</h1>
+      <div className="flex items-center justify-between gap-2">
+        <h1 className="text-2xl font-semibold">{t("title")}</h1>
+        {!showCreateForm && (
+          <button type="button" onClick={() => setShowCreateForm(true)} className="btn-primary">
+            {t("newContract")}
+          </button>
+        )}
+      </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
-        <div className="card lg:col-span-1">
-          <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("newContract")}</h2>
+      {showCreateForm && (
+        <div className="mt-6 card max-w-md">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("newContract")}</h2>
+            <button
+              type="button"
+              onClick={() => setShowCreateForm(false)}
+              aria-label={tc("cancel")}
+              className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+            >
+              <CloseIcon className="size-4" />
+            </button>
+          </div>
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             <input
               required
+              autoFocus
               placeholder={tc("name")}
               className="input"
               value={form.title}
@@ -133,15 +155,22 @@ export default function ServiceContractsPage() {
             </button>
           </form>
         </div>
+      )}
 
-        <div className="lg:col-span-2">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("contracts")}</h2>
-          {!contracts ? (
-            <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
-          ) : contracts.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">—</p>
-          ) : (
-            <ul className="flex flex-col gap-2">
+      <div className="mt-6">
+        {!contracts ? (
+          <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        ) : contracts.length === 0 ? (
+          <div className="card">
+            <EmptyState
+              icon={ServiceContractsIcon}
+              title={t("emptyTitle")}
+              message={t("empty")}
+              cta={{ label: t("newContract"), onClick: () => setShowCreateForm(true) }}
+            />
+          </div>
+        ) : (
+          <ul className="flex flex-col gap-2">
               {contracts.map((c) => (
                 <li key={c.id} className="card flex items-center justify-between hover:border-gray-400">
                   <div>
@@ -165,7 +194,6 @@ export default function ServiceContractsPage() {
               ))}
             </ul>
           )}
-        </div>
       </div>
     </AuthenticatedShell>
   );

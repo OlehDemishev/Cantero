@@ -18,6 +18,7 @@ interface InventoryItem {
 
 export function HazmatInventoryPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("hazmat");
+  const tc = useTranslations("common");
 
   const [items, setItems] = useState<InventoryItem[] | null>(null);
   const [materials, setMaterials] = useState<HazardousMaterial[]>([]);
@@ -69,7 +70,7 @@ export function HazmatInventoryPanel({ projectId }: { projectId: string }) {
       <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("inventoryHint")}</p>
 
       {!items ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">—</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
       ) : items.length === 0 ? (
         <p className="mb-3 text-sm text-gray-400 dark:text-gray-500">{t("noInventory")}</p>
       ) : (

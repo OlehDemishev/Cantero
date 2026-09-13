@@ -141,7 +141,7 @@ export default function ServiceContractDetailPage({ params }: { params: Promise<
         <div className="lg:col-span-2">
           <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("visits")}</h2>
           {contract.visits.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">—</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noVisits")}</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {contract.visits.map((v) => (

@@ -313,7 +313,10 @@ export function DocumentsPanel({
           value={newTags}
           onChange={(e) => setNewTags(e.target.value)}
         />
-        <input ref={fileInputRef} type="file" onChange={handleFileChange} disabled={busy} className="text-sm" />
+        <input ref={fileInputRef} type="file" onChange={handleFileChange} className="hidden" />
+        <button type="button" onClick={() => fileInputRef.current?.click()} disabled={busy} className="btn-secondary">
+          {t("chooseFile")}
+        </button>
       </div>
       <input ref={replaceInputRef} type="file" onChange={handleReplaceChange} className="hidden" />
 

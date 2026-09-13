@@ -7,6 +7,8 @@ import { CsvImportButton } from "@/components/csv-import-button";
 import { AssembliesPanel } from "@/components/assemblies-panel";
 import { EstimateAccuracyPanel } from "@/components/estimate-accuracy-panel";
 import { MaterialPricesPanel } from "@/components/material-prices-panel";
+import { EmptyState } from "@/components/ui/empty-state";
+import { CloseIcon, RateCatalogIcon } from "@/components/nav-icons";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate, formatDateTime } from "@/lib/format-date";
@@ -75,6 +77,7 @@ export default function RateCatalogPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [lines, setLines] = useState<MaterialLine[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState(EMPTY_FORM);
   const [historyForId, setHistoryForId] = useState<string | null>(null);
@@ -131,6 +134,7 @@ export default function RateCatalogPage() {
       });
       setForm(EMPTY_FORM);
       setLines([]);
+      setShowCreateForm(false);
       load();
     } finally {
       setSubmitting(false);
@@ -218,6 +222,11 @@ export default function RateCatalogPage() {
         <div className="flex flex-wrap gap-2">
           <CsvImportButton endpoint="/materials/catalog/import" label={ti("importMaterials")} onDone={loadMaterials} />
           <CsvImportButton endpoint="/estimates/rate-catalog/import" label={ti("importRateItems")} onDone={load} />
+          {!showCreateForm && (
+            <button type="button" onClick={() => setShowCreateForm(true)} className="btn-primary">
+              {tc("create")}
+            </button>
+          )}
         </div>
       </div>
 
@@ -297,12 +306,23 @@ export default function RateCatalogPage() {
         </form>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
-        <div className="card lg:col-span-1">
-          <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{tc("create")}</h2>
+      {showCreateForm && (
+        <div className="mt-6 card max-w-md">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{tc("create")}</h2>
+            <button
+              type="button"
+              onClick={() => setShowCreateForm(false)}
+              aria-label={tc("cancel")}
+              className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+            >
+              <CloseIcon className="size-4" />
+            </button>
+          </div>
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             <input
               required
+              autoFocus
               placeholder={t("code")}
               className="input"
               value={form.code}
@@ -408,11 +428,21 @@ export default function RateCatalogPage() {
             </button>
           </form>
         </div>
+      )}
 
-        <div className="lg:col-span-2">
-          {!visibleItems ? (
-            <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
-          ) : (
+      <div className="mt-6">
+        {!visibleItems ? (
+          <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        ) : visibleItems.length === 0 ? (
+          <div className="card">
+            <EmptyState
+              icon={RateCatalogIcon}
+              title={t("emptyTitle")}
+              message={t("empty")}
+              cta={{ label: tc("create"), onClick: () => setShowCreateForm(true) }}
+            />
+          </div>
+        ) : (
             <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
@@ -517,7 +547,6 @@ export default function RateCatalogPage() {
             </table>
             </div>
           )}
-        </div>
       </div>
 
       <MaterialPricesPanel />

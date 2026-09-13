@@ -43,7 +43,7 @@ export function SessionsPanel() {
       {!sessions ? (
         <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
       ) : sessions.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">—</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noSessions")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {sessions.map((s) => (

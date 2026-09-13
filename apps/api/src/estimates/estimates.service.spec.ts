@@ -85,8 +85,12 @@ describe("EstimatesService — currency resolution", () => {
 describe("EstimatesService — hideCostDataFromRoles", () => {
   let service: EstimatesService;
   let prisma: {
-    estimate: { findFirst: jest.Mock; findMany: jest.Mock };
+    estimate: { findFirst: jest.Mock; findMany: jest.Mock; update: jest.Mock };
     company: { findUnique: jest.Mock };
+    rateCatalogItem: { findFirst: jest.Mock };
+    estimateLine: { create: jest.Mock; createMany: jest.Mock };
+    assembly: { findFirst: jest.Mock };
+    estimateRevision: { findMany: jest.Mock; findFirst: jest.Mock };
   };
 
   const LINE_ESTIMATE = {
@@ -108,8 +112,12 @@ describe("EstimatesService — hideCostDataFromRoles", () => {
 
   beforeEach(async () => {
     prisma = {
-      estimate: { findFirst: jest.fn(), findMany: jest.fn() },
+      estimate: { findFirst: jest.fn(), findMany: jest.fn(), update: jest.fn() },
       company: { findUnique: jest.fn() },
+      rateCatalogItem: { findFirst: jest.fn() },
+      estimateLine: { create: jest.fn(), createMany: jest.fn() },
+      assembly: { findFirst: jest.fn() },
+      estimateRevision: { findMany: jest.fn(), findFirst: jest.fn() },
     };
 
     const module = await Test.createTestingModule({
@@ -173,6 +181,105 @@ describe("EstimatesService — hideCostDataFromRoles", () => {
     const result = await service.get(COMPANY_A, "estimate-1", "worker");
 
     expect(result.lines[0]).toMatchObject({ materialsCost: null, laborCost: null, lineTotal: "70.00" });
+  });
+
+  // P1 audit finding: addLine/addAssemblyToEstimate/recalculate returned the raw recalculated
+  // estimate without redaction, letting a hidden-cost-data role see costs simply by editing an
+  // estimate even though list()/get() already blocked them from seeing it directly.
+  it("recalculate() redacts cost data for a role in hideCostDataFromRoles", async () => {
+    prisma.estimate.findFirst.mockResolvedValue({ ...LINE_ESTIMATE, lines: [] });
+    prisma.estimate.update.mockResolvedValue({ ...LINE_ESTIMATE, lines: [] });
+    prisma.company.findUnique.mockResolvedValue({ hideCostDataFromRoles: ["worker"] });
+
+    const result = await service.recalculate(COMPANY_A, "estimate-1", "worker");
+
+    expect(result).toMatchObject({ materialsCostTotal: null, laborCostTotal: null, markupAmount: null });
+  });
+
+  it("recalculate() leaves cost data intact for a role not in hideCostDataFromRoles", async () => {
+    prisma.estimate.findFirst.mockResolvedValue({ ...LINE_ESTIMATE, lines: [] });
+    prisma.estimate.update.mockResolvedValue({ ...LINE_ESTIMATE, lines: [] });
+    prisma.company.findUnique.mockResolvedValue({ hideCostDataFromRoles: ["worker"] });
+
+    const result = await service.recalculate(COMPANY_A, "estimate-1", "estimator");
+
+    expect(result.materialsCostTotal).toBe("500.00");
+  });
+
+  it("addLine() redacts cost data for a role in hideCostDataFromRoles", async () => {
+    prisma.estimate.findFirst.mockResolvedValue({ ...LINE_ESTIMATE, lines: [] });
+    prisma.rateCatalogItem.findFirst.mockResolvedValue({ id: "rate-1", companyId: COMPANY_A });
+    prisma.estimateLine.create.mockResolvedValue({ id: "line-1" });
+    prisma.estimate.update.mockResolvedValue({ ...LINE_ESTIMATE, lines: [] });
+    prisma.company.findUnique.mockResolvedValue({ hideCostDataFromRoles: ["worker"] });
+
+    const result = await service.addLine(COMPANY_A, "estimate-1", { rateCatalogItemId: "rate-1", quantity: 1 }, "worker");
+
+    expect(result).toMatchObject({ materialsCostTotal: null, laborCostTotal: null, markupAmount: null });
+  });
+
+  it("addAssemblyToEstimate() redacts cost data for a role in hideCostDataFromRoles", async () => {
+    prisma.estimate.findFirst.mockResolvedValue({ ...LINE_ESTIMATE, lines: [] });
+    prisma.assembly.findFirst.mockResolvedValue({ id: "assembly-1", companyId: COMPANY_A, items: [] });
+    prisma.estimateLine.createMany.mockResolvedValue({ count: 0 });
+    prisma.estimate.update.mockResolvedValue({ ...LINE_ESTIMATE, lines: [] });
+    prisma.company.findUnique.mockResolvedValue({ hideCostDataFromRoles: ["worker"] });
+
+    const result = await service.addAssemblyToEstimate(COMPANY_A, "estimate-1", { assemblyId: "assembly-1", quantity: 1 }, "worker");
+
+    expect(result).toMatchObject({ materialsCostTotal: null, laborCostTotal: null, markupAmount: null });
+  });
+
+  const LINE_REVISION = {
+    id: "revision-1",
+    estimateId: "estimate-1",
+    versionNumber: 1,
+    name: "Estimate A",
+    laborRatePerHour: "40",
+    markupPercent: "15",
+    taxPercent: "0",
+    materialsCostTotal: "500.00",
+    laborCostTotal: "300.00",
+    subtotal: "800.00",
+    markupAmount: "100.00",
+    taxAmount: "0.00",
+    grandTotal: "900.00",
+    lines: [{ rateCatalogItemCode: "A1", materialsCost: "50.00", laborCost: "20.00", lineTotal: "70.00" }],
+  };
+
+  it("listRevisions() redacts cost/markup fields (including per-line costs) for a hidden-cost role", async () => {
+    prisma.estimate.findFirst.mockResolvedValue({ ...LINE_ESTIMATE, lines: [] });
+    prisma.estimateRevision.findMany.mockResolvedValue([LINE_REVISION]);
+    prisma.company.findUnique.mockResolvedValue({ hideCostDataFromRoles: ["worker"] });
+
+    const result = await service.listRevisions(COMPANY_A, "estimate-1", "worker");
+
+    expect(result[0]).toMatchObject({ materialsCostTotal: null, laborCostTotal: null, markupAmount: null, markupPercent: null });
+    expect((result[0].lines as unknown as { materialsCost: unknown; laborCost: unknown; lineTotal: unknown }[])[0]).toMatchObject({
+      materialsCost: null,
+      laborCost: null,
+      lineTotal: "70.00",
+    });
+  });
+
+  it("listRevisions() leaves cost data intact for a role not in hideCostDataFromRoles", async () => {
+    prisma.estimate.findFirst.mockResolvedValue({ ...LINE_ESTIMATE, lines: [] });
+    prisma.estimateRevision.findMany.mockResolvedValue([LINE_REVISION]);
+    prisma.company.findUnique.mockResolvedValue({ hideCostDataFromRoles: ["worker"] });
+
+    const result = await service.listRevisions(COMPANY_A, "estimate-1", "estimator");
+
+    expect(result[0].materialsCostTotal).toBe("500.00");
+  });
+
+  it("getRevision() redacts cost/markup fields for a hidden-cost role", async () => {
+    prisma.estimate.findFirst.mockResolvedValue({ ...LINE_ESTIMATE, lines: [] });
+    prisma.estimateRevision.findFirst.mockResolvedValue(LINE_REVISION);
+    prisma.company.findUnique.mockResolvedValue({ hideCostDataFromRoles: ["worker"] });
+
+    const result = await service.getRevision(COMPANY_A, "estimate-1", "revision-1", "worker");
+
+    expect(result).toMatchObject({ materialsCostTotal: null, laborCostTotal: null, markupAmount: null });
   });
 });
 
@@ -308,7 +415,7 @@ describe("EstimatesService — cross-tenant isolation", () => {
 describe("EstimatesService — approval chains", () => {
   let service: EstimatesService;
   let prisma: {
-    company: { findUniqueOrThrow: jest.Mock };
+    company: { findUniqueOrThrow: jest.Mock; findUnique: jest.Mock };
     estimate: { findFirst: jest.Mock; update: jest.Mock };
     estimateApproval: { findUnique: jest.Mock; create: jest.Mock; count: jest.Mock };
     $transaction: jest.Mock;
@@ -325,7 +432,7 @@ describe("EstimatesService — approval chains", () => {
 
   beforeEach(async () => {
     prisma = {
-      company: { findUniqueOrThrow: jest.fn() },
+      company: { findUniqueOrThrow: jest.fn(), findUnique: jest.fn() },
       estimate: { findFirst: jest.fn().mockResolvedValue({ ...DRAFT_ESTIMATE, approvals: [] }), update: jest.fn() },
       estimateApproval: { findUnique: jest.fn(), create: jest.fn(), count: jest.fn() },
       $transaction: jest.fn((ops) => Promise.all(ops)),
@@ -366,6 +473,28 @@ describe("EstimatesService — approval chains", () => {
     expect(prisma.estimate.update).not.toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ status: "approved" }) }),
     );
+  });
+
+  // P1 audit finding: approve() returned the raw estimate to whoever called it, regardless of
+  // role — the internal threshold/revision-snapshot math still needs real figures (see the
+  // unredacted `estimate` recalculate() gives approve() itself), but what goes back over the wire
+  // must respect hideCostDataFromRoles same as list()/get().
+  it("redacts cost data in the pending-approval response for a hidden-cost role", async () => {
+    prisma.company.findUniqueOrThrow.mockResolvedValue({ approvalThresholdAmount: "10000", requiredApprovalCount: 2 });
+    prisma.company.findUnique.mockResolvedValue({ hideCostDataFromRoles: ["worker"] });
+    prisma.estimateApproval.findUnique.mockResolvedValue(null);
+    prisma.estimateApproval.count.mockResolvedValue(1);
+    prisma.estimate.findFirst.mockResolvedValue({
+      ...DRAFT_ESTIMATE,
+      approvals: [],
+      materialsCostTotal: "30000",
+      laborCostTotal: "10000",
+      markupAmount: "5000",
+    });
+
+    const result = await service.approve(COMPANY_A, { userId: "user-1", name: "Alice" }, "estimate-1", "worker");
+
+    expect(result).toMatchObject({ materialsCostTotal: null, laborCostTotal: null, markupAmount: null });
   });
 
   it("rejects a second approval from the same user", async () => {

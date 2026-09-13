@@ -135,7 +135,7 @@ export function TimeOffPanel() {
           {!requests ? (
             <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
           ) : requests.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">—</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noRequests")}</p>
           ) : (
             <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">

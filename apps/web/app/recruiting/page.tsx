@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { CANDIDATE_STAGES, type CandidateStage, type JobPostingStatus } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
+import { CloseIcon } from "@/components/nav-icons";
 import { apiFetch } from "@/lib/api-client";
 
 interface JobPosting {
@@ -58,6 +59,7 @@ export default function RecruitingPage() {
   const [interviewForm, setInterviewForm] = useState({ interviewerName: "", notes: "", rating: "" });
   const [convertForm, setConvertForm] = useState({ role: "", hourlyCost: "" });
   const [busy, setBusy] = useState(false);
+  const [showPostingForm, setShowPostingForm] = useState(false);
 
   function loadPostings() {
     apiFetch<JobPosting[]>("/recruiting/job-postings").then((list) => {
@@ -88,6 +90,7 @@ export default function RecruitingPage() {
       });
       setPostingForm({ title: "", trade: "", location: "" });
       setSelectedPostingId(created.id);
+      setShowPostingForm(false);
       loadPostings();
     } finally {
       setBusy(false);
@@ -187,7 +190,14 @@ export default function RecruitingPage() {
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="lg:col-span-1">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("jobPostings")}</h2>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("jobPostings")}</h2>
+            {!showPostingForm && (
+              <button type="button" onClick={() => setShowPostingForm(true)} className="text-sm font-medium text-brand-700 dark:text-brand-400 hover:underline">
+                {t("addPosting")}
+              </button>
+            )}
+          </div>
           {!postings ? (
             <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
           ) : (
@@ -214,35 +224,49 @@ export default function RecruitingPage() {
             </ul>
           )}
 
-          <form onSubmit={createPosting} className="card flex flex-col gap-2">
-            <input
-              required
-              placeholder={t("postingTitlePlaceholder")}
-              className="input"
-              value={postingForm.title}
-              onChange={(e) => setPostingForm((f) => ({ ...f, title: e.target.value }))}
-            />
-            <input
-              placeholder={t("tradePlaceholder")}
-              className="input"
-              value={postingForm.trade}
-              onChange={(e) => setPostingForm((f) => ({ ...f, trade: e.target.value }))}
-            />
-            <input
-              placeholder={t("locationPlaceholder")}
-              className="input"
-              value={postingForm.location}
-              onChange={(e) => setPostingForm((f) => ({ ...f, location: e.target.value }))}
-            />
-            <button type="submit" disabled={busy} className="btn-primary">
-              {t("addPosting")}
-            </button>
-            {selectedPostingId && postings?.find((p) => p.id === selectedPostingId)?.status === "open" && (
-              <button type="button" onClick={() => closePosting(selectedPostingId)} className="btn-secondary">
-                {t("closePosting")}
+          {showPostingForm && (
+            <form onSubmit={createPosting} className="card flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{t("addPosting")}</span>
+                <button
+                  type="button"
+                  onClick={() => setShowPostingForm(false)}
+                  aria-label={tc("cancel")}
+                  className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                >
+                  <CloseIcon className="size-4" />
+                </button>
+              </div>
+              <input
+                required
+                autoFocus
+                placeholder={t("postingTitlePlaceholder")}
+                className="input"
+                value={postingForm.title}
+                onChange={(e) => setPostingForm((f) => ({ ...f, title: e.target.value }))}
+              />
+              <input
+                placeholder={t("tradePlaceholder")}
+                className="input"
+                value={postingForm.trade}
+                onChange={(e) => setPostingForm((f) => ({ ...f, trade: e.target.value }))}
+              />
+              <input
+                placeholder={t("locationPlaceholder")}
+                className="input"
+                value={postingForm.location}
+                onChange={(e) => setPostingForm((f) => ({ ...f, location: e.target.value }))}
+              />
+              <button type="submit" disabled={busy} className="btn-primary">
+                {t("addPosting")}
               </button>
-            )}
-          </form>
+            </form>
+          )}
+          {selectedPostingId && postings?.find((p) => p.id === selectedPostingId)?.status === "open" && (
+            <button type="button" onClick={() => closePosting(selectedPostingId)} className="btn-secondary mt-2 w-full">
+              {t("closePosting")}
+            </button>
+          )}
         </div>
 
         <div className="lg:col-span-2">

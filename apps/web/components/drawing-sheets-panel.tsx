@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, apiUpload } from "@/lib/api-client";
 
@@ -21,6 +21,7 @@ export function DrawingSheetsPanel({ projectId }: { projectId: string }) {
   const [form, setForm] = useState({ sheetNumber: "", discipline: "", title: "", revision: "" });
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const sheetFileInputRef = useRef<HTMLInputElement>(null);
 
   function load() {
     apiFetch<DrawingSheet[]>(`/projects/${projectId}/drawing-sheets`).then(setSheets);
@@ -90,7 +91,20 @@ export function DrawingSheetsPanel({ projectId }: { projectId: string }) {
         <input placeholder={t("disciplinePlaceholder")} className="input w-32" value={form.discipline} onChange={(e) => setForm((f) => ({ ...f, discipline: e.target.value }))} />
         <input placeholder={t("titlePlaceholder")} className="input" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
         <input placeholder={t("revisionPlaceholder")} className="input w-24" value={form.revision} onChange={(e) => setForm((f) => ({ ...f, revision: e.target.value }))} />
-        <input id="drawing-sheet-file-input" type="file" accept="application/pdf,image/*" className="text-xs" />
+        <input
+          id="drawing-sheet-file-input"
+          ref={sheetFileInputRef}
+          type="file"
+          accept="application/pdf,image/*"
+          className="hidden"
+        />
+        <button
+          type="button"
+          onClick={() => sheetFileInputRef.current?.click()}
+          className="btn-secondary shrink-0"
+        >
+          {tc("chooseFile")}
+        </button>
         <button type="submit" disabled={uploading} className="btn-secondary shrink-0">
           {tc("save")}
         </button>

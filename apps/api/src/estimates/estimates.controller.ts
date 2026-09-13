@@ -43,7 +43,7 @@ export class EstimatesController {
     @Param("templateId") templateId: string,
     @Body(new ZodValidationPipe(createFromTemplateSchema)) body: CreateFromTemplateInput,
   ) {
-    return this.service.createFromTemplate(user.companyId, templateId, body);
+    return this.service.createFromTemplate(user.companyId, templateId, body, user.role);
   }
 
   @Get(":id")
@@ -70,7 +70,7 @@ export class EstimatesController {
     @Param("id") id: string,
     @Body(new ZodValidationPipe(createEstimateLineSchema)) body: CreateEstimateLineInput,
   ) {
-    return this.service.addLine(user.companyId, id, body);
+    return this.service.addLine(user.companyId, id, body, user.role);
   }
 
   @Post(":id/lines/from-assembly")
@@ -79,7 +79,7 @@ export class EstimatesController {
     @Param("id") id: string,
     @Body(new ZodValidationPipe(addAssemblyToEstimateSchema)) body: AddAssemblyToEstimateInput,
   ) {
-    return this.service.addAssemblyToEstimate(user.companyId, id, body);
+    return this.service.addAssemblyToEstimate(user.companyId, id, body, user.role);
   }
 
   @Patch(":id/cover-letter")
@@ -93,12 +93,12 @@ export class EstimatesController {
 
   @Post(":id/recalculate")
   recalculate(@CurrentUser() user: AuthUser, @Param("id") id: string) {
-    return this.service.recalculate(user.companyId, id);
+    return this.service.recalculate(user.companyId, id, user.role);
   }
 
   @Post(":id/approve")
   approve(@CurrentUser() user: AuthUser, @Param("id") id: string) {
-    return this.service.approve(user.companyId, { userId: user.userId, name: user.name }, id);
+    return this.service.approve(user.companyId, { userId: user.userId, name: user.name }, id, user.role);
   }
 
   @Post(":id/save-as-template")
@@ -107,12 +107,12 @@ export class EstimatesController {
     @Param("id") id: string,
     @Body(new ZodValidationPipe(saveAsTemplateSchema)) body: SaveAsTemplateInput,
   ) {
-    return this.service.saveAsTemplate(user.companyId, id, body.name);
+    return this.service.saveAsTemplate(user.companyId, id, body.name, user.role);
   }
 
   @Get(":id/revisions")
   listRevisions(@CurrentUser() user: AuthUser, @Param("id") id: string) {
-    return this.service.listRevisions(user.companyId, id);
+    return this.service.listRevisions(user.companyId, id, user.role);
   }
 
   // Declared before ":revisionId" so "diff" isn't swallowed as a revision id.
@@ -132,7 +132,7 @@ export class EstimatesController {
     @Param("id") id: string,
     @Param("revisionId") revisionId: string,
   ) {
-    return this.service.getRevision(user.companyId, id, revisionId);
+    return this.service.getRevision(user.companyId, id, revisionId, user.role);
   }
 
   @Post(":id/send")
@@ -157,7 +157,7 @@ export class EstimatesController {
     @Param("id") id: string,
     @Body(new ZodValidationPipe(createVariantSchema)) body: CreateVariantInput,
   ) {
-    return this.service.createVariant(user.companyId, id, body);
+    return this.service.createVariant(user.companyId, id, body, user.role);
   }
 
   @Get(":id/variants")

@@ -121,7 +121,7 @@ export class EstimatesService {
     return company.currency;
   }
 
-  async addLine(companyId: string, estimateId: string, input: CreateEstimateLineInput) {
+  async addLine(companyId: string, estimateId: string, input: CreateEstimateLineInput, role?: string) {
     await this.findOrThrow(companyId, estimateId);
     const rateItem = await this.prisma.rateCatalogItem.findFirst({
       where: { id: input.rateCatalogItemId, companyId },
@@ -138,7 +138,7 @@ export class EstimatesService {
         costCodeId: input.costCodeId,
       },
     });
-    return this.recalculate(companyId, estimateId);
+    return this.recalculate(companyId, estimateId, role);
   }
 
   private async assertCostCode(companyId: string, costCodeId: string) {
@@ -149,7 +149,7 @@ export class EstimatesService {
   /** Expands an Assembly into ordinary EstimateLines — one per AssemblyItem, quantity scaled by
    * how many units of the assembly were added. Nothing downstream (recalc, PDF, revisions) needs
    * to know the lines came from an assembly rather than being added one at a time. */
-  async addAssemblyToEstimate(companyId: string, estimateId: string, input: AddAssemblyToEstimateInput) {
+  async addAssemblyToEstimate(companyId: string, estimateId: string, input: AddAssemblyToEstimateInput, role?: string) {
     await this.findOrThrow(companyId, estimateId);
     const assembly = await this.prisma.assembly.findFirst({
       where: { id: input.assemblyId, companyId },
@@ -165,7 +165,7 @@ export class EstimatesService {
         sectionId: input.sectionId,
       })),
     });
-    return this.recalculate(companyId, estimateId);
+    return this.recalculate(companyId, estimateId, role);
   }
 
   async updateCoverLetter(companyId: string, estimateId: string, input: UpdateEstimateCoverLetterInput) {
@@ -174,14 +174,16 @@ export class EstimatesService {
   }
 
   /** Re-runs the pure calc engine over every line and persists the resulting costs/totals. */
-  async recalculate(companyId: string, estimateId: string) {
+  async recalculate(companyId: string, estimateId: string, role?: string) {
+    const hideCostData = await this.shouldHideCostData(companyId, role);
     const estimate = await this.findOrThrow(companyId, estimateId);
     if (estimate.lines.length === 0) {
-      return this.prisma.estimate.update({
+      const updated = await this.prisma.estimate.update({
         where: { id: estimateId },
         data: { materialsCostTotal: 0, laborCostTotal: 0, subtotal: 0, markupAmount: 0, taxAmount: 0, grandTotal: 0 },
         include: { lines: true, sections: true },
       });
+      return hideCostData ? this.redactCostData(updated) : updated;
     }
 
     const result = await this.computeForLines(
@@ -214,7 +216,8 @@ export class EstimatesService {
       }),
     ]);
 
-    return this.findOrThrow(companyId, estimateId);
+    const finalEstimate = await this.findOrThrow(companyId, estimateId);
+    return hideCostData ? this.redactCostData(finalEstimate) : finalEstimate;
   }
 
   /**
@@ -229,18 +232,21 @@ export class EstimatesService {
    * bypasses the chain (it already cleared the gate once) and finalizes directly, same
    * as when no threshold is configured.
    */
-  async approve(companyId: string, actor: AuditActor, estimateId: string) {
+  async approve(companyId: string, actor: AuditActor, estimateId: string, role?: string) {
+    // Unredacted on purpose — the threshold check and revision snapshot below need real figures.
+    // Only the value ultimately returned to the caller (in recordApprovalStep/finalizeApproval) is
+    // conditionally redacted for `role`.
     const estimate = await this.recalculate(companyId, estimateId);
 
     if (estimate.status !== "approved") {
       const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
       const threshold = company.approvalThresholdAmount;
       if (threshold != null && Number(estimate.grandTotal) >= Number(threshold)) {
-        return this.recordApprovalStep(companyId, actor, estimate, company.requiredApprovalCount);
+        return this.recordApprovalStep(companyId, actor, estimate, company.requiredApprovalCount, role);
       }
     }
 
-    return this.finalizeApproval(companyId, actor, estimate);
+    return this.finalizeApproval(companyId, actor, estimate, role);
   }
 
   /** Records one step of a multi-approver chain; finalizes once the required count is reached. */
@@ -249,6 +255,7 @@ export class EstimatesService {
     actor: AuditActor,
     estimate: Awaited<ReturnType<typeof this.recalculate>>,
     requiredCount: number,
+    role?: string,
   ) {
     if (!actor.userId) throw new BadRequestException("Only a signed-in user can approve");
 
@@ -275,15 +282,17 @@ export class EstimatesService {
     );
 
     if (approvalCount >= requiredCount) {
-      return this.finalizeApproval(companyId, actor, estimate);
+      return this.finalizeApproval(companyId, actor, estimate, role);
     }
-    return this.findOrThrow(companyId, estimate.id);
+    const pending = await this.findOrThrow(companyId, estimate.id);
+    return (await this.shouldHideCostData(companyId, role)) ? this.redactCostData(pending) : pending;
   }
 
   private async finalizeApproval(
     companyId: string,
     actor: AuditActor,
     estimate: Awaited<ReturnType<typeof this.recalculate>>,
+    role?: string,
   ) {
     const estimateId = estimate.id;
     const lineInputs = estimate.lines.map((l) => ({
@@ -352,19 +361,22 @@ export class EstimatesService {
     ]);
 
     this.audit.record(companyId, actor, "estimate.approved", "Estimate", estimateId, `Approved estimate "${estimate.name}"`);
-    return this.findOrThrow(companyId, estimateId);
+    const approved = await this.findOrThrow(companyId, estimateId);
+    return (await this.shouldHideCostData(companyId, role)) ? this.redactCostData(approved) : approved;
   }
 
-  async listRevisions(companyId: string, estimateId: string) {
+  async listRevisions(companyId: string, estimateId: string, role?: string) {
     await this.findOrThrow(companyId, estimateId);
-    return this.prisma.estimateRevision.findMany({ where: { estimateId }, orderBy: { versionNumber: "desc" } });
+    const revisions = await this.prisma.estimateRevision.findMany({ where: { estimateId }, orderBy: { versionNumber: "desc" } });
+    if (!(await this.shouldHideCostData(companyId, role))) return revisions;
+    return revisions.map((r) => this.redactCostData(r));
   }
 
-  async getRevision(companyId: string, estimateId: string, revisionId: string) {
+  async getRevision(companyId: string, estimateId: string, revisionId: string, role?: string) {
     await this.findOrThrow(companyId, estimateId);
     const revision = await this.prisma.estimateRevision.findFirst({ where: { id: revisionId, estimateId } });
     if (!revision) throw new NotFoundException("Revision not found");
-    return revision;
+    return (await this.shouldHideCostData(companyId, role)) ? this.redactCostData(revision) : revision;
   }
 
   /** Line-by-line diff between two revisions, matched by rateCatalogItemCode (stable identity —
@@ -439,7 +451,7 @@ export class EstimatesService {
   }
 
   /** Clones the current sections/lines into a sibling option (e.g. "Basic" vs "Premium") for the same project. */
-  async createVariant(companyId: string, estimateId: string, input: CreateVariantInput) {
+  async createVariant(companyId: string, estimateId: string, input: CreateVariantInput, role?: string) {
     const source = await this.findOrThrow(companyId, estimateId);
     const rootId = source.variantOfId ?? source.id;
     const variant = await this.prisma.estimate.create({
@@ -455,7 +467,7 @@ export class EstimatesService {
         variantLabel: input.label,
       },
     });
-    return this.cloneSectionsAndLines(companyId, source.sections, source.lines, variant.id);
+    return this.cloneSectionsAndLines(companyId, source.sections, source.lines, variant.id, role);
   }
 
   async listVariants(companyId: string, estimateId: string) {
@@ -605,7 +617,7 @@ export class EstimatesService {
   }
 
   /** Clones the current sections/lines into a new, project-less template estimate. */
-  async saveAsTemplate(companyId: string, estimateId: string, name: string) {
+  async saveAsTemplate(companyId: string, estimateId: string, name: string, role?: string) {
     const estimate = await this.findOrThrow(companyId, estimateId);
     const template = await this.prisma.estimate.create({
       data: {
@@ -617,11 +629,11 @@ export class EstimatesService {
         taxPercent: estimate.taxPercent,
       },
     });
-    return this.cloneSectionsAndLines(companyId, estimate.sections, estimate.lines, template.id);
+    return this.cloneSectionsAndLines(companyId, estimate.sections, estimate.lines, template.id, role);
   }
 
   /** Clones a template's sections/lines into a brand-new project estimate, then recalculates against current prices. */
-  async createFromTemplate(companyId: string, templateId: string, input: CreateFromTemplateInput) {
+  async createFromTemplate(companyId: string, templateId: string, input: CreateFromTemplateInput, role?: string) {
     const template = await this.prisma.estimate.findFirst({
       where: { id: templateId, companyId, isTemplate: true },
       include: { sections: { orderBy: { sortOrder: "asc" } }, lines: { orderBy: { sortOrder: "asc" } } },
@@ -642,7 +654,7 @@ export class EstimatesService {
         currency,
       },
     });
-    return this.cloneSectionsAndLines(companyId, template.sections, template.lines, estimate.id);
+    return this.cloneSectionsAndLines(companyId, template.sections, template.lines, estimate.id, role);
   }
 
   private async cloneSectionsAndLines(
@@ -650,6 +662,7 @@ export class EstimatesService {
     sourceSections: { id: string; name: string; sortOrder: number }[],
     sourceLines: { rateCatalogItemId: string; quantity: unknown; sectionId: string | null; sortOrder: number }[],
     targetEstimateId: string,
+    role?: string,
   ) {
     const sectionIdMap = new Map<string, string>();
     for (const section of sourceSections) {
@@ -669,9 +682,10 @@ export class EstimatesService {
           sortOrder: l.sortOrder,
         })),
       });
-      return this.recalculate(companyId, targetEstimateId);
+      return this.recalculate(companyId, targetEstimateId, role);
     }
-    return this.findOrThrow(companyId, targetEstimateId);
+    const result = await this.findOrThrow(companyId, targetEstimateId);
+    return (await this.shouldHideCostData(companyId, role)) ? this.redactCostData(result) : result;
   }
 
   /** Shared rate/material lookup + pure calc — used by recalculate, approve, and the stale check. */

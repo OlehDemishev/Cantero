@@ -103,6 +103,18 @@
   table {
     font-variant-numeric: tabular-nums;
   }
+  /* Almost no table cell in the app sets its own horizontal padding, so adjacent right-aligned
+     numeric columns visually run together with zero gap (worst in dense reports like Portfolio).
+     One rule beats auditing 400+ individual <td>/<th> call sites. */
+  td,
+  th {
+    padding-block: 0.5rem;
+    padding-inline: 0.75rem;
+  }
+  td:first-child,
+  th:first-child {
+    padding-inline-start: 0;
+  }
 }
 
 body {

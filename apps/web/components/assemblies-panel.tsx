@@ -163,7 +163,7 @@ export function AssembliesPanel() {
           {!assemblies ? (
             <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
           ) : assemblies.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">—</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noAssemblies")}</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {assemblies.map((a) => (

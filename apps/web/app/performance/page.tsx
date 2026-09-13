@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { PERFORMANCE_RATINGS, type PerformanceRating, type PerformanceReviewCycleStatus } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
+import { CloseIcon } from "@/components/nav-icons";
 import { apiFetch } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
 
@@ -47,6 +48,7 @@ export default function PerformancePage() {
   const [reviewWorkerId, setReviewWorkerId] = useState("");
   const [reviewForm, setReviewForm] = useState({ rating: "" as PerformanceRating | "", strengths: "", improvementAreas: "" });
   const [busy, setBusy] = useState(false);
+  const [showCycleForm, setShowCycleForm] = useState(false);
 
   function loadCycles() {
     apiFetch<Cycle[]>("/performance/cycles").then((list) => {
@@ -83,6 +85,7 @@ export default function PerformancePage() {
       });
       setCycleForm({ name: "", periodStart: "", periodEnd: "" });
       setSelectedCycleId(created.id);
+      setShowCycleForm(false);
       loadCycles();
     } finally {
       setBusy(false);
@@ -123,7 +126,14 @@ export default function PerformancePage() {
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="lg:col-span-1">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("cycles")}</h2>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("cycles")}</h2>
+            {!showCycleForm && (
+              <button type="button" onClick={() => setShowCycleForm(true)} className="text-sm font-medium text-brand-700 dark:text-brand-400 hover:underline">
+                {t("launchCycle")}
+              </button>
+            )}
+          </div>
           {!cycles ? (
             <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
           ) : (
@@ -146,43 +156,57 @@ export default function PerformancePage() {
             </ul>
           )}
 
-          <form onSubmit={createCycle} className="card flex flex-col gap-2">
-            <input
-              required
-              placeholder={t("cycleNamePlaceholder")}
-              className="input"
-              value={cycleForm.name}
-              onChange={(e) => setCycleForm((f) => ({ ...f, name: e.target.value }))}
-            />
-            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-              {t("periodStart")}
+          {showCycleForm && (
+            <form onSubmit={createCycle} className="card flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{t("launchCycle")}</span>
+                <button
+                  type="button"
+                  onClick={() => setShowCycleForm(false)}
+                  aria-label={tc("cancel")}
+                  className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                >
+                  <CloseIcon className="size-4" />
+                </button>
+              </div>
               <input
                 required
-                type="date"
+                autoFocus
+                placeholder={t("cycleNamePlaceholder")}
                 className="input"
-                value={cycleForm.periodStart}
-                onChange={(e) => setCycleForm((f) => ({ ...f, periodStart: e.target.value }))}
+                value={cycleForm.name}
+                onChange={(e) => setCycleForm((f) => ({ ...f, name: e.target.value }))}
               />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-              {t("periodEnd")}
-              <input
-                required
-                type="date"
-                className="input"
-                value={cycleForm.periodEnd}
-                onChange={(e) => setCycleForm((f) => ({ ...f, periodEnd: e.target.value }))}
-              />
-            </label>
-            <button type="submit" disabled={busy} className="btn-primary">
-              {t("launchCycle")}
-            </button>
-            {selectedCycle?.status === "open" && (
-              <button type="button" onClick={() => closeCycle(selectedCycle.id)} className="btn-secondary">
-                {t("closeCycle")}
+              <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+                {t("periodStart")}
+                <input
+                  required
+                  type="date"
+                  className="input"
+                  value={cycleForm.periodStart}
+                  onChange={(e) => setCycleForm((f) => ({ ...f, periodStart: e.target.value }))}
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+                {t("periodEnd")}
+                <input
+                  required
+                  type="date"
+                  className="input"
+                  value={cycleForm.periodEnd}
+                  onChange={(e) => setCycleForm((f) => ({ ...f, periodEnd: e.target.value }))}
+                />
+              </label>
+              <button type="submit" disabled={busy} className="btn-primary">
+                {t("launchCycle")}
               </button>
-            )}
-          </form>
+            </form>
+          )}
+          {selectedCycle?.status === "open" && (
+            <button type="button" onClick={() => closeCycle(selectedCycle.id)} className="btn-secondary mt-2 w-full">
+              {t("closeCycle")}
+            </button>
+          )}
         </div>
 
         <div className="lg:col-span-2">

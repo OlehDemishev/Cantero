@@ -7,6 +7,8 @@ import { SUPPLIER_DOCUMENT_TYPES, type ImportResult, type SupplierDocumentType }
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { CertificateAttachment } from "@/components/certificate-attachment";
 import { MaterialRfqsPanel } from "@/components/material-rfqs-panel";
+import { EmptyState } from "@/components/ui/empty-state";
+import { CloseIcon, SuppliersIcon } from "@/components/nav-icons";
 import { apiFetch, apiUpload } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
 
@@ -54,6 +56,7 @@ export default function SuppliersPage() {
   const [suppliers, setSuppliers] = useState<Supplier[] | null>(null);
   const [form, setForm] = useState({ name: "", email: "", phone: "" });
   const [submitting, setSubmitting] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [scorecards, setScorecards] = useState<Record<string, Scorecard>>({});
   const [syncBusy, setSyncBusy] = useState(false);
@@ -169,6 +172,7 @@ export default function SuppliersPage() {
         }),
       });
       setForm({ name: "", email: "", phone: "" });
+      setShowCreateForm(false);
       load();
     } finally {
       setSubmitting(false);
@@ -177,14 +181,32 @@ export default function SuppliersPage() {
 
   return (
     <AuthenticatedShell>
-      <h1 className="text-2xl font-semibold">{t("title")}</h1>
+      <div className="flex items-center justify-between gap-2">
+        <h1 className="text-2xl font-semibold">{t("title")}</h1>
+        {!showCreateForm && (
+          <button type="button" onClick={() => setShowCreateForm(true)} className="btn-primary">
+            {t("newSupplier")}
+          </button>
+        )}
+      </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
-        <div className="card lg:col-span-1">
-          <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("newSupplier")}</h2>
+      {showCreateForm && (
+        <div className="mt-6 card max-w-md">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("newSupplier")}</h2>
+            <button
+              type="button"
+              onClick={() => setShowCreateForm(false)}
+              aria-label={tc("cancel")}
+              className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+            >
+              <CloseIcon className="size-4" />
+            </button>
+          </div>
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             <input
               required
+              autoFocus
               placeholder={tc("name")}
               className="input"
               value={form.name}
@@ -208,12 +230,22 @@ export default function SuppliersPage() {
             </button>
           </form>
         </div>
+      )}
 
-        <div className="lg:col-span-2">
-          {!suppliers ? (
-            <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
-          ) : (
-            <ul className="flex flex-col gap-2">
+      <div className="mt-6">
+        {!suppliers ? (
+          <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        ) : suppliers.length === 0 ? (
+          <div className="card">
+            <EmptyState
+              icon={SuppliersIcon}
+              title={t("emptyTitle")}
+              message={t("empty")}
+              cta={{ label: t("newSupplier"), onClick: () => setShowCreateForm(true) }}
+            />
+          </div>
+        ) : (
+          <ul className="flex flex-col gap-2">
               {suppliers.map((s) => {
                 const card = scorecards[s.id];
                 return (
@@ -424,7 +456,6 @@ export default function SuppliersPage() {
               })}
             </ul>
           )}
-        </div>
       </div>
 
       <MaterialRfqsPanel />

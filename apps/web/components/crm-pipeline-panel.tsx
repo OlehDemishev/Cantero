@@ -44,6 +44,7 @@ interface LeaderboardRow {
 
 export function CrmPipelinePanel() {
   const t = useTranslations("clients");
+  const tc = useTranslations("common");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
@@ -62,7 +63,7 @@ export function CrmPipelinePanel() {
       <div>
         <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("pipelineForecast")}</h2>
         {!forecast ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500">—</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
         ) : (
           <>
             <div className="card">
@@ -95,7 +96,7 @@ export function CrmPipelinePanel() {
       <div>
         <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("funnelReport")}</h2>
         {!funnel ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500">—</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
         ) : (
           <>
             <div className="card">
@@ -125,9 +126,9 @@ export function CrmPipelinePanel() {
       <div>
         <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("ownerLeaderboard")}</h2>
         {!leaderboard ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500">—</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
         ) : leaderboard.length === 0 ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500">—</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500">{t("ownerLeaderboardEmpty")}</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {leaderboard.map((row) => (

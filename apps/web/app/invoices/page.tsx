@@ -8,6 +8,8 @@ import {
   type RecurringInvoiceFrequency,
 } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
+import { EmptyState } from "@/components/ui/empty-state";
+import { InvoicesIcon } from "@/components/nav-icons";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
@@ -272,7 +274,14 @@ export default function InvoicesPage() {
         {!invoices ? (
           <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
         ) : invoices.length === 0 ? (
-          <p className="text-gray-500 dark:text-gray-400">—</p>
+          <div className="card">
+            <EmptyState
+              icon={InvoicesIcon}
+              title={t("emptyTitle")}
+              message={t("empty")}
+              cta={{ label: t("emptyCta"), href: "/projects" }}
+            />
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">

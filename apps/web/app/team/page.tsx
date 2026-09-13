@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { TimeOffPanel } from "@/components/time-off-panel";
 import { CertificationsDashboardPanel } from "@/components/certifications-dashboard-panel";
+import { EmptyState } from "@/components/ui/empty-state";
+import { CloseIcon, TeamIcon } from "@/components/nav-icons";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
@@ -43,6 +45,7 @@ export default function TeamPage() {
   const [showInactive, setShowInactive] = useState(false);
   const [form, setForm] = useState({ name: "", role: "", hourlyCost: "" });
   const [submitting, setSubmitting] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
   function load() {
     apiFetch<Worker[]>("/workers").then(setWorkers);
@@ -66,6 +69,7 @@ export default function TeamPage() {
         }),
       });
       setForm({ name: "", role: "", hourlyCost: "" });
+      setShowCreateForm(false);
       load();
     } finally {
       setSubmitting(false);
@@ -74,14 +78,32 @@ export default function TeamPage() {
 
   return (
     <AuthenticatedShell>
-      <h1 className="text-2xl font-semibold">{t("title")}</h1>
+      <div className="flex items-center justify-between gap-2">
+        <h1 className="text-2xl font-semibold">{t("title")}</h1>
+        {!showCreateForm && (
+          <button type="button" onClick={() => setShowCreateForm(true)} className="btn-primary">
+            {t("newWorker")}
+          </button>
+        )}
+      </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
-        <div className="card lg:col-span-1">
-          <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("newWorker")}</h2>
+      {showCreateForm && (
+        <div className="mt-6 card max-w-md">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("newWorker")}</h2>
+            <button
+              type="button"
+              onClick={() => setShowCreateForm(false)}
+              aria-label={tc("cancel")}
+              className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+            >
+              <CloseIcon className="size-4" />
+            </button>
+          </div>
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             <input
               required
+              autoFocus
               placeholder={tc("name")}
               className="input"
               value={form.name}
@@ -108,19 +130,29 @@ export default function TeamPage() {
             </button>
           </form>
         </div>
+      )}
 
-        <div className="lg:col-span-2">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("workers")}</h2>
-            <label className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-              <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} />
-              {t("showInactive")}
-            </label>
+      <div className="mt-6">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("workers")}</h2>
+          <label className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+            <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} />
+            {t("showInactive")}
+          </label>
+        </div>
+        {!visibleWorkers ? (
+          <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        ) : visibleWorkers.length === 0 ? (
+          <div className="card">
+            <EmptyState
+              icon={TeamIcon}
+              title={t("emptyTitle")}
+              message={t("empty")}
+              cta={{ label: t("newWorker"), onClick: () => setShowCreateForm(true) }}
+            />
           </div>
-          {!visibleWorkers ? (
-            <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
-          ) : (
-            <div className="overflow-x-auto">
+        ) : (
+          <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
@@ -206,7 +238,6 @@ export default function TeamPage() {
             </table>
             </div>
           )}
-        </div>
       </div>
 
       <CertificationsDashboardPanel />

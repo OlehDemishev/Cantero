@@ -119,7 +119,7 @@ export function InspectionTemplatesPanel() {
           {templates === null ? (
             <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
           ) : templates.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">—</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noInspectionTemplates")}</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {templates.map((tpl) => (

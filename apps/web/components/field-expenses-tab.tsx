@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { EXPENSE_CATEGORIES, type ExpenseCategory } from "@cantero/shared";
 import { apiUpload } from "@/lib/api-client";
@@ -33,6 +33,7 @@ export function ExpensesTab({ projectId, meUserId }: { projectId: string; meUser
     incurredAt: new Date().toISOString().slice(0, 10),
   });
   const [receipt, setReceipt] = useState<File | null>(null);
+  const receiptInputRef = useRef<HTMLInputElement>(null);
   const [scanning, setScanning] = useState(false);
   const [scanMessage, setScanMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -108,6 +109,7 @@ export function ExpensesTab({ projectId, meUserId }: { projectId: string; meUser
       }
       setForm((f) => ({ ...f, amount: "", description: "" }));
       setReceipt(null);
+      if (receiptInputRef.current) receiptInputRef.current.value = "";
       setScanMessage(null);
     } catch (err) {
       setMessage({ type: "error", text: err instanceof Error ? err.message : tc("error") });
@@ -179,14 +181,25 @@ export function ExpensesTab({ projectId, meUserId }: { projectId: string; meUser
       <label className="flex flex-col gap-1.5 text-sm">
         <span className="font-medium text-gray-700 dark:text-gray-200">{te("receipt")}</span>
         <input
+          ref={receiptInputRef}
           type="file"
           accept="image/*,application/pdf"
-          className="input"
+          className="hidden"
           onChange={(e) => {
             setReceipt(e.target.files?.[0] ?? null);
             setScanMessage(null);
           }}
         />
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => receiptInputRef.current?.click()}
+            className="btn-secondary px-3 py-1 text-xs"
+          >
+            {tc("chooseFile")}
+          </button>
+          {receipt && <span className="text-xs text-gray-500 dark:text-gray-400">{receipt.name}</span>}
+        </div>
       </label>
       {receipt && (
         <div className="flex items-center gap-2">

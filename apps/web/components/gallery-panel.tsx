@@ -44,6 +44,7 @@ function GalleryColumn({
   busy: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const tc = useTranslations("common");
 
   return (
     <div>
@@ -57,7 +58,7 @@ function GalleryColumn({
         ref={inputRef}
         type="file"
         accept="image/*"
-        className="mt-2 text-xs"
+        className="hidden"
         disabled={busy}
         onChange={(e) => {
           const file = e.target.files?.[0];
@@ -65,6 +66,14 @@ function GalleryColumn({
           if (inputRef.current) inputRef.current.value = "";
         }}
       />
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        disabled={busy}
+        className="btn-secondary mt-2 px-2 py-1 text-xs"
+      >
+        {tc("chooseFile")}
+      </button>
     </div>
   );
 }

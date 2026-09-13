@@ -57,6 +57,7 @@ export function TakeoffPanel({ projectId }: { projectId: string }) {
 
   const [uploadName, setUploadName] = useState("");
   const [uploading, setUploading] = useState(false);
+  const takeoffFileInputRef = useRef<HTMLInputElement>(null);
 
   const [mode, setMode] = useState<"idle" | "calibrate" | "length" | "area">("idle");
   const [currentPoints, setCurrentPoints] = useState<TakeoffPoint[]>([]);
@@ -217,7 +218,14 @@ export function TakeoffPanel({ projectId }: { projectId: string }) {
             value={uploadName}
             onChange={(e) => setUploadName(e.target.value)}
           />
-          <input id="takeoff-file-input" type="file" accept="image/*" className="text-xs" />
+          <input id="takeoff-file-input" ref={takeoffFileInputRef} type="file" accept="image/*" className="hidden" />
+          <button
+            type="button"
+            onClick={() => takeoffFileInputRef.current?.click()}
+            className="btn-secondary px-2 py-1 text-xs"
+          >
+            {tc("chooseFile")}
+          </button>
           <button type="submit" disabled={uploading} className="btn-secondary px-2 py-1 text-xs">
             {t("upload")}
           </button>

@@ -77,7 +77,7 @@ export function OffboardingTemplatePanel() {
         {items === null ? (
           <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
         ) : items.length === 0 ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500">—</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500">{t("noOffboardingTasks")}</p>
         ) : (
           items.map((item) => (
             <li key={item.id} className="card flex items-center justify-between text-sm">
