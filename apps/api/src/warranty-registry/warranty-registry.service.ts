@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import type { CreateWarrantyRegistrationInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
+import { addMonthsUtc } from "../common/date-utils";
 
 @Injectable()
 export class WarrantyRegistryService {
@@ -19,8 +20,7 @@ export class WarrantyRegistryService {
     if (!project) throw new NotFoundException("Project not found");
 
     const startDate = new Date(input.startDate);
-    const expirationDate = new Date(startDate);
-    expirationDate.setMonth(expirationDate.getMonth() + input.termMonths);
+    const expirationDate = addMonthsUtc(startDate, input.termMonths);
 
     const registration = await this.prisma.warrantyRegistration.create({
       data: {

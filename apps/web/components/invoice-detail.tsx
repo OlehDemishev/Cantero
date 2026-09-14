@@ -46,6 +46,7 @@ interface Invoice {
   currency: string;
   dueDate: string | null;
   percentComplete: string | null;
+  isRetainageRelease: boolean;
   lateFeeAccrued: number;
   lines: InvoiceLine[];
   payments: Payment[];
@@ -440,7 +441,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
             <Row label={t("balanceDue")} value={money(balanceDue)} emphasize />
           </dl>
 
-          {invoice.status === "draft" && (
+          {invoice.status === "draft" && invoice.percentComplete == null && !invoice.isRetainageRelease && (
             <button onClick={recalculateTax} disabled={busy} className="btn-secondary mt-3 w-full">
               {t("recalculateTax")}
             </button>

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import type {
   CreateTaxExemptionCertificateInput,
   CreateTaxJurisdictionInput,
@@ -102,6 +102,11 @@ export class TaxService {
       include: { client: true },
     });
     if (!invoice) throw new NotFoundException("Invoice not found");
+    if (invoice.percentComplete != null || invoice.isRetainageRelease) {
+      throw new BadRequestException(
+        "Progress-billing draws and retainage releases are billed against the estimate's grandTotal, which already includes tax — recalculating tax here would double it and discard the retainage withholding",
+      );
+    }
 
     const jurisdictionId = invoice.taxJurisdictionId ?? invoice.client.taxJurisdictionId;
     let rate = null as Awaited<ReturnType<typeof findActiveRate>>;

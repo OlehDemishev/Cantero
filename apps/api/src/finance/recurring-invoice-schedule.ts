@@ -1,25 +1,23 @@
 import type { RecurringInvoiceFrequency } from "@cantero/shared";
+import { addMonthsUtc } from "../common/date-utils";
 
 const round2 = (n: number): number => Math.round((n + Number.EPSILON) * 100) / 100;
 
 /** Advances a schedule date by one cycle in UTC — avoids local-timezone month/DST drift on repeated calls. */
 export function advanceDate(date: Date, frequency: RecurringInvoiceFrequency): Date {
-  const next = new Date(date);
   switch (frequency) {
-    case "weekly":
+    case "weekly": {
+      const next = new Date(date);
       next.setUTCDate(next.getUTCDate() + 7);
-      break;
+      return next;
+    }
     case "monthly":
-      next.setUTCMonth(next.getUTCMonth() + 1);
-      break;
+      return addMonthsUtc(date, 1);
     case "quarterly":
-      next.setUTCMonth(next.getUTCMonth() + 3);
-      break;
+      return addMonthsUtc(date, 3);
     case "yearly":
-      next.setUTCFullYear(next.getUTCFullYear() + 1);
-      break;
+      return addMonthsUtc(date, 12);
   }
-  return next;
 }
 
 export interface RecurringLineForCalc {

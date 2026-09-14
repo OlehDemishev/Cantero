@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import type { CompleteEnrollmentInput, CreateTrainingCourseInput, EnrollWorkerInput, UpdateTrainingCourseInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
+import { addMonthsUtc } from "../common/date-utils";
 
 @Injectable()
 export class TrainingService {
@@ -106,8 +107,7 @@ export class TrainingService {
     });
 
     if (enrollment.course.validityMonths) {
-      const expiresAt = new Date(completedAt);
-      expiresAt.setMonth(expiresAt.getMonth() + enrollment.course.validityMonths);
+      const expiresAt = addMonthsUtc(completedAt, enrollment.course.validityMonths);
       const existingCert = await this.prisma.workerCertification.findFirst({
         where: { companyId, workerId: enrollment.workerId, name: enrollment.course.title },
       });

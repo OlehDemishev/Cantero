@@ -13,13 +13,12 @@ import { InvoicesService } from "../finance/invoices.service";
 import { ClientPaymentMethodsService } from "../finance/client-payment-methods.service";
 import { OutboxService } from "../common/webhooks/outbox.service";
 import { BillingService } from "../billing/billing.service";
+import { addMonthsUtc } from "../common/date-utils";
 import type { PortalClientContext } from "./portal-jwt.service";
 
 function warrantyExpiresAt(handoverDate: Date | null, warrantyMonths: number | null): Date | null {
   if (!handoverDate || !warrantyMonths) return null;
-  const expiry = new Date(handoverDate);
-  expiry.setMonth(expiry.getMonth() + warrantyMonths);
-  return expiry;
+  return addMonthsUtc(handoverDate, warrantyMonths);
 }
 
 @Injectable()

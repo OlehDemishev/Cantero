@@ -6,6 +6,7 @@ import { StorageService } from "../common/storage/storage.service";
 import { InvoicesService } from "../finance/invoices.service";
 import { DocumentsService } from "../documents/documents.service";
 import { computeCloseoutReadiness } from "./closeout-readiness";
+import { addMonthsUtc } from "../common/date-utils";
 
 /** Builds the client-handoff ZIP: a closeout summary PDF, the project's latest invoice PDF, and its stored documents. */
 @Injectable()
@@ -111,12 +112,10 @@ export class ProjectCloseoutService {
     // in an override currency doesn't get its total mislabeled.
     const invoicedCurrency = invoices[0]?.currency ?? company.currency;
 
-    const warrantyExpires = project.handoverDate && project.warrantyMonths != null
-      ? new Date(project.handoverDate.getTime())
-      : null;
-    if (warrantyExpires && project.warrantyMonths != null) {
-      warrantyExpires.setMonth(warrantyExpires.getMonth() + project.warrantyMonths);
-    }
+    const warrantyExpires =
+      project.handoverDate && project.warrantyMonths != null
+        ? addMonthsUtc(project.handoverDate, project.warrantyMonths)
+        : null;
 
     const rows = [
       ...punchListItems.map((p) => ({

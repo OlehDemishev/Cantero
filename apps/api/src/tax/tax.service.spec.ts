@@ -1,3 +1,4 @@
+import { BadRequestException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { TaxService } from "./tax.service";
 import { PrismaService } from "../common/prisma/prisma.service";
@@ -77,6 +78,40 @@ describe("TaxService", () => {
       const call = prisma.invoice.update.mock.calls[0][0];
       expect(call.data.taxAmount).toBe(0);
       expect(call.data.total).toBe(1000);
+    });
+
+    it("refuses to recalculate tax on a progress-billing draw, since it would discard the retainage withholding and double the already-included tax", async () => {
+      prisma.invoice.findFirst.mockResolvedValue({
+        id: "inv-1",
+        clientId: "client-1",
+        number: "INV-1",
+        subtotal: 1000,
+        taxJurisdictionId: null,
+        percentComplete: 25,
+        isRetainageRelease: false,
+        createdAt: new Date("2026-06-01"),
+        client: { taxJurisdictionId: "juris-1" },
+      });
+
+      await expect(service.recalculateInvoiceTax(COMPANY_A, { name: "Staff" }, "inv-1")).rejects.toThrow(BadRequestException);
+      expect(prisma.invoice.update).not.toHaveBeenCalled();
+    });
+
+    it("refuses to recalculate tax on a retainage-release invoice", async () => {
+      prisma.invoice.findFirst.mockResolvedValue({
+        id: "inv-1",
+        clientId: "client-1",
+        number: "INV-1",
+        subtotal: 1000,
+        taxJurisdictionId: null,
+        percentComplete: null,
+        isRetainageRelease: true,
+        createdAt: new Date("2026-06-01"),
+        client: { taxJurisdictionId: "juris-1" },
+      });
+
+      await expect(service.recalculateInvoiceTax(COMPANY_A, { name: "Staff" }, "inv-1")).rejects.toThrow(BadRequestException);
+      expect(prisma.invoice.update).not.toHaveBeenCalled();
     });
 
     it("computes zero tax when no jurisdiction is set at all", async () => {

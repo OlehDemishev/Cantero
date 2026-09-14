@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import type { AddHazmatInventoryItemInput, AddSdsVersionInput, CreateHazardousMaterialInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
+import { addMonthsUtc } from "../common/date-utils";
 
 const DEFAULT_REVIEW_CYCLE_MONTHS = 36;
 
@@ -87,8 +88,7 @@ export class HazmatService {
   /** Materials whose latest SDS is missing a revisionDate, or whose revisionDate is older than
    * the review cycle — the "go get a fresh copy from the manufacturer" list. */
   async staleSdsReport(companyId: string, reviewCycleMonths = DEFAULT_REVIEW_CYCLE_MONTHS) {
-    const cutoff = new Date();
-    cutoff.setMonth(cutoff.getMonth() - reviewCycleMonths);
+    const cutoff = addMonthsUtc(new Date(), -reviewCycleMonths);
 
     const materials = await this.prisma.hazardousMaterial.findMany({
       where: { companyId },

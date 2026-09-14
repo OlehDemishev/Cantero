@@ -62,6 +62,14 @@ jobs:
 
       - run: pnpm build:shared
 
+      # apps/web/tsconfig.json includes .next/types/**/*.ts (routes.d.ts declares the global
+      # LayoutProps/PageProps types every layout/page signature uses) — that directory is
+      # gitignored and only ever written by `next dev`/`next build`, so a bare tsc run against a
+      # fresh checkout fails with "Cannot find name 'LayoutProps'". `next typegen` generates just
+      # that directory without a full build.
+      - name: Generate Next.js route types
+        run: pnpm --filter web exec next typegen
+
       - name: Type-check
         run: pnpm --filter web exec tsc --noEmit -p tsconfig.json
 

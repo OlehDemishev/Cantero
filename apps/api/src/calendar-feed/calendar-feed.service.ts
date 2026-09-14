@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { addMonthsUtc } from "../common/date-utils";
 
 interface FeedEvent {
   uid: string;
@@ -93,10 +94,8 @@ export class CalendarFeedService {
 
   /** Same three sources as buildFeed() (task/milestone due dates, service visit dates), as structured JSON for the in-app calendar view rather than an ICS text feed. */
   async listEvents(companyId: string, monthsAhead = 3): Promise<CalendarEvent[]> {
-    const windowEnd = new Date();
-    windowEnd.setMonth(windowEnd.getMonth() + monthsAhead);
-    const windowStart = new Date();
-    windowStart.setMonth(windowStart.getMonth() - 1);
+    const windowEnd = addMonthsUtc(new Date(), monthsAhead);
+    const windowStart = addMonthsUtc(new Date(), -1);
 
     const [tasks, milestones, serviceVisits] = await Promise.all([
       this.prisma.task.findMany({

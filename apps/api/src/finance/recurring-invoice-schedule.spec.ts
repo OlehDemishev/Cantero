@@ -1,6 +1,9 @@
 import { advanceDate, calculateRecurringInvoice } from "./recurring-invoice-schedule";
 
 describe("advanceDate", () => {
+  // Month-end clamping itself (the interesting, previously-buggy behavior) is exhaustively
+  // covered by date-utils.spec.ts, which this delegates to for monthly/quarterly/yearly — these
+  // just confirm each frequency maps to the right number of months (or 7 days for weekly).
   it("adds 7 days for weekly", () => {
     expect(advanceDate(new Date("2026-01-01T00:00:00.000Z"), "weekly").toISOString()).toBe("2026-01-08T00:00:00.000Z");
   });
@@ -17,10 +20,8 @@ describe("advanceDate", () => {
     expect(advanceDate(new Date("2026-01-15T00:00:00.000Z"), "yearly").toISOString()).toBe("2027-01-15T00:00:00.000Z");
   });
 
-  it("rolls over correctly when monthly lands on a shorter month", () => {
-    // Jan 31 + 1 month: JS Date rolls Feb 31 forward into March, which is the documented
-    // (if surprising) behavior — asserted here so a future refactor doesn't change it silently.
-    expect(advanceDate(new Date("2026-01-31T00:00:00.000Z"), "monthly").toISOString()).toBe("2026-03-03T00:00:00.000Z");
+  it("clamps month-end instead of overflowing (regression guard — see date-utils.spec.ts for the full matrix)", () => {
+    expect(advanceDate(new Date("2026-01-31T00:00:00.000Z"), "monthly").toISOString()).toBe("2026-02-28T00:00:00.000Z");
   });
 });
 

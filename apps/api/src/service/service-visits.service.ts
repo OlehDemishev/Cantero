@@ -5,6 +5,7 @@ import type { CompleteServiceVisitInput, ScheduleServiceVisitInput, SubmitServic
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
+import { addMonthsUtc } from "../common/date-utils";
 
 @Injectable()
 export class ServiceVisitsService {
@@ -37,8 +38,7 @@ export class ServiceVisitsService {
       },
     });
 
-    const nextVisitDate = new Date(scheduledDate);
-    nextVisitDate.setMonth(nextVisitDate.getMonth() + contract.frequencyMonths);
+    const nextVisitDate = addMonthsUtc(scheduledDate, contract.frequencyMonths);
     await this.prisma.serviceContract.update({ where: { id: contractId }, data: { nextVisitDate } });
 
     this.audit.record(companyId, actor, "service_visit.scheduled", "ServiceVisit", visit.id, `Scheduled a service visit for "${contract.title}"`);

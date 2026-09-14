@@ -2,6 +2,7 @@ import { NotFoundException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { CalendarFeedService } from "./calendar-feed.service";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { addMonthsUtc } from "../common/date-utils";
 
 describe("CalendarFeedService", () => {
   let service: CalendarFeedService;
@@ -119,10 +120,8 @@ describe("CalendarFeedService", () => {
       await service.listEvents("company-1", 6);
 
       const taskWhere = prisma.task.findMany.mock.calls[0][0].where.dueDate;
-      const expectedStart = new Date();
-      expectedStart.setMonth(expectedStart.getMonth() - 1);
-      const expectedEnd = new Date();
-      expectedEnd.setMonth(expectedEnd.getMonth() + 6);
+      const expectedStart = addMonthsUtc(new Date(), -1);
+      const expectedEnd = addMonthsUtc(new Date(), 6);
 
       const toleranceMs = 5000;
       expect(Math.abs(taskWhere.gte.getTime() - expectedStart.getTime())).toBeLessThan(toleranceMs);

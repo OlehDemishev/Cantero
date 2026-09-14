@@ -1,3 +1,5 @@
+import { addMonthsUtc } from "../common/date-utils";
+
 const round2 = (n: number): number => Math.round((n + Number.EPSILON) * 100) / 100;
 
 export interface AmortizationInput {
@@ -29,8 +31,7 @@ export function calculateAmortizationSchedule({ principal, annualInterestRatePer
   let balance = principal;
 
   for (let month = 1; month <= termMonths; month++) {
-    const dueDate = new Date(startDate);
-    dueDate.setMonth(dueDate.getMonth() + month);
+    const dueDate = addMonthsUtc(startDate, month);
 
     const interestPortion = round2(balance * monthlyRate);
     let principalPortion = round2(monthlyPayment - interestPortion);

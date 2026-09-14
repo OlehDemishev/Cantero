@@ -54,4 +54,17 @@ describe("calculateAmortizationSchedule()", () => {
     expect(rows[1].dueDate.getUTCMonth()).toBe(2);
     expect(rows[2].dueDate.getUTCMonth()).toBe(3);
   });
+
+  it("clamps a month-end start date's due dates instead of overflowing into the next month", () => {
+    // A loan originated Jan 31 must show its first payment due Feb 28, not Mar 3 (JS Date's own
+    // overflow behavior for "add a month" on a day the target month doesn't have).
+    const rows = calculateAmortizationSchedule({
+      principal: 1000,
+      annualInterestRatePercent: 5,
+      termMonths: 2,
+      startDate: new Date("2026-01-31"),
+    });
+    expect(rows[0].dueDate.toISOString()).toBe("2026-02-28T00:00:00.000Z");
+    expect(rows[1].dueDate.toISOString()).toBe("2026-03-31T00:00:00.000Z");
+  });
 });
