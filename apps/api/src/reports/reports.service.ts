@@ -12,6 +12,20 @@ import { ExchangeRateService } from "../common/exchange-rate/exchange-rate.servi
 const CASH_FLOW_WEEKS = 13;
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
+/** Same "snapshot, don't let a later price change rewrite history" reasoning as the
+ * hourlyCostSnapshot fallback used alongside this everywhere below: a stock movement's own
+ * unitCost is what the costing engine (FIFO or weighted-average) actually charged it at the time
+ * — see StockMovement.unitCost's schema comment — and using today's live catalog price instead
+ * would make every actual-cost report reprice history whenever a material's price changes. Falls
+ * back to the catalog price only for a movement that never got cost data (e.g. issued before
+ * costing was recorded for that material). */
+function materialsCostActualOf(movements: { quantity: unknown; unitCost: unknown; materialCatalogItem: { defaultUnitPrice: unknown } }[]): number {
+  return movements.reduce(
+    (sum, m) => sum + Number(m.quantity) * (m.unitCost != null ? Number(m.unitCost) : Number(m.materialCatalogItem.defaultUnitPrice)),
+    0,
+  );
+}
+
 /** Company-wide overview spanning every module — the "everything in one place" story for the dashboard. */
 @Injectable()
 export class ReportsService {
@@ -119,10 +133,7 @@ export class ReportsService {
         0,
       );
 
-      const materialsCostActual = project.stockMovements.reduce(
-        (sum, m) => sum + Number(m.quantity) * Number(m.materialCatalogItem.defaultUnitPrice),
-        0,
-      );
+      const materialsCostActual = materialsCostActualOf(project.stockMovements);
       const laborCostActual = project.timeEntries.reduce((sum, entry) => {
         const rate =
           entry.hourlyCostSnapshot !== null
@@ -177,10 +188,7 @@ export class ReportsService {
         0,
       );
 
-      const materialsCostActual = project.stockMovements.reduce(
-        (sum, m) => sum + Number(m.quantity) * Number(m.materialCatalogItem.defaultUnitPrice),
-        0,
-      );
+      const materialsCostActual = materialsCostActualOf(project.stockMovements);
       const laborCostActual = project.timeEntries.reduce((sum, entry) => {
         const rate =
           entry.hourlyCostSnapshot !== null
@@ -294,10 +302,7 @@ export class ReportsService {
         0,
       );
 
-      const materialsCostActual = project.stockMovements.reduce(
-        (sum, m) => sum + Number(m.quantity) * Number(m.materialCatalogItem.defaultUnitPrice),
-        0,
-      );
+      const materialsCostActual = materialsCostActualOf(project.stockMovements);
       const laborCostActual = project.timeEntries.reduce((sum, entry) => {
         const rate =
           entry.hourlyCostSnapshot !== null
@@ -644,10 +649,7 @@ export class ReportsService {
       const convert = (amount: number) => this.exchangeRates.convert(amount, projectCurrency, company.currency);
 
       const budgetTotal = project.estimates.reduce((sum, e) => sum + Number(e.grandTotal), 0);
-      const materialsCostActual = project.stockMovements.reduce(
-        (sum, m) => sum + Number(m.quantity) * Number(m.materialCatalogItem.defaultUnitPrice),
-        0,
-      );
+      const materialsCostActual = materialsCostActualOf(project.stockMovements);
       const laborCostActual = project.timeEntries.reduce((sum, entry) => {
         const rate =
           entry.hourlyCostSnapshot !== null

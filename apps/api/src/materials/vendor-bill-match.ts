@@ -29,45 +29,46 @@ export interface MatchResult {
  * charge) or a PO with no matching material is excluded from the comparison — only lines present
  * on both sides can be matched. A tolerance of 1 cent absorbs rounding, not real variance.
  */
+/** Merges same-item lines by summing quantity and dollar amount rather than keeping one line's
+ * unitPrice — a PO or bill can carry more than one line for the same material (e.g. a
+ * mid-order price change, or a manually duplicated line), and picking just the last price seen
+ * would misrepresent both the displayed unit price and, worse, the price variance total. */
+function mergeByItem(lines: MatchLineInput[]): Map<string, { quantity: number; amount: number }> {
+  const byItem = new Map<string, { quantity: number; amount: number }>();
+  for (const line of lines) {
+    if (!line.materialCatalogItemId) continue;
+    const existing = byItem.get(line.materialCatalogItemId) ?? { quantity: 0, amount: 0 };
+    byItem.set(line.materialCatalogItemId, {
+      quantity: existing.quantity + line.quantity,
+      amount: existing.amount + line.quantity * line.unitPrice,
+    });
+  }
+  return byItem;
+}
+
 export function matchVendorBill(poLines: MatchLineInput[] | null, billLines: MatchLineInput[]): MatchResult {
   if (!poLines) return { status: "no_po", lines: [] };
 
-  const orderedByItem = new Map<string, { quantity: number; unitPrice: number }>();
-  for (const line of poLines) {
-    const existing = orderedByItem.get(line.materialCatalogItemId);
-    orderedByItem.set(line.materialCatalogItemId, {
-      quantity: (existing?.quantity ?? 0) + line.quantity,
-      unitPrice: line.unitPrice,
-    });
-  }
-
-  const billedByItem = new Map<string, { quantity: number; unitPrice: number }>();
-  for (const line of billLines) {
-    if (!line.materialCatalogItemId) continue;
-    const existing = billedByItem.get(line.materialCatalogItemId);
-    billedByItem.set(line.materialCatalogItemId, {
-      quantity: (existing?.quantity ?? 0) + line.quantity,
-      unitPrice: line.unitPrice,
-    });
-  }
+  const orderedByItem = mergeByItem(poLines);
+  const billedByItem = mergeByItem(billLines);
 
   const itemIds = new Set([...orderedByItem.keys(), ...billedByItem.keys()]);
   const lines: MatchLineResult[] = [];
   let hasVariance = false;
 
   for (const materialCatalogItemId of itemIds) {
-    const ordered = orderedByItem.get(materialCatalogItemId) ?? { quantity: 0, unitPrice: 0 };
-    const billed = billedByItem.get(materialCatalogItemId) ?? { quantity: 0, unitPrice: 0 };
+    const ordered = orderedByItem.get(materialCatalogItemId) ?? { quantity: 0, amount: 0 };
+    const billed = billedByItem.get(materialCatalogItemId) ?? { quantity: 0, amount: 0 };
     const quantityVariance = round2(billed.quantity - ordered.quantity);
-    const priceVariance = round2(billed.unitPrice * billed.quantity - ordered.unitPrice * ordered.quantity);
+    const priceVariance = round2(billed.amount - ordered.amount);
     if (Math.abs(quantityVariance) > 0.01 || Math.abs(priceVariance) > 0.01) hasVariance = true;
 
     lines.push({
       materialCatalogItemId,
       orderedQuantity: ordered.quantity,
-      orderedUnitPrice: ordered.unitPrice,
+      orderedUnitPrice: ordered.quantity > 0 ? round2(ordered.amount / ordered.quantity) : 0,
       billedQuantity: billed.quantity,
-      billedUnitPrice: billed.unitPrice,
+      billedUnitPrice: billed.quantity > 0 ? round2(billed.amount / billed.quantity) : 0,
       quantityVariance,
       priceVariance,
     });

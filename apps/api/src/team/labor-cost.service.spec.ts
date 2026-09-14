@@ -59,6 +59,16 @@ describe("LaborCostService — ADP/Gusto payroll export", () => {
     expect(csv).toContain("28.50");
   });
 
+  it("ADP export prefers the entry's hourlyCostSnapshot over the worker's current live rate, so a raise after the fact doesn't rewrite a past pay period's export", async () => {
+    prisma.timeEntry.findMany.mockResolvedValue([{ workerId: "w1", hours: "8", date: MON, hourlyCostSnapshot: "28.50" }]);
+    prisma.worker.findMany.mockResolvedValue([{ id: "w1", name: "Jane Doe", payrollEmployeeId: null, hourlyCost: "40.00" }]);
+
+    const csv = await service.payrollExportAdpCsv(COMPANY_A, {});
+
+    expect(csv).toContain("28.50");
+    expect(csv).not.toContain("40.00");
+  });
+
   it("Gusto export splits the worker's name into first/last on the first space", async () => {
     prisma.timeEntry.findMany.mockResolvedValue([{ workerId: "w1", hours: "8", date: MON, hourlyCostSnapshot: null }]);
     prisma.worker.findMany.mockResolvedValue([

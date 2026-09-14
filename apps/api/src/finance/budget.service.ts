@@ -43,8 +43,13 @@ export class BudgetService {
       where: { companyId, projectId, type: { in: ["issue", "write_off"] } },
       include: { materialCatalogItem: true },
     });
+    // Same "snapshot, don't let a later price change rewrite history" reasoning as
+    // hourlyCostSnapshot below: unitCost is what the costing engine (FIFO or weighted-average)
+    // actually charged this movement at the time — see StockMovement.unitCost's schema comment.
+    // Falling back to today's catalog price only for a movement that never got cost data at all
+    // (e.g. issued before costing was ever recorded for this material).
     const materialsCostActual = consumptionMovements.reduce(
-      (sum, m) => sum + Number(m.quantity) * Number(m.materialCatalogItem.defaultUnitPrice),
+      (sum, m) => sum + Number(m.quantity) * (m.unitCost !== null ? Number(m.unitCost) : Number(m.materialCatalogItem.defaultUnitPrice)),
       0,
     );
 

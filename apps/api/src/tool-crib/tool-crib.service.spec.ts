@@ -10,7 +10,7 @@ const ACTOR = { userId: "user-1", name: "Owner" };
 describe("ToolCribService", () => {
   let service: ToolCribService;
   let prisma: {
-    toolCribItem: { findMany: jest.Mock; findFirst: jest.Mock; create: jest.Mock; update: jest.Mock };
+    toolCribItem: { findMany: jest.Mock; findFirst: jest.Mock; findUniqueOrThrow: jest.Mock; create: jest.Mock; update: jest.Mock };
     toolCribUnit: { findMany: jest.Mock; findFirst: jest.Mock; createMany: jest.Mock; update: jest.Mock };
     toolCheckout: { findMany: jest.Mock; findFirst: jest.Mock; create: jest.Mock; update: jest.Mock };
     worker: { findFirst: jest.Mock };
@@ -20,7 +20,7 @@ describe("ToolCribService", () => {
 
   beforeEach(async () => {
     prisma = {
-      toolCribItem: { findMany: jest.fn(), findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
+      toolCribItem: { findMany: jest.fn(), findFirst: jest.fn(), findUniqueOrThrow: jest.fn(), create: jest.fn(), update: jest.fn() },
       toolCribUnit: { findMany: jest.fn(), findFirst: jest.fn(), createMany: jest.fn(), update: jest.fn() },
       toolCheckout: { findMany: jest.fn(), findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
       worker: { findFirst: jest.fn() },
@@ -57,6 +57,8 @@ describe("ToolCribService", () => {
     it("rejects checking out more than what's on hand", async () => {
       prisma.toolCribItem.findFirst.mockResolvedValue({ id: "item-1", name: "Drill", quantityOnHand: 2 });
       prisma.worker.findFirst.mockResolvedValue({ id: "worker-1", name: "Jane" });
+      prisma.toolCribItem.findUniqueOrThrow.mockResolvedValue({ id: "item-1", quantityOnHand: 2 });
+      prisma.$transaction.mockImplementation(async (cb: any) => cb(prisma));
 
       await expect(service.checkOut(COMPANY_A, ACTOR, "item-1", { workerId: "worker-1", quantity: 5 } as any)).rejects.toThrow(
         BadRequestException,
@@ -73,12 +75,29 @@ describe("ToolCribService", () => {
     it("creates a checkout and decrements on-hand quantity via a transaction", async () => {
       prisma.toolCribItem.findFirst.mockResolvedValue({ id: "item-1", name: "Drill", quantityOnHand: 5 });
       prisma.worker.findFirst.mockResolvedValue({ id: "worker-1", name: "Jane" });
-      prisma.$transaction.mockResolvedValue([{ id: "checkout-1" }, { id: "item-1", quantityOnHand: 4 }]);
+      prisma.toolCribItem.findUniqueOrThrow.mockResolvedValue({ id: "item-1", quantityOnHand: 5 });
+      prisma.toolCheckout.create.mockResolvedValue({ id: "checkout-1" });
+      prisma.$transaction.mockImplementation(async (cb: any) => cb(prisma));
 
       const result = await service.checkOut(COMPANY_A, ACTOR, "item-1", { workerId: "worker-1", quantity: 1 } as any);
 
       expect(result.id).toBe("checkout-1");
+      expect(prisma.toolCribItem.update).toHaveBeenCalledWith({ where: { id: "item-1" }, data: { quantityOnHand: { decrement: 1 } } });
       expect(prisma.$transaction).toHaveBeenCalled();
+    });
+
+    it("checks the remaining quantity against a fresh in-transaction read, not the pre-transaction snapshot — closing the race where two concurrent checkouts could both pass a stale check", async () => {
+      // The outer findFirst (used for item.name/serialTracked) still sees 5 on hand, but by the
+      // time the transaction runs, a concurrent checkout has already taken it down to 0.
+      prisma.toolCribItem.findFirst.mockResolvedValue({ id: "item-1", name: "Drill", quantityOnHand: 5 });
+      prisma.worker.findFirst.mockResolvedValue({ id: "worker-1", name: "Jane" });
+      prisma.toolCribItem.findUniqueOrThrow.mockResolvedValue({ id: "item-1", quantityOnHand: 0 });
+      prisma.$transaction.mockImplementation(async (cb: any) => cb(prisma));
+
+      await expect(service.checkOut(COMPANY_A, ACTOR, "item-1", { workerId: "worker-1", quantity: 1 } as any)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(prisma.toolCheckout.create).not.toHaveBeenCalled();
     });
   });
 
@@ -178,6 +197,7 @@ describe("ToolCribService", () => {
       prisma.toolCribItem.findFirst.mockResolvedValue({ id: "item-1", name: "Generator", serialTracked: true });
       prisma.worker.findFirst.mockResolvedValue({ id: "worker-1", name: "Jane" });
       prisma.toolCribUnit.findFirst.mockResolvedValue({ id: "unit-1", serialNumber: "SN-1", status: "checked_out" });
+      prisma.$transaction.mockImplementation(async (cb: any) => cb(prisma));
 
       await expect(service.checkOut(COMPANY_A, ACTOR, "item-1", { workerId: "worker-1", unitId: "unit-1" } as any)).rejects.toThrow(
         BadRequestException,
@@ -188,7 +208,8 @@ describe("ToolCribService", () => {
       prisma.toolCribItem.findFirst.mockResolvedValue({ id: "item-1", name: "Generator", serialTracked: true });
       prisma.worker.findFirst.mockResolvedValue({ id: "worker-1", name: "Jane" });
       prisma.toolCribUnit.findFirst.mockResolvedValue({ id: "unit-1", serialNumber: "SN-1", status: "available" });
-      prisma.$transaction.mockResolvedValue([{ id: "checkout-1" }, { id: "unit-1", status: "checked_out" }, { id: "item-1" }]);
+      prisma.toolCheckout.create.mockResolvedValue({ id: "checkout-1" });
+      prisma.$transaction.mockImplementation(async (cb: any) => cb(prisma));
 
       const result = await service.checkOut(COMPANY_A, ACTOR, "item-1", { workerId: "worker-1", unitId: "unit-1" } as any);
 
@@ -196,6 +217,8 @@ describe("ToolCribService", () => {
       expect(prisma.toolCheckout.create).toHaveBeenCalledWith({
         data: { companyId: COMPANY_A, itemId: "item-1", toolCribUnitId: "unit-1", workerId: "worker-1", projectId: undefined, quantity: 1, notes: undefined },
       });
+      expect(prisma.toolCribUnit.update).toHaveBeenCalledWith({ where: { id: "unit-1" }, data: { status: "checked_out" } });
+      expect(prisma.toolCribItem.update).toHaveBeenCalledWith({ where: { id: "item-1" }, data: { quantityOnHand: { decrement: 1 } } });
     });
   });
 

@@ -70,6 +70,31 @@ describe("BudgetService", () => {
       expect(result.revisions).toHaveLength(2);
     });
 
+    it("costs consumed materials at the movement's own recorded unitCost, not today's live catalog price", async () => {
+      // Issued a year ago at $8/unit under FIFO; the catalog price has since risen to $20. The
+      // budget-vs-actual report must reflect what was actually charged at the time, not retroactively
+      // reprice history every time the catalog changes — same convention as the labor snapshot below.
+      prisma.project.findFirst.mockResolvedValue({ id: PROJECT_A, contingencyAmount: null });
+      prisma.stockMovement.findMany.mockResolvedValue([
+        { quantity: "10", unitCost: "8.00", materialCatalogItem: { defaultUnitPrice: "20.00" } },
+      ]);
+
+      const result = await service.getForProject(COMPANY_A, PROJECT_A);
+
+      expect(result.materialsCostActual).toBe(80);
+    });
+
+    it("falls back to the catalog's current price only when a movement has no recorded unitCost at all", async () => {
+      prisma.project.findFirst.mockResolvedValue({ id: PROJECT_A, contingencyAmount: null });
+      prisma.stockMovement.findMany.mockResolvedValue([
+        { quantity: "10", unitCost: null, materialCatalogItem: { defaultUnitPrice: "20.00" } },
+      ]);
+
+      const result = await service.getForProject(COMPANY_A, PROJECT_A);
+
+      expect(result.materialsCostActual).toBe(200);
+    });
+
     it("returns null contingency fields when the project has no reserve set", async () => {
       prisma.project.findFirst.mockResolvedValue({ id: PROJECT_A, contingencyAmount: null });
 

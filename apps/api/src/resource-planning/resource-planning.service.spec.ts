@@ -362,6 +362,24 @@ describe("ResourcePlanningService", () => {
 
       expect(result).toEqual([]);
     });
+
+    it("walks UTC calendar days, so a range crossing a DST transition doesn't drop or double a day on a server running a local timezone", async () => {
+      // 2026-11-01 is when US clocks fall back — stepping by local calendar day instead of UTC
+      // day would silently skip 2026-11-03 here (23 vs 24 real hours crossing the transition).
+      const originalTz = process.env.TZ;
+      process.env.TZ = "America/New_York";
+      try {
+        prisma.resourceAssignment.findMany.mockResolvedValue([
+          { startDate: new Date("2026-10-30T00:00:00.000Z"), endDate: new Date("2026-11-03T00:00:00.000Z"), worker: { id: "w-1", name: "Peter Bauer" } },
+        ]);
+
+        const result = await service.workloadHeatmap(COMPANY_A, new Date("2026-10-30"), new Date("2026-11-03"));
+
+        expect(result[0].days.map((d) => d.date)).toEqual(["2026-10-30", "2026-10-31", "2026-11-01", "2026-11-02", "2026-11-03"]);
+      } finally {
+        process.env.TZ = originalTz;
+      }
+    });
   });
 
   describe("createCrew()", () => {

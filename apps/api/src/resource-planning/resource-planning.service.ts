@@ -222,7 +222,10 @@ export class ResourcePlanningService {
 
       const start = a.startDate > from ? a.startDate : from;
       const end = a.endDate < to ? a.endDate : to;
-      for (let d = new Date(start); d.getTime() <= end.getTime(); d.setDate(d.getDate() + 1)) {
+      // Walk in UTC calendar days to match the toISOString() key below — stepping by local
+      // calendar day (setDate/getDate) would drift by an hour across a DST transition and could
+      // skip or double-count a day's key.
+      for (let d = new Date(start); d.getTime() <= end.getTime(); d.setUTCDate(d.getUTCDate() + 1)) {
         const key = d.toISOString().slice(0, 10);
         entry.days.set(key, (entry.days.get(key) ?? 0) + HOURS_PER_DAY);
       }

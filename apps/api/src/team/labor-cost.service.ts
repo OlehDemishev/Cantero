@@ -144,7 +144,8 @@ export class LaborCostService {
     return lines
       .map((line) => {
         const worker = workerById.get(line.workerId);
-        const rate = worker && worker.hourlyCost !== null ? Number(worker.hourlyCost) : (latestSnapshotByWorker.get(line.workerId) ?? null);
+        const snapshotRate = latestSnapshotByWorker.get(line.workerId);
+        const rate = snapshotRate !== undefined ? snapshotRate : worker && worker.hourlyCost !== null ? Number(worker.hourlyCost) : null;
         return { ...line, worker, rate };
       })
       .filter((line): line is typeof line & { worker: NonNullable<typeof line.worker> } => !!line.worker)

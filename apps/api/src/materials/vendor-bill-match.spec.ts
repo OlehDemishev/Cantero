@@ -46,6 +46,22 @@ describe("matchVendorBill()", () => {
     expect(result.status).toBe("matched");
   });
 
+  it("weighs multiple PO lines for the same material at different prices by their actual dollar totals, not just the last line's price", () => {
+    // Ordered: 5 @ $5 + 5 @ $7 = $60 total for 10 units ($6 weighted average).
+    // Billed exactly that total (10 @ $6 = $60) — should match with zero variance, not compare
+    // against $7 (the last PO line's price) times the full 10 units ($70).
+    const result = matchVendorBill(
+      [
+        { materialCatalogItemId: "m1", quantity: 5, unitPrice: 5 },
+        { materialCatalogItemId: "m1", quantity: 5, unitPrice: 7 },
+      ],
+      [{ materialCatalogItemId: "m1", quantity: 10, unitPrice: 6 }],
+    );
+    expect(result.status).toBe("matched");
+    expect(result.lines[0].orderedUnitPrice).toBe(6);
+    expect(result.lines[0].priceVariance).toBe(0);
+  });
+
   it("excludes a bill line with no materialCatalogItemId from the comparison", () => {
     const result = matchVendorBill(
       [{ materialCatalogItemId: "m1", quantity: 10, unitPrice: 5 }],

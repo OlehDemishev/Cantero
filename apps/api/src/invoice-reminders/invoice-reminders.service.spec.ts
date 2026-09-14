@@ -18,6 +18,7 @@ function invoiceOverdueBy(days: number, overrides: Record<string, unknown> = {})
     dueDate: new Date(Date.now() - days * DAY_MS),
     reminderCount: 0,
     client: { email: "client@example.com" },
+    payments: [],
     ...overrides,
   };
 }
@@ -122,6 +123,19 @@ describe("InvoiceRemindersService", () => {
     expect(result.sent).toBe(1);
     expect(mail.send).toHaveBeenCalledTimes(1);
     expect(mail.send.mock.calls[0][0].attachments).toBeUndefined();
+  });
+
+  it("quotes the remaining balance, not the original total, when the client has already made a partial payment", async () => {
+    prisma.company.findMany.mockResolvedValue([{ id: COMPANY_A, name: "Acme", currency: "EUR" }]);
+    prisma.invoice.findMany.mockResolvedValue([
+      invoiceOverdueBy(3, { total: "1500.00", currency: "EUR", payments: [{ amount: "500.00" }] }),
+    ]);
+
+    await service.runDuePass();
+
+    const { html, text } = mail.send.mock.calls[0][0];
+    expect(html).toContain("Amount due: <strong>1000 EUR</strong>");
+    expect(text).toContain("Amount due: 1000 EUR");
   });
 
   it("excludes an invoice that already received all 4 reminders, via the query filter", async () => {

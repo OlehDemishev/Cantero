@@ -160,6 +160,37 @@ describe("TimeOffService", () => {
       });
     });
 
+    it("counts business days by the UTC calendar date, not the server process's local timezone", async () => {
+      // The client always sends UTC-midnight timestamps (a date-only picker value run through
+      // toISOString()) — if the count were computed off local getDay()/setDate() instead of the
+      // UTC equivalents, a server running behind UTC (e.g. US timezones) would read every one of
+      // these dates as the previous calendar day and miscount weekdays vs. weekend.
+      const originalTz = process.env.TZ;
+      process.env.TZ = "America/Los_Angeles";
+      try {
+        // Monday 2026-06-01 through Friday 2026-06-05, UTC — 5 weekdays.
+        prisma.timeOffRequest.findFirst.mockResolvedValue({
+          id: "req-1",
+          status: "pending",
+          type: "vacation",
+          workerId: "worker-1",
+          startDate: new Date("2026-06-01T00:00:00.000Z"),
+          endDate: new Date("2026-06-05T00:00:00.000Z"),
+          worker: { name: "Sam" },
+        });
+        prisma.timeOffRequest.update.mockResolvedValue({ id: "req-1", status: "approved" });
+
+        await service.decide(COMPANY_A, ACTOR, "req-1", { approve: true });
+
+        expect(prisma.worker.update).toHaveBeenCalledWith({
+          where: { id: "worker-1" },
+          data: { ptoBalanceHours: { decrement: 40 } }, // 5 weekdays * 8h, regardless of local TZ
+        });
+      } finally {
+        process.env.TZ = originalTz;
+      }
+    });
+
     it("does not touch the PTO balance for a sick or unpaid request", async () => {
       prisma.timeOffRequest.findFirst.mockResolvedValue({
         id: "req-1",

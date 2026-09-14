@@ -171,6 +171,23 @@ describe("CompanyService — franchise linking", () => {
       expect(result.totals?.margin).toBe(8300);
     });
 
+    it("costs consumed materials at the movement's own recorded unitCost, not today's live catalog price", async () => {
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ id: COMPANY_A, currency: "EUR", reportingCurrency: null });
+      prisma.company.findMany.mockResolvedValue([{ id: "child-1", name: "Branch A", currency: "EUR" }]);
+      prisma.invoice.aggregate.mockResolvedValue({ _sum: { total: "10000" } });
+      prisma.project.count.mockResolvedValue(1);
+      prisma.membership.count.mockResolvedValue(1);
+      // Issued at $8/unit; the catalog price has since risen to $20 — the $8 actually charged
+      // at the time must be used, not a retroactive reprice at today's catalog value.
+      prisma.stockMovement.findMany.mockResolvedValue([{ quantity: "10", unitCost: "8.00", materialCatalogItem: { defaultUnitPrice: "20.00" } }]);
+      prisma.timeEntry.findMany.mockResolvedValue([]);
+      prisma.subcontractorCost.findMany.mockResolvedValue([]);
+
+      const result = await service.franchiseOverview(COMPANY_A);
+
+      expect(result.branches[0].materialsCost).toBe(80);
+    });
+
     it("converts each branch's revenue into the parent's reporting currency before summing", async () => {
       prisma.company.findUniqueOrThrow.mockResolvedValue({ id: COMPANY_A, currency: "EUR", reportingCurrency: null });
       prisma.company.findMany.mockResolvedValue([{ id: "child-1", name: "Branch USD", currency: "USD" }]);

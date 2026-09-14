@@ -15,8 +15,12 @@ export interface DepreciationResult {
   bookValue: number;
 }
 
+// UTC, not local calendar: purchaseDate/asOf arrive as UTC-midnight timestamps, and reading them
+// back with local getFullYear()/getMonth() on a server behind UTC misclassifies which month a
+// date near a month boundary falls in — e.g. an asset purchased Jan 1 and evaluated Jan 15 would
+// read as "1 month elapsed" instead of 0, overstating accumulated depreciation.
 function monthsBetween(from: Date, to: Date): number {
-  const months = (to.getFullYear() - from.getFullYear()) * 12 + (to.getMonth() - from.getMonth());
+  const months = (to.getUTCFullYear() - from.getUTCFullYear()) * 12 + (to.getUTCMonth() - from.getUTCMonth());
   return Math.max(0, months);
 }
 

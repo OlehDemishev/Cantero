@@ -518,6 +518,28 @@ describe("ReportsService.wipReport", () => {
     expect(result.rows[0].overUnderBilling).toBeLessThan(0);
   });
 
+  it("costs consumed materials at the movement's own recorded unitCost, not today's live catalog price", async () => {
+    // Issued a year ago at $8/unit; the catalog price has since risen to $20. Actual cost (and
+    // therefore earned revenue / billing status) must reflect what was actually charged at the
+    // time, not retroactively reprice history whenever the catalog changes.
+    prisma.project.findMany.mockResolvedValue([
+      {
+        id: "p1",
+        name: "Project",
+        estimates: [{ grandTotal: "10000", materialsCostTotal: "3000", laborCostTotal: "2000" }],
+        stockMovements: [{ quantity: "10", unitCost: "8.00", materialCatalogItem: { defaultUnitPrice: "20.00" } }],
+        timeEntries: [],
+        subcontractorCosts: [],
+        invoices: [{ total: "1000", percentComplete: null }],
+      },
+    ]);
+
+    const result = await service.wipReport(COMPANY_A);
+
+    // actualCost = 10 * 8 = 80 of a 5000 budgeted cost -> 1.6% complete, not 10*20=200 (4%).
+    expect(result.rows[0].percentComplete).toBeCloseTo(1.6, 5);
+  });
+
   it("sums per-project figures into company-wide totals", async () => {
     prisma.project.findMany.mockResolvedValue([
       {

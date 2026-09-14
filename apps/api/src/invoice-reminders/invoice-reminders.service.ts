@@ -74,7 +74,7 @@ export class InvoiceRemindersService implements OnModuleInit {
     const now = new Date();
     const overdue = await this.prisma.invoice.findMany({
       where: { companyId: company.id, status: "sent", dueDate: { lt: now }, reminderCount: { lt: CADENCE_DAYS.length } },
-      include: { client: true },
+      include: { client: true, payments: true },
     });
 
     let sent = 0;
@@ -96,12 +96,26 @@ export class InvoiceRemindersService implements OnModuleInit {
 
   private async sendReminder(
     company: { id: string; name: string; currency: string },
-    invoice: { id: string; number: string; total: unknown; currency: string; client: { email: string | null } },
+    invoice: {
+      id: string;
+      number: string;
+      total: unknown;
+      currency: string;
+      client: { email: string | null };
+      payments: { amount: unknown }[];
+    },
     toneIndex: number,
   ): Promise<void> {
     const { subject, body } = TONE[toneIndex](invoice.number);
     const webOrigin = this.config.get<string>("WEB_ORIGIN") ?? "http://localhost:3000";
     const link = `${webOrigin}/invoices/${invoice.id}`;
+
+    // A partial payment doesn't move status off "sent" (only paying in full does), so an
+    // overdue invoice reaching here may already have money applied to it — the reminder must
+    // ask for what's actually still owed, not restate the original total and risk the client
+    // overpaying or disputing an amount they've already partly settled.
+    const paidTotal = invoice.payments.reduce((sum, p) => sum + Number(p.amount), 0);
+    const balanceDue = Math.max(0, Number(invoice.total) - paidTotal);
 
     let pdf: Buffer | undefined;
     try {
@@ -113,8 +127,8 @@ export class InvoiceRemindersService implements OnModuleInit {
     await this.mail.send({
       to: invoice.client.email!,
       subject: `[${company.name}] ${subject}`,
-      html: `<div style="font-family:sans-serif;max-width:480px;"><h2 style="margin-bottom:4px;">${subject}</h2><p>${body}</p><p>Amount due: <strong>${invoice.total} ${invoice.currency}</strong></p><p style="margin-top:16px;"><a href="${link}">View invoice →</a></p></div>`,
-      text: `${subject}\n\n${body}\n\nAmount due: ${invoice.total} ${invoice.currency}\n\nView: ${link}`,
+      html: `<div style="font-family:sans-serif;max-width:480px;"><h2 style="margin-bottom:4px;">${subject}</h2><p>${body}</p><p>Amount due: <strong>${balanceDue} ${invoice.currency}</strong></p><p style="margin-top:16px;"><a href="${link}">View invoice →</a></p></div>`,
+      text: `${subject}\n\n${body}\n\nAmount due: ${balanceDue} ${invoice.currency}\n\nView: ${link}`,
       ...(pdf ? { attachments: [{ filename: `${invoice.number}.pdf`, content: pdf, contentType: "application/pdf" }] } : {}),
     });
   }

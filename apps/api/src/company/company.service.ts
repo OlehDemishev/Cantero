@@ -210,8 +210,12 @@ export class CompanyService {
       this.prisma.subcontractorCost.findMany({ where: { companyId } }),
     ]);
 
+    // Same "snapshot, don't let a later price change rewrite history" reasoning as
+    // hourlyCostSnapshot below: unitCost is what the costing engine actually charged this
+    // movement at the time — see StockMovement.unitCost's schema comment. Falling back to
+    // today's catalog price only for a movement that never got cost data at all.
     const materialsCost = consumptionMovements.reduce(
-      (sum, m) => sum + Number(m.quantity) * Number(m.materialCatalogItem.defaultUnitPrice),
+      (sum, m) => sum + Number(m.quantity) * (m.unitCost != null ? Number(m.unitCost) : Number(m.materialCatalogItem.defaultUnitPrice)),
       0,
     );
     const laborCost = timeEntries.reduce((sum, entry) => {

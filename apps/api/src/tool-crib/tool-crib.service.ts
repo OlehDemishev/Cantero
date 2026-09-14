@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import type { CheckInToolInput, CheckOutToolInput, CreateToolCribItemInput, RegisterToolCribUnitsInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
+import { runSerializable } from "../common/prisma/serializable-transaction";
 
 @Injectable()
 export class ToolCribService {
@@ -79,6 +80,11 @@ export class ToolCribService {
     });
   }
 
+  /** The availability check (unitId's status, or the non-serial-tracked quantityOnHand) and the
+   * write both happen inside one serializable transaction — otherwise two concurrent checkouts
+   * could each read the same "available" snapshot, both pass, and either double-assign the same
+   * unit or take quantityOnHand negative. Same TOCTOU concern StockService's costing guards
+   * against. */
   async checkOut(companyId: string, actor: AuditActor, itemId: string, input: CheckOutToolInput) {
     const item = await this.findItemOrThrow(companyId, itemId);
     const worker = await this.prisma.worker.findFirst({ where: { id: input.workerId, companyId } });
@@ -90,37 +96,41 @@ export class ToolCribService {
 
     if (item.serialTracked) {
       if (!input.unitId) throw new BadRequestException(`"${item.name}" is serial-tracked — a unitId is required to check it out`);
-      const unit = await this.prisma.toolCribUnit.findFirst({ where: { id: input.unitId, toolCribItemId: itemId, companyId } });
-      if (!unit) throw new NotFoundException("Unit not found");
-      if (unit.status !== "available") throw new BadRequestException(`Unit "${unit.serialNumber}" is not available (${unit.status})`);
 
-      const [checkout] = await this.prisma.$transaction([
-        this.prisma.toolCheckout.create({
+      const checkout = await runSerializable(this.prisma, async (tx) => {
+        const unit = await tx.toolCribUnit.findFirst({ where: { id: input.unitId, toolCribItemId: itemId, companyId } });
+        if (!unit) throw new NotFoundException("Unit not found");
+        if (unit.status !== "available") throw new BadRequestException(`Unit "${unit.serialNumber}" is not available (${unit.status})`);
+
+        const created = await tx.toolCheckout.create({
           data: { companyId, itemId, toolCribUnitId: unit.id, workerId: input.workerId, projectId: input.projectId, quantity: 1, notes: input.notes },
-        }),
-        this.prisma.toolCribUnit.update({ where: { id: unit.id }, data: { status: "checked_out" } }),
-        this.prisma.toolCribItem.update({ where: { id: itemId }, data: { quantityOnHand: { decrement: 1 } } }),
-      ]);
+        });
+        await tx.toolCribUnit.update({ where: { id: unit.id }, data: { status: "checked_out" } });
+        await tx.toolCribItem.update({ where: { id: itemId }, data: { quantityOnHand: { decrement: 1 } } });
+        return { ...created, unitSerialNumber: unit.serialNumber };
+      });
       this.audit.record(
         companyId,
         actor,
         "tool_checkout.created",
         "ToolCheckout",
         checkout.id,
-        `Checked out "${item.name}" unit ${unit.serialNumber} to ${worker.name}`,
+        `Checked out "${item.name}" unit ${checkout.unitSerialNumber} to ${worker.name}`,
       );
       return checkout;
     }
 
     const quantity = input.quantity ?? 1;
-    if (quantity > item.quantityOnHand) throw new BadRequestException(`Only ${item.quantityOnHand} on hand`);
+    const checkout = await runSerializable(this.prisma, async (tx) => {
+      const current = await tx.toolCribItem.findUniqueOrThrow({ where: { id: itemId } });
+      if (quantity > current.quantityOnHand) throw new BadRequestException(`Only ${current.quantityOnHand} on hand`);
 
-    const [checkout] = await this.prisma.$transaction([
-      this.prisma.toolCheckout.create({
+      const created = await tx.toolCheckout.create({
         data: { companyId, itemId, workerId: input.workerId, projectId: input.projectId, quantity, notes: input.notes },
-      }),
-      this.prisma.toolCribItem.update({ where: { id: itemId }, data: { quantityOnHand: { decrement: quantity } } }),
-    ]);
+      });
+      await tx.toolCribItem.update({ where: { id: itemId }, data: { quantityOnHand: { decrement: quantity } } });
+      return created;
+    });
     this.audit.record(companyId, actor, "tool_checkout.created", "ToolCheckout", checkout.id, `Checked out ${quantity} × "${item.name}" to ${worker.name}`);
     return checkout;
   }

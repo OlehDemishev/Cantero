@@ -187,7 +187,10 @@ export class ClientsService {
         unscheduled += deal.weightedValue;
         continue;
       }
-      const key = `${deal.expectedCloseDate.getFullYear()}-${String(deal.expectedCloseDate.getMonth() + 1).padStart(2, "0")}`;
+      // UTC, not local calendar: expectedCloseDate is a date-only value (UTC midnight) — reading
+      // it back with local getFullYear()/getMonth() on a server behind UTC would bucket a deal
+      // expected to close on the 1st into the previous month's forecast.
+      const key = `${deal.expectedCloseDate.getUTCFullYear()}-${String(deal.expectedCloseDate.getUTCMonth() + 1).padStart(2, "0")}`;
       byMonth.set(key, (byMonth.get(key) ?? 0) + deal.weightedValue);
     }
 

@@ -6,14 +6,17 @@ import { AuditService, type AuditActor } from "../common/audit/audit.service";
 const HOURS_PER_DAY = 8;
 
 /** Weekday count between two dates, inclusive of both ends — the simplest honest approximation
- * of "PTO days used" without a holiday calendar to subtract against. */
+ * of "PTO days used" without a holiday calendar to subtract against. start/end arrive as UTC
+ * midnight (the client sends a date-only picker value through `new Date(...).toISOString()`),
+ * so this must walk and classify days in UTC too — mixing in the server process's local calendar
+ * day (getDay()/setDate()) would shift every date by a day in any timezone behind UTC. */
 function businessDaysInclusive(start: Date, end: Date): number {
   let count = 0;
   const cursor = new Date(start);
   while (cursor <= end) {
-    const day = cursor.getDay();
+    const day = cursor.getUTCDay();
     if (day !== 0 && day !== 6) count++;
-    cursor.setDate(cursor.getDate() + 1);
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
   }
   return count;
 }
