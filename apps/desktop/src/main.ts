@@ -10,6 +10,12 @@ const APP_URL = process.env.CANTERO_APP_URL ?? "http://localhost:3000";
 
 let mainWindow: BrowserWindow | null = null;
 
+// electron-builder embeds the right icon into the packaged app/installer on its own (win.icon /
+// mac.icon in electron-builder.yml) — this is only for the BrowserWindow's own icon (window/
+// taskbar on Windows, ~unused on macOS) and the Dock icon while running unpackaged in dev, where
+// there's no app bundle yet to pull one from. .ico is a Windows format; macOS wants .icns.
+const ICON_PATH = path.join(__dirname, "..", "build", process.platform === "win32" ? "icon.ico" : "icon.icns");
+
 function isSameOrigin(url: string): boolean {
   try {
     return new URL(url).origin === new URL(APP_URL).origin;
@@ -25,7 +31,7 @@ function createWindow(): void {
     minWidth: 960,
     minHeight: 640,
     title: "Cantero",
-    icon: path.join(__dirname, "..", "build", "icon.ico"),
+    icon: ICON_PATH,
     backgroundColor: "#0b0f19",
     show: false,
     webPreferences: {
@@ -77,6 +83,10 @@ if (!gotSingleInstanceLock) {
   });
 
   app.whenReady().then(() => {
+    // Only meaningful unpackaged (dev): a packaged .app already carries its icon in the bundle
+    // itself. app.dock is undefined outside macOS.
+    if (!app.isPackaged) app.dock?.setIcon(ICON_PATH);
+
     Menu.setApplicationMenu(buildMenu());
     createWindow();
 
