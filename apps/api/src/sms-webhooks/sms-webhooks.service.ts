@@ -32,12 +32,18 @@ export class SmsWebhooksService {
     private readonly tasks: TasksService,
   ) {}
 
-  /** No TWILIO_AUTH_TOKEN configured (local dev by default) skips validation entirely — same
-   * graceful-degrade SmsService itself uses when Twilio isn't set up. */
+  /** Fails closed, not open: this gates an unauthenticated (@Public()) route that ends in a real
+   * write (TasksService.update() below), matched to a worker by phone number alone across every
+   * company on the platform — unlike SmsService's outbound send, which no-ops harmlessly when
+   * Twilio isn't configured, accepting inbound requests with nothing to verify them against would
+   * let anyone who knows a worker's phone number change that worker's task status with a plain
+   * HTTP POST, no real SMS or Twilio account involved. A missing TWILIO_AUTH_TOKEN or signature
+   * means "unverifiable", not "trusted" — a local dev/test setup that wants to exercise this path
+   * still can, by setting any TWILIO_AUTH_TOKEN value (it's only ever used as an HMAC key here,
+   * never to call Twilio's API) and computing a matching signature locally. */
   validateSignature(signature: string | undefined, url: string, params: Record<string, unknown>): boolean {
     const authToken = this.config.get<string>("TWILIO_AUTH_TOKEN");
-    if (!authToken) return true;
-    if (!signature) return false;
+    if (!authToken || !signature) return false;
     return Twilio.validateRequest(authToken, signature, url, params);
   }
 

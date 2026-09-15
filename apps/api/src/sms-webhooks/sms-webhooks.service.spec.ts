@@ -1,5 +1,6 @@
 import { Test } from "@nestjs/testing";
 import { ConfigService } from "@nestjs/config";
+import { getExpectedTwilioSignature } from "twilio";
 import { SmsWebhooksService } from "./sms-webhooks.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService } from "../common/audit/audit.service";
@@ -40,14 +41,34 @@ describe("SmsWebhooksService", () => {
   });
 
   describe("validateSignature()", () => {
-    it("passes validation when TWILIO_AUTH_TOKEN isn't configured (dev default)", () => {
+    it("fails closed when TWILIO_AUTH_TOKEN isn't configured, rather than accepting every unverifiable request", () => {
       config.get.mockReturnValue(undefined);
-      expect(service.validateSignature(undefined, "https://example.com/webhooks/sms/inbound", {})).toBe(true);
+      expect(service.validateSignature("some-signature", "https://example.com/webhooks/sms/inbound", {})).toBe(false);
+      expect(service.validateSignature(undefined, "https://example.com/webhooks/sms/inbound", {})).toBe(false);
     });
 
     it("rejects a missing signature header when a token is configured", () => {
       config.get.mockReturnValue("test-auth-token");
       expect(service.validateSignature(undefined, "https://example.com/webhooks/sms/inbound", {})).toBe(false);
+    });
+
+    it("accepts a signature that correctly HMACs the URL and params under the configured token", () => {
+      const authToken = "test-auth-token";
+      config.get.mockReturnValue(authToken);
+      const url = "https://example.com/webhooks/sms/inbound";
+      const params = { From: "+15550000000", Body: "done" };
+      const validSignature = getExpectedTwilioSignature(authToken, url, params);
+
+      expect(service.validateSignature(validSignature, url, params)).toBe(true);
+    });
+
+    it("rejects a signature computed under the wrong token", () => {
+      config.get.mockReturnValue("test-auth-token");
+      const url = "https://example.com/webhooks/sms/inbound";
+      const params = { From: "+15550000000", Body: "done" };
+      const wrongSignature = getExpectedTwilioSignature("a-different-token", url, params);
+
+      expect(service.validateSignature(wrongSignature, url, params)).toBe(false);
     });
   });
 
