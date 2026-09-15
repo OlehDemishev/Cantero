@@ -36,7 +36,14 @@ cd "$REPO_ROOT"
 RETENTION_COUNT=14
 TIMESTAMP=$(date +%Y-%m-%d_%H%M%S)
 FILENAME="cantero-${POSTGRES_DB}-${TIMESTAMP}.sql.gz"
-TMP_PATH="/tmp/${FILENAME}"
+# Dump to an uncompressed temp file first, then gzip it as a separate step, rather than piping
+# pg_dump straight into gzip: under /bin/sh (dash on Debian, what this script actually runs
+# under), `set -e` does NOT abort on a failing command in the middle of a pipeline — only the
+# pipeline's last stage (gzip, which happily "succeeds" compressing empty/partial input) decides
+# the exit status. A pg_dump failure (auth error, container not up, wrong DB name) would otherwise
+# go unnoticed and a broken or empty backup would still get uploaded to S3 as if nothing were wrong.
+TMP_SQL="/tmp/cantero-${POSTGRES_DB}-${TIMESTAMP}.sql"
+TMP_GZ="${TMP_SQL}.gz"
 
 s3() {
   AWS_ACCESS_KEY_ID="${S3_ACCESS_KEY_ID:-}" AWS_SECRET_ACCESS_KEY="${S3_SECRET_ACCESS_KEY:-}" \
@@ -44,11 +51,14 @@ s3() {
 }
 
 echo "[$(date -Iseconds)] Dumping ${POSTGRES_DB}..."
-docker compose -f docker-compose.prod.yml exec -T postgres pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" | gzip > "$TMP_PATH"
+docker compose -f docker-compose.prod.yml exec -T postgres pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" > "$TMP_SQL"
+
+echo "[$(date -Iseconds)] Compressing..."
+gzip "$TMP_SQL"
 
 echo "[$(date -Iseconds)] Uploading to s3://${S3_BUCKET}/backups/${FILENAME}..."
-s3 cp "$TMP_PATH" "s3://${S3_BUCKET}/backups/${FILENAME}"
-rm -f "$TMP_PATH"
+s3 cp "$TMP_GZ" "s3://${S3_BUCKET}/backups/${FILENAME}"
+rm -f "$TMP_GZ"
 
 echo "[$(date -Iseconds)] Pruning backups beyond the last ${RETENTION_COUNT}..."
 s3 ls "s3://${S3_BUCKET}/backups/" | awk '{print $4}' | grep '^cantero-' | sort | head -n "-${RETENTION_COUNT}" | while read -r old; do
