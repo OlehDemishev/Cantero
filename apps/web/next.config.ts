@@ -70,10 +70,10 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname, "../../"),
   outputFileTracingIncludes: {
     "/*": [
-      // i18n/request.ts loads locale files via a dynamic `import(`./messages/${locale}.json`)`,
-      // which the tracer can't resolve on its own — spell it out so a locale file isn't
-      // silently missing from the standalone output.
-      "./i18n/messages/**/*.json",
+      // i18n/request.ts loads the locale catalogs out of packages/shared (the mobile client reads
+      // the same files). They're behind per-locale dynamic imports, so keep spelling them out
+      // rather than trusting the tracer — a missed one is a silently untranslated deployment.
+      "../../packages/shared/messages/**/*.json",
       // Confirmed by actually running a built standalone image: the tracer copies next's own
       // nested `@swc/helpers` (pnpm hoists/dedupes it under next's own hashed .pnpm entry) but
       // drops its `esm/` subfolder, which next's require-hook needs at startup —

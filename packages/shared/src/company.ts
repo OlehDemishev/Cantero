@@ -9,6 +9,10 @@ export type Currency = (typeof SUPPORTED_CURRENCIES)[number];
 export const SUPPORTED_LOCALES = ["en", "de", "es", "pl", "uk"] as const;
 export type Locale = (typeof SUPPORTED_LOCALES)[number];
 
+/** Fallback when no locale has been chosen yet, and the language the message catalogs in
+ * packages/shared/messages are authored in. */
+export const DEFAULT_LOCALE: Locale = "en";
+
 export const companySettingsSchema = z.object({
   unitSystem: z.enum(UNIT_SYSTEMS),
   currency: z.enum(SUPPORTED_CURRENCIES),
