@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "Cantero Field",
+    "slug": "cantero-field",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "cantero",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.cantero.field"
+    },
+    "android": {
+      "package": "com.cantero.field",
+      "edgeToEdgeEnabled": true
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-status-bar",
+      "expo-localization",
+      "expo-sqlite",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Cantero Field records where you log working time, so it can be checked against the project site's boundary."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
