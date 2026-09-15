@@ -92,7 +92,7 @@ export default function DocumentsPage() {
       <h1 className="text-2xl font-semibold">{t("title")}</h1>
 
       <div className="mt-6 flex flex-wrap items-end gap-3">
-        <label className="text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {t("category")}
           <select
             className="input mt-1 w-auto"
@@ -107,7 +107,7 @@ export default function DocumentsPage() {
             ))}
           </select>
         </label>
-        <label className="text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {tc("name")}
           <input className="input mt-1" placeholder={t("searchPlaceholder")} value={search} onChange={(e) => setSearch(e.target.value)} />
         </label>
@@ -177,7 +177,7 @@ export default function DocumentsPage() {
       <div className="card mt-8">
         <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("uploadNew")}</h2>
         <div className="flex flex-wrap items-end gap-3">
-          <label className="text-xs text-gray-500 dark:text-gray-400">
+          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
             {t("category")}
             <select
               className="input mt-1 w-auto"
@@ -191,7 +191,7 @@ export default function DocumentsPage() {
               ))}
             </select>
           </label>
-          <label className="text-xs text-gray-500 dark:text-gray-400">
+          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
             {t("project")}
             <select className="input mt-1 w-auto" value={uploadProjectId} onChange={(e) => setUploadProjectId(e.target.value)}>
               <option value="">{t("noProject")}</option>

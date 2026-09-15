@@ -140,7 +140,7 @@ export default function BenefitsPage() {
                 </option>
               ))}
             </select>
-            <label className="text-xs text-gray-500 dark:text-gray-400">
+            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
               {t("effectiveDate")}
               <input
                 required

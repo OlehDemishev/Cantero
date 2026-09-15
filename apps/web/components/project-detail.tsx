@@ -307,7 +307,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
               <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("newEstimate")}</h2>
               <form onSubmit={handleSubmit} className="flex flex-col gap-3">
                 {templates.length > 0 && (
-                  <label className="text-xs text-gray-500 dark:text-gray-400">
+                  <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
                     {t("startFromTemplate")}
                     <select
                       className="input mt-1"
@@ -330,7 +330,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                 />
-                <label className="text-xs text-gray-500 dark:text-gray-400">
+                <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
                   {t("laborRate")} ({me?.company.currency})
                   <input
                     required
@@ -341,7 +341,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
                     onChange={(e) => setForm((f) => ({ ...f, laborRatePerHour: e.target.value }))}
                   />
                 </label>
-                <label className="text-xs text-gray-500 dark:text-gray-400">
+                <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
                   {t("markup")}
                   <input
                     required
@@ -352,7 +352,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
                     onChange={(e) => setForm((f) => ({ ...f, markupPercent: e.target.value }))}
                   />
                 </label>
-                <label className="text-xs text-gray-500 dark:text-gray-400">
+                <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
                   {t("tax")}
                   <input
                     required

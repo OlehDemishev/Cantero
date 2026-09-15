@@ -17,6 +17,7 @@ import { invoiceSentEmail } from "../common/mail/client-mail-templates";
 import { ExchangeRateService } from "../common/exchange-rate/exchange-rate.service";
 import { calculateFxSettlement } from "./fx-settlement";
 import { createInvoiceWithNumber } from "./invoice-numbering";
+import { runSerializable } from "../common/prisma/serializable-transaction";
 
 @Injectable()
 export class InvoicesService {
@@ -68,9 +69,10 @@ export class InvoicesService {
       lastLateFeeAccrualAt: Date | null;
       payments: { amount: unknown }[];
     },
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
   ): Promise<number> {
     if (invoice.status !== "sent" || !invoice.dueDate) return 0;
-    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId }, select: { lateFeePercentPerMonth: true } });
+    const company = await tx.company.findUniqueOrThrow({ where: { id: companyId }, select: { lateFeePercentPerMonth: true } });
     if (!company.lateFeePercentPerMonth) return 0;
 
     const paid = invoice.payments.reduce((sum, p) => sum + Number(p.amount), 0);
@@ -82,23 +84,35 @@ export class InvoicesService {
 
   /** Locks in the currently-accrued late fee as a real InvoiceLine, so it actually gets billed —
    * chargeable again later as more time passes, each time adding only the newly-accrued portion
-   * since this charge. */
+   * since this charge. The read (accrual computation) and the two writes (line + invoice update)
+   * all run inside one serializable transaction — otherwise two concurrent charge requests could
+   * each read the same "accrued so far" snapshot, both pass the > 0 check, and both post a line,
+   * double-charging the fee. */
   async chargeLateFee(companyId: string, actor: AuditActor, id: string) {
-    const invoice = await this.findOrThrow(companyId, id);
-    const accrued = await this.computeLateFeeAccrued(companyId, invoice);
-    if (accrued <= 0) {
-      throw new BadRequestException("No late fee has accrued on this invoice");
-    }
+    const { updated, invoiceNumber, accrued } = await runSerializable(this.prisma, async (tx) => {
+      const invoice = await tx.invoice.findFirst({
+        where: { id, companyId },
+        include: { lines: true, client: true, project: true, payments: true, installments: { orderBy: { sortOrder: "asc" } } },
+      });
+      if (!invoice) throw new NotFoundException("Invoice not found");
 
-    await this.prisma.invoiceLine.create({
-      data: { invoiceId: id, description: "Late fee", quantity: 1, unitPrice: accrued, lineTotal: accrued },
+      const accrued = await this.computeLateFeeAccrued(companyId, invoice, tx);
+      if (accrued <= 0) {
+        throw new BadRequestException("No late fee has accrued on this invoice");
+      }
+
+      await tx.invoiceLine.create({
+        data: { invoiceId: id, description: "Late fee", quantity: 1, unitPrice: accrued, lineTotal: accrued },
+      });
+      const updated = await tx.invoice.update({
+        where: { id },
+        data: { total: { increment: accrued }, lateFeeChargedTotal: { increment: accrued }, lastLateFeeAccrualAt: new Date() },
+        include: { lines: true, client: true, project: true, payments: true, installments: true },
+      });
+      return { updated, invoiceNumber: invoice.number, accrued };
     });
-    const updated = await this.prisma.invoice.update({
-      where: { id },
-      data: { total: { increment: accrued }, lateFeeChargedTotal: { increment: accrued }, lastLateFeeAccrualAt: new Date() },
-      include: { lines: true, client: true, project: true, payments: true, installments: true },
-    });
-    this.audit.record(companyId, actor, "invoice.late_fee_charged", "Invoice", id, `Charged a ${accrued} late fee on invoice ${invoice.number}`);
+
+    this.audit.record(companyId, actor, "invoice.late_fee_charged", "Invoice", id, `Charged a ${accrued} late fee on invoice ${invoiceNumber}`);
     return updated;
   }
 

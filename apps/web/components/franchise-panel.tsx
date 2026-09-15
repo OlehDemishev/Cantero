@@ -142,7 +142,7 @@ export function FranchisePanel() {
             )}
           </div>
           <form onSubmit={linkToParentCompany} className="flex items-end gap-2">
-            <label className="text-xs text-gray-500 dark:text-gray-400">
+            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
               {t("linkToParentCode")}
               <input
                 type="text"

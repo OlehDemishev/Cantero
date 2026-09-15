@@ -149,7 +149,7 @@ export function WorkerProfilePanel({ workerId, currency, onChanged }: { workerId
           value={form.role}
           onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
         />
-        <label className="text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {t("hourlyCost")} ({currency})
           <input
             type="number"
@@ -159,7 +159,7 @@ export function WorkerProfilePanel({ workerId, currency, onChanged }: { workerId
             onChange={(e) => setForm((f) => ({ ...f, hourlyCost: e.target.value }))}
           />
         </label>
-        <label className="text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {t("payrollEmployeeId")}
           <input
             placeholder={t("payrollEmployeeIdPlaceholder")}
@@ -168,7 +168,7 @@ export function WorkerProfilePanel({ workerId, currency, onChanged }: { workerId
             onChange={(e) => setForm((f) => ({ ...f, payrollEmployeeId: e.target.value }))}
           />
         </label>
-        <label className="text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {t("wageClassification")}
           <select
             className="input mt-1"
@@ -187,7 +187,7 @@ export function WorkerProfilePanel({ workerId, currency, onChanged }: { workerId
           <input type="checkbox" checked={form.isApprentice} onChange={(e) => setForm((f) => ({ ...f, isApprentice: e.target.checked }))} />
           {t("isApprentice")}
         </label>
-        <label className="text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {t("phone")}
           <input
             type="tel"
@@ -197,7 +197,7 @@ export function WorkerProfilePanel({ workerId, currency, onChanged }: { workerId
             onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
           />
         </label>
-        <label className="text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {t("preferredLocale")}
           <select
             className="input mt-1"

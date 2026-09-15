@@ -53,7 +53,7 @@ export function RevisionDiffPanel({ estimateId, revisions, currency }: { estimat
     <div className="mt-6 border-t border-gray-100 dark:border-gray-700 pt-4">
       <h3 className="mb-2 text-xs font-semibold text-gray-500 dark:text-gray-400">{t("compareRevisions")}</h3>
       <div className="flex flex-wrap items-end gap-2">
-        <label className="text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {t("from")}
           <select className="input mt-1" value={fromId} onChange={(e) => setFromId(e.target.value)}>
             {revisions.map((r) => (
@@ -63,7 +63,7 @@ export function RevisionDiffPanel({ estimateId, revisions, currency }: { estimat
             ))}
           </select>
         </label>
-        <label className="text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {t("to")}
           <select className="input mt-1" value={toId} onChange={(e) => setToId(e.target.value)}>
             {revisions.map((r) => (

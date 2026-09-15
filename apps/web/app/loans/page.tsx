@@ -201,7 +201,7 @@ export default function LoansPage() {
               onChange={(e) => setForm((f) => ({ ...f, termMonths: e.target.value }))}
             />
           </div>
-          <label className="text-xs text-gray-500 dark:text-gray-400">
+          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
             {t("startDate")}
             <input required type="date" className="input mt-1" value={form.startDate} onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))} />
           </label>

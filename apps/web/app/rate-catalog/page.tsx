@@ -342,7 +342,7 @@ export default function RateCatalogPage() {
               value={form.unit}
               onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}
             />
-            <label className="text-xs text-gray-500 dark:text-gray-400">
+            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
               {t("laborHours")}
               <input
                 required
@@ -353,7 +353,7 @@ export default function RateCatalogPage() {
                 onChange={(e) => setForm((f) => ({ ...f, laborHoursPerUnit: e.target.value }))}
               />
             </label>
-            <label className="text-xs text-gray-500 dark:text-gray-400">
+            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
               {t("catalog")}
               <select
                 className="input mt-1"
@@ -369,7 +369,7 @@ export default function RateCatalogPage() {
               </select>
             </label>
 
-            <label className="text-xs text-gray-500 dark:text-gray-400">
+            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
               {t("formula")}
               <input
                 placeholder={t("formulaPlaceholder")}
@@ -379,7 +379,7 @@ export default function RateCatalogPage() {
               />
             </label>
             {form.formula && (
-              <label className="text-xs text-gray-500 dark:text-gray-400">
+              <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
                 {t("formulaParams")}
                 <input
                   placeholder={t("formulaParamsPlaceholder")}

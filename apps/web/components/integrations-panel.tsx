@@ -74,7 +74,7 @@ export function IntegrationsPanel({ canManage }: { canManage: boolean }) {
       {!canManage && <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("managerOnlyHint")}</p>}
 
       <form onSubmit={save} className="flex flex-col gap-3">
-        <label className="text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {t("slackWebhookUrl")}
           <input
             type="url"
@@ -85,7 +85,7 @@ export function IntegrationsPanel({ canManage }: { canManage: boolean }) {
             disabled={!canManage}
           />
         </label>
-        <label className="text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {t("teamsWebhookUrl")}
           <input
             type="url"
@@ -96,7 +96,7 @@ export function IntegrationsPanel({ canManage }: { canManage: boolean }) {
             disabled={!canManage}
           />
         </label>
-        <label className="text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {t("ipAllowlist")}
           <span className="mt-0.5 block text-gray-400 dark:text-gray-500">{t("ipAllowlistHint")}</span>
           <textarea

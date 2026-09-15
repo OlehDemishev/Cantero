@@ -110,7 +110,7 @@ export default function ServiceContractDetailPage({ params }: { params: Promise<
         <div className="card lg:col-span-1">
           <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("scheduleVisit")}</h2>
           <form onSubmit={scheduleVisit} className="flex flex-col gap-3">
-            <label className="text-xs text-gray-500 dark:text-gray-400">
+            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
               {t("visitDate")}
               <input
                 required

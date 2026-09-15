@@ -268,7 +268,7 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
       {!isManager && <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("companySettingsManagerOnlyHint")}</p>}
       {error && <p className="mb-3 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{error}</p>}
       <form onSubmit={saveCompany} className="flex flex-col gap-3">
-        <label className="text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {t("companyName")}
           <input
             required
@@ -278,7 +278,7 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
             disabled={!isManager}
           />
         </label>
-        <label className="text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {t("language")}
           <select
             className="input mt-1"
@@ -769,7 +769,7 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
         <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("brandingHint")}</p>
         {logoError && <p className="mb-3 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{logoError}</p>}
         <div className="flex flex-col gap-3">
-          <label className="text-xs text-gray-500 dark:text-gray-400">
+          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
             {t("brandColor")}
             <div className="mt-1 flex items-center gap-2">
               <input

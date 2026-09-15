@@ -102,7 +102,7 @@ export function TwoFactorSettingsPanel() {
         <form onSubmit={confirmEnable} className="flex flex-col gap-2">
           <p className="text-xs text-gray-600 dark:text-gray-300">{t("scanHint")}</p>
           <p className="break-all rounded bg-gray-50 dark:bg-gray-700 p-2 font-mono text-xs">{setupData.secret}</p>
-          <label className="text-xs text-gray-500 dark:text-gray-400">
+          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
             {t("codeLabel")}
             <input
               required
@@ -120,7 +120,7 @@ export function TwoFactorSettingsPanel() {
 
       {isEnabled && (
         <form onSubmit={disable} className="flex items-end gap-2">
-          <label className="text-xs text-gray-500 dark:text-gray-400">
+          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
             {t("passwordToDisable")}
             <input
               required

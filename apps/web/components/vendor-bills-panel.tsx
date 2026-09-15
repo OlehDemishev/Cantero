@@ -224,7 +224,7 @@ export function VendorBillsPanel() {
                 value={billNumber}
                 onChange={(e) => setBillNumber(e.target.value)}
               />
-              <label className="text-xs text-gray-500 dark:text-gray-400">
+              <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
                 {t("dueDate")}
                 <input type="date" className="input mt-1" value={billDueDate} onChange={(e) => setBillDueDate(e.target.value)} />
               </label>

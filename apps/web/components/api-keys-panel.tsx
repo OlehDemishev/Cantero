@@ -138,7 +138,7 @@ export function ApiKeysPanel() {
             value={newKeyName}
             onChange={(e) => setNewKeyName(e.target.value)}
           />
-          <label className="text-xs text-gray-500 dark:text-gray-400">
+          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
             {t("apiKeyExpires")}
             <input
               type="date"

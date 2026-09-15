@@ -483,7 +483,7 @@ export default function PortalDashboardPage() {
             <p className="text-sm text-gray-400 dark:text-gray-500">{t("noProjectsUnderWarranty")}</p>
           ) : (
             <form onSubmit={submitClaim} className="flex flex-col gap-2">
-              <label className="text-xs text-gray-500 dark:text-gray-400">
+              <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
                 {t("project")}
                 <select
                   className="input mt-1"
@@ -566,7 +566,7 @@ export default function PortalDashboardPage() {
             <p className="text-sm text-gray-400 dark:text-gray-500">{t("noProjects")}</p>
           ) : (
             <form onSubmit={submitChangeRequest} className="flex flex-col gap-2">
-              <label className="text-xs text-gray-500 dark:text-gray-400">
+              <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
                 {t("project")}
                 <select
                   className="input mt-1"

@@ -183,6 +183,25 @@ describe("InvoicesService — late fees & payment terms", () => {
         expect.objectContaining({ data: expect.objectContaining({ unitPrice: 10, lineTotal: 10 }) }),
       );
     });
+
+    it("reads the invoice and posts the fee inside one serializable transaction, closing the race where two concurrent charges could each read the same accrued snapshot and double-post", async () => {
+      prisma.invoice.findFirst.mockResolvedValue({
+        id: "inv-1",
+        number: "INV-0001",
+        status: "sent",
+        dueDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+        total: 1000,
+        lateFeeChargedTotal: 0,
+        lastLateFeeAccrualAt: null,
+        payments: [],
+      });
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ lateFeePercentPerMonth: 1.5 });
+      prisma.invoice.update.mockResolvedValue({ id: "inv-1", total: 1015 });
+
+      await service.chargeLateFee(COMPANY_A, ACTOR, "inv-1");
+
+      expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), { isolationLevel: "Serializable" });
+    });
   });
 
   describe("generateProgressInvoice() — void draws don't count as the last draw", () => {

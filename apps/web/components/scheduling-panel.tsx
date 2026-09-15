@@ -275,7 +275,7 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
           value={taskForm.name}
           onChange={(e) => setTaskForm((f) => ({ ...f, name: e.target.value }))}
         />
-        <label className="text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {t("startDate")}
           <input
             type="date"
@@ -284,7 +284,7 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
             onChange={(e) => setTaskForm((f) => ({ ...f, startDate: e.target.value }))}
           />
         </label>
-        <label className="text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {t("dueDate")}
           <input
             type="date"

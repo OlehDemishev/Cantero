@@ -149,7 +149,7 @@ export function ClientDealPanel({
             </option>
           ))}
         </select>
-        <label className="text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {t("probability")}
           <input
             type="number"
@@ -161,7 +161,7 @@ export function ClientDealPanel({
             onChange={(e) => setDealForm((f) => ({ ...f, probability: e.target.value }))}
           />
         </label>
-        <label className="text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {t("expectedCloseDate")}
           <input
             type="date"
@@ -170,7 +170,7 @@ export function ClientDealPanel({
             onChange={(e) => setDealForm((f) => ({ ...f, expectedCloseDate: e.target.value }))}
           />
         </label>
-        <label className="text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {t("source")}
           <input
             className="input mt-1"
@@ -179,7 +179,7 @@ export function ClientDealPanel({
             onChange={(e) => setDealForm((f) => ({ ...f, source: e.target.value }))}
           />
         </label>
-        <label className="text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {t("campaign")}
           <select
             className="input mt-1"
@@ -194,7 +194,7 @@ export function ClientDealPanel({
             ))}
           </select>
         </label>
-        <label className="text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {t("referredBy")}
           <select
             className="input mt-1"

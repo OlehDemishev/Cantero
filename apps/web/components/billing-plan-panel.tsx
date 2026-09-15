@@ -117,7 +117,7 @@ export function BillingPlanPanel({ isManager }: { isManager: boolean }) {
 
       {isManager && (
         <form onSubmit={updateSeats} className="mt-4 flex items-end gap-2">
-          <label className="text-xs text-gray-500 dark:text-gray-400">
+          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
             {t("seats")}
             <input
               type="number"
