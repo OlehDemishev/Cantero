@@ -1,0 +1,21 @@
+{
+  "name": "@cantero/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Electron desktop shell for the Cantero web app.",
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "tsc -p tsconfig.json && electron .",
+    "build": "tsc -p tsconfig.json",
+    "dist:win": "pnpm build && electron-builder --win"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "electron": "^44.3.0",
+    "electron-builder": "^26.15.3",
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
+  }
+}

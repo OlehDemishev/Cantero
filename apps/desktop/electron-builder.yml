@@ -1,0 +1,26 @@
+appId: dev.cantero.desktop
+productName: Cantero
+directories:
+  output: release
+files:
+  - dist/**/*
+  - package.json
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: build/icon.ico
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+
+# No update feed configured yet (electron-updater in src/main.ts is wired up but has nothing to
+# check against) — set this to a real provider (e.g. `github`, or `generic` with a `url`) once
+# there's an actual place to publish releases, then electron-builder will also emit the
+# latest.yml metadata electron-updater needs.
+publish: null
