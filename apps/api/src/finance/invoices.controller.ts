@@ -191,6 +191,7 @@ export class InvoicesController {
     return xml;
   }
 
+  @Roles("owner", "admin", "accountant")
   @Post(":id/peppol/send")
   async sendPeppol(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     await this.service.sendPeppolInvoice(user.companyId, id);

@@ -25,8 +25,19 @@ export function formatDatevDate(d: Date): string {
   return `${dd}${mm}${yyyy}`;
 }
 
+/**
+ * Quotes a text field, and neutralizes CSV/spreadsheet formula injection (CWE-1236): Buchungstext
+ * and Belegfeld 1 carry free-form user data (client/subcontractor names, invoice numbers) that
+ * DATEV itself only ever reads as literal text, but an accountant sanity-checking the export by
+ * opening it in Excel/LibreOffice/Google Sheets would have a value like `=1+1` or a
+ * `=cmd|'/c calc'!A1`-style payload executed as a formula. Prefixing a leading =, +, -, @, or
+ * tab/CR with a single quote is the standard mitigation — spreadsheet apps treat a leading `'` as
+ * a plain-text marker (not itself displayed), and it's just another harmless literal character to
+ * a real DATEV importer, which doesn't interpret this column as a formula at all.
+ */
 function quoted(value: string): string {
-  return `"${value.replace(/"/g, '""')}"`;
+  const safe = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+  return `"${safe.replace(/"/g, '""')}"`;
 }
 
 export interface DatevHeaderInput {

@@ -128,6 +128,43 @@ describe("buildDatevPostingRow", () => {
     });
     expect(row).toContain('"Client ""The Big One"" GmbH"');
   });
+
+  it("neutralizes a leading formula-trigger character in a text field (CSV/spreadsheet injection)", () => {
+    const row = buildDatevPostingRow({
+      amount: 100,
+      konto: "10001",
+      gegenkonto: "8400",
+      belegdatum: new Date("2026-08-31"),
+      belegfeld1: "INV-1",
+      buchungstext: "=cmd|'/c calc'!A1",
+    });
+    expect(row).toContain("\"'=cmd|'/c calc'!A1\"");
+  });
+
+  it.each(["=", "+", "-", "@", "\t", "\r"])("neutralizes a value starting with %j", (prefix) => {
+    const row = buildDatevPostingRow({
+      amount: 100,
+      konto: "10001",
+      gegenkonto: "8400",
+      belegdatum: new Date("2026-08-31"),
+      belegfeld1: "INV-1",
+      buchungstext: `${prefix}1+1`,
+    });
+    const buchungstextField = row.split(";")[13];
+    expect(buchungstextField.startsWith(`"'${prefix}`)).toBe(true);
+  });
+
+  it("leaves an ordinary value (no formula-trigger prefix) unchanged", () => {
+    const row = buildDatevPostingRow({
+      amount: 100,
+      konto: "10001",
+      gegenkonto: "8400",
+      belegdatum: new Date("2026-08-31"),
+      belegfeld1: "INV-1",
+      buchungstext: "Bauherr Schmidt",
+    });
+    expect(row).toContain('"Bauherr Schmidt"');
+  });
 });
 
 describe("buildDatevBuchungsstapelCsv", () => {
