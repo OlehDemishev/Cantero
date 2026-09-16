@@ -14,6 +14,7 @@ describe("PurchaseOrdersService", () => {
     purchaseOrder: { findFirst: jest.Mock; update: jest.Mock };
     purchaseOrderLine: { findMany: jest.Mock; update: jest.Mock };
     receivingDiscrepancy: { create: jest.Mock; findFirst: jest.Mock; update: jest.Mock; findMany: jest.Mock };
+    unitOfMeasure: { findUniqueOrThrow: jest.Mock };
   };
   let stockService: { recordMovement: jest.Mock };
 
@@ -22,6 +23,7 @@ describe("PurchaseOrdersService", () => {
       purchaseOrder: { findFirst: jest.fn(), update: jest.fn() },
       purchaseOrderLine: { findMany: jest.fn(), update: jest.fn() },
       receivingDiscrepancy: { create: jest.fn(), findFirst: jest.fn(), update: jest.fn(), findMany: jest.fn() },
+      unitOfMeasure: { findUniqueOrThrow: jest.fn() },
     };
     stockService = { recordMovement: jest.fn() };
 
@@ -46,6 +48,9 @@ describe("PurchaseOrdersService", () => {
         materialCatalogItemId: "mat-1",
         quantity: overrides.quantity ?? 10,
         quantityReceived: overrides.quantityReceived ?? 0,
+        // purchaseUnitId null (the common case) — toStockQuantity() is then a no-op and never
+        // touches prisma.unitOfMeasure, which this suite doesn't mock.
+        materialCatalogItem: { id: "mat-1", unitId: "unit-ea", purchaseUnitId: null as string | null },
       },
     ],
   });
@@ -127,6 +132,31 @@ describe("PurchaseOrdersService", () => {
       const updateCall = prisma.purchaseOrder.update.mock.calls[0][0];
       expect(updateCall.data.status).toBe("received");
       expect(updateCall.data.receivedAt).toBeInstanceOf(Date);
+    });
+
+    it("converts a received quantity from the material's purchase unit to its stock unit before crediting stock", async () => {
+      const po = poWithLine({ quantity: 10 });
+      // ordered/stocked by the each, but this material is purchased by the box of 12
+      po.lines[0].materialCatalogItem = { id: "mat-1", unitId: "unit-ea", purchaseUnitId: "unit-box12" };
+      prisma.purchaseOrder.findFirst.mockResolvedValue(po);
+      prisma.purchaseOrderLine.findMany.mockResolvedValue([{ id: "line-1", quantity: 10, quantityReceived: 3 }]);
+      prisma.purchaseOrder.update.mockResolvedValue({ id: "po-1", status: "partially_received" });
+      prisma.unitOfMeasure.findUniqueOrThrow
+        .mockResolvedValueOnce({ id: "unit-ea", baseUnitId: null, factorToBase: null })
+        .mockResolvedValueOnce({ id: "unit-box12", baseUnitId: "unit-ea", factorToBase: 12 });
+
+      // received 3 boxes -> 36 each credited to stock
+      await service.receiveShipment(COMPANY_A, ACTOR, "po-1", {
+        warehouseId: "wh-1",
+        lines: [{ lineId: "line-1", quantityReceived: 3 }],
+      });
+
+      expect(stockService.recordMovement).toHaveBeenCalledWith(COMPANY_A, {
+        warehouseId: "wh-1",
+        materialCatalogItemId: "mat-1",
+        type: "receipt",
+        quantity: 36,
+      });
     });
   });
 

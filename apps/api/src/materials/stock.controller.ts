@@ -2,12 +2,14 @@ import { Body, Controller, Get, Post, Query } from "@nestjs/common";
 import {
   issueFromEstimateSchema,
   recordStockMovementSchema,
+  setBinLocationRefSchema,
   setBinLocationSchema,
   transferStockSchema,
   type AuthUser,
   type IssueFromEstimateInput,
   type RecordStockMovementInput,
   type SetBinLocationInput,
+  type SetBinLocationRefInput,
   type TransferStockInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
@@ -33,6 +35,11 @@ export class StockController {
     return this.service.inventoryValuation(user.companyId, warehouseId);
   }
 
+  @Get("standard-cost-variance")
+  standardCostVariance(@CurrentUser() user: AuthUser, @Query("warehouseId") warehouseId?: string) {
+    return this.service.standardCostVariance(user.companyId, warehouseId);
+  }
+
   @Get("lots")
   lots(
     @CurrentUser() user: AuthUser,
@@ -40,6 +47,15 @@ export class StockController {
     @Query("materialCatalogItemId") materialCatalogItemId?: string,
   ) {
     return this.service.listLots(user.companyId, warehouseId, materialCatalogItemId);
+  }
+
+  @Get("serial-units")
+  serialUnits(
+    @CurrentUser() user: AuthUser,
+    @Query("warehouseId") warehouseId?: string,
+    @Query("materialCatalogItemId") materialCatalogItemId?: string,
+  ) {
+    return this.service.listSerialUnits(user.companyId, warehouseId, materialCatalogItemId);
   }
 
   @Post("movements")
@@ -69,5 +85,10 @@ export class StockController {
   @Post("bin-location")
   setBinLocation(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(setBinLocationSchema)) body: SetBinLocationInput) {
     return this.service.setBinLocation(user.companyId, body);
+  }
+
+  @Post("bin-location-ref")
+  setBinLocationRef(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(setBinLocationRefSchema)) body: SetBinLocationRefInput) {
+    return this.service.setBinLocationRef(user.companyId, body);
   }
 }

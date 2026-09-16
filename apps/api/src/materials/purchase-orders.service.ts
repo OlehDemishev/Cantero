@@ -1,9 +1,11 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import type { MaterialCatalogItem } from "@prisma/client";
 import type { CreatePurchaseOrderInput, ReceiveShipmentInput, ResolveReceivingDiscrepancyInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { StockService } from "./stock.service";
 import { classifyReceivingLine } from "./receiving-discrepancy";
+import { convertUnitQuantity } from "./unit-conversion";
 
 @Injectable()
 export class PurchaseOrdersService {
@@ -68,7 +70,7 @@ export class PurchaseOrdersService {
         warehouseId,
         materialCatalogItemId: line.materialCatalogItemId,
         type: "receipt",
-        quantity: Number(line.quantity),
+        quantity: await this.toStockQuantity(line.materialCatalogItem, Number(line.quantity)),
       });
     }
 
@@ -106,7 +108,7 @@ export class PurchaseOrdersService {
           warehouseId: input.warehouseId,
           materialCatalogItemId: line.materialCatalogItemId,
           type: "receipt",
-          quantity: goodQuantity,
+          quantity: await this.toStockQuantity(line.materialCatalogItem, goodQuantity),
         });
       }
 
@@ -166,6 +168,22 @@ export class PurchaseOrdersService {
     });
     this.audit.record(companyId, actor, "receiving_discrepancy.resolved", "ReceivingDiscrepancy", id, `Resolved discrepancy as ${input.resolution}`);
     return updated;
+  }
+
+  /** A PO line's quantity is entered in the material's purchaseUnitId (bought by the box, say) —
+   * if that differs from unitId (stocked/issued by the each), convert before the quantity ever
+   * reaches StockService, which always deals in the material's own stock unit and knows nothing
+   * about purchase units. Most materials have purchaseUnitId unset (buy and stock in the same
+   * unit), the common case, so this is a no-op for them. */
+  private async toStockQuantity(material: MaterialCatalogItem, quantity: number): Promise<number> {
+    if (!material.purchaseUnitId || material.purchaseUnitId === material.unitId) return quantity;
+
+    const [stockUnit, purchaseUnit] = await Promise.all([
+      this.prisma.unitOfMeasure.findUniqueOrThrow({ where: { id: material.unitId } }),
+      this.prisma.unitOfMeasure.findUniqueOrThrow({ where: { id: material.purchaseUnitId } }),
+    ]);
+    const toConversionInfo = (u: typeof stockUnit) => ({ id: u.id, baseUnitId: u.baseUnitId, factorToBase: u.factorToBase != null ? Number(u.factorToBase) : null });
+    return convertUnitQuantity(quantity, toConversionInfo(purchaseUnit), toConversionInfo(stockUnit));
   }
 
   private async findOrThrow(companyId: string, id: string) {

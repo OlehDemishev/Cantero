@@ -4,7 +4,13 @@ import { SUPPORTED_CURRENCIES } from "./company";
 export const createMaterialCatalogItemSchema = z.object({
   code: z.string().min(1).max(40),
   name: z.string().min(1).max(160),
-  unit: z.string().min(1).max(20),
+  /// References a UnitOfMeasure the item's quantities are denominated in — no longer a free-text
+  /// string, so "kg" typed on different items always resolves to the same catalog entry. The
+  /// MaterialCatalogItem.unit column still gets a display string, derived server-side from this.
+  unitId: z.string().uuid(),
+  /// The unit a PurchaseOrderLine for this item is normally placed in, if different from unitId
+  /// (e.g. bought by the box, stocked by the each) — see PurchaseOrdersService.
+  purchaseUnitId: z.string().uuid().optional(),
   defaultUnitPrice: z.number().nonnegative(),
   reorderThreshold: z.number().nonnegative().optional(),
   carbonFootprintKgCo2e: z.number().nonnegative().optional(),
@@ -12,6 +18,7 @@ export const createMaterialCatalogItemSchema = z.object({
   greenCertificationBody: z.string().max(120).optional(),
   barcode: z.string().max(64).optional(),
   lotTracked: z.boolean().default(false),
+  standardCost: z.number().nonnegative().optional(),
 });
 export type CreateMaterialCatalogItemInput = z.infer<typeof createMaterialCatalogItemSchema>;
 
@@ -24,6 +31,11 @@ export const updateMaterialLotTrackedSchema = z.object({
   lotTracked: z.boolean(),
 });
 export type UpdateMaterialLotTrackedInput = z.infer<typeof updateMaterialLotTrackedSchema>;
+
+export const updateMaterialSerialTrackedSchema = z.object({
+  serialTracked: z.boolean(),
+});
+export type UpdateMaterialSerialTrackedInput = z.infer<typeof updateMaterialSerialTrackedSchema>;
 
 export const setBinLocationSchema = z.object({
   warehouseId: z.string().uuid(),
@@ -45,6 +57,11 @@ export const updateMaterialPriceSchema = z.object({
   defaultUnitPrice: z.number().positive(),
 });
 export type UpdateMaterialPriceInput = z.infer<typeof updateMaterialPriceSchema>;
+
+export const updateMaterialStandardCostSchema = z.object({
+  standardCost: z.number().nonnegative().nullable(),
+});
+export type UpdateMaterialStandardCostInput = z.infer<typeof updateMaterialStandardCostSchema>;
 
 export const updateMaterialSustainabilitySchema = z.object({
   carbonFootprintKgCo2e: z.number().nonnegative().nullable().optional(),

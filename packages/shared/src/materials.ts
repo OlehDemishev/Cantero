@@ -33,6 +33,13 @@ export const recordStockMovementSchema = z.object({
   /// default nearest-expiry-first (FEFO) automatic selection across all of the material's lots at
   /// this warehouse.
   lotId: z.string().uuid().optional(),
+  /// Required (enforced in StockService, not here — this schema doesn't know the material's
+  /// serialTracked flag) on a receipt against a serialTracked material — one serial number per
+  /// unit received; length must equal `quantity`. Ignored otherwise.
+  serialNumbers: z.array(z.string().min(1).max(120)).optional(),
+  /// For an issue/write_off against a serialTracked material: consume exactly these units instead
+  /// of the default oldest-registered-first automatic selection. Length must equal `quantity`.
+  unitIds: z.array(z.string().uuid()).optional(),
 });
 export type RecordStockMovementInput = z.infer<typeof recordStockMovementSchema>;
 
@@ -45,6 +52,9 @@ export const transferStockSchema = z
     /// For a lot-tracked material: consume this specific source lot instead of the default
     /// nearest-expiry-first (FEFO) automatic selection.
     lotId: z.string().uuid().optional(),
+    /// For a serialTracked material: move exactly these units instead of the default
+    /// oldest-registered-first automatic selection. Length must equal `quantity`.
+    unitIds: z.array(z.string().uuid()).optional(),
   })
   .refine((data) => data.fromWarehouseId !== data.toWarehouseId, {
     message: "fromWarehouseId and toWarehouseId must differ",

@@ -22,6 +22,16 @@ import { LongLeadItemsController } from "./long-lead-items.controller";
 import { LongLeadItemsService } from "./long-lead-items.service";
 import { LotExpiringRemindersService } from "./lot-expiring-reminders.service";
 import { LotExpiringRemindersProcessor } from "./lot-expiring-reminders.processor";
+import { StockReservationsController } from "./stock-reservations.controller";
+import { StockReservationsService } from "./stock-reservations.service";
+import { UnitsOfMeasureController } from "./units-of-measure.controller";
+import { UnitsOfMeasureService } from "./units-of-measure.service";
+import { WarehouseLocationsController } from "./warehouse-locations.controller";
+import { WarehouseLocationsService } from "./warehouse-locations.service";
+import { SupplierReturnsController } from "./supplier-returns.controller";
+import { SupplierReturnsService } from "./supplier-returns.service";
+import { StockKitsController } from "./stock-kits.controller";
+import { StockKitsService } from "./stock-kits.service";
 
 @Module({
   controllers: [
@@ -35,6 +45,11 @@ import { LotExpiringRemindersProcessor } from "./lot-expiring-reminders.processo
     VendorBillsController,
     StockTransfersController,
     LongLeadItemsController,
+    StockReservationsController,
+    UnitsOfMeasureController,
+    WarehouseLocationsController,
+    SupplierReturnsController,
+    StockKitsController,
   ],
   providers: [
     MaterialCatalogService,
@@ -50,6 +65,11 @@ import { LotExpiringRemindersProcessor } from "./lot-expiring-reminders.processo
     LongLeadItemsService,
     LotExpiringRemindersService,
     LotExpiringRemindersProcessor,
+    StockReservationsService,
+    UnitsOfMeasureService,
+    WarehouseLocationsService,
+    SupplierReturnsService,
+    StockKitsService,
   ],
   exports: [MaterialCatalogService, StockService],
 })

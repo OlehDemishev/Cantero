@@ -166,10 +166,24 @@ async function seedCompany(args: {
     data: { companyId: company.id, planId: args.planId, status: "active", seats: 3 },
   });
 
+  // Resolve/create one UnitOfMeasure per distinct unit string across this company's seed
+  // materials — same "kg" shouldn't become two unrelated rows just because two materials use it.
+  const unitIdByCode = new Map<string, string>();
   const materialIdByCode = new Map<string, string>();
   for (const m of args.materials) {
+    let unitId = unitIdByCode.get(m.unit.toLowerCase());
+    if (!unitId) {
+      const unit = await prisma.unitOfMeasure.upsert({
+        where: { companyId_code: { companyId: company.id, code: m.unit } },
+        create: { companyId: company.id, code: m.unit, name: m.unit },
+        update: {},
+      });
+      unitId = unit.id;
+      unitIdByCode.set(m.unit.toLowerCase(), unitId);
+    }
+
     const created = await prisma.materialCatalogItem.create({
-      data: { companyId: company.id, code: m.code, name: m.name, unit: m.unit, defaultUnitPrice: m.defaultUnitPrice },
+      data: { companyId: company.id, code: m.code, name: m.name, unit: m.unit, unitId, defaultUnitPrice: m.defaultUnitPrice },
     });
     materialIdByCode.set(m.code, created.id);
   }

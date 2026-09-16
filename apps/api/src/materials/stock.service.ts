@@ -2,12 +2,13 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import { InjectQueue } from "@nestjs/bullmq";
 import type { Queue } from "bullmq";
 import type { Prisma } from "@prisma/client";
-import type { RecordStockMovementInput, SetBinLocationInput, TransferStockInput } from "@cantero/shared";
+import type { RecordStockMovementInput, SetBinLocationInput, SetBinLocationRefInput, TransferStockInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { STOCK_ALERTS_QUEUE } from "../common/queue/queue.module";
 import type { LowStockCheckJob } from "./low-stock.processor";
 import { calculateFifoConsumption, calculateWeightedAverageCost } from "./inventory-costing";
 import { consumeLotsByExpiry, sortLotsByExpiry } from "./lot-tracking";
+import { selectUnitsForConsumption } from "./serial-units";
 import { runSerializable } from "../common/prisma/serializable-transaction";
 
 const DECREASING_TYPES = new Set(["issue", "write_off"]);
@@ -19,10 +20,29 @@ export class StockService {
     @InjectQueue(STOCK_ALERTS_QUEUE) private readonly stockAlertsQueue: Queue<LowStockCheckJob>,
   ) {}
 
-  listLevels(companyId: string, warehouseId?: string) {
-    return this.prisma.stockLevel.findMany({
-      where: { warehouse: { companyId }, ...(warehouseId ? { warehouseId } : {}) },
-      include: { materialCatalogItem: true, warehouse: true },
+  /**
+   * `reserved`/`available` are computed here (not stored) from active StockReservation rows —
+   * purely informational, see StockReservationsService's doc comment. Never fed back into
+   * recordMovement/transferStock/issueFromEstimate, which remain unaware reservations exist.
+   */
+  async listLevels(companyId: string, warehouseId?: string) {
+    const [levels, reservedByKey] = await Promise.all([
+      this.prisma.stockLevel.findMany({
+        where: { warehouse: { companyId }, ...(warehouseId ? { warehouseId } : {}) },
+        include: { materialCatalogItem: true, warehouse: true },
+      }),
+      this.prisma.stockReservation.groupBy({
+        by: ["warehouseId", "materialCatalogItemId"],
+        where: { companyId, status: "active", ...(warehouseId ? { warehouseId } : {}) },
+        _sum: { quantity: true },
+      }),
+    ]);
+
+    const reservedMap = new Map(reservedByKey.map((r) => [`${r.warehouseId}:${r.materialCatalogItemId}`, Number(r._sum.quantity ?? 0)]));
+
+    return levels.map((level) => {
+      const reserved = reservedMap.get(`${level.warehouseId}:${level.materialCatalogItemId}`) ?? 0;
+      return { ...level, reserved, available: Number(level.quantityOnHand) - reserved };
     });
   }
 
@@ -54,6 +74,18 @@ export class StockService {
 
     if (material.lotTracked && input.type === "receipt" && !input.lotNumber) {
       throw new BadRequestException(`"${material.name}" is lot-tracked — a lot number is required to receive it`);
+    }
+
+    if (material.serialTracked && input.type === "receipt") {
+      if (!input.serialNumbers?.length) {
+        throw new BadRequestException(`"${material.name}" is serial-tracked — one serial number per unit received is required`);
+      }
+      if (input.serialNumbers.length !== input.quantity) {
+        throw new BadRequestException("The number of serial numbers must match the quantity received");
+      }
+    }
+    if (material.serialTracked && input.type !== "receipt" && input.unitIds && input.unitIds.length !== input.quantity) {
+      throw new BadRequestException("The number of selected units must match the quantity");
     }
 
     const delta = DECREASING_TYPES.has(input.type) ? -input.quantity : input.quantity;
@@ -116,6 +148,23 @@ export class StockService {
           const touched = await this.debitLots(tx, input.warehouseId, input.materialCatalogItemId, input.quantity, input.lotId);
           for (const t of touched) {
             await tx.stockLotMovement.create({ data: { stockMovementId: movement.id, stockLotId: t.lotId, quantity: t.taken } });
+          }
+        }
+      }
+
+      if (material.serialTracked) {
+        if (input.type === "receipt") {
+          const unitIds = await this.registerSerialUnits(tx, companyId, input.warehouseId, input.materialCatalogItemId, input.serialNumbers!);
+          for (const unitId of unitIds) {
+            await tx.stockUnitMovement.create({ data: { stockMovementId: movement.id, toolCribUnitId: unitId } });
+          }
+        } else {
+          const unitIds = await this.selectSerialUnits(tx, input.warehouseId, input.materialCatalogItemId, input.quantity, input.unitIds);
+          if (unitIds.length > 0) {
+            await tx.toolCribUnit.updateMany({ where: { id: { in: unitIds } }, data: { status: "consumed" } });
+          }
+          for (const unitId of unitIds) {
+            await tx.stockUnitMovement.create({ data: { stockMovementId: movement.id, toolCribUnitId: unitId } });
           }
         }
       }
@@ -273,6 +322,78 @@ export class StockService {
     return lot.id;
   }
 
+  /** Serial tracking (MaterialCatalogItem.serialTracked) — see serial-units.ts and the
+   * ToolCribUnit/StockUnitMovement schema comments. Creates one available ToolCribUnit per serial
+   * number, pre-checking for a duplicate at this warehouse+material so the error reads as a clean
+   * BadRequestException instead of a raw unique-constraint violation (the @@unique still backstops
+   * this against a race). */
+  private async registerSerialUnits(
+    tx: Prisma.TransactionClient,
+    companyId: string,
+    warehouseId: string,
+    materialCatalogItemId: string,
+    serialNumbers: string[],
+  ): Promise<string[]> {
+    const existing = await tx.toolCribUnit.findMany({
+      where: { warehouseId, materialCatalogItemId, serialNumber: { in: serialNumbers } },
+      select: { serialNumber: true },
+    });
+    if (existing.length > 0) {
+      throw new BadRequestException(`Serial number(s) already registered at this warehouse: ${existing.map((u) => u.serialNumber).join(", ")}`);
+    }
+
+    const unitIds: string[] = [];
+    for (const serialNumber of serialNumbers) {
+      const unit = await tx.toolCribUnit.create({ data: { companyId, warehouseId, materialCatalogItemId, serialNumber } });
+      unitIds.push(unit.id);
+    }
+    return unitIds;
+  }
+
+  /** Selects either an explicit list of units (validated to belong to this warehouse+material and
+   * be available) or, by default, the oldest-registered `quantity` available units — same
+   * shortfall-tolerant philosophy as debitLots: an issue that outruns the tracked unit history
+   * still records the movement, just against fewer units than the physical quantity. Only
+   * SELECTS — does not itself change status, since callers need different end states (issue/
+   * write_off mark them "consumed"; transferStock reassigns warehouseId and leaves "available"). */
+  private async selectSerialUnits(
+    tx: Prisma.TransactionClient,
+    warehouseId: string,
+    materialCatalogItemId: string,
+    quantity: number,
+    explicitUnitIds: string[] | undefined,
+  ): Promise<string[]> {
+    let candidates: { id: string }[];
+    if (explicitUnitIds?.length) {
+      const found = await tx.toolCribUnit.findMany({
+        where: { id: { in: explicitUnitIds }, warehouseId, materialCatalogItemId, status: "available" },
+      });
+      if (found.length !== explicitUnitIds.length) throw new NotFoundException("One or more selected units are not available at this warehouse");
+      candidates = found;
+    } else {
+      candidates = await tx.toolCribUnit.findMany({
+        where: { warehouseId, materialCatalogItemId, status: "available" },
+        orderBy: { createdAt: "asc" },
+      });
+    }
+
+    return selectUnitsForConsumption(candidates, quantity).consumedUnitIds;
+  }
+
+  /** Available serialized units for one material (optionally scoped to one warehouse), oldest
+   * first — the source list for the frontend's unit picker on issue/write-off/transfer. */
+  listSerialUnits(companyId: string, warehouseId?: string, materialCatalogItemId?: string) {
+    return this.prisma.toolCribUnit.findMany({
+      where: {
+        companyId,
+        materialCatalogItemId: materialCatalogItemId ?? { not: null },
+        status: "available",
+        ...(warehouseId ? { warehouseId } : {}),
+      },
+      orderBy: { createdAt: "asc" },
+    });
+  }
+
   /** Lots for one material (optionally scoped to one warehouse), nearest-expiry-first — the
    * near-expiry view and the source list for picking an explicit lotId on an issue/write-off. */
   listLots(companyId: string, warehouseId?: string, materialCatalogItemId?: string) {
@@ -353,6 +474,19 @@ export class StockService {
           await tx.stockLotMovement.create({ data: { stockMovementId: movement.id, stockLotId: t.lotId, quantity: t.taken } });
           const destLotId = await this.creditLot(tx, companyId, input.toWarehouseId, input.materialCatalogItemId, t.lotNumber, t.expiresAt, t.taken);
           await tx.stockLotMovement.create({ data: { stockMovementId: movement.id, stockLotId: destLotId, quantity: t.taken } });
+        }
+      }
+
+      if (material.serialTracked) {
+        // Unlike lots (consumed at the source and a fresh one credited at the destination), a
+        // serialized unit is the same physical thing before and after — it's simply reassigned to
+        // the new warehouse, still `available`, no new ToolCribUnit row created.
+        const unitIds = await this.selectSerialUnits(tx, input.fromWarehouseId, input.materialCatalogItemId, input.quantity, input.unitIds);
+        if (unitIds.length > 0) {
+          await tx.toolCribUnit.updateMany({ where: { id: { in: unitIds } }, data: { warehouseId: input.toWarehouseId } });
+          for (const unitId of unitIds) {
+            await tx.stockUnitMovement.create({ data: { stockMovementId: movement.id, toolCribUnitId: unitId } });
+          }
         }
       }
 
@@ -525,6 +659,26 @@ export class StockService {
     });
   }
 
+  /** The structured counterpart to setBinLocation — same upsert shape, but pointing at a
+   * WarehouseLocation node instead of a free-text string. Both can be used side by side; see the
+   * schema comment on StockLevel.binLocationId. */
+  async setBinLocationRef(companyId: string, input: SetBinLocationRefInput) {
+    const warehouse = await this.prisma.warehouse.findFirst({ where: { id: input.warehouseId, companyId } });
+    if (!warehouse) throw new NotFoundException("Warehouse not found");
+    const material = await this.prisma.materialCatalogItem.findFirst({ where: { id: input.materialCatalogItemId, companyId } });
+    if (!material) throw new NotFoundException("Material not found");
+    if (input.binLocationId) {
+      const location = await this.prisma.warehouseLocation.findFirst({ where: { id: input.binLocationId, companyId, warehouseId: input.warehouseId } });
+      if (!location) throw new NotFoundException("Location not found at this warehouse");
+    }
+
+    return this.prisma.stockLevel.upsert({
+      where: { warehouseId_materialCatalogItemId: { warehouseId: input.warehouseId, materialCatalogItemId: input.materialCatalogItemId } },
+      create: { warehouseId: input.warehouseId, materialCatalogItemId: input.materialCatalogItemId, binLocationId: input.binLocationId },
+      update: { binLocationId: input.binLocationId },
+    });
+  }
+
   private async queueLowStockCheck(companyId: string, materialCatalogItemId: string) {
     await this.stockAlertsQueue.add(
       "check",
@@ -598,5 +752,32 @@ export class StockService {
         };
       });
     return { method, rows, totalValue: rows.reduce((sum, r) => sum + r.totalValue, 0) };
+  }
+
+  /**
+   * Standard-vs-actual unit cost variance, one row per warehouse+material — built directly on
+   * inventoryValuation() rather than re-deriving "actual cost" separately, so this automatically
+   * stays correct under either costing method (FIFO layer average or weighted-average) with no
+   * new costing logic of its own. Rows with no MaterialCatalogItem.standardCost set are excluded
+   * entirely (nothing to compare against), not shown with a misleading zero variance.
+   */
+  async standardCostVariance(companyId: string, warehouseId?: string) {
+    const valuation = await this.inventoryValuation(companyId, warehouseId);
+
+    const materialIds = [...new Set(valuation.rows.map((r) => r.materialCatalogItemId))];
+    const materials = await this.prisma.materialCatalogItem.findMany({
+      where: { id: { in: materialIds }, standardCost: { not: null } },
+      select: { id: true, standardCost: true },
+    });
+    const standardCostByMaterial = new Map(materials.map((m) => [m.id, Number(m.standardCost)]));
+
+    return valuation.rows
+      .filter((r) => r.unitValue != null && standardCostByMaterial.has(r.materialCatalogItemId))
+      .map((r) => {
+        const standardCost = standardCostByMaterial.get(r.materialCatalogItemId)!;
+        const varianceAmount = r.unitValue! - standardCost;
+        const variancePercent = standardCost !== 0 ? (varianceAmount / standardCost) * 100 : null;
+        return { ...r, standardCost, varianceAmount, variancePercent };
+      });
   }
 }

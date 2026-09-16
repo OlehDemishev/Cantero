@@ -7,6 +7,7 @@ import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { resetStateInEffect } from "@/lib/effect-reset";
+import { WarehouseLocations } from "@/components/warehouse-locations";
 
 interface Warehouse {
   id: string;
@@ -16,13 +17,36 @@ interface MaterialCatalogItem {
   id: string;
   code: string;
   name: string;
+  serialTracked?: boolean;
+}
+interface SerialUnit {
+  id: string;
+  serialNumber: string;
 }
 interface StockLevel {
   id: string;
   quantityOnHand: string;
   binLocation: string | null;
+  binLocationId: string | null;
+  reserved: number;
+  available: number;
   materialCatalogItem: MaterialCatalogItem & { unit: string };
   warehouse: { id: string };
+}
+interface WarehouseLocationOption {
+  id: string;
+  kind: "zone" | "aisle" | "rack" | "bin";
+  code: string;
+}
+interface StockReservation {
+  id: string;
+  quantity: string;
+  note: string | null;
+  status: "active" | "released";
+  createdByName: string;
+  createdAt: string;
+  materialCatalogItem: { id: string; name: string; unit: string };
+  project: { id: string; name: string } | null;
 }
 interface BarcodeStockLevel {
   warehouse: { id: string; name: string };
@@ -86,8 +110,36 @@ interface InventoryValuation {
   rows: InventoryValuationRow[];
   totalValue: number;
 }
+interface StandardCostVarianceRow {
+  materialCatalogItemId: string;
+  materialName: string;
+  unit: string;
+  unitValue: number | null;
+  standardCost: number;
+  varianceAmount: number;
+  variancePercent: number | null;
+}
+interface Supplier {
+  id: string;
+  name: string;
+}
+interface SupplierReturnPO {
+  id: string;
+  status: string;
+}
+interface SupplierReturn {
+  id: string;
+  reason: "defective" | "wrong_item" | "overstock" | "damaged_in_transit" | "other";
+  notes: string | null;
+  status: "draft" | "sent" | "confirmed";
+  createdAt: string;
+  supplier: { id: string; name: string };
+  purchaseOrder: { id: string };
+  lines: { id: string; quantity: string; materialCatalogItem: { id: string; name: string; unit: string } }[];
+}
 
 const GENERIC_MOVEMENT_TYPES = ["receipt", "issue", "write_off"] as const;
+const SUPPLIER_RETURN_REASONS = ["defective", "wrong_item", "overstock", "damaged_in_transit", "other"] as const;
 
 /** Type-ahead SKU entry: type or pick a code from the native datalist, matching sets the id. */
 function MaterialPicker({
@@ -163,7 +215,13 @@ export function WarehouseDetail({
     quantity: "1",
     unitCost: "",
   });
+  const [serialNumberDrafts, setSerialNumberDrafts] = useState<string[]>([""]);
+  const [availableSerialUnits, setAvailableSerialUnits] = useState<SerialUnit[]>([]);
+  const [selectedUnitIds, setSelectedUnitIds] = useState<string[]>([]);
   const [valuation, setValuation] = useState<InventoryValuation | null>(null);
+  const [standardCostVariance, setStandardCostVariance] = useState<
+    StandardCostVarianceRow[] | null
+  >(null);
   const [transfer, setTransfer] = useState({
     materialCatalogItemId: "",
     toWarehouseId: "",
@@ -180,12 +238,37 @@ export function WarehouseDetail({
   const [stockTransfersHasMore, setStockTransfersHasMore] = useState(false);
   const [stockTransfersLoadMoreBusy, setStockTransfersLoadMoreBusy] =
     useState(false);
+  const [reservations, setReservations] = useState<StockReservation[] | null>(
+    null,
+  );
+  const [reservationForm, setReservationForm] = useState({
+    materialCatalogItemId: "",
+    quantity: "1",
+    note: "",
+  });
   const [busy, setBusy] = useState(false);
   const [counts, setCounts] = useState<StockCount[] | null>(null);
   const [activeCount, setActiveCount] = useState<StockCount | null>(null);
   const [lineInputs, setLineInputs] = useState<Record<string, string>>({});
   const [editingBinFor, setEditingBinFor] = useState<string | null>(null);
   const [binDraft, setBinDraft] = useState("");
+  const [warehouseLocationOptions, setWarehouseLocationOptions] = useState<
+    WarehouseLocationOption[]
+  >([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [stockKits, setStockKits] = useState<{ id: string; name: string }[]>([]);
+  const [assembleForm, setAssembleForm] = useState({ kitId: "", quantity: "1" });
+  const [supplierReturnPOs, setSupplierReturnPOs] = useState<SupplierReturnPO[]>([]);
+  const [supplierReturns, setSupplierReturns] = useState<SupplierReturn[] | null>(null);
+  const [supplierReturnForm, setSupplierReturnForm] = useState({
+    supplierId: "",
+    purchaseOrderId: "",
+    reason: "defective" as (typeof SUPPLIER_RETURN_REASONS)[number],
+    notes: "",
+  });
+  const [supplierReturnLines, setSupplierReturnLines] = useState<
+    { materialCatalogItemId: string; quantity: string }[]
+  >([{ materialCatalogItemId: "", quantity: "1" }]);
   const [barcodeInput, setBarcodeInput] = useState("");
   const [barcodeResult, setBarcodeResult] =
     useState<BarcodeLookupResult | null>(null);
@@ -212,6 +295,9 @@ export function WarehouseDetail({
     apiFetch<InventoryValuation>(
       `/materials/stock/valuation?warehouseId=${warehouseId}`,
     ).then(setValuation);
+    apiFetch<StandardCostVarianceRow[]>(
+      `/materials/stock/standard-cost-variance?warehouseId=${warehouseId}`,
+    ).then(setStandardCostVariance);
     apiFetch<StockTransfer[]>(
       `/materials/stock-transfers?warehouseId=${warehouseId}`,
     ).then((page) => {
@@ -224,6 +310,15 @@ export function WarehouseDetail({
       setMovements(page);
       setMovementsHasMore(page.length === MOVEMENTS_PAGE_SIZE);
     });
+    apiFetch<WarehouseLocationOption[]>(
+      `/materials/warehouse-locations?warehouseId=${warehouseId}`,
+    ).then(setWarehouseLocationOptions);
+    apiFetch<SupplierReturn[]>(
+      `/materials/supplier-returns?warehouseId=${warehouseId}`,
+    ).then(setSupplierReturns);
+    apiFetch<StockReservation[]>(
+      `/materials/stock-reservations?warehouseId=${warehouseId}`,
+    ).then(setReservations);
   }
 
   function loadCounts() {
@@ -269,10 +364,34 @@ export function WarehouseDetail({
       if (items[0]) {
         setMovement((m) => ({ ...m, materialCatalogItemId: items[0].id }));
         setTransfer((tr) => ({ ...tr, materialCatalogItemId: items[0].id }));
+        setReservationForm((r) => ({ ...r, materialCatalogItemId: items[0].id }));
+        setSupplierReturnLines([{ materialCatalogItemId: items[0].id, quantity: "1" }]);
       }
+    });
+    apiFetch<Supplier[]>("/materials/suppliers").then((s) => {
+      setSuppliers(s);
+      if (s[0]) setSupplierReturnForm((f) => ({ ...f, supplierId: s[0].id }));
+    });
+    apiFetch<{ id: string; name: string }[]>("/materials/stock-kits").then((kits) => {
+      setStockKits(kits);
+      if (kits[0]) setAssembleForm((f) => ({ ...f, kitId: kits[0].id }));
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warehouseId]);
+
+  useEffect(() => {
+    if (supplierReturnForm.supplierId) {
+      apiFetch<SupplierReturnPO[]>(
+        `/materials/purchase-orders?supplierId=${supplierReturnForm.supplierId}`,
+      ).then((pos) => {
+        setSupplierReturnPOs(pos);
+        setSupplierReturnForm((f) => ({ ...f, purchaseOrderId: pos[0]?.id ?? "" }));
+      });
+    } else {
+      setSupplierReturnPOs([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supplierReturnForm.supplierId]);
 
   async function startCount() {
     setBusy(true);
@@ -338,10 +457,31 @@ export function WarehouseDetail({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [otherWarehouses[0]?.id]);
 
+  const movementMaterial = materials.find(
+    (m) => m.id === movement.materialCatalogItemId,
+  );
+
+  function loadAvailableSerialUnits(materialCatalogItemId: string) {
+    apiFetch<SerialUnit[]>(
+      `/materials/stock/serial-units?warehouseId=${warehouseId}&materialCatalogItemId=${materialCatalogItemId}`,
+    ).then(setAvailableSerialUnits);
+  }
+
+  useEffect(() => {
+    if (movementMaterial?.serialTracked && movement.type !== "receipt") {
+      loadAvailableSerialUnits(movementMaterial.id);
+    } else {
+      setAvailableSerialUnits([]);
+    }
+    setSelectedUnitIds([]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [movementMaterial?.id, movement.type]);
+
   async function recordMovement(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     try {
+      const serialTracked = !!movementMaterial?.serialTracked;
       await apiFetch("/materials/stock/movements", {
         method: "POST",
         body: JSON.stringify({
@@ -353,9 +493,39 @@ export function WarehouseDetail({
             movement.type === "receipt" && movement.unitCost
               ? Number(movement.unitCost)
               : undefined,
+          serialNumbers:
+            serialTracked && movement.type === "receipt"
+              ? serialNumberDrafts.filter((s) => s.trim())
+              : undefined,
+          unitIds:
+            serialTracked && movement.type !== "receipt" && selectedUnitIds.length > 0
+              ? selectedUnitIds
+              : undefined,
         }),
       });
       setMovement((m) => ({ ...m, unitCost: "" }));
+      setSerialNumberDrafts([""]);
+      setSelectedUnitIds([]);
+      if (serialTracked && movement.type !== "receipt") {
+        loadAvailableSerialUnits(movement.materialCatalogItemId);
+      }
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveBinLocationRef(materialCatalogItemId: string, binLocationId: string) {
+    setBusy(true);
+    try {
+      await apiFetch("/materials/stock/bin-location-ref", {
+        method: "POST",
+        body: JSON.stringify({
+          warehouseId,
+          materialCatalogItemId,
+          binLocationId: binLocationId || null,
+        }),
+      });
       load();
     } finally {
       setBusy(false);
@@ -374,6 +544,88 @@ export function WarehouseDetail({
         }),
       });
       setEditingBinFor(null);
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function addSupplierReturnLine() {
+    if (materials.length === 0) return;
+    setSupplierReturnLines((l) => [...l, { materialCatalogItemId: materials[0].id, quantity: "1" }]);
+  }
+
+  async function createSupplierReturn(e: React.FormEvent) {
+    e.preventDefault();
+    if (!supplierReturnForm.purchaseOrderId || supplierReturnLines.length === 0) return;
+    setBusy(true);
+    try {
+      await apiFetch("/materials/supplier-returns", {
+        method: "POST",
+        body: JSON.stringify({
+          supplierId: supplierReturnForm.supplierId,
+          purchaseOrderId: supplierReturnForm.purchaseOrderId,
+          warehouseId,
+          reason: supplierReturnForm.reason,
+          notes: supplierReturnForm.notes || undefined,
+          lines: supplierReturnLines.map((l) => ({
+            materialCatalogItemId: l.materialCatalogItemId,
+            quantity: Number(l.quantity),
+          })),
+        }),
+      });
+      setSupplierReturnForm((f) => ({ ...f, notes: "" }));
+      setSupplierReturnLines(
+        materials[0] ? [{ materialCatalogItemId: materials[0].id, quantity: "1" }] : [],
+      );
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function sendSupplierReturn(id: string) {
+    setBusy(true);
+    try {
+      await apiFetch(`/materials/supplier-returns/${id}/send`, { method: "POST" });
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function confirmSupplierReturn(id: string) {
+    setBusy(true);
+    try {
+      await apiFetch(`/materials/supplier-returns/${id}/confirm`, { method: "POST" });
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function assembleKit() {
+    if (!assembleForm.kitId) return;
+    setBusy(true);
+    try {
+      await apiFetch(`/materials/stock-kits/${assembleForm.kitId}/assemble`, {
+        method: "POST",
+        body: JSON.stringify({ warehouseId, quantity: Number(assembleForm.quantity) }),
+      });
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function disassembleKit() {
+    if (!assembleForm.kitId) return;
+    setBusy(true);
+    try {
+      await apiFetch(`/materials/stock-kits/${assembleForm.kitId}/disassemble`, {
+        method: "POST",
+        body: JSON.stringify({ warehouseId, quantity: Number(assembleForm.quantity) }),
+      });
       load();
     } finally {
       setBusy(false);
@@ -459,6 +711,38 @@ export function WarehouseDetail({
     }
   }
 
+  async function createReservation(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      await apiFetch("/materials/stock-reservations", {
+        method: "POST",
+        body: JSON.stringify({
+          warehouseId,
+          materialCatalogItemId: reservationForm.materialCatalogItemId,
+          quantity: Number(reservationForm.quantity),
+          note: reservationForm.note || undefined,
+        }),
+      });
+      setReservationForm((r) => ({ ...r, note: "" }));
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function releaseReservation(id: string) {
+    setBusy(true);
+    try {
+      await apiFetch(`/materials/stock-reservations/${id}/release`, {
+        method: "POST",
+      });
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div>
       <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">
@@ -512,6 +796,8 @@ export function WarehouseDetail({
               <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
                 <th className="py-2">{t("material")}</th>
                 <th>{t("quantity")}</th>
+                <th>{t("reserved")}</th>
+                <th>{t("available")}</th>
                 <th>{t("bin")}</th>
               </tr>
             </thead>
@@ -531,8 +817,29 @@ export function WarehouseDetail({
                   >
                     {l.quantityOnHand} {l.materialCatalogItem.unit}
                   </td>
+                  <td className="text-gray-500 dark:text-gray-400">
+                    {l.reserved > 0 ? `${l.reserved} ${l.materialCatalogItem.unit}` : "—"}
+                  </td>
+                  <td className={l.available < 0 ? "text-red-600" : ""}>
+                    {l.available} {l.materialCatalogItem.unit}
+                  </td>
                   <td>
-                    {editingBinFor === l.materialCatalogItem.id ? (
+                    {warehouseLocationOptions.length > 0 ? (
+                      <select
+                        className="input w-auto py-0.5 text-xs"
+                        value={l.binLocationId ?? ""}
+                        onChange={(e) =>
+                          saveBinLocationRef(l.materialCatalogItem.id, e.target.value)
+                        }
+                      >
+                        <option value="">{t("setBin")}</option>
+                        {warehouseLocationOptions.map((loc) => (
+                          <option key={loc.id} value={loc.id}>
+                            {t(loc.kind)} {loc.code}
+                          </option>
+                        ))}
+                      </select>
+                    ) : editingBinFor === l.materialCatalogItem.id ? (
                       <span className="flex items-center gap-1">
                         <input
                           autoFocus
@@ -564,6 +871,90 @@ export function WarehouseDetail({
                   </td>
                 </tr>
               ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">
+        {t("reservations")}
+      </h2>
+      <form onSubmit={createReservation} className="flex flex-wrap items-end gap-2">
+        <MaterialPicker
+          id="reservation-material"
+          materials={materials}
+          value={reservationForm.materialCatalogItemId}
+          onChange={(id) =>
+            setReservationForm((r) => ({ ...r, materialCatalogItemId: id }))
+          }
+        />
+        <input
+          type="number"
+          step="0.01"
+          className="input w-24"
+          value={reservationForm.quantity}
+          onChange={(e) =>
+            setReservationForm((r) => ({ ...r, quantity: e.target.value }))
+          }
+        />
+        <input
+          placeholder={t("reservationNotePlaceholder")}
+          className="input w-48"
+          value={reservationForm.note}
+          onChange={(e) =>
+            setReservationForm((r) => ({ ...r, note: e.target.value }))
+          }
+        />
+        <button type="submit" disabled={busy} className="btn-secondary">
+          {t("newReservation")}
+        </button>
+      </form>
+
+      {reservations && reservations.filter((r) => r.status === "active").length > 0 && (
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+                <th className="py-2">{t("material")}</th>
+                <th>{t("quantity")}</th>
+                <th>{t("movementProject")}</th>
+                <th>{t("note")}</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {reservations
+                .filter((r) => r.status === "active")
+                .map((r) => (
+                  <tr key={r.id} className="border-b border-gray-100 dark:border-gray-700">
+                    <td className="py-2">{r.materialCatalogItem.name}</td>
+                    <td>
+                      {r.quantity} {r.materialCatalogItem.unit}
+                    </td>
+                    <td>
+                      {r.project ? (
+                        <Link
+                          href={`/projects/${r.project.id}`}
+                          className="text-brand-700 dark:text-brand-400 hover:underline"
+                        >
+                          {r.project.name}
+                        </Link>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td className="text-xs text-gray-500 dark:text-gray-400">{r.note ?? "—"}</td>
+                    <td className="text-right">
+                      <button
+                        onClick={() => releaseReservation(r.id)}
+                        disabled={busy}
+                        className="text-xs text-gray-400 dark:text-gray-500 hover:text-error-600"
+                      >
+                        {t("releaseReservation")}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
@@ -625,6 +1016,57 @@ export function WarehouseDetail({
         </div>
       )}
 
+      {standardCostVariance && standardCostVariance.length > 0 && (
+        <div className="mt-8">
+          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">
+            {t("standardCostVariance")}
+          </h2>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+                  <th className="py-2">{t("material")}</th>
+                  <th className="text-right">{t("standardCost")}</th>
+                  <th className="text-right">{t("unitValue")}</th>
+                  <th className="text-right">{t("variance")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {standardCostVariance.map((row) => (
+                  <tr key={row.materialCatalogItemId} className="border-b border-gray-100 dark:border-gray-700">
+                    <td className="py-2">{row.materialName}</td>
+                    <td className="text-right">
+                      {row.standardCost.toFixed(4)} {currency}
+                    </td>
+                    <td className="text-right">
+                      {row.unitValue !== null ? `${row.unitValue.toFixed(4)} ${currency}` : "—"}
+                    </td>
+                    <td
+                      className={`text-right font-medium ${
+                        row.varianceAmount > 0
+                          ? "text-error-600"
+                          : row.varianceAmount < 0
+                            ? "text-success-700 dark:text-success-500"
+                            : ""
+                      }`}
+                    >
+                      {row.varianceAmount > 0 ? "+" : ""}
+                      {row.varianceAmount.toFixed(4)} {currency}
+                      {row.variancePercent !== null && (
+                        <span className="ml-1 text-xs">
+                          ({row.variancePercent > 0 ? "+" : ""}
+                          {row.variancePercent.toFixed(1)}%)
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">
         {t("recordMovement")}
       </h2>
@@ -681,6 +1123,84 @@ export function WarehouseDetail({
         <button type="submit" disabled={busy} className="btn-secondary">
           {tc("save")}
         </button>
+
+        {movementMaterial?.serialTracked && movement.type === "receipt" && (
+          <div className="mt-2 flex w-full flex-col gap-1.5">
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              {t("serialNumbers")}
+              {Number(movement.quantity) !== serialNumberDrafts.filter((s) => s.trim()).length && (
+                <span className="ml-2 text-error-600">{t("unitCountMismatch")}</span>
+              )}
+            </span>
+            {serialNumberDrafts.map((sn, i) => (
+              <div key={i} className="flex items-center gap-1.5">
+                <input
+                  className="input w-40"
+                  placeholder={`SN-${i + 1}`}
+                  value={sn}
+                  onChange={(e) =>
+                    setSerialNumberDrafts((d) =>
+                      d.map((v, idx) => (idx === i ? e.target.value : v)),
+                    )
+                  }
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSerialNumberDrafts((d) => d.filter((_, idx) => idx !== i))
+                  }
+                  className="text-xs text-gray-400 hover:text-error-600"
+                >
+                  {tc("delete")}
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => setSerialNumberDrafts((d) => [...d, ""])}
+              className="btn-secondary w-fit px-2 py-1 text-xs"
+            >
+              {t("addSerialNumber")}
+            </button>
+          </div>
+        )}
+
+        {movementMaterial?.serialTracked && movement.type !== "receipt" && (
+          <div className="mt-2 flex w-full flex-col gap-1.5">
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              {t("selectUnits")}
+              {selectedUnitIds.length > 0 &&
+                Number(movement.quantity) !== selectedUnitIds.length && (
+                  <span className="ml-2 text-error-600">{t("unitCountMismatch")}</span>
+                )}
+            </span>
+            {availableSerialUnits.length === 0 ? (
+              <span className="text-xs text-gray-400 dark:text-gray-500">{t("noAvailableUnits")}</span>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {availableSerialUnits.map((u) => (
+                  <label
+                    key={u.id}
+                    className="flex items-center gap-1 rounded border border-gray-200 px-2 py-1 text-xs dark:border-gray-700"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedUnitIds.includes(u.id)}
+                      onChange={(e) =>
+                        setSelectedUnitIds((ids) =>
+                          e.target.checked
+                            ? [...ids, u.id]
+                            : ids.filter((id) => id !== u.id),
+                        )
+                      }
+                    />
+                    {u.serialNumber}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </form>
 
       {movements && movements.length > 0 && (
@@ -1058,6 +1578,193 @@ export function WarehouseDetail({
           )}
         </div>
       )}
+
+      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">
+        {t("supplierReturns")}
+      </h2>
+      <form onSubmit={createSupplierReturn} className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-end gap-2">
+          <select
+            className="input w-auto"
+            value={supplierReturnForm.supplierId}
+            onChange={(e) =>
+              setSupplierReturnForm((f) => ({ ...f, supplierId: e.target.value }))
+            }
+          >
+            {suppliers.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+          <select
+            className="input w-auto"
+            value={supplierReturnForm.purchaseOrderId}
+            onChange={(e) =>
+              setSupplierReturnForm((f) => ({ ...f, purchaseOrderId: e.target.value }))
+            }
+          >
+            {supplierReturnPOs.length === 0 && <option value="">—</option>}
+            {supplierReturnPOs.map((po) => (
+              <option key={po.id} value={po.id}>
+                PO {po.id.slice(0, 8)} ({po.status})
+              </option>
+            ))}
+          </select>
+          <select
+            className="input w-auto"
+            value={supplierReturnForm.reason}
+            onChange={(e) =>
+              setSupplierReturnForm((f) => ({
+                ...f,
+                reason: e.target.value as (typeof SUPPLIER_RETURN_REASONS)[number],
+              }))
+            }
+          >
+            {SUPPLIER_RETURN_REASONS.map((r) => (
+              <option key={r} value={r}>
+                {t(`returnReason_${r}`)}
+              </option>
+            ))}
+          </select>
+          <input
+            placeholder={t("note")}
+            className="input w-48"
+            value={supplierReturnForm.notes}
+            onChange={(e) =>
+              setSupplierReturnForm((f) => ({ ...f, notes: e.target.value }))
+            }
+          />
+        </div>
+
+        {supplierReturnLines.map((line, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <MaterialPicker
+              id={`supplier-return-material-${i}`}
+              materials={materials}
+              value={line.materialCatalogItemId}
+              onChange={(id) =>
+                setSupplierReturnLines((ls) =>
+                  ls.map((l, idx) => (idx === i ? { ...l, materialCatalogItemId: id } : l)),
+                )
+              }
+            />
+            <input
+              type="number"
+              step="0.01"
+              className="input w-24"
+              value={line.quantity}
+              onChange={(e) =>
+                setSupplierReturnLines((ls) =>
+                  ls.map((l, idx) => (idx === i ? { ...l, quantity: e.target.value } : l)),
+                )
+              }
+            />
+            <button
+              type="button"
+              onClick={() => setSupplierReturnLines((ls) => ls.filter((_, idx) => idx !== i))}
+              className="text-xs text-gray-400 hover:text-error-600"
+            >
+              {tc("delete")}
+            </button>
+          </div>
+        ))}
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={addSupplierReturnLine} className="btn-secondary w-fit px-2 py-1 text-xs">
+            {t("addLine")}
+          </button>
+          <button type="submit" disabled={busy || !supplierReturnForm.purchaseOrderId} className="btn-primary w-fit">
+            {t("newSupplierReturn")}
+          </button>
+        </div>
+      </form>
+
+      {supplierReturns && supplierReturns.length > 0 && (
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+                <th className="py-2">{t("material")}</th>
+                <th>{tc("status")}</th>
+                <th>{t("returnReasonLabel")}</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {supplierReturns.map((sr) => (
+                <tr key={sr.id} className="border-b border-gray-100 dark:border-gray-700">
+                  <td className="py-2">
+                    {sr.supplier.name} —{" "}
+                    {sr.lines.map((l) => `${l.materialCatalogItem.name} (${l.quantity} ${l.materialCatalogItem.unit})`).join(", ")}
+                  </td>
+                  <td>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                        sr.status === "draft"
+                          ? "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
+                          : sr.status === "sent"
+                            ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400"
+                            : "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
+                      }`}
+                    >
+                      {t(`returnStatus_${sr.status}`)}
+                    </span>
+                  </td>
+                  <td className="text-xs text-gray-500 dark:text-gray-400">{t(`returnReason_${sr.reason}`)}</td>
+                  <td className="text-right">
+                    {sr.status === "draft" && (
+                      <button onClick={() => sendSupplierReturn(sr.id)} disabled={busy} className="btn-secondary px-2 py-1 text-xs">
+                        {t("sendReturn")}
+                      </button>
+                    )}
+                    {sr.status === "sent" && (
+                      <button onClick={() => confirmSupplierReturn(sr.id)} disabled={busy} className="btn-secondary px-2 py-1 text-xs">
+                        {t("confirmReturn")}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {stockKits.length > 0 && (
+        <>
+          <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">
+            {t("kit")}
+          </h2>
+          <div className="flex flex-wrap items-end gap-2">
+            <select
+              className="input w-auto"
+              value={assembleForm.kitId}
+              onChange={(e) => setAssembleForm((f) => ({ ...f, kitId: e.target.value }))}
+            >
+              {stockKits.map((k) => (
+                <option key={k.id} value={k.id}>
+                  {k.name}
+                </option>
+              ))}
+            </select>
+            <input
+              type="number"
+              step="0.01"
+              className="input w-24"
+              value={assembleForm.quantity}
+              onChange={(e) => setAssembleForm((f) => ({ ...f, quantity: e.target.value }))}
+            />
+            <button type="button" onClick={assembleKit} disabled={busy} className="btn-primary">
+              {t("assembleKit")}
+            </button>
+            <button type="button" onClick={disassembleKit} disabled={busy} className="btn-secondary">
+              {t("disassembleKit")}
+            </button>
+          </div>
+        </>
+      )}
+
+      <WarehouseLocations warehouseId={warehouseId} />
     </div>
   );
 }

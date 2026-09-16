@@ -11,6 +11,7 @@ interface MaterialCatalogItem {
   name: string;
   unit: string;
   defaultUnitPrice: string;
+  standardCost: string | null;
 }
 interface PriceChange {
   id: string;
@@ -38,6 +39,8 @@ export function MaterialPricesPanel() {
   const [changes, setChanges] = useState<PriceChange[] | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [priceDraft, setPriceDraft] = useState("");
+  const [editingStandardCostId, setEditingStandardCostId] = useState<string | null>(null);
+  const [standardCostDraft, setStandardCostDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [affectedFor, setAffectedFor] = useState<string | null>(null);
   const [affected, setAffected] = useState<AffectedEstimate[] | null>(null);
@@ -61,6 +64,26 @@ export function MaterialPricesPanel() {
     try {
       await apiFetch(`/materials/catalog/${id}/price`, { method: "PATCH", body: JSON.stringify({ defaultUnitPrice: Number(priceDraft) }) });
       setEditingId(null);
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function startEditStandardCost(m: MaterialCatalogItem) {
+    setEditingStandardCostId(m.id);
+    setStandardCostDraft(m.standardCost ?? "");
+  }
+
+  async function saveStandardCost(id: string, e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      await apiFetch(`/materials/catalog/${id}/standard-cost`, {
+        method: "PATCH",
+        body: JSON.stringify({ standardCost: standardCostDraft === "" ? null : Number(standardCostDraft) }),
+      });
+      setEditingStandardCostId(null);
       load();
     } finally {
       setBusy(false);
@@ -139,6 +162,8 @@ export function MaterialPricesPanel() {
               <th>{t("unit")}</th>
               <th>{t("price")}</th>
               <th></th>
+              <th>{t("standardCost")}</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -175,6 +200,39 @@ export function MaterialPricesPanel() {
                 <td>
                   {editingId !== m.id && (
                     <button onClick={() => startEdit(m)} className="text-xs text-brand-700 dark:text-brand-400 hover:underline">
+                      {tc("edit")}
+                    </button>
+                  )}
+                </td>
+                <td>
+                  {editingStandardCostId === m.id ? (
+                    <form onSubmit={(e) => saveStandardCost(m.id, e)} className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.0001"
+                        autoFocus
+                        placeholder={t("noStandardCostSet")}
+                        className="input w-24 py-0.5 text-xs"
+                        value={standardCostDraft}
+                        onChange={(e) => setStandardCostDraft(e.target.value)}
+                      />
+                      <button type="submit" disabled={busy} className="btn-secondary px-2 py-0.5 text-xs">
+                        {tc("save")}
+                      </button>
+                      <button type="button" onClick={() => setEditingStandardCostId(null)} className="text-xs text-gray-400 dark:text-gray-500">
+                        {tc("cancel")}
+                      </button>
+                    </form>
+                  ) : (
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {m.standardCost != null ? `${m.standardCost} ${currency}` : t("noStandardCostSet")}
+                    </span>
+                  )}
+                </td>
+                <td>
+                  {editingStandardCostId !== m.id && (
+                    <button onClick={() => startEditStandardCost(m)} className="text-xs text-brand-700 dark:text-brand-400 hover:underline">
                       {tc("edit")}
                     </button>
                   )}

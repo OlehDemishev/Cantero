@@ -7,14 +7,20 @@ import {
   updateMaterialLotTrackedSchema,
   updateMaterialPriceSchema,
   updateMaterialReorderSchema,
+  updateMaterialSerialTrackedSchema,
+  updateMaterialStandardCostSchema,
   updateMaterialSustainabilitySchema,
+  updateMaterialUnitsSchema,
   type AuthUser,
   type CreateMaterialCatalogItemInput,
   type UpdateMaterialBarcodeInput,
   type UpdateMaterialLotTrackedInput,
   type UpdateMaterialPriceInput,
   type UpdateMaterialReorderInput,
+  type UpdateMaterialSerialTrackedInput,
+  type UpdateMaterialStandardCostInput,
   type UpdateMaterialSustainabilityInput,
+  type UpdateMaterialUnitsInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
@@ -118,5 +124,32 @@ export class MaterialCatalogController {
     @Body(new ZodValidationPipe(updateMaterialLotTrackedSchema)) body: UpdateMaterialLotTrackedInput,
   ) {
     return this.service.updateLotTracked(user.companyId, id, body);
+  }
+
+  @Patch(":id/units")
+  updateUnits(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(updateMaterialUnitsSchema)) body: UpdateMaterialUnitsInput,
+  ) {
+    return this.service.updateUnits(user.companyId, id, body);
+  }
+
+  @Patch(":id/serial-tracked")
+  updateSerialTracked(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(updateMaterialSerialTrackedSchema)) body: UpdateMaterialSerialTrackedInput,
+  ) {
+    return this.service.updateSerialTracked(user.companyId, id, body);
+  }
+
+  @Patch(":id/standard-cost")
+  updateStandardCost(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(updateMaterialStandardCostSchema)) body: UpdateMaterialStandardCostInput,
+  ) {
+    return this.service.updateStandardCost(user.companyId, id, body);
   }
 }

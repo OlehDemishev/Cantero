@@ -245,10 +245,24 @@ export class RateCatalogService {
     const materials = company.unitSystem === "imperial" ? imperialMaterials : metricMaterials;
     const rateItems = company.unitSystem === "imperial" ? imperialRateItems : metricRateItems;
 
+    // Resolve/create one UnitOfMeasure per distinct unit string across the starter list — same
+    // "kg" shouldn't become two unrelated rows just because two starter materials both use it.
+    const unitIdByCode = new Map<string, string>();
     const materialIdByCode = new Map<string, string>();
     for (const m of materials) {
+      let unitId = unitIdByCode.get(m.unit.toLowerCase());
+      if (!unitId) {
+        const unit = await this.prisma.unitOfMeasure.upsert({
+          where: { companyId_code: { companyId, code: m.unit } },
+          create: { companyId, code: m.unit, name: m.unit },
+          update: {},
+        });
+        unitId = unit.id;
+        unitIdByCode.set(m.unit.toLowerCase(), unitId);
+      }
+
       const created = await this.prisma.materialCatalogItem.create({
-        data: { companyId, code: m.code, name: m.name, unit: m.unit, defaultUnitPrice: m.defaultUnitPrice },
+        data: { companyId, code: m.code, name: m.name, unit: m.unit, unitId, defaultUnitPrice: m.defaultUnitPrice },
       });
       materialIdByCode.set(m.code, created.id);
     }

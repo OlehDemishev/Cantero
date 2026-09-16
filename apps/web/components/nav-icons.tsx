@@ -65,6 +65,24 @@ export function WarehousesIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function UnitsOfMeasureIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <rect x="2.5" y="6.5" width="15" height="7" rx="1.5" transform="rotate(-8 10 10)" />
+      <path d="M5.3 7.5 4.7 9.9M8.5 7 7.9 9.4M11.7 6.5 11.1 8.9M14.9 6 14.3 8.4" />
+    </Icon>
+  );
+}
+
+export function StockKitsIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M10 2.5 17 6.5v7L10 17.5 3 13.5v-7L10 2.5Z" />
+      <path d="M3 6.5 10 10.5l7-4M10 10.5v7" />
+    </Icon>
+  );
+}
+
 export function SuppliersIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <Icon {...props}>

@@ -10,10 +10,11 @@ const ACTOR = { userId: "user-1", name: "Estimator" };
 describe("MaterialCatalogService — price changes", () => {
   let service: MaterialCatalogService;
   let prisma: {
-    materialCatalogItem: { findFirst: jest.Mock; update: jest.Mock };
+    materialCatalogItem: { findFirst: jest.Mock; findMany: jest.Mock; update: jest.Mock; create: jest.Mock; createMany: jest.Mock };
     materialPriceChange: { create: jest.Mock; findMany: jest.Mock };
     rateCatalogItemMaterial: { findMany: jest.Mock };
     estimate: { findMany: jest.Mock };
+    unitOfMeasure: { findFirst: jest.Mock; findMany: jest.Mock; create: jest.Mock };
     $transaction: jest.Mock;
   };
   let audit: { record: jest.Mock };
@@ -21,10 +22,17 @@ describe("MaterialCatalogService — price changes", () => {
 
   beforeEach(async () => {
     prisma = {
-      materialCatalogItem: { findFirst: jest.fn(), update: jest.fn() },
+      materialCatalogItem: {
+        findFirst: jest.fn(),
+        findMany: jest.fn().mockResolvedValue([]),
+        update: jest.fn(),
+        create: jest.fn((args) => args),
+        createMany: jest.fn(),
+      },
       materialPriceChange: { create: jest.fn(), findMany: jest.fn() },
       rateCatalogItemMaterial: { findMany: jest.fn() },
       estimate: { findMany: jest.fn() },
+      unitOfMeasure: { findFirst: jest.fn(), findMany: jest.fn().mockResolvedValue([]), create: jest.fn() },
       $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
     };
     audit = { record: jest.fn() };
@@ -158,6 +166,112 @@ describe("MaterialCatalogService — price changes", () => {
       expect(prisma.materialCatalogItem.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({ where: { companyId: COMPANY_A, barcode: "012345" } }),
       );
+    });
+  });
+
+  describe("updateSerialTracked()", () => {
+    it("toggles the serialTracked flag", async () => {
+      prisma.materialCatalogItem.findFirst.mockResolvedValue({ id: "mat-1" });
+      prisma.materialCatalogItem.update.mockResolvedValue({ id: "mat-1", serialTracked: true });
+
+      const result = await service.updateSerialTracked(COMPANY_A, "mat-1", { serialTracked: true });
+
+      expect(prisma.materialCatalogItem.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: "mat-1" }, data: { serialTracked: true } }),
+      );
+      expect(result.serialTracked).toBe(true);
+    });
+  });
+
+  describe("updateStandardCost()", () => {
+    it("sets the standardCost field", async () => {
+      prisma.materialCatalogItem.findFirst.mockResolvedValue({ id: "mat-1" });
+      prisma.materialCatalogItem.update.mockResolvedValue({ id: "mat-1", standardCost: 12.5 });
+
+      const result = await service.updateStandardCost(COMPANY_A, "mat-1", { standardCost: 12.5 });
+
+      expect(prisma.materialCatalogItem.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: "mat-1" }, data: { standardCost: 12.5 } }),
+      );
+      expect(result.standardCost).toBe(12.5);
+    });
+
+    it("clears the standardCost field with null", async () => {
+      prisma.materialCatalogItem.findFirst.mockResolvedValue({ id: "mat-1" });
+      prisma.materialCatalogItem.update.mockResolvedValue({ id: "mat-1", standardCost: null });
+
+      await service.updateStandardCost(COMPANY_A, "mat-1", { standardCost: null });
+
+      expect(prisma.materialCatalogItem.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { standardCost: null } }),
+      );
+    });
+  });
+
+  describe("create()", () => {
+    const INPUT = { code: "REBAR", name: "Rebar", unitId: "unit-1", defaultUnitPrice: 1.5, greenCertified: false, lotTracked: false };
+
+    it("throws when the unit doesn't belong to the company", async () => {
+      prisma.unitOfMeasure.findFirst.mockResolvedValue(null);
+      await expect(service.create(COMPANY_A, INPUT)).rejects.toThrow();
+      expect(prisma.materialCatalogItem.create).not.toHaveBeenCalled();
+    });
+
+    it("throws when the given purchaseUnitId doesn't belong to the company", async () => {
+      prisma.unitOfMeasure.findFirst.mockResolvedValueOnce({ id: "unit-1", code: "kg" }).mockResolvedValueOnce(null);
+      await expect(service.create(COMPANY_A, { ...INPUT, purchaseUnitId: "unit-2" })).rejects.toThrow();
+    });
+
+    it("denormalizes unit.code onto the new item's `unit` field", async () => {
+      prisma.unitOfMeasure.findFirst.mockResolvedValue({ id: "unit-1", code: "kg" });
+
+      await service.create(COMPANY_A, INPUT);
+
+      expect(prisma.materialCatalogItem.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ unitId: "unit-1", unit: "kg", companyId: COMPANY_A }) }),
+      );
+    });
+  });
+
+  describe("importCsv()", () => {
+    const CSV_HEADER = "code,name,unit,defaultUnitPrice";
+
+    it("resolves an existing unit case/whitespace-insensitively instead of creating a duplicate", async () => {
+      prisma.unitOfMeasure.findMany.mockResolvedValue([{ id: "unit-kg", code: "kg", companyId: COMPANY_A }]);
+
+      await service.importCsv(COMPANY_A, ACTOR, `${CSV_HEADER}\nREBAR,Rebar,  KG ,1.5`);
+
+      expect(prisma.unitOfMeasure.create).not.toHaveBeenCalled();
+      expect(prisma.materialCatalogItem.createMany).toHaveBeenCalledWith({
+        data: [expect.objectContaining({ code: "REBAR", unit: "kg", unitId: "unit-kg", companyId: COMPANY_A })],
+      });
+    });
+
+    it("creates a new base unit for a unit string not seen before", async () => {
+      prisma.unitOfMeasure.findMany.mockResolvedValue([]);
+      prisma.unitOfMeasure.create.mockResolvedValue({ id: "unit-new", code: "pallet", companyId: COMPANY_A });
+
+      await service.importCsv(COMPANY_A, ACTOR, `${CSV_HEADER}\nSKU1,Item,pallet,10`);
+
+      expect(prisma.unitOfMeasure.create).toHaveBeenCalledWith({ data: { companyId: COMPANY_A, code: "pallet", name: "pallet" } });
+      expect(prisma.materialCatalogItem.createMany).toHaveBeenCalledWith({
+        data: [expect.objectContaining({ unitId: "unit-new", unit: "pallet" })],
+      });
+    });
+
+    it("reuses one newly-created unit across multiple rows sharing the same unit string in one import", async () => {
+      prisma.unitOfMeasure.findMany.mockResolvedValue([]);
+      prisma.unitOfMeasure.create.mockResolvedValue({ id: "unit-new", code: "box", companyId: COMPANY_A });
+
+      await service.importCsv(COMPANY_A, ACTOR, `${CSV_HEADER}\nSKU1,Item 1,box,10\nSKU2,Item 2,BOX,20`);
+
+      expect(prisma.unitOfMeasure.create).toHaveBeenCalledTimes(1);
+      expect(prisma.materialCatalogItem.createMany).toHaveBeenCalledWith({
+        data: [
+          expect.objectContaining({ code: "SKU1", unitId: "unit-new" }),
+          expect.objectContaining({ code: "SKU2", unitId: "unit-new" }),
+        ],
+      });
     });
   });
 });

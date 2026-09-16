@@ -106,6 +106,11 @@ enum StockMovementType {
   write_off
 }
 
+enum StockReservationStatus {
+  active
+  released
+}
+
 /// in_transit: debited from the source warehouse already, not yet credited to the destination —
 /// goods are physically between the two. received: credited to the destination, terminal.
 /// cancelled: credited back to the source, terminal. See StockTransfer.
@@ -421,6 +426,11 @@ model Company {
   stockCounts                     StockCount[]
   inventoryCostLayers             InventoryCostLayer[]
   stockTransfers                  StockTransfer[]
+  stockReservations               StockReservation[]
+  unitsOfMeasure                  UnitOfMeasure[]
+  warehouseLocations              WarehouseLocation[]
+  supplierReturns                 SupplierReturn[]
+  stockKits                       StockKit[]
   rateCatalogItemPendingChanges   RateCatalogItemPendingChange[]
   apiKeys                         ApiKey[]
   auditLogs                       AuditLog[]
@@ -869,12 +879,47 @@ model Subscription {
 
 // ---------- Estimates (flagship) ----------
 
+/// A reusable unit definition ("each," "box of 12," "meter") shared across every
+/// MaterialCatalogItem in the company, rather than a private string per item — "kg" typed on ten
+/// different items resolves to the same row, not ten unrelated strings. A two-level tree (base +
+/// derived units only, not arbitrary chained conversions): baseUnitId null means this row IS a
+/// base unit; set means it converts to that base by factorToBase (quantity in this unit ×
+/// factorToBase = quantity in the base unit). See unit-conversion.ts for the conversion math.
+model UnitOfMeasure {
+  id           String   @id @default(uuid())
+  companyId    String
+  code         String
+  name         String
+  baseUnitId   String?
+  factorToBase Decimal? @db.Decimal(14, 6)
+  createdAt    DateTime @default(now())
+
+  company        Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  baseUnit       UnitOfMeasure?        @relation("UnitConversion", fields: [baseUnitId], references: [id], onDelete: Restrict)
+  derivedUnits   UnitOfMeasure[]       @relation("UnitConversion")
+  stockUnitOf    MaterialCatalogItem[] @relation("MaterialStockUnit")
+  purchaseUnitOf MaterialCatalogItem[] @relation("MaterialPurchaseUnit")
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@map("units_of_measure")
+}
+
 model MaterialCatalogItem {
   id                     String   @id @default(uuid())
   companyId              String
   code                   String
   name                   String
+  /// Denormalized display label kept in sync with unitOfMeasure.code by MaterialCatalogService —
+  /// no longer accepted as free-form client input (see CreateMaterialCatalogItemInput.unitId).
+  /// Every other file in the codebase that prints "{quantity} {unit}" keeps working unchanged;
+  /// only the write path (create, CSV import) changed to resolve/derive a real UnitOfMeasure.
   unit                   String
+  unitId                 String
+  /// The unit a PurchaseOrderLine for this material is normally placed in, if different from
+  /// unitId (e.g. bought by the box, stocked/issued by the each) — see PurchaseOrdersService.
+  /// Null means purchase and stock happen in the same unit, the common case.
+  purchaseUnitId         String?
   defaultUnitPrice       Decimal  @db.Decimal(12, 4)
   /// Below this quantity on hand (summed across warehouses), a low-stock alert is queued. Null = no alert.
   reorderThreshold       Decimal? @db.Decimal(14, 4)
@@ -900,10 +945,23 @@ model MaterialCatalogItem {
   /// engine (FIFO cost layers vs weighted-average) is active, unlike InventoryCostLayer which only
   /// populates under fifo.
   lotTracked             Boolean  @default(false)
+  /// When true, receipts require registering one serial number per unit received (ToolCribUnit
+  /// rows with materialCatalogItemId set) and issues/write-offs/transfers require selecting which
+  /// specific units move — see StockService's serial-tracking branch and serial-units.ts.
+  /// Mutually exclusive with lotTracked in practice (a material is either pooled-by-lot or
+  /// individually serialized) but not enforced at the schema level, matching lotTracked itself.
+  serialTracked          Boolean  @default(false)
+  /// Budgeted/planned per-unit cost, independent of Company.inventoryCostingMethod and never read
+  /// by StockService's FIFO/weighted-average consumption or valuation logic — purely a reference
+  /// value for plan-vs-actual variance reporting (see StockService.standardCostVariance). Null
+  /// means no standard has been set for this item yet, not zero.
+  standardCost           Decimal? @db.Decimal(12, 4)
   createdAt              DateTime @default(now())
 
   company             Company                       @relation(fields: [companyId], references: [id], onDelete: Cascade)
   preferredSupplier   Supplier?                     @relation(fields: [preferredSupplierId], references: [id], onDelete: SetNull)
+  unitOfMeasure       UnitOfMeasure                 @relation("MaterialStockUnit", fields: [unitId], references: [id], onDelete: Restrict)
+  purchaseUnit        UnitOfMeasure?                @relation("MaterialPurchaseUnit", fields: [purchaseUnitId], references: [id], onDelete: SetNull)
   rateCatalogItemUses RateCatalogItemMaterial[]
   stockLevels         StockLevel[]
   stockMovements      StockMovement[]
@@ -916,11 +974,18 @@ model MaterialCatalogItem {
   rfqLines            MaterialRfqLine[]
   priceChanges        MaterialPriceChange[]
   vendorBillLines     VendorBillLine[]
+  stockReservations   StockReservation[]
+  serialUnits         ToolCribUnit[]
+  supplierReturnLines SupplierReturnLine[]
+  kitDefinition       StockKit?                     @relation("KitFinishedItem")
+  kitComponentOf      StockKitComponent[]           @relation("KitComponent")
 
   @@unique([companyId, code])
   @@unique([companyId, barcode])
   @@index([companyId])
   @@index([preferredSupplierId])
+  @@index([unitId])
+  @@index([purchaseUnitId])
   @@map("material_catalog_items")
 }
 
@@ -1535,6 +1600,10 @@ model Warehouse {
   stockLots              StockLot[]
   outgoingStockTransfers StockTransfer[]      @relation("StockTransferFrom")
   incomingStockTransfers StockTransfer[]      @relation("StockTransferTo")
+  stockReservations      StockReservation[]
+  serializedUnits        ToolCribUnit[]
+  locations              WarehouseLocation[]
+  supplierReturns        SupplierReturn[]
 
   @@index([companyId])
   @@map("warehouses")
@@ -1546,8 +1615,15 @@ model StockLevel {
   materialCatalogItemId String
   quantityOnHand        Decimal  @default(0) @db.Decimal(14, 4)
   /// Free-text aisle/shelf/bin within this warehouse — per warehouse+item since the same material
-  /// can sit in a different spot at each location. Null means not yet assigned a location.
+  /// can sit in a different spot at each location. Null means not yet assigned a location. Kept
+  /// alongside binLocationId (not replaced by it) as a quick-entry fallback for warehouses that
+  /// never build out a structured WarehouseLocation hierarchy — see StockService.setBinLocation
+  /// vs. setBinLocationRef.
   binLocation           String?
+  /// Structured alternative to binLocation — references a specific node (usually a "bin") in this
+  /// warehouse's WarehouseLocation hierarchy. Null means not using structured addressing for this
+  /// item, same as binLocation being null.
+  binLocationId         String?
   /// Running weighted-average unit cost, blended in on every receipt that carries a unitCost —
   /// see calculateWeightedAverageCost. Null until the first costed receipt. Maintained regardless
   /// of Company.inventoryCostingMethod (cheap to keep, and lets a company switch method without
@@ -1556,9 +1632,115 @@ model StockLevel {
 
   warehouse           Warehouse           @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
   materialCatalogItem MaterialCatalogItem @relation(fields: [materialCatalogItemId], references: [id], onDelete: Cascade)
+  binLocationRef      WarehouseLocation?  @relation(fields: [binLocationId], references: [id], onDelete: SetNull)
 
   @@unique([warehouseId, materialCatalogItemId])
+  @@index([binLocationId])
   @@map("stock_levels")
+}
+
+enum WarehouseLocationKind {
+  zone
+  aisle
+  rack
+  bin
+}
+
+/// One node in a warehouse's storage hierarchy — zone → aisle → rack → bin, modeled as a
+/// self-referencing tree scoped to one Warehouse rather than four separate Zone/Aisle/Rack/Bin
+/// models, since every level shares the same shape (a name, a parent, a warehouse) and the number
+/// of levels a company actually uses varies (some go straight from zone to bin). `kind` labels
+/// which level this node represents for display/validation only — it doesn't constrain the tree
+/// structure itself (nothing stops a "bin" from parenting another "bin", though the UI doesn't
+/// encourage it).
+model WarehouseLocation {
+  id          String                @id @default(uuid())
+  companyId   String
+  warehouseId String
+  parentId    String?
+  kind        WarehouseLocationKind
+  /// Short label, e.g. "A", "12", "R3", "B04" — unique among siblings under the same parent, not
+  /// globally (two different aisles can each have a rack "R3").
+  code        String
+  createdAt   DateTime              @default(now())
+
+  company     Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  warehouse   Warehouse           @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  parent      WarehouseLocation?  @relation("LocationHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children    WarehouseLocation[] @relation("LocationHierarchy")
+  stockLevels StockLevel[]
+
+  @@unique([warehouseId, parentId, code])
+  @@index([companyId])
+  @@index([warehouseId])
+  @@map("warehouse_locations")
+}
+
+/// An informational hold against a material's on-hand quantity at one warehouse — reduces
+/// StockService.listLevels' reported `available` but never blocks recordMovement/transferStock/
+/// issueFromEstimate: an issue that would take quantityOnHand below the sum of other active
+/// reservations still succeeds, same shortfall-tolerant philosophy issueFromEstimate already has.
+/// Office staff use this to see "what's actually free to promise" without the system enforcing it.
+/// No auto-fulfillment — released only by explicit action, since there's no reliable way to infer
+/// which reservation a later issue was meant to satisfy.
+model StockReservation {
+  id                    String                 @id @default(uuid())
+  companyId             String
+  warehouseId           String
+  materialCatalogItemId String
+  quantity              Decimal                @db.Decimal(14, 4)
+  projectId             String?
+  /// Free-text context (e.g. an order reference) — a reservation isn't required to link to a
+  /// project; a purely internal hold ("earmarked, don't quote out") is also valid.
+  note                  String?
+  status                StockReservationStatus @default(active)
+  createdByName         String
+  createdAt             DateTime               @default(now())
+  releasedAt            DateTime?
+
+  company             Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  warehouse           Warehouse           @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  materialCatalogItem MaterialCatalogItem @relation(fields: [materialCatalogItemId], references: [id], onDelete: Cascade)
+  project             Project?            @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([companyId])
+  @@index([warehouseId, materialCatalogItemId, status])
+  @@map("stock_reservations")
+}
+
+/// A warehouse-level bill-of-materials: assembling `kitMaterialCatalogItemId` consumes each
+/// component at a ratio, producing a StockMovement pair (issue the components, receipt the
+/// finished kit) — entirely separate from Assembly/AssemblyItem, which is an estimating/pricing
+/// concept (a bundle of RateCatalogItems expanded into EstimateLines for pricing a quote) that
+/// never touches physical stock. StockKit is the inverse direction of that use and deliberately
+/// doesn't reuse any of its models.
+model StockKit {
+  id                       String   @id @default(uuid())
+  companyId                String
+  kitMaterialCatalogItemId String   @unique
+  name                     String
+  createdAt                DateTime @default(now())
+
+  company                Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  kitMaterialCatalogItem MaterialCatalogItem @relation("KitFinishedItem", fields: [kitMaterialCatalogItemId], references: [id], onDelete: Restrict)
+  components             StockKitComponent[]
+
+  @@index([companyId])
+  @@map("stock_kits")
+}
+
+model StockKitComponent {
+  id                    String  @id @default(uuid())
+  stockKitId            String
+  materialCatalogItemId String
+  quantityPerKit        Decimal @db.Decimal(12, 6)
+
+  stockKit            StockKit            @relation(fields: [stockKitId], references: [id], onDelete: Cascade)
+  materialCatalogItem MaterialCatalogItem @relation("KitComponent", fields: [materialCatalogItemId], references: [id], onDelete: Restrict)
+
+  @@unique([stockKitId, materialCatalogItemId])
+  @@index([stockKitId])
+  @@map("stock_kit_components")
 }
 
 model StockMovement {
@@ -1580,12 +1762,14 @@ model StockMovement {
   /// time — see inventory-costing.ts. Null when this movement carried/produced no cost data.
   unitCost              Decimal?          @db.Decimal(12, 4)
 
-  warehouse           Warehouse           @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
-  toWarehouse         Warehouse?          @relation("TransferDestination", fields: [toWarehouseId], references: [id], onDelete: Cascade)
-  materialCatalogItem MaterialCatalogItem @relation(fields: [materialCatalogItemId], references: [id], onDelete: Restrict)
-  project             Project?            @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  estimateLine        EstimateLine?       @relation(fields: [estimateLineId], references: [id], onDelete: SetNull)
+  warehouse           Warehouse            @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  toWarehouse         Warehouse?           @relation("TransferDestination", fields: [toWarehouseId], references: [id], onDelete: Cascade)
+  materialCatalogItem MaterialCatalogItem  @relation(fields: [materialCatalogItemId], references: [id], onDelete: Restrict)
+  project             Project?             @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  estimateLine        EstimateLine?        @relation(fields: [estimateLineId], references: [id], onDelete: SetNull)
   lotMovements        StockLotMovement[]
+  unitMovements       StockUnitMovement[]
+  supplierReturnLines SupplierReturnLine[]
 
   @@index([companyId])
   @@index([warehouseId])
@@ -1766,6 +1950,7 @@ model Supplier {
   portalLoginTokens           SupplierPortalLoginToken[]
   vendorBills                 VendorBill[]
   longLeadItems               LongLeadItem[]
+  supplierReturns             SupplierReturn[]
 
   @@unique([id, companyId])
   @@index([companyId])
@@ -1939,7 +2124,11 @@ model PurchaseOrder {
   vendorBills            VendorBill[]
   receivingDiscrepancies ReceivingDiscrepancy[]
   longLeadItems          LongLeadItem[]
+  supplierReturns        SupplierReturn[]
 
+  /// Lets SupplierReturn reference a PurchaseOrder with a composite FK (id + companyId) — the same
+  /// cross-tenant guard PurchaseOrder.supplier already has against Supplier.
+  @@unique([id, companyId])
   @@index([companyId])
   @@map("purchase_orders")
 }
@@ -1962,6 +2151,71 @@ model PurchaseOrderLine {
 
   @@index([purchaseOrderId])
   @@map("purchase_order_lines")
+}
+
+enum SupplierReturnStatus {
+  draft
+  sent
+  confirmed
+}
+
+enum SupplierReturnReason {
+  defective
+  wrong_item
+  overstock
+  damaged_in_transit
+  other
+}
+
+/// A document tracking goods physically going back to a supplier — mirrors StockTransfer's
+/// "document with a status lifecycle that drives real StockMovement rows" shape, not just a new
+/// StockMovementType value. draft: being assembled, no stock effect yet. sent: shipped back to the
+/// supplier — debits the warehouse via a write_off-type StockMovement per line (the closest
+/// existing semantic fit for inventory permanently leaving for a reason other than project
+/// consumption; SupplierReturnLine.stockMovementId is what distinguishes this from an ordinary
+/// shrinkage write-off in reporting, since StockMovement itself carries no return-specific flag).
+/// confirmed: the supplier has acknowledged/credited the return — a bookkeeping-only transition,
+/// no further stock effect.
+model SupplierReturn {
+  id              String               @id @default(uuid())
+  companyId       String
+  supplierId      String
+  purchaseOrderId String
+  warehouseId     String
+  reason          SupplierReturnReason
+  notes           String?
+  status          SupplierReturnStatus @default(draft)
+  createdByName   String
+  createdAt       DateTime             @default(now())
+  sentAt          DateTime?
+  confirmedAt     DateTime?
+
+  company       Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  supplier      Supplier             @relation(fields: [supplierId, companyId], references: [id, companyId], onDelete: Restrict)
+  purchaseOrder PurchaseOrder        @relation(fields: [purchaseOrderId, companyId], references: [id, companyId], onDelete: Restrict)
+  warehouse     Warehouse            @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  lines         SupplierReturnLine[]
+
+  @@index([companyId])
+  @@index([supplierId])
+  @@index([purchaseOrderId])
+  @@map("supplier_returns")
+}
+
+model SupplierReturnLine {
+  id                    String  @id @default(uuid())
+  supplierReturnId      String
+  materialCatalogItemId String
+  quantity              Decimal @db.Decimal(14, 4)
+  /// Snapshot of the movement this line produced once sent — null while still draft.
+  stockMovementId       String?
+
+  supplierReturn      SupplierReturn      @relation(fields: [supplierReturnId], references: [id], onDelete: Cascade)
+  materialCatalogItem MaterialCatalogItem @relation(fields: [materialCatalogItemId], references: [id], onDelete: Restrict)
+  stockMovement       StockMovement?      @relation(fields: [stockMovementId], references: [id], onDelete: SetNull)
+
+  @@index([supplierReturnId])
+  @@map("supplier_return_lines")
 }
 
 enum ReceivingDiscrepancyType {
@@ -2111,6 +2365,7 @@ model Project {
   tasks                       Task[]
   milestones                  Milestone[]
   stockMovements              StockMovement[]
+  stockReservations           StockReservation[]
   timeEntries                 TimeEntry[]
   expenses                    Expense[]
   documents                   Document[]
@@ -5539,26 +5794,60 @@ enum ToolCribUnitStatus {
   damaged
   lost
   retired
+  /// A serialized warehouse-material unit issued/written off from stock — terminal, unlike
+  /// checked_out (no return path back to available the way a tool checkout has). Never set on a
+  /// toolCribItemId-owned unit, which uses checked_out/lost/damaged/retired exclusively.
+  consumed
 }
 
-/// One physical, individually-numbered unit of a serialTracked ToolCribItem — e.g. "Generator #3"
-/// under the "Generators" catalog item. Only exists for items with serialTracked=true; bulk items
-/// stay on ToolCribItem.quantityOnHand alone, same as before this model existed.
+/// One physical, individually-numbered unit — either of a serialTracked ToolCribItem (e.g.
+/// "Generator #3" under the "Generators" catalog item) or of a serialTracked MaterialCatalogItem
+/// (a serialized warehouse material). Exactly one of toolCribItemId/materialCatalogItemId is set
+/// per row — enforced in the service layer (ToolCribService for the former, StockService for the
+/// latter), not a schema-level CHECK, matching how this codebase already handles polymorphic
+/// attachment (see CalibrationRecord). warehouseId is only meaningful for the
+/// materialCatalogItemId-owned case — which warehouse the unit currently sits at, reassigned on
+/// transfer rather than the unit being consumed and recreated.
 model ToolCribUnit {
-  id             String             @id @default(uuid())
-  companyId      String
-  toolCribItemId String
-  serialNumber   String
-  status         ToolCribUnitStatus @default(available)
-  createdAt      DateTime           @default(now())
+  id                    String             @id @default(uuid())
+  companyId             String
+  toolCribItemId        String?
+  materialCatalogItemId String?
+  warehouseId           String?
+  serialNumber          String
+  status                ToolCribUnitStatus @default(available)
+  createdAt             DateTime           @default(now())
 
-  company      Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  toolCribItem ToolCribItem   @relation(fields: [toolCribItemId], references: [id], onDelete: Cascade)
-  checkouts    ToolCheckout[]
+  company             Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  toolCribItem        ToolCribItem?        @relation(fields: [toolCribItemId], references: [id], onDelete: Cascade)
+  materialCatalogItem MaterialCatalogItem? @relation(fields: [materialCatalogItemId], references: [id], onDelete: Cascade)
+  warehouse           Warehouse?           @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  checkouts           ToolCheckout[]
+  stockUnitMovements  StockUnitMovement[]
 
   @@unique([toolCribItemId, serialNumber])
+  @@unique([warehouseId, materialCatalogItemId, serialNumber])
   @@index([companyId])
   @@map("tool_crib_units")
+}
+
+/// The serial-tracking counterpart to StockLotMovement for lot-tracked materials — records that a
+/// StockMovement touched this specific serialized ToolCribUnit. Always quantity=1 per row (a unit
+/// is indivisible), unlike StockLotMovement's pooled quantity, but kept as its own join table (not
+/// a single column on StockMovement) for the same reason: a receipt of 5 serialized units spans 5
+/// rows against one movement.
+model StockUnitMovement {
+  id              String @id @default(uuid())
+  stockMovementId String
+  toolCribUnitId  String
+
+  stockMovement StockMovement @relation(fields: [stockMovementId], references: [id], onDelete: Cascade)
+  toolCribUnit  ToolCribUnit  @relation(fields: [toolCribUnitId], references: [id], onDelete: Restrict)
+
+  @@unique([stockMovementId, toolCribUnitId])
+  @@index([stockMovementId])
+  @@index([toolCribUnitId])
+  @@map("stock_unit_movements")
 }
 
 enum ToolCheckoutCondition {

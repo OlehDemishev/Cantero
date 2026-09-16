@@ -6,7 +6,10 @@ import type {
   UpdateMaterialLotTrackedInput,
   UpdateMaterialPriceInput,
   UpdateMaterialReorderInput,
+  UpdateMaterialSerialTrackedInput,
+  UpdateMaterialStandardCostInput,
   UpdateMaterialSustainabilityInput,
+  UpdateMaterialUnitsInput,
 } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { parseCsvRecords } from "../common/csv";
@@ -39,43 +42,66 @@ export class MaterialCatalogService {
     return item;
   }
 
-  create(companyId: string, input: CreateMaterialCatalogItemInput) {
+  async create(companyId: string, input: CreateMaterialCatalogItemInput) {
+    const unit = await this.prisma.unitOfMeasure.findFirst({ where: { id: input.unitId, companyId } });
+    if (!unit) throw new NotFoundException("Unit of measure not found");
+    if (input.purchaseUnitId) {
+      const purchaseUnit = await this.prisma.unitOfMeasure.findFirst({ where: { id: input.purchaseUnitId, companyId } });
+      if (!purchaseUnit) throw new NotFoundException("Purchase unit of measure not found");
+    }
+
     return this.prisma.materialCatalogItem.create({
-      data: { ...input, companyId },
+      data: { ...input, unit: unit.code, companyId },
     });
   }
 
-  /** CSV columns: code (required), name (required), unit (required), defaultUnitPrice (required, numeric). Rows whose code already exists for this company are skipped. */
+  /**
+   * CSV columns: code (required), name (required), unit (required), defaultUnitPrice (required,
+   * numeric). Rows whose code already exists for this company are skipped. `unit` here is still a
+   * free-text CSV column (spreadsheets don't carry UnitOfMeasure ids) — resolveOrCreateUnit finds
+   * or creates a matching base unit per distinct string, the same "kg"/" Kg " collapsing the
+   * schema migration's backfill did, so a CSV re-import never creates duplicate near-identical units.
+   */
   async importCsv(companyId: string, actor: AuditActor, csv: string): Promise<ImportResult> {
     const records = parseCsvRecords(csv);
     const result: ImportResult = { created: 0, skipped: 0, errors: [] };
 
-    const existing = await this.prisma.materialCatalogItem.findMany({ where: { companyId }, select: { code: true } });
+    const [existing, existingUnits] = await Promise.all([
+      this.prisma.materialCatalogItem.findMany({ where: { companyId }, select: { code: true } }),
+      this.prisma.unitOfMeasure.findMany({ where: { companyId } }),
+    ]);
     const seenCodes = new Set(existing.map((m) => m.code));
+    const unitByKey = new Map(existingUnits.map((u) => [u.code.toLowerCase(), u]));
 
-    const toCreate: { code: string; name: string; unit: string; defaultUnitPrice: number }[] = [];
+    const toCreate: { code: string; name: string; unit: string; unitId: string; defaultUnitPrice: number }[] = [];
 
-    records.forEach((record, index) => {
+    for (const [index, record] of records.entries()) {
       const row = index + 2;
       const code = record.code?.trim();
       const name = record.name?.trim();
-      const unit = record.unit?.trim();
+      const unitLabel = record.unit?.trim();
       const priceRaw = record.defaultunitprice?.trim();
       const price = Number(priceRaw);
 
-      if (!code || !name || !unit || !priceRaw || Number.isNaN(price)) {
+      if (!code || !name || !unitLabel || !priceRaw || Number.isNaN(price)) {
         result.skipped++;
         result.errors.push({ row, message: "Missing or invalid code/name/unit/defaultUnitPrice" });
-        return;
+        continue;
       }
       if (seenCodes.has(code)) {
         result.skipped++;
         result.errors.push({ row, message: `Code "${code}" already exists` });
-        return;
+        continue;
       }
       seenCodes.add(code);
-      toCreate.push({ code, name, unit, defaultUnitPrice: price });
-    });
+
+      let unit = unitByKey.get(unitLabel.toLowerCase());
+      if (!unit) {
+        unit = await this.prisma.unitOfMeasure.create({ data: { companyId, code: unitLabel, name: unitLabel } });
+        unitByKey.set(unitLabel.toLowerCase(), unit);
+      }
+      toCreate.push({ code, name, unit: unit.code, unitId: unit.id, defaultUnitPrice: price });
+    }
 
     if (toCreate.length > 0) {
       await this.prisma.materialCatalogItem.createMany({ data: toCreate.map((m) => ({ ...m, companyId })) });
@@ -92,6 +118,25 @@ export class MaterialCatalogService {
     );
 
     return result;
+  }
+
+  /** Changes which UnitOfMeasure this item's quantities/purchases are denominated in — does not
+   * retroactively convert any existing StockLevel/StockMovement history, which stays in whatever
+   * unit it was originally recorded in. Same "no retroactive rewrite" stance as updateLotTracked. */
+  async updateUnits(companyId: string, id: string, input: UpdateMaterialUnitsInput) {
+    await this.get(companyId, id);
+    const unit = await this.prisma.unitOfMeasure.findFirst({ where: { id: input.unitId, companyId } });
+    if (!unit) throw new NotFoundException("Unit of measure not found");
+    if (input.purchaseUnitId) {
+      const purchaseUnit = await this.prisma.unitOfMeasure.findFirst({ where: { id: input.purchaseUnitId, companyId } });
+      if (!purchaseUnit) throw new NotFoundException("Purchase unit of measure not found");
+    }
+
+    return this.prisma.materialCatalogItem.update({
+      where: { id },
+      data: { unitId: input.unitId, unit: unit.code, purchaseUnitId: input.purchaseUnitId },
+      include: { preferredSupplier: true },
+    });
   }
 
   async updateReorderSettings(companyId: string, id: string, input: UpdateMaterialReorderInput) {
@@ -208,6 +253,29 @@ export class MaterialCatalogService {
     return this.prisma.materialCatalogItem.update({
       where: { id },
       data: { lotTracked: input.lotTracked },
+      include: { preferredSupplier: true },
+    });
+  }
+
+  /** Toggles serial tracking for this material — see MaterialCatalogItem.serialTracked. Turning it
+   * off doesn't retroactively delete any ToolCribUnit rows already created; it only stops
+   * requiring serial numbers on future receipts and stops per-unit selection on future issues. */
+  async updateSerialTracked(companyId: string, id: string, input: UpdateMaterialSerialTrackedInput) {
+    await this.get(companyId, id);
+    return this.prisma.materialCatalogItem.update({
+      where: { id },
+      data: { serialTracked: input.serialTracked },
+      include: { preferredSupplier: true },
+    });
+  }
+
+  /** Purely a stored reference value (see MaterialCatalogItem.standardCost) — never touches
+   * defaultUnitPrice, InventoryCostLayer, or StockLevel.averageCost, unlike updatePrice(). */
+  async updateStandardCost(companyId: string, id: string, input: UpdateMaterialStandardCostInput) {
+    await this.get(companyId, id);
+    return this.prisma.materialCatalogItem.update({
+      where: { id },
+      data: { standardCost: input.standardCost },
       include: { preferredSupplier: true },
     });
   }

@@ -66,6 +66,60 @@ describe("StockService.setBinLocation", () => {
   });
 });
 
+describe("StockService.setBinLocationRef", () => {
+  let service: StockService;
+  let prisma: {
+    warehouse: { findFirst: jest.Mock };
+    materialCatalogItem: { findFirst: jest.Mock };
+    warehouseLocation: { findFirst: jest.Mock };
+    stockLevel: { upsert: jest.Mock };
+  };
+
+  beforeEach(async () => {
+    prisma = {
+      warehouse: { findFirst: jest.fn().mockResolvedValue({ id: "wh-1" }) },
+      materialCatalogItem: { findFirst: jest.fn().mockResolvedValue({ id: "mat-1" }) },
+      warehouseLocation: { findFirst: jest.fn() },
+      stockLevel: { upsert: jest.fn((args) => args) },
+    };
+    const module = await Test.createTestingModule({
+      providers: [
+        StockService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: getQueueToken(STOCK_ALERTS_QUEUE), useValue: { add: jest.fn() } },
+      ],
+    }).compile();
+    service = module.get(StockService);
+  });
+
+  it("throws when the given location doesn't exist at this warehouse", async () => {
+    prisma.warehouseLocation.findFirst.mockResolvedValue(null);
+    await expect(
+      service.setBinLocationRef(COMPANY_A, { warehouseId: "wh-1", materialCatalogItemId: "mat-1", binLocationId: "loc-1" }),
+    ).rejects.toThrow(NotFoundException);
+  });
+
+  it("upserts the StockLevel row with the location reference", async () => {
+    prisma.warehouseLocation.findFirst.mockResolvedValue({ id: "loc-1" });
+
+    await service.setBinLocationRef(COMPANY_A, { warehouseId: "wh-1", materialCatalogItemId: "mat-1", binLocationId: "loc-1" });
+
+    expect(prisma.stockLevel.upsert).toHaveBeenCalledWith({
+      where: { warehouseId_materialCatalogItemId: { warehouseId: "wh-1", materialCatalogItemId: "mat-1" } },
+      create: { warehouseId: "wh-1", materialCatalogItemId: "mat-1", binLocationId: "loc-1" },
+      update: { binLocationId: "loc-1" },
+    });
+  });
+
+  it("clears the location reference when binLocationId is null", async () => {
+    await service.setBinLocationRef(COMPANY_A, { warehouseId: "wh-1", materialCatalogItemId: "mat-1", binLocationId: null });
+    expect(prisma.warehouseLocation.findFirst).not.toHaveBeenCalled();
+    expect(prisma.stockLevel.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ create: expect.objectContaining({ binLocationId: null }) }),
+    );
+  });
+});
+
 describe("StockService.recordMovement — costing", () => {
   let service: StockService;
   let prisma: {
@@ -171,6 +225,19 @@ describe("StockService.recordMovement — costing", () => {
 
     expect(prisma.$transaction).toHaveBeenCalledTimes(2);
     expect(prisma.stockMovement.create).toHaveBeenCalledTimes(1);
+  });
+
+  // Reservations are purely informational (see StockReservationsService) — recordMovement never
+  // reads or writes StockReservation, so an issue succeeds even if it would take quantityOnHand
+  // below what other reservations claim. The mocked `prisma` above has no `stockReservation` key
+  // at all; if recordMovement ever queried it, this test would throw a TypeError instead of passing.
+  it("issues succeed regardless of any active reservation on the material (reservations never block)", async () => {
+    prisma.company.findUniqueOrThrow.mockResolvedValue({ inventoryCostingMethod: "weighted_average" });
+    prisma.stockLevel.findUnique.mockResolvedValue({ quantityOnHand: "2", averageCost: "6" });
+
+    await expect(
+      service.recordMovement(COMPANY_A, { warehouseId: "wh-1", materialCatalogItemId: "mat-1", type: "issue", quantity: 10 }),
+    ).resolves.toBeDefined();
   });
 });
 
@@ -326,6 +393,214 @@ describe("StockService.recordMovement — lot tracking", () => {
   });
 });
 
+describe("StockService.recordMovement — serial tracking", () => {
+  let service: StockService;
+  let prisma: {
+    warehouse: { findFirst: jest.Mock };
+    materialCatalogItem: { findFirst: jest.Mock };
+    company: { findUniqueOrThrow: jest.Mock };
+    stockLevel: { upsert: jest.Mock; findUnique: jest.Mock };
+    stockMovement: { create: jest.Mock };
+    toolCribUnit: { findMany: jest.Mock; create: jest.Mock; updateMany: jest.Mock };
+    stockUnitMovement: { create: jest.Mock };
+    $transaction: jest.Mock;
+  };
+
+  beforeEach(async () => {
+    prisma = {
+      warehouse: { findFirst: jest.fn().mockResolvedValue({ id: "wh-1" }) },
+      materialCatalogItem: { findFirst: jest.fn().mockResolvedValue({ id: "mat-1", name: "Power Drill", serialTracked: true }) },
+      company: { findUniqueOrThrow: jest.fn().mockResolvedValue({ inventoryCostingMethod: "weighted_average" }) },
+      stockLevel: { upsert: jest.fn((args) => args), findUnique: jest.fn().mockResolvedValue(null) },
+      stockMovement: { create: jest.fn(() => ({ id: "movement-1" })) },
+      toolCribUnit: { findMany: jest.fn().mockResolvedValue([]), create: jest.fn(), updateMany: jest.fn() },
+      stockUnitMovement: { create: jest.fn() },
+      $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
+    };
+
+    const module = await Test.createTestingModule({
+      providers: [
+        StockService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: getQueueToken(STOCK_ALERTS_QUEUE), useValue: { add: jest.fn() } },
+      ],
+    }).compile();
+
+    service = module.get(StockService);
+  });
+
+  it("rejects a receipt against a serial-tracked material with no serial numbers", async () => {
+    await expect(
+      service.recordMovement(COMPANY_A, { warehouseId: "wh-1", materialCatalogItemId: "mat-1", type: "receipt", quantity: 2 }),
+    ).rejects.toThrow(BadRequestException);
+    expect(prisma.stockMovement.create).not.toHaveBeenCalled();
+  });
+
+  it("rejects a receipt whose serial number count doesn't match the quantity", async () => {
+    await expect(
+      service.recordMovement(COMPANY_A, {
+        warehouseId: "wh-1",
+        materialCatalogItemId: "mat-1",
+        type: "receipt",
+        quantity: 3,
+        serialNumbers: ["SN-1", "SN-2"],
+      }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it("rejects a duplicate serial number already registered at this warehouse", async () => {
+    prisma.toolCribUnit.findMany.mockResolvedValue([{ serialNumber: "SN-1" }]);
+
+    await expect(
+      service.recordMovement(COMPANY_A, {
+        warehouseId: "wh-1",
+        materialCatalogItemId: "mat-1",
+        type: "receipt",
+        quantity: 1,
+        serialNumbers: ["SN-1"],
+      }),
+    ).rejects.toThrow(BadRequestException);
+    expect(prisma.toolCribUnit.create).not.toHaveBeenCalled();
+  });
+
+  it("receipt: registers one ToolCribUnit per serial number and links each to the movement", async () => {
+    prisma.toolCribUnit.create
+      .mockResolvedValueOnce({ id: "unit-1" })
+      .mockResolvedValueOnce({ id: "unit-2" });
+
+    await service.recordMovement(COMPANY_A, {
+      warehouseId: "wh-1",
+      materialCatalogItemId: "mat-1",
+      type: "receipt",
+      quantity: 2,
+      serialNumbers: ["SN-1", "SN-2"],
+    });
+
+    expect(prisma.toolCribUnit.create).toHaveBeenCalledWith({ data: { companyId: COMPANY_A, warehouseId: "wh-1", materialCatalogItemId: "mat-1", serialNumber: "SN-1" } });
+    expect(prisma.toolCribUnit.create).toHaveBeenCalledWith({ data: { companyId: COMPANY_A, warehouseId: "wh-1", materialCatalogItemId: "mat-1", serialNumber: "SN-2" } });
+    expect(prisma.stockUnitMovement.create).toHaveBeenCalledWith({ data: { stockMovementId: "movement-1", toolCribUnitId: "unit-1" } });
+    expect(prisma.stockUnitMovement.create).toHaveBeenCalledWith({ data: { stockMovementId: "movement-1", toolCribUnitId: "unit-2" } });
+  });
+
+  it("issue: without explicit unitIds, consumes the oldest-registered available units and marks them consumed", async () => {
+    prisma.toolCribUnit.findMany.mockResolvedValue([{ id: "unit-old" }, { id: "unit-new" }]);
+
+    await service.recordMovement(COMPANY_A, { warehouseId: "wh-1", materialCatalogItemId: "mat-1", type: "issue", quantity: 1 });
+
+    expect(prisma.toolCribUnit.updateMany).toHaveBeenCalledWith({ where: { id: { in: ["unit-old"] } }, data: { status: "consumed" } });
+    expect(prisma.stockUnitMovement.create).toHaveBeenCalledWith({ data: { stockMovementId: "movement-1", toolCribUnitId: "unit-old" } });
+  });
+
+  it("issue: with explicit unitIds, consumes exactly those units", async () => {
+    prisma.toolCribUnit.findMany.mockResolvedValue([{ id: "unit-42" }]);
+
+    await service.recordMovement(COMPANY_A, {
+      warehouseId: "wh-1",
+      materialCatalogItemId: "mat-1",
+      type: "issue",
+      quantity: 1,
+      unitIds: ["unit-42"],
+    });
+
+    expect(prisma.toolCribUnit.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: { in: ["unit-42"] }, warehouseId: "wh-1", materialCatalogItemId: "mat-1", status: "available" } }),
+    );
+    expect(prisma.toolCribUnit.updateMany).toHaveBeenCalledWith({ where: { id: { in: ["unit-42"] } }, data: { status: "consumed" } });
+  });
+
+  it("throws when an explicitly selected unit isn't available at this warehouse", async () => {
+    prisma.toolCribUnit.findMany.mockResolvedValue([]);
+
+    await expect(
+      service.recordMovement(COMPANY_A, {
+        warehouseId: "wh-1",
+        materialCatalogItemId: "mat-1",
+        type: "issue",
+        quantity: 1,
+        unitIds: ["unit-missing"],
+      }),
+    ).rejects.toThrow(NotFoundException);
+  });
+});
+
+describe("StockService.transferStock — serial tracking", () => {
+  let service: StockService;
+  let prisma: {
+    warehouse: { findFirst: jest.Mock };
+    materialCatalogItem: { findFirst: jest.Mock };
+    company: { findUniqueOrThrow: jest.Mock };
+    stockLevel: { upsert: jest.Mock; findUnique: jest.Mock };
+    stockMovement: { create: jest.Mock };
+    toolCribUnit: { findMany: jest.Mock; updateMany: jest.Mock };
+    stockUnitMovement: { create: jest.Mock };
+    $transaction: jest.Mock;
+  };
+
+  beforeEach(async () => {
+    prisma = {
+      warehouse: { findFirst: jest.fn().mockResolvedValue({ id: "wh-1" }) },
+      materialCatalogItem: { findFirst: jest.fn().mockResolvedValue({ id: "mat-1", name: "Power Drill", serialTracked: true }) },
+      company: { findUniqueOrThrow: jest.fn().mockResolvedValue({ inventoryCostingMethod: "weighted_average" }) },
+      stockLevel: { upsert: jest.fn((args) => args), findUnique: jest.fn().mockResolvedValue(null) },
+      stockMovement: { create: jest.fn(() => ({ id: "movement-1" })) },
+      toolCribUnit: { findMany: jest.fn().mockResolvedValue([{ id: "unit-1" }]), updateMany: jest.fn() },
+      stockUnitMovement: { create: jest.fn() },
+      $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
+    };
+
+    const module = await Test.createTestingModule({
+      providers: [
+        StockService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: getQueueToken(STOCK_ALERTS_QUEUE), useValue: { add: jest.fn() } },
+      ],
+    }).compile();
+
+    service = module.get(StockService);
+  });
+
+  it("reassigns the moved unit's warehouseId without changing its status", async () => {
+    await service.transferStock(COMPANY_A, { fromWarehouseId: "wh-1", toWarehouseId: "wh-2", materialCatalogItemId: "mat-1", quantity: 1 });
+
+    expect(prisma.toolCribUnit.updateMany).toHaveBeenCalledWith({ where: { id: { in: ["unit-1"] } }, data: { warehouseId: "wh-2" } });
+    expect(prisma.stockUnitMovement.create).toHaveBeenCalledWith({ data: { stockMovementId: "movement-1", toolCribUnitId: "unit-1" } });
+  });
+});
+
+describe("StockService.listLevels", () => {
+  it("adds reserved/available computed from active reservations, keyed by warehouse+material", async () => {
+    const prisma = {
+      stockLevel: {
+        findMany: jest.fn().mockResolvedValue([
+          { warehouseId: "wh-1", materialCatalogItemId: "mat-1", quantityOnHand: "10" },
+          { warehouseId: "wh-1", materialCatalogItemId: "mat-2", quantityOnHand: "5" },
+        ]),
+      },
+      stockReservation: {
+        groupBy: jest.fn().mockResolvedValue([{ warehouseId: "wh-1", materialCatalogItemId: "mat-1", _sum: { quantity: "3" } }]),
+      },
+    };
+    const module = await Test.createTestingModule({
+      providers: [
+        StockService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: getQueueToken(STOCK_ALERTS_QUEUE), useValue: { add: jest.fn() } },
+      ],
+    }).compile();
+    const service = module.get(StockService);
+
+    const result = await service.listLevels(COMPANY_A);
+
+    expect(result).toEqual([
+      { warehouseId: "wh-1", materialCatalogItemId: "mat-1", quantityOnHand: "10", reserved: 3, available: 7 },
+      { warehouseId: "wh-1", materialCatalogItemId: "mat-2", quantityOnHand: "5", reserved: 0, available: 5 },
+    ]);
+    expect(prisma.stockReservation.groupBy).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { companyId: COMPANY_A, status: "active" } }),
+    );
+  });
+});
+
 describe("StockService.listLots", () => {
   it("scopes the query by company and, when given, warehouse/material", async () => {
     const prisma = { stockLot: { findMany: jest.fn().mockResolvedValue([]) } };
@@ -405,5 +680,84 @@ describe("StockService.inventoryValuation", () => {
     expect(result.rows).toEqual([
       { warehouseId: "wh-1", warehouseName: "Main", materialCatalogItemId: "mat-1", materialName: "2x4 Lumber", unit: "ea", quantity: 8, totalValue: 38, unitValue: 4.75 },
     ]);
+  });
+});
+
+describe("StockService.standardCostVariance", () => {
+  let service: StockService;
+  let prisma: {
+    company: { findUniqueOrThrow: jest.Mock };
+    stockLevel: { findMany: jest.Mock };
+    inventoryCostLayer: { findMany: jest.Mock };
+    materialCatalogItem: { findMany: jest.Mock };
+  };
+
+  beforeEach(async () => {
+    prisma = {
+      company: { findUniqueOrThrow: jest.fn().mockResolvedValue({ inventoryCostingMethod: "weighted_average" }) },
+      stockLevel: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            warehouseId: "wh-1",
+            materialCatalogItemId: "mat-1",
+            quantityOnHand: "10",
+            averageCost: "6",
+            warehouse: { name: "Main" },
+            materialCatalogItem: { name: "2x4 Lumber", unit: "ea" },
+          },
+          {
+            warehouseId: "wh-1",
+            materialCatalogItemId: "mat-2",
+            quantityOnHand: "5",
+            averageCost: "20",
+            warehouse: { name: "Main" },
+            materialCatalogItem: { name: "Widget", unit: "ea" },
+          },
+        ]),
+      },
+      inventoryCostLayer: { findMany: jest.fn() },
+      materialCatalogItem: { findMany: jest.fn() },
+    };
+
+    const module = await Test.createTestingModule({
+      providers: [
+        StockService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: getQueueToken(STOCK_ALERTS_QUEUE), useValue: { add: jest.fn() } },
+      ],
+    }).compile();
+
+    service = module.get(StockService);
+  });
+
+  it("excludes materials with no standardCost set", async () => {
+    prisma.materialCatalogItem.findMany.mockResolvedValue([{ id: "mat-1", standardCost: "5" }]);
+
+    const rows = await service.standardCostVariance(COMPANY_A);
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0].materialCatalogItemId).toBe("mat-1");
+  });
+
+  it("computes the variance amount and percent against the actual (weighted-average) cost", async () => {
+    prisma.materialCatalogItem.findMany.mockResolvedValue([{ id: "mat-1", standardCost: "5" }]);
+
+    const rows = await service.standardCostVariance(COMPANY_A);
+
+    // actual (averageCost) = 6, standard = 5 -> +1 variance, +20%
+    expect(rows[0]).toEqual(expect.objectContaining({ standardCost: 5, varianceAmount: 1, variancePercent: 20 }));
+  });
+
+  it("computes variance correctly under fifo too, reusing inventoryValuation's own actual-cost derivation", async () => {
+    prisma.company.findUniqueOrThrow.mockResolvedValue({ inventoryCostingMethod: "fifo" });
+    prisma.inventoryCostLayer.findMany.mockResolvedValue([
+      { warehouseId: "wh-1", materialCatalogItemId: "mat-1", remainingQuantity: "10", unitCost: "8", warehouse: { name: "Main" }, materialCatalogItem: { name: "2x4 Lumber", unit: "ea" } },
+    ]);
+    prisma.materialCatalogItem.findMany.mockResolvedValue([{ id: "mat-1", standardCost: "10" }]);
+
+    const rows = await service.standardCostVariance(COMPANY_A);
+
+    // actual = 8, standard = 10 -> -2 variance, -20%
+    expect(rows[0]).toEqual(expect.objectContaining({ standardCost: 10, varianceAmount: -2, variancePercent: -20 }));
   });
 });

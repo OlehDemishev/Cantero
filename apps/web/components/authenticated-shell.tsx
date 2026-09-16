@@ -55,6 +55,8 @@ import {
   ToolCribIcon,
   UserCircleIcon,
   WarehousesIcon,
+  UnitsOfMeasureIcon,
+  StockKitsIcon,
 } from "@/components/nav-icons";
 
 interface NavItem {
@@ -110,6 +112,8 @@ export const NAV_GROUPS: { key: string; items: NavItem[] }[] = [
     key: "procurement",
     items: [
       { href: "/warehouses", key: "warehouses", icon: WarehousesIcon },
+      { href: "/materials/units", key: "unitsOfMeasure", icon: UnitsOfMeasureIcon },
+      { href: "/materials/kits", key: "stockKits", icon: StockKitsIcon },
       { href: "/equipment", key: "equipment", icon: EquipmentIcon },
       { href: "/fleet", key: "fleet", icon: FleetIcon },
       { href: "/tool-crib", key: "toolCrib", icon: ToolCribIcon },
