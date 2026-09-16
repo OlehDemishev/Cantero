@@ -261,6 +261,39 @@ describe("AccountingSyncService", () => {
         expect.objectContaining({ data: expect.objectContaining({ invoiceNumber: "INV-0002", status: "success" }) }),
       );
     });
+
+    it("defaults to the QuickBooks sandbox API host when QUICKBOOKS_API_BASE_URL isn't set", async () => {
+      prisma.accountingConnection.findUnique.mockResolvedValue(activeConnection);
+      prisma.invoice.findMany.mockResolvedValue([
+        { id: "inv-1", number: "INV-0001", total: "100", dueDate: null, client: { name: "Acme Corp", email: null } },
+      ]);
+      fetchMock
+        .mockResolvedValueOnce(jsonResponse({ QueryResponse: { Customer: [{ Id: "cust-1" }] } }))
+        .mockResolvedValueOnce(jsonResponse({ Invoice: { Id: "qb-inv-1" } }));
+
+      await service.syncInvoices("company-a");
+
+      for (const call of fetchMock.mock.calls) {
+        expect(call[0]).toMatch(/^https:\/\/sandbox-quickbooks\.api\.intuit\.com\//);
+      }
+    });
+
+    it("uses QUICKBOOKS_API_BASE_URL when set, so a real deployment can point at production", async () => {
+      config.get.mockImplementation((key: string) => (key === "QUICKBOOKS_API_BASE_URL" ? "https://quickbooks.api.intuit.com" : CONFIG_VALUES[key]));
+      prisma.accountingConnection.findUnique.mockResolvedValue(activeConnection);
+      prisma.invoice.findMany.mockResolvedValue([
+        { id: "inv-1", number: "INV-0001", total: "100", dueDate: null, client: { name: "Acme Corp", email: null } },
+      ]);
+      fetchMock
+        .mockResolvedValueOnce(jsonResponse({ QueryResponse: { Customer: [{ Id: "cust-1" }] } }))
+        .mockResolvedValueOnce(jsonResponse({ Invoice: { Id: "qb-inv-1" } }));
+
+      await service.syncInvoices("company-a");
+
+      for (const call of fetchMock.mock.calls) {
+        expect(call[0]).toMatch(/^https:\/\/quickbooks\.api\.intuit\.com\//);
+      }
+    });
   });
 
   describe("syncBills", () => {

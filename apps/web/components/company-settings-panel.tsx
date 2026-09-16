@@ -16,6 +16,20 @@ interface Company {
   postalCode: string | null;
   vatId: string | null;
   iban: string | null;
+  datevConsultantNumber: string | null;
+  datevClientNumber: string | null;
+  datevFiscalYearStartMonth: number | null;
+  datevFiscalYearStartDay: number | null;
+  datevChartOfAccounts: "skr03" | "skr04" | null;
+  datevSachkontenlaenge: number | null;
+  datevReceivablesAccount: string | null;
+  datevPayablesAccount: string | null;
+  datevRevenueAccountStandard: string | null;
+  datevRevenueAccountReduced: string | null;
+  datevRevenueAccountExempt: string | null;
+  datevExpenseAccountSubcontractors: string | null;
+  peppolScheme: string | null;
+  peppolParticipantId: string | null;
   approvalThresholdAmount: string | null;
   requiredApprovalCount: number;
   changeOrderApprovalThresholdAmount: string | null;
@@ -45,6 +59,17 @@ interface Company {
   reportingCurrency: string | null;
 }
 
+/** Typical SKR03/SKR04 account numbers, used only to pre-fill the settings form when the company
+ * picks a chart of accounts — never assumed server-side. The customer's own Steuerberater may use
+ * different numbers; these are starting points, not authoritative defaults. */
+const DATEV_ACCOUNT_SUGGESTIONS: Record<
+  "skr03" | "skr04",
+  { receivables: string; payables: string; revenueStandard: string; revenueReduced: string; revenueExempt: string; expenseSubcontractors: string }
+> = {
+  skr03: { receivables: "1400", payables: "1600", revenueStandard: "8400", revenueReduced: "8300", revenueExempt: "8120", expenseSubcontractors: "3300" },
+  skr04: { receivables: "1200", payables: "3300", revenueStandard: "4400", revenueReduced: "4300", revenueExempt: "4120", expenseSubcontractors: "5900" },
+};
+
 export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
   const t = useTranslations("settings");
   const tc = useTranslations("common");
@@ -58,6 +83,20 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
     postalCode: string;
     vatId: string;
     iban: string;
+    datevConsultantNumber: string;
+    datevClientNumber: string;
+    datevFiscalYearStartMonth: string;
+    datevFiscalYearStartDay: string;
+    datevChartOfAccounts: "" | "skr03" | "skr04";
+    datevSachkontenlaenge: string;
+    datevReceivablesAccount: string;
+    datevPayablesAccount: string;
+    datevRevenueAccountStandard: string;
+    datevRevenueAccountReduced: string;
+    datevRevenueAccountExempt: string;
+    datevExpenseAccountSubcontractors: string;
+    peppolScheme: string;
+    peppolParticipantId: string;
     approvalThresholdAmount: string;
     requiredApprovalCount: string;
     changeOrderApprovalThresholdAmount: string;
@@ -94,6 +133,20 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
     postalCode: "",
     vatId: "",
     iban: "",
+    datevConsultantNumber: "",
+    datevClientNumber: "",
+    datevFiscalYearStartMonth: "",
+    datevFiscalYearStartDay: "",
+    datevChartOfAccounts: "",
+    datevSachkontenlaenge: "",
+    datevReceivablesAccount: "",
+    datevPayablesAccount: "",
+    datevRevenueAccountStandard: "",
+    datevRevenueAccountReduced: "",
+    datevRevenueAccountExempt: "",
+    datevExpenseAccountSubcontractors: "",
+    peppolScheme: "",
+    peppolParticipantId: "",
     approvalThresholdAmount: "",
     requiredApprovalCount: "1",
     changeOrderApprovalThresholdAmount: "",
@@ -147,6 +200,20 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
         postalCode: c.postalCode ?? "",
         vatId: c.vatId ?? "",
         iban: c.iban ?? "",
+        datevConsultantNumber: c.datevConsultantNumber ?? "",
+        datevClientNumber: c.datevClientNumber ?? "",
+        datevFiscalYearStartMonth: c.datevFiscalYearStartMonth !== null ? String(c.datevFiscalYearStartMonth) : "",
+        datevFiscalYearStartDay: c.datevFiscalYearStartDay !== null ? String(c.datevFiscalYearStartDay) : "",
+        datevChartOfAccounts: c.datevChartOfAccounts ?? "",
+        datevSachkontenlaenge: c.datevSachkontenlaenge !== null ? String(c.datevSachkontenlaenge) : "",
+        datevReceivablesAccount: c.datevReceivablesAccount ?? "",
+        datevPayablesAccount: c.datevPayablesAccount ?? "",
+        datevRevenueAccountStandard: c.datevRevenueAccountStandard ?? "",
+        datevRevenueAccountReduced: c.datevRevenueAccountReduced ?? "",
+        datevRevenueAccountExempt: c.datevRevenueAccountExempt ?? "",
+        datevExpenseAccountSubcontractors: c.datevExpenseAccountSubcontractors ?? "",
+        peppolScheme: c.peppolScheme ?? "",
+        peppolParticipantId: c.peppolParticipantId ?? "",
         approvalThresholdAmount: c.approvalThresholdAmount ?? "",
         requiredApprovalCount: String(c.requiredApprovalCount),
         changeOrderApprovalThresholdAmount: c.changeOrderApprovalThresholdAmount ?? "",
@@ -206,6 +273,20 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
           postalCode: companyForm.postalCode || null,
           vatId: companyForm.vatId || null,
           iban: companyForm.iban || null,
+          datevConsultantNumber: companyForm.datevConsultantNumber || null,
+          datevClientNumber: companyForm.datevClientNumber || null,
+          datevFiscalYearStartMonth: companyForm.datevFiscalYearStartMonth ? Number(companyForm.datevFiscalYearStartMonth) : null,
+          datevFiscalYearStartDay: companyForm.datevFiscalYearStartDay ? Number(companyForm.datevFiscalYearStartDay) : null,
+          datevChartOfAccounts: companyForm.datevChartOfAccounts || null,
+          datevSachkontenlaenge: companyForm.datevSachkontenlaenge ? Number(companyForm.datevSachkontenlaenge) : null,
+          datevReceivablesAccount: companyForm.datevReceivablesAccount || null,
+          datevPayablesAccount: companyForm.datevPayablesAccount || null,
+          datevRevenueAccountStandard: companyForm.datevRevenueAccountStandard || null,
+          datevRevenueAccountReduced: companyForm.datevRevenueAccountReduced || null,
+          datevRevenueAccountExempt: companyForm.datevRevenueAccountExempt || null,
+          datevExpenseAccountSubcontractors: companyForm.datevExpenseAccountSubcontractors || null,
+          peppolScheme: companyForm.peppolScheme || null,
+          peppolParticipantId: companyForm.peppolParticipantId || null,
           approvalThresholdAmount: companyForm.approvalThresholdAmount ? Number(companyForm.approvalThresholdAmount) : null,
           requiredApprovalCount: Number(companyForm.requiredApprovalCount) || 1,
           changeOrderApprovalThresholdAmount: companyForm.changeOrderApprovalThresholdAmount
@@ -244,6 +325,26 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
     } finally {
       setBusy(false);
     }
+  }
+
+  /** Pre-fills the six account-number inputs with typical values for the chosen chart of
+   * accounts — still editable, still requires the form's own Save click, never silently applied. */
+  function pickDatevChartOfAccounts(value: "" | "skr03" | "skr04") {
+    setCompanyForm((f) => {
+      if (!value) return { ...f, datevChartOfAccounts: value };
+      const suggestions = DATEV_ACCOUNT_SUGGESTIONS[value];
+      return {
+        ...f,
+        datevChartOfAccounts: value,
+        datevReceivablesAccount: f.datevReceivablesAccount || suggestions.receivables,
+        datevPayablesAccount: f.datevPayablesAccount || suggestions.payables,
+        datevRevenueAccountStandard: f.datevRevenueAccountStandard || suggestions.revenueStandard,
+        datevRevenueAccountReduced: f.datevRevenueAccountReduced || suggestions.revenueReduced,
+        datevRevenueAccountExempt: f.datevRevenueAccountExempt || suggestions.revenueExempt,
+        datevExpenseAccountSubcontractors: f.datevExpenseAccountSubcontractors || suggestions.expenseSubcontractors,
+        datevSachkontenlaenge: f.datevSachkontenlaenge || "4",
+      };
+    });
   }
 
   async function uploadLogo(e: React.ChangeEvent<HTMLInputElement>) {
@@ -339,6 +440,145 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
                 disabled={!isManager}
               />
             </div>
+          </div>
+        </div>
+        <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+          <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-gray-700 dark:text-gray-200">
+            {t("datevSettings")}
+            <HelpTooltip text={t("datevSettingsTooltip")} />
+          </p>
+          <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">{t("datevSettingsHint")}</p>
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-2">
+              <input
+                className="input flex-1"
+                placeholder={t("beraternummer")}
+                value={companyForm.datevConsultantNumber}
+                onChange={(e) => setCompanyForm((f) => ({ ...f, datevConsultantNumber: e.target.value }))}
+                disabled={!isManager}
+              />
+              <input
+                className="input flex-1"
+                placeholder={t("mandantennummer")}
+                value={companyForm.datevClientNumber}
+                onChange={(e) => setCompanyForm((f) => ({ ...f, datevClientNumber: e.target.value }))}
+                disabled={!isManager}
+              />
+            </div>
+            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+              {t("fiscalYearStart")}
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  min="1"
+                  max="12"
+                  className="input w-20"
+                  placeholder={t("month")}
+                  value={companyForm.datevFiscalYearStartMonth}
+                  onChange={(e) => setCompanyForm((f) => ({ ...f, datevFiscalYearStartMonth: e.target.value }))}
+                  disabled={!isManager}
+                />
+                <input
+                  type="number"
+                  min="1"
+                  max="31"
+                  className="input w-20"
+                  placeholder={t("day")}
+                  value={companyForm.datevFiscalYearStartDay}
+                  onChange={(e) => setCompanyForm((f) => ({ ...f, datevFiscalYearStartDay: e.target.value }))}
+                  disabled={!isManager}
+                />
+              </div>
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+              {t("chartOfAccounts")}
+              <select
+                className="input"
+                value={companyForm.datevChartOfAccounts}
+                onChange={(e) => pickDatevChartOfAccounts(e.target.value as "" | "skr03" | "skr04")}
+                disabled={!isManager}
+              >
+                <option value="">—</option>
+                <option value="skr03">SKR03</option>
+                <option value="skr04">SKR04</option>
+              </select>
+            </label>
+            <input
+              type="number"
+              className="input w-28"
+              placeholder={t("sachkontenlaenge")}
+              value={companyForm.datevSachkontenlaenge}
+              onChange={(e) => setCompanyForm((f) => ({ ...f, datevSachkontenlaenge: e.target.value }))}
+              disabled={!isManager}
+            />
+            <div className="flex gap-2">
+              <input
+                className="input flex-1"
+                placeholder={t("receivablesAccount")}
+                value={companyForm.datevReceivablesAccount}
+                onChange={(e) => setCompanyForm((f) => ({ ...f, datevReceivablesAccount: e.target.value }))}
+                disabled={!isManager}
+              />
+              <input
+                className="input flex-1"
+                placeholder={t("payablesAccount")}
+                value={companyForm.datevPayablesAccount}
+                onChange={(e) => setCompanyForm((f) => ({ ...f, datevPayablesAccount: e.target.value }))}
+                disabled={!isManager}
+              />
+            </div>
+            <div className="flex gap-2">
+              <input
+                className="input flex-1"
+                placeholder={t("revenueAccountStandard")}
+                value={companyForm.datevRevenueAccountStandard}
+                onChange={(e) => setCompanyForm((f) => ({ ...f, datevRevenueAccountStandard: e.target.value }))}
+                disabled={!isManager}
+              />
+              <input
+                className="input flex-1"
+                placeholder={t("revenueAccountReduced")}
+                value={companyForm.datevRevenueAccountReduced}
+                onChange={(e) => setCompanyForm((f) => ({ ...f, datevRevenueAccountReduced: e.target.value }))}
+                disabled={!isManager}
+              />
+              <input
+                className="input flex-1"
+                placeholder={t("revenueAccountExempt")}
+                value={companyForm.datevRevenueAccountExempt}
+                onChange={(e) => setCompanyForm((f) => ({ ...f, datevRevenueAccountExempt: e.target.value }))}
+                disabled={!isManager}
+              />
+            </div>
+            <input
+              className="input"
+              placeholder={t("expenseAccountSubcontractors")}
+              value={companyForm.datevExpenseAccountSubcontractors}
+              onChange={(e) => setCompanyForm((f) => ({ ...f, datevExpenseAccountSubcontractors: e.target.value }))}
+              disabled={!isManager}
+            />
+          </div>
+        </div>
+        <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+          <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-gray-700 dark:text-gray-200">
+            {t("peppolSettings")}
+            <HelpTooltip text={t("peppolSettingsHint")} />
+          </p>
+          <div className="flex gap-2">
+            <input
+              className="input w-32"
+              placeholder={t("peppolScheme")}
+              value={companyForm.peppolScheme}
+              onChange={(e) => setCompanyForm((f) => ({ ...f, peppolScheme: e.target.value }))}
+              disabled={!isManager}
+            />
+            <input
+              className="input flex-1"
+              placeholder={t("peppolParticipantId")}
+              value={companyForm.peppolParticipantId}
+              onChange={(e) => setCompanyForm((f) => ({ ...f, peppolParticipantId: e.target.value }))}
+              disabled={!isManager}
+            />
           </div>
         </div>
         <div className="border-t border-gray-100 dark:border-gray-700 pt-3">

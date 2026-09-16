@@ -1,11 +1,12 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import type { AddBidScoreCriterionInput, CreateBidRequestInput, ScoreBidInput, SubmitBidInput } from "@cantero/shared";
+import type { AddBidScoreCriterionInput, CreateBidRequestInput, ScoreBidInput, SetBidRequestLinesInput, SubmitBidInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { SubcontractorsService } from "../finance/subcontractors.service";
 import type { PortalSubcontractorContext } from "../subcontractor-portal/subcontractor-portal-jwt.service";
 import { weightedBidScore } from "./bid-scoring";
 import { calculateBidLeveling } from "./bid-leveling";
+import { buildGaebDa83Xml, parseGaebDa84Xml, GaebParseError } from "./gaeb";
 
 @Injectable()
 export class BidRequestsService {
@@ -38,6 +39,7 @@ export class BidRequestsService {
           orderBy: { amount: "asc" },
         },
         criteria: true,
+        lines: { orderBy: { sortOrder: "asc" } },
       },
     });
     if (!bidRequest) throw new NotFoundException("Bid request not found");
@@ -84,6 +86,152 @@ export class BidRequestsService {
     return { ok: true };
   }
 
+  /**
+   * Replaces the GAEB Bill of Quantities wholesale — same delete+recreate pattern submitBid uses
+   * for BidLine. A request can be re-scoped any time it's still open; bids already submitted
+   * against the old line set aren't retroactively reconciled (a known, documented limitation, not
+   * a guard this method enforces).
+   */
+  async setLines(companyId: string, actor: AuditActor, bidRequestId: string, input: SetBidRequestLinesInput) {
+    const bidRequest = await this.prisma.bidRequest.findFirst({ where: { id: bidRequestId, companyId } });
+    if (!bidRequest) throw new NotFoundException("Bid request not found");
+
+    await this.prisma.bidRequestLine.deleteMany({ where: { bidRequestId } });
+    if (input.lines.length > 0) {
+      await this.prisma.bidRequestLine.createMany({
+        data: input.lines.map((line, i) => ({
+          bidRequestId,
+          positionNo: line.positionNo,
+          description: line.description,
+          quantity: line.quantity,
+          unit: line.unit,
+          sortOrder: i,
+        })),
+      });
+    }
+    this.audit.record(companyId, actor, "bid_request.lines_set", "BidRequest", bidRequestId, `Set ${input.lines.length} scope line(s) on "${bidRequest.title}"`);
+    return this.prisma.bidRequestLine.findMany({ where: { bidRequestId }, orderBy: { sortOrder: "asc" } });
+  }
+
+  /**
+   * A GAEB DA XML price inquiry (DA83) built from this request's scope lines — see gaeb.ts. Needs
+   * the company's e-invoicing-grade address fields (already required for XRechnung, see
+   * InvoicesService.generateXRechnungXml) since a GAEB OWN party carries the same information.
+   */
+  async generateGaebDa83Xml(companyId: string, id: string): Promise<{ xml: string; filename: string }> {
+    const bidRequest = await this.prisma.bidRequest.findFirst({ where: { id, companyId }, include: { lines: { orderBy: { sortOrder: "asc" } }, project: true } });
+    if (!bidRequest) throw new NotFoundException("Bid request not found");
+    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+
+    const missing: string[] = [];
+    if (!company.address) missing.push("company street address");
+    if (!company.city) missing.push("company city");
+    if (!company.postalCode) missing.push("company postal code");
+    if (missing.length > 0) {
+      throw new BadRequestException(`Can't generate a GAEB export — missing: ${missing.join(", ")}. Fill these in under company settings first.`);
+    }
+    if (bidRequest.lines.length === 0) {
+      throw new BadRequestException("Add scope lines to this bid request before exporting it as GAEB.");
+    }
+
+    const xml = buildGaebDa83Xml({
+      projectName: bidRequest.project.name,
+      title: bidRequest.title,
+      description: bidRequest.description,
+      submissionDeadline: bidRequest.dueDate,
+      owner: {
+        name: company.name,
+        street: company.address!,
+        city: company.city!,
+        postalCode: company.postalCode!,
+        countryCode: company.country,
+      },
+      lines: bidRequest.lines.map((line) => ({
+        positionNo: line.positionNo,
+        description: line.description,
+        quantity: Number(line.quantity),
+        unit: line.unit,
+      })),
+    });
+
+    // Content-Disposition header values must be ASCII — same reasoning as the e-invoice filename.
+    const asciiTitle = bidRequest.title.replace(/[^\x20-\x7e]/g, "_");
+    return { xml, filename: `${asciiTitle}-da83.xml` };
+  }
+
+  /**
+   * Imports a subcontractor's priced GAEB DA XML response (DA84) — office-side only: the GC
+   * receives the file (e.g. by email) and uploads it on the sub's behalf, same as how bids
+   * presumably arrive out-of-band today. Matches each returned item to this request's scope lines
+   * by GAEB position number; a returned position with no match in our BoQ (e.g. the sub's own
+   * software added an advisory line) is skipped and reported back as a warning rather than
+   * failing the whole import.
+   */
+  async importGaebDa84Bid(companyId: string, actor: AuditActor, bidRequestId: string, subcontractorId: string, xml: string) {
+    const invite = await this.prisma.bidInvite.findFirst({
+      where: { bidRequestId, subcontractorId, bidRequest: { companyId } },
+      include: { bidRequest: { include: { lines: true } }, subcontractor: true },
+    });
+    if (!invite) throw new NotFoundException("This subcontractor was not invited to this bid request");
+    if (invite.bidRequest.status !== "open") throw new BadRequestException("This bid request is no longer accepting bids");
+
+    let items;
+    try {
+      items = parseGaebDa84Xml(xml);
+    } catch (err) {
+      throw new BadRequestException(err instanceof GaebParseError ? err.message : "Could not parse the uploaded GAEB file");
+    }
+
+    const linesByPosition = new Map(invite.bidRequest.lines.map((l) => [l.positionNo, l]));
+    const warnings: string[] = [];
+    const matched: { positionNo: string; description: string; quantity: number; unitPrice: number }[] = [];
+    for (const item of items) {
+      const scopeLine = linesByPosition.get(item.positionNo);
+      if (!scopeLine) {
+        warnings.push(`Position ${item.positionNo} isn't on this bid request's scope list — ignored.`);
+        continue;
+      }
+      if (item.quantity == null || item.unitPrice == null) {
+        warnings.push(`Position ${item.positionNo} is missing a quantity or unit price — ignored.`);
+        continue;
+      }
+      matched.push({ positionNo: item.positionNo, description: item.description ?? scopeLine.description, quantity: item.quantity, unitPrice: item.unitPrice });
+    }
+
+    const totalAmount = matched.reduce((sum, l) => sum + l.quantity * l.unitPrice, 0);
+    const bid = await this.prisma.bid.upsert({
+      where: { bidRequestId_subcontractorId: { bidRequestId, subcontractorId } },
+      create: { bidRequestId, subcontractorId, amount: totalAmount },
+      update: { amount: totalAmount, submittedAt: new Date() },
+    });
+
+    await this.prisma.bidLine.deleteMany({ where: { bidId: bid.id } });
+    if (matched.length > 0) {
+      await this.prisma.bidLine.createMany({
+        data: matched.map((line, i) => ({
+          bidId: bid.id,
+          description: line.description,
+          amount: line.quantity * line.unitPrice,
+          positionNo: line.positionNo,
+          quantity: line.quantity,
+          unitPrice: line.unitPrice,
+          sortOrder: i,
+        })),
+      });
+    }
+
+    this.audit.record(
+      companyId,
+      actor,
+      "bid_request.gaeb_bid_imported",
+      "BidRequest",
+      bidRequestId,
+      `Imported a GAEB DA84 bid from ${invite.subcontractor.name} (${matched.length} line(s), ${warnings.length} warning(s))`,
+    );
+
+    return { bid: await this.prisma.bid.findUniqueOrThrow({ where: { id: bid.id }, include: { lines: { orderBy: { sortOrder: "asc" } } } }), warnings };
+  }
+
   async scoreBid(companyId: string, actor: AuditActor, bidRequestId: string, bidId: string, input: ScoreBidInput) {
     const bid = await this.prisma.bid.findFirst({ where: { id: bidId, bidRequestId, bidRequest: { companyId } } });
     if (!bid) throw new NotFoundException("Bid not found");
@@ -125,8 +273,11 @@ export class BidRequestsService {
         description: input.description,
         dueDate: input.dueDate ? new Date(input.dueDate) : undefined,
         invites: { create: input.subcontractorIds.map((subcontractorId) => ({ subcontractorId })) },
+        lines: input.lines
+          ? { create: input.lines.map((line, i) => ({ positionNo: line.positionNo, description: line.description, quantity: line.quantity, unit: line.unit, sortOrder: i })) }
+          : undefined,
       },
-      include: { invites: { include: { subcontractor: { select: { id: true, name: true } } } } },
+      include: { invites: { include: { subcontractor: { select: { id: true, name: true } } } }, lines: { orderBy: { sortOrder: "asc" } } },
     });
     this.audit.record(
       companyId,
@@ -239,7 +390,7 @@ export class BidRequestsService {
     const scopeItems = calculateBidLeveling(
       bidRequest.bids.map((bid) => ({
         bidId: bid.id,
-        lines: bid.lines.map((l) => ({ description: l.description, amount: Number(l.amount), included: l.included })),
+        lines: bid.lines.map((l) => ({ description: l.description, amount: Number(l.amount), included: l.included, positionNo: l.positionNo })),
       })),
     );
 

@@ -24,6 +24,9 @@ export type CompanySettings = z.infer<typeof companySettingsSchema>;
 export const INVENTORY_COSTING_METHODS = ["fifo", "weighted_average"] as const;
 export type InventoryCostingMethod = (typeof INVENTORY_COSTING_METHODS)[number];
 
+export const DATEV_CHARTS_OF_ACCOUNTS = ["skr03", "skr04"] as const;
+export type DatevChartOfAccounts = (typeof DATEV_CHARTS_OF_ACCOUNTS)[number];
+
 export const PLAN_IDS = ["starter", "growth", "pro"] as const;
 export type PlanId = (typeof PLAN_IDS)[number];
 
@@ -82,6 +85,27 @@ export const updateCompanySchema = z.object({
   postalCode: z.string().max(20).nullable().optional(),
   vatId: z.string().max(30).nullable().optional(),
   iban: z.string().max(34).nullable().optional(),
+  /// DATEV Buchungsstapel export settings — see InvoicesService.exportDatevSalesCsv /
+  /// SubcontractorCostsService.exportDatevPurchasesCsv. Account numbers are plain digit strings,
+  /// never guessed by the app — datevChartOfAccounts only drives which SKR03/SKR04 values the
+  /// settings UI suggests.
+  datevConsultantNumber: z.string().max(20).nullable().optional(),
+  datevClientNumber: z.string().max(20).nullable().optional(),
+  datevFiscalYearStartMonth: z.number().int().min(1).max(12).nullable().optional(),
+  datevFiscalYearStartDay: z.number().int().min(1).max(31).nullable().optional(),
+  datevChartOfAccounts: z.enum(DATEV_CHARTS_OF_ACCOUNTS).nullable().optional(),
+  datevSachkontenlaenge: z.number().int().min(4).max(10).nullable().optional(),
+  datevReceivablesAccount: z.string().regex(/^\d+$/, "Digits only").max(12).nullable().optional(),
+  datevPayablesAccount: z.string().regex(/^\d+$/, "Digits only").max(12).nullable().optional(),
+  datevRevenueAccountStandard: z.string().regex(/^\d+$/, "Digits only").max(12).nullable().optional(),
+  datevRevenueAccountReduced: z.string().regex(/^\d+$/, "Digits only").max(12).nullable().optional(),
+  datevRevenueAccountExempt: z.string().regex(/^\d+$/, "Digits only").max(12).nullable().optional(),
+  datevExpenseAccountSubcontractors: z.string().regex(/^\d+$/, "Digits only").max(12).nullable().optional(),
+  /// Peppol Participant ID (EndpointID) for outgoing BIS Billing 3.0 e-invoices — see
+  /// InvoicesService.generatePeppolBisXml. peppolScheme is the EAS scheme code (e.g. "9930" for
+  /// "DE:VAT"); no default is guessed, since Peppol covers every EU country's own scheme.
+  peppolScheme: z.string().max(10).nullable().optional(),
+  peppolParticipantId: z.string().max(50).nullable().optional(),
   inventoryCostingMethod: z.enum(INVENTORY_COSTING_METHODS).optional(),
   rateCatalogApprovalThresholdPercent: z.number().nonnegative().max(999.99).nullable().optional(),
   npsDetractorFollowUpEnabled: z.boolean().optional(),

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, apiUpload, downloadBlob, ApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
 interface Subcontractor {
@@ -31,6 +31,12 @@ interface Criterion {
   label: string;
   weight: number;
 }
+interface BidRequestLine {
+  positionNo: string;
+  description: string;
+  quantity: string;
+  unit: string;
+}
 type BidRequestStatus = "open" | "awarded" | "cancelled";
 interface BidRequest {
   id: string;
@@ -43,6 +49,7 @@ interface BidRequest {
 }
 interface BidRequestDetail extends BidRequest {
   criteria: Criterion[];
+  lines: BidRequestLine[];
 }
 interface LevelingBid {
   id: string;
@@ -80,8 +87,10 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
   const [criterionForm, setCriterionForm] = useState({ label: "", weight: "5" });
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", dueDate: "", subcontractorIds: new Set<string>() });
+  const [lineForm, setLineForm] = useState<BidRequestLine[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [gaebError, setGaebError] = useState<string | null>(null);
 
   function load() {
     apiFetch<BidRequest[]>(`/bid-requests?projectId=${projectId}`).then(setRequests);
@@ -129,12 +138,27 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
     });
   }
 
+  function addLineRow() {
+    setLineForm((rows) => [...rows, { positionNo: "", description: "", quantity: "", unit: "" }]);
+  }
+
+  function updateLineRow(index: number, field: keyof BidRequestLine, value: string) {
+    setLineForm((rows) => rows.map((row, i) => (i === index ? { ...row, [field]: value } : row)));
+  }
+
+  function removeLineRow(index: number) {
+    setLineForm((rows) => rows.filter((_, i) => i !== index));
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (form.subcontractorIds.size === 0) return;
     setBusy(true);
     setError(null);
     try {
+      const lines = lineForm
+        .filter((l) => l.positionNo.trim() && l.description.trim() && l.quantity.trim() && l.unit.trim())
+        .map((l) => ({ positionNo: l.positionNo.trim(), description: l.description.trim(), quantity: Number(l.quantity), unit: l.unit.trim() }));
       await apiFetch("/bid-requests", {
         method: "POST",
         body: JSON.stringify({
@@ -143,13 +167,40 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
           description: form.description || undefined,
           dueDate: form.dueDate ? new Date(form.dueDate).toISOString() : undefined,
           subcontractorIds: Array.from(form.subcontractorIds),
+          lines: lines.length > 0 ? lines : undefined,
         }),
       });
       setForm({ title: "", description: "", dueDate: "", subcontractorIds: new Set() });
+      setLineForm([]);
       setCreating(false);
       load();
     } catch (err) {
       setError(err instanceof Error ? err.message : tc("error"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function downloadGaeb(bidRequestId: string, title: string) {
+    setGaebError(null);
+    try {
+      const blob = await apiFetch<Blob>(`/bid-requests/${bidRequestId}/gaeb-da83.xml`);
+      downloadBlob(blob, `${title}-da83.xml`);
+    } catch (err) {
+      setGaebError(err instanceof ApiError ? err.message : tc("error"));
+    }
+  }
+
+  async function importGaebBid(bidRequestId: string, subcontractorId: string, file: File) {
+    setGaebError(null);
+    setBusy(true);
+    try {
+      const result = await apiUpload<{ warnings: string[] }>(`/bid-requests/${bidRequestId}/gaeb-da84/${subcontractorId}`, file);
+      if (result.warnings.length > 0) setGaebError(result.warnings.join(" "));
+      loadDetail(bidRequestId);
+      load();
+    } catch (err) {
+      setGaebError(err instanceof ApiError ? err.message : tc("error"));
     } finally {
       setBusy(false);
     }
@@ -264,6 +315,46 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                 ))}
               </div>
             )}
+          </div>
+          <div className="flex flex-col gap-1.5 text-sm">
+            <span className="font-medium text-gray-700 dark:text-gray-200">{t("scopeLines")}</span>
+            <p className="text-xs text-gray-400 dark:text-gray-500">{t("scopeLinesHint")}</p>
+            {lineForm.map((row, i) => (
+              <div key={i} className="flex items-center gap-1.5">
+                <input
+                  placeholder={t("positionNo")}
+                  className="input w-20 py-1 text-xs"
+                  value={row.positionNo}
+                  onChange={(e) => updateLineRow(i, "positionNo", e.target.value)}
+                />
+                <input
+                  placeholder={t("lineDescription")}
+                  className="input flex-1 py-1 text-xs"
+                  value={row.description}
+                  onChange={(e) => updateLineRow(i, "description", e.target.value)}
+                />
+                <input
+                  type="number"
+                  step="any"
+                  placeholder={t("quantity")}
+                  className="input w-20 py-1 text-xs"
+                  value={row.quantity}
+                  onChange={(e) => updateLineRow(i, "quantity", e.target.value)}
+                />
+                <input
+                  placeholder={t("unit")}
+                  className="input w-16 py-1 text-xs"
+                  value={row.unit}
+                  onChange={(e) => updateLineRow(i, "unit", e.target.value)}
+                />
+                <button type="button" onClick={() => removeLineRow(i)} className="text-gray-400 dark:text-gray-500 hover:text-error-700">
+                  ×
+                </button>
+              </div>
+            ))}
+            <button type="button" onClick={addLineRow} className="btn-secondary w-fit px-2 py-1 text-xs">
+              {t("addLine")}
+            </button>
           </div>
           {error && <p className="text-xs text-error-600">{error}</p>}
           <div className="flex gap-2">
@@ -389,16 +480,34 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                                 {dBid?.weightedScore ?? "—"}
                               </td>
                               <td className="pl-2 text-right">
-                                {bid?.isAwarded && (
-                                  <span className="rounded-full bg-success-50 dark:bg-success-500/15 px-2 py-0.5 text-xs font-medium text-success-700 dark:text-success-500">
-                                    {t("awarded")}
-                                  </span>
-                                )}
-                                {bid && !bid.isAwarded && r.status === "open" && (
-                                  <button onClick={() => award(r.id, bid.id)} disabled={busy} className="btn-secondary px-2 py-1 text-xs">
-                                    {t("award")}
-                                  </button>
-                                )}
+                                <div className="flex items-center justify-end gap-1.5">
+                                  {bid?.isAwarded && (
+                                    <span className="rounded-full bg-success-50 dark:bg-success-500/15 px-2 py-0.5 text-xs font-medium text-success-700 dark:text-success-500">
+                                      {t("awarded")}
+                                    </span>
+                                  )}
+                                  {bid && !bid.isAwarded && r.status === "open" && (
+                                    <button onClick={() => award(r.id, bid.id)} disabled={busy} className="btn-secondary px-2 py-1 text-xs">
+                                      {t("award")}
+                                    </button>
+                                  )}
+                                  {r.status === "open" && d.lines.length > 0 && (
+                                    <label className="btn-secondary cursor-pointer px-2 py-1 text-xs">
+                                      {t("importGaebBid")}
+                                      <input
+                                        type="file"
+                                        accept=".xml,application/xml,text/xml"
+                                        className="hidden"
+                                        disabled={busy}
+                                        onChange={(e) => {
+                                          const file = e.target.files?.[0];
+                                          e.target.value = "";
+                                          if (file) importGaebBid(r.id, inv.subcontractor.id, file);
+                                        }}
+                                      />
+                                    </label>
+                                  )}
+                                </div>
                               </td>
                             </tr>
                           );
@@ -406,10 +515,16 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                       </tbody>
                     </table>
                     </div>
+                    {gaebError && <p className="text-xs text-error-600">{gaebError}</p>}
                     <div className="flex items-center gap-2">
                       {r.bids.length > 1 && (
                         <button onClick={() => toggleLeveling(r.id)} className="btn-secondary w-fit px-3 py-1 text-xs">
                           {showLeveling ? t("hideLeveling") : t("viewLeveling")}
+                        </button>
+                      )}
+                      {d.lines.length > 0 && (
+                        <button onClick={() => downloadGaeb(r.id, r.title)} className="btn-secondary w-fit px-3 py-1 text-xs">
+                          {t("exportGaeb")}
                         </button>
                       )}
                       {r.status === "open" && (

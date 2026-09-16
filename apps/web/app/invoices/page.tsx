@@ -10,7 +10,7 @@ import {
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { EmptyState } from "@/components/ui/empty-state";
 import { InvoicesIcon } from "@/components/nav-icons";
-import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { apiFetch, downloadBlob, getToken, API_URL, ApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
 interface Invoice {
@@ -86,6 +86,8 @@ export default function InvoicesPage() {
   ]);
   const [recurringBusy, setRecurringBusy] = useState(false);
   const [recurringError, setRecurringError] = useState<string | null>(null);
+  const [datevError, setDatevError] = useState<string | null>(null);
+  const [datevWarningCount, setDatevWarningCount] = useState<number | null>(null);
 
   function loadRecurring() {
     apiFetch<RecurringInvoice[]>("/recurring-invoices").then((page) => {
@@ -149,6 +151,29 @@ export default function InvoicesPage() {
   async function exportXeroCsv() {
     const blob = await apiFetch<Blob>("/invoices/export/xero.csv");
     downloadBlob(blob, "invoices-xero.csv");
+  }
+
+  async function exportDatevCsv() {
+    setDatevError(null);
+    setDatevWarningCount(null);
+    try {
+      // A raw fetch, not apiFetch — the warning count travels as a response header, which
+      // apiFetch's Blob-returning path doesn't expose.
+      const token = getToken();
+      const res = await fetch(`${API_URL}/invoices/export/datev.csv`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new ApiError(res.status, body?.message ?? res.statusText);
+      }
+      const warningsCount = Number(res.headers.get("X-Datev-Warnings-Count") ?? "0");
+      const blob = await res.blob();
+      downloadBlob(blob, "invoices-datev.csv");
+      setDatevWarningCount(warningsCount);
+    } catch (err) {
+      setDatevError(err instanceof ApiError ? err.message : tc("error"));
+    }
   }
 
   function updateRecurringLine(
@@ -267,8 +292,16 @@ export default function InvoicesPage() {
           <button onClick={exportXeroCsv} className="btn-secondary">
             {t("exportXero")}
           </button>
+          <button onClick={exportDatevCsv} className="btn-secondary">
+            {t("exportDatev")}
+          </button>
         </div>
       </div>
+      <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{t("datevTestImportNotice")}</p>
+      {datevError && <p className="mt-1 text-xs text-error-600">{datevError}</p>}
+      {datevWarningCount !== null && datevWarningCount > 0 && (
+        <p className="mt-1 text-xs text-warning-700 dark:text-warning-500">{t("datevWarningCount", { count: datevWarningCount })}</p>
+      )}
 
       <div className="mt-6">
         {!invoices ? (

@@ -96,3 +96,86 @@ describe("SubcontractorCostsService.markPaid", () => {
     expect(prisma.subcontractorCost.update).not.toHaveBeenCalled();
   });
 });
+
+describe("SubcontractorCostsService.exportDatevPurchasesCsv", () => {
+  let service: SubcontractorCostsService;
+  let prisma: {
+    subcontractorCost: { findMany: jest.Mock };
+    company: { findUniqueOrThrow: jest.Mock };
+  };
+
+  const completeDatevCompany = {
+    name: "Cantero Bau GmbH",
+    datevConsultantNumber: "12345",
+    datevClientNumber: "1001",
+    datevFiscalYearStartMonth: 1,
+    datevFiscalYearStartDay: 1,
+    datevSachkontenlaenge: 4,
+    datevPayablesAccount: "1600",
+    datevExpenseAccountSubcontractors: "3300",
+  };
+
+  beforeEach(async () => {
+    prisma = {
+      subcontractorCost: { findMany: jest.fn() },
+      company: { findUniqueOrThrow: jest.fn() },
+    };
+
+    const module = await Test.createTestingModule({
+      providers: [
+        SubcontractorCostsService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: PdfService, useValue: {} },
+        { provide: StorageService, useValue: {} },
+        { provide: AuditService, useValue: { record: jest.fn() } },
+      ],
+    }).compile();
+
+    service = module.get(SubcontractorCostsService);
+  });
+
+  it("rejects when DATEV company settings are incomplete", async () => {
+    prisma.company.findUniqueOrThrow.mockResolvedValue({ ...completeDatevCompany, datevPayablesAccount: null });
+    await expect(service.exportDatevPurchasesCsv(COMPANY_A)).rejects.toThrow("Can't generate a DATEV export");
+    expect(prisma.subcontractorCost.findMany).not.toHaveBeenCalled();
+  });
+
+  it("skips a cost whose subcontractor has no DATEV Kreditor number, and reports a warning", async () => {
+    prisma.company.findUniqueOrThrow.mockResolvedValue(completeDatevCompany);
+    prisma.subcontractorCost.findMany.mockResolvedValue([
+      {
+        id: "cost-1",
+        description: "Electrical rough-in",
+        amount: "5000",
+        incurredDate: new Date("2026-08-15"),
+        subcontractor: { name: "No Kreditor Sub", datevKreditorNumber: null },
+      },
+    ]);
+
+    const { csv, warnings } = await service.exportDatevPurchasesCsv(COMPANY_A);
+
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain("No Kreditor Sub");
+    expect(csv.split("\r\n")).toHaveLength(2);
+  });
+
+  it("includes an unpaid cost — no paid filter, since it's a liability from the moment it's logged", async () => {
+    prisma.company.findUniqueOrThrow.mockResolvedValue(completeDatevCompany);
+    prisma.subcontractorCost.findMany.mockResolvedValue([
+      {
+        id: "cost-1",
+        description: "Electrical rough-in",
+        amount: "5000",
+        incurredDate: new Date("2026-08-15"),
+        paid: false,
+        subcontractor: { name: "ElectroPro", datevKreditorNumber: "70001" },
+      },
+    ]);
+
+    const { csv } = await service.exportDatevPurchasesCsv(COMPANY_A);
+    const dataRow = csv.split("\r\n")[2];
+    expect(dataRow.split(";")[0]).toBe("5000,00");
+    expect(dataRow.split(";")[6]).toBe("70001"); // Konto
+    expect(dataRow.split(";")[7]).toBe("3300"); // Gegenkonto — subcontractor expense account
+  });
+});

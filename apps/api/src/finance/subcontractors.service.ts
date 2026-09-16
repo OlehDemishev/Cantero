@@ -326,7 +326,7 @@ export class SubcontractorsService {
   async getTaxProfile(companyId: string, id: string) {
     const subcontractor = await this.prisma.subcontractor.findFirst({
       where: { id, companyId },
-      select: { taxId: true, legalBusinessName: true, mailingAddress: true },
+      select: { taxId: true, legalBusinessName: true, mailingAddress: true, datevKreditorNumber: true },
     });
     if (!subcontractor) throw new NotFoundException("Subcontractor not found");
     return subcontractor;

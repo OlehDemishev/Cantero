@@ -25,6 +25,9 @@ importers:
       '@cantero/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@fontsource/roboto':
+        specifier: ^5.2.10
+        version: 5.3.0
       '@nestjs/bullmq':
         specifier: ^10.2.3
         version: 10.2.3(@nestjs/common@10.4.22(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@10.4.22)(bullmq@5.81.3)
@@ -73,6 +76,9 @@ importers:
       class-validator:
         specifier: ^0.14.1
         version: 0.14.4
+      fast-xml-parser:
+        specifier: ^4.5.1
+        version: 4.5.7
       ioredis:
         specifier: ^5.4.2
         version: 5.11.1
@@ -1210,6 +1216,9 @@ packages:
   '@expo/xcpretty@4.4.5':
     resolution: {integrity: sha512-J3eL4n4h5QTwfD0SIz8OIk6/+sOL/hFZAMacgCM07UNlxBQfJipEpIC2AQxvGkbYeStByJ0TVhQAJo+DeNgaSQ==}
     hasBin: true
+
+  '@fontsource/roboto@5.3.0':
+    resolution: {integrity: sha512-BapRJOWYP+LZ21zp+wBQjfpPYKRoxc4LspJ/RLuI+HSMBD5u/X4O+ESDrSvEqDSy0rAl7GwBJ+09mdc16cVQ1Q==}
 
   '@formatjs/fast-memoize@3.1.7':
     resolution: {integrity: sha512-zXfhLpvA6T7+efdt9JLbBwZ00tT7NsBMDVnDu8rpHeNNv8KfRZAMo2gkG0k9lK/Nzc//3kJ9pImsfuJxk3KhUA==}
@@ -4629,6 +4638,10 @@ packages:
   fast-uri@3.1.5:
     resolution: {integrity: sha512-gHwA1O9LDIcKunMKhObS/HimwtehO1nPUECKAu5TpKgaO19fcWEl4bliWe1jWxVFvIXztJjjQ4L8XQ1EU9f7Jw==}
 
+  fast-xml-parser@4.5.7:
+    resolution: {integrity: sha512-a6Qh1RMCNbSrU1+sAyAAZH3rTe+OaWJbNZIq0S+ifZciUUOQtlVxBJwoTUE2bYhysmG/RYyI5WJFIKdBahJdrQ==}
+    hasBin: true
+
   fastq@1.20.1:
     resolution: {integrity: sha512-GGToxJ/w1x32s/D2EKND7kTil4n8OVk/9mycTc4VDza13lOvpUZTGX3mFSCtV9ksdGBVzvsyAVLM6mHFThxXxw==}
 
@@ -7201,6 +7214,9 @@ packages:
     resolution: {integrity: sha512-aT2BU9KkizY9SATf14WhhYVv2uOapBWX0OFWF4xvcj1mPaNotlSc2CsxpS4DS46ZueSppmCF5BX1sNYBtwBvfw==}
     engines: {node: '>=12.*'}
 
+  strnum@1.1.2:
+    resolution: {integrity: sha512-vrN+B7DBIoTTZjnPNewwhx6cBA/H+IS7rfW68n7XxC1y7uoiGQBxaKzqucGUgavX15dJgiGztLJ8vxuEzwqBdA==}
+
   strtok3@10.3.5:
     resolution: {integrity: sha512-ki4hZQfh5rX0QDLLkOCj+h+CVNkqmp/CMf8v8kZpkNVK6jGQooMytqzLZYUVYIZcFZ6yDB70EfD8POcFXiF5oA==}
     engines: {node: '>=18'}
@@ -9260,6 +9276,8 @@ snapshots:
       '@babel/code-frame': 7.29.7
       chalk: 4.1.2
       js-yaml: 4.3.1
+
+  '@fontsource/roboto@5.3.0': {}
 
   '@formatjs/fast-memoize@3.1.7': {}
 
@@ -13212,6 +13230,10 @@ snapshots:
 
   fast-uri@3.1.5: {}
 
+  fast-xml-parser@4.5.7:
+    dependencies:
+      strnum: 1.1.2
+
   fastq@1.20.1:
     dependencies:
       reusify: 1.1.0
@@ -16345,6 +16367,8 @@ snapshots:
     dependencies:
       '@types/node': 22.20.1
       qs: 6.16.0
+
+  strnum@1.1.2: {}
 
   strtok3@10.3.5:
     dependencies:

@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import type { SubcontractorDiversityCategory } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { SubcontractorListItem } from "@/components/subcontractor-list-item";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, downloadBlob, getToken, API_URL, ApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 
 interface Subcontractor {
@@ -46,6 +46,29 @@ export default function SubcontractorsPage() {
   const [busy, setBusy] = useState(false);
   const [taxSummaryYear, setTaxSummaryYear] = useState(String(CURRENT_YEAR));
   const [taxSummary, setTaxSummary] = useState<TaxSummaryRow[] | null>(null);
+  const [datevError, setDatevError] = useState<string | null>(null);
+  const [datevWarningCount, setDatevWarningCount] = useState<number | null>(null);
+
+  async function exportDatevCsv() {
+    setDatevError(null);
+    setDatevWarningCount(null);
+    try {
+      const token = getToken();
+      const res = await fetch(`${API_URL}/finance/subcontractor-costs/export/datev.csv`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new ApiError(res.status, body?.message ?? res.statusText);
+      }
+      const warningsCount = Number(res.headers.get("X-Datev-Warnings-Count") ?? "0");
+      const blob = await res.blob();
+      downloadBlob(blob, "subcontractor-costs-datev.csv");
+      setDatevWarningCount(warningsCount);
+    } catch (err) {
+      setDatevError(err instanceof ApiError ? err.message : tc("error"));
+    }
+  }
 
   function load() {
     apiFetch<Subcontractor[]>("/finance/subcontractors").then(setSubcontractors);
@@ -84,8 +107,18 @@ export default function SubcontractorsPage() {
 
   return (
     <AuthenticatedShell>
-      <h1 className="text-2xl font-semibold">{t("title")}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">{t("title")}</h1>
+        <button onClick={exportDatevCsv} className="btn-secondary">
+          {t("exportDatev")}
+        </button>
+      </div>
       <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("complianceSubtitle")}</p>
+      <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{t("datevTestImportNotice")}</p>
+      {datevError && <p className="mt-1 text-xs text-error-600">{datevError}</p>}
+      {datevWarningCount !== null && datevWarningCount > 0 && (
+        <p className="mt-1 text-xs text-warning-700 dark:text-warning-500">{t("datevWarningCount", { count: datevWarningCount })}</p>
+      )}
 
       <div className="mt-6 card max-w-md">
         <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("newSubcontractor")}</h2>

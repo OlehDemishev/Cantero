@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Header, NotFoundException, Param, Post, Query, StreamableFile } from "@nestjs/common";
+import { Body, Controller, Get, Header, NotFoundException, Param, Post, Query, Res, StreamableFile } from "@nestjs/common";
+import type { Response } from "express";
 import {
   createSubcontractorCostSchema,
   requestLienWaiverSchema,
@@ -17,6 +18,26 @@ export class SubcontractorCostsController {
   @Get()
   list(@CurrentUser() user: AuthUser, @Query("projectId") projectId?: string, @Query("subcontractorId") subcontractorId?: string) {
     return this.service.list(user.companyId, projectId, subcontractorId);
+  }
+
+  // Declared before ":id" so "export" isn't swallowed as a cost id.
+  @Get("export/datev.csv")
+  @Header("Content-Type", "text/csv")
+  async exportDatevCsv(
+    @CurrentUser() user: AuthUser,
+    @Res({ passthrough: true }) res: Response,
+    @Query("from") from?: string,
+    @Query("to") to?: string,
+  ) {
+    const { csv, warnings } = await this.service.exportDatevPurchasesCsv(
+      user.companyId,
+      from ? new Date(from) : undefined,
+      to ? new Date(to) : undefined,
+    );
+    res.set("Content-Disposition", 'attachment; filename="subcontractor-costs-datev.csv"');
+    res.set("X-Datev-Warnings-Count", String(warnings.length));
+    res.set("Access-Control-Expose-Headers", "X-Datev-Warnings-Count");
+    return csv;
   }
 
   @Post()

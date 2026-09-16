@@ -13,7 +13,9 @@ describe("BidRequestsService", () => {
   let prisma: {
     project: { findFirst: jest.Mock };
     subcontractor: { findMany: jest.Mock };
+    company: { findUniqueOrThrow: jest.Mock };
     bidRequest: { create: jest.Mock; findFirst: jest.Mock; update: jest.Mock };
+    bidRequestLine: { deleteMany: jest.Mock; createMany: jest.Mock; findMany: jest.Mock };
     bid: { findFirst: jest.Mock; update: jest.Mock; upsert: jest.Mock; findUniqueOrThrow: jest.Mock };
     bidLine: { deleteMany: jest.Mock; createMany: jest.Mock };
     bidInvite: { findFirst: jest.Mock };
@@ -28,7 +30,9 @@ describe("BidRequestsService", () => {
     prisma = {
       project: { findFirst: jest.fn() },
       subcontractor: { findMany: jest.fn() },
+      company: { findUniqueOrThrow: jest.fn() },
       bidRequest: { create: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
+      bidRequestLine: { deleteMany: jest.fn(), createMany: jest.fn(), findMany: jest.fn() },
       bid: { findFirst: jest.fn(), update: jest.fn(), upsert: jest.fn(), findUniqueOrThrow: jest.fn() },
       bidLine: { deleteMany: jest.fn(), createMany: jest.fn() },
       bidInvite: { findFirst: jest.fn() },
@@ -250,6 +254,144 @@ describe("BidRequestsService", () => {
         create: { bidId: "bid-1", criterionId: "crit-1", score: 4 },
         update: { score: 4 },
       });
+    });
+  });
+
+  describe("setLines()", () => {
+    it("404s on a bid request outside the company", async () => {
+      prisma.bidRequest.findFirst.mockResolvedValue(null);
+      await expect(service.setLines(COMPANY_A, ACTOR, "br-1", { lines: [] })).rejects.toThrow(NotFoundException);
+      expect(prisma.bidRequestLine.deleteMany).not.toHaveBeenCalled();
+    });
+
+    it("replaces the scope lines wholesale", async () => {
+      prisma.bidRequest.findFirst.mockResolvedValue({ id: "br-1", title: "Electrical rough-in" });
+      prisma.bidRequestLine.findMany.mockResolvedValue([]);
+
+      await service.setLines(COMPANY_A, ACTOR, "br-1", {
+        lines: [{ positionNo: "01.010", description: "Conduit", quantity: 150, unit: "m" }],
+      });
+
+      expect(prisma.bidRequestLine.deleteMany).toHaveBeenCalledWith({ where: { bidRequestId: "br-1" } });
+      expect(prisma.bidRequestLine.createMany).toHaveBeenCalledWith({
+        data: [{ bidRequestId: "br-1", positionNo: "01.010", description: "Conduit", quantity: 150, unit: "m", sortOrder: 0 }],
+      });
+    });
+  });
+
+  describe("generateGaebDa83Xml()", () => {
+    it("404s on a bid request outside the company", async () => {
+      prisma.bidRequest.findFirst.mockResolvedValue(null);
+      await expect(service.generateGaebDa83Xml(COMPANY_A, "br-1")).rejects.toThrow(NotFoundException);
+    });
+
+    it("rejects when the company is missing e-invoicing-grade address fields", async () => {
+      prisma.bidRequest.findFirst.mockResolvedValue({ id: "br-1", title: "Electrical rough-in", lines: [], project: { name: "Site A" } });
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ name: "Cantero Bau GmbH", address: null, city: null, postalCode: null, country: "DE" });
+
+      await expect(service.generateGaebDa83Xml(COMPANY_A, "br-1")).rejects.toThrow(BadRequestException);
+    });
+
+    it("rejects a bid request with no scope lines", async () => {
+      prisma.bidRequest.findFirst.mockResolvedValue({ id: "br-1", title: "Electrical rough-in", lines: [], project: { name: "Site A" } });
+      prisma.company.findUniqueOrThrow.mockResolvedValue({
+        name: "Cantero Bau GmbH",
+        address: "Musterstraße 12",
+        city: "Berlin",
+        postalCode: "10115",
+        country: "DE",
+      });
+
+      await expect(service.generateGaebDa83Xml(COMPANY_A, "br-1")).rejects.toThrow("scope lines");
+    });
+
+    it("builds a GAEB DA83 XML document from the bid request's scope lines", async () => {
+      prisma.bidRequest.findFirst.mockResolvedValue({
+        id: "br-1",
+        title: "Electrical rough-in",
+        description: null,
+        dueDate: null,
+        project: { name: "Site A" },
+        lines: [{ positionNo: "01.010", description: "Conduit", quantity: "150", unit: "m" }],
+      });
+      prisma.company.findUniqueOrThrow.mockResolvedValue({
+        name: "Cantero Bau GmbH",
+        address: "Musterstraße 12",
+        city: "Berlin",
+        postalCode: "10115",
+        country: "DE",
+      });
+
+      const { xml, filename } = await service.generateGaebDa83Xml(COMPANY_A, "br-1");
+
+      expect(xml).toContain('<Item RNoPart="01.010">');
+      expect(filename).toBe("Electrical rough-in-da83.xml");
+    });
+  });
+
+  describe("importGaebDa84Bid()", () => {
+    const da83Xml = (positionNo: string, qty: string, up: string) => `<?xml version="1.0" encoding="UTF-8"?>
+<GAEB><Award><BoQ><BoQBody><Itemlist>
+<Item RNoPart="${positionNo}"><Qty>${qty}</Qty><QU>m</QU><UP>${up}</UP><IT></IT>
+<Description><OutlineText><OutlTxt><span>Conduit</span></OutlTxt></OutlineText></Description>
+</Item>
+</Itemlist></BoQBody></BoQ></Award></GAEB>`;
+
+    it("404s when the subcontractor wasn't invited to this bid request", async () => {
+      prisma.bidInvite.findFirst.mockResolvedValue(null);
+      await expect(service.importGaebDa84Bid(COMPANY_A, ACTOR, "br-1", "sub-1", da83Xml("01.010", "150", "2.5"))).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(prisma.bid.upsert).not.toHaveBeenCalled();
+    });
+
+    it("rejects an import once the bid request is no longer open", async () => {
+      prisma.bidInvite.findFirst.mockResolvedValue({ bidRequest: { status: "awarded", lines: [] }, subcontractor: { name: "ElectroPro" } });
+      await expect(service.importGaebDa84Bid(COMPANY_A, ACTOR, "br-1", "sub-1", da83Xml("01.010", "150", "2.5"))).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(prisma.bid.upsert).not.toHaveBeenCalled();
+    });
+
+    it("rejects unparseable XML with a BadRequestException, not a 500", async () => {
+      prisma.bidInvite.findFirst.mockResolvedValue({ bidRequest: { status: "open", lines: [] }, subcontractor: { name: "ElectroPro" } });
+      await expect(service.importGaebDa84Bid(COMPANY_A, ACTOR, "br-1", "sub-1", "<not-gaeb/>")).rejects.toThrow(BadRequestException);
+    });
+
+    it("matches returned items to scope lines by position number and upserts a priced Bid/BidLine", async () => {
+      prisma.bidInvite.findFirst.mockResolvedValue({
+        bidRequest: { status: "open", lines: [{ positionNo: "01.010", description: "Conduit, 20mm" }] },
+        subcontractor: { name: "ElectroPro" },
+      });
+      prisma.bid.upsert.mockResolvedValue({ id: "bid-1" });
+      prisma.bid.findUniqueOrThrow.mockResolvedValue({ id: "bid-1", lines: [] });
+
+      const result = await service.importGaebDa84Bid(COMPANY_A, ACTOR, "br-1", "sub-1", da83Xml("01.010", "150", "2.5"));
+
+      expect(prisma.bid.upsert).toHaveBeenCalledWith({
+        where: { bidRequestId_subcontractorId: { bidRequestId: "br-1", subcontractorId: "sub-1" } },
+        create: { bidRequestId: "br-1", subcontractorId: "sub-1", amount: 375 },
+        update: { amount: 375, submittedAt: expect.any(Date) },
+      });
+      expect(prisma.bidLine.createMany).toHaveBeenCalledWith({
+        data: [{ bidId: "bid-1", description: "Conduit", amount: 375, positionNo: "01.010", quantity: 150, unitPrice: 2.5, sortOrder: 0 }],
+      });
+      expect(result.warnings).toEqual([]);
+    });
+
+    it("skips a returned position that isn't on the scope list and reports it as a warning", async () => {
+      prisma.bidInvite.findFirst.mockResolvedValue({
+        bidRequest: { status: "open", lines: [] },
+        subcontractor: { name: "ElectroPro" },
+      });
+      prisma.bid.upsert.mockResolvedValue({ id: "bid-1" });
+      prisma.bid.findUniqueOrThrow.mockResolvedValue({ id: "bid-1", lines: [] });
+
+      const result = await service.importGaebDa84Bid(COMPANY_A, ACTOR, "br-1", "sub-1", da83Xml("99.999", "1", "10"));
+
+      expect(prisma.bidLine.createMany).not.toHaveBeenCalled();
+      expect(result.warnings).toHaveLength(1);
+      expect(result.warnings[0]).toContain("99.999");
     });
   });
 

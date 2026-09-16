@@ -45,6 +45,14 @@ enum Locale {
   uk
 }
 
+/// Which standard German chart of accounts a company's Steuerberater uses — only drives which
+/// account numbers the DATEV settings UI suggests (see Company.datevChartOfAccounts), not read by
+/// the export logic itself.
+enum DatevChartOfAccounts {
+  skr03
+  skr04
+}
+
 /// Static/seeded conversion rates between the five supported currencies — there's no live forex
 /// feed wired up (no API key available), so these are refreshed manually via a seed script rather
 /// than a scheduled job. One row per direction (EUR→USD and USD→EUR are stored separately) so a
@@ -371,6 +379,31 @@ model Company {
   /// IBAN shown as the e-invoice's payment means (BT-84) — null just omits the PaymentMeans
   /// block rather than blocking generation, since not every seller pays by bank transfer.
   iban                                 String?
+  /// DATEV Buchungsstapel export settings (see InvoicesService.exportDatevSalesCsv /
+  /// SubcontractorCostsService.exportDatevPurchasesCsv) — all null until explicitly configured,
+  /// which blocks export the same way missing e-invoicing fields block XRechnung/ZUGFeRD. Account
+  /// numbers are never guessed server-side; datevChartOfAccounts only drives which SKR03/SKR04
+  /// values the settings UI suggests, it isn't read by the export logic itself.
+  datevConsultantNumber                String?
+  datevClientNumber                    String?
+  datevFiscalYearStartMonth            Int?
+  datevFiscalYearStartDay              Int?
+  datevChartOfAccounts                 DatevChartOfAccounts?
+  datevSachkontenlaenge                Int?
+  datevReceivablesAccount              String?
+  datevPayablesAccount                 String?
+  datevRevenueAccountStandard          String?
+  datevRevenueAccountReduced           String?
+  datevRevenueAccountExempt            String?
+  datevExpenseAccountSubcontractors    String?
+  /// Peppol Participant ID (EndpointID) for outgoing BIS Billing 3.0 e-invoices — see
+  /// InvoicesService.generatePeppolBisXml. peppolScheme is the EAS scheme code (e.g. "9930" for
+  /// "DE:VAT"), peppolParticipantId the identifier under that scheme (often the VAT number). Both
+  /// null until explicitly configured, which blocks Peppol export the same way missing
+  /// e-invoicing fields block XRechnung/ZUGFeRD — no default scheme is guessed, since Peppol
+  /// covers every EU country's own identifier scheme, not just Germany's.
+  peppolScheme                         String?
+  peppolParticipantId                  String?
   /// Set when coiPubliclyShared is turned on; the public COI page lives at /company-coi/:coiPublicToken.
   /// Same shareable-link pattern as Subcontractor.publicToken/publicListed — lets a client or lender
   /// view/download this company's current insurance certificates without an account.
@@ -3325,6 +3358,11 @@ model Subcontractor {
   taxId                           String?
   legalBusinessName               String?
   mailingAddress                  String?
+  /// DATEV Kreditor (creditor) account number for accounting export — see
+  /// SubcontractorCostsService.exportDatevPurchasesCsv. Manually assigned (mirrors how a real
+  /// Steuerberater assigns these), never auto-numbered. Null excludes this subcontractor's costs
+  /// from the DATEV export with a warning rather than guessing an account.
+  datevKreditorNumber             String?
   /// Self-reported diversity certifications (MBE/WBE/DBE/etc.) for public-work bid compliance
   /// reporting — see SubcontractorsService.diversitySpendReport(). Not verified against any
   /// certifying agency's registry; same self-attested trust level as licenseNumber/bondingCapacity
@@ -4433,10 +4471,32 @@ model BidRequest {
   invites  BidInvite[]
   bids     Bid[]
   criteria BidScoreCriterion[]
+  lines    BidRequestLine[]
 
   @@index([companyId])
   @@index([projectId])
   @@map("bid_requests")
+}
+
+/// The fixed, position-numbered Bill of Quantities (BoQ) a GAEB DA83 price-inquiry export is built
+/// from — positionNo is the GAEB RNo, preserved verbatim through export and a subcontractor's DA84
+/// response so submitted prices can be matched back to the exact scope item they price (see gaeb.ts
+/// and BidRequestsService.importGaebDa84Bid). Optional: a BidRequest created without any lines just
+/// can't be exported as GAEB, and still works with the original free-text bidding flow.
+model BidRequestLine {
+  id           String  @id @default(uuid())
+  bidRequestId String
+  positionNo   String
+  description  String
+  quantity     Decimal @db.Decimal(14, 4)
+  unit         String
+  sortOrder    Int     @default(0)
+
+  bidRequest BidRequest @relation(fields: [bidRequestId], references: [id], onDelete: Cascade)
+
+  @@unique([bidRequestId, positionNo])
+  @@index([bidRequestId])
+  @@map("bid_request_lines")
 }
 
 /// Which subcontractors were invited to bid — only invited subs can see/submit against a BidRequest from their portal.
@@ -4475,18 +4535,24 @@ model Bid {
 }
 
 /// A single priced scope item within a bid, for leveling (side-by-side comparison across subs
-/// bidding the same BidRequest) — see bid-leveling.ts. description is matched exactly
-/// (case/whitespace-insensitive) across bids to line up common scope items; there's no shared
-/// scope-item taxonomy, so this only works as well as the subs name things consistently.
+/// bidding the same BidRequest) — see bid-leveling.ts. When positionNo is set (a GAEB DA84 import,
+/// see BidRequestsService.importGaebDa84Bid), leveling matches rows by that exact position instead
+/// of by description text. Free-text bids (the original portal submitBid flow) leave
+/// positionNo/quantity/unitPrice null and are matched by description
+/// (case/whitespace-insensitive) same as before — there's no shared scope-item taxonomy there, so
+/// it only works as well as the subs name things consistently.
 /// Replaced wholesale (delete+recreate) on every re-submission of a bid, same
 /// deleteMany-then-create pattern SafetyBriefing uses for its attendees on update.
 model BidLine {
-  id          String  @id @default(uuid())
+  id          String   @id @default(uuid())
   bidId       String
   description String
-  amount      Decimal @db.Decimal(14, 2)
-  included    Boolean @default(true)
-  sortOrder   Int     @default(0)
+  amount      Decimal  @db.Decimal(14, 2)
+  included    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  positionNo  String?
+  quantity    Decimal? @db.Decimal(14, 4)
+  unitPrice   Decimal? @db.Decimal(14, 4)
 
   bid Bid @relation(fields: [bidId], references: [id], onDelete: Cascade)
 
@@ -4592,6 +4658,18 @@ model Client {
   country                  String? // ISO 3166-1 alpha-2 — null falls back to the company's own country on e-invoices.
   /// Buyer's EU VAT ID (BT-48) — optional, since many clients are private individuals with none.
   vatId                    String?
+  /// DATEV Debitor account number for accounting export — see InvoicesService.exportDatevSalesCsv.
+  /// Manually assigned (mirrors how a real Steuerberater assigns these), never auto-numbered. Null
+  /// excludes this client's invoices from the DATEV export with a warning rather than guessing an
+  /// account.
+  datevDebitorNumber       String?
+  /// Buyer's Peppol Participant ID (EndpointID), for outgoing BIS Billing 3.0 e-invoices — see
+  /// InvoicesService.generatePeppolBisXml. Optional and never blocks export (unlike the seller's
+  /// own peppolScheme/peppolParticipantId on Company): it would only matter for actually routing
+  /// a document over the live Peppol network, which this app doesn't do (see
+  /// PeppolAccessPointService) — when unset, the XML simply omits the buyer's EndpointID.
+  peppolScheme             String?
+  peppolParticipantId      String?
   /// Stripe Customer created lazily the first time this client saves a card for autopay — null
   /// until then. Kept even after the payment method is removed, so re-adding a card doesn't spawn
   /// duplicate Stripe Customer objects.

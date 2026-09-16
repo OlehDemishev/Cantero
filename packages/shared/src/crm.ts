@@ -20,6 +20,12 @@ export const updateClientSchema = z.object({
   postalCode: z.string().max(20).nullable().optional(),
   country: z.string().length(2).nullable().optional(), // ISO 3166-1 alpha-2
   vatId: z.string().max(30).nullable().optional(),
+  /// DATEV Debitor account number for accounting export — see InvoicesService.exportDatevSalesCsv.
+  datevDebitorNumber: z.string().regex(/^\d+$/, "Digits only").max(12).nullable().optional(),
+  /// Buyer's Peppol Participant ID (EndpointID) for outgoing BIS Billing 3.0 e-invoices — optional,
+  /// never blocks export (unlike the seller's own peppolScheme/peppolParticipantId on Company).
+  peppolScheme: z.string().max(10).nullable().optional(),
+  peppolParticipantId: z.string().max(50).nullable().optional(),
   paymentTermsDays: z.number().int().min(0).max(365).nullable().optional(),
   /// Which locale to send invoice/estimate/change-order PDFs and emails in — null uses the company's own.
   preferredLocale: z.enum(SUPPORTED_LOCALES).nullable().optional(),

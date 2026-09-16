@@ -61,6 +61,25 @@ export class InvoicesController {
     return this.service.exportXeroCsv(user.companyId);
   }
 
+  @Get("export/datev.csv")
+  @Header("Content-Type", "text/csv")
+  async exportDatevCsv(
+    @CurrentUser() user: AuthUser,
+    @Res({ passthrough: true }) res: Response,
+    @Query("from") from?: string,
+    @Query("to") to?: string,
+  ) {
+    const { csv, warnings } = await this.service.exportDatevSalesCsv(
+      user.companyId,
+      from ? new Date(from) : undefined,
+      to ? new Date(to) : undefined,
+    );
+    res.set("Content-Disposition", 'attachment; filename="invoices-datev.csv"');
+    res.set("X-Datev-Warnings-Count", String(warnings.length));
+    res.set("Access-Control-Expose-Headers", "X-Datev-Warnings-Count");
+    return csv;
+  }
+
   @Get(":id")
   get(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.get(user.companyId, id);
@@ -155,5 +174,26 @@ export class InvoicesController {
     const { xml, filename } = await this.service.generateXRechnungXml(user.companyId, id);
     res.set("Content-Disposition", `attachment; filename="${filename}"`);
     return xml;
+  }
+
+  @Get(":id/e-invoice.pdf")
+  @Header("Content-Type", "application/pdf")
+  async zugferdPdf(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    const { buffer, filename } = await this.service.generateZugferdPdf(user.companyId, id);
+    return new StreamableFile(buffer, { disposition: `attachment; filename="${filename}"` });
+  }
+
+  @Get(":id/peppol.xml")
+  @Header("Content-Type", "application/xml")
+  async peppolXml(@CurrentUser() user: AuthUser, @Param("id") id: string, @Res({ passthrough: true }) res: Response) {
+    const { xml, filename } = await this.service.generatePeppolBisXml(user.companyId, id);
+    res.set("Content-Disposition", `attachment; filename="${filename}"`);
+    return xml;
+  }
+
+  @Post(":id/peppol/send")
+  async sendPeppol(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    await this.service.sendPeppolInvoice(user.companyId, id);
+    return { ok: true };
   }
 }

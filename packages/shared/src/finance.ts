@@ -142,6 +142,9 @@ export const updateSubcontractorTaxProfileSchema = z.object({
   taxId: z.string().max(40).nullable().optional(),
   legalBusinessName: z.string().max(200).nullable().optional(),
   mailingAddress: z.string().max(400).nullable().optional(),
+  /// DATEV Kreditor account number for accounting export — see
+  /// SubcontractorCostsService.exportDatevPurchasesCsv.
+  datevKreditorNumber: z.string().regex(/^\d+$/, "Digits only").max(12).nullable().optional(),
 });
 export type UpdateSubcontractorTaxProfileInput = z.infer<typeof updateSubcontractorTaxProfileSchema>;
 
@@ -201,12 +204,31 @@ export const updateDrawRequestStatusSchema = z.object({
 });
 export type UpdateDrawRequestStatusInput = z.infer<typeof updateDrawRequestStatusSchema>;
 
+/// A fixed, position-numbered Bill of Quantities line — the scope item a GAEB DA83 price-inquiry
+/// export is built from. positionNo is the GAEB RNo, preserved through export and a
+/// subcontractor's DA84 response so submitted prices match back to the exact line they price.
+export const bidRequestLineInputSchema = z.object({
+  positionNo: z.string().min(1).max(20),
+  description: z.string().min(1).max(300),
+  quantity: z.number().positive(),
+  unit: z.string().min(1).max(10),
+});
+export type BidRequestLineInput = z.infer<typeof bidRequestLineInputSchema>;
+
+export const setBidRequestLinesSchema = z.object({
+  lines: z.array(bidRequestLineInputSchema).max(200),
+});
+export type SetBidRequestLinesInput = z.infer<typeof setBidRequestLinesSchema>;
+
 export const createBidRequestSchema = z.object({
   projectId: z.string().uuid(),
   title: z.string().min(1).max(160),
   description: z.string().max(2000).optional(),
   dueDate: z.string().datetime().optional(),
   subcontractorIds: z.array(z.string().uuid()).min(1),
+  /// Optional GAEB BoQ — a request created without lines still works with the original
+  /// free-text bidding flow, it just can't be exported as a GAEB DA83 price inquiry.
+  lines: z.array(bidRequestLineInputSchema).max(200).optional(),
 });
 export type CreateBidRequestInput = z.infer<typeof createBidRequestSchema>;
 

@@ -461,6 +461,20 @@ describe("SubcontractorsService", () => {
       await expect(service.updateTaxProfile(COMPANY_A, "sub-1", { taxId: "12-3456789" })).rejects.toThrow(NotFoundException);
       expect(prisma.subcontractor.update).not.toHaveBeenCalled();
     });
+
+    // Regression: the select clause here once listed only taxId/legalBusinessName/mailingAddress,
+    // so adding datevKreditorNumber to the model silently never came back from this endpoint even
+    // though it saved correctly — caught by hand while browser-testing the DATEV export feature.
+    it("selects datevKreditorNumber, not just the US tax-profile fields", async () => {
+      prisma.subcontractor.findFirst.mockResolvedValue({ taxId: null, legalBusinessName: null, mailingAddress: null, datevKreditorNumber: "70001" });
+
+      const result = await service.getTaxProfile(COMPANY_A, "sub-1");
+
+      expect(prisma.subcontractor.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({ select: expect.objectContaining({ datevKreditorNumber: true }) }),
+      );
+      expect(result.datevKreditorNumber).toBe("70001");
+    });
   });
 
   describe("addPayment()", () => {

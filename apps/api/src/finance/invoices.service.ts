@@ -3,14 +3,18 @@ import { ConfigService } from "@nestjs/config";
 import { Prisma } from "@prisma/client";
 import type { AddInstallmentInput, GenerateProgressInvoiceInput, RecordPaymentInput, ReleaseRetainageInput, UpdateInvoiceInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
-import { PdfService } from "../common/pdf/pdf.service";
+import { PdfService, type PdfDocumentSpec } from "../common/pdf/pdf.service";
 import { StorageService } from "../common/storage/storage.service";
 import { toCsv } from "../common/csv";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
 import { OutboxService } from "../common/webhooks/outbox.service";
 import { calculateProgressDraw, round2 } from "./progress-billing";
-import { buildXRechnungXml } from "./e-invoice";
+import { buildXRechnungXml, type BuildXRechnungXmlInput } from "./e-invoice";
+import { buildZugferdCiiXml } from "./zugferd";
+import { buildDatevHeader, buildDatevPostingRow, buildDatevBuchungsstapelCsv, resolveDatevFiscalYearStart } from "./datev";
+import { buildPeppolBisXml } from "./peppol";
+import { PeppolAccessPointService } from "./peppol-access-point.service";
 import { calculateLateFee, daysOverdue } from "./late-fee";
 import { documentPdfLabels } from "../common/pdf/pdf-labels";
 import { invoiceSentEmail } from "../common/mail/client-mail-templates";
@@ -32,6 +36,7 @@ export class InvoicesService {
     private readonly mail: MailService,
     private readonly outbox: OutboxService,
     private readonly exchangeRates: ExchangeRateService,
+    private readonly peppolAccessPoint: PeppolAccessPointService,
   ) {}
 
   /** take omitted (public-api's JSON export, out of scope for this round's pagination pass —
@@ -443,13 +448,15 @@ export class InvoicesService {
     return updated;
   }
 
-  async generatePdf(companyId: string, id: string): Promise<Buffer> {
-    const invoice = await this.findOrThrow(companyId, id);
-    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
-    const logoBuffer = company.logoStorageKey ? await this.storage.read(company.logoStorageKey) : undefined;
-    const labels = documentPdfLabels(invoice.client.preferredLocale ?? company.locale);
-
-    return this.pdfService.render({
+  /** Shared by generatePdf() and generateZugferdPdf() — the two only differ in which PdfService
+   * method renders this same spec (plain vs PDF/A-3b + embedded XML). */
+  private buildInvoicePdfSpec(
+    invoice: Awaited<ReturnType<typeof this.findOrThrow>>,
+    company: Awaited<ReturnType<typeof this.prisma.company.findUniqueOrThrow>>,
+    labels: ReturnType<typeof documentPdfLabels>,
+    logoBuffer: Buffer | undefined,
+  ): PdfDocumentSpec {
+    return {
       title: `Invoice ${invoice.number}`,
       subtitle: `${invoice.client.name} — ${invoice.project.name}`,
       meta: [
@@ -466,19 +473,28 @@ export class InvoicesService {
         { label: labels.totalDue, value: `${invoice.total} ${invoice.currency}`, emphasize: true },
       ],
       branding: { logoBuffer, accentColor: company.brandColor ?? undefined },
-    });
+    };
+  }
+
+  async generatePdf(companyId: string, id: string): Promise<Buffer> {
+    const invoice = await this.findOrThrow(companyId, id);
+    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    const logoBuffer = company.logoStorageKey ? await this.storage.read(company.logoStorageKey) : undefined;
+    const labels = documentPdfLabels(invoice.client.preferredLocale ?? company.locale);
+
+    return this.pdfService.render(this.buildInvoicePdfSpec(invoice, company, labels, logoBuffer));
   }
 
   /**
-   * A UBL 2.1/XRechnung 3.0 e-invoice XML for this invoice (see buildXRechnungXml). Requires the
-   * company's e-invoicing fields (address/city/postalCode/vatId) and the client's billing address
-   * to be filled in first — throws a specific, actionable message naming exactly what's missing
-   * rather than a generic validation failure.
+   * Requires the company's e-invoicing fields (address/city/postalCode/vatId) and the client's
+   * billing address to be filled in first — throws a specific, actionable message naming exactly
+   * what's missing rather than a generic validation failure. Shared by both e-invoice formats
+   * (XRechnung/UBL and ZUGFeRD/CII) since they carry the same EN16931 business data.
    */
-  async generateXRechnungXml(companyId: string, id: string): Promise<{ xml: string; filename: string }> {
-    const invoice = await this.findOrThrow(companyId, id);
-    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
-
+  private assertEInvoiceFieldsPresent(
+    company: Awaited<ReturnType<typeof this.prisma.company.findUniqueOrThrow>>,
+    invoice: Awaited<ReturnType<typeof this.findOrThrow>>,
+  ): void {
     const missing: string[] = [];
     if (!company.address) missing.push("company street address");
     if (!company.city) missing.push("company city");
@@ -493,8 +509,16 @@ export class InvoicesService {
         `Can't generate an e-invoice — missing: ${missing.join(", ")}. Fill these in under company settings and the client's billing address first.`,
       );
     }
+  }
 
-    const xml = buildXRechnungXml({
+  /** The EN16931 business data both e-invoice XML builders need (buildXRechnungXml's UBL and
+   * buildZugferdCiiXml's CII) — same seller/buyer/lines/totals, different XML schema. Call
+   * assertEInvoiceFieldsPresent() first; this assumes the required fields are already non-null. */
+  private buildEInvoiceInput(
+    invoice: Awaited<ReturnType<typeof this.findOrThrow>>,
+    company: Awaited<ReturnType<typeof this.prisma.company.findUniqueOrThrow>>,
+  ): BuildXRechnungXmlInput {
+    return {
       invoiceNumber: invoice.number,
       issueDate: invoice.createdAt,
       dueDate: invoice.dueDate,
@@ -507,6 +531,8 @@ export class InvoicesService {
         countryCode: company.country,
         vatId: company.vatId,
         iban: company.iban,
+        endpointScheme: company.peppolScheme,
+        endpointId: company.peppolParticipantId,
       },
       buyer: {
         name: invoice.client.name,
@@ -515,6 +541,8 @@ export class InvoicesService {
         postalCode: invoice.client.postalCode!,
         countryCode: invoice.client.country!,
         vatId: invoice.client.vatId,
+        endpointScheme: invoice.client.peppolScheme,
+        endpointId: invoice.client.peppolParticipantId,
       },
       lines: invoice.lines.map((line) => ({
         description: line.description,
@@ -525,12 +553,75 @@ export class InvoicesService {
       subtotal: Number(invoice.subtotal),
       taxAmount: Number(invoice.taxAmount),
       total: Number(invoice.total),
-    });
+    };
+  }
+
+  /** A UBL 2.1/XRechnung 3.0 e-invoice XML for this invoice (see buildXRechnungXml). */
+  async generateXRechnungXml(companyId: string, id: string): Promise<{ xml: string; filename: string }> {
+    const invoice = await this.findOrThrow(companyId, id);
+    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    this.assertEInvoiceFieldsPresent(company, invoice);
+
+    const xml = buildXRechnungXml(this.buildEInvoiceInput(invoice, company));
 
     // Content-Disposition header values must be ASCII — an invoice number in another script
     // (e.g. "РАХ-2026-001") would otherwise throw ERR_INVALID_CHAR when the controller sets it.
     const asciiNumber = invoice.number.replace(/[^\x20-\x7e]/g, "_");
     return { xml, filename: `${asciiNumber}-xrechnung.xml` };
+  }
+
+  /** Requires the company's own Peppol Participant ID (EndpointID) — see buildPeppolBisXml. Never
+   * guesses an EAS scheme, since Peppol covers every EU country's own identifier scheme. */
+  private assertPeppolFieldsPresent(company: Awaited<ReturnType<typeof this.prisma.company.findUniqueOrThrow>>): void {
+    const missing: string[] = [];
+    if (!company.peppolScheme) missing.push("Peppol EAS scheme code");
+    if (!company.peppolParticipantId) missing.push("Peppol participant ID");
+    if (missing.length > 0) {
+      throw new BadRequestException(`Can't generate a Peppol export — missing: ${missing.join(", ")}. Fill these in under company settings first.`);
+    }
+  }
+
+  /** A Peppol BIS Billing 3.0 e-invoice XML for this invoice (see buildPeppolBisXml). Requires
+   * both the shared e-invoicing fields (address/VAT — see assertEInvoiceFieldsPresent) and the
+   * company's own Peppol Participant ID. */
+  async generatePeppolBisXml(companyId: string, id: string): Promise<{ xml: string; filename: string }> {
+    const invoice = await this.findOrThrow(companyId, id);
+    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    this.assertEInvoiceFieldsPresent(company, invoice);
+    this.assertPeppolFieldsPresent(company);
+
+    const xml = buildPeppolBisXml(this.buildEInvoiceInput(invoice, company));
+
+    const asciiNumber = invoice.number.replace(/[^\x20-\x7e]/g, "_");
+    return { xml, filename: `${asciiNumber}-peppol.xml` };
+  }
+
+  /** Generates the Peppol BIS XML and hands it to the Access Point scaffold — see
+   * PeppolAccessPointService for why this always throws today (no contracted AP provider exists
+   * in this environment) and what's needed to make it actually transmit. */
+  async sendPeppolInvoice(companyId: string, id: string): Promise<void> {
+    const { xml, filename } = await this.generatePeppolBisXml(companyId, id);
+    await this.peppolAccessPoint.sendInvoice(xml, filename);
+  }
+
+  /**
+   * A ZUGFeRD/Factur-X hybrid invoice: the same visual PDF as generatePdf(), but PDF/A-3b with the
+   * EN16931 CII XML (see buildZugferdCiiXml) embedded as "factur-x.xml" — see
+   * PdfService.renderZugferdInvoice for the format-mandated attachment/metadata details.
+   */
+  async generateZugferdPdf(companyId: string, id: string): Promise<{ buffer: Buffer; filename: string }> {
+    const invoice = await this.findOrThrow(companyId, id);
+    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    this.assertEInvoiceFieldsPresent(company, invoice);
+
+    const xml = buildZugferdCiiXml(this.buildEInvoiceInput(invoice, company));
+    const logoBuffer = company.logoStorageKey ? await this.storage.read(company.logoStorageKey) : undefined;
+    const labels = documentPdfLabels(invoice.client.preferredLocale ?? company.locale);
+    const spec = this.buildInvoicePdfSpec(invoice, company, labels, logoBuffer);
+    const buffer = await this.pdfService.renderZugferdInvoice(spec, Buffer.from(xml, "utf-8"));
+
+    const asciiNumber = invoice.number.replace(/[^\x20-\x7e]/g, "_");
+    return { buffer, filename: `${asciiNumber}-zugferd.pdf` };
   }
 
   /** Accounting export: one row per invoice, with paid/outstanding derived from its payments. */
@@ -647,6 +738,89 @@ export class InvoicesService {
       ]),
     );
     return toCsv(header, rows);
+  }
+
+  /**
+   * DATEV "Buchungsstapel" export for sales (see datev.ts) — requires the company's DATEV
+   * settings to be filled in first, same missing-field pattern as assertEInvoiceFieldsPresent.
+   * Invoices whose client has no datevDebitorNumber are skipped (with a warning) rather than
+   * failing the whole export — the rest of the batch is still useful.
+   */
+  private assertDatevSettingsPresent(company: Awaited<ReturnType<typeof this.prisma.company.findUniqueOrThrow>>): void {
+    const missing: string[] = [];
+    if (!company.datevConsultantNumber) missing.push("DATEV consultant number (Beraternummer)");
+    if (!company.datevClientNumber) missing.push("DATEV client number (Mandantennummer)");
+    if (!company.datevFiscalYearStartMonth || !company.datevFiscalYearStartDay) missing.push("DATEV fiscal year start");
+    if (!company.datevSachkontenlaenge) missing.push("DATEV account number length (Sachkontenlänge)");
+    if (!company.datevReceivablesAccount) missing.push("DATEV receivables account");
+    if (!company.datevRevenueAccountStandard) missing.push("DATEV standard-rate revenue account");
+    if (!company.datevRevenueAccountReduced) missing.push("DATEV reduced-rate revenue account");
+    if (!company.datevRevenueAccountExempt) missing.push("DATEV tax-exempt revenue account");
+    if (missing.length > 0) {
+      throw new BadRequestException(`Can't generate a DATEV export — missing: ${missing.join(", ")}. Fill these in under company settings first.`);
+    }
+  }
+
+  async exportDatevSalesCsv(companyId: string, from?: Date, to?: Date): Promise<{ csv: string; warnings: string[] }> {
+    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    this.assertDatevSettingsPresent(company);
+
+    const invoices = await this.prisma.invoice.findMany({
+      where: {
+        companyId,
+        status: { in: ["sent", "paid"] },
+        currency: "EUR",
+        ...(from || to ? { createdAt: { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } } : {}),
+      },
+      include: { client: true },
+      orderBy: { number: "asc" },
+    });
+
+    const warnings: string[] = [];
+    const rows: string[] = [];
+    for (const inv of invoices) {
+      if (!inv.client.datevDebitorNumber) {
+        warnings.push(`Invoice ${inv.number} skipped — client "${inv.client.name}" has no DATEV Debitor number.`);
+        continue;
+      }
+      const subtotal = Number(inv.subtotal);
+      const taxPercent = subtotal > 0 ? (Number(inv.taxAmount) / subtotal) * 100 : 0;
+      const gegenkonto =
+        taxPercent >= 15
+          ? company.datevRevenueAccountStandard!
+          : taxPercent >= 3
+            ? company.datevRevenueAccountReduced!
+            : company.datevRevenueAccountExempt!;
+
+      rows.push(
+        buildDatevPostingRow({
+          amount: Number(inv.total),
+          konto: inv.client.datevDebitorNumber,
+          gegenkonto,
+          belegdatum: inv.createdAt,
+          belegfeld1: inv.number,
+          buchungstext: inv.client.name,
+        }),
+      );
+    }
+
+    const dates = invoices.map((i) => i.createdAt.getTime());
+    const batchFrom = from ?? new Date(dates.length > 0 ? Math.min(...dates) : Date.now());
+    const batchTo = to ?? new Date(dates.length > 0 ? Math.max(...dates) : Date.now());
+
+    const header = buildDatevHeader({
+      companyName: company.name,
+      createdAt: new Date(),
+      consultantNumber: company.datevConsultantNumber!,
+      clientNumber: company.datevClientNumber!,
+      fiscalYearStart: resolveDatevFiscalYearStart(company.datevFiscalYearStartMonth!, company.datevFiscalYearStartDay!, batchFrom),
+      sachkontenlaenge: company.datevSachkontenlaenge!,
+      batchFrom,
+      batchTo,
+      label: `Verkauf ${batchFrom.toISOString().slice(0, 10)} - ${batchTo.toISOString().slice(0, 10)}`,
+    });
+
+    return { csv: buildDatevBuchungsstapelCsv(header, rows), warnings };
   }
 
   private async assertInvoiceableEstimate(companyId: string, estimateId: string) {

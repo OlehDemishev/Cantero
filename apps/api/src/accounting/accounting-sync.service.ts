@@ -7,6 +7,12 @@ import { PrismaService } from "../common/prisma/prisma.service";
 
 const FETCH_TIMEOUT_MS = 10_000;
 const STATE_TTL = "10m";
+/// Intuit, unlike Xero, splits sandbox and production data onto different API hosts (the OAuth
+/// endpoints above are shared by both). Defaulting to sandbox keeps local dev/test working with
+/// no env var set, but a real deployment MUST set QUICKBOOKS_API_BASE_URL to
+/// "https://quickbooks.api.intuit.com" or every sync silently keeps writing into a sandbox
+/// company no real QBO user ever sees.
+const QUICKBOOKS_SANDBOX_API_BASE_URL = "https://sandbox-quickbooks.api.intuit.com";
 
 interface ProviderConfig {
   authorizeUrl: string;
@@ -478,11 +484,20 @@ export class AccountingSyncService {
     return created.Invoices[0].InvoiceID;
   }
 
+  /** QUICKBOOKS_API_BASE_URL is unset in most environments on purpose — see the constants above.
+   * Falling back to sandbox rather than production is the safe default: a misconfigured sandbox
+   * URL in production is a loud, obvious no-op (nothing shows up in the real QBO company), while
+   * a misconfigured production URL in a dev/test environment would silently write test data into
+   * someone's real accounting records. */
+  private quickbooksApiBaseUrl(): string {
+    return this.config.get<string>("QUICKBOOKS_API_BASE_URL") ?? QUICKBOOKS_SANDBOX_API_BASE_URL;
+  }
+
   private async quickbooksQuery(
     connection: { accessToken: string; externalAccountId: string },
     query: string,
   ): Promise<any> {
-    const url = `https://sandbox-quickbooks.api.intuit.com/v3/company/${connection.externalAccountId}/query?query=${encodeURIComponent(query)}`;
+    const url = `${this.quickbooksApiBaseUrl()}/v3/company/${connection.externalAccountId}/query?query=${encodeURIComponent(query)}`;
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${connection.accessToken}`, Accept: "application/json" },
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
@@ -497,7 +512,7 @@ export class AccountingSyncService {
     path: string,
     body: unknown,
   ): Promise<any> {
-    const url = `https://sandbox-quickbooks.api.intuit.com/v3/company/${connection.externalAccountId}/${path}`;
+    const url = `${this.quickbooksApiBaseUrl()}/v3/company/${connection.externalAccountId}/${path}`;
     const res = await fetch(url, {
       method,
       headers: {

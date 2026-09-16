@@ -1,45 +1,16 @@
 import { round2 } from "./progress-billing";
+import type { BuildXRechnungXmlInput, EInvoiceLine, EInvoiceParty } from "./e-invoice";
 
-export interface EInvoiceParty {
-  name: string;
-  street: string;
-  city: string;
-  postalCode: string;
-  countryCode: string;
-  vatId: string | null;
-  /** Peppol Participant ID (EndpointID) — EAS scheme + identifier, e.g. scheme "9930" ("DE:VAT")
-   * with the VAT number as the id. Optional (not just nullable) so existing EInvoiceParty object
-   * literals built before Peppol support existed — including e-invoice.spec.ts/zugferd.spec.ts's
-   * fixtures — stay valid unchanged. Undefined/null on a party with no Peppol registration; only
-   * rendered by buildPeppolBisXml (see ./peppol.ts) — buildXRechnungXml/buildZugferdCiiXml ignore
-   * both fields, so adding them here doesn't change either builder's output. */
-  endpointScheme?: string | null;
-  endpointId?: string | null;
-}
-
-export interface EInvoiceSeller extends EInvoiceParty {
-  iban: string | null;
-}
-
-export interface EInvoiceLine {
-  description: string;
-  quantity: number;
-  unitPrice: number;
-  lineTotal: number;
-}
-
-export interface BuildXRechnungXmlInput {
-  invoiceNumber: string;
-  issueDate: Date;
-  dueDate: Date | null;
-  currency: string;
-  seller: EInvoiceSeller;
-  buyer: EInvoiceParty;
-  lines: EInvoiceLine[];
-  subtotal: number;
-  taxAmount: number;
-  total: number;
-}
+/**
+ * Builds a UBL 2.1 Invoice document conforming to Peppol BIS Billing 3.0 — the international
+ * e-invoicing network's profile. XRechnung (buildXRechnungXml in ./e-invoice.ts) is actually a
+ * German CIUS/subset of this same standard, so the UBL skeleton here is nearly identical; the
+ * three real differences are the CustomizationID/ProfileID values and the EndpointID (Peppol
+ * Participant ID) on each party, which XRechnung doesn't require. Same hand-built, honest-subset
+ * philosophy as the other three e-invoice/export formats in this codebase: structurally correct
+ * against the real BIS Billing 3.0 model, not run through the official Peppol validator — a
+ * single derived overall tax rate, no per-line ClassifiedTaxCategory.
+ */
 
 function escapeXml(value: string): string {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
@@ -50,9 +21,13 @@ function isoDate(date: Date): string {
 }
 
 function partyBlock(tag: "cac:AccountingSupplierParty" | "cac:AccountingCustomerParty", party: EInvoiceParty): string {
+  const endpointId =
+    party.endpointScheme && party.endpointId
+      ? `    <cbc:EndpointID schemeID="${escapeXml(party.endpointScheme)}">${escapeXml(party.endpointId)}</cbc:EndpointID>\n`
+      : "";
   return `  <${tag}>
     <cac:Party>
-      <cac:PostalAddress>
+${endpointId}      <cac:PostalAddress>
         <cbc:StreetName>${escapeXml(party.street)}</cbc:StreetName>
         <cbc:CityName>${escapeXml(party.city)}</cbc:CityName>
         <cbc:PostalZone>${escapeXml(party.postalCode)}</cbc:PostalZone>
@@ -77,31 +52,24 @@ function partyBlock(tag: "cac:AccountingSupplierParty" | "cac:AccountingCustomer
   </${tag}>`;
 }
 
-/**
- * Builds a UBL 2.1 Invoice document conforming to the EN16931 core model, using the XRechnung 3.0
- * customization ID (the German CIUS — Factur-X/other-EU CIUSes reuse the same UBL structure with a
- * different customization ID, not implemented here). This is a hand-built, structurally-correct
- * XML — not run through the official Kosit/EN16931 validator — so treat it as a strong starting
- * point for e-invoicing compliance, not a government-validated guarantee.
- */
-export function buildXRechnungXml(input: BuildXRechnungXmlInput): string {
-  const taxPercent = input.subtotal > 0 ? round2((input.taxAmount / input.subtotal) * 100) : 0;
-
-  const lines = input.lines
-    .map(
-      (line, i) => `  <cac:InvoiceLine>
-    <cbc:ID>${i + 1}</cbc:ID>
+function lineBlock(line: EInvoiceLine, index: number, currency: string): string {
+  return `  <cac:InvoiceLine>
+    <cbc:ID>${index + 1}</cbc:ID>
     <cbc:InvoicedQuantity unitCode="C62">${line.quantity}</cbc:InvoicedQuantity>
-    <cbc:LineExtensionAmount currencyID="${input.currency}">${round2(line.lineTotal)}</cbc:LineExtensionAmount>
+    <cbc:LineExtensionAmount currencyID="${currency}">${round2(line.lineTotal)}</cbc:LineExtensionAmount>
     <cac:Item>
       <cbc:Name>${escapeXml(line.description)}</cbc:Name>
     </cac:Item>
     <cac:Price>
-      <cbc:PriceAmount currencyID="${input.currency}">${round2(line.unitPrice)}</cbc:PriceAmount>
+      <cbc:PriceAmount currencyID="${currency}">${round2(line.unitPrice)}</cbc:PriceAmount>
     </cac:Price>
-  </cac:InvoiceLine>`,
-    )
-    .join("\n");
+  </cac:InvoiceLine>`;
+}
+
+export function buildPeppolBisXml(input: BuildXRechnungXmlInput): string {
+  const taxPercent = input.subtotal > 0 ? round2((input.taxAmount / input.subtotal) * 100) : 0;
+
+  const lines = input.lines.map((line, i) => lineBlock(line, i, input.currency)).join("\n");
 
   const paymentMeans = input.seller.iban
     ? `  <cac:PaymentMeans>
@@ -114,7 +82,8 @@ export function buildXRechnungXml(input: BuildXRechnungXmlInput): string {
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2">
-  <cbc:CustomizationID>urn:cen.eu:en16931:2017#compliant#urn:xoev-de:kosit:standard:xrechnung_3.0</cbc:CustomizationID>
+  <cbc:CustomizationID>urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0</cbc:CustomizationID>
+  <cbc:ProfileID>urn:fdc:peppol.eu:2017:poacc:billing:01:1.0</cbc:ProfileID>
   <cbc:ID>${escapeXml(input.invoiceNumber)}</cbc:ID>
   <cbc:IssueDate>${isoDate(input.issueDate)}</cbc:IssueDate>
 ${input.dueDate ? `  <cbc:DueDate>${isoDate(input.dueDate)}</cbc:DueDate>\n` : ""}  <cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode>

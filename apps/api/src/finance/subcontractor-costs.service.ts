@@ -4,6 +4,7 @@ import { PrismaService } from "../common/prisma/prisma.service";
 import { PdfService } from "../common/pdf/pdf.service";
 import { StorageService } from "../common/storage/storage.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
+import { buildDatevHeader, buildDatevPostingRow, buildDatevBuchungsstapelCsv, resolveDatevFiscalYearStart } from "./datev";
 
 const LIEN_WAIVER_TYPE_LABELS: Record<string, string> = {
   conditional_progress: "Conditional waiver on progress payment",
@@ -156,5 +157,73 @@ export class SubcontractorCostsService {
           ? { imageBuffer: signatureImageBuffer, signerName: waiver.signerName, signedAt: waiver.signedAt }
           : undefined,
     });
+  }
+
+  /**
+   * DATEV "Buchungsstapel" export for purchases (see datev.ts). No `paid` filter — a
+   * SubcontractorCost is booked as a liability the moment it's logged, regardless of payment
+   * status (see the model's own doc comment). No tax-rate branching — SubcontractorCost has no
+   * VAT field to read (construction subcontractor billing between VAT-registered businesses in
+   * Germany is often reverse-charge anyway, which this data model doesn't represent) — every
+   * posting uses the single configured expense account.
+   */
+  async exportDatevPurchasesCsv(companyId: string, from?: Date, to?: Date): Promise<{ csv: string; warnings: string[] }> {
+    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    const missing: string[] = [];
+    if (!company.datevConsultantNumber) missing.push("DATEV consultant number (Beraternummer)");
+    if (!company.datevClientNumber) missing.push("DATEV client number (Mandantennummer)");
+    if (!company.datevFiscalYearStartMonth || !company.datevFiscalYearStartDay) missing.push("DATEV fiscal year start");
+    if (!company.datevSachkontenlaenge) missing.push("DATEV account number length (Sachkontenlänge)");
+    if (!company.datevPayablesAccount) missing.push("DATEV payables account");
+    if (!company.datevExpenseAccountSubcontractors) missing.push("DATEV subcontractor expense account");
+    if (missing.length > 0) {
+      throw new BadRequestException(`Can't generate a DATEV export — missing: ${missing.join(", ")}. Fill these in under company settings first.`);
+    }
+
+    const costs = await this.prisma.subcontractorCost.findMany({
+      where: {
+        companyId,
+        ...(from || to ? { incurredDate: { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } } : {}),
+      },
+      include: { subcontractor: true },
+      orderBy: { incurredDate: "asc" },
+    });
+
+    const warnings: string[] = [];
+    const rows: string[] = [];
+    for (const cost of costs) {
+      if (!cost.subcontractor.datevKreditorNumber) {
+        warnings.push(`Cost "${cost.description}" skipped — subcontractor "${cost.subcontractor.name}" has no DATEV Kreditor number.`);
+        continue;
+      }
+      rows.push(
+        buildDatevPostingRow({
+          amount: Number(cost.amount),
+          konto: cost.subcontractor.datevKreditorNumber,
+          gegenkonto: company.datevExpenseAccountSubcontractors!,
+          belegdatum: cost.incurredDate,
+          belegfeld1: cost.id,
+          buchungstext: `${cost.subcontractor.name} — ${cost.description}`,
+        }),
+      );
+    }
+
+    const dates = costs.map((c) => c.incurredDate.getTime());
+    const batchFrom = from ?? new Date(dates.length > 0 ? Math.min(...dates) : Date.now());
+    const batchTo = to ?? new Date(dates.length > 0 ? Math.max(...dates) : Date.now());
+
+    const header = buildDatevHeader({
+      companyName: company.name,
+      createdAt: new Date(),
+      consultantNumber: company.datevConsultantNumber!,
+      clientNumber: company.datevClientNumber!,
+      fiscalYearStart: resolveDatevFiscalYearStart(company.datevFiscalYearStartMonth!, company.datevFiscalYearStartDay!, batchFrom),
+      sachkontenlaenge: company.datevSachkontenlaenge!,
+      batchFrom,
+      batchTo,
+      label: `Einkauf ${batchFrom.toISOString().slice(0, 10)} - ${batchTo.toISOString().slice(0, 10)}`,
+    });
+
+    return { csv: buildDatevBuchungsstapelCsv(header, rows), warnings };
   }
 }

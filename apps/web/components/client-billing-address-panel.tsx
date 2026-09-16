@@ -11,6 +11,9 @@ interface Client {
   postalCode: string | null;
   country: string | null;
   vatId: string | null;
+  datevDebitorNumber: string | null;
+  peppolScheme: string | null;
+  peppolParticipantId: string | null;
   paymentTermsDays: number | null;
   preferredLocale: string | null;
 }
@@ -25,6 +28,9 @@ export function ClientBillingAddressPanel({ clientId }: { clientId: string }) {
     postalCode: "",
     country: "",
     vatId: "",
+    datevDebitorNumber: "",
+    peppolScheme: "",
+    peppolParticipantId: "",
     paymentTermsDays: "",
     preferredLocale: "",
   });
@@ -39,6 +45,9 @@ export function ClientBillingAddressPanel({ clientId }: { clientId: string }) {
         postalCode: c.postalCode ?? "",
         country: c.country ?? "",
         vatId: c.vatId ?? "",
+        datevDebitorNumber: c.datevDebitorNumber ?? "",
+        peppolScheme: c.peppolScheme ?? "",
+        peppolParticipantId: c.peppolParticipantId ?? "",
         paymentTermsDays: c.paymentTermsDays?.toString() ?? "",
         preferredLocale: c.preferredLocale ?? "",
       });
@@ -58,6 +67,9 @@ export function ClientBillingAddressPanel({ clientId }: { clientId: string }) {
           postalCode: billingForm.postalCode || null,
           country: billingForm.country || null,
           vatId: billingForm.vatId || null,
+          datevDebitorNumber: billingForm.datevDebitorNumber || null,
+          peppolScheme: billingForm.peppolScheme || null,
+          peppolParticipantId: billingForm.peppolParticipantId || null,
           paymentTermsDays: billingForm.paymentTermsDays ? Number(billingForm.paymentTermsDays) : null,
           preferredLocale: billingForm.preferredLocale || null,
         }),
@@ -106,6 +118,26 @@ export function ClientBillingAddressPanel({ clientId }: { clientId: string }) {
           value={billingForm.vatId}
           onChange={(e) => setBillingForm((f) => ({ ...f, vatId: e.target.value }))}
         />
+        <input
+          className="input"
+          placeholder={t("datevDebitorNumber")}
+          value={billingForm.datevDebitorNumber}
+          onChange={(e) => setBillingForm((f) => ({ ...f, datevDebitorNumber: e.target.value.replace(/\D/g, "") }))}
+        />
+        <div className="flex gap-2">
+          <input
+            className="input w-24"
+            placeholder={t("peppolScheme")}
+            value={billingForm.peppolScheme}
+            onChange={(e) => setBillingForm((f) => ({ ...f, peppolScheme: e.target.value }))}
+          />
+          <input
+            className="input flex-1"
+            placeholder={t("peppolParticipantId")}
+            value={billingForm.peppolParticipantId}
+            onChange={(e) => setBillingForm((f) => ({ ...f, peppolParticipantId: e.target.value }))}
+          />
+        </div>
         <label className="flex w-40 flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
           {t("paymentTermsDays")}
           <input

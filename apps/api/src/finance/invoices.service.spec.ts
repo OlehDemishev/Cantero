@@ -10,6 +10,7 @@ import { AuditService } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
 import { OutboxService } from "../common/webhooks/outbox.service";
 import { ExchangeRateService } from "../common/exchange-rate/exchange-rate.service";
+import { PeppolAccessPointService } from "./peppol-access-point.service";
 
 const COMPANY_A = "company-a";
 const ACTOR = { userId: "user-1", name: "Accountant" };
@@ -17,7 +18,7 @@ const ACTOR = { userId: "user-1", name: "Accountant" };
 describe("InvoicesService — late fees & payment terms", () => {
   let service: InvoicesService;
   let prisma: {
-    invoice: { findFirst: jest.Mock; update: jest.Mock; create: jest.Mock; count: jest.Mock };
+    invoice: { findFirst: jest.Mock; findMany: jest.Mock; update: jest.Mock; create: jest.Mock; count: jest.Mock };
     invoiceLine: { create: jest.Mock };
     company: { findUniqueOrThrow: jest.Mock };
     payment: { create: jest.Mock; findMany: jest.Mock };
@@ -27,10 +28,12 @@ describe("InvoicesService — late fees & payment terms", () => {
   let audit: { record: jest.Mock };
   let mail: { send: jest.Mock };
   let exchangeRates: { getRate: jest.Mock };
+  let pdfService: { render: jest.Mock; renderZugferdInvoice: jest.Mock };
+  let peppolAccessPoint: { sendInvoice: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
-      invoice: { findFirst: jest.fn(), update: jest.fn(), create: jest.fn(), count: jest.fn().mockResolvedValue(0) },
+      invoice: { findFirst: jest.fn(), findMany: jest.fn(), update: jest.fn(), create: jest.fn(), count: jest.fn().mockResolvedValue(0) },
       invoiceLine: { create: jest.fn() },
       company: { findUniqueOrThrow: jest.fn() },
       payment: { create: jest.fn(), findMany: jest.fn().mockResolvedValue([]) },
@@ -40,18 +43,21 @@ describe("InvoicesService — late fees & payment terms", () => {
     audit = { record: jest.fn() };
     mail = { send: jest.fn() };
     exchangeRates = { getRate: jest.fn() };
+    pdfService = { render: jest.fn(), renderZugferdInvoice: jest.fn().mockResolvedValue(Buffer.from("pdf-bytes")) };
+    peppolAccessPoint = { sendInvoice: jest.fn() };
 
     const module = await Test.createTestingModule({
       providers: [
         InvoicesService,
         { provide: PrismaService, useValue: prisma },
-        { provide: PdfService, useValue: { render: jest.fn() } },
+        { provide: PdfService, useValue: pdfService },
         { provide: StorageService, useValue: { read: jest.fn(), save: jest.fn() } },
         { provide: AuditService, useValue: audit },
         { provide: ConfigService, useValue: { get: () => undefined } },
         { provide: MailService, useValue: mail },
         { provide: OutboxService, useValue: { enqueue: jest.fn() } },
         { provide: ExchangeRateService, useValue: exchangeRates },
+        { provide: PeppolAccessPointService, useValue: peppolAccessPoint },
       ],
     }).compile();
 
@@ -453,6 +459,234 @@ describe("InvoicesService — late fees & payment terms", () => {
       );
     });
   });
+
+  describe("generateZugferdPdf()", () => {
+    const completeInvoice = {
+      id: "inv-1",
+      number: "INV-2026-042",
+      createdAt: new Date("2026-08-31"),
+      dueDate: new Date("2026-09-30"),
+      currency: "EUR",
+      status: "sent",
+      subtotal: "4550",
+      taxAmount: "864.5",
+      total: "5414.5",
+      lines: [{ description: "Concrete slab", quantity: "100", unitPrice: "45.5", lineTotal: "4550" }],
+      client: {
+        name: "Bauherr Schmidt",
+        street: "Kundenweg 5",
+        city: "Munich",
+        postalCode: "80331",
+        country: "DE",
+        vatId: null,
+        preferredLocale: null,
+      },
+      project: { name: "Renovation" },
+    };
+    const completeCompany = {
+      name: "Cantero Bau GmbH",
+      address: "Musterstraße 12",
+      city: "Berlin",
+      postalCode: "10115",
+      country: "DE",
+      vatId: "DE123456789",
+      iban: "DE89370400440532013000",
+      logoStorageKey: null,
+      brandColor: null,
+      locale: "de",
+    };
+
+    it("rejects when required e-invoicing fields are missing, without calling the PDF renderer", async () => {
+      prisma.invoice.findFirst.mockResolvedValue(completeInvoice);
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ ...completeCompany, address: null, vatId: null });
+
+      await expect(service.generateZugferdPdf(COMPANY_A, "inv-1")).rejects.toThrow(BadRequestException);
+      expect(pdfService.renderZugferdInvoice).not.toHaveBeenCalled();
+    });
+
+    it("builds the CII XML and renders a PDF/A-3b invoice via PdfService.renderZugferdInvoice", async () => {
+      prisma.invoice.findFirst.mockResolvedValue(completeInvoice);
+      prisma.company.findUniqueOrThrow.mockResolvedValue(completeCompany);
+
+      const result = await service.generateZugferdPdf(COMPANY_A, "inv-1");
+
+      expect(pdfService.renderZugferdInvoice).toHaveBeenCalledTimes(1);
+      const [spec, xmlBuffer] = pdfService.renderZugferdInvoice.mock.calls[0];
+      expect(spec.title).toBe("Invoice INV-2026-042");
+      expect(xmlBuffer.toString("utf-8")).toContain("CrossIndustryInvoice");
+      expect(result).toEqual({ buffer: Buffer.from("pdf-bytes"), filename: "INV-2026-042-zugferd.pdf" });
+    });
+  });
+
+  describe("generatePeppolBisXml() / sendPeppolInvoice()", () => {
+    const completeInvoice = {
+      id: "inv-1",
+      number: "INV-2026-042",
+      createdAt: new Date("2026-08-31"),
+      dueDate: new Date("2026-09-30"),
+      currency: "EUR",
+      status: "sent",
+      subtotal: "4550",
+      taxAmount: "864.5",
+      total: "5414.5",
+      lines: [{ description: "Concrete slab", quantity: "100", unitPrice: "45.5", lineTotal: "4550" }],
+      client: {
+        name: "Bauherr Schmidt",
+        street: "Kundenweg 5",
+        city: "Munich",
+        postalCode: "80331",
+        country: "DE",
+        vatId: null,
+        preferredLocale: null,
+        peppolScheme: null,
+        peppolParticipantId: null,
+      },
+      project: { name: "Renovation" },
+    };
+    const completeCompany = {
+      name: "Cantero Bau GmbH",
+      address: "Musterstraße 12",
+      city: "Berlin",
+      postalCode: "10115",
+      country: "DE",
+      vatId: "DE123456789",
+      iban: "DE89370400440532013000",
+      logoStorageKey: null,
+      brandColor: null,
+      locale: "de",
+      peppolScheme: "9930",
+      peppolParticipantId: "DE123456789",
+    };
+
+    it("rejects when the shared e-invoicing fields are missing", async () => {
+      prisma.invoice.findFirst.mockResolvedValue(completeInvoice);
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ ...completeCompany, address: null });
+
+      await expect(service.generatePeppolBisXml(COMPANY_A, "inv-1")).rejects.toThrow(BadRequestException);
+    });
+
+    it("rejects when the company's Peppol fields are missing, even if e-invoicing fields are present", async () => {
+      prisma.invoice.findFirst.mockResolvedValue(completeInvoice);
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ ...completeCompany, peppolParticipantId: null });
+
+      await expect(service.generatePeppolBisXml(COMPANY_A, "inv-1")).rejects.toThrow("Peppol");
+    });
+
+    it("builds a Peppol BIS XML with the seller's EndpointID", async () => {
+      prisma.invoice.findFirst.mockResolvedValue(completeInvoice);
+      prisma.company.findUniqueOrThrow.mockResolvedValue(completeCompany);
+
+      const { xml, filename } = await service.generatePeppolBisXml(COMPANY_A, "inv-1");
+
+      expect(xml).toContain('<cbc:EndpointID schemeID="9930">DE123456789</cbc:EndpointID>');
+      expect(xml).toContain("urn:fdc:peppol.eu:2017:poacc:billing:3.0");
+      expect(filename).toBe("INV-2026-042-peppol.xml");
+    });
+
+    it("sendPeppolInvoice() propagates the Access Point scaffold's not-configured error", async () => {
+      prisma.invoice.findFirst.mockResolvedValue(completeInvoice);
+      prisma.company.findUniqueOrThrow.mockResolvedValue(completeCompany);
+      peppolAccessPoint.sendInvoice.mockRejectedValue(new BadRequestException("Peppol network sending isn't configured"));
+
+      await expect(service.sendPeppolInvoice(COMPANY_A, "inv-1")).rejects.toThrow("isn't configured");
+    });
+  });
+
+  describe("exportDatevSalesCsv()", () => {
+    const completeDatevCompany = {
+      name: "Cantero Bau GmbH",
+      datevConsultantNumber: "12345",
+      datevClientNumber: "1001",
+      datevFiscalYearStartMonth: 1,
+      datevFiscalYearStartDay: 1,
+      datevSachkontenlaenge: 4,
+      datevReceivablesAccount: "1400",
+      datevRevenueAccountStandard: "8400",
+      datevRevenueAccountReduced: "8300",
+      datevRevenueAccountExempt: "8120",
+    };
+
+    it("rejects when DATEV company settings are incomplete", async () => {
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ ...completeDatevCompany, datevConsultantNumber: null });
+      await expect(service.exportDatevSalesCsv(COMPANY_A)).rejects.toThrow(BadRequestException);
+      expect(prisma.invoice.findMany).not.toHaveBeenCalled();
+    });
+
+    it("skips an invoice whose client has no DATEV Debitor number, and reports a warning", async () => {
+      prisma.company.findUniqueOrThrow.mockResolvedValue(completeDatevCompany);
+      prisma.invoice.findMany.mockResolvedValue([
+        {
+          number: "INV-1",
+          createdAt: new Date("2026-08-31"),
+          subtotal: "1000",
+          taxAmount: "190",
+          total: "1190",
+          client: { name: "No Debitor Client", datevDebitorNumber: null },
+        },
+      ]);
+
+      const { csv, warnings } = await service.exportDatevSalesCsv(COMPANY_A);
+
+      expect(warnings).toHaveLength(1);
+      expect(warnings[0]).toContain("No Debitor Client");
+      expect(csv.split("\r\n")).toHaveLength(2); // just the two header rows, no posting
+    });
+
+    it("picks the standard-rate revenue account for a ~19% invoice", async () => {
+      prisma.company.findUniqueOrThrow.mockResolvedValue(completeDatevCompany);
+      prisma.invoice.findMany.mockResolvedValue([
+        {
+          number: "INV-2",
+          createdAt: new Date("2026-08-31"),
+          subtotal: "1000",
+          taxAmount: "190",
+          total: "1190",
+          client: { name: "Bauherr Schmidt", datevDebitorNumber: "10001" },
+        },
+      ]);
+
+      const { csv } = await service.exportDatevSalesCsv(COMPANY_A);
+      const dataRow = csv.split("\r\n")[2];
+      expect(dataRow.split(";")[6]).toBe("10001"); // Konto
+      expect(dataRow.split(";")[7]).toBe("8400"); // Gegenkonto — standard rate
+    });
+
+    it("picks the reduced-rate revenue account for a ~7% invoice", async () => {
+      prisma.company.findUniqueOrThrow.mockResolvedValue(completeDatevCompany);
+      prisma.invoice.findMany.mockResolvedValue([
+        {
+          number: "INV-3",
+          createdAt: new Date("2026-08-31"),
+          subtotal: "1000",
+          taxAmount: "70",
+          total: "1070",
+          client: { name: "Bauherr Schmidt", datevDebitorNumber: "10001" },
+        },
+      ]);
+
+      const { csv } = await service.exportDatevSalesCsv(COMPANY_A);
+      const dataRow = csv.split("\r\n")[2];
+      expect(dataRow.split(";")[7]).toBe("8300"); // reduced rate
+    });
+
+    it("picks the exempt revenue account for a 0% invoice", async () => {
+      prisma.company.findUniqueOrThrow.mockResolvedValue(completeDatevCompany);
+      prisma.invoice.findMany.mockResolvedValue([
+        {
+          number: "INV-4",
+          createdAt: new Date("2026-08-31"),
+          subtotal: "1000",
+          taxAmount: "0",
+          total: "1000",
+          client: { name: "Bauherr Schmidt", datevDebitorNumber: "10001" },
+        },
+      ]);
+
+      const { csv } = await service.exportDatevSalesCsv(COMPANY_A);
+      const dataRow = csv.split("\r\n")[2];
+      expect(dataRow.split(";")[7]).toBe("8120"); // exempt
+    });
+  });
 });
 
 describe("InvoicesService — partial retainage release", () => {
@@ -479,6 +713,7 @@ describe("InvoicesService — partial retainage release", () => {
         { provide: MailService, useValue: { send: jest.fn() } },
         { provide: OutboxService, useValue: { enqueue: jest.fn() } },
         { provide: ExchangeRateService, useValue: { getRate: jest.fn(), convert: jest.fn((amount: number) => Promise.resolve(amount)) } },
+        { provide: PeppolAccessPointService, useValue: { sendInvoice: jest.fn() } },
       ],
     }).compile();
 

@@ -64,6 +64,7 @@ interface TaxProfile {
   taxId: string | null;
   legalBusinessName: string | null;
   mailingAddress: string | null;
+  datevKreditorNumber: string | null;
 }
 interface SubcontractorPayment {
   id: string;
@@ -124,7 +125,7 @@ export function SubcontractorListItem({
   const [scorecard, setScorecard] = useState<Scorecard | null>(null);
   const [reviews, setReviews] = useState<PerformanceReview[] | null>(null);
   const [reviewForm, setReviewForm] = useState({ rating: "5", onTime: "", safetyIncidents: "0", reworkCount: "0", wouldHireAgain: "", comments: "" });
-  const [taxForm, setTaxForm] = useState({ taxId: "", legalBusinessName: "", mailingAddress: "" });
+  const [taxForm, setTaxForm] = useState({ taxId: "", legalBusinessName: "", mailingAddress: "", datevKreditorNumber: "" });
   const [payments, setPayments] = useState<SubcontractorPayment[] | null>(null);
   const [paymentForm, setPaymentForm] = useState({ amount: "", paidAt: "", note: "" });
   const [assignments, setAssignments] = useState<Assignment[] | null>(null);
@@ -137,10 +138,17 @@ export function SubcontractorListItem({
     apiFetch<PerformanceReview[]>(`/finance/subcontractors/${s.id}/performance-reviews`).then(setReviews);
     apiFetch<Assignment[]>(`/finance/subcontractors/${s.id}/assignments`).then(setAssignments);
     apiFetch<SubcontractorCost[]>(`/finance/subcontractor-costs?subcontractorId=${s.id}`).then(setCosts);
+    // Tax profile carries both US 1099 fields and the DATEV Kreditor number, so it's fetched
+    // regardless of isUsCompany — only the US-specific inputs/payments ledger below stay gated.
+    apiFetch<TaxProfile>(`/finance/subcontractors/${s.id}/tax-profile`).then((p) =>
+      setTaxForm({
+        taxId: p.taxId ?? "",
+        legalBusinessName: p.legalBusinessName ?? "",
+        mailingAddress: p.mailingAddress ?? "",
+        datevKreditorNumber: p.datevKreditorNumber ?? "",
+      }),
+    );
     if (isUsCompany) {
-      apiFetch<TaxProfile>(`/finance/subcontractors/${s.id}/tax-profile`).then((p) =>
-        setTaxForm({ taxId: p.taxId ?? "", legalBusinessName: p.legalBusinessName ?? "", mailingAddress: p.mailingAddress ?? "" }),
-      );
       apiFetch<SubcontractorPayment[]>(`/finance/subcontractors/${s.id}/payments`).then(setPayments);
     }
   }
@@ -187,6 +195,7 @@ export function SubcontractorListItem({
           taxId: taxForm.taxId || null,
           legalBusinessName: taxForm.legalBusinessName || null,
           mailingAddress: taxForm.mailingAddress || null,
+          datevKreditorNumber: taxForm.datevKreditorNumber || null,
         }),
       });
       loadDetail();
@@ -651,6 +660,22 @@ export function SubcontractorListItem({
               />
               <button type="submit" disabled={busy} className="btn-secondary px-2.5 py-1 text-xs">
                 {t("addReview")}
+              </button>
+            </form>
+          </div>
+
+          <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+            <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("datevSettings")}</h3>
+            <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">{t("datevKreditorNumberHint")}</p>
+            <form onSubmit={saveTaxProfile} className="flex flex-col gap-2">
+              <input
+                placeholder={t("datevKreditorNumber")}
+                className="input"
+                value={taxForm.datevKreditorNumber}
+                onChange={(e) => setTaxForm((f) => ({ ...f, datevKreditorNumber: e.target.value.replace(/\D/g, "") }))}
+              />
+              <button type="submit" disabled={busy} className="btn-secondary self-start px-2.5 py-1 text-xs">
+                {tc("save")}
               </button>
             </form>
           </div>

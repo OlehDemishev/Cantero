@@ -1,5 +1,19 @@
+import { readFileSync } from "fs";
 import { Injectable } from "@nestjs/common";
 import PDFDocument from "pdfkit";
+
+// Loaded once at module scope, not per render — these two files are the only ones ZUGFeRD PDFs
+// need. PDF/A mandates every rendered font be embedded (pdfkit's built-in "Helvetica"/
+// "Helvetica-Bold" used by render() below are NOT embedded, so they can't be reused here).
+// @fontsource/roboto is OFL-1.1 licensed and ships actual font files meant for exactly this kind
+// of redistribution/embedding. Deliberately the plain ".woff" (not ".woff2") build: pdfkit embeds
+// fonts by calling fontkit's font.createSubset(), and with this pdfkit/fontkit version pair,
+// subsetting a WOFF2-sourced font throws ("Attempt to access memory outside buffer bounds" in
+// fontkit's TTFSubset encoder — a real, reproducible crash, not a hypothetical) while the
+// classic-WOFF-sourced font subsets cleanly. Confirmed by hand: generate a PDF and grep its
+// decompressed streams for "pdfaid:part"/"factur-x.xml" before changing this.
+const ROBOTO_REGULAR = readFileSync(require.resolve("@fontsource/roboto/files/roboto-latin-400-normal.woff"));
+const ROBOTO_BOLD = readFileSync(require.resolve("@fontsource/roboto/files/roboto-latin-700-normal.woff"));
 
 export interface PdfTableRow {
   cells: string[];
@@ -151,6 +165,104 @@ export class PdfService {
         }
         doc.fillColor(DEFAULT_TEXT_COLOR);
       }
+
+      doc.end();
+    });
+  }
+
+  /**
+   * A ZUGFeRD/Factur-X hybrid invoice: the same visual layout as render(), but as a standalone
+   * PDF/A-3b document (pdfkit's `subset` option — embeds the required XMP conformance metadata and
+   * an sRGB ICC output intent automatically on doc.end()) with `embeddedXml` attached as
+   * "factur-x.xml" (the exact name/relationship the spec mandates — see ZugferdService/
+   * InvoicesService.generateZugferdPdf). This duplicates render()'s drawing logic rather than
+   * extending it, because `subset` and embedded fonts are constructor-time PDFDocument options
+   * that can't be layered onto an already-built document — keeping it a separate method means
+   * every other document type (contracts, schedule-of-values, the plain invoice PDF) is completely
+   * unaffected by this format's stricter requirements.
+   */
+  renderZugferdInvoice(spec: PdfDocumentSpec, embeddedXml: Buffer): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      // pdfVersion must be explicit: pdfkit defaults to PDF 1.3, and its own endMetadata() silently
+      // skips writing the XMP metadata stream entirely on 1.3 (metadata didn't exist before 1.4) —
+      // which would silently drop the PDF/A conformance markers `subset` is supposed to add. PDF/A-3
+      // itself is built on PDF 1.7, so this also isn't just "pick something newer than 1.3".
+      const doc = new PDFDocument({ margin: 50, size: "A4", subset: "PDF/A-3b", pdfVersion: "1.7" });
+      doc.registerFont("Roboto", ROBOTO_REGULAR);
+      doc.registerFont("Roboto-Bold", ROBOTO_BOLD);
+      const chunks: Buffer[] = [];
+      doc.on("data", (chunk) => chunks.push(chunk));
+      doc.on("end", () => resolve(Buffer.concat(chunks)));
+      doc.on("error", reject);
+
+      const accentColor = spec.branding?.accentColor ?? DEFAULT_TEXT_COLOR;
+      const dividerColor = spec.branding?.accentColor ?? DEFAULT_DIVIDER_COLOR;
+
+      if (spec.branding?.logoBuffer) {
+        try {
+          doc.image(spec.branding.logoBuffer, doc.page.width - 50 - LOGO_MAX_WIDTH, 50, {
+            fit: [LOGO_MAX_WIDTH, LOGO_MAX_HEIGHT],
+          });
+        } catch {
+          // A corrupt/unsupported image shouldn't block the rest of the document from rendering.
+        }
+      }
+
+      doc.font("Roboto-Bold").fillColor(accentColor).fontSize(20).text(spec.title, { align: "left" });
+      doc.fillColor(DEFAULT_TEXT_COLOR);
+      if (spec.subtitle) {
+        doc.font("Roboto").moveDown(0.2).fontSize(11).fillColor("#555").text(spec.subtitle);
+        doc.fillColor(DEFAULT_TEXT_COLOR);
+      }
+      doc.moveDown(1);
+
+      doc.font("Roboto");
+      for (const item of spec.meta) {
+        doc.fontSize(10).text(`${item.label}: ${item.value}`);
+      }
+      doc.moveDown(1);
+
+      const colWidth = (doc.page.width - 100) / spec.tableHeader.length;
+      const startX = doc.x;
+      let y = doc.y;
+
+      doc.fontSize(10).font("Roboto-Bold");
+      spec.tableHeader.forEach((header, i) => {
+        doc.text(header, startX + i * colWidth, y, { width: colWidth });
+      });
+      y += 18;
+      doc.moveTo(startX, y).lineTo(doc.page.width - 50, y).strokeColor(dividerColor).stroke();
+      y += 6;
+
+      doc.font("Roboto");
+      for (const row of spec.tableRows) {
+        row.cells.forEach((cell, i) => {
+          doc.text(cell, startX + i * colWidth, y, { width: colWidth });
+        });
+        y += 18;
+      }
+
+      y += 10;
+      doc.moveTo(startX, y).lineTo(doc.page.width - 50, y).strokeColor(dividerColor).stroke();
+      y += 10;
+
+      for (const total of spec.totals) {
+        doc.font(total.emphasize ? "Roboto-Bold" : "Roboto").fontSize(total.emphasize ? 13 : 10);
+        doc.fillColor(total.emphasize ? accentColor : DEFAULT_TEXT_COLOR);
+        doc.text(`${total.label}: ${total.value}`, startX, y, { align: "right" });
+        y += total.emphasize ? 20 : 16;
+      }
+      doc.fillColor(DEFAULT_TEXT_COLOR);
+
+      // @types/pdfkit@0.13.9 hasn't caught up with pdfkit 0.15's `relationship` attachment option
+      // (confirmed present and functional in pdfkit's own source — AttachmentsMixin.file) — the
+      // cast below is scoped to just this one call, not a blanket `any`.
+      doc.file(embeddedXml, {
+        name: "factur-x.xml",
+        type: "text/xml",
+        description: "Factur-X/ZUGFeRD structured invoice data (EN16931 Comfort, CII syntax)",
+        relationship: "Data",
+      } as PDFKit.Mixins.PDFAttachmentOptions & { relationship: "Data" });
 
       doc.end();
     });

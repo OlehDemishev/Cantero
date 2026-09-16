@@ -76,6 +76,9 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   const [busy, setBusy] = useState(false);
   const [emailSentTo, setEmailSentTo] = useState<string | null | undefined>(undefined);
   const [eInvoiceError, setEInvoiceError] = useState<string | null>(null);
+  const [zugferdError, setZugferdError] = useState<string | null>(null);
+  const [peppolError, setPeppolError] = useState<string | null>(null);
+  const [peppolSendMessage, setPeppolSendMessage] = useState<string | null>(null);
 
   function load() {
     apiFetch<Invoice>(`/invoices/${invoiceId}`).then((inv) => {
@@ -103,6 +106,37 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
       downloadBlob(blob, `${invoice?.number ?? "invoice"}-xrechnung.xml`);
     } catch (err) {
       setEInvoiceError(err instanceof ApiError ? err.message : tc("error"));
+    }
+  }
+
+  async function downloadZugferd() {
+    setZugferdError(null);
+    try {
+      const blob = await apiFetch<Blob>(`/invoices/${invoiceId}/e-invoice.pdf`);
+      downloadBlob(blob, `${invoice?.number ?? "invoice"}-zugferd.pdf`);
+    } catch (err) {
+      setZugferdError(err instanceof ApiError ? err.message : tc("error"));
+    }
+  }
+
+  async function downloadPeppol() {
+    setPeppolError(null);
+    try {
+      const blob = await apiFetch<Blob>(`/invoices/${invoiceId}/peppol.xml`);
+      downloadBlob(blob, `${invoice?.number ?? "invoice"}-peppol.xml`);
+    } catch (err) {
+      setPeppolError(err instanceof ApiError ? err.message : tc("error"));
+    }
+  }
+
+  async function sendPeppol() {
+    setPeppolError(null);
+    setPeppolSendMessage(null);
+    try {
+      await apiFetch(`/invoices/${invoiceId}/peppol/send`, { method: "POST" });
+      setPeppolSendMessage(t("peppolSent"));
+    } catch (err) {
+      setPeppolError(err instanceof ApiError ? err.message : tc("error"));
     }
   }
 
@@ -491,6 +525,18 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
               {t("downloadEInvoice")}
             </button>
             {eInvoiceError && <p className="text-xs text-error-600">{eInvoiceError}</p>}
+            <button onClick={downloadZugferd} className="btn-secondary">
+              {t("downloadZugferd")}
+            </button>
+            {zugferdError && <p className="text-xs text-error-600">{zugferdError}</p>}
+            <button onClick={downloadPeppol} className="btn-secondary">
+              {t("downloadPeppol")}
+            </button>
+            <button onClick={sendPeppol} className="btn-secondary">
+              {t("sendPeppolNetwork")}
+            </button>
+            {peppolError && <p className="text-xs text-error-600">{peppolError}</p>}
+            {peppolSendMessage && <p className="text-xs text-success-700 dark:text-success-500">{peppolSendMessage}</p>}
             {emailSentTo !== undefined && (
               <p className="text-xs text-gray-500 dark:text-gray-400">
                 {emailSentTo ? tc("emailedTo", { email: emailSentTo }) : tc("noClientEmail")}
