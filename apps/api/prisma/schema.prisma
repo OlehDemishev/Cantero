@@ -734,11 +734,19 @@ model User {
   passwordHash    String
   name            String
   createdAt       DateTime  @default(now())
-  /// TOTP secret (base32), set once the user completes 2FA setup — null means 2FA is off.
+  /// TOTP secret (base32) actually in effect — null means 2FA is off. Only enable() ever writes
+  /// here, once a code from pendingTotpSecret is verified, so an in-progress re-setup can never
+  /// disable a working authenticator by being abandoned before confirmation.
   totpSecret      String?
   totpEnabledAt   DateTime?
   /// Bcrypt-hashed one-time recovery codes, consumed (removed) as they're used.
   totpBackupCodes String[]  @default([])
+  /// The secret setup() just generated, awaiting confirmation via enable() — see TwoFactorService.
+  /// Kept separate from totpSecret specifically so re-setup of an already-active authenticator
+  /// (setup() called again, correctly gated on the current password) never touches the live
+  /// secret until a real code from the NEW one is verified; abandoning the flow after setup()
+  /// just leaves this field stale and harmless, the old authenticator keeps working.
+  pendingTotpSecret String?
 
   memberships         Membership[]
   workers             Worker[]

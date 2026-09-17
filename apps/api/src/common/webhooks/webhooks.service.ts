@@ -4,7 +4,7 @@ import * as Sentry from "@sentry/node";
 import { WEBHOOK_EVENTS, type CreateWebhookEndpointInput, type UpdateWebhookEndpointInput, type WebhookEvent } from "@cantero/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuditService, type AuditActor } from "../audit/audit.service";
-import { assertPublicWebhookUrl } from "./webhook-url";
+import { assertPublicWebhookUrl, resolvePinnedWebhookDispatcher } from "./webhook-url";
 
 const DELIVERY_TIMEOUT_MS = 8000;
 
@@ -131,13 +131,20 @@ export class WebhooksService {
       // redirect: "manual" — the URL was validated as public/non-private at save time, but a
       // 3xx response could otherwise point this request at an internal address at delivery time
       // without ever being re-checked. Not following it closes that gap; Slack/Teams endpoints
-      // don't redirect in normal operation anyway.
-      fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-        redirect: "manual",
-      }).catch((err) => this.logger.warn(`Chat webhook delivery failed for company ${companyId}: ${(err as Error).message}`));
+      // don't redirect in normal operation anyway. dispatcher pins the connection to a freshly
+      // (re-)resolved, re-validated IP — see resolvePinnedWebhookDispatcher's doc comment for why
+      // that's needed on top of redirect: "manual" (DNS rebinding, not a redirect).
+      resolvePinnedWebhookDispatcher(url)
+        .then((dispatcher) =>
+          fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text }),
+            redirect: "manual",
+            dispatcher,
+          } as RequestInit),
+        )
+        .catch((err) => this.logger.warn(`Chat webhook delivery failed for company ${companyId}: ${(err as Error).message}`));
     }
   }
 
@@ -164,6 +171,11 @@ export class WebhooksService {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), DELIVERY_TIMEOUT_MS);
       try {
+        // dispatcher pins this request to a freshly (re-)resolved, re-validated IP — closes the
+        // DNS-rebinding gap that redirect: "manual" alone doesn't (see
+        // resolvePinnedWebhookDispatcher's doc comment). Thrown here (private/unresolvable
+        // address) falls into the outer catch below, same as any other delivery failure.
+        const dispatcher = await resolvePinnedWebhookDispatcher(url);
         // redirect: "manual" — assertPublicWebhookUrl only checks the URL at save time; without
         // this, a since-compromised (or maliciously registered) endpoint could answer with a 3xx
         // pointing at a private/internal address and this request would follow it there,
@@ -174,7 +186,8 @@ export class WebhooksService {
           body,
           signal: controller.signal,
           redirect: "manual",
-        });
+          dispatcher,
+        } as RequestInit);
         if (res.type === "opaqueredirect") {
           success = false;
           error = "Endpoint responded with a redirect — redirects are not followed for webhook deliveries";

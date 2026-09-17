@@ -43,12 +43,12 @@ describe("TwoFactorService", () => {
   });
 
   describe("setup", () => {
-    it("generates and stores a secret, returning an otpauth URL, when 2FA isn't active yet", async () => {
+    it("generates and stores a secret as pending (not live), returning an otpauth URL, when 2FA isn't active yet", async () => {
       prisma.user.findUniqueOrThrow.mockResolvedValue({ totpEnabledAt: null });
 
       const result = await service.setup("user-1", "jane@example.com");
 
-      expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: "user-1" }, data: { totpSecret: result.secret } });
+      expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: "user-1" }, data: { pendingTotpSecret: result.secret } });
       expect(result.otpauthUrl).toContain("otpauth://totp/");
       expect(result.otpauthUrl).toContain("Cantero");
     });
@@ -68,41 +68,58 @@ describe("TwoFactorService", () => {
       expect(prisma.user.update).not.toHaveBeenCalled();
     });
 
-    it("allows replacing an already-active authenticator with the correct password", async () => {
+    it("allows replacing an already-active authenticator with the correct password, without touching the live secret yet", async () => {
       const passwordHash = await bcrypt.hash("correct", 10);
       prisma.user.findUniqueOrThrow.mockResolvedValue({ totpEnabledAt: new Date(), passwordHash });
 
       const result = await service.setup("user-1", "jane@example.com", "correct");
 
       expect(result.otpauthUrl).toContain("otpauth://totp/");
+      // The audit scenario this whole pending-secret design closes: re-authenticating and calling
+      // setup() again must never itself disable the still-working old authenticator — only
+      // enable() (confirming a code from the NEW secret) may do that.
+      expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: "user-1" }, data: { pendingTotpSecret: result.secret } });
+      expect(prisma.user.update).not.toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ totpSecret: expect.anything() }) }));
     });
   });
 
   describe("enable", () => {
     it("rejects when setup hasn't been called", async () => {
-      prisma.user.findUniqueOrThrow.mockResolvedValue({ totpSecret: null });
+      prisma.user.findUniqueOrThrow.mockResolvedValue({ pendingTotpSecret: null });
 
       await expect(service.enable("user-1", "123456")).rejects.toThrow(BadRequestException);
     });
 
     it("rejects an invalid code", async () => {
       const secret = authenticator.generateSecret();
-      prisma.user.findUniqueOrThrow.mockResolvedValue({ totpSecret: secret });
+      prisma.user.findUniqueOrThrow.mockResolvedValue({ pendingTotpSecret: secret });
 
       await expect(service.enable("user-1", "000000")).rejects.toThrow(BadRequestException);
     });
 
-    it("confirms 2FA with a valid code and returns backup codes", async () => {
+    it("confirms 2FA with a valid code, promotes the pending secret to live, and returns backup codes", async () => {
       const secret = authenticator.generateSecret();
-      prisma.user.findUniqueOrThrow.mockResolvedValue({ totpSecret: secret });
+      prisma.user.findUniqueOrThrow.mockResolvedValue({ pendingTotpSecret: secret });
       const code = authenticator.generate(secret);
 
       const result = await service.enable("user-1", code);
 
       expect(result.backupCodes).toHaveLength(8);
       const updateCall = prisma.user.update.mock.calls[0][0];
+      expect(updateCall.data.totpSecret).toBe(secret);
+      expect(updateCall.data.pendingTotpSecret).toBeNull();
       expect(updateCall.data.totpEnabledAt).toBeInstanceOf(Date);
       expect(updateCall.data.totpBackupCodes).toHaveLength(8);
+    });
+
+    it("never touches the live totpSecret when the pending code check fails, so an active authenticator survives an abandoned re-setup", async () => {
+      const liveSecret = authenticator.generateSecret();
+      const newPendingSecret = authenticator.generateSecret();
+      prisma.user.findUniqueOrThrow.mockResolvedValue({ totpSecret: liveSecret, pendingTotpSecret: newPendingSecret });
+
+      await expect(service.enable("user-1", "000000")).rejects.toThrow(BadRequestException);
+
+      expect(prisma.user.update).not.toHaveBeenCalled();
     });
   });
 
@@ -122,7 +139,7 @@ describe("TwoFactorService", () => {
 
       expect(prisma.user.update).toHaveBeenCalledWith({
         where: { id: "user-1" },
-        data: { totpSecret: null, totpEnabledAt: null, totpBackupCodes: [] },
+        data: { totpSecret: null, pendingTotpSecret: null, totpEnabledAt: null, totpBackupCodes: [] },
       });
     });
   });
@@ -135,6 +152,28 @@ describe("TwoFactorService", () => {
     it("rejects a challenge token of the wrong kind", async () => {
       const token = jwt.sign({ userId: "user-1", kind: "not-2fa" });
       await expect(service.verifyChallenge(token, "123456", {})).rejects.toThrow(UnauthorizedException);
+    });
+
+    it("still accepts a code from the old, live authenticator while a re-setup is pending but unconfirmed", async () => {
+      const liveSecret = authenticator.generateSecret();
+      const newPendingSecret = authenticator.generateSecret();
+      const challengeToken = jwt.sign({ userId: "user-1", kind: "2fa_challenge" }, { expiresIn: "10m" });
+      prisma.user.findUnique.mockResolvedValue({
+        id: "user-1",
+        email: "jane@example.com",
+        name: "Jane",
+        totpSecret: liveSecret,
+        pendingTotpSecret: newPendingSecret,
+        totpEnabledAt: new Date(),
+        totpBackupCodes: [],
+        memberships: [{ companyId: "company-a", role: "worker", customRole: null }],
+      });
+      const codeFromOldAuthenticator = authenticator.generate(liveSecret);
+
+      const result = await service.verifyChallenge(challengeToken, codeFromOldAuthenticator, {});
+
+      expect("requires2fa" in result).toBe(false);
+      expect(authService.issueAccessToken).toHaveBeenCalled();
     });
 
     it("issues a real access token for a valid TOTP code", async () => {

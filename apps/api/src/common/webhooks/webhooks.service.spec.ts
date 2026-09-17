@@ -2,8 +2,16 @@ import * as Sentry from "@sentry/node";
 import { WebhooksService } from "./webhooks.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../audit/audit.service";
+import { resolvePinnedWebhookDispatcher } from "./webhook-url";
 
 jest.mock("@sentry/node", () => ({ captureException: jest.fn() }));
+// Delivery now resolves a real (pinned) dispatcher before every fetch — see
+// resolvePinnedWebhookDispatcher's own spec file for its DNS/private-IP behavior. Mocked here so
+// these tests can keep asserting on a mocked global.fetch without a real DNS lookup in between.
+jest.mock("./webhook-url", () => ({
+  ...jest.requireActual("./webhook-url"),
+  resolvePinnedWebhookDispatcher: jest.fn(),
+}));
 
 const COMPANY_A = "company-a";
 
@@ -32,6 +40,7 @@ describe("WebhooksService.trigger", () => {
     prisma.webhookEndpoint.update.mockResolvedValue({});
     prisma.webhookDelivery.create.mockResolvedValue({});
     prisma.company.findUnique.mockResolvedValue({ slackWebhookUrl: null, teamsWebhookUrl: null });
+    (resolvePinnedWebhookDispatcher as jest.Mock).mockResolvedValue({ __fakeDispatcher: true });
   });
 
   afterEach(() => {
@@ -124,5 +133,54 @@ describe("WebhooksService.trigger", () => {
     await flush();
 
     expect(fetchMock).toHaveBeenCalledWith("https://hooks.slack.com/services/x", expect.objectContaining({ redirect: "manual" }));
+  });
+
+  it("pins the customer-endpoint delivery to the dispatcher resolvePinnedWebhookDispatcher returns", async () => {
+    prisma.webhookEndpoint.findMany.mockResolvedValue([{ id: "ep-1", url: "https://example.com/hook", secret: "s3cr3t" }]);
+    const fakeDispatcher = { __fakeDispatcher: "pinned" };
+    (resolvePinnedWebhookDispatcher as jest.Mock).mockResolvedValue(fakeDispatcher);
+    const fetchMock = jest.fn().mockResolvedValue({ ok: true, status: 200 });
+    global.fetch = fetchMock as never;
+
+    service.trigger(COMPANY_A, "invoice.sent", {});
+    await flush();
+    await flush();
+
+    expect(resolvePinnedWebhookDispatcher).toHaveBeenCalledWith("https://example.com/hook");
+    expect(fetchMock).toHaveBeenCalledWith("https://example.com/hook", expect.objectContaining({ dispatcher: fakeDispatcher }));
+  });
+
+  it("records a failed delivery (without ever calling fetch) when the pinned resolution rejects — e.g. the hostname rebound to a private address since registration", async () => {
+    prisma.webhookEndpoint.findMany.mockResolvedValue([{ id: "ep-1", url: "https://example.com/hook", secret: "s3cr3t" }]);
+    (resolvePinnedWebhookDispatcher as jest.Mock).mockRejectedValue(
+      new Error("Webhook destination resolved to a private or internal address"),
+    );
+    const fetchMock = jest.fn();
+    global.fetch = fetchMock as never;
+
+    service.trigger(COMPANY_A, "invoice.sent", {});
+    await flush();
+    await flush();
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(prisma.webhookDelivery.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ success: false, error: expect.stringContaining("private or internal") }) }),
+    );
+    expect(Sentry.captureException).not.toHaveBeenCalled();
+  });
+
+  it("skips a chat webhook delivery when the pinned resolution rejects, without calling fetch", async () => {
+    prisma.webhookEndpoint.findMany.mockResolvedValue([]);
+    prisma.company.findUnique.mockResolvedValue({ slackWebhookUrl: "https://hooks.slack.com/services/x", teamsWebhookUrl: null });
+    (resolvePinnedWebhookDispatcher as jest.Mock).mockRejectedValue(new Error("Could not resolve the webhook host"));
+    const fetchMock = jest.fn();
+    global.fetch = fetchMock as never;
+
+    service.trigger(COMPANY_A, "invoice.sent", {});
+    await flush();
+    await flush();
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(Sentry.captureException).not.toHaveBeenCalled();
   });
 });

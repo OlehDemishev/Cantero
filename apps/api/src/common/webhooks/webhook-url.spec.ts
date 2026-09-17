@@ -1,5 +1,6 @@
 import { BadRequestException } from "@nestjs/common";
-import { assertPublicWebhookUrl } from "./webhook-url";
+import { Agent } from "undici";
+import { assertPublicWebhookUrl, resolvePinnedWebhookDispatcher } from "./webhook-url";
 
 jest.mock("node:dns/promises", () => ({ lookup: jest.fn() }));
 const lookup = jest.requireMock("node:dns/promises").lookup as jest.Mock;
@@ -57,5 +58,44 @@ describe("assertPublicWebhookUrl", () => {
   it("allows a hostname resolving to a public IPv6 address", async () => {
     lookup.mockResolvedValue({ address: "2606:4700:4700::1111", family: 6 });
     await expect(assertPublicWebhookUrl("https://hooks.slack.com/services/x")).resolves.toBeUndefined();
+  });
+});
+
+describe("resolvePinnedWebhookDispatcher", () => {
+  beforeEach(() => {
+    lookup.mockReset();
+  });
+
+  it("rejects localhost outright without a DNS lookup", async () => {
+    await expect(resolvePinnedWebhookDispatcher("http://localhost/hook")).rejects.toThrow("localhost");
+    expect(lookup).not.toHaveBeenCalled();
+  });
+
+  it("rejects when the hostname fails to resolve", async () => {
+    lookup.mockRejectedValue(new Error("ENOTFOUND"));
+    await expect(resolvePinnedWebhookDispatcher("https://nonexistent.example/hook")).rejects.toThrow("Could not resolve");
+  });
+
+  it("rejects a hostname that resolves to a private IPv4 address — e.g. rebound since the webhook was registered", async () => {
+    lookup.mockResolvedValue({ address: "169.254.169.254", family: 4 });
+    await expect(resolvePinnedWebhookDispatcher("https://sneaky.example/hook")).rejects.toThrow("private or internal");
+  });
+
+  it("rejects a hostname that resolves to a private IPv6 address", async () => {
+    lookup.mockResolvedValue({ address: "fd00::1", family: 6 });
+    await expect(resolvePinnedWebhookDispatcher("https://sneaky.example/hook")).rejects.toThrow("private or internal");
+  });
+
+  it("re-resolves on every call rather than caching — two calls make two lookups", async () => {
+    lookup.mockResolvedValue({ address: "203.0.113.42", family: 4 });
+    await resolvePinnedWebhookDispatcher("https://hooks.example/hook");
+    await resolvePinnedWebhookDispatcher("https://hooks.example/hook");
+    expect(lookup).toHaveBeenCalledTimes(2);
+  });
+
+  it("returns a dispatcher pinned to the resolved public address, without throwing", async () => {
+    lookup.mockResolvedValue({ address: "203.0.113.42", family: 4 });
+    const dispatcher = await resolvePinnedWebhookDispatcher("https://hooks.example/hook");
+    expect(dispatcher).toBeInstanceOf(Agent);
   });
 });

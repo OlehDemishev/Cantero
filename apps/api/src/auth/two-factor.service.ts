@@ -30,12 +30,15 @@ export class TwoFactorService {
     private readonly rateLimiter: RateLimiterService,
   ) {}
 
-  /** Generates a fresh secret and stashes it on the user, unconfirmed — 2FA only actually turns
-   * on once enable() verifies a code generated from it. Re-running this before first enabling
-   * just overwrites the pending secret, which is fine: nothing depended on the old one yet. Once
-   * 2FA is already active, replacing it is a sensitive action gated on the current password —
+  /** Generates a fresh secret and stashes it as *pending*, unconfirmed — the live totpSecret (if
+   * any) is never touched here. 2FA only actually turns on, or an existing authenticator only
+   * actually gets replaced, once enable() verifies a code generated from the pending secret. This
+   * means abandoning the flow after setup() (closing the tab before scanning the new QR code, a
+   * network blip, anything) leaves the previously-working authenticator — if there was one —
+   * completely unaffected; only enable() ever writes to totpSecret. Once 2FA is already active,
+   * generating a new pending secret is a sensitive action gated on the current password —
    * otherwise anyone holding a valid access token (e.g. one obtained some other way) could
-   * silently swap out the real owner's authenticator. */
+   * silently queue up a replacement authenticator. */
   async setup(userId: string, email: string, currentPassword?: string): Promise<{ secret: string; otpauthUrl: string }> {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
     if (user.totpEnabledAt) {
@@ -45,15 +48,20 @@ export class TwoFactorService {
     }
 
     const secret = authenticator.generateSecret();
-    await this.prisma.user.update({ where: { id: userId }, data: { totpSecret: secret } });
+    await this.prisma.user.update({ where: { id: userId }, data: { pendingTotpSecret: secret } });
     const otpauthUrl = authenticator.keyuri(email, "Cantero", secret);
     return { secret, otpauthUrl };
   }
 
+  /** Verifies a code against the *pending* secret from setup(), and only then atomically promotes
+   * it to the live totpSecret — the one moment the live secret ever changes. Clears
+   * pendingTotpSecret either way isn't needed on failure (a wrong code shouldn't discard a setup
+   * the user might retry), but succeeding always clears it, since it's now redundant with the
+   * (identical) live secret. */
   async enable(userId: string, code: string): Promise<{ backupCodes: string[] }> {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
-    if (!user.totpSecret) throw new BadRequestException("Call setup first");
-    if (!authenticator.verify({ token: code, secret: user.totpSecret })) {
+    if (!user.pendingTotpSecret) throw new BadRequestException("Call setup first");
+    if (!authenticator.verify({ token: code, secret: user.pendingTotpSecret })) {
       throw new BadRequestException("Invalid code");
     }
 
@@ -61,7 +69,7 @@ export class TwoFactorService {
     const hashed = await Promise.all(backupCodes.map((c) => bcrypt.hash(c, BCRYPT_ROUNDS)));
     await this.prisma.user.update({
       where: { id: userId },
-      data: { totpEnabledAt: new Date(), totpBackupCodes: hashed },
+      data: { totpSecret: user.pendingTotpSecret, pendingTotpSecret: null, totpEnabledAt: new Date(), totpBackupCodes: hashed },
     });
     return { backupCodes };
   }
@@ -73,7 +81,7 @@ export class TwoFactorService {
 
     await this.prisma.user.update({
       where: { id: userId },
-      data: { totpSecret: null, totpEnabledAt: null, totpBackupCodes: [] },
+      data: { totpSecret: null, pendingTotpSecret: null, totpEnabledAt: null, totpBackupCodes: [] },
     });
     return { ok: true };
   }
