@@ -8,12 +8,14 @@ import { PublicApiModule } from "./public-api/public-api.module";
 import { resolveTrustProxyHops } from "./common/trust-proxy";
 import { initSentry } from "./common/sentry/init-sentry";
 import { SentryExceptionsFilter } from "./common/sentry/sentry-exceptions.filter";
+import { assertQuickbooksProductionSafety } from "./accounting/quickbooks-production-safety";
 
 // Must run before the Nest app is created so Sentry's instrumentation can hook whatever it needs
 // (http, the DB driver, ...) before those modules load. No-op unless SENTRY_DSN is set.
 initSentry();
 
 async function bootstrap() {
+  assertQuickbooksProductionSafety(process.env);
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });
   app.enableCors({ origin: process.env.WEB_ORIGIN ?? "http://localhost:3000", credentials: true });
   // Reports every unexpected error (a raw thrown error, or a 500+ HttpException) to Sentry, then
