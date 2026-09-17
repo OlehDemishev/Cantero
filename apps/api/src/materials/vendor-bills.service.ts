@@ -2,6 +2,8 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import type { CreateVendorBillInput, SchedulePaymentInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
+import { GobdLedgerService } from "../common/gobd/gobd-ledger.service";
+import { runSerializable } from "../common/prisma/serializable-transaction";
 import { matchVendorBill } from "./vendor-bill-match";
 import { calculateApAging } from "./ap-aging";
 import { calculateDisbursementCalendar } from "./disbursement-calendar";
@@ -19,6 +21,7 @@ export class VendorBillsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly gobdLedger: GobdLedgerService,
   ) {}
 
   async list(companyId: string) {
@@ -79,12 +82,60 @@ export class VendorBillsService {
   async approve(companyId: string, actor: AuditActor, id: string) {
     const bill = await this.findOrThrow(companyId, id);
     if (bill.status !== "draft") throw new BadRequestException("Only a draft bill can be approved");
-    const updated = await this.prisma.vendorBill.update({
-      where: { id },
-      data: { status: "approved", approvedAt: new Date(), approvedByName: actor.name },
-      include: INCLUDE,
+    const approvedAt = new Date();
+    const updated = await runSerializable(this.prisma, async (tx) => {
+      const updated = await tx.vendorBill.update({
+        where: { id },
+        data: { status: "approved", approvedAt, approvedByName: actor.name, lockedAt: approvedAt },
+        include: INCLUDE,
+      });
+      await this.gobdLedger.append(
+        tx,
+        companyId,
+        actor,
+        "vendor_bill.locked",
+        "VendorBill",
+        id,
+        `GoBD Festschreibung: locked bill ${bill.billNumber} at approval`,
+        {
+          billNumber: bill.billNumber,
+          supplierId: bill.supplierId,
+          lines: bill.lines.map((l) => ({ description: l.description, quantity: l.quantity.toString(), unitPrice: l.unitPrice.toString() })),
+        },
+      );
+      return updated;
     });
     this.audit.record(companyId, actor, "vendor_bill.approved", "VendorBill", id, `Approved bill ${bill.billNumber}`);
+    return this.withMatch(updated);
+  }
+
+  /**
+   * GoBD-compliant correction for an approved/paid bill: never edits or deletes it, only marks it
+   * void with a documented reason. Unlike Invoice.void(), no reversal document is auto-generated —
+   * we don't issue bills to ourselves, so a corrected bill from the supplier is entered as its own
+   * fresh VendorBill instead.
+   */
+  async void(companyId: string, actor: AuditActor, id: string, reason: string) {
+    const bill = await this.findOrThrow(companyId, id);
+    if (!bill.lockedAt) {
+      throw new BadRequestException("Only a locked (approved or paid) bill needs a correction — a draft can simply be edited or deleted upstream.");
+    }
+    if (bill.status === "void") throw new BadRequestException("This bill has already been voided");
+
+    const voidedAt = new Date();
+    const updated = await runSerializable(this.prisma, async (tx) => {
+      const updated = await tx.vendorBill.update({
+        where: { id },
+        data: { status: "void", voidedAt, voidReason: reason },
+        include: INCLUDE,
+      });
+      await this.gobdLedger.append(tx, companyId, actor, "vendor_bill.voided", "VendorBill", id, `GoBD correction: voided bill ${bill.billNumber} — ${reason}`, {
+        billNumber: bill.billNumber,
+        reason,
+      });
+      return updated;
+    });
+    this.audit.record(companyId, actor, "vendor_bill.voided", "VendorBill", id, `Voided bill ${bill.billNumber}: ${reason}`);
     return this.withMatch(updated);
   }
 

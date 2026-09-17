@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { Prisma } from "@prisma/client";
+import { Prisma, type Locale } from "@prisma/client";
 import type { AddInstallmentInput, GenerateProgressInvoiceInput, RecordPaymentInput, ReleaseRetainageInput, UpdateInvoiceInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { PdfService, type PdfDocumentSpec } from "../common/pdf/pdf.service";
@@ -22,6 +22,7 @@ import { ExchangeRateService } from "../common/exchange-rate/exchange-rate.servi
 import { calculateFxSettlement } from "./fx-settlement";
 import { createInvoiceWithNumber } from "./invoice-numbering";
 import { runSerializable } from "../common/prisma/serializable-transaction";
+import { GobdLedgerService } from "../common/gobd/gobd-ledger.service";
 
 @Injectable()
 export class InvoicesService {
@@ -37,6 +38,7 @@ export class InvoicesService {
     private readonly outbox: OutboxService,
     private readonly exchangeRates: ExchangeRateService,
     private readonly peppolAccessPoint: PeppolAccessPointService,
+    private readonly gobdLedger: GobdLedgerService,
   ) {}
 
   /** take omitted (public-api's JSON export, out of scope for this round's pagination pass —
@@ -309,46 +311,147 @@ export class InvoicesService {
       dueDate = new Date(Date.now() + termsDays * 24 * 60 * 60 * 1000);
     }
 
-    const updated = await this.prisma.$transaction(async (tx) => {
+    const lockedAt = new Date();
+    const updated = await runSerializable(this.prisma, async (tx) => {
       const updated = await tx.invoice.update({
         where: { id },
-        data: { status: "sent", dueDate },
+        data: { status: "sent", dueDate, lockedAt },
         include: { lines: true, client: true, project: true, payments: true, installments: true },
       });
       await this.outbox.enqueue(tx, companyId, "invoice.sent", { invoiceId: id, number: invoice.number });
+      await this.gobdLedger.append(tx, companyId, actor, "invoice.locked", "Invoice", id, `GoBD Festschreibung: locked invoice ${invoice.number} at send`, {
+        number: invoice.number,
+        subtotal: invoice.subtotal.toString(),
+        taxAmount: invoice.taxAmount.toString(),
+        total: invoice.total.toString(),
+        currency: invoice.currency,
+        dueDate: dueDate.toISOString(),
+        lines: invoice.lines.map((l) => ({ description: l.description, quantity: l.quantity.toString(), unitPrice: l.unitPrice.toString(), lineTotal: l.lineTotal.toString() })),
+      });
       return updated;
     });
     this.audit.record(companyId, actor, "invoice.sent", "Invoice", id, `Sent invoice ${invoice.number} to ${invoice.client.name}`);
 
-    if (updated.client.email) {
-      const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
-      const pdf = await this.generatePdf(companyId, id);
-      const email = invoiceSentEmail(
-        updated.client.preferredLocale ?? company.locale,
-        company.name,
-        updated.number,
-        updated.total.toString(),
-        updated.currency,
-      );
-      this.mail.send({
-        to: updated.client.email,
-        subject: email.subject,
-        html: email.html,
-        text: email.text,
-        attachments: [{ filename: `${updated.number}.pdf`, content: pdf, contentType: "application/pdf" }],
-      });
-    }
+    const emailSentTo = updated.client.email
+      ? await this.sendInvoicePdfEmail(companyId, updated).then(() => updated.client.email)
+      : null;
 
-    return { ...updated, emailSentTo: updated.client.email ?? null };
+    return { ...updated, emailSentTo };
+  }
+
+  /** Generates the invoice's PDF and emails it to the client, if they have an email on file —
+   * shared by send() and the auto-generated Stornorechnung in void(), since both need to put a
+   * newly-locked invoice PDF in front of the client the same way. */
+  private async sendInvoicePdfEmail(
+    companyId: string,
+    invoice: { id: string; number: string; total: Prisma.Decimal; currency: string; client: { email: string | null; preferredLocale: Locale | null } },
+  ): Promise<void> {
+    if (!invoice.client.email) return;
+    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    const pdf = await this.generatePdf(companyId, invoice.id);
+    const email = invoiceSentEmail(invoice.client.preferredLocale ?? company.locale, company.name, invoice.number, invoice.total.toString(), invoice.currency);
+    this.mail.send({
+      to: invoice.client.email,
+      subject: email.subject,
+      html: email.html,
+      text: email.text,
+      attachments: [{ filename: `${invoice.number}.pdf`, content: pdf, contentType: "application/pdf" }],
+    });
   }
 
   async update(companyId: string, id: string, input: UpdateInvoiceInput) {
-    await this.findOrThrow(companyId, id);
+    const invoice = await this.findOrThrow(companyId, id);
+    if (invoice.lockedAt) {
+      throw new BadRequestException(
+        "This invoice was locked under GoBD Festschreibung when it was sent and can no longer be edited — void it and issue a correction instead.",
+      );
+    }
     return this.prisma.invoice.update({
       where: { id },
       data: { dueDate: input.dueDate === undefined ? undefined : input.dueDate ? new Date(input.dueDate) : null },
       include: { lines: true, client: true, project: true, payments: true, installments: true },
     });
+  }
+
+  /**
+   * GoBD-compliant correction: never edits or deletes a locked invoice. Instead marks it void and
+   * issues a brand-new Stornorechnung (credit note) with the exact negation of every line, its own
+   * sequential number, sent immediately. Both the void and the correction's issuance are recorded
+   * in the tamper-evident ledger, inside the same serializable transaction as the writes.
+   */
+  async void(companyId: string, actor: AuditActor, id: string, reason: string) {
+    const invoice = await this.findOrThrow(companyId, id);
+    if (!invoice.lockedAt) {
+      throw new BadRequestException("Only a locked (sent or paid) invoice needs a correction — a draft can simply be edited or left alone.");
+    }
+    if (invoice.status === "void") {
+      throw new BadRequestException("This invoice has already been voided");
+    }
+
+    const voidedAt = new Date();
+    // createInvoiceWithNumber retries on a number clash by re-invoking create() with a freshly
+    // recomputed number — each attempt opens its own fresh serializable transaction (rather than
+    // sharing one across attempts) so a failed attempt's create() aborts and rolls back cleanly,
+    // including the void-status update, instead of leaving a poisoned transaction to retry into.
+    const correction = await createInvoiceWithNumber(this.prisma, companyId, (number) =>
+      runSerializable(this.prisma, async (tx) => {
+        await tx.invoice.update({ where: { id }, data: { status: "void", voidedAt, voidReason: reason } });
+        const created = await tx.invoice.create({
+          data: {
+            companyId,
+            projectId: invoice.projectId,
+            clientId: invoice.clientId,
+            number,
+            status: "sent",
+            subtotal: invoice.subtotal.negated(),
+            taxAmount: invoice.taxAmount.negated(),
+            total: invoice.total.negated(),
+            currency: invoice.currency,
+            lockedAt: voidedAt,
+            correctsInvoiceId: invoice.id,
+            lines: {
+              create: invoice.lines.map((l) => ({
+                description: `Storno: ${l.description}`,
+                quantity: l.quantity,
+                unitPrice: l.unitPrice.negated(),
+                lineTotal: l.lineTotal.negated(),
+              })),
+            },
+          },
+          include: { lines: true, client: true, project: true, payments: true, installments: true },
+        });
+        await this.gobdLedger.append(tx, companyId, actor, "invoice.voided", "Invoice", id, `GoBD correction: voided invoice ${invoice.number} — ${reason}`, {
+          number: invoice.number,
+          reason,
+          correctionInvoiceNumber: number,
+        });
+        await this.gobdLedger.append(
+          tx,
+          companyId,
+          actor,
+          "invoice.correction_issued",
+          "Invoice",
+          created.id,
+          `GoBD correction: issued Stornorechnung ${number} reversing ${invoice.number}`,
+          {
+            number,
+            correctsInvoiceId: invoice.id,
+            correctsInvoiceNumber: invoice.number,
+            subtotal: created.subtotal.toString(),
+            taxAmount: created.taxAmount.toString(),
+            total: created.total.toString(),
+          },
+        );
+        return created;
+      }),
+    );
+
+    this.audit.record(companyId, actor, "invoice.voided", "Invoice", id, `Voided invoice ${invoice.number}: ${reason}`);
+    this.audit.record(companyId, actor, "invoice.correction_issued", "Invoice", correction.id, `Issued Stornorechnung ${correction.number} reversing ${invoice.number}`);
+
+    await this.sendInvoicePdfEmail(companyId, correction);
+
+    return correction;
   }
 
   /** Adds one row to the invoice's planned payment schedule — a plan only, not linked to actual Payment rows. */

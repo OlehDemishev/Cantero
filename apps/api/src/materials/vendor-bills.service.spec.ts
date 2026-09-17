@@ -3,6 +3,7 @@ import { Test } from "@nestjs/testing";
 import { VendorBillsService } from "./vendor-bills.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService } from "../common/audit/audit.service";
+import { GobdLedgerService } from "../common/gobd/gobd-ledger.service";
 
 const COMPANY_A = "company-a";
 
@@ -26,7 +27,9 @@ describe("VendorBillsService", () => {
     supplier: { findFirst: jest.Mock };
     purchaseOrder: { findFirst: jest.Mock };
     materialCatalogItem: { count: jest.Mock };
+    $transaction: jest.Mock;
   };
+  let gobdLedger: { append: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -34,13 +37,16 @@ describe("VendorBillsService", () => {
       supplier: { findFirst: jest.fn() },
       purchaseOrder: { findFirst: jest.fn() },
       materialCatalogItem: { count: jest.fn() },
+      $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
     };
+    gobdLedger = { append: jest.fn() };
 
     const module = await Test.createTestingModule({
       providers: [
         VendorBillsService,
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: { record: jest.fn() } },
+        { provide: GobdLedgerService, useValue: gobdLedger },
       ],
     }).compile();
 
@@ -105,6 +111,59 @@ describe("VendorBillsService", () => {
       expect(result.status).toBe("approved");
       const call = prisma.vendorBill.update.mock.calls[0][0];
       expect(call.data.approvedByName).toBe("Owner");
+    });
+
+    it("locks the bill under GoBD Festschreibung and writes a vendor_bill.locked ledger entry", async () => {
+      prisma.vendorBill.findFirst.mockResolvedValue(bill());
+      prisma.vendorBill.update.mockResolvedValue(bill({ status: "approved" }));
+
+      await service.approve(COMPANY_A, { name: "Owner" }, "bill-1");
+
+      expect(prisma.vendorBill.update.mock.calls[0][0].data.lockedAt).toBeInstanceOf(Date);
+      expect(gobdLedger.append).toHaveBeenCalledWith(
+        prisma,
+        COMPANY_A,
+        { name: "Owner" },
+        "vendor_bill.locked",
+        "VendorBill",
+        "bill-1",
+        expect.stringContaining("B-100"),
+        expect.objectContaining({ billNumber: "B-100" }),
+      );
+    });
+  });
+
+  describe("void() — GoBD correction", () => {
+    it("refuses to void a draft (never-locked) bill", async () => {
+      prisma.vendorBill.findFirst.mockResolvedValue(bill({ status: "draft", lockedAt: null }));
+      await expect(service.void(COMPANY_A, { name: "Owner" }, "bill-1", "duplicate")).rejects.toThrow(BadRequestException);
+    });
+
+    it("refuses to void an already-void bill", async () => {
+      prisma.vendorBill.findFirst.mockResolvedValue(bill({ status: "void", lockedAt: new Date() }));
+      await expect(service.void(COMPANY_A, { name: "Owner" }, "bill-1", "duplicate")).rejects.toThrow(BadRequestException);
+    });
+
+    it("marks an approved bill void with the given reason and records it in the ledger", async () => {
+      prisma.vendorBill.findFirst.mockResolvedValue(bill({ status: "approved", lockedAt: new Date("2026-09-01") }));
+      prisma.vendorBill.update.mockResolvedValue(bill({ status: "void" }));
+
+      const result = await service.void(COMPANY_A, { name: "Owner" }, "bill-1", "Duplicate entry from supplier");
+
+      expect(result.status).toBe("void");
+      expect(prisma.vendorBill.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: "bill-1" }, data: expect.objectContaining({ status: "void", voidReason: "Duplicate entry from supplier" }) }),
+      );
+      expect(gobdLedger.append).toHaveBeenCalledWith(
+        prisma,
+        COMPANY_A,
+        { name: "Owner" },
+        "vendor_bill.voided",
+        "VendorBill",
+        "bill-1",
+        expect.stringContaining("Duplicate entry from supplier"),
+        expect.any(Object),
+      );
     });
   });
 

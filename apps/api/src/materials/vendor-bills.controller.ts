@@ -1,6 +1,15 @@
 import { Body, Controller, Get, Param, Post } from "@nestjs/common";
-import { createVendorBillSchema, schedulePaymentSchema, type AuthUser, type CreateVendorBillInput, type SchedulePaymentInput } from "@cantero/shared";
+import {
+  createVendorBillSchema,
+  schedulePaymentSchema,
+  voidVendorBillSchema,
+  type AuthUser,
+  type CreateVendorBillInput,
+  type SchedulePaymentInput,
+  type VoidVendorBillInput,
+} from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
+import { Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { VendorBillsService } from "./vendor-bills.service";
 
@@ -50,5 +59,15 @@ export class VendorBillsController {
   @Post(":id/pay")
   markPaid(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.markPaid(user.companyId, { userId: user.userId, name: user.name }, id);
+  }
+
+  @Roles("owner", "admin", "accountant")
+  @Post(":id/void")
+  void(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(voidVendorBillSchema)) body: VoidVendorBillInput,
+  ) {
+    return this.service.void(user.companyId, { userId: user.userId, name: user.name }, id, body.reason);
   }
 }

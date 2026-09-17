@@ -7,12 +7,14 @@ import {
   recordPaymentSchema,
   releaseRetainageSchema,
   updateInvoiceSchema,
+  voidInvoiceSchema,
   type AddInstallmentInput,
   type AuthUser,
   type GenerateProgressInvoiceInput,
   type RecordPaymentInput,
   type ReleaseRetainageInput,
   type UpdateInvoiceInput,
+  type VoidInvoiceInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
@@ -126,6 +128,16 @@ export class InvoicesController {
   @Post(":id/send")
   send(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.send(user.companyId, { userId: user.userId, name: user.name }, id);
+  }
+
+  @Roles("owner", "admin", "accountant")
+  @Post(":id/void")
+  void(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(voidInvoiceSchema)) body: VoidInvoiceInput,
+  ) {
+    return this.service.void(user.companyId, { userId: user.userId, name: user.name }, id, body.reason);
   }
 
   @Roles("owner", "admin", "accountant")

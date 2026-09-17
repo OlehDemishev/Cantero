@@ -24,6 +24,8 @@ import { CompanyCoiService } from "./company-coi.service";
 import { PublicPortalBrandingController } from "./public-portal-branding.controller";
 import { CompanyHolidaysController } from "./company-holidays.controller";
 import { CompanyHolidaysService } from "./company-holidays.service";
+import { GobdController } from "./gobd.controller";
+import { GobdService } from "./gobd.service";
 
 @Module({
   imports: [AuthModule],
@@ -42,6 +44,7 @@ import { CompanyHolidaysService } from "./company-holidays.service";
     PublicCompanyCoiController,
     PublicPortalBrandingController,
     CompanyHolidaysController,
+    GobdController,
   ],
   providers: [
     CompanyService,
@@ -54,6 +57,7 @@ import { CompanyHolidaysService } from "./company-holidays.service";
     OffboardingTemplateService,
     CompanyCoiService,
     CompanyHolidaysService,
+    GobdService,
   ],
 })
 export class CompanyModule {}

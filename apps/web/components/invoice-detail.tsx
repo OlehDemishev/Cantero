@@ -48,6 +48,8 @@ interface Invoice {
   percentComplete: string | null;
   isRetainageRelease: boolean;
   lateFeeAccrued: number;
+  voidReason: string | null;
+  correctsInvoiceId: string | null;
   lines: InvoiceLine[];
   payments: Payment[];
   installments: Installment[];
@@ -79,6 +81,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   const [zugferdError, setZugferdError] = useState<string | null>(null);
   const [peppolError, setPeppolError] = useState<string | null>(null);
   const [peppolSendMessage, setPeppolSendMessage] = useState<string | null>(null);
+  const [voidError, setVoidError] = useState<string | null>(null);
 
   function load() {
     apiFetch<Invoice>(`/invoices/${invoiceId}`).then((inv) => {
@@ -146,6 +149,21 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
       const result = await apiFetch<{ emailSentTo: string | null }>(`/invoices/${invoiceId}/send`, { method: "POST" });
       setEmailSentTo(result.emailSentTo);
       load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function voidInvoice() {
+    const reason = window.prompt(t("voidReasonPrompt"));
+    if (!reason) return;
+    setVoidError(null);
+    setBusy(true);
+    try {
+      await apiFetch(`/invoices/${invoiceId}/void`, { method: "POST", body: JSON.stringify({ reason }) });
+      load();
+    } catch (err) {
+      setVoidError(err instanceof ApiError ? err.message : tc("error"));
     } finally {
       setBusy(false);
     }
@@ -280,6 +298,12 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
           {invoice.client.name}
         </Link>
       </p>
+      {invoice.status === "void" && invoice.voidReason && (
+        <p className="mt-1 text-xs text-error-600">
+          {t("voidReasonLabel")}: {invoice.voidReason}
+        </p>
+      )}
+      {invoice.correctsInvoiceId && <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t("isCorrectionNote")}</p>}
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2">
@@ -537,6 +561,12 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
             </button>
             {peppolError && <p className="text-xs text-error-600">{peppolError}</p>}
             {peppolSendMessage && <p className="text-xs text-success-700 dark:text-success-500">{peppolSendMessage}</p>}
+            {(invoice.status === "sent" || invoice.status === "paid") && (
+              <button onClick={voidInvoice} disabled={busy} className="btn-secondary text-error-600">
+                {t("voidInvoice")}
+              </button>
+            )}
+            {voidError && <p className="text-xs text-error-600">{voidError}</p>}
             {emailSentTo !== undefined && (
               <p className="text-xs text-gray-500 dark:text-gray-400">
                 {emailSentTo ? tc("emailedTo", { email: emailSentTo }) : tc("noClientEmail")}

@@ -6,6 +6,7 @@ import { PdfModule } from "./common/pdf/pdf.module";
 import { QueueModule } from "./common/queue/queue.module";
 import { StorageModule } from "./common/storage/storage.module";
 import { AuditModule } from "./common/audit/audit.module";
+import { GobdModule } from "./common/gobd/gobd.module";
 import { RateLimiterModule } from "./common/rate-limiter/rate-limiter.module";
 import { MailModule } from "./common/mail/mail.module";
 import { SmsModule } from "./common/sms/sms.module";
@@ -110,6 +111,7 @@ import { ClientChangeRequestsModule } from "./client-change-requests/client-chan
     QueueModule,
     StorageModule,
     AuditModule,
+    GobdModule,
     RateLimiterModule,
     ProjectAccessModule,
     IdempotencyModule,

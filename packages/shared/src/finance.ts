@@ -305,3 +305,13 @@ export const rejectIncomingEInvoiceSchema = z.object({
   reason: z.string().min(1).max(500),
 });
 export type RejectIncomingEInvoiceInput = z.infer<typeof rejectIncomingEInvoiceSchema>;
+
+export const voidInvoiceSchema = z.object({
+  reason: z.string().min(1).max(500),
+});
+export type VoidInvoiceInput = z.infer<typeof voidInvoiceSchema>;
+
+export const voidVendorBillSchema = z.object({
+  reason: z.string().min(1).max(500),
+});
+export type VoidVendorBillInput = z.infer<typeof voidVendorBillSchema>;

@@ -505,6 +505,7 @@ model Company {
   msProjectConnection             MsProjectConnection?
   autodeskConnection              AutodeskConnection?
   incomingEInvoices               IncomingEInvoice[]
+  gobdLedgerEntries               GobdLedgerEntry[]
   expenses                        Expense[]
   materialRfqs                    MaterialRfq[]
   customRoles                     CustomRole[]
@@ -625,6 +626,44 @@ model AuditLog {
   @@map("audit_logs")
 }
 
+/// GoBD-grade tamper-evident journal for Festschreibung events specifically (an invoice/vendor
+/// bill being locked, voided, or corrected) — deliberately separate from AuditLog, which is a
+/// best-effort, fire-and-forget activity log for the whole app and was never meant to prove
+/// nothing in it was edited or deleted after the fact. Every row here is written inside the same
+/// SERIALIZABLE transaction as the event it documents (see GobdLedgerService.append and
+/// runSerializable) and chains to the previous row's hash, so altering or deleting any historical
+/// row breaks the chain from that point forward — detectable via GobdLedgerService.verifyChain.
+/// This does NOT replace real backup/retention procedures or restrict raw DB access; see the
+/// generated Verfahrensdokumentation for what is and isn't covered.
+model GobdLedgerEntry {
+  id           String   @id @default(uuid())
+  companyId    String
+  /// Per-company monotonic counter (1, 2, 3, ...) — the chain's actual ordering; createdAt is
+  /// informational only since two entries could theoretically share a timestamp.
+  sequence     Int
+  entityType   String
+  entityId     String
+  /// e.g. "invoice.locked", "invoice.voided", "invoice.correction_issued", "vendor_bill.locked",
+  /// "vendor_bill.voided" — see GobdLedgerService callers for the full set.
+  event        String
+  summary      String
+  /// Canonical snapshot of the fields being frozen or corrected at this moment (amounts, dates,
+  /// party identifiers) — hashed as part of the chain, so the frozen content itself is provable,
+  /// not just the fact that *something* happened.
+  payload      Json
+  actorName    String
+  /// Null only for the very first entry in a company's chain.
+  previousHash String?
+  hash         String
+  createdAt    DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, sequence])
+  @@index([companyId, entityType, entityId])
+  @@map("gobd_ledger_entries")
+}
+
 /// Company-level credential for the read-only external integration API (/api/v1/*).
 /// The raw key is shown once at creation and never persisted — only its hash.
 model ApiKey {
@@ -730,18 +769,18 @@ model OutboxEvent {
 }
 
 model User {
-  id              String    @id @default(uuid())
-  email           String    @unique
-  passwordHash    String
-  name            String
-  createdAt       DateTime  @default(now())
+  id                String    @id @default(uuid())
+  email             String    @unique
+  passwordHash      String
+  name              String
+  createdAt         DateTime  @default(now())
   /// TOTP secret (base32) actually in effect — null means 2FA is off. Only enable() ever writes
   /// here, once a code from pendingTotpSecret is verified, so an in-progress re-setup can never
   /// disable a working authenticator by being abandoned before confirmation.
-  totpSecret      String?
-  totpEnabledAt   DateTime?
+  totpSecret        String?
+  totpEnabledAt     DateTime?
   /// Bcrypt-hashed one-time recovery codes, consumed (removed) as they're used.
-  totpBackupCodes String[]  @default([])
+  totpBackupCodes   String[]  @default([])
   /// The secret setup() just generated, awaiting confirmation via enable() — see TwoFactorService.
   /// Kept separate from totpSecret specifically so re-setup of an already-active authenticator
   /// (setup() called again, correctly gated on the current password) never touches the live
@@ -2313,6 +2352,7 @@ enum VendorBillStatus {
   draft
   approved
   paid
+  void
 }
 
 /// A supplier invoice for materials or services — the AP-side counterpart to the AR-side
@@ -2338,6 +2378,15 @@ model VendorBill {
   paidAt               DateTime?
   notes                String?
   createdAt            DateTime         @default(now())
+  /// GoBD Festschreibung: set the moment this bill is approved (see VendorBillsService.approve) —
+  /// there's no update() for line items/amounts to block (none exists), so this exists to document
+  /// *when* the lock took effect, for the Verfahrensdokumentation and the tamper-evident ledger.
+  lockedAt             DateTime?
+  voidedAt             DateTime?
+  /// Required whenever voidedAt is set. Unlike Invoice.void(), this never auto-generates a
+  /// reversal document — a corrected bill from the supplier is entered as its own new VendorBill
+  /// (see VendorBillsService.void).
+  voidReason           String?
 
   company          Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
   supplier         Supplier          @relation(fields: [supplierId], references: [id], onDelete: Restrict)
@@ -2440,9 +2489,9 @@ model IncomingEInvoice {
   reviewedByName    String?
   createdAt         DateTime               @default(now())
 
-  company    Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  supplier   Supplier?         @relation(fields: [supplierId], references: [id], onDelete: SetNull)
-  vendorBill VendorBill?       @relation(fields: [vendorBillId], references: [id], onDelete: SetNull)
+  company    Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  supplier   Supplier?              @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  vendorBill VendorBill?            @relation(fields: [vendorBillId], references: [id], onDelete: SetNull)
   lines      IncomingEInvoiceLine[]
 
   @@index([companyId])
@@ -2792,18 +2841,18 @@ model ProjectMember {
 }
 
 model Task {
-  id             String     @id @default(uuid())
-  companyId      String
-  projectId      String
-  estimateLineId String?
-  name           String
-  status         TaskStatus @default(planned)
-  startDate      DateTime?
-  dueDate        DateTime?
-  sortOrder      Int        @default(0)
+  id                  String     @id @default(uuid())
+  companyId           String
+  projectId           String
+  estimateLineId      String?
+  name                String
+  status              TaskStatus @default(planned)
+  startDate           DateTime?
+  dueDate             DateTime?
+  sortOrder           Int        @default(0)
   /// Marks work exposed to the elements (framing, roofing, concrete pour, etc.) so the
   /// weather-risk notification can flag it when the forecast for its startDate turns bad.
-  isOutdoorWork  Boolean    @default(false)
+  isOutdoorWork       Boolean    @default(false)
   /// Set once this task has been pushed to Project for the Web as an msdyn_projecttask row —
   /// see MsProjectService.syncProject(). Null means not yet synced.
   msProjectExternalId String?
@@ -3211,21 +3260,35 @@ model Invoice {
   /// charged yet, so accrual still starts from dueDate. Advancing this on every charge is what
   /// makes each charge cover only the time since the last one, not the whole overdue period again.
   lastLateFeeAccrualAt       DateTime?
+  /// GoBD Festschreibung: set the moment this invoice is sent (see InvoicesService.send) and never
+  /// cleared. Once set, InvoicesService.update() refuses to change even the narrow dueDate field —
+  /// a posted invoice's tax-relevant content must never be editable, only corrected via void().
+  lockedAt                   DateTime?
+  voidedAt                   DateTime?
+  /// Required whenever voidedAt is set — why this invoice was corrected, kept for the audit trail
+  /// alongside the GobdLedgerEntry recording the same event.
+  voidReason                 String?
+  /// Set on the auto-generated Stornorechnung (credit note) only — points at the invoice it
+  /// reverses. See InvoicesService.void: the original is never edited or deleted, only marked void
+  /// and paired with a brand-new invoice carrying the exact negation of its amounts.
+  correctsInvoiceId          String?       @unique
 
-  company          Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company            Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
   /// Composite FKs (not just projectId/clientId) so the DB rejects an invoice pointing at a
   /// project or client belonging to a different company — see AUDIT-2026-09-07.md "составные FK".
-  project          Project              @relation(fields: [projectId, companyId], references: [id, companyId], onDelete: Cascade)
-  client           Client               @relation(fields: [clientId, companyId], references: [id, companyId], onDelete: Restrict)
-  estimate         Estimate?            @relation(fields: [estimateId], references: [id], onDelete: SetNull)
-  recurringInvoice RecurringInvoice?    @relation(fields: [recurringInvoiceId], references: [id], onDelete: SetNull)
-  taxJurisdiction  TaxJurisdiction?     @relation(fields: [taxJurisdictionId], references: [id], onDelete: SetNull)
-  lines            InvoiceLine[]
-  payments         Payment[]
-  installments     InvoiceInstallment[]
-  documents        Document[]
-  bankTransactions BankTransaction[]
-  drawRequest      DrawRequest?
+  project            Project              @relation(fields: [projectId, companyId], references: [id, companyId], onDelete: Cascade)
+  client             Client               @relation(fields: [clientId, companyId], references: [id, companyId], onDelete: Restrict)
+  estimate           Estimate?            @relation(fields: [estimateId], references: [id], onDelete: SetNull)
+  recurringInvoice   RecurringInvoice?    @relation(fields: [recurringInvoiceId], references: [id], onDelete: SetNull)
+  taxJurisdiction    TaxJurisdiction?     @relation(fields: [taxJurisdictionId], references: [id], onDelete: SetNull)
+  correctsInvoice    Invoice?             @relation("InvoiceCorrection", fields: [correctsInvoiceId], references: [id], onDelete: SetNull)
+  correctedByInvoice Invoice?             @relation("InvoiceCorrection")
+  lines              InvoiceLine[]
+  payments           Payment[]
+  installments       InvoiceInstallment[]
+  documents          Document[]
+  bankTransactions   BankTransaction[]
+  drawRequest        DrawRequest?
 
   @@unique([companyId, number])
   @@unique([recurringInvoiceId, recurringBillingPeriod])

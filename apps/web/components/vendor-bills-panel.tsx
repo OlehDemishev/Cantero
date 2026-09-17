@@ -46,7 +46,8 @@ interface VendorBill {
   billDate: string;
   dueDate: string | null;
   scheduledPaymentDate: string | null;
-  status: "draft" | "approved" | "paid";
+  status: "draft" | "approved" | "paid" | "void";
+  voidReason: string | null;
   supplier: Supplier;
   purchaseOrder: { id: string } | null;
   lines: VendorBillLine[];
@@ -164,6 +165,13 @@ export function VendorBillsPanel() {
       body: JSON.stringify({ scheduledPaymentDate: new Date(date).toISOString() }),
     });
     setScheduleDrafts((f) => ({ ...f, [billId]: "" }));
+    loadBills();
+  }
+
+  async function voidBill(billId: string) {
+    const reason = window.prompt(t("voidBillReasonPrompt"));
+    if (!reason) return;
+    await apiFetch(`/materials/vendor-bills/${billId}/void`, { method: "POST", body: JSON.stringify({ reason }) });
     loadBills();
   }
 
@@ -306,7 +314,9 @@ export function VendorBillsPanel() {
                             ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
                             : bill.status === "approved"
                               ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400"
-                              : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
+                              : bill.status === "void"
+                                ? "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500"
+                                : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                         }`}
                       >
                         {t(`billStatus_${bill.status}`)}
@@ -324,10 +334,16 @@ export function VendorBillsPanel() {
                   {bill.scheduledPaymentDate && (
                     <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{t("scheduledPaymentDate")}: {formatDate(new Date(bill.scheduledPaymentDate))}</p>
                   )}
+                  {bill.status === "void" && bill.voidReason && <p className="mt-1 text-xs text-error-600">{t("voidReasonLabel")}: {bill.voidReason}</p>}
                   <div className="mt-3 flex flex-wrap items-center gap-2">
                     {bill.status === "draft" && (
                       <button onClick={() => approveBill(bill.id)} className="btn-secondary px-2 py-1 text-xs">
                         {t("approveBill")}
+                      </button>
+                    )}
+                    {(bill.status === "approved" || bill.status === "paid") && (
+                      <button onClick={() => voidBill(bill.id)} className="btn-secondary px-2 py-1 text-xs text-error-600">
+                        {t("voidBill")}
                       </button>
                     )}
                     {bill.status === "approved" && (

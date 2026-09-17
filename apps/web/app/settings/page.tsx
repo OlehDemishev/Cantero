@@ -18,6 +18,7 @@ import { TeamInvitesPanel } from "@/components/team-invites-panel";
 import { ApiKeysPanel } from "@/components/api-keys-panel";
 import { WebhooksPanel } from "@/components/webhooks-panel";
 import { AuditLogPanel } from "@/components/audit-log-panel";
+import { GobdCompliancePanel } from "@/components/gobd-compliance-panel";
 import { CustomFieldsSettingsPanel } from "@/components/custom-fields-settings-panel";
 import { LeadFormSettingsPanel } from "@/components/lead-form-settings-panel";
 import { CustomPortalDomainPanel } from "@/components/custom-portal-domain-panel";
@@ -145,6 +146,8 @@ export default function SettingsPage() {
         {activeTab === "security" && <CompanyCoiPanel canManage={isManager} />}
 
         {activeTab === "security" && isManager && <AuditLogPanel />}
+
+        {activeTab === "security" && canManageAccounting && <GobdCompliancePanel />}
 
         {activeTab === "templates" && isManager && <OnboardingTemplatePanel />}
         {activeTab === "templates" && isManager && <OffboardingTemplatePanel />}

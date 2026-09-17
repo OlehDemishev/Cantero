@@ -10,6 +10,7 @@ import { AuditService } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
 import { OutboxService } from "../common/webhooks/outbox.service";
 import { ExchangeRateService } from "../common/exchange-rate/exchange-rate.service";
+import { GobdLedgerService } from "../common/gobd/gobd-ledger.service";
 import { PeppolAccessPointService } from "./peppol-access-point.service";
 
 const COMPANY_A = "company-a";
@@ -30,6 +31,7 @@ describe("InvoicesService — late fees & payment terms", () => {
   let exchangeRates: { getRate: jest.Mock };
   let pdfService: { render: jest.Mock; renderZugferdInvoice: jest.Mock };
   let peppolAccessPoint: { sendInvoice: jest.Mock };
+  let gobdLedger: { append: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -45,6 +47,7 @@ describe("InvoicesService — late fees & payment terms", () => {
     exchangeRates = { getRate: jest.fn() };
     pdfService = { render: jest.fn(), renderZugferdInvoice: jest.fn().mockResolvedValue(Buffer.from("pdf-bytes")) };
     peppolAccessPoint = { sendInvoice: jest.fn() };
+    gobdLedger = { append: jest.fn() };
 
     const module = await Test.createTestingModule({
       providers: [
@@ -58,6 +61,7 @@ describe("InvoicesService — late fees & payment terms", () => {
         { provide: OutboxService, useValue: { enqueue: jest.fn() } },
         { provide: ExchangeRateService, useValue: exchangeRates },
         { provide: PeppolAccessPointService, useValue: peppolAccessPoint },
+        { provide: GobdLedgerService, useValue: gobdLedger },
       ],
     }).compile();
 
@@ -255,6 +259,11 @@ describe("InvoicesService — late fees & payment terms", () => {
         number: "INV-0001",
         status: "draft",
         dueDate: null,
+        subtotal: 1000,
+        taxAmount: 0,
+        total: 1000,
+        currency: "EUR",
+        lines: [],
         client: { email: null, name: "Acme", paymentTermsDays: 15 },
       });
       prisma.company.findUniqueOrThrow.mockResolvedValue({ defaultPaymentTermsDays: 30 });
@@ -273,6 +282,11 @@ describe("InvoicesService — late fees & payment terms", () => {
         number: "INV-0001",
         status: "draft",
         dueDate: null,
+        subtotal: 1000,
+        taxAmount: 0,
+        total: 1000,
+        currency: "EUR",
+        lines: [],
         client: { email: null, name: "Acme", paymentTermsDays: null },
       });
       prisma.company.findUniqueOrThrow.mockResolvedValue({ defaultPaymentTermsDays: 45 });
@@ -292,6 +306,11 @@ describe("InvoicesService — late fees & payment terms", () => {
         number: "INV-0001",
         status: "draft",
         dueDate: explicitDueDate,
+        subtotal: 1000,
+        taxAmount: 0,
+        total: 1000,
+        currency: "EUR",
+        lines: [],
         client: { email: null, name: "Acme", paymentTermsDays: null },
       });
       prisma.invoice.update.mockResolvedValue({ id: "inv-1", client: { email: null } });
@@ -321,6 +340,8 @@ describe("InvoicesService — late fees & payment terms", () => {
         number: "INV-0001",
         status: "draft",
         dueDate: new Date(),
+        subtotal: 1000,
+        taxAmount: 0,
         total: 1000,
         currency: "EUR",
         lines: [],
@@ -349,6 +370,8 @@ describe("InvoicesService — late fees & payment terms", () => {
         number: "INV-0001",
         status: "draft",
         dueDate: new Date(),
+        subtotal: 1000,
+        taxAmount: 0,
         total: 1000,
         currency: "EUR",
         lines: [],
@@ -368,6 +391,121 @@ describe("InvoicesService — late fees & payment terms", () => {
 
       expect(mail.send).toHaveBeenCalledWith(
         expect.objectContaining({ subject: expect.stringContaining("Rechnung") }),
+      );
+    });
+  });
+
+  describe("send() — GoBD Festschreibung", () => {
+    it("sets lockedAt and writes an invoice.locked ledger entry", async () => {
+      prisma.invoice.findFirst.mockResolvedValue({
+        id: "inv-1",
+        number: "INV-0001",
+        status: "draft",
+        dueDate: new Date(),
+        subtotal: 1000,
+        taxAmount: 190,
+        total: 1190,
+        currency: "EUR",
+        lines: [{ description: "Concrete", quantity: 1, unitPrice: 1000, lineTotal: 1000 }],
+        client: { email: null, name: "Acme", paymentTermsDays: null },
+      });
+      prisma.invoice.update.mockResolvedValue({ id: "inv-1", client: { email: null } });
+
+      await service.send(COMPANY_A, ACTOR, "inv-1");
+
+      expect(prisma.invoice.update.mock.calls[0][0].data.lockedAt).toBeInstanceOf(Date);
+      expect(gobdLedger.append).toHaveBeenCalledWith(
+        prisma,
+        COMPANY_A,
+        ACTOR,
+        "invoice.locked",
+        "Invoice",
+        "inv-1",
+        expect.stringContaining("INV-0001"),
+        expect.objectContaining({ number: "INV-0001", total: "1190" }),
+      );
+    });
+  });
+
+  describe("update() — refused once locked", () => {
+    it("throws once the invoice has been sent (lockedAt set)", async () => {
+      prisma.invoice.findFirst.mockResolvedValue({ id: "inv-1", lockedAt: new Date() });
+      await expect(service.update(COMPANY_A, "inv-1", { dueDate: "2027-01-01" })).rejects.toThrow(BadRequestException);
+      expect(prisma.invoice.update).not.toHaveBeenCalled();
+    });
+
+    it("still allows editing a draft invoice (lockedAt null)", async () => {
+      prisma.invoice.findFirst.mockResolvedValue({ id: "inv-1", lockedAt: null });
+      prisma.invoice.update.mockResolvedValue({ id: "inv-1" });
+      await service.update(COMPANY_A, "inv-1", { dueDate: "2027-01-01" });
+      expect(prisma.invoice.update).toHaveBeenCalled();
+    });
+  });
+
+  describe("void() — GoBD correction (Stornorechnung)", () => {
+    it("refuses to void a draft (never-locked) invoice", async () => {
+      prisma.invoice.findFirst.mockResolvedValue({ id: "inv-1", status: "draft", lockedAt: null });
+      await expect(service.void(COMPANY_A, ACTOR, "inv-1", "duplicate")).rejects.toThrow(BadRequestException);
+    });
+
+    it("refuses to void an already-void invoice", async () => {
+      prisma.invoice.findFirst.mockResolvedValue({ id: "inv-1", status: "void", lockedAt: new Date() });
+      await expect(service.void(COMPANY_A, ACTOR, "inv-1", "duplicate")).rejects.toThrow(BadRequestException);
+    });
+
+    it("marks the original void and creates a Stornorechnung with negated amounts, never editing the original's amounts", async () => {
+      const original = {
+        id: "inv-1",
+        number: "INV-0007",
+        status: "sent",
+        lockedAt: new Date("2026-09-01"),
+        projectId: "proj-1",
+        clientId: "client-1",
+        subtotal: new Prisma.Decimal("1000"),
+        taxAmount: new Prisma.Decimal("190"),
+        total: new Prisma.Decimal("1190"),
+        currency: "EUR",
+        lines: [{ description: "Concrete", quantity: new Prisma.Decimal("10"), unitPrice: new Prisma.Decimal("100"), lineTotal: new Prisma.Decimal("1000") }],
+        client: { email: null, name: "Acme", preferredLocale: null },
+      };
+      prisma.invoice.findFirst.mockResolvedValue(original);
+      prisma.invoice.count.mockResolvedValue(6); // next number: INV-0007
+      prisma.invoice.create.mockImplementation(({ data }: { data: Record<string, unknown> }) =>
+        Promise.resolve({ ...data, id: "inv-corr-1", lines: (data.lines as { create: unknown[] }).create, client: original.client }),
+      );
+
+      const correction = await service.void(COMPANY_A, ACTOR, "inv-1", "Wrong client billed");
+
+      expect(prisma.invoice.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: "inv-1" }, data: expect.objectContaining({ status: "void", voidReason: "Wrong client billed" }) }),
+      );
+      const createCall = prisma.invoice.create.mock.calls[0][0];
+      expect(createCall.data.correctsInvoiceId).toBe("inv-1");
+      expect(createCall.data.subtotal.toString()).toBe("-1000");
+      expect(createCall.data.taxAmount.toString()).toBe("-190");
+      expect(createCall.data.total.toString()).toBe("-1190");
+      expect(createCall.data.lines.create[0].unitPrice.toString()).toBe("-100");
+      expect(createCall.data.lines.create[0].quantity.toString()).toBe("10"); // quantity itself is never negated
+      expect(correction.id).toBe("inv-corr-1");
+      expect(gobdLedger.append).toHaveBeenCalledWith(
+        prisma,
+        COMPANY_A,
+        ACTOR,
+        "invoice.voided",
+        "Invoice",
+        "inv-1",
+        expect.stringContaining("Wrong client billed"),
+        expect.any(Object),
+      );
+      expect(gobdLedger.append).toHaveBeenCalledWith(
+        prisma,
+        COMPANY_A,
+        ACTOR,
+        "invoice.correction_issued",
+        "Invoice",
+        "inv-corr-1",
+        expect.any(String),
+        expect.any(Object),
       );
     });
   });
@@ -714,6 +852,7 @@ describe("InvoicesService — partial retainage release", () => {
         { provide: OutboxService, useValue: { enqueue: jest.fn() } },
         { provide: ExchangeRateService, useValue: { getRate: jest.fn(), convert: jest.fn((amount: number) => Promise.resolve(amount)) } },
         { provide: PeppolAccessPointService, useValue: { sendInvoice: jest.fn() } },
+        { provide: GobdLedgerService, useValue: { append: jest.fn() } },
       ],
     }).compile();
 
