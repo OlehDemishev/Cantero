@@ -959,9 +959,9 @@
     "payThisInstallment": "Оплатити цей внесок",
     "paymentMethod": "Спосіб оплати",
     "cardOnFile": "{brand}, що закінчується на {last4}",
-    "removeCard": "Видалити картку",
-    "noCardOnFile": "Картку не збережено.",
-    "saveCard": "Зберегти картку",
+    "removePaymentMethod": "Видалити спосіб оплати",
+    "noPaymentMethodOnFile": "Спосіб оплати не збережено.",
+    "savePaymentMethod": "Зберегти спосіб оплати",
     "myTickets": "Мої тікети",
     "noTickets": "Тікетів підтримки ще немає.",
     "ticketSubjectPlaceholder": "Тема",
@@ -983,7 +983,7 @@
     "changeRequestTitlePlaceholder": "Що б ви хотіли змінити?",
     "submitChangeRequest": "Надіслати запит",
     "changeRequestSubmitted": "Запит надіслано — ми розглянемо його і зв'яжемося з вами.",
-    "confirmRemoveCard": "Видалити цю збережену картку? Щоб автосписання й далі працювало, потрібно буде додати нову."
+    "confirmRemovePaymentMethod": "Видалити цей збережений спосіб оплати? Щоб автосписання й далі працювало, потрібно буде додати новий."
   },
   "equipment": {
     "title": "Техніка",
@@ -2322,7 +2322,7 @@
   },
   "accountingSync": {
     "title": "Синхронізація з бухгалтерією",
-    "hint": "Підключіть QuickBooks або Xero, щоб автоматично надсилати рахунки до вашого обліку.",
+    "hint": "Підключіть QuickBooks, Xero або lexoffice, щоб автоматично надсилати рахунки до вашого обліку.",
     "connect": "Підключити {provider}",
     "connectFailed": "Не вдалося розпочати підключення. Спробуйте ще раз.",
     "connectedSummary": "Підключено до {provider} {date}.",
@@ -2335,7 +2335,51 @@
     "noHistory": "Ще немає спроб синхронізації.",
     "syncBillsNow": "Синхронізувати рахунки зараз",
     "integrityCheckBills": "{count, plural, =0 {Усі рахунки синхронізовано} one {# рахунок ще не синхронізовано} few {# рахунки ще не синхронізовано} many {# рахунків ще не синхронізовано} other {# рахунків ще не синхронізовано}}",
-    "confirmDisconnect": "Від'єднати інтеграцію з бухгалтерією? Синхронізація рахунків припиниться, доки ви не підключите її знову."
+    "confirmDisconnect": "Від'єднати інтеграцію з бухгалтерією? Синхронізація рахунків припиниться, доки ви не підключите її знову.",
+    "lexofficeApiKeyLabel": "Публічний API-ключ lexoffice",
+    "lexofficeApiKeyPlaceholder": "Вставте свій API-ключ",
+    "lexofficeHint": "Створіть його в lexoffice в розділі Налаштування → Public API. Синхронізація рахунків від постачальників поки не підтримується для lexoffice — лише вихідні рахунки."
+  },
+  "docusign": {
+    "title": "Електронний підпис DocuSign",
+    "hint": "Підключіть DocuSign, щоб надсилати договори на підпис із сертифікатом завершення — як альтернативу власному посиланню для підпису цього застосунку.",
+    "connect": "Підключити DocuSign",
+    "connectFailed": "Не вдалося розпочати підключення. Спробуйте ще раз.",
+    "connectedSummary": "Підключено до DocuSign {date}.",
+    "disconnect": "Відʼєднати",
+    "confirmDisconnect": "Відʼєднати DocuSign? Ви не зможете надсилати нові договори через нього, доки не підключите знову — вже надіслані договори продовжать працювати."
+  },
+  "msProject": {
+    "title": "Синхронізація з MS Project",
+    "hint": "Надіслати цей проєкт і його завдання до підключеного плану \"Project for the Web\".",
+    "syncNow": "Синхронізувати з MS Project",
+    "syncResult": "Синхронізовано {synced}, не вдалося {failed}.",
+    "syncFailed": "Не вдалося синхронізувати з MS Project. Спробуйте ще раз.",
+    "settingsTitle": "MS Project (Project for the Web)",
+    "settingsHint": "Підключіть середовище Project for the Web, щоб надсилати туди проєкти й завдання з вкладки \"Розклад\" будь-якого проєкту.",
+    "environmentUrlLabel": "URL середовища Dataverse",
+    "environmentUrlPlaceholder": "https://org12345.crm.dynamics.com",
+    "connect": "Підключити",
+    "connectFailed": "Не вдалося розпочати підключення. Спробуйте ще раз.",
+    "connectedSummary": "Підключено {date}.",
+    "disconnect": "Відʼєднати",
+    "confirmDisconnect": "Відʼєднати MS Project? Ви не зможете синхронізувати нові проєкти/завдання, доки не підключите знову."
+  },
+  "autodesk": {
+    "title": "Синхронізація з Autodesk Construction Cloud",
+    "hint": "Надіслати список зауважень цього проєкту до проєкту Autodesk Construction Cloud як Issues.",
+    "accProjectIdLabel": "ID проєкту ACC",
+    "accProjectIdPlaceholder": "напр. b.xxxxxxxx-xxxx-...",
+    "syncNow": "Синхронізувати з Autodesk",
+    "syncResult": "Синхронізовано {synced}, не вдалося {failed}.",
+    "syncFailed": "Не вдалося синхронізувати з Autodesk. Спробуйте ще раз.",
+    "settingsTitle": "Autodesk Construction Cloud",
+    "settingsHint": "Підключіть обліковий запис Autodesk, щоб надсилати туди список зауважень як Issues із вкладки \"Якість\" будь-якого проєкту.",
+    "connect": "Підключити Autodesk",
+    "connectFailed": "Не вдалося розпочати підключення. Спробуйте ще раз.",
+    "connectedSummary": "Підключено {date}.",
+    "disconnect": "Відʼєднати",
+    "confirmDisconnect": "Відʼєднати Autodesk? Ви не зможете синхронізувати нові пункти списку зауважень, доки не підключите знову."
   },
   "expenses": {
     "title": "Витрати",
@@ -2630,7 +2674,11 @@
     "signedThanks": "Дякуємо — цей договір підписано.",
     "notAwaitingSignature": "Цей договір не очікує на підпис.",
     "linkNotFound": "Це посилання недійсне або застаріле.",
-    "confirmDeleteTemplate": "Видалити цей шаблон договору?"
+    "confirmDeleteTemplate": "Видалити цей шаблон договору?",
+    "sendViaDocusign": "Надіслати через DocuSign",
+    "refreshDocusignStatus": "Оновити статус підпису",
+    "docusignStatusLabel": "Статус DocuSign: {status}",
+    "downloadDocusignSignedPdf": "Завантажити підписаний DocuSign PDF"
   },
   "costCodes": {
     "title": "Коди витрат",

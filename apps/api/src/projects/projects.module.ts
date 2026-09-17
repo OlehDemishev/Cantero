@@ -24,6 +24,10 @@ import { ScheduleBaselineController } from "./schedule-baseline.controller";
 import { ScheduleBaselineService } from "./schedule-baseline.service";
 import { MeetingsController } from "./meetings.controller";
 import { MeetingsService } from "./meetings.service";
+import { MsProjectController } from "./ms-project.controller";
+import { MsProjectService } from "./ms-project.service";
+import { AutodeskController } from "./autodesk.controller";
+import { AutodeskService } from "./autodesk.service";
 import { WeatherModule } from "../weather/weather.module";
 import { FinanceModule } from "../finance/finance.module";
 import { DocumentsModule } from "../documents/documents.module";
@@ -43,6 +47,8 @@ import { DocumentsModule } from "../documents/documents.module";
     SiteSignInsController,
     ScheduleBaselineController,
     MeetingsController,
+    MsProjectController,
+    AutodeskController,
   ],
   providers: [
     ProjectsService,
@@ -58,6 +64,8 @@ import { DocumentsModule } from "../documents/documents.module";
     SiteSignInsService,
     ScheduleBaselineService,
     MeetingsService,
+    MsProjectService,
+    AutodeskService,
   ],
   exports: [ProjectsService, PunchListService, TasksService],
 })

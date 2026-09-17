@@ -959,9 +959,9 @@
     "payThisInstallment": "Zapłać tę ratę",
     "paymentMethod": "Metoda płatności",
     "cardOnFile": "{brand} kończąca się na {last4}",
-    "removeCard": "Usuń kartę",
-    "noCardOnFile": "Brak zapisanej karty.",
-    "saveCard": "Zapisz kartę",
+    "removePaymentMethod": "Usuń metodę płatności",
+    "noPaymentMethodOnFile": "Brak zapisanej metody płatności.",
+    "savePaymentMethod": "Zapisz metodę płatności",
     "myTickets": "Moje zgłoszenia",
     "noTickets": "Brak zgłoszeń wsparcia.",
     "ticketSubjectPlaceholder": "Temat",
@@ -983,7 +983,7 @@
     "changeRequestTitlePlaceholder": "Co chcieliby Państwo zmienić?",
     "submitChangeRequest": "Wyślij wniosek",
     "changeRequestSubmitted": "Wniosek wysłany — rozpatrzymy go i się odezwiemy.",
-    "confirmRemoveCard": "Usunąć tę zapisaną kartę? Aby automatyczne płatności nadal działały, trzeba będzie dodać nową."
+    "confirmRemovePaymentMethod": "Usunąć tę zapisaną metodę płatności? Aby automatyczne płatności nadal działały, trzeba będzie dodać nową."
   },
   "equipment": {
     "title": "Sprzęt",
@@ -2322,7 +2322,7 @@
   },
   "accountingSync": {
     "title": "Synchronizacja księgowa",
-    "hint": "Połącz QuickBooks lub Xero, aby automatycznie przesyłać faktury do księgowości.",
+    "hint": "Połącz QuickBooks, Xero lub lexoffice, aby automatycznie przesyłać faktury do księgowości.",
     "connect": "Połącz {provider}",
     "connectFailed": "Nie udało się rozpocząć połączenia. Spróbuj ponownie.",
     "connectedSummary": "Połączono z {provider} dnia {date}.",
@@ -2335,7 +2335,51 @@
     "noHistory": "Brak jeszcze prób synchronizacji.",
     "syncBillsNow": "Synchronizuj faktury teraz",
     "integrityCheckBills": "{count, plural, =0 {Wszystkie faktury zsynchronizowane} one {# faktura niezsynchronizowana} few {# faktury niezsynchronizowane} many {# faktur niezsynchronizowanych} other {# faktury niezsynchronizowane}}",
-    "confirmDisconnect": "Odłączyć integrację księgową? Faktury przestaną się synchronizować do czasu ponownego połączenia."
+    "confirmDisconnect": "Odłączyć integrację księgową? Faktury przestaną się synchronizować do czasu ponownego połączenia.",
+    "lexofficeApiKeyLabel": "Klucz Public API lexoffice",
+    "lexofficeApiKeyPlaceholder": "Wklej swój klucz API",
+    "lexofficeHint": "Wygeneruj go w lexoffice w Ustawienia → Public API. Synchronizacja faktur od dostawców nie jest jeszcze obsługiwana dla lexoffice — tylko faktury wystawiane."
+  },
+  "docusign": {
+    "title": "Podpis elektroniczny DocuSign",
+    "hint": "Połącz DocuSign, aby wysyłać umowy do podpisu z certyfikatem ukończenia — jako alternatywę dla własnego linku podpisu tej aplikacji.",
+    "connect": "Połącz DocuSign",
+    "connectFailed": "Nie udało się rozpocząć połączenia. Spróbuj ponownie.",
+    "connectedSummary": "Połączono z DocuSign {date}.",
+    "disconnect": "Rozłącz",
+    "confirmDisconnect": "Rozłączyć DocuSign? Nie będzie można wysyłać nowych umów tą drogą do czasu ponownego połączenia — już wysłane umowy będą nadal działać."
+  },
+  "msProject": {
+    "title": "Synchronizacja z MS Project",
+    "hint": "Wyślij ten projekt i jego zadania do połączonego planu \"Project for the Web\".",
+    "syncNow": "Synchronizuj z MS Project",
+    "syncResult": "Zsynchronizowano {synced}, niepowodzeń {failed}.",
+    "syncFailed": "Nie udało się zsynchronizować z MS Project. Spróbuj ponownie.",
+    "settingsTitle": "MS Project (Project for the Web)",
+    "settingsHint": "Połącz środowisko Project for the Web, aby wysyłać do niego projekty i zadania z zakładki Harmonogram dowolnego projektu.",
+    "environmentUrlLabel": "URL środowiska Dataverse",
+    "environmentUrlPlaceholder": "https://org12345.crm.dynamics.com",
+    "connect": "Połącz",
+    "connectFailed": "Nie udało się rozpocząć połączenia. Spróbuj ponownie.",
+    "connectedSummary": "Połączono {date}.",
+    "disconnect": "Rozłącz",
+    "confirmDisconnect": "Rozłączyć MS Project? Nie będzie można synchronizować nowych projektów/zadań do czasu ponownego połączenia."
+  },
+  "autodesk": {
+    "title": "Synchronizacja z Autodesk Construction Cloud",
+    "hint": "Wyślij listę usterek tego projektu do projektu Autodesk Construction Cloud jako Issues.",
+    "accProjectIdLabel": "ID projektu ACC",
+    "accProjectIdPlaceholder": "np. b.xxxxxxxx-xxxx-...",
+    "syncNow": "Synchronizuj z Autodesk",
+    "syncResult": "Zsynchronizowano {synced}, niepowodzeń {failed}.",
+    "syncFailed": "Nie udało się zsynchronizować z Autodesk. Spróbuj ponownie.",
+    "settingsTitle": "Autodesk Construction Cloud",
+    "settingsHint": "Połącz konto Autodesk, aby wysyłać do niego listę usterek jako Issues z zakładki Jakość dowolnego projektu.",
+    "connect": "Połącz Autodesk",
+    "connectFailed": "Nie udało się rozpocząć połączenia. Spróbuj ponownie.",
+    "connectedSummary": "Połączono {date}.",
+    "disconnect": "Rozłącz",
+    "confirmDisconnect": "Rozłączyć Autodesk? Nie będzie można synchronizować nowych pozycji listy usterek do czasu ponownego połączenia."
   },
   "expenses": {
     "title": "Wydatki",
@@ -2630,7 +2674,11 @@
     "signedThanks": "Dziękujemy — ta umowa została podpisana.",
     "notAwaitingSignature": "Ta umowa nie oczekuje na podpis.",
     "linkNotFound": "Ten link jest nieprawidłowy lub wygasł.",
-    "confirmDeleteTemplate": "Usunąć ten szablon umowy?"
+    "confirmDeleteTemplate": "Usunąć ten szablon umowy?",
+    "sendViaDocusign": "Wyślij przez DocuSign",
+    "refreshDocusignStatus": "Odśwież status podpisu",
+    "docusignStatusLabel": "Status DocuSign: {status}",
+    "downloadDocusignSignedPdf": "Pobierz PDF podpisany w DocuSign"
   },
   "costCodes": {
     "title": "Kody kosztowe",

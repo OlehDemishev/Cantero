@@ -7,6 +7,7 @@ import { PdfService } from "../common/pdf/pdf.service";
 import { StorageService } from "../common/storage/storage.service";
 import { AuditService } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
+import { DocusignService } from "./docusign.service";
 
 const COMPANY_A = "company-a";
 const ACTOR = { userId: "user-1", name: "Jane" };
@@ -15,7 +16,7 @@ describe("ContractsService", () => {
   let service: ContractsService;
   let prisma: {
     project: { findFirst: jest.Mock };
-    client: { findFirst: jest.Mock };
+    client: { findFirst: jest.Mock; findUnique: jest.Mock };
     subcontractor: { findFirst: jest.Mock };
     contractTemplate: { findFirst: jest.Mock };
     contract: { findFirst: jest.Mock; create: jest.Mock; update: jest.Mock };
@@ -23,11 +24,18 @@ describe("ContractsService", () => {
   };
   let storage: { save: jest.Mock; read: jest.Mock };
   let mail: { send: jest.Mock };
+  let docusign: {
+    getConnectionOrThrow: jest.Mock;
+    createEnvelope: jest.Mock;
+    getEnvelopeStatus: jest.Mock;
+    downloadCombinedDocument: jest.Mock;
+  };
+  let pdfService: { renderTextDocument: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
       project: { findFirst: jest.fn() },
-      client: { findFirst: jest.fn() },
+      client: { findFirst: jest.fn(), findUnique: jest.fn() },
       subcontractor: { findFirst: jest.fn() },
       contractTemplate: { findFirst: jest.fn() },
       contract: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
@@ -35,16 +43,24 @@ describe("ContractsService", () => {
     };
     storage = { save: jest.fn(), read: jest.fn() };
     mail = { send: jest.fn() };
+    docusign = {
+      getConnectionOrThrow: jest.fn(),
+      createEnvelope: jest.fn(),
+      getEnvelopeStatus: jest.fn(),
+      downloadCombinedDocument: jest.fn(),
+    };
+    pdfService = { renderTextDocument: jest.fn().mockResolvedValue(Buffer.from("pdf")) };
 
     const module = await Test.createTestingModule({
       providers: [
         ContractsService,
         { provide: PrismaService, useValue: prisma },
-        { provide: PdfService, useValue: { renderTextDocument: jest.fn() } },
+        { provide: PdfService, useValue: pdfService },
         { provide: StorageService, useValue: storage },
         { provide: AuditService, useValue: { record: jest.fn() } },
         { provide: ConfigService, useValue: { get: jest.fn().mockReturnValue(undefined) } },
         { provide: MailService, useValue: mail },
+        { provide: DocusignService, useValue: docusign },
       ],
     }).compile();
 
@@ -115,6 +131,129 @@ describe("ContractsService", () => {
       await service.send(COMPANY_A, ACTOR, "c1");
 
       expect(mail.send).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("sendViaDocusign()", () => {
+    it("rejects sending a contract that isn't a draft", async () => {
+      prisma.contract.findFirst.mockResolvedValue({ id: "c1", companyId: COMPANY_A, status: "sent", title: "MSA" });
+
+      await expect(service.sendViaDocusign(COMPANY_A, ACTOR, "c1")).rejects.toThrow(BadRequestException);
+      expect(docusign.getConnectionOrThrow).not.toHaveBeenCalled();
+    });
+
+    it("rejects when the contract's client has no email on file", async () => {
+      prisma.contract.findFirst.mockResolvedValue({ id: "c1", companyId: COMPANY_A, status: "draft", title: "MSA", clientId: "client-1" });
+      prisma.client.findUnique.mockResolvedValue({ id: "client-1", name: "Acme", email: null });
+
+      await expect(service.sendViaDocusign(COMPANY_A, ACTOR, "c1")).rejects.toThrow(BadRequestException);
+      expect(docusign.getConnectionOrThrow).not.toHaveBeenCalled();
+    });
+
+    it("generates the PDF with the anchor marker, creates the envelope, and stores its id", async () => {
+      prisma.contract.findFirst.mockResolvedValue({
+        id: "c1",
+        companyId: COMPANY_A,
+        status: "draft",
+        title: "MSA",
+        body: "Terms...",
+        clientId: "client-1",
+      });
+      prisma.client.findUnique.mockResolvedValue({ id: "client-1", name: "Acme Corp", email: "client@example.com" });
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ name: "Cantero Demo", logoStorageKey: null, brandColor: null });
+      docusign.getConnectionOrThrow.mockResolvedValue({ accountId: "acct-1" });
+      docusign.createEnvelope.mockResolvedValue({ envelopeId: "env-1" });
+      prisma.contract.update.mockResolvedValue({ id: "c1", status: "sent", docusignEnvelopeId: "env-1" });
+
+      await service.sendViaDocusign(COMPANY_A, ACTOR, "c1");
+
+      expect(pdfService.renderTextDocument).toHaveBeenCalledWith(expect.objectContaining({ body: expect.stringContaining("/sig1/") }));
+      expect(docusign.createEnvelope).toHaveBeenCalledWith(
+        { accountId: "acct-1" },
+        expect.objectContaining({ signerEmail: "client@example.com", signerName: "Acme Corp" }),
+      );
+      expect(prisma.contract.update).toHaveBeenCalledWith({
+        where: { id: "c1" },
+        data: { status: "sent", sentAt: expect.any(Date), docusignEnvelopeId: "env-1", docusignStatus: "sent" },
+      });
+    });
+  });
+
+  describe("refreshDocusignStatus()", () => {
+    it("rejects a contract that was never sent via DocuSign", async () => {
+      prisma.contract.findFirst.mockResolvedValue({ id: "c1", companyId: COMPANY_A, docusignEnvelopeId: null });
+
+      await expect(service.refreshDocusignStatus(COMPANY_A, "c1")).rejects.toThrow(BadRequestException);
+    });
+
+    it("just updates docusignStatus when the envelope isn't completed yet", async () => {
+      prisma.contract.findFirst.mockResolvedValue({ id: "c1", companyId: COMPANY_A, status: "sent", docusignEnvelopeId: "env-1" });
+      docusign.getConnectionOrThrow.mockResolvedValue({ accountId: "acct-1" });
+      docusign.getEnvelopeStatus.mockResolvedValue({ status: "delivered", completedAt: null });
+
+      await service.refreshDocusignStatus(COMPANY_A, "c1");
+
+      expect(docusign.downloadCombinedDocument).not.toHaveBeenCalled();
+      expect(prisma.contract.update).toHaveBeenCalledWith({ where: { id: "c1" }, data: { docusignStatus: "delivered" } });
+    });
+
+    it("downloads the signed document and marks the contract signed once DocuSign reports completed", async () => {
+      prisma.contract.findFirst.mockResolvedValue({
+        id: "c1",
+        companyId: COMPANY_A,
+        status: "sent",
+        title: "MSA",
+        docusignEnvelopeId: "env-1",
+        clientId: "client-1",
+      });
+      prisma.client.findUnique.mockResolvedValue({ id: "client-1", name: "Acme Corp", email: "client@example.com" });
+      docusign.getConnectionOrThrow.mockResolvedValue({ accountId: "acct-1" });
+      docusign.getEnvelopeStatus.mockResolvedValue({ status: "completed", completedAt: "2026-09-16T10:00:00Z" });
+      docusign.downloadCombinedDocument.mockResolvedValue(Buffer.from("signed-pdf"));
+      storage.save.mockResolvedValue({ storageKey: "key-1", size: 10 });
+      prisma.contract.update.mockResolvedValue({ id: "c1", status: "signed" });
+
+      await service.refreshDocusignStatus(COMPANY_A, "c1");
+
+      expect(storage.save).toHaveBeenCalledWith(COMPANY_A, "docusign-signed.pdf", Buffer.from("signed-pdf"));
+      expect(prisma.contract.update).toHaveBeenCalledWith({
+        where: { id: "c1" },
+        data: {
+          status: "signed",
+          docusignStatus: "completed",
+          docusignSignedPdfKey: "key-1",
+          signerName: "Acme Corp",
+          signedAt: new Date("2026-09-16T10:00:00Z"),
+        },
+      });
+    });
+
+    it("doesn't re-download or re-record once the contract is already signed", async () => {
+      prisma.contract.findFirst.mockResolvedValue({ id: "c1", companyId: COMPANY_A, status: "signed", docusignEnvelopeId: "env-1" });
+      docusign.getConnectionOrThrow.mockResolvedValue({ accountId: "acct-1" });
+      docusign.getEnvelopeStatus.mockResolvedValue({ status: "completed", completedAt: "2026-09-16T10:00:00Z" });
+
+      await service.refreshDocusignStatus(COMPANY_A, "c1");
+
+      expect(docusign.downloadCombinedDocument).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("getDocusignSignedPdf()", () => {
+    it("throws when no DocuSign-signed document is on file", async () => {
+      prisma.contract.findFirst.mockResolvedValue({ id: "c1", companyId: COMPANY_A, docusignSignedPdfKey: null });
+
+      await expect(service.getDocusignSignedPdf(COMPANY_A, "c1")).rejects.toThrow(NotFoundException);
+    });
+
+    it("reads the stored document", async () => {
+      prisma.contract.findFirst.mockResolvedValue({ id: "c1", companyId: COMPANY_A, docusignSignedPdfKey: "key-1" });
+      storage.read.mockResolvedValue(Buffer.from("signed-pdf"));
+
+      const result = await service.getDocusignSignedPdf(COMPANY_A, "c1");
+
+      expect(storage.read).toHaveBeenCalledWith("key-1");
+      expect(result).toEqual(Buffer.from("signed-pdf"));
     });
   });
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import type { AccountingProviderType } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch } from "@/lib/api-client";
 
@@ -13,7 +14,7 @@ interface Company {
 }
 interface AccountingStatus {
   connected: boolean;
-  provider?: "quickbooks" | "xero";
+  provider?: AccountingProviderType;
 }
 interface SsoConfig {
   ssoDomain: string | null;

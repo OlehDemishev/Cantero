@@ -253,18 +253,45 @@ describe("RecurringInvoicesService", () => {
       prisma.invoice.count.mockResolvedValue(0);
       prisma.invoice.create.mockResolvedValue({ id: "inv-1", number: "INV-0001", clientId: "client-1", total: 1000, currency: "EUR" });
       (invoices.send as jest.Mock).mockResolvedValue(undefined);
-      (clientPaymentMethods.chargeOffSession as jest.Mock).mockResolvedValue({ succeeded: true });
+      (clientPaymentMethods.chargeOffSession as jest.Mock).mockResolvedValue({ status: "succeeded", paymentIntentId: "pi_1", method: "card" });
 
       await service.runDuePass();
 
       expect(invoices.send).toHaveBeenCalledWith(COMPANY_A, expect.objectContaining({ name: "Autopay" }), "inv-1");
-      expect(clientPaymentMethods.chargeOffSession).toHaveBeenCalledWith(COMPANY_A, "client-1", 1000, "EUR");
+      expect(clientPaymentMethods.chargeOffSession).toHaveBeenCalledWith(COMPANY_A, "client-1", "inv-1", 1000, "EUR");
       expect(invoices.recordPayment).toHaveBeenCalledWith(
         COMPANY_A,
         expect.objectContaining({ name: "Autopay" }),
         "inv-1",
         { amount: 1000, method: "card" },
+        "pi_1",
       );
+    });
+
+    it("leaves the invoice sent (not paid) when a SEPA/ACH autopay charge is still processing", async () => {
+      prisma.recurringInvoice.findMany.mockResolvedValue([
+        {
+          id: "rec-1",
+          companyId: COMPANY_A,
+          projectId: "project-1",
+          clientId: "client-1",
+          frequency: "monthly",
+          taxPercent: 0,
+          autopayEnabled: true,
+          nextRunDate: new Date("2026-06-01T00:00:00.000Z"),
+          endDate: null,
+          lines: [{ description: "Retainer", quantity: 1, unitPrice: 1000 }],
+        },
+      ]);
+      prisma.invoice.count.mockResolvedValue(0);
+      prisma.invoice.create.mockResolvedValue({ id: "inv-1", number: "INV-0001", clientId: "client-1", total: 1000, currency: "EUR" });
+      (invoices.send as jest.Mock).mockResolvedValue(undefined);
+      (clientPaymentMethods.chargeOffSession as jest.Mock).mockResolvedValue({ status: "processing", paymentIntentId: "pi_1", method: "bank_transfer" });
+
+      await service.runDuePass();
+
+      expect(invoices.send).toHaveBeenCalled();
+      expect(invoices.recordPayment).not.toHaveBeenCalled();
     });
 
     it("leaves the invoice sent (not paid) when the autopay charge is declined", async () => {
@@ -285,7 +312,7 @@ describe("RecurringInvoicesService", () => {
       prisma.invoice.count.mockResolvedValue(0);
       prisma.invoice.create.mockResolvedValue({ id: "inv-1", number: "INV-0001", clientId: "client-1", total: 1000, currency: "EUR" });
       (invoices.send as jest.Mock).mockResolvedValue(undefined);
-      (clientPaymentMethods.chargeOffSession as jest.Mock).mockResolvedValue({ succeeded: false, error: "card_declined" });
+      (clientPaymentMethods.chargeOffSession as jest.Mock).mockResolvedValue({ status: "failed", error: "card_declined" });
 
       await service.runDuePass();
 

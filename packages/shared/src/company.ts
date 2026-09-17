@@ -3,7 +3,7 @@ import { z } from "zod";
 export const UNIT_SYSTEMS = ["metric", "imperial"] as const;
 export type UnitSystem = (typeof UNIT_SYSTEMS)[number];
 
-export const SUPPORTED_CURRENCIES = ["EUR", "USD", "GBP", "CHF", "CAD"] as const;
+export const SUPPORTED_CURRENCIES = ["EUR", "USD", "GBP", "CHF", "CAD", "PLN", "UAH"] as const;
 export type Currency = (typeof SUPPORTED_CURRENCIES)[number];
 
 export const SUPPORTED_LOCALES = ["en", "de", "es", "pl", "uk"] as const;
@@ -12,6 +12,18 @@ export type Locale = (typeof SUPPORTED_LOCALES)[number];
 /** Fallback when no locale has been chosen yet, and the language the message catalogs in
  * packages/shared/messages are authored in. */
 export const DEFAULT_LOCALE: Locale = "en";
+
+/** Signup-form convenience only — a starting guess for which currency goes with a chosen locale,
+ * not an enforced pairing. A company can still freely pick any supported currency regardless of
+ * its locale (e.g. an English-language company invoicing in EUR), so nothing outside the signup
+ * form should read this as a constraint. */
+export const DEFAULT_CURRENCY_BY_LOCALE: Record<Locale, Currency> = {
+  en: "USD",
+  de: "EUR",
+  es: "EUR",
+  pl: "PLN",
+  uk: "UAH",
+};
 
 export const companySettingsSchema = z.object({
   unitSystem: z.enum(UNIT_SYSTEMS),

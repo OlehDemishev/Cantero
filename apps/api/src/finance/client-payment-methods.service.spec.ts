@@ -49,7 +49,13 @@ describe("ClientPaymentMethodsService", () => {
 
   describe("createSetupSession()", () => {
     it("reuses an existing Stripe customer instead of creating a duplicate", async () => {
-      prisma.client.findFirstOrThrow.mockResolvedValue({ id: "client-1", stripeCustomerId: "cus_existing", email: null, name: "Acme" });
+      prisma.client.findFirstOrThrow.mockResolvedValue({
+        id: "client-1",
+        stripeCustomerId: "cus_existing",
+        email: null,
+        name: "Acme",
+        company: { currency: "GBP" },
+      });
       stripe.checkout.sessions.create.mockResolvedValue({ url: "https://checkout.stripe.com/setup" });
 
       await service.createSetupSession(COMPANY_A, "client-1");
@@ -61,7 +67,13 @@ describe("ClientPaymentMethodsService", () => {
     });
 
     it("creates a Stripe customer on first use and persists it", async () => {
-      prisma.client.findFirstOrThrow.mockResolvedValue({ id: "client-1", stripeCustomerId: null, email: "c@x.com", name: "Acme" });
+      prisma.client.findFirstOrThrow.mockResolvedValue({
+        id: "client-1",
+        stripeCustomerId: null,
+        email: "c@x.com",
+        name: "Acme",
+        company: { currency: "GBP" },
+      });
       stripe.customers.create.mockResolvedValue({ id: "cus_new" });
       stripe.checkout.sessions.create.mockResolvedValue({ url: "https://checkout.stripe.com/setup" });
 
@@ -69,10 +81,43 @@ describe("ClientPaymentMethodsService", () => {
 
       expect(prisma.client.update).toHaveBeenCalledWith({ where: { id: "client-1" }, data: { stripeCustomerId: "cus_new" } });
     });
+
+    it("offers only card for a currency with no bank-debit equivalent", async () => {
+      prisma.client.findFirstOrThrow.mockResolvedValue({ id: "client-1", stripeCustomerId: "cus_1", email: null, name: "Acme", company: { currency: "GBP" } });
+      stripe.checkout.sessions.create.mockResolvedValue({ url: "https://checkout.stripe.com/setup" });
+
+      await service.createSetupSession(COMPANY_A, "client-1");
+
+      expect(stripe.checkout.sessions.create).toHaveBeenCalledWith(
+        expect.objectContaining({ payment_method_types: ["card"], currency: "gbp" }),
+      );
+    });
+
+    it("offers card + SEPA Direct Debit for a EUR company", async () => {
+      prisma.client.findFirstOrThrow.mockResolvedValue({ id: "client-1", stripeCustomerId: "cus_1", email: null, name: "Acme", company: { currency: "EUR" } });
+      stripe.checkout.sessions.create.mockResolvedValue({ url: "https://checkout.stripe.com/setup" });
+
+      await service.createSetupSession(COMPANY_A, "client-1");
+
+      expect(stripe.checkout.sessions.create).toHaveBeenCalledWith(
+        expect.objectContaining({ payment_method_types: ["card", "sepa_debit"], currency: "eur" }),
+      );
+    });
+
+    it("offers card + US bank account (ACH) for a USD company", async () => {
+      prisma.client.findFirstOrThrow.mockResolvedValue({ id: "client-1", stripeCustomerId: "cus_1", email: null, name: "Acme", company: { currency: "USD" } });
+      stripe.checkout.sessions.create.mockResolvedValue({ url: "https://checkout.stripe.com/setup" });
+
+      await service.createSetupSession(COMPANY_A, "client-1");
+
+      expect(stripe.checkout.sessions.create).toHaveBeenCalledWith(
+        expect.objectContaining({ payment_method_types: ["card", "us_bank_account"], currency: "usd" }),
+      );
+    });
   });
 
   describe("removePaymentMethod()", () => {
-    it("detaches the card, clears the client's saved fields, and turns off autopay wherever it relied on this card", async () => {
+    it("detaches the payment method, clears the client's saved fields, and turns off autopay wherever it relied on it", async () => {
       prisma.client.findFirstOrThrow.mockResolvedValue({ id: "client-1", stripePaymentMethodId: "pm_123" });
 
       await service.removePaymentMethod(COMPANY_A, "client-1");
@@ -80,7 +125,7 @@ describe("ClientPaymentMethodsService", () => {
       expect(stripe.paymentMethods.detach).toHaveBeenCalledWith("pm_123");
       expect(prisma.client.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: { stripePaymentMethodId: null, stripePaymentMethodBrand: null, stripePaymentMethodLast4: null },
+          data: { stripePaymentMethodId: null, stripePaymentMethodType: null, stripePaymentMethodBrand: null, stripePaymentMethodLast4: null },
         }),
       );
       expect(prisma.recurringInvoice.updateMany).toHaveBeenCalledWith(
@@ -99,42 +144,59 @@ describe("ClientPaymentMethodsService", () => {
   });
 
   describe("chargeOffSession()", () => {
-    it("returns succeeded: false without calling Stripe when the client has no saved card", async () => {
+    it("returns status: failed without calling Stripe when the client has no saved payment method", async () => {
       prisma.client.findFirstOrThrow.mockResolvedValue({ id: "client-1", stripeCustomerId: null, stripePaymentMethodId: null });
 
-      const result = await service.chargeOffSession(COMPANY_A, "client-1", 100, "EUR");
+      const result = await service.chargeOffSession(COMPANY_A, "client-1", "inv-1", 100, "EUR");
 
-      expect(result).toEqual({ succeeded: false, error: "No saved payment method" });
+      expect(result).toEqual({ status: "failed", error: "No saved payment method" });
       expect(stripe.paymentIntents.create).not.toHaveBeenCalled();
     });
 
     it("charges the saved card off-session and reports success", async () => {
-      prisma.client.findFirstOrThrow.mockResolvedValue({ id: "client-1", stripeCustomerId: "cus_1", stripePaymentMethodId: "pm_1" });
+      prisma.client.findFirstOrThrow.mockResolvedValue({ id: "client-1", stripeCustomerId: "cus_1", stripePaymentMethodId: "pm_1", stripePaymentMethodType: "card" });
       stripe.paymentIntents.create.mockResolvedValue({ id: "pi_1", status: "succeeded" });
 
-      const result = await service.chargeOffSession(COMPANY_A, "client-1", 99.5, "EUR");
+      const result = await service.chargeOffSession(COMPANY_A, "client-1", "inv-1", 99.5, "EUR");
 
       expect(stripe.paymentIntents.create).toHaveBeenCalledWith(
-        expect.objectContaining({ amount: 9950, currency: "eur", customer: "cus_1", payment_method: "pm_1", off_session: true, confirm: true }),
+        expect.objectContaining({
+          amount: 9950,
+          currency: "eur",
+          customer: "cus_1",
+          payment_method: "pm_1",
+          off_session: true,
+          confirm: true,
+          metadata: { companyId: COMPANY_A, clientId: "client-1", invoiceId: "inv-1", method: "card", kind: "autopay" },
+        }),
       );
-      expect(result).toEqual({ succeeded: true });
+      expect(result).toEqual({ status: "succeeded", paymentIntentId: "pi_1", method: "card" });
     });
 
-    it("catches a Stripe decline and returns succeeded: false instead of throwing", async () => {
-      prisma.client.findFirstOrThrow.mockResolvedValue({ id: "client-1", stripeCustomerId: "cus_1", stripePaymentMethodId: "pm_1" });
+    it("reports processing (not succeeded) for a SEPA/ACH bank debit still clearing", async () => {
+      prisma.client.findFirstOrThrow.mockResolvedValue({ id: "client-1", stripeCustomerId: "cus_1", stripePaymentMethodId: "pm_1", stripePaymentMethodType: "sepa_debit" });
+      stripe.paymentIntents.create.mockResolvedValue({ id: "pi_1", status: "processing" });
+
+      const result = await service.chargeOffSession(COMPANY_A, "client-1", "inv-1", 100, "EUR");
+
+      expect(result).toEqual({ status: "processing", paymentIntentId: "pi_1", method: "bank_transfer" });
+    });
+
+    it("catches a Stripe decline and returns status: failed instead of throwing", async () => {
+      prisma.client.findFirstOrThrow.mockResolvedValue({ id: "client-1", stripeCustomerId: "cus_1", stripePaymentMethodId: "pm_1", stripePaymentMethodType: "card" });
       stripe.paymentIntents.create.mockRejectedValue(new Error("Your card was declined."));
 
-      const result = await service.chargeOffSession(COMPANY_A, "client-1", 100, "EUR");
+      const result = await service.chargeOffSession(COMPANY_A, "client-1", "inv-1", 100, "EUR");
 
-      expect(result.succeeded).toBe(false);
+      expect(result.status).toBe("failed");
       expect(result.error).toContain("declined");
     });
   });
 
   describe("handleSetupSessionCompleted()", () => {
-    it("saves the payment method id, brand, and last4 from the completed setup session", async () => {
+    it("saves the payment method id, type, brand, and last4 for a card", async () => {
       stripe.setupIntents.retrieve.mockResolvedValue({ payment_method: "pm_new" });
-      stripe.paymentMethods.retrieve.mockResolvedValue({ card: { brand: "visa", last4: "4242" } });
+      stripe.paymentMethods.retrieve.mockResolvedValue({ type: "card", card: { brand: "visa", last4: "4242" } });
 
       await service.handleSetupSessionCompleted({
         metadata: { clientId: "client-1" },
@@ -143,7 +205,37 @@ describe("ClientPaymentMethodsService", () => {
 
       expect(prisma.client.update).toHaveBeenCalledWith({
         where: { id: "client-1" },
-        data: { stripePaymentMethodId: "pm_new", stripePaymentMethodBrand: "visa", stripePaymentMethodLast4: "4242" },
+        data: { stripePaymentMethodId: "pm_new", stripePaymentMethodType: "card", stripePaymentMethodBrand: "visa", stripePaymentMethodLast4: "4242" },
+      });
+    });
+
+    it("saves a SEPA Direct Debit payment method with no brand", async () => {
+      stripe.setupIntents.retrieve.mockResolvedValue({ payment_method: "pm_sepa" });
+      stripe.paymentMethods.retrieve.mockResolvedValue({ type: "sepa_debit", sepa_debit: { last4: "3000" } });
+
+      await service.handleSetupSessionCompleted({
+        metadata: { clientId: "client-1" },
+        setup_intent: "seti_1",
+      } as never);
+
+      expect(prisma.client.update).toHaveBeenCalledWith({
+        where: { id: "client-1" },
+        data: { stripePaymentMethodId: "pm_sepa", stripePaymentMethodType: "sepa_debit", stripePaymentMethodBrand: null, stripePaymentMethodLast4: "3000" },
+      });
+    });
+
+    it("saves a US bank account (ACH) payment method with no brand", async () => {
+      stripe.setupIntents.retrieve.mockResolvedValue({ payment_method: "pm_ach" });
+      stripe.paymentMethods.retrieve.mockResolvedValue({ type: "us_bank_account", us_bank_account: { last4: "6789" } });
+
+      await service.handleSetupSessionCompleted({
+        metadata: { clientId: "client-1" },
+        setup_intent: "seti_1",
+      } as never);
+
+      expect(prisma.client.update).toHaveBeenCalledWith({
+        where: { id: "client-1" },
+        data: { stripePaymentMethodId: "pm_ach", stripePaymentMethodType: "us_bank_account", stripePaymentMethodBrand: null, stripePaymentMethodLast4: "6789" },
       });
     });
 

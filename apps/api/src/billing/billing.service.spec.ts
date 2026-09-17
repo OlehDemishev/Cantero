@@ -179,4 +179,54 @@ describe("BillingService", () => {
       expect(invoices.recordPayment).not.toHaveBeenCalled();
     });
   });
+
+  describe("handleWebhookEvent — autopay bank debit settlement", () => {
+    it("records the payment once a SEPA/ACH autopay PaymentIntent settles, using its id for dedup", async () => {
+      await service.handleWebhookEvent({
+        type: "payment_intent.succeeded",
+        data: {
+          object: {
+            id: "pi_test_abc",
+            amount: 15000,
+            metadata: { kind: "autopay", companyId: COMPANY_A, invoiceId: "inv-1", method: "bank_transfer" },
+          },
+        },
+      } as never);
+
+      expect(invoices.recordPayment).toHaveBeenCalledWith(
+        COMPANY_A,
+        { userId: "stripe", name: "Online payment" },
+        "inv-1",
+        { amount: 150, method: "bank_transfer" },
+        "pi_test_abc",
+      );
+    });
+
+    it("does not record a payment when the autopay bank debit fails", async () => {
+      await service.handleWebhookEvent({
+        type: "payment_intent.payment_failed",
+        data: {
+          object: {
+            id: "pi_test_fail",
+            amount: 15000,
+            metadata: { kind: "autopay", companyId: COMPANY_A, invoiceId: "inv-1", method: "bank_transfer" },
+            last_payment_error: { message: "insufficient funds" },
+          },
+        },
+      } as never);
+
+      expect(invoices.recordPayment).not.toHaveBeenCalled();
+    });
+
+    it("ignores a payment_intent event that isn't from autopay", async () => {
+      await service.handleWebhookEvent({
+        type: "payment_intent.succeeded",
+        data: {
+          object: { id: "pi_unrelated", amount: 5000, metadata: {} },
+        },
+      } as never);
+
+      expect(invoices.recordPayment).not.toHaveBeenCalled();
+    });
+  });
 });

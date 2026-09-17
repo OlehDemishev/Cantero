@@ -21,6 +21,15 @@ function warrantyExpiresAt(handoverDate: Date | null, warrantyMonths: number | n
   return addMonthsUtc(handoverDate, warrantyMonths);
 }
 
+/** `type` is null on rows saved before Client.stripePaymentMethodType existed — those are always
+ * a card (stripePaymentMethodBrand was only ever populated for cards), so falling through to
+ * `brand` covers both that legacy case and today's normal "card" rows in one branch. */
+function paymentMethodLabel(type: string | null, brand: string | null): string | null {
+  if (type === "sepa_debit") return "SEPA Direct Debit";
+  if (type === "us_bank_account") return "Bank account";
+  return brand;
+}
+
 @Injectable()
 export class PortalService {
   constructor(
@@ -43,8 +52,8 @@ export class PortalService {
       email: record.email,
       companyName: record.company.name,
       currency: record.company.currency,
-      savedCardBrand: record.stripePaymentMethodBrand,
-      savedCardLast4: record.stripePaymentMethodLast4,
+      savedPaymentMethodLabel: paymentMethodLabel(record.stripePaymentMethodType, record.stripePaymentMethodBrand),
+      savedPaymentMethodLast4: record.stripePaymentMethodLast4,
     };
   }
 

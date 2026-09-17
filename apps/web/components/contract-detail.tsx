@@ -19,6 +19,9 @@ interface Contract {
   clientAccessToken: string | null;
   client: { id: string; name: string } | null;
   subcontractor: { id: string; name: string } | null;
+  docusignEnvelopeId: string | null;
+  docusignStatus: string | null;
+  docusignSignedPdfKey: string | null;
 }
 
 const STATUS_STYLES: Record<Contract["status"], string> = {
@@ -38,6 +41,7 @@ export function ContractDetail({ contractId }: { contractId: string }) {
   const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [docusignError, setDocusignError] = useState<string | null>(null);
 
   function load() {
     apiFetch<Contract>(`/contracts/${contractId}`).then((c) => {
@@ -71,6 +75,37 @@ export function ContractDetail({ contractId }: { contractId: string }) {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function sendViaDocusign() {
+    setBusy(true);
+    setDocusignError(null);
+    try {
+      await apiFetch(`/contracts/${contractId}/send-docusign`, { method: "POST" });
+      load();
+    } catch (err) {
+      setDocusignError(err instanceof Error ? err.message : "Failed to send via DocuSign");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function refreshDocusignStatus() {
+    setBusy(true);
+    setDocusignError(null);
+    try {
+      await apiFetch(`/contracts/${contractId}/docusign-refresh`, { method: "POST" });
+      load();
+    } catch (err) {
+      setDocusignError(err instanceof Error ? err.message : "Failed to refresh status");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function downloadDocusignSignedPdf() {
+    const blob = await apiFetch<Blob>(`/contracts/${contractId}/docusign-signed-pdf`);
+    downloadBlob(blob, `${contract?.title ?? "contract"}-docusign-signed.pdf`);
   }
 
   async function voidContract() {
@@ -161,6 +196,20 @@ export function ContractDetail({ contractId }: { contractId: string }) {
                 {t("send")}
               </button>
             )}
+            {contract.status === "draft" && contract.client && (
+              <button onClick={sendViaDocusign} disabled={busy} className="btn-secondary">
+                {t("sendViaDocusign")}
+              </button>
+            )}
+            {contract.docusignEnvelopeId && contract.status === "sent" && (
+              <button onClick={refreshDocusignStatus} disabled={busy} className="btn-secondary">
+                {t("refreshDocusignStatus")}
+              </button>
+            )}
+            {contract.docusignStatus && (
+              <p className="text-xs text-gray-500 dark:text-gray-400">{t("docusignStatusLabel", { status: contract.docusignStatus })}</p>
+            )}
+            {docusignError && <p className="text-xs text-error-600">{docusignError}</p>}
             {contract.status !== "void" && (
               <button onClick={voidContract} disabled={busy} className="btn-secondary">
                 {t("voidContract")}
@@ -169,6 +218,11 @@ export function ContractDetail({ contractId }: { contractId: string }) {
             <button onClick={downloadPdf} className="btn-secondary">
               {t("downloadPdf")}
             </button>
+            {contract.docusignSignedPdfKey && (
+              <button onClick={downloadDocusignSignedPdf} className="btn-secondary">
+                {t("downloadDocusignSignedPdf")}
+              </button>
+            )}
             {contract.clientAccessToken && (
               <button onClick={copyLink} className="btn-secondary">
                 {linkCopied ? tc("linkCopied") : tc("copyLink")}

@@ -959,9 +959,9 @@
     "payThisInstallment": "Pay this installment",
     "paymentMethod": "Payment method",
     "cardOnFile": "{brand} ending in {last4}",
-    "removeCard": "Remove card",
-    "noCardOnFile": "No card on file.",
-    "saveCard": "Save a card",
+    "removePaymentMethod": "Remove payment method",
+    "noPaymentMethodOnFile": "No payment method on file.",
+    "savePaymentMethod": "Save a payment method",
     "myTickets": "My tickets",
     "noTickets": "No support tickets yet.",
     "ticketSubjectPlaceholder": "Subject",
@@ -983,7 +983,7 @@
     "changeRequestTitlePlaceholder": "What would you like changed?",
     "submitChangeRequest": "Submit request",
     "changeRequestSubmitted": "Request submitted — we'll review it and follow up.",
-    "confirmRemoveCard": "Remove this saved card? You'll need to add a new one to keep autopay working."
+    "confirmRemovePaymentMethod": "Remove this saved payment method? You'll need to add a new one to keep autopay working."
   },
   "equipment": {
     "title": "Equipment",
@@ -2322,7 +2322,7 @@
   },
   "accountingSync": {
     "title": "Accounting sync",
-    "hint": "Connect QuickBooks or Xero to automatically push invoices into your books.",
+    "hint": "Connect QuickBooks, Xero, or lexoffice to automatically push invoices into your books.",
     "connect": "Connect {provider}",
     "connectFailed": "Couldn't start the connection. Try again.",
     "connectedSummary": "Connected to {provider} on {date}.",
@@ -2335,7 +2335,51 @@
     "noHistory": "No sync attempts yet.",
     "syncBillsNow": "Sync bills now",
     "integrityCheckBills": "{count, plural, =0 {All bills are synced} one {# bill not yet synced} other {# bills not yet synced}}",
-    "confirmDisconnect": "Disconnect your accounting integration? Invoices and bills will stop syncing until you reconnect."
+    "confirmDisconnect": "Disconnect your accounting integration? Invoices and bills will stop syncing until you reconnect.",
+    "lexofficeApiKeyLabel": "lexoffice Public API Key",
+    "lexofficeApiKeyPlaceholder": "Paste your API key",
+    "lexofficeHint": "Generate one in lexoffice under Settings → Public API. Bill sync isn't supported for lexoffice yet — only invoices."
+  },
+  "docusign": {
+    "title": "DocuSign e-signature",
+    "hint": "Connect DocuSign to send contracts for signature with a certificate of completion, as an alternative to this app's own signing link.",
+    "connect": "Connect DocuSign",
+    "connectFailed": "Couldn't start the connection. Try again.",
+    "connectedSummary": "Connected to DocuSign on {date}.",
+    "disconnect": "Disconnect",
+    "confirmDisconnect": "Disconnect DocuSign? You won't be able to send new contracts through it until you reconnect — contracts already sent keep working."
+  },
+  "msProject": {
+    "title": "MS Project sync",
+    "hint": "Push this project and its tasks to a connected \"Project for the Web\" plan.",
+    "syncNow": "Sync to MS Project",
+    "syncResult": "Synced {synced}, failed {failed}.",
+    "syncFailed": "Couldn't sync to MS Project. Try again.",
+    "settingsTitle": "MS Project (Project for the Web)",
+    "settingsHint": "Connect a Project for the Web environment to push projects and tasks into it from any project's Schedule tab.",
+    "environmentUrlLabel": "Dataverse environment URL",
+    "environmentUrlPlaceholder": "https://org12345.crm.dynamics.com",
+    "connect": "Connect",
+    "connectFailed": "Couldn't start the connection. Try again.",
+    "connectedSummary": "Connected on {date}.",
+    "disconnect": "Disconnect",
+    "confirmDisconnect": "Disconnect MS Project? You won't be able to sync new projects/tasks until you reconnect."
+  },
+  "autodesk": {
+    "title": "Autodesk Construction Cloud sync",
+    "hint": "Push this project's punch list items to an Autodesk Construction Cloud project as Issues.",
+    "accProjectIdLabel": "ACC project ID",
+    "accProjectIdPlaceholder": "e.g. b.xxxxxxxx-xxxx-...",
+    "syncNow": "Sync to Autodesk",
+    "syncResult": "Synced {synced}, failed {failed}.",
+    "syncFailed": "Couldn't sync to Autodesk. Try again.",
+    "settingsTitle": "Autodesk Construction Cloud",
+    "settingsHint": "Connect an Autodesk account to push punch list items into it as Issues from any project's Quality tab.",
+    "connect": "Connect Autodesk",
+    "connectFailed": "Couldn't start the connection. Try again.",
+    "connectedSummary": "Connected on {date}.",
+    "disconnect": "Disconnect",
+    "confirmDisconnect": "Disconnect Autodesk? You won't be able to sync new punch list items until you reconnect."
   },
   "expenses": {
     "title": "Expenses",
@@ -2630,7 +2674,11 @@
     "signedThanks": "Thank you — this contract has been signed.",
     "notAwaitingSignature": "This contract is not awaiting a signature.",
     "linkNotFound": "This link is invalid or has expired.",
-    "confirmDeleteTemplate": "Delete this contract template?"
+    "confirmDeleteTemplate": "Delete this contract template?",
+    "sendViaDocusign": "Send via DocuSign",
+    "refreshDocusignStatus": "Refresh signing status",
+    "docusignStatusLabel": "DocuSign status: {status}",
+    "downloadDocusignSignedPdf": "Download DocuSign signed PDF"
   },
   "costCodes": {
     "title": "Cost codes",

@@ -36,6 +36,7 @@ interface IntegrityCheck {
 const PROVIDER_LABELS: Record<AccountingProviderType, string> = {
   quickbooks: "QuickBooks",
   xero: "Xero",
+  lexoffice: "lexoffice",
 };
 
 export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
@@ -44,6 +45,8 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
   const [status, setStatus] = useState<Status | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lexofficeApiKey, setLexofficeApiKey] = useState("");
+  const [lexofficeBusy, setLexofficeBusy] = useState(false);
   const [syncResult, setSyncResult] = useState<SyncSummary | null>(null);
   const [integrity, setIntegrity] = useState<IntegrityCheck | null>(null);
   const [history, setHistory] = useState<SyncLogEntry[] | null>(null);
@@ -83,6 +86,20 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
       window.location.href = url;
     } catch (err) {
       setError(err instanceof Error ? err.message : t("connectFailed"));
+    }
+  }
+
+  async function connectLexoffice() {
+    setError(null);
+    setLexofficeBusy(true);
+    try {
+      await apiFetch("/company/accounting/connect-lexoffice", { method: "POST", body: JSON.stringify({ apiKey: lexofficeApiKey }) });
+      setLexofficeApiKey("");
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("connectFailed"));
+    } finally {
+      setLexofficeBusy(false);
     }
   }
 
@@ -146,9 +163,11 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
               <button onClick={sync} disabled={busy} className="btn-primary">
                 {t("syncNow")}
               </button>
-              <button onClick={syncBills} disabled={busy} className="btn-secondary">
-                {t("syncBillsNow")}
-              </button>
+              {status.provider !== "lexoffice" && (
+                <button onClick={syncBills} disabled={busy} className="btn-secondary">
+                  {t("syncBillsNow")}
+                </button>
+              )}
               <button onClick={disconnect} disabled={busy} className="btn-secondary text-error-600">
                 {t("disconnect")}
               </button>
@@ -204,13 +223,35 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
         </div>
       ) : (
         canManage && (
-          <div className="flex flex-wrap gap-2">
-            <button onClick={() => connect("quickbooks")} className="btn-secondary">
-              {t("connect", { provider: "QuickBooks" })}
-            </button>
-            <button onClick={() => connect("xero")} className="btn-secondary">
-              {t("connect", { provider: "Xero" })}
-            </button>
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => connect("quickbooks")} className="btn-secondary">
+                {t("connect", { provider: "QuickBooks" })}
+              </button>
+              <button onClick={() => connect("xero")} className="btn-secondary">
+                {t("connect", { provider: "Xero" })}
+              </button>
+            </div>
+            <div className="flex flex-wrap items-end gap-2">
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="font-medium text-gray-700 dark:text-gray-200">{t("lexofficeApiKeyLabel")}</span>
+                <input
+                  type="password"
+                  className="input"
+                  placeholder={t("lexofficeApiKeyPlaceholder")}
+                  value={lexofficeApiKey}
+                  onChange={(e) => setLexofficeApiKey(e.target.value)}
+                />
+              </label>
+              <button
+                onClick={connectLexoffice}
+                disabled={lexofficeBusy || lexofficeApiKey.trim().length === 0}
+                className="btn-secondary"
+              >
+                {t("connect", { provider: "lexoffice" })}
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{t("lexofficeHint")}</p>
           </div>
         )
       )}

@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
-import { CSI_MASTERFORMAT_DIVISIONS } from "@cantero/shared";
+import { CSI_MASTERFORMAT_DIVISIONS, type Currency } from "@cantero/shared";
 import {
   metricMaterials,
   metricRateItems,
@@ -88,7 +88,7 @@ async function main() {
  * live feed. USD_PER expresses each currency's value in USD; every directed pair is derived from
  * that single table so the rates are internally consistent (EUR->USD and USD->EUR truly invert). */
 async function seedExchangeRates() {
-  const USD_PER: Record<string, number> = { EUR: 1.08, USD: 1.0, GBP: 1.25, CHF: 1.15, CAD: 0.74 };
+  const USD_PER: Record<string, number> = { EUR: 1.08, USD: 1.0, GBP: 1.25, CHF: 1.15, CAD: 0.74, PLN: 0.25, UAH: 0.024 };
   const currencies = Object.keys(USD_PER);
 
   const rows: { fromCurrency: string; toCurrency: string; rate: number }[] = [];
@@ -128,7 +128,7 @@ async function seedCompany(args: {
   ownerName: string;
   country: string;
   unitSystem: "metric" | "imperial";
-  currency: "EUR" | "USD" | "GBP" | "CHF" | "CAD";
+  currency: Currency;
   locale: "en" | "de" | "es" | "pl" | "uk";
   planId: string;
   materials: StarterMaterial[];

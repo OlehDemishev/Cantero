@@ -35,6 +35,8 @@ enum Currency {
   GBP
   CHF
   CAD
+  PLN
+  UAH
 }
 
 enum Locale {
@@ -53,7 +55,7 @@ enum DatevChartOfAccounts {
   skr04
 }
 
-/// Static/seeded conversion rates between the five supported currencies — there's no live forex
+/// Static/seeded conversion rates between the seven supported currencies — there's no live forex
 /// feed wired up (no API key available), so these are refreshed manually via a seed script rather
 /// than a scheduled job. One row per direction (EUR→USD and USD→EUR are stored separately) so a
 /// lookup is always a single indexed read, never an inversion at query time.
@@ -499,6 +501,9 @@ model Company {
   savedViews                      SavedView[]
   customReports                   CustomReport[]
   accountingConnection            AccountingConnection?
+  docusignConnection              DocusignConnection?
+  msProjectConnection             MsProjectConnection?
+  autodeskConnection              AutodeskConnection?
   expenses                        Expense[]
   materialRfqs                    MaterialRfq[]
   customRoles                     CustomRole[]
@@ -2389,6 +2394,13 @@ model Project {
   /// already baked into estimate pricing — null means no contingency fund tracked. Remaining
   /// balance is computed live as this minus the sum of ContingencyDraw.amount, never stored.
   contingencyAmount           Decimal?  @db.Decimal(14, 2)
+  /// Set once this project has been pushed to a connected Project for the Web plan — see
+  /// MsProjectService.syncProject(). Null means not yet synced (or MS Project isn't connected).
+  msProjectExternalId         String?
+  /// The matching Autodesk Construction Cloud project's own id, entered by the company (ACC
+  /// projects are set up in Autodesk's own UI — this app never creates one) — see
+  /// AutodeskService.syncPunchList(). Null means no ACC project mapped yet.
+  autodeskProjectId           String?
 
   company                     Company                      @relation(fields: [companyId], references: [id], onDelete: Cascade)
   client                      Client?                      @relation(fields: [clientId], references: [id], onDelete: SetNull)
@@ -2675,6 +2687,9 @@ model Task {
   /// Marks work exposed to the elements (framing, roofing, concrete pour, etc.) so the
   /// weather-risk notification can flag it when the forecast for its startDate turns bad.
   isOutdoorWork  Boolean    @default(false)
+  /// Set once this task has been pushed to Project for the Web as an msdyn_projecttask row —
+  /// see MsProjectService.syncProject(). Null means not yet synced.
+  msProjectExternalId String?
 
   company             Company                        @relation(fields: [companyId], references: [id], onDelete: Cascade)
   /// Composite FK (not just projectId) so the DB itself rejects a task pointing at a project
@@ -2908,6 +2923,9 @@ model PunchListItem {
   /// Same dollar-estimate-then-confirm-via-CO pattern as Rfi.estimatedCostImpact/changeOrderId.
   estimatedCostImpact     Decimal?            @db.Decimal(14, 2)
   changeOrderId           String?
+  /// Set once this item has been pushed to Autodesk Construction Cloud as an Issue — see
+  /// AutodeskService.syncPunchList(). Null means not yet synced.
+  autodeskIssueId         String?             @unique
 
   company               Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   project               Project                   @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -4324,23 +4342,36 @@ enum ContractStatus {
 /// A free-form legal document (prime contract or subcontractor agreement) — distinct from
 /// Estimate/ChangeOrder, which are structured pricing documents this codebase already renders
 /// from line items. Reuses the same signerName/signatureImageKey/signedIp/clientAccessToken
-/// trio those two already use for e-signature, rather than inventing a new mechanism.
+/// trio those two already use for e-signature, rather than inventing a new mechanism. The
+/// docusign* fields are an alternate path through the same status field (see DocusignService):
+/// sending via DocuSign instead of the native link populates docusignEnvelopeId/docusignStatus
+/// and, once the envelope completes, docusignSignedPdfKey — signatureImageKey/signedIp stay null
+/// in that case, since DocuSign's own signed PDF carries its own certificate of completion
+/// instead of a raster signature capture.
 model Contract {
-  id                String         @id @default(uuid())
-  companyId         String
-  projectId         String
-  clientId          String?
-  subcontractorId   String?
-  title             String
-  body              String
-  status            ContractStatus @default(draft)
-  clientAccessToken String?        @unique
-  sentAt            DateTime?
-  signerName        String?
-  signatureImageKey String?
-  signedIp          String?
-  signedAt          DateTime?
-  createdAt         DateTime       @default(now())
+  id                   String         @id @default(uuid())
+  companyId            String
+  projectId            String
+  clientId             String?
+  subcontractorId      String?
+  title                String
+  body                 String
+  status               ContractStatus @default(draft)
+  clientAccessToken    String?        @unique
+  sentAt               DateTime?
+  signerName           String?
+  signatureImageKey    String?
+  signedIp             String?
+  signedAt             DateTime?
+  docusignEnvelopeId   String?        @unique
+  /// Last DocuSign envelope status seen on refresh (DocuSign's own vocabulary: sent, delivered,
+  /// completed, declined, voided) — richer than ContractStatus, kept for display/debugging only.
+  docusignStatus       String?
+  /// The combined signed document DocuSign returns once the envelope completes (includes
+  /// DocuSign's certificate of completion) — separate from signatureImageKey, which a native-flow
+  /// signature is stored under instead.
+  docusignSignedPdfKey String?
+  createdAt            DateTime       @default(now())
 
   company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
   project       Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -4350,6 +4381,73 @@ model Contract {
   @@index([companyId])
   @@index([projectId])
   @@map("contracts")
+}
+
+/// One connected DocuSign account per company — same "absence of a row means not connected"
+/// shape as AccountingConnection. DocuSign's OAuth2 Authorization Code Grant is structurally
+/// identical to QuickBooks/Xero's (see AccountingSyncService), so this mirrors that pattern
+/// rather than inventing a new one, but lives in its own model/service since DocuSign is a
+/// different capability (e-signature) than accounting sync.
+model DocusignConnection {
+  id             String   @id @default(uuid())
+  companyId      String   @unique
+  accessToken    String
+  refreshToken   String
+  tokenExpiresAt DateTime
+  /// DocuSign account (organization) ID, from GET /oauth/userinfo right after connecting.
+  accountId      String
+  /// Per-account eSignature API base URL from that same /oauth/userinfo call — unlike
+  /// QuickBooks/Xero's single fixed API host, different DocuSign accounts live on different
+  /// regional API clusters (na1/na2/na3/eu/au/...), so this can't be a constant.
+  apiBaseUrl     String
+  connectedAt    DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("docusign_connections")
+}
+
+/// One connected "Project for the Web" environment per company — same OAuth2 shape as
+/// DocuSign/QuickBooks/Xero (see MsProjectService), but for Microsoft's modern cloud Project
+/// product, which stores its data in a Power Platform/Dataverse environment rather than behind
+/// a single universal API host like graph.microsoft.com. There's no directory lookup for "this
+/// tenant's Project environment" this app can call, so the company enters environmentUrl
+/// themselves when connecting (found in Power Platform admin center), the same
+/// company-provides-one-more-piece-of-config shape as lexoffice's API key.
+model MsProjectConnection {
+  id             String   @id @default(uuid())
+  companyId      String   @unique
+  accessToken    String
+  refreshToken   String
+  tokenExpiresAt DateTime
+  /// e.g. "https://org12345.crm4.dynamics.com" — the company's own Dataverse environment URL,
+  /// used both as the OAuth resource/scope and as the API host for every Dataverse Web API call.
+  environmentUrl String
+  connectedAt    DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("ms_project_connections")
+}
+
+/// One connected Autodesk Construction Cloud (APS/Forge) account per company — same OAuth2 shape
+/// as DocuSign/QuickBooks/Xero (see AutodeskService), a real 3-legged Authorization Code Grant
+/// via Autodesk Platform Services. hubId is discovered from GET /project/v1/hubs right after
+/// connecting (the first hub the authorizing user can see) — construction-issue sync then targets
+/// one ACC project within that hub at a time, chosen via Project.autodeskProjectId.
+model AutodeskConnection {
+  id             String   @id @default(uuid())
+  companyId      String   @unique
+  accessToken    String
+  refreshToken   String
+  tokenExpiresAt DateTime
+  /// e.g. "b.xxxxxxxx-xxxx-...": the ACC/BIM 360 hub id, from GET /project/v1/hubs.
+  hubId          String
+  connectedAt    DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("autodesk_connections")
 }
 
 enum SuretyBondType {
@@ -4674,10 +4772,15 @@ model Client {
   /// until then. Kept even after the payment method is removed, so re-adding a card doesn't spawn
   /// duplicate Stripe Customer objects.
   stripeCustomerId         String?
-  /// Saved default card for RecurringInvoice.autopayEnabled — null means no card on file, and
-  /// autopay can't be turned on for this client's recurring invoices until one is saved via the
-  /// portal's "save card" Checkout (mode "setup", never charges anything itself).
+  /// Saved default payment method for RecurringInvoice.autopayEnabled — null means nothing on
+  /// file, and autopay can't be turned on for this client's recurring invoices until one is saved
+  /// via the portal's "save payment method" Checkout (mode "setup", never charges anything
+  /// itself). Card, SEPA Direct Debit, and US bank account (ACH) are all saved the same way —
+  /// which ones Checkout offers is decided by Company.currency (see ClientPaymentMethodsService).
   stripePaymentMethodId    String?
+  /// "card" | "sepa_debit" | "us_bank_account" — null on rows saved before this field existed,
+  /// which are always a card (stripePaymentMethodBrand was only ever populated for cards).
+  stripePaymentMethodType  String?
   stripePaymentMethodBrand String?
   stripePaymentMethodLast4 String?
   /// Free-text acquisition channel (e.g. "referral", "google_ads", "trade_show", "cold_call") —
@@ -7460,6 +7563,7 @@ model CustomReport {
 enum AccountingProvider {
   quickbooks
   xero
+  lexoffice
 }
 
 /// One connected accounting system per company. Absence of a row means "not connected" — no
@@ -7468,11 +7572,18 @@ model AccountingConnection {
   id                String             @id @default(uuid())
   companyId         String             @unique
   provider          AccountingProvider
+  /// QuickBooks/Xero: OAuth2 access token. lexoffice: the account's static Public API Key itself
+  /// (lexoffice has no OAuth flow for third-party apps — see AccountingSyncService.connectLexoffice).
   accessToken       String
+  /// QuickBooks/Xero only. Empty string for lexoffice, which has no refresh token to store —
+  /// ensureFreshToken() never calls the OAuth refresh path for that provider.
   refreshToken      String
+  /// QuickBooks/Xero: real OAuth token expiry. lexoffice: LEXOFFICE_NO_EXPIRY (a far-future
+  /// sentinel), since a Public API Key doesn't expire and this column isn't nullable.
   tokenExpiresAt    DateTime
   /// QuickBooks: realm (company) ID, returned on the OAuth callback. Xero: tenant ID, fetched
   /// from GET /connections right after token exchange since Xero doesn't return it on the callback.
+  /// lexoffice: organizationId, fetched from GET /v1/profile when the API key is first submitted.
   externalAccountId String
   connectedAt       DateTime           @default(now())
 

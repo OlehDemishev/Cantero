@@ -8,6 +8,7 @@ import { StorageService } from "../common/storage/storage.service";
 import { decodePngDataUrl } from "../common/signature";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
+import { DocusignService } from "./docusign.service";
 
 @Injectable()
 export class ContractsService {
@@ -18,6 +19,7 @@ export class ContractsService {
     private readonly audit: AuditService,
     private readonly config: ConfigService,
     private readonly mail: MailService,
+    private readonly docusign: DocusignService,
   ) {}
 
   list(companyId: string, projectId?: string) {
@@ -103,6 +105,92 @@ export class ContractsService {
     }
 
     return updated;
+  }
+
+  /** Alternative to send() — routes the contract through a real DocuSign envelope instead of
+   * this app's own link-and-canvas signature capture, for the stronger audit trail (certificate
+   * of completion, tamper-evident signing record) some clients specifically expect from DocuSign.
+   * Needs a client with an email on file, since DocuSign routes envelopes by email rather than a
+   * bare link. */
+  async sendViaDocusign(companyId: string, actor: AuditActor, id: string) {
+    const contract = await this.findOrThrow(companyId, id);
+    if (contract.status !== "draft") throw new BadRequestException("Only a draft contract can be sent");
+    const client = contract.clientId ? await this.prisma.client.findUnique({ where: { id: contract.clientId } }) : null;
+    if (!client?.email) {
+      throw new BadRequestException("This contract needs a client with an email on file to send via DocuSign");
+    }
+
+    const connection = await this.docusign.getConnectionOrThrow(companyId);
+    const pdfBuffer = await this.generateDocusignPdf(companyId, contract);
+    const { envelopeId } = await this.docusign.createEnvelope(connection, {
+      pdfBase64: pdfBuffer.toString("base64"),
+      documentName: `${contract.title}.pdf`,
+      emailSubject: `${contract.title} — please sign`,
+      signerEmail: client.email,
+      signerName: client.name,
+    });
+
+    const updated = await this.prisma.contract.update({
+      where: { id },
+      data: { status: "sent", sentAt: new Date(), docusignEnvelopeId: envelopeId, docusignStatus: "sent" },
+    });
+    this.audit.record(companyId, actor, "contract.sent", "Contract", id, `Sent contract "${contract.title}" via DocuSign`);
+    return updated;
+  }
+
+  /** Polls DocuSign for this envelope's current status — there's no webhook wired up (see
+   * DocusignService's doc comment), so this is a manual "check now" rather than a push update.
+   * Once DocuSign reports "completed", downloads the signed document (with DocuSign's own
+   * certificate of completion) and transitions the contract to signed, same end state the native
+   * signature flow reaches via sign(). */
+  async refreshDocusignStatus(companyId: string, id: string) {
+    const contract = await this.findOrThrow(companyId, id);
+    if (!contract.docusignEnvelopeId) throw new BadRequestException("This contract wasn't sent via DocuSign");
+
+    const connection = await this.docusign.getConnectionOrThrow(companyId);
+    const { status, completedAt } = await this.docusign.getEnvelopeStatus(connection, contract.docusignEnvelopeId);
+
+    if (status === "completed" && contract.status !== "signed") {
+      const signedPdf = await this.docusign.downloadCombinedDocument(connection, contract.docusignEnvelopeId);
+      const stored = await this.storage.save(companyId, "docusign-signed.pdf", signedPdf);
+      const client = contract.clientId ? await this.prisma.client.findUnique({ where: { id: contract.clientId } }) : null;
+
+      const updated = await this.prisma.contract.update({
+        where: { id },
+        data: {
+          status: "signed",
+          docusignStatus: status,
+          docusignSignedPdfKey: stored.storageKey,
+          signerName: client?.name ?? null,
+          signedAt: completedAt ? new Date(completedAt) : new Date(),
+        },
+      });
+      this.audit.record(companyId, { name: "DocuSign" }, "contract.signed", "Contract", id, `Signed contract "${contract.title}" via DocuSign`);
+      return updated;
+    }
+
+    return this.prisma.contract.update({ where: { id }, data: { docusignStatus: status } });
+  }
+
+  async getDocusignSignedPdf(companyId: string, id: string): Promise<Buffer> {
+    const contract = await this.findOrThrow(companyId, id);
+    if (!contract.docusignSignedPdfKey) throw new NotFoundException("No DocuSign-signed document on file");
+    return this.storage.read(contract.docusignSignedPdfKey);
+  }
+
+  /** Same rendering as generatePdf(), but with a literal `/sig1/` anchor appended after the body
+   * for DocusignService.createEnvelope() to place the Sign Here tab against — never shown on the
+   * customer-facing downloadable PDF generatePdf() itself produces. */
+  private async generateDocusignPdf(companyId: string, contract: { title: string; body: string }): Promise<Buffer> {
+    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
+    const logoBuffer = company.logoStorageKey ? await this.storage.read(company.logoStorageKey) : undefined;
+    return this.pdfService.renderTextDocument({
+      title: contract.title,
+      subtitle: company.name,
+      meta: [],
+      body: `${contract.body}\n\nSignature: /sig1/`,
+      branding: { logoBuffer, accentColor: company.brandColor ?? undefined },
+    });
   }
 
   async void(companyId: string, actor: AuditActor, id: string) {

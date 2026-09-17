@@ -3,12 +3,23 @@ import { ConfigService } from "@nestjs/config";
 import Stripe from "stripe";
 import { PrismaService } from "../common/prisma/prisma.service";
 
+/** Which Checkout payment method types to offer, based on the company's own currency — SEPA
+ * Direct Debit only ever settles in EUR and US bank account (ACH) only in USD, so offering either
+ * for a mismatched company currency would save a payment method that can never actually charge
+ * successfully. Card has no such restriction and is always offered. */
+function paymentMethodTypesFor(currency: string): Stripe.Checkout.SessionCreateParams.PaymentMethodType[] {
+  if (currency === "EUR") return ["card", "sepa_debit"];
+  if (currency === "USD") return ["card", "us_bank_account"];
+  return ["card"];
+}
+
 /**
- * Saves a client's card via a Stripe Checkout session in "setup" mode (never charges anything
- * itself) so RecurringInvoice.autopayEnabled has a card to charge off-session later. Kept
- * separate from BillingService (which handles the company's own subscription billing) because
- * RecurringInvoicesService needs it and importing BillingModule from FinanceModule would be
- * circular — BillingModule already imports FinanceModule for InvoicesService.
+ * Saves a client's payment method (card, and — depending on the company's currency — SEPA Direct
+ * Debit or US bank account/ACH) via a Stripe Checkout session in "setup" mode (never charges
+ * anything itself) so RecurringInvoice.autopayEnabled has something to charge off-session later.
+ * Kept separate from BillingService (which handles the company's own subscription billing)
+ * because RecurringInvoicesService needs it and importing BillingModule from FinanceModule would
+ * be circular — BillingModule already imports FinanceModule for InvoicesService.
  */
 @Injectable()
 export class ClientPaymentMethodsService {
@@ -23,7 +34,10 @@ export class ClientPaymentMethodsService {
   }
 
   async createSetupSession(companyId: string, clientId: string): Promise<{ url: string }> {
-    const client = await this.prisma.client.findFirstOrThrow({ where: { id: clientId, companyId } });
+    const client = await this.prisma.client.findFirstOrThrow({
+      where: { id: clientId, companyId },
+      include: { company: { select: { currency: true } } },
+    });
 
     let stripeCustomerId = client.stripeCustomerId;
     if (!stripeCustomerId) {
@@ -40,7 +54,10 @@ export class ClientPaymentMethodsService {
     const session = await this.stripe.checkout.sessions.create({
       mode: "setup",
       customer: stripeCustomerId,
-      payment_method_types: ["card"],
+      payment_method_types: paymentMethodTypesFor(client.company.currency),
+      // Required by Stripe whenever payment_method_types includes a currency-specific method
+      // (sepa_debit/us_bank_account); harmless to pass for the card-only case too.
+      currency: client.company.currency.toLowerCase(),
       success_url: `${webOrigin}/portal?cardSaved=1`,
       cancel_url: `${webOrigin}/portal`,
       metadata: { companyId, clientId, kind: "save_payment_method" },
@@ -60,9 +77,9 @@ export class ClientPaymentMethodsService {
     }
     await this.prisma.client.update({
       where: { id: clientId },
-      data: { stripePaymentMethodId: null, stripePaymentMethodBrand: null, stripePaymentMethodLast4: null },
+      data: { stripePaymentMethodId: null, stripePaymentMethodType: null, stripePaymentMethodBrand: null, stripePaymentMethodLast4: null },
     });
-    // A removed card can no longer fund autopay — turn it off wherever it was relying on this client's card.
+    // A removed payment method can no longer fund autopay — turn it off wherever it relied on it.
     await this.prisma.recurringInvoice.updateMany({
       where: { companyId, clientId, autopayEnabled: true },
       data: { autopayEnabled: false },
@@ -83,39 +100,53 @@ export class ClientPaymentMethodsService {
       where: { id: clientId },
       data: {
         stripePaymentMethodId: paymentMethodId,
+        stripePaymentMethodType: paymentMethod.type,
         stripePaymentMethodBrand: paymentMethod.card?.brand ?? null,
-        stripePaymentMethodLast4: paymentMethod.card?.last4 ?? null,
+        stripePaymentMethodLast4: paymentMethod.card?.last4 ?? paymentMethod.sepa_debit?.last4 ?? paymentMethod.us_bank_account?.last4 ?? null,
       },
     });
   }
 
   /** Never throws — a decline is a normal outcome the caller should log and fall back to the
-   * ordinary reminder flow for, not a failure that should break a due-pass loop over many clients. */
+   * ordinary reminder flow for, not a failure that should break a due-pass loop over many clients.
+   *
+   * Unlike a card, SEPA Direct Debit and US bank account (ACH) charges don't settle synchronously:
+   * Stripe confirms the PaymentIntent immediately but its status comes back "processing" and takes
+   * several business days to resolve to "succeeded" or fail. Recording the invoice as paid the
+   * moment "processing" comes back would credit money that hasn't actually arrived yet — so the
+   * caller must only record a payment on "succeeded", and leave "processing" alone until
+   * BillingService's payment_intent.succeeded/payment_intent.payment_failed webhook (using the
+   * invoiceId in this PaymentIntent's own metadata) resolves it later. */
   async chargeOffSession(
     companyId: string,
     clientId: string,
+    invoiceId: string,
     amount: number,
     currency: string,
-  ): Promise<{ succeeded: boolean; error?: string }> {
+  ): Promise<{ status: "succeeded" | "processing" | "failed"; error?: string; paymentIntentId?: string; method?: "card" | "bank_transfer" }> {
     const client = await this.prisma.client.findFirstOrThrow({ where: { id: clientId, companyId } });
     if (!client.stripeCustomerId || !client.stripePaymentMethodId) {
-      return { succeeded: false, error: "No saved payment method" };
+      return { status: "failed", error: "No saved payment method" };
     }
+    const method: "card" | "bank_transfer" = client.stripePaymentMethodType === "card" || !client.stripePaymentMethodType ? "card" : "bank_transfer";
 
     try {
-      await this.stripe.paymentIntents.create({
+      const paymentIntent = await this.stripe.paymentIntents.create({
         amount: Math.round(amount * 100),
         currency: currency.toLowerCase(),
         customer: client.stripeCustomerId,
         payment_method: client.stripePaymentMethodId,
         off_session: true,
         confirm: true,
+        metadata: { companyId, clientId, invoiceId, method, kind: "autopay" },
       });
-      return { succeeded: true };
+      if (paymentIntent.status === "succeeded") return { status: "succeeded", paymentIntentId: paymentIntent.id, method };
+      if (paymentIntent.status === "processing") return { status: "processing", paymentIntentId: paymentIntent.id, method };
+      return { status: "failed", error: `Unexpected PaymentIntent status: ${paymentIntent.status}` };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       this.logger.warn(`Autopay charge failed for client ${clientId}: ${message}`);
-      return { succeeded: false, error: message };
+      return { status: "failed", error: message };
     }
   }
 }

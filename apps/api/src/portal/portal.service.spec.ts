@@ -84,6 +84,73 @@ describe("PortalService.listProjects — progress", () => {
   });
 });
 
+describe("PortalService.me() — payment method label", () => {
+  let service: PortalService;
+  let prisma: { client: { findUniqueOrThrow: jest.Mock } };
+
+  beforeEach(async () => {
+    prisma = { client: { findUniqueOrThrow: jest.fn() } };
+
+    const module = await Test.createTestingModule({
+      providers: [
+        PortalService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: EstimatesService, useValue: {} },
+        { provide: ChangeOrdersService, useValue: {} },
+        { provide: InvoicesService, useValue: {} },
+        { provide: OutboxService, useValue: {} },
+        { provide: BillingService, useValue: {} },
+        { provide: ClientPaymentMethodsService, useValue: {} },
+      ],
+    }).compile();
+
+    service = module.get(PortalService);
+  });
+
+  function mockClient(overrides: Partial<{ stripePaymentMethodType: string | null; stripePaymentMethodBrand: string | null; stripePaymentMethodLast4: string | null }>) {
+    prisma.client.findUniqueOrThrow.mockResolvedValue({
+      name: "Acme",
+      email: "acme@example.com",
+      company: { name: "Cantero Demo", currency: "EUR" },
+      stripePaymentMethodType: null,
+      stripePaymentMethodBrand: null,
+      stripePaymentMethodLast4: null,
+      ...overrides,
+    });
+  }
+
+  it("labels a card by its brand", async () => {
+    mockClient({ stripePaymentMethodType: "card", stripePaymentMethodBrand: "visa", stripePaymentMethodLast4: "4242" });
+    const result = await service.me(CLIENT_1);
+    expect(result.savedPaymentMethodLabel).toBe("visa");
+  });
+
+  it("labels a legacy card row (saved before stripePaymentMethodType existed) by its brand too", async () => {
+    mockClient({ stripePaymentMethodType: null, stripePaymentMethodBrand: "mastercard", stripePaymentMethodLast4: "1111" });
+    const result = await service.me(CLIENT_1);
+    expect(result.savedPaymentMethodLabel).toBe("mastercard");
+  });
+
+  it("labels a SEPA Direct Debit payment method generically, not by brand", async () => {
+    mockClient({ stripePaymentMethodType: "sepa_debit", stripePaymentMethodBrand: null, stripePaymentMethodLast4: "3000" });
+    const result = await service.me(CLIENT_1);
+    expect(result.savedPaymentMethodLabel).toBe("SEPA Direct Debit");
+  });
+
+  it("labels a US bank account (ACH) payment method generically, not by brand", async () => {
+    mockClient({ stripePaymentMethodType: "us_bank_account", stripePaymentMethodBrand: null, stripePaymentMethodLast4: "6789" });
+    const result = await service.me(CLIENT_1);
+    expect(result.savedPaymentMethodLabel).toBe("Bank account");
+  });
+
+  it("returns null when nothing is saved", async () => {
+    mockClient({});
+    const result = await service.me(CLIENT_1);
+    expect(result.savedPaymentMethodLabel).toBeNull();
+    expect(result.savedPaymentMethodLast4).toBeNull();
+  });
+});
+
 describe("PortalService — change requests", () => {
   let service: PortalService;
   let prisma: {

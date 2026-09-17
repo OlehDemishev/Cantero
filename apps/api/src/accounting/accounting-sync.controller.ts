@@ -1,11 +1,18 @@
-import { BadRequestException, Controller, Delete, Get, Param, Post, Query, Res } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Query, Res } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { IsString, MinLength } from "class-validator";
 import type { Response } from "express";
 import { ACCOUNTING_PROVIDERS, type AccountingProviderType, type AuthUser } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
 import { Public } from "../common/decorators/public.decorator";
 import { AccountingSyncService } from "./accounting-sync.service";
+
+class ConnectLexofficeDto {
+  @IsString()
+  @MinLength(10)
+  apiKey!: string;
+}
 
 function assertProvider(provider: string): AccountingProviderType {
   if (!ACCOUNTING_PROVIDERS.includes(provider as AccountingProviderType)) {
@@ -31,6 +38,12 @@ export class AccountingSyncController {
   @Get("company/accounting/authorize-url")
   authorizeUrl(@CurrentUser() user: AuthUser, @Query("provider") provider: string) {
     return { url: this.service.getAuthorizeUrl(user.companyId, assertProvider(provider)) };
+  }
+
+  @Roles("owner", "admin", "accountant")
+  @Post("company/accounting/connect-lexoffice")
+  connectLexoffice(@CurrentUser() user: AuthUser, @Body() body: ConnectLexofficeDto) {
+    return this.service.connectLexoffice(user.companyId, body.apiKey);
   }
 
   @Roles("owner", "admin", "accountant")

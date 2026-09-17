@@ -10,8 +10,8 @@ interface Me {
   name: string;
   companyName: string;
   currency: string;
-  savedCardBrand: string | null;
-  savedCardLast4: string | null;
+  savedPaymentMethodLabel: string | null;
+  savedPaymentMethodLast4: string | null;
 }
 interface EstimateSummary {
   id: string;
@@ -116,7 +116,7 @@ export default function PortalDashboardPage() {
   }
 
   async function removeCard() {
-    if (!window.confirm(t("confirmRemoveCard"))) return;
+    if (!window.confirm(t("confirmRemovePaymentMethod"))) return;
     setPaymentMethodBusy(true);
     try {
       await portalApiFetch("/portal/payment-method", { method: "DELETE" });
@@ -429,20 +429,20 @@ export default function PortalDashboardPage() {
 
         <section className="card mt-6">
           <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("paymentMethod")}</h2>
-          {me.savedCardLast4 ? (
+          {me.savedPaymentMethodLast4 ? (
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-700 dark:text-gray-200">
-                {t("cardOnFile", { brand: me.savedCardBrand ?? "", last4: me.savedCardLast4 })}
+                {t("cardOnFile", { brand: me.savedPaymentMethodLabel ?? "", last4: me.savedPaymentMethodLast4 })}
               </span>
               <button onClick={removeCard} disabled={paymentMethodBusy} className="btn-secondary px-2 py-1 text-xs">
-                {t("removeCard")}
+                {t("removePaymentMethod")}
               </button>
             </div>
           ) : (
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-500 dark:text-gray-400">{t("noCardOnFile")}</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">{t("noPaymentMethodOnFile")}</span>
               <button onClick={saveCard} disabled={paymentMethodBusy} className="btn-secondary px-2 py-1 text-xs">
-                {t("saveCard")}
+                {t("savePaymentMethod")}
               </button>
             </div>
           )}

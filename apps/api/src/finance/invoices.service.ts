@@ -368,10 +368,14 @@ export class InvoicesService {
 
   /** Records a payment and re-derives invoice status from the running balance. A foreignPayment
    * settles in a currency other than the invoice's own — see fx-settlement.ts. `stripeCheckoutSessionId`
-   * is set only by BillingService's webhook handler (never from user-submitted input — it isn't
-   * part of RecordPaymentInput) and makes this idempotent against Stripe redelivering the same
-   * `checkout.session.completed` event: Stripe explicitly does not guarantee exactly-once
-   * delivery, and without this a redelivered event would credit the same payment twice. */
+   * is set only by BillingService's webhook handlers and RecurringInvoicesService's autopay (never
+   * from user-submitted input — it isn't part of RecordPaymentInput): it holds whichever Stripe
+   * object id uniquely identifies the underlying charge — a Checkout session id for a one-off
+   * online payment, or a PaymentIntent id for an autopay charge (immediate for a card, or from the
+   * async payment_intent.succeeded webhook for a settled SEPA/ACH bank debit) — and makes this
+   * idempotent against Stripe redelivering the same event or firing both a synchronous confirm and
+   * a later webhook for the one charge: Stripe explicitly does not guarantee exactly-once
+   * delivery, and without this a redelivered/duplicate event would credit the same payment twice. */
   async recordPayment(companyId: string, actor: AuditActor, id: string, input: RecordPaymentInput, stripeCheckoutSessionId?: string) {
     const invoice = await this.findOrThrow(companyId, id);
     if (invoice.status === "draft") {

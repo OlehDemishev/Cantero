@@ -65,6 +65,8 @@ import { SubcontractorClaimsPanel } from "@/components/subcontractor-claims-pane
 import { ClientChangeRequestsPanel } from "@/components/client-change-requests-panel";
 import { SafetyObservationsPanel } from "@/components/safety-observations-panel";
 import { ProjectHealthBadge } from "@/components/project-health-badge";
+import { MsProjectSyncPanel } from "@/components/ms-project-sync-panel";
+import { AutodeskSyncPanel } from "@/components/autodesk-sync-panel";
 import { SUPPORTED_CURRENCIES } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
@@ -77,6 +79,7 @@ interface Project {
   currency: string | null;
   budgetAlertThresholdPercent: number | null;
   contingencyAmount: string | null;
+  autodeskProjectId: string | null;
 }
 interface Estimate {
   id: string;
@@ -405,6 +408,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
           <LookAheadPanel projectId={projectId} />
           <ProgressTrackingPanel projectId={projectId} />
           <CommissioningPanel projectId={projectId} />
+          <MsProjectSyncPanel projectId={projectId} />
         </>
       )}
 
@@ -445,6 +449,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
           <SubmittalsPanel projectId={projectId} />
           <TransmittalsPanel projectId={projectId} />
           <WarrantyPanel projectId={projectId} />
+          {project && <AutodeskSyncPanel projectId={projectId} initialAutodeskProjectId={project.autodeskProjectId} />}
         </>
       )}
 

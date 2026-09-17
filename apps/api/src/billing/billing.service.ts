@@ -214,9 +214,51 @@ export class BillingService {
         });
         break;
       }
+      // Only autopay's own off-session PaymentIntents carry kind: "autopay" (set in
+      // ClientPaymentMethodsService.chargeOffSession) — a one-off online payment goes through
+      // Checkout and is already recorded by checkout.session.completed above, so without this
+      // guard a card autopay charge (which usually confirms synchronously) would be recorded
+      // twice: once immediately by RecurringInvoicesService, once again here when Stripe fires
+      // this same event for the PaymentIntent shortly after. recordPayment's dedup on the shared
+      // PaymentIntent id makes that harmless either way, but the guard avoids the redundant work.
+      case "payment_intent.succeeded":
+      case "payment_intent.payment_failed": {
+        const intent = event.data.object as Stripe.PaymentIntent;
+        if (intent.metadata?.kind === "autopay") {
+          await this.handleAutopayPaymentIntent(intent, event.type === "payment_intent.succeeded");
+        }
+        break;
+      }
       default:
         this.logger.debug(`Unhandled Stripe event type: ${event.type}`);
     }
+  }
+
+  /** Resolves a SEPA/ACH autopay charge once it actually settles — see the "processing" branch of
+   * RecurringInvoicesService.attemptAutopay for why this can't just be recorded synchronously. A
+   * card autopay charge lands here too (Stripe fires this event for every PaymentIntent, not just
+   * bank debits) but was already recorded synchronously with the same PaymentIntent id, so
+   * recordPayment's dedup makes the second call here a harmless no-op. */
+  private async handleAutopayPaymentIntent(intent: Stripe.PaymentIntent, succeeded: boolean): Promise<void> {
+    const { companyId, invoiceId, method } = intent.metadata ?? {};
+    if (!companyId || !invoiceId) {
+      this.logger.warn(`Autopay ${intent.id} webhook missing companyId/invoiceId metadata, skipping`);
+      return;
+    }
+    if (!succeeded) {
+      this.logger.warn(
+        `Autopay bank debit ${intent.id} failed for invoice ${invoiceId}: ${intent.last_payment_error?.message ?? "unknown reason"} — left as sent for normal reminders`,
+      );
+      return;
+    }
+    const amount = intent.amount / 100;
+    await this.invoices.recordPayment(
+      companyId,
+      STRIPE_PAYMENT_ACTOR,
+      invoiceId,
+      { amount, method: method === "bank_transfer" ? "bank_transfer" : "card" },
+      intent.id,
+    );
   }
 
   private async recordInvoicePayment(session: Stripe.Checkout.Session): Promise<void> {

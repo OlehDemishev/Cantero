@@ -43,6 +43,23 @@ export class ContractsController {
     return this.service.send(user.companyId, { userId: user.userId, name: user.name }, id);
   }
 
+  @Post(":id/send-docusign")
+  sendViaDocusign(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.sendViaDocusign(user.companyId, { userId: user.userId, name: user.name }, id);
+  }
+
+  @Post(":id/docusign-refresh")
+  refreshDocusignStatus(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.refreshDocusignStatus(user.companyId, id);
+  }
+
+  @Get(":id/docusign-signed-pdf")
+  @Header("Content-Type", "application/pdf")
+  async getDocusignSignedPdf(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    const buffer = await this.service.getDocusignSignedPdf(user.companyId, id);
+    return new StreamableFile(buffer, { disposition: `attachment; filename="contract-signed-docusign.pdf"` });
+  }
+
   @Post(":id/void")
   void_(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.void(user.companyId, { userId: user.userId, name: user.name }, id);

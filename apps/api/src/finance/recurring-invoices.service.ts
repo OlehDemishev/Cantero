@@ -290,16 +290,21 @@ export class RecurringInvoicesService implements OnModuleInit {
     return invoice;
   }
 
-  /** Sends the freshly-generated invoice, then tries to charge the client's saved card. A
-   * decline just leaves the invoice "sent" for InvoiceRemindersService to chase normally — same
-   * outcome as a manually-sent invoice the client hasn't paid yet, not a failure worth surfacing
-   * to whoever's watching the due-pass logs. */
+  /** Sends the freshly-generated invoice, then tries to charge the client's saved payment
+   * method. A decline just leaves the invoice "sent" for InvoiceRemindersService to chase
+   * normally — same outcome as a manually-sent invoice the client hasn't paid yet, not a failure
+   * worth surfacing to whoever's watching the due-pass logs. A SEPA/ACH bank debit that comes back
+   * "processing" is left alone the same way: it isn't a decline, but it isn't money in hand yet
+   * either — BillingService's payment_intent.succeeded webhook records it once it actually
+   * settles, days later. */
   private async attemptAutopay(companyId: string, invoiceId: string, number: string, clientId: string, amount: number, currency: string) {
     await this.invoices.send(companyId, AUTOPAY_ACTOR, invoiceId);
-    const result = await this.clientPaymentMethods.chargeOffSession(companyId, clientId, amount, currency);
-    if (result.succeeded) {
-      await this.invoices.recordPayment(companyId, AUTOPAY_ACTOR, invoiceId, { amount, method: "card" });
+    const result = await this.clientPaymentMethods.chargeOffSession(companyId, clientId, invoiceId, amount, currency);
+    if (result.status === "succeeded") {
+      await this.invoices.recordPayment(companyId, AUTOPAY_ACTOR, invoiceId, { amount, method: result.method ?? "card" }, result.paymentIntentId);
       this.logger.log(`Autopay succeeded for invoice ${number}`);
+    } else if (result.status === "processing") {
+      this.logger.log(`Autopay for invoice ${number} is processing (bank debit) — will record once Stripe confirms settlement`);
     } else {
       this.logger.warn(`Autopay failed for invoice ${number}: ${result.error} — left as sent for normal reminders`);
     }

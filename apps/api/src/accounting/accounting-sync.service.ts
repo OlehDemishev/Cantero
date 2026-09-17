@@ -14,6 +14,8 @@ const STATE_TTL = "10m";
 /// company no real QBO user ever sees.
 const QUICKBOOKS_SANDBOX_API_BASE_URL = "https://sandbox-quickbooks.api.intuit.com";
 
+type OAuthProviderType = Exclude<AccountingProviderType, "lexoffice">;
+
 interface ProviderConfig {
   authorizeUrl: string;
   tokenUrl: string;
@@ -22,7 +24,10 @@ interface ProviderConfig {
   clientSecretKey: string;
 }
 
-const PROVIDERS: Record<AccountingProviderType, ProviderConfig> = {
+/// OAuth2 config for QuickBooks/Xero only — lexoffice has no third-party OAuth app model at all,
+/// just a per-account Public API Key the company generates themselves and pastes in (see
+/// connectLexoffice()), so it has nothing to put here.
+const PROVIDERS: Record<OAuthProviderType, ProviderConfig> = {
   quickbooks: {
     authorizeUrl: "https://appcenter.intuit.com/connect/oauth2",
     tokenUrl: "https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer",
@@ -39,6 +44,13 @@ const PROVIDERS: Record<AccountingProviderType, ProviderConfig> = {
   },
 };
 
+const LEXOFFICE_API_BASE_URL = "https://api.lexoffice.io/v1";
+/// lexoffice's Public API Key doesn't expire and isn't refreshed via OAuth — this sentinel just
+/// keeps AccountingConnection.tokenExpiresAt (a non-nullable column shared with QuickBooks/Xero's
+/// real expiry) self-explanatory to anyone reading the row directly. ensureFreshToken() never
+/// evaluates this for a lexoffice connection; it short-circuits before the expiry check runs.
+const LEXOFFICE_NO_EXPIRY = new Date("9999-12-31T00:00:00.000Z");
+
 interface TokenResponse {
   access_token: string;
   refresh_token: string;
@@ -52,11 +64,23 @@ export interface SyncSummary {
 }
 
 /**
- * Live OAuth2 sync with QuickBooks Online / Xero: connect via authorization-code flow, push
- * unsynced invoices (creating the customer first if needed), track the external ID for
- * idempotency. Each provider needs its own app registered with Intuit/Xero (CLIENT_ID/SECRET
- * env vars) — with neither configured, getAuthorizeUrl fails fast with a clear error instead
- * of building a redirect that would 404 at the provider.
+ * Live sync with QuickBooks Online / Xero / lexoffice: push unsynced invoices (creating the
+ * customer first if needed), track the external ID for idempotency. QuickBooks/Xero connect via
+ * OAuth2 authorization-code flow and each needs its own app registered with Intuit/Xero
+ * (CLIENT_ID/SECRET env vars) — with neither configured, getAuthorizeUrl fails fast with a clear
+ * error instead of building a redirect that would 404 at the provider. lexoffice has no
+ * third-party OAuth app model at all: a company generates their own Public API Key in lexoffice's
+ * own Settings and pastes it in via connectLexoffice() — there's no CLIENT_ID/SECRET to configure
+ * on this server for it, and no authorize/callback redirect.
+ *
+ * lexoffice support here is built from its public API docs, not verified against a real account —
+ * the same "hand-built, honest subset" spirit as e-invoice.ts/gaeb.ts/zugferd.ts/datev.ts, but
+ * with the lowest confidence of any of them, since I can't test a live sync. AR-side sync
+ * (syncInvoices → contacts + invoices) is implemented; AP-side (syncBills) deliberately isn't —
+ * lexoffice's Vouchers API models incoming receipts/documents for bookkeeping, not a
+ * create-a-payable-with-line-items concept comparable to a QuickBooks Bill or Xero ACCPAY invoice,
+ * and guessing that shape without a real account to verify against risked corrupting someone's
+ * books. **Do one supervised test sync against a real lexoffice account before relying on this.**
  */
 @Injectable()
 export class AccountingSyncService {
@@ -77,7 +101,47 @@ export class AccountingSyncService {
     };
   }
 
+  /** lexoffice's equivalent of getAuthorizeUrl()/handleCallback() combined into one step, since
+   * there's no redirect dance: validates the pasted key by calling GET /v1/profile (which also
+   * doubles as the "does this key actually work" check) and stores it as the connection right
+   * away. */
+  async connectLexoffice(companyId: string, apiKey: string): Promise<{ ok: true }> {
+    const res = await fetch(`${LEXOFFICE_API_BASE_URL}/profile`, {
+      headers: { Authorization: `Bearer ${apiKey}`, Accept: "application/json" },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+    if (!res.ok) {
+      throw new BadRequestException(
+        res.status === 401 ? "That lexoffice API key was rejected — check it and try again" : `lexoffice rejected the connection (${res.status})`,
+      );
+    }
+    const profile = (await res.json()) as { organizationId: string };
+
+    await this.prisma.accountingConnection.upsert({
+      where: { companyId },
+      create: {
+        companyId,
+        provider: "lexoffice",
+        accessToken: apiKey,
+        refreshToken: "",
+        tokenExpiresAt: LEXOFFICE_NO_EXPIRY,
+        externalAccountId: profile.organizationId,
+      },
+      update: {
+        provider: "lexoffice",
+        accessToken: apiKey,
+        refreshToken: "",
+        tokenExpiresAt: LEXOFFICE_NO_EXPIRY,
+        externalAccountId: profile.organizationId,
+      },
+    });
+    return { ok: true };
+  }
+
   getAuthorizeUrl(companyId: string, provider: AccountingProviderType): string {
+    if (provider === "lexoffice") {
+      throw new BadRequestException("lexoffice connects with a Public API Key, not OAuth — use the lexoffice connect form instead");
+    }
     const cfg = PROVIDERS[provider];
     const clientId = this.config.get<string>(cfg.clientIdKey);
     if (!clientId) {
@@ -107,6 +171,12 @@ export class AccountingSyncService {
     state: string,
     realmId: string | undefined,
   ): Promise<{ companyId: string }> {
+    // lexoffice never reaches here in normal use — getAuthorizeUrl() refuses to build a signed
+    // state for it, so a request would need a forged/stale state to arrive at all. Guarded
+    // anyway for the same fail-fast reason as getAuthorizeUrl, and so `provider` narrows to
+    // OAuthProviderType below.
+    if (provider === "lexoffice") throw new BadRequestException("lexoffice doesn't use this callback");
+
     let decoded: { companyId: string; provider: AccountingProviderType };
     try {
       decoded = this.jwt.verify(state);
@@ -194,6 +264,11 @@ export class AccountingSyncService {
    * needed. Same one-failure-doesn't-block-the-rest shape. */
   async syncBills(companyId: string): Promise<SyncSummary> {
     const connection = await this.getConnectionOrThrow(companyId);
+    if (connection.provider === "lexoffice") {
+      throw new BadRequestException(
+        "Syncing bills to lexoffice isn't supported yet — lexoffice's API models incoming documents differently from a QuickBooks Bill or Xero ACCPAY invoice",
+      );
+    }
     const fresh = await this.ensureFreshToken(connection);
 
     const bills = await this.prisma.subcontractorCost.findMany({
@@ -244,7 +319,9 @@ export class AccountingSyncService {
 
   /** Invoices that should be synced but aren't (not-draft, no externalAccountingId yet) plus the
    * most recent sync failures — surfaces drift between this app and the connected provider
-   * without requiring the user to comb through every invoice by hand. */
+   * without requiring the user to comb through every invoice by hand. Skips the unsynced-bills
+   * query for lexoffice (syncBills isn't supported there — see its own comment) so the panel
+   * doesn't show a "N bills not yet synced" count next to a sync action that doesn't exist. */
   async integrityCheck(companyId: string) {
     const connection = await this.prisma.accountingConnection.findUnique({ where: { companyId } });
     const [unsyncedInvoices, unsyncedBills, recentFailures] = await Promise.all([
@@ -253,11 +330,13 @@ export class AccountingSyncService {
         select: { id: true, number: true, total: true, createdAt: true },
         orderBy: { createdAt: "desc" },
       }),
-      this.prisma.subcontractorCost.findMany({
-        where: { companyId, externalAccountingId: null },
-        select: { id: true, description: true, amount: true, incurredDate: true, subcontractor: { select: { name: true } } },
-        orderBy: { incurredDate: "desc" },
-      }),
+      connection?.provider === "lexoffice"
+        ? Promise.resolve([])
+        : this.prisma.subcontractorCost.findMany({
+            where: { companyId, externalAccountingId: null },
+            select: { id: true, description: true, amount: true, incurredDate: true, subcontractor: { select: { name: true } } },
+            orderBy: { incurredDate: "desc" },
+          }),
       this.prisma.accountingSyncLog.findMany({
         where: { companyId, status: "failed" },
         orderBy: { attemptedAt: "desc" },
@@ -283,9 +362,10 @@ export class AccountingSyncService {
     tokenExpiresAt: Date;
     externalAccountId: string;
   }) {
+    if (connection.provider === "lexoffice") return connection;
     if (connection.tokenExpiresAt.getTime() - Date.now() > 60_000) return connection;
 
-    const provider = connection.provider as AccountingProviderType;
+    const provider = connection.provider as OAuthProviderType;
     const cfg = PROVIDERS[provider];
     const clientId = this.config.getOrThrow<string>(cfg.clientIdKey);
     const clientSecret = this.config.getOrThrow<string>(cfg.clientSecretKey);
@@ -312,7 +392,7 @@ export class AccountingSyncService {
     });
   }
 
-  private async exchangeCode(provider: AccountingProviderType, code: string): Promise<TokenResponse> {
+  private async exchangeCode(provider: OAuthProviderType, code: string): Promise<TokenResponse> {
     const cfg = PROVIDERS[provider];
     const clientId = this.config.getOrThrow<string>(cfg.clientIdKey);
     const clientSecret = this.config.getOrThrow<string>(cfg.clientSecretKey);
@@ -359,6 +439,8 @@ export class AccountingSyncService {
       return created.Customer.Id;
     }
 
+    if (connection.provider === "lexoffice") return this.ensureLexofficeContact(connection, client, "customer");
+
     const found = await this.xeroRequest(connection, "GET", `Contacts?where=${encodeURIComponent(`Name=="${client.name}"`)}`);
     const existingId = found?.Contacts?.[0]?.ContactID;
     if (existingId) return existingId;
@@ -367,6 +449,36 @@ export class AccountingSyncService {
       Contacts: [{ Name: client.name, ...(client.email ? { EmailAddress: client.email } : {}) }],
     });
     return created.Contacts[0].ContactID;
+  }
+
+  /**
+   * lexoffice models customer/vendor as roles on one shared Contact resource rather than
+   * QuickBooks/Xero's separate Customer and Vendor(-flagged-Contact) lists, so this is the one
+   * ensureCustomer/ensureVendor implementation for both. Dedup only works when the client/
+   * subcontractor has an email on file (looked up via GET /v1/contacts?email=) — lexoffice's
+   * public API has no reliable exact-name filter to fall back on, so a contact with no email
+   * gets a fresh lexoffice Contact created on every sync instead of being matched to one already
+   * there. Documented limitation, not a bug: see the class doc comment about this connector's
+   * confidence level overall.
+   */
+  private async ensureLexofficeContact(
+    connection: { accessToken: string },
+    party: { name: string; email: string | null },
+    role: "customer" | "vendor",
+  ): Promise<string> {
+    if (party.email) {
+      const found = await this.lexofficeRequest(connection, "GET", `contacts?email=${encodeURIComponent(party.email)}`);
+      const existingId = found?.content?.[0]?.id;
+      if (existingId) return existingId;
+    }
+
+    const created = await this.lexofficeRequest(connection, "POST", "contacts", {
+      version: 0,
+      roles: { [role]: {} },
+      company: { name: party.name },
+      ...(party.email ? { emailAddresses: { business: [party.email] } } : {}),
+    });
+    return created.id;
   }
 
   /** Same find-by-name-or-create pattern as ensureCustomer(), but for the AP side: a QuickBooks
@@ -470,6 +582,31 @@ export class AccountingSyncService {
       return created.Invoice.Id;
     }
 
+    if (connection.provider === "lexoffice") {
+      // finalize=true issues the invoice for real (lexoffice generates its PDF and locks the
+      // document) rather than leaving a draft — matching the QuickBooks/Xero paths above, which
+      // also push already-decided (non-draft) invoices. EUR-only: lexoffice is a DACH-market
+      // product and doesn't support other currencies.
+      const created = await this.lexofficeRequest(connection, "POST", "invoices?finalize=true", {
+        archived: false,
+        voucherDate: new Date().toISOString(),
+        address: { contactId: externalCustomerId },
+        lineItems: [
+          {
+            type: "custom",
+            name: `Invoice ${invoice.number}`,
+            quantity: 1,
+            unitName: "Stück",
+            unitPrice: { currency: "EUR", netAmount: Number(invoice.total), taxRatePercentage: 0 },
+            discountPercentage: 0,
+          },
+        ],
+        totalPrice: { currency: "EUR" },
+        taxConditions: { taxType: "net" },
+      });
+      return created.id;
+    }
+
     const created = await this.xeroRequest(connection, "POST", "Invoices", {
       Invoices: [
         {
@@ -546,6 +683,25 @@ export class AccountingSyncService {
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
     if (!res.ok) throw new Error(`Xero ${path} request failed (${res.status})`);
+    return res.json();
+  }
+
+  /** Unlike QuickBooks/Xero there's no per-company account/tenant path segment or header — a
+   * lexoffice Public API Key is scoped to exactly one account, so the bearer token alone is
+   * enough context for every request. */
+  private async lexofficeRequest(connection: { accessToken: string }, method: "GET" | "POST", path: string, body?: unknown): Promise<any> {
+    const url = `${LEXOFFICE_API_BASE_URL}/${path}`;
+    const res = await fetch(url, {
+      method,
+      headers: {
+        Authorization: `Bearer ${connection.accessToken}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+    if (!res.ok) throw new Error(`lexoffice ${path} request failed (${res.status})`);
     return res.json();
   }
 

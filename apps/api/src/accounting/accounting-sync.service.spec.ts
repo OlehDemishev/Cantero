@@ -47,11 +47,42 @@ describe("AccountingSyncService", () => {
     service = new AccountingSyncService(prisma as never, config as never, jwt);
   });
 
+  describe("connectLexoffice", () => {
+    it("validates the API key against /v1/profile and stores the connection", async () => {
+      fetchMock.mockResolvedValueOnce(jsonResponse({ organizationId: "org-123" }));
+
+      const result = await service.connectLexoffice("company-a", "lexoffice-key");
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        "https://api.lexoffice.io/v1/profile",
+        expect.objectContaining({ headers: expect.objectContaining({ Authorization: "Bearer lexoffice-key" }) }),
+      );
+      expect(prisma.accountingConnection.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { companyId: "company-a" },
+          create: expect.objectContaining({ provider: "lexoffice", accessToken: "lexoffice-key", refreshToken: "", externalAccountId: "org-123" }),
+        }),
+      );
+      expect(result).toEqual({ ok: true });
+    });
+
+    it("rejects an invalid API key with a clear message instead of a raw status code", async () => {
+      fetchMock.mockResolvedValueOnce(jsonResponse({}, false, 401));
+
+      await expect(service.connectLexoffice("company-a", "bad-key")).rejects.toThrow(BadRequestException);
+      expect(prisma.accountingConnection.upsert).not.toHaveBeenCalled();
+    });
+  });
+
   describe("getAuthorizeUrl", () => {
     it("throws when the provider's client ID isn't configured", () => {
       config.get.mockImplementation(() => undefined);
 
       expect(() => service.getAuthorizeUrl("company-a", "quickbooks")).toThrow(BadRequestException);
+    });
+
+    it("refuses lexoffice, which connects with an API key instead of OAuth", () => {
+      expect(() => service.getAuthorizeUrl("company-a", "lexoffice")).toThrow(BadRequestException);
     });
 
     it("builds a QuickBooks authorize URL carrying a signed state and the callback redirect_uri", () => {
@@ -70,6 +101,10 @@ describe("AccountingSyncService", () => {
   });
 
   describe("handleCallback", () => {
+    it("refuses lexoffice, which never reaches this OAuth callback", async () => {
+      await expect(service.handleCallback("lexoffice", "code", "state", undefined)).rejects.toThrow(BadRequestException);
+    });
+
     it("rejects a state signed for a different provider", async () => {
       const state = jwt.sign({ companyId: "company-a", provider: "xero" });
 
@@ -240,6 +275,61 @@ describe("AccountingSyncService", () => {
       expect(prisma.invoice.update).toHaveBeenCalledTimes(1);
     });
 
+    it("looks up the lexoffice contact by email, creates and finalizes the invoice", async () => {
+      prisma.accountingConnection.findUnique.mockResolvedValue({
+        id: "conn-1",
+        companyId: "company-a",
+        provider: "lexoffice",
+        accessToken: "lex-key",
+        refreshToken: "",
+        tokenExpiresAt: new Date("9999-12-31"),
+        externalAccountId: "org-123",
+      });
+      prisma.invoice.findMany.mockResolvedValue([
+        { id: "inv-1", number: "INV-0001", total: "1500.00", dueDate: null, client: { name: "Acme GmbH", email: "billing@acme.test" } },
+      ]);
+      fetchMock
+        .mockResolvedValueOnce(jsonResponse({ content: [] })) // contact lookup by email: none found
+        .mockResolvedValueOnce(jsonResponse({ id: "contact-9" })) // contact created
+        .mockResolvedValueOnce(jsonResponse({ id: "lex-inv-7" })); // invoice created
+
+      const result = await service.syncInvoices("company-a");
+
+      expect(result).toEqual({ synced: 1, failed: 0, errors: [] });
+      expect(fetchMock).toHaveBeenNthCalledWith(1, "https://api.lexoffice.io/v1/contacts?email=billing%40acme.test", expect.anything());
+      expect(fetchMock).toHaveBeenNthCalledWith(
+        3,
+        "https://api.lexoffice.io/v1/invoices?finalize=true",
+        expect.objectContaining({ method: "POST" }),
+      );
+      expect(prisma.invoice.update).toHaveBeenCalledWith({
+        where: { id: "inv-1" },
+        data: { externalAccountingId: "lex-inv-7", externalAccountingSyncedAt: expect.any(Date) },
+      });
+    });
+
+    it("reuses an existing lexoffice contact found by email instead of creating a duplicate", async () => {
+      prisma.accountingConnection.findUnique.mockResolvedValue({
+        id: "conn-1",
+        companyId: "company-a",
+        provider: "lexoffice",
+        accessToken: "lex-key",
+        refreshToken: "",
+        tokenExpiresAt: new Date("9999-12-31"),
+        externalAccountId: "org-123",
+      });
+      prisma.invoice.findMany.mockResolvedValue([
+        { id: "inv-1", number: "INV-0001", total: "1500.00", dueDate: null, client: { name: "Acme GmbH", email: "billing@acme.test" } },
+      ]);
+      fetchMock
+        .mockResolvedValueOnce(jsonResponse({ content: [{ id: "contact-existing" }] }))
+        .mockResolvedValueOnce(jsonResponse({ id: "lex-inv-8" }));
+
+      await service.syncInvoices("company-a");
+
+      expect(fetchMock).toHaveBeenCalledTimes(2); // lookup + invoice create, no contact-create call
+    });
+
     it("logs a sync attempt for every invoice, success and failure alike", async () => {
       prisma.accountingConnection.findUnique.mockResolvedValue(activeConnection);
       prisma.invoice.findMany.mockResolvedValue([
@@ -310,6 +400,21 @@ describe("AccountingSyncService", () => {
     it("throws when there's no connection", async () => {
       prisma.accountingConnection.findUnique.mockResolvedValue(null);
       await expect(service.syncBills("company-a")).rejects.toThrow(NotFoundException);
+    });
+
+    it("refuses to sync bills to lexoffice, which isn't supported yet", async () => {
+      prisma.accountingConnection.findUnique.mockResolvedValue({
+        id: "conn-1",
+        companyId: "company-a",
+        provider: "lexoffice",
+        accessToken: "lex-key",
+        refreshToken: "",
+        tokenExpiresAt: new Date("9999-12-31"),
+        externalAccountId: "org-123",
+      });
+
+      await expect(service.syncBills("company-a")).rejects.toThrow(BadRequestException);
+      expect(fetchMock).not.toHaveBeenCalled();
     });
 
     it("creates the vendor, pushes the bill, and records the external ID", async () => {
@@ -417,6 +522,15 @@ describe("AccountingSyncService", () => {
       const result = await service.integrityCheck("company-a");
 
       expect(result.unsyncedBills).toHaveLength(1);
+    });
+
+    it("skips the unsynced-bills query for lexoffice, since syncBills isn't supported there", async () => {
+      prisma.accountingConnection.findUnique.mockResolvedValue({ provider: "lexoffice" });
+
+      const result = await service.integrityCheck("company-a");
+
+      expect(result.unsyncedBills).toEqual([]);
+      expect(prisma.subcontractorCost.findMany).not.toHaveBeenCalled();
     });
   });
 });

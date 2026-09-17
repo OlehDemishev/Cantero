@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { PLAN_IDS, SUPPORTED_CURRENCIES, SUPPORTED_LOCALES, UNIT_SYSTEMS } from "@cantero/shared";
+import { DEFAULT_CURRENCY_BY_LOCALE, PLAN_IDS, SUPPORTED_CURRENCIES, SUPPORTED_LOCALES, UNIT_SYSTEMS, type Locale } from "@cantero/shared";
 import { apiFetch, ApiError, setToken } from "@/lib/api-client";
 
 export default function SignupPage() {
@@ -25,9 +25,16 @@ export default function SignupPage() {
   });
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // Tracks whether the user has manually picked a currency, so switching locale only pre-fills a
+  // sensible starting currency and never clobbers an intentional choice.
+  const [currencyTouched, setCurrencyTouched] = useState(false);
 
   function update<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
+  }
+
+  function updateLocale(locale: Locale) {
+    setForm((f) => ({ ...f, locale, currency: currencyTouched ? f.currency : DEFAULT_CURRENCY_BY_LOCALE[locale] }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -116,7 +123,14 @@ export default function SignupPage() {
           </select>
         </Field>
         <Field label={tc("currency")}>
-          <select className="input" value={form.currency} onChange={(e) => update("currency", e.target.value)}>
+          <select
+            className="input"
+            value={form.currency}
+            onChange={(e) => {
+              setCurrencyTouched(true);
+              update("currency", e.target.value);
+            }}
+          >
             {SUPPORTED_CURRENCIES.map((c) => (
               <option key={c} value={c}>
                 {c}
@@ -125,7 +139,7 @@ export default function SignupPage() {
           </select>
         </Field>
         <Field label={t("locale")}>
-          <select className="input" value={form.locale} onChange={(e) => update("locale", e.target.value)}>
+          <select className="input" value={form.locale} onChange={(e) => updateLocale(e.target.value as Locale)}>
             {SUPPORTED_LOCALES.map((l) => (
               <option key={l} value={l}>
                 {l.toUpperCase()}
