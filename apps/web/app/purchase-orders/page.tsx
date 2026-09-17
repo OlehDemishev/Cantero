@@ -5,6 +5,7 @@ import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { PurchaseOrdersPanel } from "@/components/purchase-orders-panel";
 import { ReceivingDiscrepanciesPanel } from "@/components/receiving-discrepancies-panel";
 import { VendorBillsPanel } from "@/components/vendor-bills-panel";
+import { IncomingEInvoicesPanel } from "@/components/incoming-e-invoices-panel";
 
 export default function PurchaseOrdersPage() {
   const t = useTranslations("purchaseOrders");
@@ -20,6 +21,8 @@ export default function PurchaseOrdersPage() {
       <ReceivingDiscrepanciesPanel />
 
       <VendorBillsPanel />
+
+      <IncomingEInvoicesPanel />
     </AuthenticatedShell>
   );
 }

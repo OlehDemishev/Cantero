@@ -295,3 +295,13 @@ export const updateRecurringInvoiceSchema = z.object({
   lines: z.array(recurringInvoiceLineSchema).min(1).optional(),
 });
 export type UpdateRecurringInvoiceInput = z.infer<typeof updateRecurringInvoiceSchema>;
+
+export const matchIncomingEInvoiceSupplierSchema = z.object({
+  supplierId: z.string().uuid(),
+});
+export type MatchIncomingEInvoiceSupplierInput = z.infer<typeof matchIncomingEInvoiceSupplierSchema>;
+
+export const rejectIncomingEInvoiceSchema = z.object({
+  reason: z.string().min(1).max(500),
+});
+export type RejectIncomingEInvoiceInput = z.infer<typeof rejectIncomingEInvoiceSchema>;

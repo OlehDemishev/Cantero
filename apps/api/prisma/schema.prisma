@@ -504,6 +504,7 @@ model Company {
   docusignConnection              DocusignConnection?
   msProjectConnection             MsProjectConnection?
   autodeskConnection              AutodeskConnection?
+  incomingEInvoices               IncomingEInvoice[]
   expenses                        Expense[]
   materialRfqs                    MaterialRfq[]
   customRoles                     CustomRole[]
@@ -1984,6 +1985,10 @@ model Supplier {
   name      String
   email     String?
   phone     String?
+  /// VAT/tax identification number (e.g. German "USt-IdNr.") — used to match this supplier
+  /// against the seller identity on an incoming e-invoice (see IncomingEInvoicesService). Not
+  /// required for domestic suppliers who never send structured e-invoices.
+  vatId     String?
 
   company                     Company                      @relation(fields: [companyId], references: [id], onDelete: Cascade)
   purchaseOrders              PurchaseOrder[]
@@ -1997,6 +2002,7 @@ model Supplier {
   vendorBills                 VendorBill[]
   longLeadItems               LongLeadItem[]
   supplierReturns             SupplierReturn[]
+  incomingEInvoices           IncomingEInvoice[]
 
   @@unique([id, companyId])
   @@index([companyId])
@@ -2333,10 +2339,11 @@ model VendorBill {
   notes                String?
   createdAt            DateTime         @default(now())
 
-  company       Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  supplier      Supplier         @relation(fields: [supplierId], references: [id], onDelete: Restrict)
-  purchaseOrder PurchaseOrder?   @relation(fields: [purchaseOrderId], references: [id], onDelete: SetNull)
-  lines         VendorBillLine[]
+  company          Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  supplier         Supplier          @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  purchaseOrder    PurchaseOrder?    @relation(fields: [purchaseOrderId], references: [id], onDelete: SetNull)
+  lines            VendorBillLine[]
+  incomingEInvoice IncomingEInvoice?
 
   @@index([companyId])
   @@index([supplierId])
@@ -2357,6 +2364,108 @@ model VendorBillLine {
 
   @@index([vendorBillId])
   @@map("vendor_bill_lines")
+}
+
+enum IncomingEInvoiceFormat {
+  /// XRechnung using the UBL Invoice syntax (also matches a generic Peppol BIS Billing 3.0
+  /// invoice, structurally the same syntax with a different CustomizationID — see
+  /// incoming-e-invoice-parser.ts's format sniffing).
+  xrechnung_ubl
+  /// XRechnung using the CII (Cross Industry Invoice) syntax — same underlying data as
+  /// xrechnung_ubl, different XML vocabulary.
+  xrechnung_cii
+  /// A hybrid PDF/A-3 with an embedded CII XML (Factur-X/ZUGFeRD) — the XML is extracted from the
+  /// PDF's embedded files before parsing, then handled identically to xrechnung_cii.
+  zugferd
+  /// Peppol BIS Billing 3.0 (UBL) received directly as XML rather than via the Peppol network
+  /// (this app has no live Access Point connection to receive from — see
+  /// PeppolAccessPointService — so this is only reachable by uploading the XML by hand today).
+  peppol_ubl
+}
+
+enum IncomingEInvoiceStatus {
+  /// Parsed successfully (or with recoverable validation warnings) but not yet matched to a
+  /// known Supplier or turned into a real payable.
+  pending_review
+  /// Matched to a Supplier — ready to convert to a VendorBill.
+  matched
+  /// Converted into a real VendorBill — see vendorBillId.
+  converted
+  /// Explicitly rejected (wrong company, duplicate, unreadable, fraudulent, ...) — see rejectedReason.
+  rejected
+}
+
+/// A supplier e-invoice (XRechnung/ZUGFeRD/Peppol) received and parsed, staged here for human
+/// review before it becomes a real payable — see IncomingEInvoicesService. Deliberately NOT
+/// auto-converted to a VendorBill on upload: EN 16931 core-rule failures (validationErrors) or a
+/// wrong/missing supplier match are exactly the kind of thing a human should see before money
+/// gets committed, the same reasoning as VendorBill's own draft→approved workflow one step further
+/// upstream. Mirrors BuildXRechnungXmlInput/EInvoiceParty/EInvoiceLine's shape (see
+/// finance/e-invoice.ts) so the same business-object model covers both outbound and inbound
+/// e-invoices — this is genuinely the reverse operation of buildXRechnungXml/buildZugferdCiiXml/
+/// buildPeppolBisXml.
+model IncomingEInvoice {
+  id                String                 @id @default(uuid())
+  companyId         String
+  format            IncomingEInvoiceFormat
+  status            IncomingEInvoiceStatus @default(pending_review)
+  /// The original file exactly as uploaded (a .xml file, or the ZUGFeRD hybrid PDF) — kept for
+  /// audit/dispute purposes even after conversion, same as Contract.signatureImageKey's own
+  /// direct-storage-key convention rather than going through the generic Document model.
+  rawFileStorageKey String
+  rawFileName       String
+  invoiceNumber     String?
+  issueDate         DateTime?
+  dueDate           DateTime?
+  currency          String?
+  sellerName        String?
+  sellerVatId       String?
+  sellerStreet      String?
+  sellerCity        String?
+  sellerPostalCode  String?
+  sellerCountryCode String?
+  subtotal          Decimal?               @db.Decimal(14, 2)
+  taxAmount         Decimal?               @db.Decimal(14, 2)
+  total             Decimal?               @db.Decimal(14, 2)
+  /// Hand-built subset of EN 16931 core business rules that failed (e.g. "BR-CO-15: total does
+  /// not equal subtotal + tax") — informational, does not block staging or even conversion (a
+  /// human reviewing the bill is the actual control), just surfaced so they know to look closer.
+  validationErrors  String[]               @default([])
+  /// Set once matched to a known Supplier by VAT ID (automatically) or by hand — required before
+  /// convertToVendorBill() can run, since VendorBill.supplierId itself is required (not nullable).
+  supplierId        String?
+  vendorBillId      String?                @unique
+  rejectedReason    String?
+  reviewedAt        DateTime?
+  reviewedByName    String?
+  createdAt         DateTime               @default(now())
+
+  company    Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  supplier   Supplier?         @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  vendorBill VendorBill?       @relation(fields: [vendorBillId], references: [id], onDelete: SetNull)
+  lines      IncomingEInvoiceLine[]
+
+  @@index([companyId])
+  @@index([companyId, status])
+  @@map("incoming_e_invoices")
+}
+
+model IncomingEInvoiceLine {
+  id                 String   @id @default(uuid())
+  incomingEInvoiceId String
+  description        String
+  quantity           Decimal  @db.Decimal(14, 4)
+  unitPrice          Decimal  @db.Decimal(12, 4)
+  lineTotal          Decimal  @db.Decimal(14, 2)
+  /// Per-line tax rate as EN 16931 actually allows (unlike this app's own outbound e-invoice
+  /// builders, which only ever produce one flat header-level rate — see e-invoice.ts) — an
+  /// incoming invoice from another system may legitimately mix tax categories on one document.
+  taxRatePercent     Decimal? @db.Decimal(5, 2)
+
+  incomingEInvoice IncomingEInvoice @relation(fields: [incomingEInvoiceId], references: [id], onDelete: Cascade)
+
+  @@index([incomingEInvoiceId])
+  @@map("incoming_e_invoice_lines")
 }
 
 // ---------- Projects (thin in Phase 1; Scheduling schema-only until Phase 3) ----------

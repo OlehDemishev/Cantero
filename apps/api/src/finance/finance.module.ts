@@ -16,6 +16,8 @@ import { DrawRequestsController } from "./draw-requests.controller";
 import { DrawRequestsService } from "./draw-requests.service";
 import { ClientPaymentMethodsService } from "./client-payment-methods.service";
 import { PeppolAccessPointService } from "./peppol-access-point.service";
+import { IncomingEInvoicesController } from "./incoming-e-invoices.controller";
+import { IncomingEInvoicesService } from "./incoming-e-invoices.service";
 import { SubcontractorPrequalificationModule } from "../subcontractor-prequalification/subcontractor-prequalification.module";
 
 @Module({
@@ -28,6 +30,7 @@ import { SubcontractorPrequalificationModule } from "../subcontractor-prequalifi
     SubcontractorCostsController,
     RecurringInvoicesController,
     DrawRequestsController,
+    IncomingEInvoicesController,
   ],
   providers: [
     InvoicesService,
@@ -40,6 +43,7 @@ import { SubcontractorPrequalificationModule } from "../subcontractor-prequalifi
     DrawRequestsService,
     ClientPaymentMethodsService,
     PeppolAccessPointService,
+    IncomingEInvoicesService,
   ],
   exports: [InvoicesService, SubcontractorsService, BudgetService, ClientPaymentMethodsService],
 })
