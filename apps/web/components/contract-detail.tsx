@@ -90,19 +90,6 @@ export function ContractDetail({ contractId }: { contractId: string }) {
     }
   }
 
-  async function refreshDocusignStatus() {
-    setBusy(true);
-    setDocusignError(null);
-    try {
-      await apiFetch(`/contracts/${contractId}/docusign-refresh`, { method: "POST" });
-      load();
-    } catch (err) {
-      setDocusignError(err instanceof Error ? err.message : "Failed to refresh status");
-    } finally {
-      setBusy(false);
-    }
-  }
-
   async function downloadDocusignSignedPdf() {
     const blob = await apiFetch<Blob>(`/contracts/${contractId}/docusign-signed-pdf`);
     downloadBlob(blob, `${contract?.title ?? "contract"}-docusign-signed.pdf`);
@@ -201,13 +188,11 @@ export function ContractDetail({ contractId }: { contractId: string }) {
                 {t("sendViaDocusign")}
               </button>
             )}
-            {contract.docusignEnvelopeId && contract.status === "sent" && (
-              <button onClick={refreshDocusignStatus} disabled={busy} className="btn-secondary">
-                {t("refreshDocusignStatus")}
-              </button>
-            )}
             {contract.docusignStatus && (
               <p className="text-xs text-gray-500 dark:text-gray-400">{t("docusignStatusLabel", { status: contract.docusignStatus })}</p>
+            )}
+            {contract.docusignEnvelopeId && contract.status === "sent" && (
+              <p className="text-xs text-gray-400 dark:text-gray-500">{t("docusignAutoPollHint")}</p>
             )}
             {docusignError && <p className="text-xs text-error-600">{docusignError}</p>}
             {contract.status !== "void" && (

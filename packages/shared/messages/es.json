@@ -2725,8 +2725,8 @@
     "linkNotFound": "Este enlace no es válido o ha caducado.",
     "confirmDeleteTemplate": "¿Eliminar esta plantilla de contrato?",
     "sendViaDocusign": "Enviar por DocuSign",
-    "refreshDocusignStatus": "Actualizar estado de firma",
     "docusignStatusLabel": "Estado de DocuSign: {status}",
+    "docusignAutoPollHint": "El estado de la firma se actualiza automáticamente en segundo plano — no es necesario comprobarlo manualmente.",
     "downloadDocusignSignedPdf": "Descargar PDF firmado por DocuSign"
   },
   "costCodes": {

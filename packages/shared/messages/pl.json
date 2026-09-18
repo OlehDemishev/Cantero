@@ -2725,8 +2725,8 @@
     "linkNotFound": "Ten link jest nieprawidłowy lub wygasł.",
     "confirmDeleteTemplate": "Usunąć ten szablon umowy?",
     "sendViaDocusign": "Wyślij przez DocuSign",
-    "refreshDocusignStatus": "Odśwież status podpisu",
     "docusignStatusLabel": "Status DocuSign: {status}",
+    "docusignAutoPollHint": "Status podpisu aktualizuje się automatycznie w tle — nie trzeba sprawdzać ręcznie.",
     "downloadDocusignSignedPdf": "Pobierz PDF podpisany w DocuSign"
   },
   "costCodes": {

@@ -31,6 +31,7 @@ describe("ContractsService", () => {
     downloadCombinedDocument: jest.Mock;
   };
   let pdfService: { renderTextDocument: jest.Mock };
+  let audit: { record: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -50,6 +51,7 @@ describe("ContractsService", () => {
       downloadCombinedDocument: jest.fn(),
     };
     pdfService = { renderTextDocument: jest.fn().mockResolvedValue(Buffer.from("pdf")) };
+    audit = { record: jest.fn() };
 
     const module = await Test.createTestingModule({
       providers: [
@@ -57,7 +59,7 @@ describe("ContractsService", () => {
         { provide: PrismaService, useValue: prisma },
         { provide: PdfService, useValue: pdfService },
         { provide: StorageService, useValue: storage },
-        { provide: AuditService, useValue: { record: jest.fn() } },
+        { provide: AuditService, useValue: audit },
         { provide: ConfigService, useValue: { get: jest.fn().mockReturnValue(undefined) } },
         { provide: MailService, useValue: mail },
         { provide: DocusignService, useValue: docusign },
@@ -236,6 +238,40 @@ describe("ContractsService", () => {
       await service.refreshDocusignStatus(COMPANY_A, "c1");
 
       expect(docusign.downloadCombinedDocument).not.toHaveBeenCalled();
+    });
+
+    it("voids the contract when the signer declines the envelope", async () => {
+      prisma.contract.findFirst.mockResolvedValue({ id: "c1", companyId: COMPANY_A, status: "sent", title: "MSA", docusignEnvelopeId: "env-1" });
+      docusign.getConnectionOrThrow.mockResolvedValue({ accountId: "acct-1" });
+      docusign.getEnvelopeStatus.mockResolvedValue({ status: "declined", completedAt: null });
+      prisma.contract.update.mockResolvedValue({ id: "c1", status: "void" });
+
+      await service.refreshDocusignStatus(COMPANY_A, "c1");
+
+      expect(prisma.contract.update).toHaveBeenCalledWith({ where: { id: "c1" }, data: { status: "void", docusignStatus: "declined" } });
+      expect(audit.record).toHaveBeenCalledWith(COMPANY_A, { name: "DocuSign" }, "contract.voided", "Contract", "c1", expect.stringContaining("declined"));
+    });
+
+    it("voids the contract when the envelope is voided in DocuSign", async () => {
+      prisma.contract.findFirst.mockResolvedValue({ id: "c1", companyId: COMPANY_A, status: "sent", title: "MSA", docusignEnvelopeId: "env-1" });
+      docusign.getConnectionOrThrow.mockResolvedValue({ accountId: "acct-1" });
+      docusign.getEnvelopeStatus.mockResolvedValue({ status: "voided", completedAt: null });
+      prisma.contract.update.mockResolvedValue({ id: "c1", status: "void" });
+
+      await service.refreshDocusignStatus(COMPANY_A, "c1");
+
+      expect(prisma.contract.update).toHaveBeenCalledWith({ where: { id: "c1" }, data: { status: "void", docusignStatus: "voided" } });
+    });
+
+    it("doesn't re-void a contract that's already void", async () => {
+      prisma.contract.findFirst.mockResolvedValue({ id: "c1", companyId: COMPANY_A, status: "void", title: "MSA", docusignEnvelopeId: "env-1" });
+      docusign.getConnectionOrThrow.mockResolvedValue({ accountId: "acct-1" });
+      docusign.getEnvelopeStatus.mockResolvedValue({ status: "voided", completedAt: null });
+
+      await service.refreshDocusignStatus(COMPANY_A, "c1");
+
+      expect(prisma.contract.update).toHaveBeenCalledWith({ where: { id: "c1" }, data: { docusignStatus: "voided" } });
+      expect(audit.record).not.toHaveBeenCalledWith(expect.anything(), expect.anything(), "contract.voided", expect.anything(), expect.anything(), expect.anything());
     });
   });
 

@@ -2725,8 +2725,8 @@
     "linkNotFound": "Це посилання недійсне або застаріле.",
     "confirmDeleteTemplate": "Видалити цей шаблон договору?",
     "sendViaDocusign": "Надіслати через DocuSign",
-    "refreshDocusignStatus": "Оновити статус підпису",
     "docusignStatusLabel": "Статус DocuSign: {status}",
+    "docusignAutoPollHint": "Статус підпису оновлюється автоматично у фоновому режимі — перевіряти вручну не потрібно.",
     "downloadDocusignSignedPdf": "Завантажити підписаний DocuSign PDF"
   },
   "costCodes": {

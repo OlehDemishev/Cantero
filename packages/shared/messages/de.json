@@ -2725,8 +2725,8 @@
     "linkNotFound": "Dieser Link ist ungültig oder abgelaufen.",
     "confirmDeleteTemplate": "Diese Vertragsvorlage löschen?",
     "sendViaDocusign": "Über DocuSign senden",
-    "refreshDocusignStatus": "Signaturstatus aktualisieren",
     "docusignStatusLabel": "DocuSign-Status: {status}",
+    "docusignAutoPollHint": "Der Signaturstatus wird automatisch im Hintergrund aktualisiert — keine manuelle Prüfung nötig.",
     "downloadDocusignSignedPdf": "DocuSign-signiertes PDF herunterladen"
   },
   "costCodes": {

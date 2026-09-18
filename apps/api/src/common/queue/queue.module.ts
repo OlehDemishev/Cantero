@@ -20,6 +20,7 @@ export const CHANGE_ORDER_REMINDERS_QUEUE = "change-order-reminders";
 export const ENPS_SURVEYS_QUEUE = "enps-surveys";
 export const OUTBOX_QUEUE = "webhook-outbox";
 export const STOCK_LOT_EXPIRING_QUEUE = "stock-lot-expiring";
+export const DOCUSIGN_POLL_QUEUE = "docusign-poll";
 
 @Global()
 @Module({
@@ -48,6 +49,7 @@ export const STOCK_LOT_EXPIRING_QUEUE = "stock-lot-expiring";
     BullModule.registerQueue({ name: ENPS_SURVEYS_QUEUE }),
     BullModule.registerQueue({ name: OUTBOX_QUEUE }),
     BullModule.registerQueue({ name: STOCK_LOT_EXPIRING_QUEUE }),
+    BullModule.registerQueue({ name: DOCUSIGN_POLL_QUEUE }),
   ],
   providers: [QueueFailureReporterService],
   exports: [BullModule],

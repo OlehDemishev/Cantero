@@ -139,10 +139,14 @@ export class ContractsService {
   }
 
   /** Polls DocuSign for this envelope's current status — there's no webhook wired up (see
-   * DocusignService's doc comment), so this is a manual "check now" rather than a push update.
-   * Once DocuSign reports "completed", downloads the signed document (with DocuSign's own
-   * certificate of completion) and transitions the contract to signed, same end state the native
-   * signature flow reaches via sign(). */
+   * DocusignService's doc comment), so DocusignPollingService's background sweep (or, for
+   * immediate feedback right after sending, a direct call) is what actually calls this now rather
+   * than a "check now" button. Once DocuSign reports "completed", downloads the signed document
+   * (with DocuSign's own certificate of completion) and transitions the contract to signed, same
+   * end state the native signature flow reaches via sign(). A "declined" or "voided" envelope
+   * transitions the contract to void instead — both are terminal DocuSign outcomes, and voiding
+   * here (rather than leaving status stuck on "sent") is what makes the polling sweep's
+   * `status: "sent"` filter naturally stop re-checking this contract. */
   async refreshDocusignStatus(companyId: string, id: string) {
     const contract = await this.findOrThrow(companyId, id);
     if (!contract.docusignEnvelopeId) throw new BadRequestException("This contract wasn't sent via DocuSign");
@@ -166,6 +170,12 @@ export class ContractsService {
         },
       });
       this.audit.record(companyId, { name: "DocuSign" }, "contract.signed", "Contract", id, `Signed contract "${contract.title}" via DocuSign`);
+      return updated;
+    }
+
+    if ((status === "declined" || status === "voided") && contract.status !== "void") {
+      const updated = await this.prisma.contract.update({ where: { id }, data: { status: "void", docusignStatus: status } });
+      this.audit.record(companyId, { name: "DocuSign" }, "contract.voided", "Contract", id, `Contract "${contract.title}" ${status} via DocuSign`);
       return updated;
     }
 

@@ -2725,8 +2725,8 @@
     "linkNotFound": "This link is invalid or has expired.",
     "confirmDeleteTemplate": "Delete this contract template?",
     "sendViaDocusign": "Send via DocuSign",
-    "refreshDocusignStatus": "Refresh signing status",
     "docusignStatusLabel": "DocuSign status: {status}",
+    "docusignAutoPollHint": "Signing status updates automatically in the background — no need to check manually.",
     "downloadDocusignSignedPdf": "Download DocuSign signed PDF"
   },
   "costCodes": {
