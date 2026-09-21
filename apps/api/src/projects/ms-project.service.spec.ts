@@ -117,89 +117,33 @@ describe("MsProjectService", () => {
     });
   });
 
-  describe("syncProject", () => {
-    const activeConnection = {
-      id: "conn-1",
-      companyId: "company-a",
-      accessToken: "at",
-      refreshToken: "rt",
-      tokenExpiresAt: new Date(Date.now() + 3600_000),
-      environmentUrl: ENV_URL,
-    };
+  // syncProject's request/response behavior is pinned to the provider's published contract in
+  // src/__provider-contracts__/documented-providers.contract.spec.ts; only the guards live here.
+  describe("syncProject guards", () => {
+    const connection = { id: "conn-1", companyId: "company-a", accessToken: "at", refreshToken: "rt", tokenExpiresAt: new Date(Date.now() + 3600_000), environmentUrl: ENV_URL };
+
+    it("throws when the project doesn't belong to this company", async () => {
+      prisma.msProjectConnection.findUnique.mockResolvedValue(connection);
+      prisma.project.findFirst.mockResolvedValue(null);
+      await expect(service.syncProject("company-a", "project-1")).rejects.toThrow(NotFoundException);
+    });
+
+    it("refreshes an expired token before syncing, and stops early with nothing to push", async () => {
+      prisma.msProjectConnection.findUnique.mockResolvedValue({ ...connection, tokenExpiresAt: new Date(Date.now() - 1000) });
+      prisma.msProjectConnection.update.mockResolvedValue({ ...connection, accessToken: "new-at" });
+      prisma.project.findFirst.mockResolvedValue({ id: "project-1", name: "Sample Reno", msProjectExternalId: "ext-project-1" });
+      prisma.task.findMany.mockResolvedValue([]);
+      fetchMock.mockResolvedValueOnce(jsonResponse({ access_token: "new-at", refresh_token: "new-rt", expires_in: 3600 }));
+
+      await expect(service.syncProject("company-a", "project-1")).resolves.toEqual({ synced: 0, failed: 0, errors: [] });
+      expect(fetchMock.mock.calls[0][0]).toContain("login.microsoftonline.com");
+      expect(prisma.msProjectConnection.update).toHaveBeenCalled();
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
 
     it("throws NotFoundException when nothing is connected", async () => {
       prisma.msProjectConnection.findUnique.mockResolvedValue(null);
       await expect(service.syncProject("company-a", "project-1")).rejects.toThrow(NotFoundException);
-    });
-
-    it("throws when the project doesn't belong to this company", async () => {
-      prisma.msProjectConnection.findUnique.mockResolvedValue(activeConnection);
-      prisma.project.findFirst.mockResolvedValue(null);
-
-      await expect(service.syncProject("company-a", "project-1")).rejects.toThrow(NotFoundException);
-    });
-
-    it("creates the remote project once, then pushes every unsynced task", async () => {
-      prisma.msProjectConnection.findUnique.mockResolvedValue(activeConnection);
-      prisma.project.findFirst.mockResolvedValue({ id: "project-1", name: "Sample Reno", msProjectExternalId: null });
-      prisma.task.findMany.mockResolvedValue([
-        { id: "task-1", name: "Framing", startDate: new Date("2026-10-01"), dueDate: new Date("2026-10-10") },
-        { id: "task-2", name: "Roofing", startDate: null, dueDate: null },
-      ]);
-      fetchMock
-        .mockResolvedValueOnce(jsonResponse({ msdyn_projectid: "ext-project-1" }))
-        .mockResolvedValueOnce(jsonResponse({ msdyn_projecttaskid: "ext-task-1" }))
-        .mockResolvedValueOnce(jsonResponse({ msdyn_projecttaskid: "ext-task-2" }));
-
-      const result = await service.syncProject("company-a", "project-1");
-
-      expect(result).toEqual({ synced: 2, failed: 0, errors: [] });
-      expect(prisma.project.update).toHaveBeenCalledWith({ where: { id: "project-1" }, data: { msProjectExternalId: "ext-project-1" } });
-      expect(prisma.task.update).toHaveBeenCalledWith({ where: { id: "task-1" }, data: { msProjectExternalId: "ext-task-1" } });
-      const secondCallBody = JSON.parse(fetchMock.mock.calls[1][1].body);
-      expect(secondCallBody["msdyn_ProjectId@odata.bind"]).toBe("/msdyn_projects(ext-project-1)");
-      expect(secondCallBody.msdyn_start).toBe(new Date("2026-10-01").toISOString());
-    });
-
-    it("reuses the already-synced remote project instead of creating a duplicate", async () => {
-      prisma.msProjectConnection.findUnique.mockResolvedValue(activeConnection);
-      prisma.project.findFirst.mockResolvedValue({ id: "project-1", name: "Sample Reno", msProjectExternalId: "ext-project-existing" });
-      prisma.task.findMany.mockResolvedValue([{ id: "task-1", name: "Framing", startDate: null, dueDate: null }]);
-      fetchMock.mockResolvedValueOnce(jsonResponse({ msdyn_projecttaskid: "ext-task-1" }));
-
-      await service.syncProject("company-a", "project-1");
-
-      expect(fetchMock).toHaveBeenCalledTimes(1); // only the task create, no project create
-      expect(prisma.project.update).not.toHaveBeenCalled();
-    });
-
-    it("collects one task's failure without aborting the rest of the batch", async () => {
-      prisma.msProjectConnection.findUnique.mockResolvedValue(activeConnection);
-      prisma.project.findFirst.mockResolvedValue({ id: "project-1", name: "Sample Reno", msProjectExternalId: "ext-project-1" });
-      prisma.task.findMany.mockResolvedValue([
-        { id: "task-1", name: "Broken Task", startDate: null, dueDate: null },
-        { id: "task-2", name: "Roofing", startDate: null, dueDate: null },
-      ]);
-      fetchMock.mockResolvedValueOnce(jsonResponse({}, false, 500)).mockResolvedValueOnce(jsonResponse({ msdyn_projecttaskid: "ext-task-2" }));
-
-      const result = await service.syncProject("company-a", "project-1");
-
-      expect(result.synced).toBe(1);
-      expect(result.failed).toBe(1);
-      expect(result.errors[0]).toContain("Broken Task");
-    });
-
-    it("refreshes an expired token before syncing", async () => {
-      prisma.msProjectConnection.findUnique.mockResolvedValue({ ...activeConnection, tokenExpiresAt: new Date(Date.now() - 1000) });
-      prisma.msProjectConnection.update.mockResolvedValue({ ...activeConnection, accessToken: "new-at" });
-      prisma.project.findFirst.mockResolvedValue({ id: "project-1", name: "Sample Reno", msProjectExternalId: "ext-project-1" });
-      fetchMock
-        .mockResolvedValueOnce(jsonResponse({ access_token: "new-at", refresh_token: "new-rt", expires_in: 3600 }));
-
-      const result = await service.syncProject("company-a", "project-1");
-
-      expect(prisma.msProjectConnection.update).toHaveBeenCalled();
-      expect(result).toEqual({ synced: 0, failed: 0, errors: [] });
     });
   });
 });

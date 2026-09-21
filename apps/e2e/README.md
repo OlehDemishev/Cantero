@@ -1,10 +1,19 @@
-# E2E smoke tests
+# E2E tests
 
-One critical-path test — login → create project → estimate → approve → invoice → send → get paid
-— run against a real, running `api` + `web` (see the root README/`.claude/launch.json` for how to
-start both locally). This is the one thing this repo had zero automated coverage of before: the
-frontend has no test suite at all, and the API's 2000+ tests never exercise it through the actual
-UI end to end.
+Run against a real, running `api` + `web` (see the root README/`.claude/launch.json` for how to
+start both locally). The API's unit suite mocks its I/O; these specs exercise the flows where the
+seams between browser, API, database and a third party are exactly where things break.
+
+| Spec | What it proves |
+| --- | --- |
+| `critical-path` | login → project → estimate → approve → invoice → send → paid, all through the UI |
+| `sepa-autopay` | a SEPA/ACH autopay debit that settles days later via a signed `payment_intent.succeeded` webhook marks the invoice paid exactly once; a redelivered event doesn't pay twice; a failed debit leaves it open; a forged signature is a 400 |
+| `portal-signature` | a stranger with no account opens the emailed estimate link, is refused without a drawn signature, then signs and approves; the stored signature is a real PNG |
+| `offline-sync` | a field write made offline is queued, flushed once connectivity returns, and not duplicated — including when the first attempt committed but its response was lost (same `Idempotency-Key` on retry) |
+| `sso-saml` | SAML sign-in from the real login page through a throwaway IdP: JIT-provisions a worker; rejects a tampered assertion, a foreign signing key, an off-domain email, and a replayed assertion |
+
+Arranging state (a project, an approved estimate, a sent invoice) goes through the API directly
+(`api.ts`) rather than the UI, so each spec only drives the part it covers.
 
 ## Running locally
 
@@ -20,11 +29,15 @@ UI end to end.
 Runs against `demo-eu@cantero.dev` (seeded by `apps/api/prisma/seed.ts`) by default. Override with
 `E2E_WEB_URL` / `E2E_API_URL` / `DATABASE_URL` env vars to point at a different environment.
 
+- `sepa-autopay` signs webhooks with the API's own secret: `E2E_STRIPE_WEBHOOK_SECRET`, or
+  `STRIPE_WEBHOOK_SECRET` read from `apps/api/.env`.
+- `sso-saml` needs `openssl` on PATH — it generates a fresh IdP key pair per run, so no key is
+  ever committed.
+
 ## What it does to the database
 
-`global-setup.ts` pins the demo company's locale to English before the run (its selectors are
-English button text, and the locale is a user-editable setting that earlier manual testing can
-leave on anything). `global-teardown.ts` deletes every project this run created — matched by the
-`"E2E Smoke "` name prefix the test generates — which cascades to the estimates/invoices/lines it
-made along the way. Both connect to `DATABASE_URL` directly; neither touches seeded demo data or
-anything not created by this suite.
+`global-setup.ts` pins the demo company's locale to English (the selectors are English text).
+`global-teardown.ts` deletes every project named `"E2E Smoke …"`, which cascades to everything the
+specs made under them. `sso-saml` points the demo company's SSO at its test IdP for the duration
+and restores the previous configuration afterwards, then deletes the users it provisioned on the
+test-only `e2e-sso.test` domain. Nothing else is touched.

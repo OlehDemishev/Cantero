@@ -38,11 +38,15 @@ export interface SyncSummary {
 /** ACC's own status vocabulary for its generic Issues API — this project only has three punch-
  * list states, so this collapses them onto the closest ACC equivalents rather than attempting a
  * full mapping. */
+/** Values from the documented POST issues status enum (draft, open, pending, in_progress,
+ * completed, in_review, not_approved, in_dispute, closed) — "resolved" isn't one of them. */
 const ACC_ISSUE_STATUS: Record<PunchListItemStatus, string> = {
   open: "open",
-  resolved: "resolved",
+  resolved: "completed",
   verified: "closed",
 };
+const ACC_TITLE_MAX = 100;
+const ACC_DESCRIPTION_MAX = 1000;
 
 /**
  * Live OAuth2 (3-legged Authorization Code Grant via Autodesk Platform Services, formerly Forge)
@@ -151,14 +155,23 @@ export class AutodeskService {
     }
 
     const items = await this.prisma.punchListItem.findMany({ where: { companyId, projectId, autodeskIssueId: null } });
+    if (items.length === 0) return { synced: 0, failed: 0, errors: [] };
+
+    // The Issues API wants the bare project UUID; Data Management hands it out with a "b." prefix.
+    const accProjectId = autodeskProjectId.replace(/^b\./, "");
+    const issueSubtypeId = await this.pickIssueSubtype(connection, accProjectId);
     const summary: SyncSummary = { synced: 0, failed: 0, errors: [] };
     for (const item of items) {
       try {
-        const created = await this.request(connection, "POST", `construction/issues/v1/projects/${autodeskProjectId}/issues`, {
-          title: item.title,
-          description: item.description ?? undefined,
+        const created = await this.request(connection, "POST", `construction/issues/v1/projects/${accProjectId}/issues`, {
+          title: item.title.slice(0, ACC_TITLE_MAX),
+          ...(item.description ? { description: item.description.slice(0, ACC_DESCRIPTION_MAX) } : {}),
+          issueSubtypeId,
           status: ACC_ISSUE_STATUS[item.status],
-          dueDate: item.dueDate ? item.dueDate.toISOString().slice(0, 10) : undefined,
+          ...(item.dueDate ? { dueDate: item.dueDate.toISOString().slice(0, 10) } : {}),
+          // Unpublished issues are only visible to their creator, which defeats the point of pushing
+          // the punch list to the team's ACC project.
+          published: true,
         });
         await this.prisma.punchListItem.update({ where: { id: item.id }, data: { autodeskIssueId: created.id } });
         summary.synced++;
@@ -170,6 +183,18 @@ export class AutodeskService {
       }
     }
     return summary;
+  }
+
+  /** issueSubtypeId is required on every created issue. Prefers a category or type named like
+   * "punch" (ACC's usual punch-list setup), otherwise the first active, editable type. */
+  private async pickIssueSubtype(connection: AutodeskConnection, accProjectId: string): Promise<string> {
+    const res = await this.request(connection, "GET", `construction/issues/v1/projects/${accProjectId}/issue-types?include=subtypes&limit=200`);
+    const candidates = ((res?.results ?? []) as { title: string; isActive: boolean; subtypes?: { id: string; title: string; isActive: boolean; isReadOnly?: boolean }[] }[])
+      .filter((type) => type.isActive)
+      .flatMap((type) => (type.subtypes ?? []).filter((sub) => sub.isActive && !sub.isReadOnly).map((sub) => ({ id: sub.id, label: `${type.title} ${sub.title}` })));
+    const chosen = candidates.find((c) => /punch/i.test(c.label)) ?? candidates[0];
+    if (!chosen) throw new BadRequestException("This Autodesk project has no active issue types to file punch list items under");
+    return chosen.id;
   }
 
   private async getConnectionOrThrow(companyId: string): Promise<AutodeskConnection> {
@@ -230,18 +255,27 @@ export class AutodeskService {
     return (await res.json()) as HubsResponse;
   }
 
-  private async request(connection: AutodeskConnection, method: "POST", path: string, body: unknown): Promise<any> {
+  private async request(connection: AutodeskConnection, method: "GET" | "POST", path: string, body?: unknown): Promise<any> {
     const res = await fetch(`${APS_API_BASE_URL}/${path}`, {
       method,
       headers: {
         Authorization: `Bearer ${connection.accessToken}`,
-        "Content-Type": "application/json",
         Accept: "application/json",
+        ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
       },
-      body: JSON.stringify(body),
+      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
-    if (!res.ok) throw new Error(`Autodesk ${path} request failed (${res.status})`);
+    if (!res.ok) {
+      let detail = "";
+      try {
+        const err = await res.json();
+        detail = err?.detail ?? err?.title ?? err?.message ?? "";
+      } catch {
+        // non-JSON error body
+      }
+      throw new Error(`Autodesk ${path.split("?")[0]} failed (${res.status})${detail ? `: ${detail}` : ""}`);
+    }
     return res.json();
   }
 

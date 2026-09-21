@@ -44,7 +44,9 @@ const PROVIDERS: Record<OAuthProviderType, ProviderConfig> = {
   },
 };
 
-const LEXOFFICE_API_BASE_URL = "https://api.lexoffice.io/v1";
+/// lexoffice rebranded to Lexware Office and moved its API gateway here on 2025-05-26; the old
+/// api.lexoffice.io host was only kept "until December 2025" (developers.lexware.io, Introduction).
+const LEXOFFICE_API_BASE_URL = "https://api.lexware.io/v1";
 /// lexoffice's Public API Key doesn't expire and isn't refreshed via OAuth — this sentinel just
 /// keeps AccountingConnection.tokenExpiresAt (a non-nullable column shared with QuickBooks/Xero's
 /// real expiry) self-explanatory to anyone reading the row directly. ensureFreshToken() never
@@ -273,15 +275,18 @@ export class AccountingSyncService {
 
     const bills = await this.prisma.subcontractorCost.findMany({
       where: { companyId, externalAccountingId: null },
-      include: { subcontractor: true },
+      include: { subcontractor: true, project: { select: { currency: true } } },
     });
+    // A subcontractor cost has no currency of its own — it's in its project's currency, falling
+    // back to the company's, the same rule invoices use.
+    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId }, select: { currency: true } });
 
     const summary: SyncSummary = { synced: 0, failed: 0, errors: [] };
     for (const bill of bills) {
       const reference = `${bill.subcontractor.name} — ${bill.description}`;
       try {
         const externalVendorId = await this.ensureVendor(fresh, bill.subcontractor);
-        const externalBillId = await this.pushBill(fresh, bill, externalVendorId);
+        const externalBillId = await this.pushBill(fresh, { ...bill, currency: bill.project?.currency ?? company.currency }, externalVendorId);
         await this.prisma.subcontractorCost.update({
           where: { id: bill.id },
           data: { externalAccountingId: externalBillId, externalAccountingSyncedAt: new Date() },
@@ -481,10 +486,10 @@ export class AccountingSyncService {
     return created.id;
   }
 
-  /** Same find-by-name-or-create pattern as ensureCustomer(), but for the AP side: a QuickBooks
-   * Vendor or a Xero Contact flagged IsSupplier — neither provider shares its AR contact list
-   * with the AP one, so this is a genuinely separate lookup even for a name that also exists as
-   * a customer. */
+  /** Same find-by-name-or-create pattern as ensureCustomer(), but for the AP side. QuickBooks keeps
+   * Vendors separate from Customers; Xero has one Contact list and marks a contact as a supplier by
+   * itself once an ACCPAY invoice is posted against it (IsSupplier "cannot be set via PUT or POST"
+   * per its API spec), so on Xero this finds or creates a plain Contact. */
   private async ensureVendor(
     connection: { provider: AccountingProviderEnum; accessToken: string; externalAccountId: string },
     subcontractor: { name: string; email: string | null },
@@ -507,7 +512,7 @@ export class AccountingSyncService {
     if (existingId) return existingId;
 
     const created = await this.xeroRequest(connection, "POST", "Contacts", {
-      Contacts: [{ Name: subcontractor.name, IsSupplier: true, ...(subcontractor.email ? { EmailAddress: subcontractor.email } : {}) }],
+      Contacts: [{ Name: subcontractor.name, ...(subcontractor.email ? { EmailAddress: subcontractor.email } : {}) }],
     });
     return created.Contacts[0].ContactID;
   }
@@ -519,7 +524,7 @@ export class AccountingSyncService {
    */
   private async pushBill(
     connection: { provider: AccountingProviderEnum; accessToken: string; externalAccountId: string },
-    bill: { description: string; amount: unknown; dueDate: Date | null },
+    bill: { description: string; amount: unknown; dueDate: Date | null; currency: string },
     externalVendorId: string,
   ): Promise<string> {
     const dueDate = bill.dueDate ? bill.dueDate.toISOString().slice(0, 10) : undefined;
@@ -535,6 +540,7 @@ export class AccountingSyncService {
             Description: bill.description,
           },
         ],
+        CurrencyRef: { value: bill.currency }, // conditionally required — see pushInvoice
         ...(dueDate ? { DueDate: dueDate } : {}),
       });
       return created.Bill.Id;
@@ -561,7 +567,7 @@ export class AccountingSyncService {
    */
   private async pushInvoice(
     connection: { provider: AccountingProviderEnum; accessToken: string; externalAccountId: string },
-    invoice: { number: string; total: unknown; dueDate: Date | null },
+    invoice: { number: string; total: unknown; subtotal: unknown; taxAmount: unknown; currency: string; createdAt: Date; dueDate: Date | null },
     externalCustomerId: string,
   ): Promise<string> {
     const dueDate = invoice.dueDate ? invoice.dueDate.toISOString().slice(0, 10) : undefined;
@@ -577,19 +583,29 @@ export class AccountingSyncService {
             Description: `Invoice ${invoice.number}`,
           },
         ],
+        // Required when the company has multicurrency on; without it a non-home-currency invoice
+        // would land in the home currency. With multicurrency off, QuickBooks rejects a foreign
+        // currency outright — an error, which beats a silently mislabeled amount.
+        CurrencyRef: { value: invoice.currency },
         ...(dueDate ? { DueDate: dueDate } : {}),
       });
       return created.Invoice.Id;
     }
 
     if (connection.provider === "lexoffice") {
-      // finalize=true issues the invoice for real (lexoffice generates its PDF and locks the
+      // finalize=true issues the invoice for real (Lexware generates its PDF and locks the
       // document) rather than leaving a draft — matching the QuickBooks/Xero paths above, which
-      // also push already-decided (non-draft) invoices. EUR-only: lexoffice is a DACH-market
-      // product and doesn't support other currencies.
+      // also push already-decided (non-draft) invoices. Because it's locked on arrival, the
+      // amounts have to be right the first time: net amount plus the invoice's own VAT rate, never
+      // the gross total at 0%, which would issue a finalized invoice with no VAT on it.
+      if (invoice.currency !== "EUR") {
+        throw new Error(`Lexware Office only accepts EUR invoices; ${invoice.number} is in ${invoice.currency}`);
+      }
+      const subtotal = Number(invoice.subtotal);
+      const taxRatePercentage = subtotal > 0 ? Math.round((Number(invoice.taxAmount) / subtotal) * 10_000) / 100 : 0;
       const created = await this.lexofficeRequest(connection, "POST", "invoices?finalize=true", {
         archived: false,
-        voucherDate: new Date().toISOString(),
+        voucherDate: invoice.createdAt.toISOString(),
         address: { contactId: externalCustomerId },
         lineItems: [
           {
@@ -597,12 +613,15 @@ export class AccountingSyncService {
             name: `Invoice ${invoice.number}`,
             quantity: 1,
             unitName: "Stück",
-            unitPrice: { currency: "EUR", netAmount: Number(invoice.total), taxRatePercentage: 0 },
+            unitPrice: { currency: "EUR", netAmount: subtotal, taxRatePercentage },
             discountPercentage: 0,
           },
         ],
         totalPrice: { currency: "EUR" },
         taxConditions: { taxType: "net" },
+        // Required by the API. Construction work is a service; the invoice date stands in for the
+        // Leistungsdatum, which Cantero doesn't record separately.
+        shippingConditions: { shippingType: "service", shippingDate: invoice.createdAt.toISOString() },
       });
       return created.id;
     }

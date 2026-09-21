@@ -116,73 +116,18 @@ describe("AutodeskService", () => {
     });
   });
 
-  describe("syncPunchList", () => {
-    const activeConnection = {
-      id: "conn-1",
-      companyId: "company-a",
-      accessToken: "at",
-      refreshToken: "rt",
-      tokenExpiresAt: new Date(Date.now() + 3600_000),
-      hubId: "b.hub-1",
-    };
+  // syncPunchList's request/response behavior is pinned to the provider's published contract in
+  // src/__provider-contracts__/documented-providers.contract.spec.ts; only the guards live here.
+  describe("syncPunchList guards", () => {
+    it("throws when the project doesn't belong to this company", async () => {
+      prisma.autodeskConnection.findUnique.mockResolvedValue({ id: "c", companyId: "company-a", accessToken: "at", refreshToken: "rt", tokenExpiresAt: new Date(Date.now() + 3600_000), hubId: "b.hub" });
+      prisma.project.findFirst.mockResolvedValue(null);
+      await expect(service.syncPunchList("company-a", "project-1", "acc-project")).rejects.toThrow(NotFoundException);
+    });
 
     it("throws NotFoundException when nothing is connected", async () => {
       prisma.autodeskConnection.findUnique.mockResolvedValue(null);
-      await expect(service.syncPunchList("company-a", "project-1", "acc-proj-1")).rejects.toThrow(NotFoundException);
-    });
-
-    it("throws when the project doesn't belong to this company", async () => {
-      prisma.autodeskConnection.findUnique.mockResolvedValue(activeConnection);
-      prisma.project.findFirst.mockResolvedValue(null);
-
-      await expect(service.syncPunchList("company-a", "project-1", "acc-proj-1")).rejects.toThrow(NotFoundException);
-    });
-
-    it("saves the ACC project mapping and pushes every unsynced punch list item as an issue", async () => {
-      prisma.autodeskConnection.findUnique.mockResolvedValue(activeConnection);
-      prisma.project.findFirst.mockResolvedValue({ id: "project-1", autodeskProjectId: null });
-      prisma.punchListItem.findMany.mockResolvedValue([
-        { id: "item-1", title: "Fix drywall", description: "Crack in hallway", status: "open", dueDate: new Date("2026-10-01") },
-        { id: "item-2", title: "Paint touch-up", description: null, status: "verified", dueDate: null },
-      ]);
-      fetchMock.mockResolvedValueOnce(jsonResponse({ id: "issue-1" })).mockResolvedValueOnce(jsonResponse({ id: "issue-2" }));
-
-      const result = await service.syncPunchList("company-a", "project-1", "acc-proj-1");
-
-      expect(result).toEqual({ synced: 2, failed: 0, errors: [] });
-      expect(prisma.project.update).toHaveBeenCalledWith({ where: { id: "project-1" }, data: { autodeskProjectId: "acc-proj-1" } });
-      expect(prisma.punchListItem.update).toHaveBeenCalledWith({ where: { id: "item-1" }, data: { autodeskIssueId: "issue-1" } });
-
-      const firstBody = JSON.parse(fetchMock.mock.calls[0][1].body);
-      expect(firstBody.status).toBe("open");
-      const secondBody = JSON.parse(fetchMock.mock.calls[1][1].body);
-      expect(secondBody.status).toBe("closed"); // "verified" maps to ACC's "closed"
-    });
-
-    it("doesn't re-save the mapping when the ACC project id hasn't changed", async () => {
-      prisma.autodeskConnection.findUnique.mockResolvedValue(activeConnection);
-      prisma.project.findFirst.mockResolvedValue({ id: "project-1", autodeskProjectId: "acc-proj-1" });
-      prisma.punchListItem.findMany.mockResolvedValue([]);
-
-      await service.syncPunchList("company-a", "project-1", "acc-proj-1");
-
-      expect(prisma.project.update).not.toHaveBeenCalled();
-    });
-
-    it("collects one item's failure without aborting the rest of the batch", async () => {
-      prisma.autodeskConnection.findUnique.mockResolvedValue(activeConnection);
-      prisma.project.findFirst.mockResolvedValue({ id: "project-1", autodeskProjectId: "acc-proj-1" });
-      prisma.punchListItem.findMany.mockResolvedValue([
-        { id: "item-1", title: "Broken Item", description: null, status: "open", dueDate: null },
-        { id: "item-2", title: "OK Item", description: null, status: "open", dueDate: null },
-      ]);
-      fetchMock.mockResolvedValueOnce(jsonResponse({}, false, 500)).mockResolvedValueOnce(jsonResponse({ id: "issue-2" }));
-
-      const result = await service.syncPunchList("company-a", "project-1", "acc-proj-1");
-
-      expect(result.synced).toBe(1);
-      expect(result.failed).toBe(1);
-      expect(result.errors[0]).toContain("Broken Item");
+      await expect(service.syncPunchList("company-a", "project-1", "acc-project")).rejects.toThrow(NotFoundException);
     });
   });
 });

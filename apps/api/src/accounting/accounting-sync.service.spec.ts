@@ -13,6 +13,7 @@ describe("AccountingSyncService", () => {
     invoice: { findMany: jest.Mock; update: jest.Mock };
     subcontractorCost: { findMany: jest.Mock; update: jest.Mock };
     accountingSyncLog: { create: jest.Mock; findMany: jest.Mock };
+    company: { findUniqueOrThrow: jest.Mock };
   };
   let config: { get: jest.Mock; getOrThrow: jest.Mock };
   let jwt: JwtService;
@@ -32,6 +33,7 @@ describe("AccountingSyncService", () => {
       invoice: { findMany: jest.fn().mockResolvedValue([]), update: jest.fn() },
       subcontractorCost: { findMany: jest.fn().mockResolvedValue([]), update: jest.fn() },
       accountingSyncLog: { create: jest.fn(), findMany: jest.fn() },
+      company: { findUniqueOrThrow: jest.fn().mockResolvedValue({ currency: "EUR" }) },
     };
     config = {
       get: jest.fn((key: string) => CONFIG_VALUES[key]),
@@ -54,7 +56,7 @@ describe("AccountingSyncService", () => {
       const result = await service.connectLexoffice("company-a", "lexoffice-key");
 
       expect(fetchMock).toHaveBeenCalledWith(
-        "https://api.lexoffice.io/v1/profile",
+        "https://api.lexware.io/v1/profile",
         expect.objectContaining({ headers: expect.objectContaining({ Authorization: "Bearer lexoffice-key" }) }),
       );
       expect(prisma.accountingConnection.upsert).toHaveBeenCalledWith(
@@ -286,7 +288,7 @@ describe("AccountingSyncService", () => {
         externalAccountId: "org-123",
       });
       prisma.invoice.findMany.mockResolvedValue([
-        { id: "inv-1", number: "INV-0001", total: "1500.00", dueDate: null, client: { name: "Acme GmbH", email: "billing@acme.test" } },
+        { id: "inv-1", number: "INV-0001", total: "1785.00", subtotal: "1500.00", taxAmount: "285.00", currency: "EUR", createdAt: new Date("2026-09-01"), dueDate: null, client: { name: "Acme GmbH", email: "billing@acme.test" } },
       ]);
       fetchMock
         .mockResolvedValueOnce(jsonResponse({ content: [] })) // contact lookup by email: none found
@@ -296,10 +298,10 @@ describe("AccountingSyncService", () => {
       const result = await service.syncInvoices("company-a");
 
       expect(result).toEqual({ synced: 1, failed: 0, errors: [] });
-      expect(fetchMock).toHaveBeenNthCalledWith(1, "https://api.lexoffice.io/v1/contacts?email=billing%40acme.test", expect.anything());
+      expect(fetchMock).toHaveBeenNthCalledWith(1, "https://api.lexware.io/v1/contacts?email=billing%40acme.test", expect.anything());
       expect(fetchMock).toHaveBeenNthCalledWith(
         3,
-        "https://api.lexoffice.io/v1/invoices?finalize=true",
+        "https://api.lexware.io/v1/invoices?finalize=true",
         expect.objectContaining({ method: "POST" }),
       );
       expect(prisma.invoice.update).toHaveBeenCalledWith({
@@ -319,7 +321,7 @@ describe("AccountingSyncService", () => {
         externalAccountId: "org-123",
       });
       prisma.invoice.findMany.mockResolvedValue([
-        { id: "inv-1", number: "INV-0001", total: "1500.00", dueDate: null, client: { name: "Acme GmbH", email: "billing@acme.test" } },
+        { id: "inv-1", number: "INV-0001", total: "1785.00", subtotal: "1500.00", taxAmount: "285.00", currency: "EUR", createdAt: new Date("2026-09-01"), dueDate: null, client: { name: "Acme GmbH", email: "billing@acme.test" } },
       ]);
       fetchMock
         .mockResolvedValueOnce(jsonResponse({ content: [{ id: "contact-existing" }] }))
@@ -328,6 +330,28 @@ describe("AccountingSyncService", () => {
       await service.syncInvoices("company-a");
 
       expect(fetchMock).toHaveBeenCalledTimes(2); // lookup + invoice create, no contact-create call
+    });
+
+    it("refuses a non-EUR invoice for lexoffice instead of labeling foreign amounts as EUR", async () => {
+      prisma.accountingConnection.findUnique.mockResolvedValue({
+        id: "conn-1",
+        companyId: "company-a",
+        provider: "lexoffice",
+        accessToken: "lex-key",
+        refreshToken: "",
+        tokenExpiresAt: new Date("9999-12-31"),
+        externalAccountId: "org-123",
+      });
+      prisma.invoice.findMany.mockResolvedValue([
+        { id: "inv-1", number: "INV-0001", total: "1190", subtotal: "1000", taxAmount: "190", currency: "PLN", createdAt: new Date("2026-09-01"), dueDate: null, client: { name: "Acme", email: "a@acme.test" } },
+      ]);
+      fetchMock.mockResolvedValueOnce(jsonResponse({ content: [{ id: "contact-existing" }] }));
+
+      const result = await service.syncInvoices("company-a");
+
+      expect(result.failed).toBe(1);
+      expect(result.errors[0]).toMatch(/EUR/);
+      expect(fetchMock).toHaveBeenCalledTimes(1); // only the contact lookup — no invoice was posted
     });
 
     it("logs a sync attempt for every invoice, success and failure alike", async () => {
