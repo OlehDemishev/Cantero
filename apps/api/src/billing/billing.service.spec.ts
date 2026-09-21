@@ -1,6 +1,7 @@
 import { BadRequestException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { ConfigService } from "@nestjs/config";
+import Stripe from "stripe";
 import { BillingService } from "./billing.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { InvoicesService } from "../finance/invoices.service";
@@ -55,6 +56,25 @@ describe("BillingService", () => {
     // The Stripe SDK client is constructed internally rather than injected — swap it for a
     // mock post-construction so these tests never hit the real Stripe API.
     (service as unknown as { stripe: unknown }).stripe = stripe;
+  });
+
+  describe("constructWebhookEvent", () => {
+    // The real SDK, not the mock above: this is about Stripe's own signature check. The config
+    // mock returns "sk_test_fake" for every key, so that's also the webhook secret here.
+    const payload = JSON.stringify({ id: "evt_1", object: "event", type: "payment_intent.succeeded", data: { object: {} } });
+    beforeEach(() => {
+      (service as unknown as { stripe: unknown }).stripe = new Stripe("sk_test_fake");
+    });
+
+    it("returns the event for a correctly signed payload", () => {
+      const header = Stripe.webhooks.generateTestHeaderString({ payload, secret: "sk_test_fake" });
+      expect(service.constructWebhookEvent(Buffer.from(payload), header).id).toBe("evt_1");
+    });
+
+    it("maps a forged signature to a 400, not an unhandled 500", () => {
+      const header = Stripe.webhooks.generateTestHeaderString({ payload, secret: "whsec_someone_else" });
+      expect(() => service.constructWebhookEvent(Buffer.from(payload), header)).toThrow(BadRequestException);
+    });
   });
 
   describe("createPortalSession", () => {

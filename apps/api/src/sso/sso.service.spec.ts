@@ -25,6 +25,7 @@ const ACTOR = { userId: "user-1", name: "Owner" };
 describe("SsoService", () => {
   let service: SsoService;
   let prisma: {
+    samlConsumedAssertion: { deleteMany: jest.Mock; create: jest.Mock };
     company: { update: jest.Mock; findFirst: jest.Mock; findUnique: jest.Mock; findUniqueOrThrow: jest.Mock };
     user: { findUnique: jest.Mock; create: jest.Mock };
   };
@@ -35,6 +36,7 @@ describe("SsoService", () => {
     prisma = {
       company: { update: jest.fn(), findFirst: jest.fn(), findUnique: jest.fn(), findUniqueOrThrow: jest.fn().mockResolvedValue({}) },
       user: { findUnique: jest.fn(), create: jest.fn() },
+      samlConsumedAssertion: { deleteMany: jest.fn(), create: jest.fn() },
     };
     audit = { record: jest.fn() };
 
@@ -98,6 +100,13 @@ describe("SsoService", () => {
   });
 
   describe("handleAcs()", () => {
+    /** What node-saml's validated profile carries: the email plus the verified assertion XML. */
+    const profileFor = (email: string, assertionId = "_a1", notOnOrAfter = "2099-01-01T00:00:00Z") => ({
+      nameID: email,
+      email,
+      getAssertionXml: () =>
+        `<saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="${assertionId}" Version="2.0"><saml:Conditions NotBefore="2020-01-01T00:00:00Z" NotOnOrAfter="${notOnOrAfter}"/></saml:Assertion>`,
+    });
     const configuredCompany = { id: COMPANY_A, ssoDomain: "acme.com", ssoEntryPoint: "https://idp.example/sso", ssoIssuer: "idp-issuer", ssoCert: "cert" };
 
     it("rejects when SSO isn't configured for the company", async () => {
@@ -108,7 +117,7 @@ describe("SsoService", () => {
 
     it("rejects an assertion whose email domain doesn't match the company's configured SSO domain", async () => {
       prisma.company.findUnique.mockResolvedValue(configuredCompany);
-      validatePostResponseAsync.mockResolvedValue({ profile: { nameID: "user@other.com", email: "user@other.com" } });
+      validatePostResponseAsync.mockResolvedValue({ profile: profileFor("user@other.com") });
 
       await expect(service.handleAcs(COMPANY_A, "response", {})).rejects.toThrow(BadRequestException);
       expect(prisma.user.create).not.toHaveBeenCalled();
@@ -116,7 +125,7 @@ describe("SsoService", () => {
 
     it("rejects when the email already belongs to a user with no membership in this company", async () => {
       prisma.company.findUnique.mockResolvedValue(configuredCompany);
-      validatePostResponseAsync.mockResolvedValue({ profile: { nameID: "user@acme.com", email: "user@acme.com" } });
+      validatePostResponseAsync.mockResolvedValue({ profile: profileFor("user@acme.com") });
       prisma.user.findUnique.mockResolvedValue({ id: "existing-user", email: "user@acme.com", memberships: [] });
 
       await expect(service.handleAcs(COMPANY_A, "response", {})).rejects.toThrow(BadRequestException);
@@ -124,7 +133,7 @@ describe("SsoService", () => {
 
     it("just-in-time provisions a new user as worker on first sign-in", async () => {
       prisma.company.findUnique.mockResolvedValue(configuredCompany);
-      validatePostResponseAsync.mockResolvedValue({ profile: { nameID: "newuser@acme.com", email: "newuser@acme.com" } });
+      validatePostResponseAsync.mockResolvedValue({ profile: profileFor("newuser@acme.com") });
       prisma.user.findUnique.mockResolvedValue(null);
       prisma.user.create.mockResolvedValue({
         id: "new-user",
@@ -148,7 +157,7 @@ describe("SsoService", () => {
 
     it("reuses an existing membership without re-provisioning on a returning sign-in", async () => {
       prisma.company.findUnique.mockResolvedValue(configuredCompany);
-      validatePostResponseAsync.mockResolvedValue({ profile: { nameID: "returning@acme.com", email: "returning@acme.com" } });
+      validatePostResponseAsync.mockResolvedValue({ profile: profileFor("returning@acme.com") });
       prisma.user.findUnique.mockResolvedValue({
         id: "returning-user",
         email: "returning@acme.com",
@@ -160,6 +169,43 @@ describe("SsoService", () => {
 
       expect(result.accessToken).toBe("signed-jwt");
       expect(prisma.user.create).not.toHaveBeenCalled();
+    });
+
+    it("records the assertion ID until it expires", async () => {
+      prisma.company.findUnique.mockResolvedValue(configuredCompany);
+      validatePostResponseAsync.mockResolvedValue({ profile: profileFor("returning@acme.com", "_abc", "2099-01-01T00:00:00Z") });
+      prisma.user.findUnique.mockResolvedValue({ id: "u", email: "returning@acme.com", name: "R", memberships: [{ role: "admin" }] });
+
+      await service.handleAcs(COMPANY_A, "response", {});
+
+      expect(prisma.samlConsumedAssertion.create).toHaveBeenCalledWith({
+        data: { companyId: COMPANY_A, assertionId: "_abc", expiresAt: new Date("2099-01-01T00:00:00Z") },
+      });
+    });
+
+    it("refuses a replayed assertion without issuing a session", async () => {
+      prisma.company.findUnique.mockResolvedValue(configuredCompany);
+      validatePostResponseAsync.mockResolvedValue({ profile: profileFor("returning@acme.com") });
+      prisma.samlConsumedAssertion.create.mockRejectedValue(Object.assign(new Error("unique"), { code: "P2002" }));
+
+      await expect(service.handleAcs(COMPANY_A, "response", {})).rejects.toThrow(/already used/);
+      expect(prisma.user.findUnique).not.toHaveBeenCalled();
+    });
+
+    it("refuses an assertion with no ID rather than skipping the replay check", async () => {
+      prisma.company.findUnique.mockResolvedValue(configuredCompany);
+      validatePostResponseAsync.mockResolvedValue({ profile: { nameID: "returning@acme.com", email: "returning@acme.com", getAssertionXml: () => "<Assertion/>" } });
+
+      await expect(service.handleAcs(COMPANY_A, "response", {})).rejects.toThrow(/no ID/);
+      expect(prisma.samlConsumedAssertion.create).not.toHaveBeenCalled();
+    });
+
+    it("doesn't record anything for an assertion that fails the domain check", async () => {
+      prisma.company.findUnique.mockResolvedValue(configuredCompany);
+      validatePostResponseAsync.mockResolvedValue({ profile: profileFor("user@other.com") });
+
+      await expect(service.handleAcs(COMPANY_A, "response", {})).rejects.toThrow(BadRequestException);
+      expect(prisma.samlConsumedAssertion.create).not.toHaveBeenCalled();
     });
   });
 });

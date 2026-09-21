@@ -507,6 +507,7 @@ model Company {
   incomingEInvoices               IncomingEInvoice[]
   gobdLedgerEntries               GobdLedgerEntry[]
   intacctConnection               IntacctConnection?
+  samlConsumedAssertions          SamlConsumedAssertion[]
   expenses                        Expense[]
   materialRfqs                    MaterialRfq[]
   customRoles                     CustomRole[]
@@ -4616,6 +4617,23 @@ model IntacctConnection {
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@map("intacct_connections")
+}
+
+/// IDs of SAML assertions already exchanged for a session, kept until the assertion itself expires
+/// — without this the same signed IdP response could be POSTed to the ACS endpoint again and again
+/// within its validity window, each time minting a fresh session (see SsoService.handleAcs). In
+/// Postgres rather than process memory so it holds across every API instance.
+model SamlConsumedAssertion {
+  companyId   String
+  assertionId String
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@id([companyId, assertionId])
+  @@index([expiresAt])
+  @@map("saml_consumed_assertions")
 }
 
 /// One connected "Project for the Web" environment per company — same OAuth2 shape as

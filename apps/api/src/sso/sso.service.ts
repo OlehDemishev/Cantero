@@ -16,6 +16,8 @@ interface SsoConfig {
   ssoCert: string | null;
 }
 
+const ASSERTION_FALLBACK_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+
 @Injectable()
 export class SsoService {
   constructor(
@@ -101,6 +103,7 @@ export class SsoService {
     if (email.split("@")[1] !== company.ssoDomain) {
       throw new BadRequestException("The signed-in email doesn't match this company's SSO domain");
     }
+    await this.consumeAssertion(companyId, profile);
 
     let user = await this.prisma.user.findUnique({
       where: { email },
@@ -140,6 +143,28 @@ export class SsoService {
     } satisfies AuthUser);
 
     return { accessToken };
+  }
+
+  /** Refuses a second use of the same signed assertion. Runs only after the signature and domain
+   * checks pass, so garbage can't fill the table. Where the assertion carries no NotOnOrAfter, the
+   * ID is kept for a week — long enough that replaying it isn't a practical attack. */
+  private async consumeAssertion(companyId: string, profile: { getAssertionXml?: () => string } | null | undefined): Promise<void> {
+    const xml = profile?.getAssertionXml?.() ?? "";
+    const assertionId = /<(?:[\w-]+:)?Assertion\b[^>]*?\sID="([^"]+)"/.exec(xml)?.[1];
+    if (!assertionId) throw new BadRequestException("The IdP's assertion has no ID, so it can't be protected against replay");
+    const notOnOrAfter = /<(?:[\w-]+:)?Conditions\b[^>]*?\sNotOnOrAfter="([^"]+)"/.exec(xml)?.[1];
+    const parsed = notOnOrAfter ? Date.parse(notOnOrAfter) : NaN;
+    const expiresAt = new Date(Number.isNaN(parsed) ? Date.now() + ASSERTION_FALLBACK_RETENTION_MS : parsed);
+
+    await this.prisma.samlConsumedAssertion.deleteMany({ where: { expiresAt: { lt: new Date() } } });
+    try {
+      await this.prisma.samlConsumedAssertion.create({ data: { companyId, assertionId, expiresAt } });
+    } catch (err) {
+      if ((err as { code?: string }).code === "P2002") {
+        throw new BadRequestException("This sign-in response was already used — start the sign-in again");
+      }
+      throw err;
+    }
   }
 
   private buildSaml(

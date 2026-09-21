@@ -182,9 +182,19 @@ export class BillingService {
     return this.prisma.subscription.update({ where: { companyId }, data: { seats } });
   }
 
+  /** A bad signature is the sender's fault, so it's a 400 — left unmapped, Stripe's error surfaced
+   * as a 500, which Stripe treats as "retry" and Sentry reports as a server fault for every forged
+   * or misrouted request. */
   constructWebhookEvent(rawBody: Buffer, signature: string): Stripe.Event {
     const webhookSecret = this.config.getOrThrow<string>("STRIPE_WEBHOOK_SECRET");
-    return this.stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
+    try {
+      return this.stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
+    } catch (err) {
+      if (err instanceof Stripe.errors.StripeSignatureVerificationError) {
+        throw new BadRequestException("Invalid Stripe signature");
+      }
+      throw err;
+    }
   }
 
   async handleWebhookEvent(event: Stripe.Event): Promise<void> {
