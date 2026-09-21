@@ -6,6 +6,7 @@ import Link from "next/link";
 import { SUPPLIER_DOCUMENT_TYPES, type ImportResult, type SupplierDocumentType } from "@cantero/shared";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { CertificateAttachment } from "@/components/certificate-attachment";
+import { SupplierAccountingFields } from "@/components/supplier-accounting-fields";
 import { MaterialRfqsPanel } from "@/components/material-rfqs-panel";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CloseIcon, SuppliersIcon } from "@/components/nav-icons";
@@ -17,6 +18,8 @@ interface Supplier {
   name: string;
   email: string | null;
   phone: string | null;
+  vatId: string | null;
+  sageVendorId: string | null;
 }
 interface Scorecard {
   totalOrders: number;
@@ -294,6 +297,8 @@ export default function SuppliersPage() {
                             </>
                           )}
                         </div>
+
+                        <SupplierAccountingFields key={`${s.id}-${s.vatId}-${s.sageVendorId}`} supplier={s} onSaved={load} />
 
                         <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-3">
                           <div className="mb-1.5 flex items-center justify-between">

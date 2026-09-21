@@ -1,14 +1,17 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, Post, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, UploadedFile, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
+import { Roles } from "../common/decorators/roles.decorator";
 import { MAX_UPLOAD_BYTES } from "../common/upload-limits";
 import {
   addSupplierDocumentSchema,
   createSupplierReviewSchema,
   createSupplierSchema,
+  updateSupplierSchema,
   type AddSupplierDocumentInput,
   type AuthUser,
   type CreateSupplierInput,
   type CreateSupplierReviewInput,
+  type UpdateSupplierInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
@@ -72,6 +75,12 @@ export class SuppliersController {
     @Body(new ZodValidationPipe(createSupplierSchema)) body: CreateSupplierInput,
   ) {
     return this.service.create(user.companyId, body);
+  }
+
+  @Roles("owner", "admin", "accountant")
+  @Patch(":id")
+  update(@CurrentUser() user: AuthUser, @Param("id") id: string, @Body(new ZodValidationPipe(updateSupplierSchema)) body: UpdateSupplierInput) {
+    return this.service.update(user.companyId, id, body);
   }
 
   @Post(":id/catalog-sync")

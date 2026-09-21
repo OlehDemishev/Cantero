@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { SageApExportPanel } from "@/components/sage-ap-export-panel";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 
@@ -179,6 +180,8 @@ export function VendorBillsPanel() {
     <div className="mt-10">
       <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("vendorBillsTitle")}</h2>
       <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("vendorBillsHint")}</p>
+
+      <SageApExportPanel />
 
       {aging && aging.grandTotal > 0 && (
         <div className="card mb-4">

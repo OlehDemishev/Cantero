@@ -27,6 +27,8 @@ import { MeetingsService } from "./meetings.service";
 import { MsProjectController } from "./ms-project.controller";
 import { MsProjectService } from "./ms-project.service";
 import { AutodeskController } from "./autodesk.controller";
+import { ScheduleFilesController } from "./schedule-files.controller";
+import { ScheduleFilesService } from "./schedule-files.service";
 import { AutodeskService } from "./autodesk.service";
 import { WeatherModule } from "../weather/weather.module";
 import { FinanceModule } from "../finance/finance.module";
@@ -49,10 +51,12 @@ import { DocumentsModule } from "../documents/documents.module";
     MeetingsController,
     MsProjectController,
     AutodeskController,
+    ScheduleFilesController,
   ],
   providers: [
     ProjectsService,
     TasksService,
+    ScheduleFilesService,
     MilestonesService,
     DailyLogsService,
     PunchListService,

@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import type { AddSupplierDocumentInput, CreateSupplierInput, CreateSupplierReviewInput, ImportResult } from "@cantero/shared";
+import type { AddSupplierDocumentInput, CreateSupplierInput, CreateSupplierReviewInput, ImportResult, UpdateSupplierInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { parseCsvRecords } from "../common/csv";
@@ -24,6 +24,11 @@ export class SuppliersService {
 
   create(companyId: string, input: CreateSupplierInput) {
     return this.prisma.supplier.create({ data: { ...input, companyId } });
+  }
+
+  async update(companyId: string, id: string, input: UpdateSupplierInput) {
+    await this.get(companyId, id);
+    return this.prisma.supplier.update({ where: { id }, data: { vatId: input.vatId, sageVendorId: input.sageVendorId } });
   }
 
   /** On-time rate and spend are computed from every received purchase order — "on time" means

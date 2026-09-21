@@ -86,8 +86,17 @@ export const createSupplierSchema = z.object({
   name: z.string().min(1).max(160),
   email: z.string().email().optional(),
   phone: z.string().max(40).optional(),
+  vatId: z.string().max(40).optional(),
+  sageVendorId: z.string().max(10).optional(),
 });
 export type CreateSupplierInput = z.infer<typeof createSupplierSchema>;
+
+/** Only the accounting identifiers are editable after creation; null clears one. */
+export const updateSupplierSchema = z.object({
+  vatId: z.string().max(40).nullable().optional(),
+  sageVendorId: z.string().max(10).nullable().optional(),
+});
+export type UpdateSupplierInput = z.infer<typeof updateSupplierSchema>;
 
 export const SUPPLIER_DOCUMENT_TYPES = ["general_liability_insurance", "workers_comp_insurance", "other"] as const;
 export type SupplierDocumentType = (typeof SUPPLIER_DOCUMENT_TYPES)[number];

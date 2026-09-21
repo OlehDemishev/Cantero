@@ -1301,6 +1301,10 @@
     "noKits": "Aún no hay kits."
   },
   "suppliers": {
+    "accountingIds": "Identificadores contables",
+    "vatId": "NIF/IVA",
+    "sageVendorId": "Vendor ID de Sage",
+    "accountingIdsHint": "El NIF/IVA permite emparejar automáticamente las facturas electrónicas recibidas con este proveedor; el Vendor ID de Sage (máx. 10 caracteres) es necesario para exportar sus facturas a Sage 300 CRE.",
     "title": "Proveedores",
     "emptyTitle": "Aún no hay proveedores",
     "empty": "Añada sus proveedores de materiales y equipos para hacer seguimiento de pedidos, documentos y rendimiento de entrega.",
@@ -2397,6 +2401,24 @@
     "connectedSummary": "Conectado a DocuSign el {date}.",
     "disconnect": "Desconectar",
     "confirmDisconnect": "¿Desconectar DocuSign? No podrás enviar nuevos contratos por ahí hasta que vuelvas a conectar — los ya enviados seguirán funcionando."
+  },
+  "sageExport": {
+    "title": "Exportar a Sage 300 CRE",
+    "hint": "Facturas de proveedor aprobadas y pagadas como archivo para Cuentas por pagar > Importar facturas. Cada proveedor necesita antes su Vendor ID de Sage (Proveedores). Trabajo, código de costo e impuesto quedan en blanco; deje las cuentas vacías para que Sage use los valores del proveedor. Pruebe primero la importación en un conjunto de datos de prueba.",
+    "expenseAccount": "Cuenta de gasto (opcional)",
+    "apAccount": "Cuenta de cuentas por pagar (opcional)",
+    "export": "Descargar archivo de importación",
+    "failed": "No se pudieron exportar las facturas."
+  },
+  "scheduleFiles": {
+    "title": "Importar / exportar archivo de cronograma",
+    "hint": "Intercambie el cronograma con MS Project de escritorio (XML) o Primavera P6 (XER), sin necesidad de cuenta. Las importaciones se añaden a las tareas existentes sin reemplazarlas; las fechas se importan tal cual están en el archivo.",
+    "importLabel": "Importar un cronograma (.xml de MS Project o .xer de P6)",
+    "importFailed": "No se pudo importar este archivo.",
+    "exportFailed": "No se pudo exportar el cronograma.",
+    "importResult": "Importadas {tasks} tareas, {milestones} hitos y {dependencies} dependencias ({skipped} vínculos omitidos: afectaban a un hito o estaban repetidos).",
+    "exportMspdi": "Exportar para MS Project (XML)",
+    "exportXer": "Exportar para Primavera P6 (XER)"
   },
   "msProject": {
     "title": "Sincronización con MS Project",

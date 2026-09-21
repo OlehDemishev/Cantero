@@ -7,6 +7,7 @@ import { runSerializable } from "../common/prisma/serializable-transaction";
 import { matchVendorBill } from "./vendor-bill-match";
 import { calculateApAging } from "./ap-aging";
 import { calculateDisbursementCalendar } from "./disbursement-calendar";
+import { assertSageBillsExportable, buildSage300CreApInvoices } from "./sage-300-cre";
 
 const DISBURSEMENT_CALENDAR_WEEKS = 8;
 
@@ -189,6 +190,44 @@ export class VendorBillsService {
     });
     this.audit.record(companyId, actor, "vendor_bill.paid", "VendorBill", id, `Marked bill ${bill.billNumber} paid`);
     return this.withMatch(updated);
+  }
+
+  /** Approved and paid bills (never drafts or voids) as a Sage 300 CRE AP "Import Invoices" file —
+   * see sage-300-cre.ts for the format and what it deliberately leaves blank. Refuses the whole
+   * export, naming every offender, rather than silently dropping bills Sage would have rejected. */
+  async exportSage300Cre(
+    companyId: string,
+    actor: AuditActor,
+    options: { from?: Date; to?: Date; expenseAccount?: string; apAccount?: string },
+  ): Promise<string> {
+    const bills = await this.prisma.vendorBill.findMany({
+      where: {
+        companyId,
+        status: { in: ["approved", "paid"] },
+        ...(options.from || options.to ? { billDate: { ...(options.from ? { gte: options.from } : {}), ...(options.to ? { lte: options.to } : {}) } } : {}),
+      },
+      include: { supplier: true, lines: true },
+      orderBy: { billDate: "asc" },
+    });
+    if (bills.length === 0) throw new BadRequestException("No approved or paid bills to export for that period");
+
+    const exportable = bills.map((b) => ({
+      billNumber: b.billNumber,
+      billDate: b.billDate,
+      dueDate: b.dueDate,
+      scheduledPaymentDate: b.scheduledPaymentDate,
+      notes: b.notes,
+      supplierName: b.supplier.name,
+      sageVendorId: b.supplier.sageVendorId,
+      lines: b.lines.map((l) => ({ description: l.description, quantity: Number(l.quantity), unitPrice: Number(l.unitPrice) })),
+    }));
+    try {
+      assertSageBillsExportable(exportable);
+    } catch (err) {
+      throw new BadRequestException(err instanceof Error ? err.message : "Bills can't be exported");
+    }
+    this.audit.record(companyId, actor, "vendor_bill.exported_sage", "VendorBill", bills[0].id, `Exported ${bills.length} bill(s) to a Sage 300 CRE import file`);
+    return buildSage300CreApInvoices(exportable, { expenseAccount: options.expenseAccount, apAccount: options.apAccount });
   }
 
   async agingReport(companyId: string) {

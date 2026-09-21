@@ -1301,6 +1301,10 @@
     "noKits": "No kits yet."
   },
   "suppliers": {
+    "accountingIds": "Accounting identifiers",
+    "vatId": "VAT ID",
+    "sageVendorId": "Sage Vendor ID",
+    "accountingIdsHint": "The VAT ID lets incoming e-invoices match this supplier automatically; the Sage Vendor ID (max 10 characters) is required to export its bills to Sage 300 CRE.",
     "title": "Suppliers",
     "emptyTitle": "No suppliers yet",
     "empty": "Add your material and equipment suppliers to track orders, documents, and delivery performance.",
@@ -2397,6 +2401,24 @@
     "connectedSummary": "Connected to DocuSign on {date}.",
     "disconnect": "Disconnect",
     "confirmDisconnect": "Disconnect DocuSign? You won't be able to send new contracts through it until you reconnect — contracts already sent keep working."
+  },
+  "sageExport": {
+    "title": "Export to Sage 300 CRE",
+    "hint": "Approved and paid bills as an Accounts Payable > Import Invoices file. Each supplier needs its Sage Vendor ID first (Suppliers). Job, cost code and tax are left blank; leave the accounts empty to let Sage use the vendor's defaults. Test the import in a scratch data set first.",
+    "expenseAccount": "Expense account (optional)",
+    "apAccount": "AP account (optional)",
+    "export": "Download import file",
+    "failed": "Couldn't export the bills."
+  },
+  "scheduleFiles": {
+    "title": "Import / export schedule file",
+    "hint": "Exchange the schedule with desktop MS Project (XML) or Primavera P6 (XER) — no account needed. Imports are added to the existing tasks, never replacing them; dates come across exactly as in the file.",
+    "importLabel": "Import a schedule (.xml from MS Project, or .xer from P6)",
+    "importFailed": "Couldn't import this file.",
+    "exportFailed": "Couldn't export the schedule.",
+    "importResult": "Imported {tasks} tasks, {milestones} milestones and {dependencies} dependencies ({skipped} links skipped — they touched a milestone or repeated another).",
+    "exportMspdi": "Export for MS Project (XML)",
+    "exportXer": "Export for Primavera P6 (XER)"
   },
   "msProject": {
     "title": "MS Project sync",

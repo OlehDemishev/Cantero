@@ -167,6 +167,44 @@ describe("VendorBillsService", () => {
     });
   });
 
+  describe("exportSage300Cre()", () => {
+    const exportable = (over: Record<string, unknown> = {}) => ({
+      id: "bill-1",
+      billNumber: "B-100",
+      billDate: new Date("2026-09-10"),
+      dueDate: null,
+      scheduledPaymentDate: null,
+      notes: null,
+      supplier: { name: "Acme Supply", sageVendorId: "ACME" },
+      lines: [{ description: "Tile", quantity: 10, unitPrice: 5 }],
+      ...over,
+    });
+
+    it("refuses when there's nothing approved or paid to export", async () => {
+      prisma.vendorBill.findMany.mockResolvedValue([]);
+      await expect(service.exportSage300Cre(COMPANY_A, { name: "Owner" }, {})).rejects.toThrow(BadRequestException);
+    });
+
+    it("only asks for approved/paid bills", async () => {
+      prisma.vendorBill.findMany.mockResolvedValue([exportable()]);
+      await service.exportSage300Cre(COMPANY_A, { name: "Owner" }, {});
+      expect(prisma.vendorBill.findMany.mock.calls[0][0].where.status).toEqual({ in: ["approved", "paid"] });
+    });
+
+    it("refuses the whole export when a supplier has no Sage Vendor ID, naming the bill", async () => {
+      prisma.vendorBill.findMany.mockResolvedValue([exportable({ supplier: { name: "Acme Supply", sageVendorId: null } })]);
+      await expect(service.exportSage300Cre(COMPANY_A, { name: "Owner" }, {})).rejects.toThrow(/B-100.*no Sage Vendor ID/);
+    });
+
+    it("returns an APIF/APDF file with the given accounts", async () => {
+      prisma.vendorBill.findMany.mockResolvedValue([exportable()]);
+      const text = await service.exportSage300Cre(COMPANY_A, { name: "Owner" }, { expenseAccount: "50-1000" });
+      const rows = text.trim().split("\r\n");
+      expect(rows[0].startsWith("APIF,ACME,B-100")).toBe(true);
+      expect(rows[1].split(",")[11]).toBe("50-1000");
+    });
+  });
+
   describe("markPaid()", () => {
     it("rejects marking a draft bill (not yet approved) as paid", async () => {
       prisma.vendorBill.findFirst.mockResolvedValue(bill({ status: "draft" }));

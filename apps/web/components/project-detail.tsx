@@ -66,6 +66,7 @@ import { ClientChangeRequestsPanel } from "@/components/client-change-requests-p
 import { SafetyObservationsPanel } from "@/components/safety-observations-panel";
 import { ProjectHealthBadge } from "@/components/project-health-badge";
 import { MsProjectSyncPanel } from "@/components/ms-project-sync-panel";
+import { ScheduleFilesPanel } from "@/components/schedule-files-panel";
 import { AutodeskSyncPanel } from "@/components/autodesk-sync-panel";
 import { SUPPORTED_CURRENCIES } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
@@ -408,6 +409,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
           <LookAheadPanel projectId={projectId} />
           <ProgressTrackingPanel projectId={projectId} />
           <CommissioningPanel projectId={projectId} />
+          <ScheduleFilesPanel projectId={projectId} />
           <MsProjectSyncPanel projectId={projectId} />
         </>
       )}

@@ -2019,15 +2019,19 @@ model StockCountLine {
 }
 
 model Supplier {
-  id        String  @id @default(uuid())
-  companyId String
-  name      String
-  email     String?
-  phone     String?
+  id           String  @id @default(uuid())
+  companyId    String
+  name         String
+  email        String?
+  phone        String?
   /// VAT/tax identification number (e.g. German "USt-IdNr.") — used to match this supplier
   /// against the seller identity on an incoming e-invoice (see IncomingEInvoicesService). Not
   /// required for domestic suppliers who never send structured e-invoices.
-  vatId     String?
+  vatId        String?
+  /// This supplier's Vendor ID inside the company's Sage 300 CRE (max 10 chars there) — the AP
+  /// invoice export writes it verbatim, since Sage rejects any invoice whose vendor it doesn't
+  /// already know. Nothing here can guess it, so it's entered by hand.
+  sageVendorId String?
 
   company                     Company                      @relation(fields: [companyId], references: [id], onDelete: Cascade)
   purchaseOrders              PurchaseOrder[]

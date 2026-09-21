@@ -1301,6 +1301,10 @@
     "noKits": "Brak zestawów."
   },
   "suppliers": {
+    "accountingIds": "Identyfikatory księgowe",
+    "vatId": "NIP/VAT ID",
+    "sageVendorId": "Sage Vendor ID",
+    "accountingIdsHint": "NIP/VAT ID pozwala automatycznie dopasować przychodzące e-faktury do tego dostawcy; Sage Vendor ID (maks. 10 znaków) jest potrzebny do eksportu jego faktur do Sage 300 CRE.",
     "title": "Dostawcy",
     "emptyTitle": "Brak dostawców",
     "empty": "Dodaj dostawców materiałów i sprzętu, aby śledzić zamówienia, dokumenty i terminowość dostaw.",
@@ -2397,6 +2401,24 @@
     "connectedSummary": "Połączono z DocuSign {date}.",
     "disconnect": "Rozłącz",
     "confirmDisconnect": "Rozłączyć DocuSign? Nie będzie można wysyłać nowych umów tą drogą do czasu ponownego połączenia — już wysłane umowy będą nadal działać."
+  },
+  "sageExport": {
+    "title": "Eksport do Sage 300 CRE",
+    "hint": "Zatwierdzone i opłacone faktury zakupu jako plik dla Accounts Payable > Import Invoices. Każdy dostawca musi najpierw mieć Sage Vendor ID (Dostawcy). Zlecenie, kod kosztów i podatek zostają puste; zostaw konta puste, aby Sage użył domyślnych wartości dostawcy. Najpierw przetestuj import na zestawie testowym.",
+    "expenseAccount": "Konto kosztowe (opcjonalne)",
+    "apAccount": "Konto zobowiązań (opcjonalne)",
+    "export": "Pobierz plik importu",
+    "failed": "Nie udało się wyeksportować faktur."
+  },
+  "scheduleFiles": {
+    "title": "Import / eksport pliku harmonogramu",
+    "hint": "Wymieniaj harmonogram z MS Project (desktop, XML) lub Primavera P6 (XER) — bez konta. Import dodaje zadania do istniejących, niczego nie zastępując; daty są przenoszone dokładnie tak jak w pliku.",
+    "importLabel": "Importuj harmonogram (.xml z MS Project lub .xer z P6)",
+    "importFailed": "Nie udało się zaimportować tego pliku.",
+    "exportFailed": "Nie udało się wyeksportować harmonogramu.",
+    "importResult": "Zaimportowano {tasks} zadań, {milestones} kamieni milowych i {dependencies} zależności (pominięto {skipped} powiązań — dotyczyły kamienia milowego lub się powtarzały).",
+    "exportMspdi": "Eksportuj dla MS Project (XML)",
+    "exportXer": "Eksportuj dla Primavera P6 (XER)"
   },
   "msProject": {
     "title": "Synchronizacja z MS Project",

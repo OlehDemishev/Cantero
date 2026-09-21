@@ -1301,6 +1301,10 @@
     "noKits": "Noch keine Sets."
   },
   "suppliers": {
+    "accountingIds": "Buchhaltungskennungen",
+    "vatId": "USt-IdNr.",
+    "sageVendorId": "Sage-Vendor-ID",
+    "accountingIdsHint": "Mit der USt-IdNr. werden eingehende E-Rechnungen automatisch diesem Lieferanten zugeordnet; die Sage-Vendor-ID (max. 10 Zeichen) wird für den Export seiner Rechnungen nach Sage 300 CRE benötigt.",
     "title": "Lieferanten",
     "emptyTitle": "Noch keine Lieferanten",
     "empty": "Fügen Sie Ihre Material- und Ausrüstungslieferanten hinzu, um Bestellungen, Dokumente und Lieferleistung zu verfolgen.",
@@ -2397,6 +2401,24 @@
     "connectedSummary": "Mit DocuSign verbunden am {date}.",
     "disconnect": "Trennen",
     "confirmDisconnect": "DocuSign trennen? Sie können darüber keine neuen Verträge mehr senden, bis Sie sich erneut verbinden — bereits gesendete Verträge funktionieren weiterhin."
+  },
+  "sageExport": {
+    "title": "Export nach Sage 300 CRE",
+    "hint": "Freigegebene und bezahlte Eingangsrechnungen als Datei für Kreditoren > Rechnungen importieren. Jeder Lieferant braucht zuerst seine Sage-Vendor-ID (Lieferanten). Auftrag, Kostenstelle und Steuer bleiben leer; Konten leer lassen, damit Sage die Standardwerte des Lieferanten nutzt. Import zuerst in einem Testdatenbestand prüfen.",
+    "expenseAccount": "Aufwandskonto (optional)",
+    "apAccount": "Kreditorenkonto (optional)",
+    "export": "Importdatei herunterladen",
+    "failed": "Die Rechnungen konnten nicht exportiert werden."
+  },
+  "scheduleFiles": {
+    "title": "Terminplan-Datei importieren / exportieren",
+    "hint": "Terminplan mit MS Project Desktop (XML) oder Primavera P6 (XER) austauschen — ohne Konto. Importierte Vorgänge werden zu den bestehenden hinzugefügt und ersetzen nichts; Termine werden exakt wie in der Datei übernommen.",
+    "importLabel": "Terminplan importieren (.xml aus MS Project oder .xer aus P6)",
+    "importFailed": "Diese Datei konnte nicht importiert werden.",
+    "exportFailed": "Der Terminplan konnte nicht exportiert werden.",
+    "importResult": "{tasks} Vorgänge, {milestones} Meilensteine und {dependencies} Abhängigkeiten importiert ({skipped} Verknüpfungen übersprungen — sie betrafen einen Meilenstein oder waren doppelt).",
+    "exportMspdi": "Für MS Project exportieren (XML)",
+    "exportXer": "Für Primavera P6 exportieren (XER)"
   },
   "msProject": {
     "title": "MS-Project-Synchronisierung",

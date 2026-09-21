@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Post } from "@nestjs/common";
+import { Body, Controller, Get, Header, Param, Post, Query, Res } from "@nestjs/common";
+import type { Response } from "express";
 import {
   createVendorBillSchema,
   schedulePaymentSchema,
@@ -25,6 +26,26 @@ export class VendorBillsController {
   @Get("aging-report")
   agingReport(@CurrentUser() user: AuthUser) {
     return this.service.agingReport(user.companyId);
+  }
+
+  @Roles("owner", "admin", "accountant")
+  @Get("export/sage-300-cre.txt")
+  @Header("Content-Type", "application/octet-stream")
+  async exportSage300Cre(
+    @CurrentUser() user: AuthUser,
+    @Res({ passthrough: true }) res: Response,
+    @Query("from") from?: string,
+    @Query("to") to?: string,
+    @Query("expenseAccount") expenseAccount?: string,
+    @Query("apAccount") apAccount?: string,
+  ) {
+    res.set("Content-Disposition", 'attachment; filename="ap-invoices-sage-300-cre.txt"');
+    return this.service.exportSage300Cre(user.companyId, { userId: user.userId, name: user.name }, {
+      from: from ? new Date(from) : undefined,
+      to: to ? new Date(to) : undefined,
+      expenseAccount: expenseAccount || undefined,
+      apAccount: apAccount || undefined,
+    });
   }
 
   @Get("disbursement-calendar")
