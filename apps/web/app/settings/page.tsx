@@ -27,6 +27,7 @@ import { DataPrivacyPanel } from "@/components/data-privacy-panel";
 import { DeletedDocumentsPanel } from "@/components/deleted-documents-panel";
 import { AccountingSyncPanel } from "@/components/accounting-sync-panel";
 import { DocusignSettingsPanel } from "@/components/docusign-settings-panel";
+import { IntacctSettingsPanel } from "@/components/intacct-settings-panel";
 import { MsProjectSettingsPanel } from "@/components/ms-project-settings-panel";
 import { AutodeskSettingsPanel } from "@/components/autodesk-settings-panel";
 import { TwoFactorSettingsPanel } from "@/components/two-factor-settings-panel";
@@ -124,6 +125,8 @@ export default function SettingsPage() {
         {activeTab === "integrations" && <AccountingSyncPanel canManage={canManageAccounting} />}
 
         {activeTab === "integrations" && <DocusignSettingsPanel canManage={isManager} />}
+
+        {activeTab === "integrations" && <IntacctSettingsPanel canManage={canManageAccounting} />}
 
         {activeTab === "integrations" && <MsProjectSettingsPanel canManage={isManager} />}
 

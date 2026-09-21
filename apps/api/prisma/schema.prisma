@@ -506,6 +506,7 @@ model Company {
   autodeskConnection              AutodeskConnection?
   incomingEInvoices               IncomingEInvoice[]
   gobdLedgerEntries               GobdLedgerEntry[]
+  intacctConnection               IntacctConnection?
   expenses                        Expense[]
   materialRfqs                    MaterialRfq[]
   customRoles                     CustomRole[]
@@ -1462,12 +1463,14 @@ model ChangeOrder {
 
   /// Same shape as Estimate.reminderCount/lastReminderSentAt — ChangeOrderRemindersService's
   /// escalating cadence, capped and self-clearing the same way once clientDecision leaves "pending".
-  reminderCount      Int       @default(0)
-  lastReminderSentAt DateTime?
+  reminderCount        Int       @default(0)
+  lastReminderSentAt   DateTime?
   /// Calendar-day extension this change order adds to (positive) or pulls into (negative) the
   /// project schedule — entered by whoever raises the CO, since it isn't derivable from cost lines
   /// alone. Null means no schedule impact has been assessed yet.
-  scheduleImpactDays Int?
+  scheduleImpactDays   Int?
+  /// Set once this change order has been pushed to Intacct as a project change order.
+  intacctChangeOrderId String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2567,6 +2570,11 @@ model Project {
   /// Set once this project has been pushed to a connected Project for the Web plan — see
   /// MsProjectService.syncProject(). Null means not yet synced (or MS Project isn't connected).
   msProjectExternalId         String?
+  /// Project dimension ID inside the company's Sage Intacct, typed in when pushing the contract.
+  intacctProjectId            String?
+  /// Set once this project's contract exists in Intacct — the returned record id, so a second
+  /// push refuses instead of creating a duplicate contract.
+  intacctContractId           String?
   /// The matching Autodesk Construction Cloud project's own id, entered by the company (ACC
   /// projects are set up in Autodesk's own UI — this app never creates one) — see
   /// AutodeskService.syncPunchList(). Null means no ACC project mapped yet.
@@ -4591,6 +4599,25 @@ model DocusignConnection {
   @@map("docusign_connections")
 }
 
+/// Company-level OAuth2 connection to Sage Intacct's REST API (authorization code grant with
+/// offline_access, so a refresh token comes back). Same shape as DocusignConnection; unlike
+/// DocuSign there's no per-account API host — every Intacct tenant is at the one api.intacct.com.
+model IntacctConnection {
+  id                String   @id @default(uuid())
+  companyId         String   @unique
+  accessToken       String
+  refreshToken      String
+  tokenExpiresAt    DateTime
+  /// The Intacct Item ID every pushed change order is created against — Intacct requires one on
+  /// a project change order and nothing in Cantero can know which of the company's items to use.
+  changeOrderItemId String?
+  connectedAt       DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("intacct_connections")
+}
+
 /// One connected "Project for the Web" environment per company — same OAuth2 shape as
 /// DocuSign/QuickBooks/Xero (see MsProjectService), but for Microsoft's modern cloud Project
 /// product, which stores its data in a Power Platform/Dataverse environment rather than behind
@@ -4945,6 +4972,8 @@ model Client {
   /// excludes this client's invoices from the DATEV export with a warning rather than guessing an
   /// account.
   datevDebitorNumber       String?
+  /// Customer ID of this client inside the company's Sage Intacct — needed to create its project contract.
+  intacctCustomerId        String?
   /// Buyer's Peppol Participant ID (EndpointID), for outgoing BIS Billing 3.0 e-invoices — see
   /// InvoicesService.generatePeppolBisXml. Optional and never blocks export (unlike the seller's
   /// own peppolScheme/peppolParticipantId on Company): it would only matter for actually routing

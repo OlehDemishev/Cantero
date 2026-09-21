@@ -315,3 +315,14 @@ export const voidVendorBillSchema = z.object({
   reason: z.string().min(1).max(500),
 });
 export type VoidVendorBillInput = z.infer<typeof voidVendorBillSchema>;
+
+export const pushIntacctContractSchema = z.object({
+  intacctProjectId: z.string().trim().min(1).max(100),
+  intacctCustomerId: z.string().trim().min(1).max(100),
+});
+export type PushIntacctContractInput = z.infer<typeof pushIntacctContractSchema>;
+
+export const updateIntacctSettingsSchema = z.object({
+  changeOrderItemId: z.string().trim().max(100).nullable(),
+});
+export type UpdateIntacctSettingsInput = z.infer<typeof updateIntacctSettingsSchema>;

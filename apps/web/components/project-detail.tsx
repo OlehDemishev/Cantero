@@ -67,6 +67,7 @@ import { SafetyObservationsPanel } from "@/components/safety-observations-panel"
 import { ProjectHealthBadge } from "@/components/project-health-badge";
 import { MsProjectSyncPanel } from "@/components/ms-project-sync-panel";
 import { ScheduleFilesPanel } from "@/components/schedule-files-panel";
+import { IntacctProjectPanel } from "@/components/intacct-project-panel";
 import { AutodeskSyncPanel } from "@/components/autodesk-sync-panel";
 import { SUPPORTED_CURRENCIES } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
@@ -416,6 +417,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
 
       {activeTab === "financials" && (
         <>
+          <IntacctProjectPanel projectId={projectId} />
           <BudgetPanel projectId={projectId} />
           <AllowancesPanel projectId={projectId} />
           <UnitPriceTmPanel projectId={projectId} />
