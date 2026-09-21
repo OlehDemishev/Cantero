@@ -52,6 +52,30 @@ describe("ProjectAccessGuard", () => {
     expect(projectAccess.assertAccess).toHaveBeenCalledWith("c1", "p1", "u1", "worker");
   });
 
+  it("reads :id as the project on a projects/:id route", async () => {
+    const { reflector, context } = makeContext({ user: { userId: "u1", companyId: "c1", role: "worker" }, route: { path: "/api/projects/:id/permits" }, params: { id: "p1" }, query: {} });
+    const guard = new ProjectAccessGuard(reflector, projectAccess as unknown as ProjectAccessService);
+
+    await guard.canActivate(context);
+    expect(projectAccess.assertAccess).toHaveBeenCalledWith("c1", "p1", "u1", "worker");
+  });
+
+  it("propagates the denial on a projects/:id route", async () => {
+    projectAccess.assertAccess.mockRejectedValue(new ForbiddenException());
+    const { reflector, context } = makeContext({ user: { userId: "u1", companyId: "c1", role: "worker" }, route: { path: "/api/projects/:id" }, params: { id: "p1" } });
+    const guard = new ProjectAccessGuard(reflector, projectAccess as unknown as ProjectAccessService);
+
+    await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
+  });
+
+  it.each(["/api/tasks/:id", "/api/subprojects/:id/files", "/api/projects/:projectIdx"])("doesn't treat :id as a project on %s", async (path) => {
+    const { reflector, context } = makeContext({ user: { userId: "u1", companyId: "c1", role: "worker" }, route: { path }, params: { id: "x1" }, query: {} });
+    const guard = new ProjectAccessGuard(reflector, projectAccess as unknown as ProjectAccessService);
+
+    await guard.canActivate(context);
+    expect(projectAccess.assertAccess).not.toHaveBeenCalled();
+  });
+
   it("checks access using a query string projectId", async () => {
     const { reflector, context } = makeContext({ user: { userId: "u1", companyId: "c1", role: "worker" }, query: { projectId: "p1" } });
     const guard = new ProjectAccessGuard(reflector, projectAccess as unknown as ProjectAccessService);
