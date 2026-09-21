@@ -138,12 +138,24 @@ describe("AutodeskService", () => {
       const [first, second] = fetchMock.mock.calls.map((c) => new URLSearchParams(c[1].body));
       expect([first.get("refresh_token"), first.get("scope")]).toEqual(["rt-old", "data:read data:write account:read"]);
       expect([second.get("refresh_token"), second.get("scope")]).toEqual(["rt-1", "viewables:read"]);
-      expect(prisma.autodeskConnection.update).toHaveBeenCalledWith({
-        where: { id: "c" },
-        data: expect.objectContaining({ accessToken: "server-at", viewerAccessToken: "viewer-at", refreshToken: "rt-2" }),
-      });
+      // Each step is saved as soon as it succeeds, so a failed viewer step never leaves a spent refresh token stored.
+      const [afterServer, afterViewer] = prisma.autodeskConnection.update.mock.calls.map((c) => c[0].data);
+      expect(afterServer).toMatchObject({ accessToken: "server-at", viewerAccessToken: null, refreshToken: "rt-1" });
+      expect(afterViewer).toMatchObject({ viewerAccessToken: "viewer-at", refreshToken: "rt-2" });
       expect(token.accessToken).toBe("viewer-at");
       expect(token.expiresIn).toBeGreaterThan(3500);
+    });
+
+    it("keeps the live refresh token when only the viewer step fails", async () => {
+      prisma.autodeskConnection.findUnique.mockResolvedValue(expired);
+      prisma.autodeskConnection.update.mockImplementation(async ({ data }: { data: object }) => ({ ...expired, ...data }));
+      fetchMock
+        .mockResolvedValueOnce(jsonResponse({ access_token: "server-at", refresh_token: "rt-1", expires_in: 3600 }))
+        .mockResolvedValueOnce(jsonResponse({ error: "invalid_scope" }, false, 400));
+
+      await expect(service.getViewerToken("company-a")).rejects.toThrow(/reconnect/);
+      expect(prisma.autodeskConnection.update).toHaveBeenCalledTimes(1);
+      expect(prisma.autodeskConnection.update.mock.calls[0][0].data).toMatchObject({ refreshToken: "rt-1", viewerAccessToken: null });
     });
 
     it("refreshes a still-valid connection that predates the viewer so it gets a viewer token", async () => {

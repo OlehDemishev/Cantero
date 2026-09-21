@@ -1,12 +1,12 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
-import type { AccountingProvider as AccountingProviderEnum } from "@prisma/client";
+import type { AccountingConnection, AccountingProvider as AccountingProviderEnum } from "@prisma/client";
 import type { AccountingProviderType } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { apiOrigin, exchangeCode, refreshIfExpiring, requestToken, signState, tokenExpiry, verifyState, type TokenEndpoint } from "../common/oauth/oauth";
 
 const FETCH_TIMEOUT_MS = 10_000;
-const STATE_TTL = "10m";
 /// Intuit, unlike Xero, splits sandbox and production data onto different API hosts (the OAuth
 /// endpoints above are shared by both). Defaulting to sandbox keeps local dev/test working with
 /// no env var set, but a real deployment MUST set QUICKBOOKS_API_BASE_URL to
@@ -17,6 +17,7 @@ const QUICKBOOKS_SANDBOX_API_BASE_URL = "https://sandbox-quickbooks.api.intuit.c
 type OAuthProviderType = Exclude<AccountingProviderType, "lexoffice">;
 
 interface ProviderConfig {
+  name: string;
   authorizeUrl: string;
   tokenUrl: string;
   scope: string;
@@ -29,6 +30,7 @@ interface ProviderConfig {
 /// connectLexoffice()), so it has nothing to put here.
 const PROVIDERS: Record<OAuthProviderType, ProviderConfig> = {
   quickbooks: {
+    name: "QuickBooks",
     authorizeUrl: "https://appcenter.intuit.com/connect/oauth2",
     tokenUrl: "https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer",
     scope: "com.intuit.quickbooks.accounting",
@@ -36,6 +38,7 @@ const PROVIDERS: Record<OAuthProviderType, ProviderConfig> = {
     clientSecretKey: "QUICKBOOKS_CLIENT_SECRET",
   },
   xero: {
+    name: "Xero",
     authorizeUrl: "https://login.xero.com/identity/connect/authorize",
     tokenUrl: "https://identity.xero.com/connect/token",
     scope: "accounting.transactions accounting.contacts offline_access",
@@ -52,12 +55,6 @@ const LEXOFFICE_API_BASE_URL = "https://api.lexware.io/v1";
 /// real expiry) self-explanatory to anyone reading the row directly. ensureFreshToken() never
 /// evaluates this for a lexoffice connection; it short-circuits before the expiry check runs.
 const LEXOFFICE_NO_EXPIRY = new Date("9999-12-31T00:00:00.000Z");
-
-interface TokenResponse {
-  access_token: string;
-  refresh_token: string;
-  expires_in: number;
-}
 
 export interface SyncSummary {
   synced: number;
@@ -148,11 +145,11 @@ export class AccountingSyncService {
     const clientId = this.config.get<string>(cfg.clientIdKey);
     if (!clientId) {
       throw new BadRequestException(
-        `${provider === "quickbooks" ? "QuickBooks" : "Xero"} isn't configured on this server — set ${cfg.clientIdKey}/${cfg.clientSecretKey}`,
+        `${cfg.name} isn't configured on this server — set ${cfg.clientIdKey}/${cfg.clientSecretKey}`,
       );
     }
 
-    const state = this.jwt.sign({ companyId, provider }, { expiresIn: STATE_TTL });
+    const state = signState(this.jwt, { companyId, provider });
     const redirectUri = this.callbackUrl(provider);
     const params = new URLSearchParams({
       client_id: clientId,
@@ -179,15 +176,10 @@ export class AccountingSyncService {
     // OAuthProviderType below.
     if (provider === "lexoffice") throw new BadRequestException("lexoffice doesn't use this callback");
 
-    let decoded: { companyId: string; provider: AccountingProviderType };
-    try {
-      decoded = this.jwt.verify(state);
-    } catch {
-      throw new BadRequestException("This connection link has expired — try connecting again");
-    }
+    const decoded = verifyState<{ companyId: string; provider: AccountingProviderType }>(this.jwt, state);
     if (decoded.provider !== provider) throw new BadRequestException("Provider mismatch");
 
-    const tokens = await this.exchangeCode(provider, code);
+    const tokens = await exchangeCode(this.tokenEndpoint(provider), { code, redirect_uri: this.callbackUrl(provider) });
     const externalAccountId = provider === "quickbooks" ? realmId : await this.fetchXeroTenantId(tokens.access_token);
     if (!externalAccountId) throw new BadRequestException("The provider didn't return an account identifier");
 
@@ -198,14 +190,14 @@ export class AccountingSyncService {
         provider: provider as AccountingProviderEnum,
         accessToken: tokens.access_token,
         refreshToken: tokens.refresh_token,
-        tokenExpiresAt: new Date(Date.now() + tokens.expires_in * 1000),
+        tokenExpiresAt: tokenExpiry(tokens),
         externalAccountId,
       },
       update: {
         provider: provider as AccountingProviderEnum,
         accessToken: tokens.access_token,
         refreshToken: tokens.refresh_token,
-        tokenExpiresAt: new Date(Date.now() + tokens.expires_in * 1000),
+        tokenExpiresAt: tokenExpiry(tokens),
         externalAccountId,
       },
     });
@@ -358,61 +350,32 @@ export class AccountingSyncService {
   }
 
   /** Refreshes and persists the access token when it's expired (or about to), so callers always get a usable one. */
-  private async ensureFreshToken(connection: {
-    id: string;
-    companyId: string;
-    provider: AccountingProviderEnum;
-    accessToken: string;
-    refreshToken: string;
-    tokenExpiresAt: Date;
-    externalAccountId: string;
-  }) {
-    if (connection.provider === "lexoffice") return connection;
-    if (connection.tokenExpiresAt.getTime() - Date.now() > 60_000) return connection;
-
+  private ensureFreshToken(connection: AccountingConnection): Promise<AccountingConnection> {
+    if (connection.provider === "lexoffice") return Promise.resolve(connection);
     const provider = connection.provider as OAuthProviderType;
-    const cfg = PROVIDERS[provider];
-    const clientId = this.config.getOrThrow<string>(cfg.clientIdKey);
-    const clientSecret = this.config.getOrThrow<string>(cfg.clientSecretKey);
-
-    const res = await fetch(cfg.tokenUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
-      },
-      body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: connection.refreshToken }),
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-    if (!res.ok) throw new BadRequestException("Failed to refresh the accounting connection — reconnect it in Settings");
-    const tokens = (await res.json()) as TokenResponse;
-
-    return this.prisma.accountingConnection.update({
-      where: { id: connection.id },
-      data: {
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
-        tokenExpiresAt: new Date(Date.now() + tokens.expires_in * 1000),
+    return refreshIfExpiring(connection, {
+      kind: "accounting",
+      reconnectMessage: "Failed to refresh the accounting connection — reconnect it in Settings",
+      reload: () => this.prisma.accountingConnection.findUnique({ where: { id: connection.id } }),
+      refresh: async (c) => {
+        const tokens = await requestToken(this.tokenEndpoint(provider), { grant_type: "refresh_token", refresh_token: c.refreshToken });
+        return this.prisma.accountingConnection.update({
+          where: { id: c.id },
+          data: { accessToken: tokens.access_token, refreshToken: tokens.refresh_token ?? c.refreshToken, tokenExpiresAt: tokenExpiry(tokens) },
+        });
       },
     });
   }
 
-  private async exchangeCode(provider: OAuthProviderType, code: string): Promise<TokenResponse> {
+  private tokenEndpoint(provider: OAuthProviderType): TokenEndpoint {
     const cfg = PROVIDERS[provider];
-    const clientId = this.config.getOrThrow<string>(cfg.clientIdKey);
-    const clientSecret = this.config.getOrThrow<string>(cfg.clientSecretKey);
-
-    const res = await fetch(cfg.tokenUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
-      },
-      body: new URLSearchParams({ grant_type: "authorization_code", code, redirect_uri: this.callbackUrl(provider) }),
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-    if (!res.ok) throw new BadRequestException(`${provider} rejected the authorization code`);
-    return (await res.json()) as TokenResponse;
+    return {
+      provider: cfg.name,
+      url: cfg.tokenUrl,
+      clientId: this.config.getOrThrow<string>(cfg.clientIdKey),
+      clientSecret: this.config.getOrThrow<string>(cfg.clientSecretKey),
+      clientAuth: "basic",
+    };
   }
 
   /** Xero's token response has no tenant/company identifier — it's fetched separately, right after connecting. */
@@ -725,7 +688,6 @@ export class AccountingSyncService {
   }
 
   private callbackUrl(provider: AccountingProviderType): string {
-    const apiOrigin = this.config.get<string>("API_ORIGIN") ?? "http://localhost:4000/api";
-    return `${apiOrigin}/auth/accounting/callback/${provider}`;
+    return `${apiOrigin(this.config)}/auth/accounting/callback/${provider}`;
   }
 }

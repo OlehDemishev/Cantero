@@ -4,16 +4,10 @@ import { JwtService } from "@nestjs/jwt";
 import type { PushIntacctContractInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
+import { callbackUrl, exchangeCode, refreshIfExpiring, requestToken, signState, tokenExpiry, verifyState, type TokenEndpoint } from "../common/oauth/oauth";
 
 const FETCH_TIMEOUT_MS = 15_000;
-const STATE_TTL = "10m";
 const DEFAULT_BASE_URL = "https://api.intacct.com/ia/api/v1";
-
-interface TokenResponse {
-  access_token: string;
-  refresh_token?: string;
-  expires_in: number;
-}
 
 export interface IntacctConnection {
   id: string;
@@ -72,29 +66,19 @@ export class IntacctService {
       response_type: "code",
       client_id: clientId,
       redirect_uri: this.callbackUrl(),
-      state: this.jwt.sign({ companyId }, { expiresIn: STATE_TTL }),
+      state: signState(this.jwt, { companyId }),
       scope: "offline_access",
     });
     return `${this.baseUrl()}/oauth2/authorize?${params.toString()}`;
   }
 
   async handleCallback(code: string, state: string): Promise<{ companyId: string }> {
-    let decoded: { companyId: string };
-    try {
-      decoded = this.jwt.verify(state);
-    } catch {
-      throw new BadRequestException("This connection link has expired — try connecting again");
-    }
-    const tokens = await this.tokenRequest({ grant_type: "authorization_code", code, redirect_uri: this.callbackUrl() });
-    if (!tokens.refresh_token) throw new BadRequestException("Sage Intacct didn't return a refresh token — the connection can't stay authorized");
+    const { companyId } = verifyState(this.jwt, state);
+    const tokens = await exchangeCode(this.tokenEndpoint(), { code, redirect_uri: this.callbackUrl() });
 
-    const data = {
-      accessToken: tokens.access_token,
-      refreshToken: tokens.refresh_token,
-      tokenExpiresAt: new Date(Date.now() + tokens.expires_in * 1000),
-    };
-    await this.prisma.intacctConnection.upsert({ where: { companyId: decoded.companyId }, create: { companyId: decoded.companyId, ...data }, update: data });
-    return { companyId: decoded.companyId };
+    const data = { accessToken: tokens.access_token, refreshToken: tokens.refresh_token, tokenExpiresAt: tokenExpiry(tokens) };
+    await this.prisma.intacctConnection.upsert({ where: { companyId }, create: { companyId, ...data }, update: data });
+    return { companyId };
   }
 
   async disconnect(companyId: string): Promise<void> {
@@ -184,37 +168,29 @@ export class IntacctService {
     return refresh ? this.ensureFreshToken(connection) : connection;
   }
 
-  private async ensureFreshToken(connection: IntacctConnection): Promise<IntacctConnection> {
-    if (connection.tokenExpiresAt.getTime() - Date.now() > 60_000) return connection;
-    let tokens: TokenResponse;
-    try {
-      tokens = await this.tokenRequest({ grant_type: "refresh_token", refresh_token: connection.refreshToken });
-    } catch {
-      throw new BadRequestException("Failed to refresh the Sage Intacct connection — reconnect it in Settings");
-    }
-    return this.prisma.intacctConnection.update({
-      where: { id: connection.id },
-      data: {
-        accessToken: tokens.access_token,
-        ...(tokens.refresh_token ? { refreshToken: tokens.refresh_token } : {}),
-        tokenExpiresAt: new Date(Date.now() + tokens.expires_in * 1000),
+  private ensureFreshToken(connection: IntacctConnection): Promise<IntacctConnection> {
+    return refreshIfExpiring(connection, {
+      kind: "intacct",
+      reconnectMessage: "Failed to refresh the Sage Intacct connection — reconnect it in Settings",
+      reload: () => this.prisma.intacctConnection.findUnique({ where: { id: connection.id } }),
+      refresh: async (c) => {
+        const tokens = await requestToken(this.tokenEndpoint(), { grant_type: "refresh_token", refresh_token: c.refreshToken });
+        return this.prisma.intacctConnection.update({
+          where: { id: c.id },
+          data: { accessToken: tokens.access_token, refreshToken: tokens.refresh_token ?? c.refreshToken, tokenExpiresAt: tokenExpiry(tokens) },
+        });
       },
     });
   }
 
-  private async tokenRequest(params: Record<string, string>): Promise<TokenResponse> {
-    const res = await fetch(`${this.baseUrl()}/oauth2/token`, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        ...params,
-        client_id: this.config.getOrThrow<string>("INTACCT_CLIENT_ID"),
-        client_secret: this.config.getOrThrow<string>("INTACCT_CLIENT_SECRET"),
-      }),
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-    if (!res.ok) throw new BadRequestException("Sage Intacct rejected the authorization request");
-    return (await res.json()) as TokenResponse;
+  private tokenEndpoint(): TokenEndpoint {
+    return {
+      provider: "Sage Intacct",
+      url: `${this.baseUrl()}/oauth2/token`,
+      clientId: this.config.getOrThrow<string>("INTACCT_CLIENT_ID"),
+      clientSecret: this.config.getOrThrow<string>("INTACCT_CLIENT_SECRET"),
+      clientAuth: "body",
+    };
   }
 
   private async request(connection: IntacctConnection, method: "POST", path: string, body: unknown): Promise<any> {
@@ -242,6 +218,6 @@ export class IntacctService {
   }
 
   private callbackUrl(): string {
-    return `${this.config.get<string>("API_ORIGIN") ?? "http://localhost:4000/api"}/auth/intacct/callback`;
+    return callbackUrl(this.config, "intacct");
   }
 }

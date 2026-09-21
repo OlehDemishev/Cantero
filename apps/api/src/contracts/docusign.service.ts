@@ -2,9 +2,9 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { callbackUrl, exchangeCode, refreshIfExpiring, requestToken, signState, tokenExpiry, verifyState, type TokenEndpoint } from "../common/oauth/oauth";
 
 const FETCH_TIMEOUT_MS = 10_000;
-const STATE_TTL = "10m";
 
 /// DocuSign, like QuickBooks, splits its "demo" (sandbox/developer) environment and production
 /// onto different account hosts (the eSignature API host itself is per-account — see
@@ -13,12 +13,6 @@ const STATE_TTL = "10m";
 /// MUST set DOCUSIGN_OAUTH_BASE_URL to "https://account.docusign.com" or every connection attempt
 /// keeps hitting a demo account no real DocuSign customer has.
 const DOCUSIGN_DEMO_OAUTH_BASE_URL = "https://account-d.docusign.com";
-
-interface TokenResponse {
-  access_token: string;
-  refresh_token: string;
-  expires_in: number;
-}
 
 interface UserInfoResponse {
   accounts: { account_id: string; is_default: boolean; base_uri: string }[];
@@ -78,7 +72,7 @@ export class DocusignService {
       throw new BadRequestException("DocuSign isn't configured on this server — set DOCUSIGN_CLIENT_ID/DOCUSIGN_CLIENT_SECRET");
     }
 
-    const state = this.jwt.sign({ companyId }, { expiresIn: STATE_TTL });
+    const state = signState(this.jwt, { companyId });
     const params = new URLSearchParams({
       response_type: "code",
       scope: "signature",
@@ -94,15 +88,9 @@ export class DocusignService {
    * here, since different accounts live on different regional clusters (na1/na2/eu/au/...).
    * Returns the companyId so the controller can redirect appropriately even on later failures. */
   async handleCallback(code: string, state: string): Promise<{ companyId: string }> {
-    let decoded: { companyId: string };
-    try {
-      decoded = this.jwt.verify(state);
-    } catch {
-      throw new BadRequestException("This connection link has expired — try connecting again");
-    }
-    const companyId = decoded.companyId;
+    const { companyId } = verifyState(this.jwt, state);
 
-    const tokens = await this.exchangeCode(code);
+    const tokens = await exchangeCode(this.tokenEndpoint(), { code });
     const userInfo = await this.fetchUserInfo(tokens.access_token);
     const account = userInfo.accounts.find((a) => a.is_default) ?? userInfo.accounts[0];
     if (!account) throw new BadRequestException("DocuSign didn't return an account to connect");
@@ -113,14 +101,14 @@ export class DocusignService {
         companyId,
         accessToken: tokens.access_token,
         refreshToken: tokens.refresh_token,
-        tokenExpiresAt: new Date(Date.now() + tokens.expires_in * 1000),
+        tokenExpiresAt: tokenExpiry(tokens),
         accountId: account.account_id,
         apiBaseUrl: account.base_uri,
       },
       update: {
         accessToken: tokens.access_token,
         refreshToken: tokens.refresh_token,
-        tokenExpiresAt: new Date(Date.now() + tokens.expires_in * 1000),
+        tokenExpiresAt: tokenExpiry(tokens),
         accountId: account.account_id,
         apiBaseUrl: account.base_uri,
       },
@@ -184,47 +172,29 @@ export class DocusignService {
     return Buffer.from(await res.arrayBuffer());
   }
 
-  private async ensureFreshToken(connection: DocusignConnection): Promise<DocusignConnection> {
-    if (connection.tokenExpiresAt.getTime() - Date.now() > 60_000) return connection;
-
-    const clientId = this.config.getOrThrow<string>("DOCUSIGN_CLIENT_ID");
-    const clientSecret = this.config.getOrThrow<string>("DOCUSIGN_CLIENT_SECRET");
-    const res = await fetch(`${this.oauthBaseUrl()}/oauth/token`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
-      },
-      body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: connection.refreshToken }),
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-    if (!res.ok) throw new BadRequestException("Failed to refresh the DocuSign connection — reconnect it in Settings");
-    const tokens = (await res.json()) as TokenResponse;
-
-    return this.prisma.docusignConnection.update({
-      where: { id: connection.id },
-      data: {
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
-        tokenExpiresAt: new Date(Date.now() + tokens.expires_in * 1000),
+  private ensureFreshToken(connection: DocusignConnection): Promise<DocusignConnection> {
+    return refreshIfExpiring(connection, {
+      kind: "docusign",
+      reconnectMessage: "Failed to refresh the DocuSign connection — reconnect it in Settings",
+      reload: () => this.prisma.docusignConnection.findUnique({ where: { id: connection.id } }),
+      refresh: async (c) => {
+        const tokens = await requestToken(this.tokenEndpoint(), { grant_type: "refresh_token", refresh_token: c.refreshToken });
+        return this.prisma.docusignConnection.update({
+          where: { id: c.id },
+          data: { accessToken: tokens.access_token, refreshToken: tokens.refresh_token ?? c.refreshToken, tokenExpiresAt: tokenExpiry(tokens) },
+        });
       },
     });
   }
 
-  private async exchangeCode(code: string): Promise<TokenResponse> {
-    const clientId = this.config.getOrThrow<string>("DOCUSIGN_CLIENT_ID");
-    const clientSecret = this.config.getOrThrow<string>("DOCUSIGN_CLIENT_SECRET");
-    const res = await fetch(`${this.oauthBaseUrl()}/oauth/token`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
-      },
-      body: new URLSearchParams({ grant_type: "authorization_code", code }),
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-    if (!res.ok) throw new BadRequestException("DocuSign rejected the authorization code");
-    return (await res.json()) as TokenResponse;
+  private tokenEndpoint(): TokenEndpoint {
+    return {
+      provider: "DocuSign",
+      url: `${this.oauthBaseUrl()}/oauth/token`,
+      clientId: this.config.getOrThrow<string>("DOCUSIGN_CLIENT_ID"),
+      clientSecret: this.config.getOrThrow<string>("DOCUSIGN_CLIENT_SECRET"),
+      clientAuth: "basic",
+    };
   }
 
   private async fetchUserInfo(accessToken: string): Promise<UserInfoResponse> {
@@ -257,7 +227,6 @@ export class DocusignService {
   }
 
   private callbackUrl(): string {
-    const apiOrigin = this.config.get<string>("API_ORIGIN") ?? "http://localhost:4000/api";
-    return `${apiOrigin}/auth/docusign/callback`;
+    return callbackUrl(this.config, "docusign");
   }
 }

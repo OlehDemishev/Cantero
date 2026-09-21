@@ -3,9 +3,20 @@ import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import type { PunchListItemStatus } from "@prisma/client";
 import { PrismaService } from "../common/prisma/prisma.service";
+import {
+  OAuthTokenError,
+  callbackUrl,
+  exchangeCode,
+  refreshIfExpiring,
+  requestToken,
+  signState,
+  tokenExpiry,
+  verifyState,
+  type OAuthTokens,
+  type TokenEndpoint,
+} from "../common/oauth/oauth";
 
 const FETCH_TIMEOUT_MS = 10_000;
-const STATE_TTL = "10m";
 const APS_AUTH_BASE_URL = "https://developer.api.autodesk.com/authentication/v2";
 const APS_API_BASE_URL = "https://developer.api.autodesk.com";
 const APS_SCOPE = "data:read data:write account:read";
@@ -19,12 +30,6 @@ const VIEWER_API_BY_REGION: Record<string, string> = { US: "streamingV2", EMEA: 
 const FOLDER_PAGE_LIMIT = 200;
 /** A Model Derivative URN is URL-safe base64 of a version id. */
 const URN_PATTERN = /^[A-Za-z0-9_-]{20,600}$/;
-
-interface TokenResponse {
-  access_token: string;
-  refresh_token: string;
-  expires_in: number;
-}
 
 interface HubsResponse {
   data: { id: string; attributes?: { region?: string } }[];
@@ -132,7 +137,7 @@ export class AutodeskService {
       throw new BadRequestException("Autodesk isn't configured on this server — set AUTODESK_CLIENT_ID/AUTODESK_CLIENT_SECRET");
     }
 
-    const state = this.jwt.sign({ companyId }, { expiresIn: STATE_TTL });
+    const state = signState(this.jwt, { companyId });
     const params = new URLSearchParams({
       response_type: "code",
       client_id: clientId,
@@ -149,22 +154,22 @@ export class AutodeskService {
    * returned is what gets connected. Returns the companyId so the controller can redirect
    * appropriately even on later failures. */
   async handleCallback(code: string, state: string): Promise<{ companyId: string }> {
-    let decoded: { companyId: string };
-    try {
-      decoded = this.jwt.verify(state);
-    } catch {
-      throw new BadRequestException("This connection link has expired — try connecting again");
-    }
-    const { companyId } = decoded;
+    const { companyId } = verifyState(this.jwt, state);
 
-    const tokens = await this.exchangeCode(code);
+    const tokens = await exchangeCode(this.tokenEndpoint(), { code, redirect_uri: this.callbackUrl() });
     const hubs = await this.fetchHubs(tokens.access_token);
     const hub = hubs.data[0];
     if (!hub) throw new BadRequestException("This Autodesk account has no accessible hub to connect");
-    const viewer = await this.refresh(tokens.refresh_token, APS_VIEWER_SCOPE);
+    const viewer = await this.viewerRefresh(tokens.refresh_token).catch((err: unknown) => {
+      if (err instanceof OAuthTokenError) throw new BadRequestException("Autodesk refused a viewing token for this account — try connecting again");
+      throw err;
+    });
 
     const data = {
-      ...this.tokenFields(tokens, viewer),
+      accessToken: tokens.access_token,
+      viewerAccessToken: viewer.access_token,
+      refreshToken: viewer.refresh_token ?? tokens.refresh_token,
+      tokenExpiresAt: tokenExpiry({ ...viewer, expires_in: Math.min(tokens.expires_in, viewer.expires_in) }),
       hubId: hub.id,
       hubRegion: hub.attributes?.region ?? null,
     };
@@ -347,58 +352,51 @@ export class AutodeskService {
   }
 
   /** Refreshes twice, as APS's hubs-browser tutorial does: once with the full scope for the
-   * server's token, then with the narrowed viewer scope. Each refresh token is single-use, so the
-   * one stored is the second call's; the scope is re-requested explicitly on the next round because
-   * that stored token was issued from a viewer-scoped refresh. A connection without a viewer token
-   * (made before the viewer existed) refreshes early so it gets one. */
-  private async ensureFreshToken(connection: AutodeskConnection): Promise<AutodeskConnection> {
-    if (connection.viewerAccessToken && connection.tokenExpiresAt.getTime() - Date.now() > 60_000) return connection;
-
-    const server = await this.refresh(connection.refreshToken, APS_SCOPE);
-    const viewer = await this.refresh(server.refresh_token, APS_VIEWER_SCOPE);
-    return this.prisma.autodeskConnection.update({ where: { id: connection.id }, data: this.tokenFields(server, viewer) });
+   * server's token, then with the narrowed viewer scope. Refresh tokens are single-use, so each
+   * step is saved as soon as it succeeds — if the viewer step then fails, the connection still
+   * holds a live refresh token instead of a spent one, and the missing viewer token makes the
+   * next call try again. The full scope is requested explicitly because the stored refresh token
+   * comes from a viewer-scoped refresh. A connection without a viewer token (made before the
+   * viewer existed) refreshes early so it gets one. */
+  private ensureFreshToken(connection: AutodeskConnection): Promise<AutodeskConnection> {
+    return refreshIfExpiring(connection, {
+      kind: "autodesk",
+      force: !connection.viewerAccessToken,
+      reconnectMessage: "Failed to refresh the Autodesk connection — reconnect it in Settings",
+      reload: () => this.prisma.autodeskConnection.findUnique({ where: { id: connection.id } }),
+      refresh: async (c) => {
+        const server = await requestToken(this.tokenEndpoint(), { grant_type: "refresh_token", refresh_token: c.refreshToken, scope: APS_SCOPE });
+        const serverRefreshToken = server.refresh_token ?? c.refreshToken;
+        await this.prisma.autodeskConnection.update({
+          where: { id: c.id },
+          data: { accessToken: server.access_token, viewerAccessToken: null, refreshToken: serverRefreshToken, tokenExpiresAt: tokenExpiry(server) },
+        });
+        const viewer = await this.viewerRefresh(serverRefreshToken);
+        return this.prisma.autodeskConnection.update({
+          where: { id: c.id },
+          data: {
+            viewerAccessToken: viewer.access_token,
+            refreshToken: viewer.refresh_token ?? serverRefreshToken,
+            // Minted moments apart; the earlier expiry bounds both.
+            tokenExpiresAt: tokenExpiry({ ...viewer, expires_in: Math.min(server.expires_in, viewer.expires_in) }),
+          },
+        });
+      },
+    });
   }
 
-  private tokenFields(server: TokenResponse, viewer: TokenResponse) {
+  private viewerRefresh(refreshToken: string): Promise<OAuthTokens> {
+    return requestToken(this.tokenEndpoint(), { grant_type: "refresh_token", refresh_token: refreshToken, scope: APS_VIEWER_SCOPE });
+  }
+
+  private tokenEndpoint(): TokenEndpoint {
     return {
-      accessToken: server.access_token,
-      viewerAccessToken: viewer.access_token,
-      refreshToken: viewer.refresh_token,
-      // Both were minted moments apart; the earlier expiry is the one that bounds either.
-      tokenExpiresAt: new Date(Date.now() + Math.min(server.expires_in, viewer.expires_in) * 1000),
+      provider: "Autodesk",
+      url: `${APS_AUTH_BASE_URL}/token`,
+      clientId: this.config.getOrThrow<string>("AUTODESK_CLIENT_ID"),
+      clientSecret: this.config.getOrThrow<string>("AUTODESK_CLIENT_SECRET"),
+      clientAuth: "basic",
     };
-  }
-
-  private async refresh(refreshToken: string, scope: string): Promise<TokenResponse> {
-    const clientId = this.config.getOrThrow<string>("AUTODESK_CLIENT_ID");
-    const clientSecret = this.config.getOrThrow<string>("AUTODESK_CLIENT_SECRET");
-    const res = await fetch(`${APS_AUTH_BASE_URL}/token`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
-      },
-      body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: refreshToken, scope }),
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-    if (!res.ok) throw new BadRequestException("Failed to refresh the Autodesk connection — reconnect it in Settings");
-    return (await res.json()) as TokenResponse;
-  }
-
-  private async exchangeCode(code: string): Promise<TokenResponse> {
-    const clientId = this.config.getOrThrow<string>("AUTODESK_CLIENT_ID");
-    const clientSecret = this.config.getOrThrow<string>("AUTODESK_CLIENT_SECRET");
-    const res = await fetch(`${APS_AUTH_BASE_URL}/token`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
-      },
-      body: new URLSearchParams({ grant_type: "authorization_code", code, redirect_uri: this.callbackUrl() }),
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-    if (!res.ok) throw new BadRequestException("Autodesk rejected the authorization code");
-    return (await res.json()) as TokenResponse;
   }
 
   private async fetchHubs(accessToken: string): Promise<HubsResponse> {
@@ -435,8 +433,7 @@ export class AutodeskService {
   }
 
   private callbackUrl(): string {
-    const apiOrigin = this.config.get<string>("API_ORIGIN") ?? "http://localhost:4000/api";
-    return `${apiOrigin}/auth/autodesk/callback`;
+    return callbackUrl(this.config, "autodesk");
   }
 }
 

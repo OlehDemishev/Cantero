@@ -3,18 +3,12 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from "@nes
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { callbackUrl, exchangeCode, refreshIfExpiring, requestToken, signState, tokenExpiry, verifyState, type TokenEndpoint } from "../common/oauth/oauth";
 
 const FETCH_TIMEOUT_MS = 10_000;
-const STATE_TTL = "10m";
 const MICROSOFT_IDENTITY_BASE_URL = "https://login.microsoftonline.com/common/oauth2/v2.0";
 /** Microsoft's documented cap on operations per OperationSet. */
 const OPERATION_SET_LIMIT = 200;
-
-interface TokenResponse {
-  access_token: string;
-  refresh_token: string;
-  expires_in: number;
-}
 
 export interface MsProjectConnection {
   id: string;
@@ -68,12 +62,12 @@ export class MsProjectService {
     }
     const normalizedUrl = environmentUrl.replace(/\/+$/, "");
 
-    const state = this.jwt.sign({ companyId, environmentUrl: normalizedUrl }, { expiresIn: STATE_TTL });
+    const state = signState(this.jwt, { companyId, environmentUrl: normalizedUrl });
     const params = new URLSearchParams({
       response_type: "code",
       client_id: clientId,
       redirect_uri: this.callbackUrl(),
-      scope: `${normalizedUrl}/.default offline_access`,
+      scope: scopeFor(normalizedUrl),
       state,
     });
     return `${MICROSOFT_IDENTITY_BASE_URL}/authorize?${params.toString()}`;
@@ -84,15 +78,9 @@ export class MsProjectService {
    * the way DocuSign's account info can), then exchanges the code. Returns the companyId so the
    * controller can redirect appropriately even on later failures. */
   async handleCallback(code: string, state: string): Promise<{ companyId: string }> {
-    let decoded: { companyId: string; environmentUrl: string };
-    try {
-      decoded = this.jwt.verify(state);
-    } catch {
-      throw new BadRequestException("This connection link has expired — try connecting again");
-    }
-    const { companyId, environmentUrl } = decoded;
+    const { companyId, environmentUrl } = verifyState<{ companyId: string; environmentUrl: string }>(this.jwt, state);
 
-    const tokens = await this.exchangeCode(code, environmentUrl);
+    const tokens = await exchangeCode(this.tokenEndpoint(), { code, redirect_uri: this.callbackUrl(), scope: scopeFor(environmentUrl) });
 
     await this.prisma.msProjectConnection.upsert({
       where: { companyId },
@@ -100,13 +88,13 @@ export class MsProjectService {
         companyId,
         accessToken: tokens.access_token,
         refreshToken: tokens.refresh_token,
-        tokenExpiresAt: new Date(Date.now() + tokens.expires_in * 1000),
+        tokenExpiresAt: tokenExpiry(tokens),
         environmentUrl,
       },
       update: {
         accessToken: tokens.access_token,
         refreshToken: tokens.refresh_token,
-        tokenExpiresAt: new Date(Date.now() + tokens.expires_in * 1000),
+        tokenExpiresAt: tokenExpiry(tokens),
         environmentUrl,
       },
     });
@@ -220,54 +208,29 @@ export class MsProjectService {
     return this.ensureFreshToken(connection);
   }
 
-  private async ensureFreshToken(connection: MsProjectConnection): Promise<MsProjectConnection> {
-    if (connection.tokenExpiresAt.getTime() - Date.now() > 60_000) return connection;
-
-    const clientId = this.config.getOrThrow<string>("MS_PROJECT_CLIENT_ID");
-    const clientSecret = this.config.getOrThrow<string>("MS_PROJECT_CLIENT_SECRET");
-    const res = await fetch(`${MICROSOFT_IDENTITY_BASE_URL}/token`, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        grant_type: "refresh_token",
-        refresh_token: connection.refreshToken,
-        client_id: clientId,
-        client_secret: clientSecret,
-        scope: `${connection.environmentUrl}/.default offline_access`,
-      }),
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-    if (!res.ok) throw new BadRequestException("Failed to refresh the MS Project connection — reconnect it in Settings");
-    const tokens = (await res.json()) as TokenResponse;
-
-    return this.prisma.msProjectConnection.update({
-      where: { id: connection.id },
-      data: {
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
-        tokenExpiresAt: new Date(Date.now() + tokens.expires_in * 1000),
+  private ensureFreshToken(connection: MsProjectConnection): Promise<MsProjectConnection> {
+    return refreshIfExpiring(connection, {
+      kind: "ms-project",
+      reconnectMessage: "Failed to refresh the MS Project connection — reconnect it in Settings",
+      reload: () => this.prisma.msProjectConnection.findUnique({ where: { id: connection.id } }),
+      refresh: async (c) => {
+        const tokens = await requestToken(this.tokenEndpoint(), { grant_type: "refresh_token", refresh_token: c.refreshToken, scope: scopeFor(c.environmentUrl) });
+        return this.prisma.msProjectConnection.update({
+          where: { id: c.id },
+          data: { accessToken: tokens.access_token, refreshToken: tokens.refresh_token ?? c.refreshToken, tokenExpiresAt: tokenExpiry(tokens) },
+        });
       },
     });
   }
 
-  private async exchangeCode(code: string, environmentUrl: string): Promise<TokenResponse> {
-    const clientId = this.config.getOrThrow<string>("MS_PROJECT_CLIENT_ID");
-    const clientSecret = this.config.getOrThrow<string>("MS_PROJECT_CLIENT_SECRET");
-    const res = await fetch(`${MICROSOFT_IDENTITY_BASE_URL}/token`, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        grant_type: "authorization_code",
-        code,
-        client_id: clientId,
-        client_secret: clientSecret,
-        redirect_uri: this.callbackUrl(),
-        scope: `${environmentUrl}/.default offline_access`,
-      }),
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-    if (!res.ok) throw new BadRequestException("Microsoft rejected the authorization code");
-    return (await res.json()) as TokenResponse;
+  private tokenEndpoint(): TokenEndpoint {
+    return {
+      provider: "Microsoft",
+      url: `${MICROSOFT_IDENTITY_BASE_URL}/token`,
+      clientId: this.config.getOrThrow<string>("MS_PROJECT_CLIENT_ID"),
+      clientSecret: this.config.getOrThrow<string>("MS_PROJECT_CLIENT_SECRET"),
+      clientAuth: "body",
+    };
   }
 
   /** Unbound actions (msdyn_*V1) and entity-set reads over the Dataverse Web API. Errors carry
@@ -299,7 +262,11 @@ export class MsProjectService {
   }
 
   private callbackUrl(): string {
-    const apiOrigin = this.config.get<string>("API_ORIGIN") ?? "http://localhost:4000/api";
-    return `${apiOrigin}/auth/ms-project/callback`;
+    return callbackUrl(this.config, "ms-project");
   }
+}
+
+/** Dataverse tokens are per environment; offline_access is what gets a refresh token. */
+function scopeFor(environmentUrl: string): string {
+  return `${environmentUrl}/.default offline_access`;
 }
