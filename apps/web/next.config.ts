@@ -23,7 +23,15 @@ function originOf(url: string | undefined): string | null {
 const apiOrigin = originOf(process.env.NEXT_PUBLIC_API_URL) ?? "http://localhost:4000";
 const sentryOrigin = originOf(process.env.NEXT_PUBLIC_SENTRY_DSN?.replace(/^[^@]*@/, "https://"));
 
-const connectSrc = ["'self'", apiOrigin, sentryOrigin, isDev ? "ws://localhost:*" : null]
+// Autodesk Viewer (components/autodesk-viewer.tsx): its script, stylesheet and worker come from
+// developer.api.autodesk.com, and model data streams from there and cdn.derivative.autodesk.com
+// (SVF2 over a websocket). The worker is started from a blob: URL; its UI font (Artifakt) comes
+// from fonts.autodesk.com. The viewer's own usage telemetry (api-js.mixpanel.com) is deliberately
+// left out, so the CSP blocks it: model views aren't reported to a third party.
+const AUTODESK_VIEWER = "https://developer.api.autodesk.com";
+const AUTODESK_STREAMING = ["https://cdn.derivative.autodesk.com", "wss://cdn.derivative.autodesk.com"];
+
+const connectSrc = ["'self'", apiOrigin, sentryOrigin, AUTODESK_VIEWER, ...AUTODESK_STREAMING, isDev ? "ws://localhost:*" : null]
   .filter((v): v is string => Boolean(v))
   .join(" ");
 
@@ -34,10 +42,11 @@ const connectSrc = ["'self'", apiOrigin, sentryOrigin, isDev ? "ws://localhost:*
 // origin), just not same-origin inline injection.
 const cspHeader = `
   default-src 'self';
-  script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""};
-  style-src 'self' 'unsafe-inline';
+  script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} ${AUTODESK_VIEWER};
+  style-src 'self' 'unsafe-inline' ${AUTODESK_VIEWER};
+  worker-src 'self' blob:;
   img-src 'self' data: blob: https:;
-  font-src 'self' data:;
+  font-src 'self' data: https://fonts.autodesk.com;
   connect-src ${connectSrc};
   object-src 'none';
   base-uri 'self';

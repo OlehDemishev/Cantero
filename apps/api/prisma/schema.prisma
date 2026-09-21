@@ -2580,6 +2580,13 @@ model Project {
   /// projects are set up in Autodesk's own UI — this app never creates one) — see
   /// AutodeskService.syncPunchList(). Null means no ACC project mapped yet.
   autodeskProjectId           String?
+  /// Model Derivative URN (URL-safe base64 of an ACC file version id) of the model shown in the
+  /// project's BIM viewer — picked from the mapped ACC project's folders, see
+  /// AutodeskService.setModel(). Pinned to that version: a newer upload in ACC isn't picked up
+  /// until someone chooses it again.
+  autodeskModelUrn            String?
+  /// File name and version number shown next to the viewer, e.g. "Tower A.rvt (v3)".
+  autodeskModelName           String?
 
   company                     Company                      @relation(fields: [companyId], references: [id], onDelete: Cascade)
   client                      Client?                      @relation(fields: [clientId], references: [id], onDelete: SetNull)
@@ -4665,14 +4672,21 @@ model MsProjectConnection {
 /// connecting (the first hub the authorizing user can see) — construction-issue sync then targets
 /// one ACC project within that hub at a time, chosen via Project.autodeskProjectId.
 model AutodeskConnection {
-  id             String   @id @default(uuid())
-  companyId      String   @unique
-  accessToken    String
-  refreshToken   String
-  tokenExpiresAt DateTime
+  id                String   @id @default(uuid())
+  companyId         String   @unique
+  accessToken       String
+  refreshToken      String
+  tokenExpiresAt    DateTime
   /// e.g. "b.xxxxxxxx-xxxx-...": the ACC/BIM 360 hub id, from GET /project/v1/hubs.
-  hubId          String
-  connectedAt    DateTime @default(now())
+  hubId             String
+  /// The hub's data region from GET /project/v1/hubs ("US", "EMEA", "AUS"). The viewer has to
+  /// stream derivatives from the same region's endpoint. Null on connections made before it was
+  /// recorded — treated as "US" until the next reconnect.
+  hubRegion         String?
+  /// A viewables:read-only token handed to the browser for the Autodesk Viewer, minted alongside
+  /// accessToken (which carries data:write and never leaves the server). Same expiry.
+  viewerAccessToken String?
+  connectedAt       DateTime @default(now())
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 

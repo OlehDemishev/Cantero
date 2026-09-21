@@ -167,7 +167,7 @@ describe("Autodesk Construction Cloud Issues — APS POST issues contract", () =
   const SUBTYPE_PUNCH = "2220f222-6c54-4b01-90e6-d701748f0222";
   let provider: ReturnType<typeof fakeProvider>;
   const prisma = {
-    autodeskConnection: { findUnique: jest.fn().mockResolvedValue({ id: "c", companyId: "co", accessToken: "AT", refreshToken: "RT", tokenExpiresAt: future(), hubId: "b.hub" }) },
+    autodeskConnection: { findUnique: jest.fn().mockResolvedValue({ id: "c", companyId: "co", accessToken: "AT", refreshToken: "RT", tokenExpiresAt: future(), hubId: "b.hub", viewerAccessToken: "VT" }) },
     project: { findFirst: jest.fn().mockResolvedValue({ id: "p1", autodeskProjectId: `b.${RAW}` }), update: jest.fn() },
     punchListItem: { findMany: jest.fn(), update: jest.fn() },
   };
@@ -216,6 +216,97 @@ describe("Autodesk Construction Cloud Issues — APS POST issues contract", () =
     expect(documentedViolations(autodesk.createIssue, { title: "Crack", status: "resolved" })).toEqual(
       expect.arrayContaining([expect.stringContaining("issueSubtypeId is required"), expect.stringContaining('"resolved" is not one of')]),
     );
+  });
+});
+
+describe("Autodesk Data Management + OAuth — BIM viewer contract", () => {
+  const RAW = "c8b0c73d-3ae9-4b1a-9c2d-1e2f3a4b5c6d";
+  const TIP = "urn:adsk.wipprod:fs.file:vf.d34fdsg3g?version=2";
+  const DERIVATIVE = "dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLmQzNGZkc2czZz92ZXJzaW9uPTI";
+  let provider: ReturnType<typeof fakeProvider>;
+  let connection: Record<string, unknown>;
+  const prisma = {
+    autodeskConnection: {
+      findUnique: jest.fn(async () => connection),
+      update: jest.fn(async ({ data }: { data: object }) => ({ ...connection, ...data })),
+    },
+    project: { findFirst: jest.fn().mockResolvedValue({ id: "p1", autodeskProjectId: RAW }) },
+  };
+  const service = new AutodeskService(prisma as never, config, new JwtService({ secret: "s" }));
+
+  beforeEach(() => {
+    connection = { id: "c", companyId: "co", accessToken: "AT", refreshToken: "RT", tokenExpiresAt: future(), hubId: "b.hub-1", hubRegion: "EMEA", viewerAccessToken: "VT" };
+    provider = fakeProvider([
+      { method: "POST", url: /^https:\/\/developer\.api\.autodesk\.com\/authentication\/v2\/token$/, respond: (c) => ({ body: { access_token: `AT-${c.body.scope}`, refresh_token: `RT-${c.body.scope}`, expires_in: 3599, token_type: "Bearer" } }) },
+      // Shapes trimmed from the documented examples of GET topFolders and GET folder contents.
+      {
+        method: "GET",
+        url: /\/project\/v1\/hubs\/[^/]+\/projects\/[^/]+\/topFolders$/,
+        respond: () => ({
+          body: {
+            data: [
+              { type: "folders", id: "urn:adsk.wipprod:fs.folder:co.plans", attributes: { name: "Project Files", displayName: "Project Files", hidden: false } },
+              { type: "folders", id: "urn:adsk.wipprod:fs.folder:co.hidden", attributes: { name: "checklist_x", displayName: "checklist_x", hidden: true } },
+            ],
+          },
+        }),
+      },
+      {
+        method: "GET",
+        url: /\/data\/v1\/projects\/[^/]+\/folders\/[^/]+\/contents$/,
+        respond: () => ({
+          body: {
+            links: { self: { href: "…" }, next: { href: "…page%5Bnumber%5D=1" } },
+            data: [
+              { type: "items", id: "urn:adsk.wipprod:dm.lineage:hC6k4hndRWaeIVhIjvHu8w", attributes: { displayName: "Tower A.rvt", hidden: false }, relationships: { tip: { data: { type: "versions", id: TIP } } } },
+              { type: "folders", id: "urn:adsk.wipprod:dm.folder:hC6k4hndRWaeIVhIjvHu8w", attributes: { name: "Plans", displayName: "Plans", hidden: false } },
+              { type: "items", id: "urn:adsk.wipprod:dm.lineage:nover", attributes: { displayName: "Old.nwd", hidden: false }, relationships: { tip: { data: { type: "versions", id: "urn:adsk.wipprod:fs.file:vf.nover?version=1" } } } },
+            ],
+            included: [
+              {
+                type: "versions",
+                id: TIP,
+                attributes: { name: "Tower A.rvt", displayName: "Tower A.rvt", versionNumber: 2 },
+                relationships: { derivatives: { data: { type: "derivatives", id: DERIVATIVE } } },
+              },
+            ],
+          },
+        }),
+      },
+    ]);
+  });
+  afterEach(() => provider.restore());
+
+  it("lists top folders with the b.-prefixed Data Management project id and hides deleted ones", async () => {
+    const { entries } = await service.browseModels("co", "p1");
+    const call = provider.calls[0];
+    expect(decodeURIComponent(call.url.pathname.split("/")[6])).toMatch(autodesk.dataManagementProjectIdInPath);
+    expect(entries).toEqual([{ kind: "folder", id: "urn:adsk.wipprod:fs.folder:co.plans", name: "Project Files" }]);
+  });
+
+  it("lists a folder's files with their tip version's derivative URN, folders first, and flags a second page", async () => {
+    const result = await service.browseModels("co", "p1", "urn:adsk.wipprod:fs.folder:co.plans");
+    const call = provider.calls[0];
+    expect(decodeURIComponent(call.url.pathname.split("/")[4])).toMatch(autodesk.dataManagementProjectIdInPath);
+    expect(Number(call.url.searchParams.get("page[limit]"))).toBeLessThanOrEqual(autodesk.folderContentsPageLimitMax);
+    expect(result.truncated).toBe(true);
+    expect(result.entries.map((e) => e.name)).toEqual(["Plans", "Old.nwd", "Tower A.rvt"]);
+    expect(result.entries.find((e) => e.name === "Tower A.rvt")).toMatchObject({ kind: "file", urn: DERIVATIVE, versionNumber: 2 });
+    // No derivatives relationship in the payload: fall back to encoding the version id, which is what the derivative id is.
+    expect(Buffer.from(result.entries.find((e) => e.name === "Old.nwd")!.urn!, "base64url").toString()).toBe("urn:adsk.wipprod:fs.file:vf.nover?version=1");
+  });
+
+  it("token refreshes send only documented fields, and the viewer scope is a subset of what was granted", async () => {
+    connection = { ...connection, tokenExpiresAt: new Date(Date.now() - 1000) };
+    const token = await service.getViewerToken("co");
+    const refreshes = provider.calls.filter((c) => c.url.pathname.endsWith("/token"));
+    expect(refreshes).toHaveLength(2);
+    for (const r of refreshes) expect(documentedViolations(autodesk.refreshToken, r.body)).toEqual([]);
+    const granted = new Set(String(refreshes[0].body.scope).split(" "));
+    expect(granted.has("data:read")).toBe(true); // viewables:read is contained in data:read
+    expect(refreshes[1].body.scope).toBe("viewables:read");
+    expect(refreshes[1].body.refresh_token).toBe(`RT-${refreshes[0].body.scope}`);
+    expect(token).toEqual({ accessToken: "AT-viewables:read", expiresIn: expect.any(Number), api: "streamingV2_EU" });
   });
 });
 

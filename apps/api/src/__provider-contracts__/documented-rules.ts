@@ -110,6 +110,20 @@ export const autodesk = {
   } satisfies DocumentedRule,
   /** "…removing the b. prefix" from the Data Management project id. */
   projectIdInPath: /^[0-9a-f-]{36}$/i,
+  /** aps.autodesk.com/en/docs/oauth/v2/reference/http/gettoken-POST, refresh_token grant: "If
+   * specified, scopes have to be … same with or a subset of the scopes used to generate the
+   * refresh_token." */
+  refreshToken: {
+    source: "aps.autodesk.com/en/docs/oauth/v2/reference/http/gettoken-POST",
+    required: ["grant_type", "refresh_token"],
+    allowedTopLevel: ["grant_type", "refresh_token", "scope"],
+    enums: { grant_type: ["refresh_token"] },
+  } satisfies DocumentedRule,
+  /** Data Management: "To convert BIM 360 or Forma Project IDs to Data Management Project IDs,
+   * prefix them with b." (topFolders / folder contents). */
+  dataManagementProjectIdInPath: /^b\.[0-9a-f-]{36}$/i,
+  /** Folder contents: page[limit] "max value is 200". */
+  folderContentsPageLimitMax: 200,
 };
 
 const QBO = "developer.intuit.com/app/developer/qbo/docs/api/accounting/all-entities";

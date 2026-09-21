@@ -69,6 +69,7 @@ import { MsProjectSyncPanel } from "@/components/ms-project-sync-panel";
 import { ScheduleFilesPanel } from "@/components/schedule-files-panel";
 import { IntacctProjectPanel } from "@/components/intacct-project-panel";
 import { AutodeskSyncPanel } from "@/components/autodesk-sync-panel";
+import { BimModelPanel } from "@/components/bim-model-panel";
 import { SUPPORTED_CURRENCIES } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
@@ -82,6 +83,8 @@ interface Project {
   budgetAlertThresholdPercent: number | null;
   contingencyAmount: string | null;
   autodeskProjectId: string | null;
+  autodeskModelUrn: string | null;
+  autodeskModelName: string | null;
 }
 interface Estimate {
   id: string;
@@ -485,6 +488,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
         <>
           <TakeoffPanel projectId={projectId} />
           <DrawingSheetsPanel projectId={projectId} />
+          {project && <BimModelPanel projectId={projectId} role={me?.user.role} initial={project} />}
           <TimeTrackingPanel projectId={projectId} />
           <ProductivityPanel projectId={projectId} />
           <DocumentsPanel projectId={projectId} />

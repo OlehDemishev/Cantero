@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { BadGatewayException, BadRequestException, Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import type { PunchListItemStatus } from "@prisma/client";
@@ -9,6 +9,16 @@ const STATE_TTL = "10m";
 const APS_AUTH_BASE_URL = "https://developer.api.autodesk.com/authentication/v2";
 const APS_API_BASE_URL = "https://developer.api.autodesk.com";
 const APS_SCOPE = "data:read data:write account:read";
+/** What the browser-side Viewer gets. APS's recommended split: the server keeps the full-scope
+ * token, the page gets one that can only stream derivatives (viewables:read is within data:read, so
+ * a refresh can narrow to it). */
+const APS_VIEWER_SCOPE = "viewables:read";
+/** Viewer `api` per hub region (InitOptions docs: streamingV2 = SVF2 from the US data center,
+ * _EU / _AUS for the European / Australian ones). */
+const VIEWER_API_BY_REGION: Record<string, string> = { US: "streamingV2", EMEA: "streamingV2_EU", AUS: "streamingV2_AUS" };
+const FOLDER_PAGE_LIMIT = 200;
+/** A Model Derivative URN is URL-safe base64 of a version id. */
+const URN_PATTERN = /^[A-Za-z0-9_-]{20,600}$/;
 
 interface TokenResponse {
   access_token: string;
@@ -17,7 +27,33 @@ interface TokenResponse {
 }
 
 interface HubsResponse {
-  data: { id: string }[];
+  data: { id: string; attributes?: { region?: string } }[];
+}
+
+interface DmResource {
+  type: string;
+  id: string;
+  attributes: { name?: string; displayName?: string; hidden?: boolean; versionNumber?: number };
+  relationships?: {
+    tip?: { data?: { id: string } };
+    derivatives?: { data?: { id: string } };
+  };
+}
+
+export interface ModelBrowserEntry {
+  kind: "folder" | "file";
+  id: string;
+  name: string;
+  /** Files only: URN of the tip version's derivatives, what the Viewer loads. */
+  urn?: string;
+  versionNumber?: number;
+}
+
+export interface ViewerToken {
+  accessToken: string;
+  expiresIn: number;
+  /** Viewer InitOptions.api for the hub's data region. */
+  api: string;
 }
 
 export interface AutodeskConnection {
@@ -27,6 +63,8 @@ export interface AutodeskConnection {
   refreshToken: string;
   tokenExpiresAt: Date;
   hubId: string;
+  hubRegion?: string | null;
+  viewerAccessToken?: string | null;
 }
 
 export interface SyncSummary {
@@ -66,6 +104,11 @@ const ACC_DESCRIPTION_MAX = 1000;
  * of valid status values) — ACC's Issues API is one of Autodesk's better-documented construction
  * APIs, so this is closer to lexoffice's confidence level than MS Project's Dataverse guesswork,
  * but still not verified against a live account. Do one supervised test sync before relying on it.
+ *
+ * The same connection also backs the project's BIM viewer: browseModels() walks the mapped ACC
+ * project's Docs folders (Data Management API), setModel() pins one file version's derivatives,
+ * and getViewerToken() hands the browser a viewables:read-only token to stream them with. ACC
+ * translates uploaded models for viewing itself, so nothing is submitted to Model Derivative here.
  */
 @Injectable()
 export class AutodeskService {
@@ -118,23 +161,14 @@ export class AutodeskService {
     const hubs = await this.fetchHubs(tokens.access_token);
     const hub = hubs.data[0];
     if (!hub) throw new BadRequestException("This Autodesk account has no accessible hub to connect");
+    const viewer = await this.refresh(tokens.refresh_token, APS_VIEWER_SCOPE);
 
-    await this.prisma.autodeskConnection.upsert({
-      where: { companyId },
-      create: {
-        companyId,
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
-        tokenExpiresAt: new Date(Date.now() + tokens.expires_in * 1000),
-        hubId: hub.id,
-      },
-      update: {
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
-        tokenExpiresAt: new Date(Date.now() + tokens.expires_in * 1000),
-        hubId: hub.id,
-      },
-    });
+    const data = {
+      ...this.tokenFields(tokens, viewer),
+      hubId: hub.id,
+      hubRegion: hub.attributes?.region ?? null,
+    };
+    await this.prisma.autodeskConnection.upsert({ where: { companyId }, create: { companyId, ...data }, update: data });
     return { companyId };
   }
 
@@ -159,7 +193,7 @@ export class AutodeskService {
 
     // The Issues API wants the bare project UUID; Data Management hands it out with a "b." prefix.
     const accProjectId = autodeskProjectId.replace(/^b\./, "");
-    const issueSubtypeId = await this.pickIssueSubtype(connection, accProjectId);
+    const issueSubtypeId = await this.pickIssueSubtype(connection, accProjectId).catch((err: unknown) => this.rethrowForUser(err));
     const summary: SyncSummary = { synced: 0, failed: 0, errors: [] };
     for (const item of items) {
       try {
@@ -185,6 +219,115 @@ export class AutodeskService {
     return summary;
   }
 
+  /** One level of the mapped ACC project's Docs tree: its top folders when `folderId` is omitted,
+   * otherwise that folder's subfolders and files (each file with its tip version's URN). Deleted
+   * entries are hidden by the API by default; `truncated` is set when the folder has more than one
+   * page (200 entries) — only the first page is listed. */
+  async browseModels(companyId: string, projectId: string, folderId?: string): Promise<{ entries: ModelBrowserEntry[]; truncated: boolean }> {
+    const connection = await this.getConnectionOrThrow(companyId);
+    const dmProjectId = await this.dataManagementProjectId(companyId, projectId);
+    return this.listFolder(connection, dmProjectId, folderId).catch((err: unknown) => this.rethrowForUser(err));
+  }
+
+  /** Turns an Autodesk API failure into something the person can act on instead of a 500. */
+  private rethrowForUser(err: unknown): never {
+    if (!(err instanceof AutodeskApiError)) throw err;
+    this.logger.warn(err.message);
+    if (err.status === 401) throw new BadRequestException("Autodesk no longer accepts this connection — reconnect it in Settings");
+    if (err.status === 403) throw new BadRequestException("The connected Autodesk account can't open this ACC project or folder — ask an ACC project admin for access");
+    if (err.status === 404) throw new BadRequestException("Autodesk has no such project in the connected hub — check the ACC project ID");
+    throw new BadGatewayException("Autodesk didn't answer properly — try again in a moment");
+  }
+
+  private async listFolder(connection: AutodeskConnection, dmProjectId: string, folderId?: string): Promise<{ entries: ModelBrowserEntry[]; truncated: boolean }> {
+
+    if (!folderId) {
+      const res = await this.request(connection, "GET", `project/v1/hubs/${encodeURIComponent(connection.hubId)}/projects/${encodeURIComponent(dmProjectId)}/topFolders?excludeDeleted=true`);
+      const entries = ((res?.data ?? []) as DmResource[])
+        .filter((f) => !f.attributes.hidden)
+        .map((f) => ({ kind: "folder" as const, id: f.id, name: f.attributes.displayName ?? f.attributes.name ?? f.id }));
+      return { entries, truncated: false };
+    }
+
+    const res = await this.request(
+      connection,
+      "GET",
+      `data/v1/projects/${encodeURIComponent(dmProjectId)}/folders/${encodeURIComponent(folderId)}/contents?page%5Blimit%5D=${FOLDER_PAGE_LIMIT}`,
+    );
+    const versions = new Map(((res?.included ?? []) as DmResource[]).filter((r) => r.type === "versions").map((v) => [v.id, v]));
+    const entries: ModelBrowserEntry[] = [];
+    for (const r of (res?.data ?? []) as DmResource[]) {
+      if (r.attributes.hidden) continue;
+      const name = r.attributes.displayName ?? r.attributes.name ?? r.id;
+      if (r.type === "folders") {
+        entries.push({ kind: "folder", id: r.id, name });
+      } else if (r.type === "items") {
+        const tipId = r.relationships?.tip?.data?.id;
+        if (!tipId) continue;
+        const tip = versions.get(tipId);
+        entries.push({
+          kind: "file",
+          id: r.id,
+          name,
+          urn: tip?.relationships?.derivatives?.data?.id ?? versionUrn(tipId),
+          ...(tip?.attributes.versionNumber ? { versionNumber: tip.attributes.versionNumber } : {}),
+        });
+      }
+    }
+    entries.sort((a, b) => (a.kind === b.kind ? a.name.localeCompare(b.name) : a.kind === "folder" ? -1 : 1));
+    return { entries, truncated: Boolean(res?.links?.next) };
+  }
+
+  /** Maps a local project to its ACC project (the id from the ACC URL, with or without "b.").
+   * Changing it drops the pinned model, which belongs to the old ACC project. */
+  async linkProject(companyId: string, projectId: string, autodeskProjectId: string) {
+    const id = autodeskProjectId.trim();
+    if (!/^(b\.)?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      throw new BadRequestException("An ACC project ID looks like 1a2b3c4d-… (copy it from the project's URL in Autodesk Construction Cloud)");
+    }
+    const project = await this.prisma.project.findFirst({ where: { id: projectId, companyId }, select: { autodeskProjectId: true } });
+    if (!project) throw new NotFoundException("Project not found");
+    const changed = project.autodeskProjectId !== id;
+    return this.prisma.project.update({
+      where: { id: projectId },
+      data: { autodeskProjectId: id, ...(changed ? { autodeskModelUrn: null, autodeskModelName: null } : {}) },
+      select: { autodeskProjectId: true, autodeskModelUrn: true, autodeskModelName: true },
+    });
+  }
+
+  /** Pins the model the project's viewer shows, or clears it with `null`. */
+  async setModel(companyId: string, projectId: string, model: { urn: string; name: string } | null) {
+    const project = await this.prisma.project.findFirst({ where: { id: projectId, companyId }, select: { id: true } });
+    if (!project) throw new NotFoundException("Project not found");
+    if (model && !URN_PATTERN.test(model.urn)) throw new BadRequestException("That isn't a model URN");
+    return this.prisma.project.update({
+      where: { id: projectId },
+      data: { autodeskModelUrn: model?.urn ?? null, autodeskModelName: model ? model.name.slice(0, 200) : null },
+      select: { autodeskModelUrn: true, autodeskModelName: true },
+    });
+  }
+
+  /** The browser-side token for the Autodesk Viewer: viewables:read only, so it can stream model
+   * derivatives but can't list, download or change anything in the company's Autodesk account. */
+  async getViewerToken(companyId: string): Promise<ViewerToken> {
+    const connection = await this.getConnectionOrThrow(companyId);
+    if (!connection.viewerAccessToken) throw new BadRequestException("Reconnect Autodesk in Settings to enable the model viewer");
+    return {
+      accessToken: connection.viewerAccessToken,
+      expiresIn: Math.max(0, Math.floor((connection.tokenExpiresAt.getTime() - Date.now()) / 1000)),
+      api: VIEWER_API_BY_REGION[connection.hubRegion ?? "US"] ?? VIEWER_API_BY_REGION.US,
+    };
+  }
+
+  /** Data Management wants the project id with its "b." prefix; the Issues API and ACC's own URLs
+   * use the bare UUID, which is what people usually paste. Accept either. */
+  private async dataManagementProjectId(companyId: string, projectId: string): Promise<string> {
+    const project = await this.prisma.project.findFirst({ where: { id: projectId, companyId }, select: { autodeskProjectId: true } });
+    if (!project) throw new NotFoundException("Project not found");
+    if (!project.autodeskProjectId) throw new BadRequestException("Link this project to an Autodesk Construction Cloud project first");
+    return project.autodeskProjectId.startsWith("b.") ? project.autodeskProjectId : `b.${project.autodeskProjectId}`;
+  }
+
   /** issueSubtypeId is required on every created issue. Prefers a category or type named like
    * "punch" (ACC's usual punch-list setup), otherwise the first active, editable type. */
   private async pickIssueSubtype(connection: AutodeskConnection, accProjectId: string): Promise<string> {
@@ -203,9 +346,30 @@ export class AutodeskService {
     return this.ensureFreshToken(connection);
   }
 
+  /** Refreshes twice, as APS's hubs-browser tutorial does: once with the full scope for the
+   * server's token, then with the narrowed viewer scope. Each refresh token is single-use, so the
+   * one stored is the second call's; the scope is re-requested explicitly on the next round because
+   * that stored token was issued from a viewer-scoped refresh. A connection without a viewer token
+   * (made before the viewer existed) refreshes early so it gets one. */
   private async ensureFreshToken(connection: AutodeskConnection): Promise<AutodeskConnection> {
-    if (connection.tokenExpiresAt.getTime() - Date.now() > 60_000) return connection;
+    if (connection.viewerAccessToken && connection.tokenExpiresAt.getTime() - Date.now() > 60_000) return connection;
 
+    const server = await this.refresh(connection.refreshToken, APS_SCOPE);
+    const viewer = await this.refresh(server.refresh_token, APS_VIEWER_SCOPE);
+    return this.prisma.autodeskConnection.update({ where: { id: connection.id }, data: this.tokenFields(server, viewer) });
+  }
+
+  private tokenFields(server: TokenResponse, viewer: TokenResponse) {
+    return {
+      accessToken: server.access_token,
+      viewerAccessToken: viewer.access_token,
+      refreshToken: viewer.refresh_token,
+      // Both were minted moments apart; the earlier expiry is the one that bounds either.
+      tokenExpiresAt: new Date(Date.now() + Math.min(server.expires_in, viewer.expires_in) * 1000),
+    };
+  }
+
+  private async refresh(refreshToken: string, scope: string): Promise<TokenResponse> {
     const clientId = this.config.getOrThrow<string>("AUTODESK_CLIENT_ID");
     const clientSecret = this.config.getOrThrow<string>("AUTODESK_CLIENT_SECRET");
     const res = await fetch(`${APS_AUTH_BASE_URL}/token`, {
@@ -214,20 +378,11 @@ export class AutodeskService {
         "Content-Type": "application/x-www-form-urlencoded",
         Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
       },
-      body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: connection.refreshToken }),
+      body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: refreshToken, scope }),
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
     if (!res.ok) throw new BadRequestException("Failed to refresh the Autodesk connection — reconnect it in Settings");
-    const tokens = (await res.json()) as TokenResponse;
-
-    return this.prisma.autodeskConnection.update({
-      where: { id: connection.id },
-      data: {
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
-        tokenExpiresAt: new Date(Date.now() + tokens.expires_in * 1000),
-      },
-    });
+    return (await res.json()) as TokenResponse;
   }
 
   private async exchangeCode(code: string): Promise<TokenResponse> {
@@ -274,7 +429,7 @@ export class AutodeskService {
       } catch {
         // non-JSON error body
       }
-      throw new Error(`Autodesk ${path.split("?")[0]} failed (${res.status})${detail ? `: ${detail}` : ""}`);
+      throw new AutodeskApiError(res.status, `Autodesk ${path.split("?")[0]} failed (${res.status})${detail ? `: ${detail}` : ""}`);
     }
     return res.json();
   }
@@ -283,4 +438,18 @@ export class AutodeskService {
     const apiOrigin = this.config.get<string>("API_ORIGIN") ?? "http://localhost:4000/api";
     return `${apiOrigin}/auth/autodesk/callback`;
   }
+}
+
+class AutodeskApiError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
+/** The URN the Viewer loads for a Data Management version id: its URL-safe base64, unpadded. */
+export function versionUrn(versionId: string): string {
+  return Buffer.from(versionId).toString("base64url");
 }

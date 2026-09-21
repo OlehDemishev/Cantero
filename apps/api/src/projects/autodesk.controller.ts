@@ -1,6 +1,6 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Query, Res } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Put, Query, Res } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { IsString } from "class-validator";
+import { IsString, MaxLength, MinLength } from "class-validator";
 import type { Response } from "express";
 import type { AuthUser } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
@@ -11,6 +11,18 @@ import { AutodeskService } from "./autodesk.service";
 class SyncAutodeskDto {
   @IsString()
   autodeskProjectId!: string;
+}
+
+class SetAutodeskModelDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(600)
+  urn!: string;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(200)
+  name!: string;
 }
 
 @Controller()
@@ -38,10 +50,41 @@ export class AutodeskController {
     return this.service.disconnect(user.companyId);
   }
 
-  @Post("projects/:id/sync-autodesk")
-  syncPunchList(@CurrentUser() user: AuthUser, @Param("id") id: string, @Body() body: SyncAutodeskDto) {
+  // Routes are keyed by :projectId (not :id) so the global ProjectAccessGuard sees them.
+  @Post("projects/:projectId/sync-autodesk")
+  syncPunchList(@CurrentUser() user: AuthUser, @Param("projectId") projectId: string, @Body() body: SyncAutodeskDto) {
     if (!body.autodeskProjectId) throw new BadRequestException("autodeskProjectId is required");
-    return this.service.syncPunchList(user.companyId, id, body.autodeskProjectId);
+    return this.service.syncPunchList(user.companyId, projectId, body.autodeskProjectId);
+  }
+
+  @Roles("owner", "admin", "estimator", "foreman")
+  @Put("projects/:projectId/autodesk/project")
+  linkProject(@CurrentUser() user: AuthUser, @Param("projectId") projectId: string, @Body() body: SyncAutodeskDto) {
+    return this.service.linkProject(user.companyId, projectId, body.autodeskProjectId);
+  }
+
+  @Roles("owner", "admin", "estimator", "foreman")
+  @Get("projects/:projectId/autodesk/models")
+  browseModels(@CurrentUser() user: AuthUser, @Param("projectId") projectId: string, @Query("folderId") folderId?: string) {
+    return this.service.browseModels(user.companyId, projectId, folderId || undefined);
+  }
+
+  @Roles("owner", "admin", "estimator", "foreman")
+  @Put("projects/:projectId/autodesk/model")
+  setModel(@CurrentUser() user: AuthUser, @Param("projectId") projectId: string, @Body() body: SetAutodeskModelDto) {
+    return this.service.setModel(user.companyId, projectId, { urn: body.urn, name: body.name });
+  }
+
+  @Roles("owner", "admin", "estimator", "foreman")
+  @Delete("projects/:projectId/autodesk/model")
+  clearModel(@CurrentUser() user: AuthUser, @Param("projectId") projectId: string) {
+    return this.service.setModel(user.companyId, projectId, null);
+  }
+
+  /** Anyone who can open the project can look at its model. */
+  @Get("projects/:projectId/autodesk/viewer-token")
+  viewerToken(@CurrentUser() user: AuthUser) {
+    return this.service.getViewerToken(user.companyId);
   }
 
   /** Autodesk redirects the browser here directly (a top-level navigation, not an XHR) — same
