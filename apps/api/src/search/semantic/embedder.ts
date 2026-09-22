@@ -6,31 +6,45 @@ import { ConfigService } from "@nestjs/config";
  * BAAI bge-m3 (MIT licence, 100+ languages, 1024 dimensions, ~560 MB int8). Chosen over the smaller
  * multilingual-e5 models on a calibration set of construction records in German, English, Polish and
  * Ukrainian: it ranked the right record first for 7 of 7 cross-language queries (e5-small 5/7,
- * e5-base 6/7) with a clear gap to the next one, and its scores separate relevant from unrelated
- * text. The cost is memory: about 1.7 GB resident once loaded.
+ * e5-base 6/7). Its absolute scores do not cleanly separate relevant from unrelated text on real
+ * records (short generic names like "Демонтажні роботи" score high against many queries), hence the
+ * window below. A cross-encoder reranker (bge-reranker-v2-m3) was tried on the same set and didn't
+ * earn its cost: about as often right first (38 vs 37 of 51 queries), ~0.9 s per query, 560 MB more.
+ * The cost is memory: about 1.7 GB resident once loaded.
  */
 export const DEFAULT_EMBEDDING_MODEL = "Xenova/bge-m3";
 
 export interface ModelProfile {
   /** Below this, a search hit is unrelated text. */
   minSearchScore: number;
+  /** Search shows only hits within this much of the best one: scores from a cross-language query
+   * run lower across the board, so a fixed floor alone either drops them or lets noise through. */
+  searchWindow: number;
   /** At or above this, a new record is flagged as possibly the same as an existing one. */
   duplicateScore: number;
 }
 
 /**
- * Score thresholds measured per model on that calibration set (small and hand-made — revisit them
- * against real company data). bge-m3: relevant hits ≥ 0.648, unrelated ≤ 0.616; true duplicates
- * 0.848–0.976 (one cross-language duplicate at 0.715 is missed), look-alikes about a different
- * room/floor/door ≤ 0.811. e5-small's scores overlap so much that it only flags near-identical text.
+ * Score thresholds measured per model. bge-m3 was calibrated on 2026-09-22 against a real company's
+ * records (Ukrainian RFIs, punch items, daily logs, tasks) with 89 queries in English, German,
+ * Spanish, Polish and Ukrainian, 15 of them with no matching record, and 20 new RFIs/punch items (10
+ * true duplicates, 10 look-alikes about another room, material or defect). Search scores a record by
+ * its better vector, title or full text; floor 0.63 with a 0.05 window showed 5 unrelated records
+ * in 76 results (the fixed 0.63 floor alone: 35 in 105) and put a right one first for 43 of 74
+ * queries (37). Duplicates compare full texts only — a title vector made look-alikes score higher
+ * ("damaged paint in the lobby" vs "damaged tile in the lobby": 0.84). At 0.69 it caught 4 of 10
+ * duplicates (0.70–0.89) with no false alarm; look-alikes reach 0.67, the same pair varies by about
+ * 0.01 between runs (int8 model, different batches), and cross-language duplicates can score as low
+ * as 0.46 — so it is a hint that catches the obvious ones, not a duplicate detector. The e5
+ * profiles come from an earlier, smaller hand-made set and have no window measured.
  */
 const PROFILES: Record<string, ModelProfile> = {
-  "Xenova/bge-m3": { minSearchScore: 0.63, duplicateScore: 0.83 },
-  "Xenova/multilingual-e5-base": { minSearchScore: 0.8, duplicateScore: 0.96 },
-  "Xenova/multilingual-e5-small": { minSearchScore: 0.8, duplicateScore: 0.975 },
+  "Xenova/bge-m3": { minSearchScore: 0.63, searchWindow: 0.05, duplicateScore: 0.69 },
+  "Xenova/multilingual-e5-base": { minSearchScore: 0.8, searchWindow: 1, duplicateScore: 0.96 },
+  "Xenova/multilingual-e5-small": { minSearchScore: 0.8, searchWindow: 1, duplicateScore: 0.975 },
 };
 /** An uncalibrated model: only show strong matches. */
-const FALLBACK_PROFILE: ModelProfile = { minSearchScore: 0.8, duplicateScore: 0.97 };
+const FALLBACK_PROFILE: ModelProfile = { minSearchScore: 0.8, searchWindow: 1, duplicateScore: 0.97 };
 /** e5 models are trained with these prefixes (leaving them off noticeably hurts ranking); other
  * models, e.g. bge-m3, take the text as is. */
 const prefixesFor = (model: string) => (/e5/i.test(model) ? { query: "query: ", passage: "passage: " } : { query: "", passage: "" });

@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 /** Shared across global-setup, global-teardown, and the specs — kept in one place so the
  * "which company/user does this suite run against" answer only needs updating once. */
 
@@ -12,8 +15,14 @@ export function testProjectName(): string {
   return `${TEST_RUN_PREFIX} ${Date.now()}`;
 }
 
+/** DATABASE_URL, falling back to the one apps/api/.env points the API at — the suite must set up
+ * and clean up the same database the API under test is using. */
 export function databaseUrl(): string {
-  return process.env.DATABASE_URL ?? "postgresql://baugeld:baugeld@localhost:5432/baugeld?schema=public";
+  if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
+  const env = readFileSync(join(__dirname, "../api/.env"), "utf-8");
+  const match = /^DATABASE_URL="?([^"\n]+)"?/m.exec(env);
+  if (!match) throw new Error("Set DATABASE_URL (or DATABASE_URL in apps/api/.env)");
+  return match[1];
 }
 
 export function apiUrl(): string {

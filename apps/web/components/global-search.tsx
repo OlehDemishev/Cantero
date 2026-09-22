@@ -29,6 +29,8 @@ interface SearchResult {
   link: string;
   /** Set on results found by meaning rather than by the words typed. */
   byMeaning?: boolean;
+  /** Found by meaning: other records with exactly this text, folded into this result. */
+  sameTextCount?: number;
 }
 
 const DEBOUNCE_MS = 250;
@@ -146,6 +148,9 @@ export function GlobalSearch() {
                     <span>
                       <span className="block text-sm font-medium text-gray-800 dark:text-white/90">{r.title}</span>
                       {r.subtitle && <span className="block text-xs text-gray-500 dark:text-gray-400">{r.subtitle}</span>}
+                      {!!r.sameTextCount && (
+                        <span className="block text-xs text-gray-400 dark:text-gray-500">{t("sameTextMore", { count: r.sameTextCount })}</span>
+                      )}
                     </span>
                     <span className="ml-2 shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500 dark:bg-white/10 dark:text-gray-400">
                       {t(`type_${r.type}`)}

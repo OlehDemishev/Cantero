@@ -29,7 +29,11 @@ Arranging state (a project, an approved estimate, a sent invoice) goes through t
 
 Runs against `demo-eu@cantero.dev` (seeded by `apps/api/prisma/seed.ts`) by default. Override with
 `E2E_WEB_URL` / `E2E_API_URL` / `DATABASE_URL` env vars to point at a different environment.
+Without `DATABASE_URL`, setup and cleanup use the one in `apps/api/.env` — the same database the
+local API runs on.
 
+- `semantic-search` runs the real embedding model; the API's first indexing run loads it, so the
+  first search after starting the API takes a few seconds longer.
 - `sepa-autopay` signs webhooks with the API's own secret: `E2E_STRIPE_WEBHOOK_SECRET`, or
   `STRIPE_WEBHOOK_SECRET` read from `apps/api/.env`.
 - `sso-saml` needs `openssl` on PATH — it generates a fresh IdP key pair per run, so no key is

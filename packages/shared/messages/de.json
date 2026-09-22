@@ -1752,6 +1752,7 @@
     "type_incident_report": "Vorfall",
     "type_warranty_claim": "Gewährleistungsfall",
     "byMeaning": "Nach Bedeutung",
+    "sameTextMore": "und {count} weitere mit gleichem Text",
     "type_daily_log": "Bautagebuch",
     "type_task": "Aufgabe"
   },

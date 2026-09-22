@@ -1752,6 +1752,7 @@
     "type_incident_report": "Інцидент",
     "type_warranty_claim": "Гарантійне звернення",
     "byMeaning": "За змістом",
+    "sameTextMore": "і ще {count} з таким самим текстом",
     "type_daily_log": "Журнал робіт",
     "type_task": "Завдання"
   },

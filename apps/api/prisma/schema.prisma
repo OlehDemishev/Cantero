@@ -8069,18 +8069,22 @@ model CostCodeBudgetTransfer {
   @@map("cost_code_budget_transfers")
 }
 
-/// Meaning-based search: one local embedding (multilingual-e5-small, 384 numbers, computed on this
-/// server — see src/search/semantic) per searchable record. Polymorphic by entityType/entityId with
-/// no foreign key; the indexer removes rows whose record is gone. contentHash is md5 of the exact
-/// text embedded, so a record is re-embedded only when that text changes.
+/// Meaning-based search: local embeddings (EMBEDDINGS_MODEL, by default bge-m3 with 1024 numbers,
+/// computed on this server — see src/search/semantic) per searchable record. Polymorphic by
+/// entityType/entityId with no foreign key; the indexer removes rows whose record is gone.
+/// contentHash is md5 of the model, the index format and the exact text embedded, so a record is
+/// re-embedded only when one of those changes.
 model SearchEmbedding {
-  entityType  String
-  entityId    String
-  companyId   String
-  projectId   String?
-  contentHash String
-  embedding   Float[]  @db.Real
-  updatedAt   DateTime @updatedAt
+  entityType     String
+  entityId       String
+  companyId      String
+  projectId      String?
+  contentHash    String
+  embedding      Float[]  @db.Real
+  /// The record's title/subject on its own, when the full text is longer: a short query matches a
+  /// title far better than a title diluted by a long description. Empty when the text is the title.
+  titleEmbedding Float[]  @default([]) @db.Real
+  updatedAt      DateTime @updatedAt
 
   @@id([entityType, entityId])
   @@index([companyId])

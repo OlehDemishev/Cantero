@@ -1752,6 +1752,7 @@
     "type_incident_report": "Incident",
     "type_warranty_claim": "Warranty claim",
     "byMeaning": "By meaning",
+    "sameTextMore": "and {count} more with the same text",
     "type_daily_log": "Daily log",
     "type_task": "Task"
   },

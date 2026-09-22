@@ -1752,6 +1752,7 @@
     "type_incident_report": "Incidente",
     "type_warranty_claim": "Reclamación de garantía",
     "byMeaning": "Por significado",
+    "sameTextMore": "y {count} más con el mismo texto",
     "type_daily_log": "Diario de obra",
     "type_task": "Tarea"
   },
