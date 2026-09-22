@@ -1,5 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { createWorker } from "tesseract.js";
+import { localWorkerOptions, ocrLanguageString } from "../common/ocr/ocr-languages";
 import { extractAmount, extractDate, extractVendor } from "./receipt-fields";
 
 export interface ReceiptExtraction {
@@ -15,6 +17,8 @@ const EMPTY_EXTRACTION: ReceiptExtraction = { rawText: "", amount: null, incurre
 export class ReceiptOcrService {
   private readonly logger = new Logger(ReceiptOcrService.name);
 
+  constructor(private readonly config: ConfigService) {}
+
   /**
    * Best-effort — a receipt the OCR engine can't read (blurry photo, unsupported format, worker
    * init failure) returns an all-null extraction rather than throwing, so the caller always falls
@@ -23,7 +27,8 @@ export class ReceiptOcrService {
   async extract(buffer: Buffer): Promise<ReceiptExtraction> {
     let rawText: string;
     try {
-      const worker = await createWorker("eng");
+      // German, English, Polish and Ukrainian receipts, read with the models shipped in the app.
+      const worker = await createWorker(ocrLanguageString(this.config.get<string>("OCR_LANGUAGES")), undefined, localWorkerOptions());
       try {
         const result = await worker.recognize(buffer);
         rawText = result.data.text;

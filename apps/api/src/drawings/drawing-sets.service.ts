@@ -12,6 +12,8 @@ import { latestPerChain } from "./drawing-sheets.service";
 
 /** Past this, reading every page's text takes long enough to time out the upload request. */
 const MAX_PAGES = 300;
+/** Scanned pages (no text layer) whose title block is OCR'd per upload — a second or two each. */
+const MAX_SCANNED_PAGES_OCR = 60;
 
 export interface SetPageAnalysis {
   page: number;
@@ -19,6 +21,8 @@ export interface SetPageAnalysis {
   title: string | null;
   discipline: string | null;
   confidence: Confidence | null;
+  /** Read by OCR from a scanned page's title block, not from a text layer — worth a closer look. */
+  fromScan?: boolean;
   /** Every sheet reference printed on the page; the page's own number is dropped at import, once
    * the person has confirmed what that number is. */
   references: SheetReference[];
@@ -48,14 +52,20 @@ export class DrawingSetsService {
 
     let pages: Awaited<ReturnType<typeof extractPdfText>>;
     try {
-      pages = await extractPdfText(file.buffer, MAX_PAGES + 1);
+      pages = await extractPdfText(file.buffer, MAX_PAGES + 1, { ocrScans: { maxPages: MAX_SCANNED_PAGES_OCR } });
     } catch {
       throw new BadRequestException("This PDF couldn't be read — it may be damaged or password-protected");
     }
     if (pages.length === 0) throw new BadRequestException("This PDF has no pages");
     if (pages.length > MAX_PAGES) throw new BadRequestException(`A drawing set can have at most ${MAX_PAGES} pages — split it and upload the parts`);
 
-    const analysis: SetPageAnalysis[] = pages.map((p) => ({ page: p.pageNumber, ...recognizeSheet(p.words), references: findSheetReferences(p.words, null) }));
+    const analysis: SetPageAnalysis[] = pages.map((p) => ({
+      page: p.pageNumber,
+      ...recognizeSheet(p.words),
+      ...(p.fromScan ? { fromScan: true } : {}),
+      // Only the title block of a scan is read, so it has no references worth linking.
+      references: p.fromScan ? [] : findSheetReferences(p.words, null),
+    }));
     const stored = await this.storage.save(companyId, file.originalname, file.buffer);
     const set = await this.prisma.drawingSet.create({
       data: {

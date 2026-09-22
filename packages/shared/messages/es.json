@@ -1750,7 +1750,14 @@
     "type_punch_list_item": "Defecto",
     "type_submittal": "Aprobación",
     "type_incident_report": "Incidente",
-    "type_warranty_claim": "Reclamación de garantía"
+    "type_warranty_claim": "Reclamación de garantía",
+    "byMeaning": "Por significado",
+    "type_daily_log": "Diario de obra",
+    "type_task": "Tarea"
+  },
+  "similarItems": {
+    "titleRfi": "Puede que ya exista una RFI similar:",
+    "titlePunch": "Puede que esto ya esté en la lista de incidencias:"
   },
   "onboarding": {
     "skipSetup": "Omitir configuración",
@@ -3089,6 +3096,7 @@
     "notRecognized": "Sin número reconocido",
     "revises": "Nueva revisión de {sheet} (versión {version})",
     "checkIt": "Detectado por posición: revísalo",
+    "fromScan": "Leído de un escaneo: revísalo",
     "newSheet": "Hoja nueva",
     "previewPage": "Página {n}",
     "closePreview": "Cerrar vista previa",

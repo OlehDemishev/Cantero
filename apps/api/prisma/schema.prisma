@@ -8068,3 +8068,21 @@ model CostCodeBudgetTransfer {
   @@index([projectId])
   @@map("cost_code_budget_transfers")
 }
+
+/// Meaning-based search: one local embedding (multilingual-e5-small, 384 numbers, computed on this
+/// server — see src/search/semantic) per searchable record. Polymorphic by entityType/entityId with
+/// no foreign key; the indexer removes rows whose record is gone. contentHash is md5 of the exact
+/// text embedded, so a record is re-embedded only when that text changes.
+model SearchEmbedding {
+  entityType  String
+  entityId    String
+  companyId   String
+  projectId   String?
+  contentHash String
+  embedding   Float[]  @db.Real
+  updatedAt   DateTime @updatedAt
+
+  @@id([entityType, entityId])
+  @@index([companyId])
+  @@map("search_embeddings")
+}

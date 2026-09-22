@@ -1,0 +1,6 @@
+{
+  "name": "on-device-ocr",
+  "platforms": ["apple", "android"],
+  "apple": { "modules": ["OnDeviceOcrModule"] },
+  "android": { "modules": ["expo.modules.ondeviceocr.OnDeviceOcrModule"] }
+}

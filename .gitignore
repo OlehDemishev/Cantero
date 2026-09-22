@@ -10,3 +10,5 @@ dist/
 coverage/
 apps/api/uploads/
 .claude/settings.local.json
+# Local AI models downloaded at runtime (embeddings) — see apps/api/.env.example
+apps/api/.models/

@@ -1750,7 +1750,14 @@
     "type_punch_list_item": "Punch list",
     "type_submittal": "Submittal",
     "type_incident_report": "Incident",
-    "type_warranty_claim": "Warranty claim"
+    "type_warranty_claim": "Warranty claim",
+    "byMeaning": "By meaning",
+    "type_daily_log": "Daily log",
+    "type_task": "Task"
+  },
+  "similarItems": {
+    "titleRfi": "A similar RFI may already exist:",
+    "titlePunch": "This may already be on the punch list:"
   },
   "onboarding": {
     "skipSetup": "Skip setup",
@@ -3089,6 +3096,7 @@
     "notRecognized": "No sheet number found",
     "revises": "New revision of {sheet} (version {version})",
     "checkIt": "Found by position — check it",
+    "fromScan": "Read from a scan — check it",
     "newSheet": "New sheet",
     "previewPage": "Page {n}",
     "closePreview": "Close preview",

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { BulkActionResult, PunchListItemStatus } from "@cantero/shared";
+import { SimilarItemsHint } from "@/components/similar-items-hint";
 import { apiFetch } from "@/lib/api-client";
 import { PhotoAttachments } from "@/components/photo-attachments";
 import { CommentsThread } from "@/components/comments-thread";
@@ -238,6 +239,7 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
               </select>
             </label>
           </div>
+          <SimilarItemsHint type="punch_list_item" projectId={projectId} text={[form.title, form.location, form.description].filter((v) => v.trim()).join("\n")} />
           <label className="flex w-40 flex-col gap-1.5 text-sm">
             <span className="font-medium text-gray-700 dark:text-gray-200">{t("dueDate")}</span>
             <input

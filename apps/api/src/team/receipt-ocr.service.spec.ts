@@ -1,3 +1,4 @@
+import { ConfigService } from "@nestjs/config";
 import { Test } from "@nestjs/testing";
 import { createWorker } from "tesseract.js";
 import { ReceiptOcrService } from "./receipt-ocr.service";
@@ -8,7 +9,7 @@ describe("ReceiptOcrService", () => {
   let service: ReceiptOcrService;
 
   beforeEach(async () => {
-    const module = await Test.createTestingModule({ providers: [ReceiptOcrService] }).compile();
+    const module = await Test.createTestingModule({ providers: [ReceiptOcrService, { provide: ConfigService, useValue: new ConfigService({}) }] }).compile();
     service = module.get(ReceiptOcrService);
     jest.clearAllMocks();
   });
@@ -24,6 +25,15 @@ describe("ReceiptOcrService", () => {
     expect(result.amount).toBe(42.5);
     expect(result.incurredAt).toBe(new Date(Date.UTC(2026, 7, 27)).toISOString());
     expect(terminate).toHaveBeenCalled();
+  });
+
+  it("reads German, English, Polish and Ukrainian with the models shipped in the app, not a CDN", async () => {
+    (createWorker as jest.Mock).mockResolvedValue({ recognize: jest.fn().mockResolvedValue({ data: { text: "" } }), terminate: jest.fn() });
+    await service.extract(Buffer.from("fake-image"));
+    const [langs, , options] = (createWorker as jest.Mock).mock.calls[0];
+    expect(langs).toBe("deu+eng+pol+ukr");
+    expect(options).toMatchObject({ gzip: true, cacheMethod: "none" });
+    expect(options.langPath).not.toMatch(/^https?:/);
   });
 
   it("returns an all-null extraction instead of throwing when OCR fails", async () => {

@@ -1750,7 +1750,14 @@
     "type_punch_list_item": "Usterka",
     "type_submittal": "Zatwierdzenie",
     "type_incident_report": "Zdarzenie",
-    "type_warranty_claim": "Roszczenie gwarancyjne"
+    "type_warranty_claim": "Roszczenie gwarancyjne",
+    "byMeaning": "Według znaczenia",
+    "type_daily_log": "Dziennik budowy",
+    "type_task": "Zadanie"
+  },
+  "similarItems": {
+    "titleRfi": "Podobne RFI może już istnieć:",
+    "titlePunch": "Ta usterka może już być na liście:"
   },
   "onboarding": {
     "skipSetup": "Pomiń konfigurację",
@@ -3089,6 +3096,7 @@
     "notRecognized": "Nie znaleziono numeru",
     "revises": "Nowa rewizja {sheet} (wersja {version})",
     "checkIt": "Rozpoznano po położeniu — sprawdź",
+    "fromScan": "Odczytano ze skanu — sprawdź",
     "newSheet": "Nowy arkusz",
     "previewPage": "Strona {n}",
     "closePreview": "Zamknij podgląd",

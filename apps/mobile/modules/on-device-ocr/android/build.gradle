@@ -1,0 +1,28 @@
+apply plugin: 'com.android.library'
+
+group = 'expo.modules.ondeviceocr'
+version = '0.1.0'
+
+def expoModulesCorePlugin = new File(project(":expo-modules-core").projectDir.absolutePath, "ExpoModulesCorePlugin.gradle")
+apply from: expoModulesCorePlugin
+applyKotlinExpoModulesCorePlugin()
+useCoreDependencies()
+useExpoPublishing()
+useDefaultAndroidSdkVersions()
+
+android {
+  namespace "expo.modules.ondeviceocr"
+  defaultConfig {
+    versionCode 1
+    versionName "0.1.0"
+  }
+  lintOptions {
+    abortOnError false
+  }
+}
+
+dependencies {
+  // The bundled model (in the APK, ~4 MB per ABI) rather than the Play Services one, which is
+  // downloaded on first use — this has to work on a site with no signal from the first launch.
+  implementation 'com.google.mlkit:text-recognition:16.0.1'
+}

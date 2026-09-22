@@ -69,3 +69,47 @@ describe("extractVendor", () => {
     expect(extractVendor("12\n34\n56")).toBeNull();
   });
 });
+
+describe("receipts in German, Polish and Ukrainian", () => {
+  it("reads a German Kassenbon: Summe, not the MwSt or Zwischensumme line; dotted date; umlaut vendor", () => {
+    const text = [
+      "Bäckerei Müller GmbH",
+      "Hauptstraße 12, 10115 Berlin",
+      "Datum: 27.08.2026 14:03",
+      "Brötchen 2x0,45      0,90",
+      "Kaffee               2,60",
+      "Zwischensumme        3,50",
+      "SUMME EUR            3,50",
+      "MwSt 19% Betrag      0,56",
+      "Gegeben Bar          5,00",
+    ].join("\n");
+    expect(extractAmount(text)).toBe(3.5);
+    expect(extractDate(text)).toBe(new Date(Date.UTC(2026, 7, 27)).toISOString());
+    expect(extractVendor(text)).toBe("Bäckerei Müller GmbH");
+  });
+
+  it("reads a German invoice total with thousands separators and a two-digit year", () => {
+    const text = "Baustoffhandel Krüger\nRechnung Nr. 4711 vom 03.09.26\nNetto 1.050,42\nUSt 19% 199,58\nGesamtbetrag 1.250,00 €";
+    expect(extractAmount(text)).toBe(1250);
+    expect(extractDate(text)).toBe(new Date(Date.UTC(2026, 8, 3)).toISOString());
+    expect(extractVendor(text)).toBe("Baustoffhandel Krüger");
+  });
+
+  it("reads a Polish paragon: Suma PLN, PTU line ignored", () => {
+    const text = "PARAGON FISKALNY\nBudmat Sp. z o.o.\n12.09.2026\nCement 25kg 3x21,99 65,97\nSprzed. opod. PTU A 65,97\nPTU A 23% 12,34\nSUMA PLN 65,97";
+    expect(extractAmount(text)).toBe(65.97);
+    expect(extractVendor(text)).toBe("Budmat Sp. z o.o.");
+  });
+
+  it("reads a Ukrainian receipt: Сума, Cyrillic vendor", () => {
+    const text = "Епіцентр К\nЧЕК № 123\n05.10.2026\nЦвяхи 1кг 89,00\nСУМА 89,00 грн\nПДВ 20% 14,83";
+    expect(extractAmount(text)).toBe(89);
+    expect(extractDate(text)).toBe(new Date(Date.UTC(2026, 9, 5)).toISOString());
+    expect(extractVendor(text)).toBe("Епіцентр К");
+  });
+
+  it("reads a German written-out month", () => {
+    expect(extractDate("Lieferung am 5. März 2026")).toBe(new Date(Date.UTC(2026, 2, 5)).toISOString());
+  });
+});
+

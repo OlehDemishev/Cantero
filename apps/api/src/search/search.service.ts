@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { ProjectAccessService } from "../common/project-access/project-access.service";
 
 const RESULTS_PER_TYPE = 5;
 const MIN_QUERY_LENGTH = 2;
@@ -28,9 +29,14 @@ export interface SearchResult {
 
 @Injectable()
 export class SearchService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly projectAccess: ProjectAccessService,
+  ) {}
 
-  async search(companyId: string, query: string): Promise<SearchResult[]> {
+  /** Substring search across the company. Anything belonging to a restricted project the user
+   * isn't a member of is left out (projects, and the RFIs/punch items/… inside them). */
+  async search(companyId: string, query: string, userId?: string, role?: string): Promise<SearchResult[]> {
     const q = query.trim();
     if (q.length < MIN_QUERY_LENGTH) return [];
 
@@ -117,8 +123,9 @@ export class SearchService {
     }
     const dedupedSubmittals = Array.from(latestSubmittalByChain.values()).slice(0, RESULTS_PER_TYPE);
 
-    const results: SearchResult[] = [
+    const results: (SearchResult & { projectId?: string })[] = [
       ...projects.map((p) => ({
+        projectId: p.id,
         type: "project" as const,
         id: p.id,
         title: p.name,
@@ -140,6 +147,7 @@ export class SearchService {
         link: `/invoices/${i.id}`,
       })),
       ...estimates.map((e) => ({
+        projectId: e.project?.id,
         type: "estimate" as const,
         id: e.id,
         title: e.name,
@@ -168,6 +176,7 @@ export class SearchService {
         link: `/suppliers`,
       })),
       ...rfis.map((r) => ({
+        projectId: r.project.id,
         type: "rfi" as const,
         id: r.id,
         title: `${r.number}: ${r.subject}`,
@@ -175,6 +184,7 @@ export class SearchService {
         link: `/projects/${r.project.id}`,
       })),
       ...punchListItems.map((p) => ({
+        projectId: p.project.id,
         type: "punch_list_item" as const,
         id: p.id,
         title: p.title,
@@ -182,6 +192,7 @@ export class SearchService {
         link: `/projects/${p.project.id}`,
       })),
       ...dedupedSubmittals.map((s) => ({
+        projectId: s.project.id,
         type: "submittal" as const,
         id: s.id,
         title: `${s.number}: ${s.title}`,
@@ -189,6 +200,7 @@ export class SearchService {
         link: `/projects/${s.project.id}`,
       })),
       ...incidents.map((inc) => ({
+        projectId: inc.project.id,
         type: "incident_report" as const,
         id: inc.id,
         title: inc.description,
@@ -196,6 +208,7 @@ export class SearchService {
         link: `/projects/${inc.project.id}`,
       })),
       ...warrantyClaims.map((w) => ({
+        projectId: w.project.id,
         type: "warranty_claim" as const,
         id: w.id,
         title: w.title,
@@ -204,6 +217,14 @@ export class SearchService {
       })),
     ];
 
-    return results;
+    const hidden = await this.hiddenProjectIds(companyId, userId, role);
+    return results.filter((r) => !r.projectId || !hidden.has(r.projectId)).map(({ projectId: _projectId, ...r }) => r);
+  }
+
+  private async hiddenProjectIds(companyId: string, userId?: string, role?: string): Promise<Set<string>> {
+    const restricted = await this.prisma.project.findMany({ where: { companyId, restrictedToMembers: true }, select: { id: true, restrictedToMembers: true } });
+    if (restricted.length === 0) return new Set();
+    const visible = new Set((await this.projectAccess.filterAccessible(restricted, userId, role)).map((p) => p.id));
+    return new Set(restricted.filter((p) => !visible.has(p.id)).map((p) => p.id));
   }
 }

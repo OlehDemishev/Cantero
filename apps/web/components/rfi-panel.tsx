@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { BallInCourtParty, BulkActionResult, RfiPriority, RfiStatus } from "@cantero/shared";
+import { SimilarItemsHint } from "@/components/similar-items-hint";
 import { apiFetch } from "@/lib/api-client";
 import { useBulkSelection } from "@/components/bulk-select";
 import { CommentsThread } from "@/components/comments-thread";
@@ -220,6 +221,7 @@ export function RfiPanel({ projectId }: { projectId: string }) {
               onChange={(e) => setForm((f) => ({ ...f, question: e.target.value }))}
             />
           </label>
+          <SimilarItemsHint type="rfi" projectId={projectId} text={`${form.subject}\n${form.question}`} />
           <div className="flex flex-wrap gap-3">
             <label className="flex flex-col gap-1.5 text-sm">
               <span className="font-medium text-gray-700 dark:text-gray-200">{t("priority")}</span>

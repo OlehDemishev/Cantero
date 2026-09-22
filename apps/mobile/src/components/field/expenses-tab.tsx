@@ -4,6 +4,8 @@ import { EXPENSE_CATEGORIES, type ExpenseCategory } from "@cantero/shared";
 import { fetchCached } from "@/lib/offline-cache";
 import { apiUpload, NetworkError } from "@/lib/api-client";
 import { attachFiles, submitOrQueue } from "@/lib/offline-queue";
+import { extractAmount, extractDate, extractVendor } from "@cantero/shared";
+import { isOnDeviceOcrAvailable, linesToText, recognizeText } from "../../../modules/on-device-ocr";
 import type { LocalPhoto } from "@/lib/photos";
 import {
   Card,
@@ -95,13 +97,27 @@ export function ExpensesTab({ projectId, meUserId, reloadKey }: { projectId: str
     }
   }
 
-  /** Reads amount, date and vendor off the receipt photo; fields already filled in are kept. */
+  /** On the phone first: instant, and works with no signal. Null when it finds nothing to use. */
+  async function scanOnDevice(uri: string): Promise<ReceiptExtraction | null> {
+    if (!isOnDeviceOcrAvailable) return null;
+    try {
+      const text = linesToText(await recognizeText(uri));
+      const found = { amount: extractAmount(text), incurredAt: extractDate(text), vendorGuess: extractVendor(text) };
+      return found.amount === null && found.incurredAt === null && found.vendorGuess === null ? null : found;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Reads amount, date and vendor off the receipt photo; fields already filled in are kept. The
+   * phone reads it itself; the server's OCR is the fallback for what the phone can't read (a
+   * Ukrainian receipt on Android, a build without the native module) when there's a connection. */
   async function scan() {
     if (!receipt[0]) return;
     setScanning(true);
     setMessage(null);
     try {
-      const result = await apiUpload<ReceiptExtraction>("/expenses/scan-receipt", receipt[0]);
+      const result = (await scanOnDevice(receipt[0].uri)) ?? (await apiUpload<ReceiptExtraction>("/expenses/scan-receipt", receipt[0]));
       if (result.amount === null && result.incurredAt === null && result.vendorGuess === null) {
         setMessage({ type: "warning", text: t("scanReceiptNoData") });
         return;

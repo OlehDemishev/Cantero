@@ -85,6 +85,13 @@ describe("DrawingSetsService", () => {
     expect(prisma.drawingSheet.create).not.toHaveBeenCalled();
   });
 
+  it("marks a page read from a scan and links nothing from it", async () => {
+    mockExtract.mockResolvedValue([{ pageNumber: 1, width: 1190, height: 842, fromScan: true, words: [...titleBlock("A-101"), word("A-501", 0.85, 0.95)] }]);
+    const result = await service.analyze("co", { userId: "u1", name: "Anke" }, "p1", { originalname: "Scan.pdf", mimetype: "application/pdf", size: 1000, buffer: await threePagePdf() } as Express.Multer.File);
+    expect(mockExtract).toHaveBeenCalledWith(expect.any(Buffer), expect.any(Number), { ocrScans: { maxPages: 60 } });
+    expect(result.pages[0]).toMatchObject({ sheetNumber: "A-101", fromScan: true, referenceCount: 0 });
+  });
+
   it("refuses anything but a PDF", async () => {
     await expect(service.analyze("co", { userId: "u1", name: "A" }, "p1", { originalname: "a.png", mimetype: "image/png", size: 1, buffer: Buffer.from("x") } as Express.Multer.File)).rejects.toThrow(BadRequestException);
   });

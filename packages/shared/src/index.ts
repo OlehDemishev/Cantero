@@ -96,3 +96,4 @@ export * from "./estimate-alternates";
 export * from "./meetings";
 export * from "./long-lead-items";
 export * from "./job-costing";
+export * from "./receipt-fields";

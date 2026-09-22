@@ -1,3 +1,5 @@
+import { TitleBlockReader } from "./scan-ocr";
+
 /**
  * Reads the words printed on each page of a PDF, with where they sit on the page — the input to
  * sheet-number recognition and cross-sheet link detection. CAD exports (AutoCAD, Revit, Archicad,
@@ -20,6 +22,8 @@ export interface PageWord {
 
 export interface PageText {
   pageNumber: number;
+  /** The page had no text layer (a scan) and its words were read by OCR from the title-block corner. */
+  fromScan?: boolean;
   /** Page size in PDF units (1/72 in) as displayed. */
   width: number;
   height: number;
@@ -39,11 +43,17 @@ interface Viewport {
   convertToViewportPoint(x: number, y: number): number[];
 }
 
-/** Every page's words. `maxPages` bounds the work on a huge set. */
-export async function extractPdfText(pdf: Buffer, maxPages = Infinity): Promise<PageText[]> {
+/**
+ * Every page's words. `maxPages` bounds the work on a huge set. With `ocrScans`, a page with no
+ * text layer at all (a scanned drawing) has its title-block corner read by OCR instead — up to
+ * `ocrScans.maxPages` of them, since each takes a second or two.
+ */
+export async function extractPdfText(pdf: Buffer, maxPages = Infinity, options: { ocrScans?: { maxPages: number } } = {}): Promise<PageText[]> {
   // pdfjs-dist is ESM-only; see extract-zugferd-xml-from-pdf.ts for why this is a dynamic import.
   const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
   const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(pdf) });
+  const reader = options.ocrScans ? new TitleBlockReader() : null;
+  let scansRead = 0;
   try {
     const doc = await loadingTask.promise;
     const pages: PageText[] = [];
@@ -52,11 +62,18 @@ export async function extractPdfText(pdf: Buffer, maxPages = Infinity): Promise<
       const viewport = page.getViewport({ scale: 1 }) as Viewport;
       const content = await page.getTextContent();
       const words = (content.items as PdfTextItem[]).filter((i) => typeof i.str === "string" && i.str.trim()).flatMap((i) => itemWords(i, viewport));
-      pages.push({ pageNumber: n, width: viewport.width, height: viewport.height, words });
+      if (words.length === 0 && reader && scansRead < options.ocrScans!.maxPages) {
+        scansRead++;
+        const scanned = await reader.read(page as never, doc.canvasFactory as never).catch(() => []);
+        pages.push({ pageNumber: n, width: viewport.width, height: viewport.height, words: scanned, fromScan: true });
+      } else {
+        pages.push({ pageNumber: n, width: viewport.width, height: viewport.height, words });
+      }
       page.cleanup();
     }
     return pages;
   } finally {
+    await reader?.close();
     await loadingTask.destroy();
   }
 }

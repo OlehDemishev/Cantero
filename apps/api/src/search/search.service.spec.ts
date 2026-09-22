@@ -1,6 +1,7 @@
 import { Test } from "@nestjs/testing";
 import { SearchService } from "./search.service";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { ProjectAccessService } from "../common/project-access/project-access.service";
 
 const COMPANY_A = "company-a";
 
@@ -25,12 +26,14 @@ function emptyPrisma() {
 describe("SearchService", () => {
   let service: SearchService;
   let prisma: ReturnType<typeof emptyPrisma>;
+  let projectAccess: { filterAccessible: jest.Mock };
 
   beforeEach(async () => {
     prisma = emptyPrisma();
+    projectAccess = { filterAccessible: jest.fn(async (projects: unknown[]) => projects) };
 
     const module = await Test.createTestingModule({
-      providers: [SearchService, { provide: PrismaService, useValue: prisma }],
+      providers: [SearchService, { provide: PrismaService, useValue: prisma }, { provide: ProjectAccessService, useValue: projectAccess }],
     }).compile();
 
     service = module.get(SearchService);
@@ -71,5 +74,25 @@ describe("SearchService", () => {
 
     expect(submittalResults).toHaveLength(1);
     expect(submittalResults[0].id).toBe("sub-rev1");
+  });
+
+  it("leaves out a restricted project the user isn't a member of, and everything inside it", async () => {
+    const open = { id: "project-open", name: "Open site" };
+    const secret = { id: "project-secret", name: "Secret site" };
+    // The same findMany serves the project matches and the lookup of restricted projects.
+    prisma.project.findMany.mockImplementation(async (args: { where: { restrictedToMembers?: boolean } }) =>
+      args.where.restrictedToMembers ? [{ id: secret.id, restrictedToMembers: true }] : [{ ...secret, address: null }, { ...open, address: null }],
+    );
+    prisma.rfi.findMany.mockResolvedValue([
+      { id: "rfi-open", number: "RFI-1", subject: "Door", project: open },
+      { id: "rfi-secret", number: "RFI-2", subject: "Door", project: secret },
+    ]);
+    projectAccess.filterAccessible.mockResolvedValue([]); // not a member of the restricted one
+
+    const results = await service.search(COMPANY_A, "door", "user-1", "worker");
+
+    expect(results.map((r) => r.id).sort()).toEqual(["project-open", "rfi-open"]);
+    expect(projectAccess.filterAccessible).toHaveBeenCalledWith([{ id: secret.id, restrictedToMembers: true }], "user-1", "worker");
+    expect(results[0]).not.toHaveProperty("projectId");
   });
 });

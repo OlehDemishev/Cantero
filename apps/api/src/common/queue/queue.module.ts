@@ -21,6 +21,7 @@ export const ENPS_SURVEYS_QUEUE = "enps-surveys";
 export const OUTBOX_QUEUE = "webhook-outbox";
 export const STOCK_LOT_EXPIRING_QUEUE = "stock-lot-expiring";
 export const DOCUSIGN_POLL_QUEUE = "docusign-poll";
+export const SEMANTIC_INDEX_QUEUE = "semantic-index";
 
 @Global()
 @Module({
@@ -50,6 +51,7 @@ export const DOCUSIGN_POLL_QUEUE = "docusign-poll";
     BullModule.registerQueue({ name: OUTBOX_QUEUE }),
     BullModule.registerQueue({ name: STOCK_LOT_EXPIRING_QUEUE }),
     BullModule.registerQueue({ name: DOCUSIGN_POLL_QUEUE }),
+    BullModule.registerQueue({ name: SEMANTIC_INDEX_QUEUE }),
   ],
   providers: [QueueFailureReporterService],
   exports: [BullModule],

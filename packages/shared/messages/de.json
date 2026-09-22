@@ -1750,7 +1750,14 @@
     "type_punch_list_item": "Mängel",
     "type_submittal": "Freigabe",
     "type_incident_report": "Vorfall",
-    "type_warranty_claim": "Gewährleistungsfall"
+    "type_warranty_claim": "Gewährleistungsfall",
+    "byMeaning": "Nach Bedeutung",
+    "type_daily_log": "Bautagebuch",
+    "type_task": "Aufgabe"
+  },
+  "similarItems": {
+    "titleRfi": "Eine ähnliche RFI gibt es vielleicht schon:",
+    "titlePunch": "Dieser Mangel ist vielleicht schon erfasst:"
   },
   "onboarding": {
     "skipSetup": "Einrichtung überspringen",
@@ -3089,6 +3096,7 @@
     "notRecognized": "Keine Plannummer gefunden",
     "revises": "Neuer Index von {sheet} (Version {version})",
     "checkIt": "Nach Lage erkannt — bitte prüfen",
+    "fromScan": "Aus einem Scan gelesen — bitte prüfen",
     "newSheet": "Neuer Plan",
     "previewPage": "Seite {n}",
     "closePreview": "Vorschau schließen",

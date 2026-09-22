@@ -1750,7 +1750,14 @@
     "type_punch_list_item": "Дефект",
     "type_submittal": "Погодження",
     "type_incident_report": "Інцидент",
-    "type_warranty_claim": "Гарантійне звернення"
+    "type_warranty_claim": "Гарантійне звернення",
+    "byMeaning": "За змістом",
+    "type_daily_log": "Журнал робіт",
+    "type_task": "Завдання"
+  },
+  "similarItems": {
+    "titleRfi": "Схожий RFI, можливо, вже є:",
+    "titlePunch": "Можливо, це зауваження вже є у списку:"
   },
   "onboarding": {
     "skipSetup": "Пропустити налаштування",
@@ -3089,6 +3096,7 @@
     "notRecognized": "Номер не знайдено",
     "revises": "Нова редакція {sheet} (версія {version})",
     "checkIt": "Знайдено за розташуванням — перевірте",
+    "fromScan": "Прочитано зі скану — перевірте",
     "newSheet": "Новий аркуш",
     "previewPage": "Сторінка {n}",
     "closePreview": "Закрити перегляд",

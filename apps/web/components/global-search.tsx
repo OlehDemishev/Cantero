@@ -18,13 +18,17 @@ type ResultType =
   | "punch_list_item"
   | "submittal"
   | "incident_report"
-  | "warranty_claim";
+  | "warranty_claim"
+  | "daily_log"
+  | "task";
 interface SearchResult {
   type: ResultType;
   id: string;
   title: string;
   subtitle: string;
   link: string;
+  /** Set on results found by meaning rather than by the words typed. */
+  byMeaning?: boolean;
 }
 
 const DEBOUNCE_MS = 250;
@@ -39,6 +43,8 @@ export function GlobalSearch() {
   const [activeIndex, setActiveIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Only the latest query's answer is shown, however the two requests race.
+  const requestRef = useRef(0);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -58,10 +64,25 @@ export function GlobalSearch() {
       return;
     }
     debounceRef.current = setTimeout(() => {
-      apiFetch<SearchResult[]>(`/search?q=${encodeURIComponent(value)}`).then((r) => {
-        setResults(r);
+      const request = ++requestRef.current;
+      const q = encodeURIComponent(value);
+      apiFetch<SearchResult[]>(`/search?q=${q}`).then((r) => {
+        if (request !== requestRef.current) return;
+        setResults((prev) => [...r, ...(prev ?? []).filter((x) => x.byMeaning && !r.some((y) => y.id === x.id))]);
         setOpen(true);
       });
+      // Meaning-based results (any language) follow the word matches; a server with it turned off
+      // answers 400, which just means there is no second group.
+      apiFetch<SearchResult[]>(`/search/semantic?q=${q}`)
+        .then((r) => {
+          if (request !== requestRef.current) return;
+          setResults((prev) => {
+            const words = (prev ?? []).filter((x) => !x.byMeaning);
+            return [...words, ...r.filter((x) => !words.some((y) => y.id === x.id)).map((x) => ({ ...x, byMeaning: true }))];
+          });
+          setOpen(true);
+        })
+        .catch(() => {});
     }, DEBOUNCE_MS);
   }
 
@@ -112,6 +133,9 @@ export function GlobalSearch() {
             <ul className="flex flex-col gap-0.5">
               {results.map((r, i) => (
                 <li key={`${r.type}:${r.id}`}>
+                  {r.byMeaning && !results[i - 1]?.byMeaning && (
+                    <p className="px-2 pb-1 pt-2 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{t("byMeaning")}</p>
+                  )}
                   <button
                     onClick={() => go(r)}
                     onMouseEnter={() => setActiveIndex(i)}

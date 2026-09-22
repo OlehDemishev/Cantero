@@ -12,6 +12,8 @@ interface SetPage {
   title: string | null;
   discipline: string | null;
   confidence: "high" | "medium" | null;
+  /** Read by OCR from a scanned page's title block. */
+  fromScan?: boolean;
   referenceCount: number;
   existingSheet: { id: string; sheetNumber: string; revision: string | null; version: number } | null;
 }
@@ -201,6 +203,8 @@ export function DrawingSetImport({ projectId, onImported }: { projectId: string;
                       <span className="text-gray-400">{p.sheetNumber ? t("skipped") : t("notRecognized")}</span>
                     ) : revises ? (
                       <span className="rounded bg-warning-50 px-1.5 py-0.5 text-warning-700 dark:bg-warning-500/15 dark:text-warning-500">{t("revises", { sheet: revises.sheetNumber, version: revises.version + 1 })}</span>
+                    ) : p.fromScan && key(p.sheetNumber ?? "") === key(r.sheetNumber) ? (
+                      <span className="rounded bg-gray-100 px-1.5 py-0.5 text-gray-600 dark:bg-gray-800 dark:text-gray-300">{t("fromScan")}</span>
                     ) : p.confidence === "medium" && key(p.sheetNumber ?? "") === key(r.sheetNumber) ? (
                       <span className="rounded bg-gray-100 px-1.5 py-0.5 text-gray-600 dark:bg-gray-800 dark:text-gray-300">{t("checkIt")}</span>
                     ) : (
