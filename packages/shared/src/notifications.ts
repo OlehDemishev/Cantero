@@ -14,6 +14,20 @@ export const pushUnsubscribeSchema = z.object({
 });
 export type PushUnsubscribeInput = z.infer<typeof pushUnsubscribeSchema>;
 
+/** An Expo push token, as expo-notifications' getExpoPushTokenAsync() returns it. */
+export const EXPO_PUSH_TOKEN_PATTERN = /^Expo(?:nent)?PushToken\[[A-Za-z0-9_-]{10,}\]$/;
+export const DEVICE_PLATFORMS = ["ios", "android"] as const;
+export type DevicePlatform = (typeof DEVICE_PLATFORMS)[number];
+
+export const registerDeviceSchema = z.object({
+  token: z.string().max(200).regex(EXPO_PUSH_TOKEN_PATTERN, "Not an Expo push token"),
+  platform: z.enum(DEVICE_PLATFORMS),
+});
+export type RegisterDeviceInput = z.infer<typeof registerDeviceSchema>;
+
+export const unregisterDeviceSchema = z.object({ token: z.string().max(200) });
+export type UnregisterDeviceInput = z.infer<typeof unregisterDeviceSchema>;
+
 export const EMAIL_DIGEST_FREQUENCIES = ["off", "daily", "weekly"] as const;
 export type EmailDigestFrequency = (typeof EMAIL_DIGEST_FREQUENCIES)[number];
 

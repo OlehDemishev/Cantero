@@ -25,6 +25,34 @@
         {
           "locationWhenInUsePermission": "Cantero Field records where you log working time, so it can be checked against the project site's boundary."
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Cantero Field uses the camera to photograph punch list items, daily progress and receipts, and to scan material barcodes.",
+          "photosPermission": "Cantero Field attaches photos you choose to punch list items, daily logs, RFIs and expenses.",
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "defaultChannel": "alerts"
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Cantero Field uses the camera to photograph punch list items, daily progress and receipts, and to scan material barcodes.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Cantero Field uses Face ID so you can unlock the app without signing in again."
+        }
       ]
     ],
     "experiments": {

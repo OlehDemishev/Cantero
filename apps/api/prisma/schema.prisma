@@ -870,6 +870,7 @@ model Membership {
   user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   company           Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
   pushSubscriptions PushSubscription[]
+  devicePushTokens  DevicePushToken[]
   customRole        CustomRole?        @relation(fields: [customRoleId], references: [id], onDelete: SetNull)
 
   @@unique([userId, companyId])
@@ -913,6 +914,25 @@ model PushSubscription {
 
   @@index([membershipId])
   @@map("push_subscriptions")
+}
+
+/// A phone running Cantero Field that should get push notifications: its Expo push token, which Expo
+/// Push turns into an APNs (iOS) or FCM (Android) delivery. The native counterpart of
+/// PushSubscription (browser Web Push); PushService sends the same alerts to both. A token Expo
+/// reports as DeviceNotRegistered (app uninstalled, notifications turned off) is deleted.
+model DevicePushToken {
+  id           String   @id @default(uuid())
+  membershipId String
+  /// "ExponentPushToken[…]". Unique: a phone handed to another worker moves to their membership.
+  token        String   @unique
+  platform     String
+  createdAt    DateTime @default(now())
+  lastSeenAt   DateTime @default(now())
+
+  membership Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+
+  @@index([membershipId])
+  @@map("device_push_tokens")
 }
 
 model Invite {

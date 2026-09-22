@@ -1,3 +1,4 @@
+import { File as ExpoFile, UploadType } from "expo-file-system";
 import * as SecureStore from "expo-secure-store";
 import { clearOfflineData } from "./offline-db";
 
@@ -125,4 +126,52 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
 
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
+}
+
+/** A file on the device, as React Native's fetch takes it inside FormData. */
+export interface UploadFile {
+  uri: string;
+  name: string;
+  type: string;
+}
+
+/**
+ * Multipart upload of a local file (field "file", which every upload endpoint reads), sent by the
+ * native uploader in expo-file-system rather than fetch: Expo SDK 57's fetch (expo/fetch) doesn't
+ * take React Native's { uri, name, type } form parts and would send an empty file, while the
+ * native upload streams from disk with the MIME type stated explicitly. Same error contract as
+ * apiFetch: NetworkError when nothing came back, ApiError when the server refused.
+ */
+export async function apiUpload<T>(path: string, file: UploadFile, idempotencyKey?: string): Promise<T> {
+  const token = getToken();
+  const headers: Record<string, string> = { Accept: "application/json" };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
+
+  let res: { status: number; body: string };
+  try {
+    res = await new ExpoFile(file.uri).upload(`${API_URL}${path}`, {
+      httpMethod: "POST",
+      uploadType: UploadType.MULTIPART,
+      fieldName: "file",
+      mimeType: file.type,
+      headers,
+      // The queue retries anything that doesn't finish; a background session would outlive the
+      // promise it has to resolve.
+      sessionType: "foreground",
+    });
+  } catch (err) {
+    throw new NetworkError(err);
+  }
+  let body: unknown = undefined;
+  try {
+    body = res.body ? JSON.parse(res.body) : undefined;
+  } catch {
+    // not JSON
+  }
+  if (res.status < 200 || res.status >= 300) {
+    const m = (body as { message?: unknown } | undefined)?.message;
+    throw new ApiError(res.status, Array.isArray(m) ? m.join(", ") : typeof m === "string" ? m : `Upload failed (${res.status})`);
+  }
+  return body as T;
 }

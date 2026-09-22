@@ -3,7 +3,8 @@ import { Text } from "react-native";
 import { useFormatter, useTranslations } from "use-intl";
 import { WEATHER_CONDITIONS, type WeatherCondition } from "@cantero/shared";
 import { fetchCached } from "@/lib/offline-cache";
-import { submitOrQueue } from "@/lib/offline-queue";
+import { attachFiles, submitOrQueue } from "@/lib/offline-queue";
+import type { LocalPhoto } from "@/lib/photos";
 import { useTheme } from "@/theme";
 import {
   CachedNote,
@@ -16,6 +17,7 @@ import {
   TextField,
   type FieldMessageType,
 } from "./ui";
+import { PhotoPicker } from "./photo-picker";
 
 interface DailyLog {
   id: string;
@@ -37,6 +39,7 @@ export function LogsTab({ projectId, reloadKey }: { projectId: string; reloadKey
   const [existingId, setExistingId] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [loaded, setLoaded] = useState(false);
+  const [photos, setPhotos] = useState<LocalPhoto[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ type: FieldMessageType; text: string } | null>(null);
   const [cachedAt, setCachedAt] = useState<number | null>(null);
@@ -72,16 +75,25 @@ export function LogsTab({ projectId, reloadKey }: { projectId: string; reloadKey
       delays: form.delays || undefined,
     };
     try {
-      const { queued, data } = existingId
+      const record = existingId
         ? await submitOrQueue<{ id: string }>("daily-log", `/daily-logs/${existingId}`, "PATCH", body)
         : await submitOrQueue<{ id: string }>("daily-log", "/daily-logs", "POST", {
             ...body,
             projectId,
             date: new Date().toISOString(),
           });
+      const { queued, data } = record;
       // Remember the log just created, so saving again updates it instead of creating a second one.
       if (!existingId && !queued && data?.id) setExistingId(data.id);
-      setMessage({ type: "success", text: queued ? t("queuedOffline") : tc("saved") });
+      // Today's log already exists: its photos attach to it by id even if this edit is queued.
+      const target = existingId ? { queued: false, data: { id: existingId } } : record;
+      const sent = photos.length > 0 ? await attachFiles("daily-log-photo", target, photos, (id) => `/documents?dailyLogId=${encodeURIComponent(id)}&category=photo`) : { queued: 0, failed: 0 };
+      setPhotos([]);
+      setMessage(
+        sent.failed > 0
+          ? { type: "warning", text: t("photosFailed", { n: sent.failed }) }
+          : { type: "success", text: queued ? t("queuedOffline") : sent.queued > 0 ? t("photosQueued", { n: sent.queued }) : tc("saved") },
+      );
     } catch (err) {
       setMessage({ type: "error", text: err instanceof Error ? err.message : tc("error") });
     } finally {
@@ -121,6 +133,7 @@ export function LogsTab({ projectId, reloadKey }: { projectId: string; reloadKey
       <Field label={td("delays")}>
         <TextField multiline value={form.delays} onChangeText={(delays) => setForm((f) => ({ ...f, delays }))} />
       </Field>
+      <PhotoPicker photos={photos} onChange={setPhotos} />
       <PrimaryButton
         label={existingId ? tc("save") : td("newLog")}
         onPress={submit}

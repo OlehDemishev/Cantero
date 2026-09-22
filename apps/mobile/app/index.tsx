@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslations } from "use-intl";
 import { ExpensesTab } from "@/components/field/expenses-tab";
 import { LogsTab } from "@/components/field/logs-tab";
+import { PlansTab } from "@/components/field/plans-tab";
 import { PunchTab } from "@/components/field/punch-tab";
 import { RfiTab } from "@/components/field/rfi-tab";
 import { StockTab } from "@/components/field/stock-tab";
@@ -25,6 +26,7 @@ import { OfflineConflictsBanner } from "@/components/offline-conflicts-banner";
 import { ApiError } from "@/lib/api-client";
 import { fetchCached } from "@/lib/offline-cache";
 import { useOfflineQueue } from "@/lib/offline-queue";
+import { registerForPush, usePushNavigation } from "@/lib/push";
 import { useSession } from "@/lib/session";
 import { useMe } from "@/lib/use-me";
 import { useTheme, type Theme } from "@/theme";
@@ -34,7 +36,7 @@ interface Project {
   name: string;
 }
 
-const TABS = ["tasks", "time", "stock", "logs", "punch", "rfi", "expenses"] as const;
+const TABS = ["tasks", "time", "stock", "logs", "punch", "plans", "rfi", "expenses"] as const;
 type TabKey = (typeof TABS)[number];
 
 export default function FieldScreen() {
@@ -72,6 +74,18 @@ function FieldShell({ token }: { token: string }) {
   useEffect(() => {
     if (unauthorized) signOut();
   }, [unauthorized, signOut]);
+
+  // Register this phone for alerts once signed in. Failing (offline, permission refused, no EAS
+  // project in a dev build) just means no push; the app works the same.
+  useEffect(() => {
+    registerForPush().catch(() => {});
+  }, [token]);
+
+  // Tapping an alert opens its project, on the tab it's about.
+  usePushNavigation(({ projectId: target, tab: targetTab }) => {
+    if (target) setProjectId(target);
+    if (targetTab && (TABS as readonly string[]).includes(targetTab)) setTab(targetTab as TabKey);
+  });
 
   useEffect(() => {
     fetchCached<Project[]>("field:projects", "/projects")
@@ -185,6 +199,7 @@ function FieldShell({ token }: { token: string }) {
               {tab === "stock" && <StockTab projectId={projectId} reloadKey={reloadKey} />}
               {tab === "logs" && <LogsTab projectId={projectId} reloadKey={reloadKey} />}
               {tab === "punch" && <PunchTab projectId={projectId} reloadKey={reloadKey} />}
+              {tab === "plans" && <PlansTab projectId={projectId} reloadKey={reloadKey} />}
               {tab === "rfi" && <RfiTab projectId={projectId} reloadKey={reloadKey} />}
               {tab === "expenses" && <ExpensesTab projectId={projectId} meUserId={meUserId} reloadKey={reloadKey} />}
             </View>

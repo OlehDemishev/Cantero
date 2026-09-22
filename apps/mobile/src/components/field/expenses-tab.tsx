@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "use-intl";
 import { EXPENSE_CATEGORIES, type ExpenseCategory } from "@cantero/shared";
 import { fetchCached } from "@/lib/offline-cache";
-import { submitOrQueue } from "@/lib/offline-queue";
+import { apiUpload, NetworkError } from "@/lib/api-client";
+import { attachFiles, submitOrQueue } from "@/lib/offline-queue";
+import type { LocalPhoto } from "@/lib/photos";
 import {
   Card,
   DateStepper,
@@ -12,10 +14,18 @@ import {
   Muted,
   parseDecimal,
   PrimaryButton,
+  SecondaryButton,
   SelectField,
   TextField,
   type FieldMessageType,
 } from "./ui";
+import { PhotoPicker } from "./photo-picker";
+
+interface ReceiptExtraction {
+  amount: number | null;
+  incurredAt: string | null;
+  vendorGuess: string | null;
+}
 
 interface Worker {
   id: string;
@@ -25,8 +35,8 @@ interface Worker {
 
 const today = () => new Date().toISOString().slice(0, 10);
 
-/** Receipt photos (capture, OCR scan, queued upload) aren't ported yet — they need the camera and a
- * file-aware upload queue, which is a separate step. */
+/** An expense with its receipt photo: scanned (when online) to prefill amount, date and vendor, then
+ * uploaded after the expense — queued behind it when the expense itself was saved offline. */
 export function ExpensesTab({ projectId, meUserId, reloadKey }: { projectId: string; meUserId: string | null; reloadKey: number }) {
   const t = useTranslations("field");
   const tt = useTranslations("team");
@@ -40,6 +50,8 @@ export function ExpensesTab({ projectId, meUserId, reloadKey }: { projectId: str
     description: "",
     incurredAt: today(),
   });
+  const [receipt, setReceipt] = useState<LocalPhoto[]>([]);
+  const [scanning, setScanning] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ type: FieldMessageType; text: string } | null>(null);
   const [error, setError] = useState(false);
@@ -59,7 +71,7 @@ export function ExpensesTab({ projectId, meUserId, reloadKey }: { projectId: str
     setBusy(true);
     setMessage(null);
     try {
-      const { queued } = await submitOrQueue("expense", "/expenses", "POST", {
+      const record = await submitOrQueue<{ id: string }>("expense", "/expenses", "POST", {
         projectId,
         workerId: form.workerId,
         category: form.category,
@@ -67,7 +79,14 @@ export function ExpensesTab({ projectId, meUserId, reloadKey }: { projectId: str
         description: form.description || undefined,
         incurredAt: new Date(form.incurredAt).toISOString(),
       });
-      setMessage({ type: "success", text: queued ? t("queuedOffline") : te("submitted") });
+      const { queued } = record;
+      const sent = receipt.length > 0 ? await attachFiles("expense-receipt", record, receipt, (id) => `/expenses/${encodeURIComponent(id)}/receipt`) : { queued: 0, failed: 0 };
+      setReceipt([]);
+      setMessage(
+        sent.failed > 0
+          ? { type: "warning", text: t("receiptUploadFailed") }
+          : { type: "success", text: queued ? t("queuedOffline") : sent.queued > 0 ? t("receiptQueuedOffline") : te("submitted") },
+      );
       setForm((f) => ({ ...f, amount: "", description: "" }));
     } catch (err) {
       setMessage({ type: "error", text: err instanceof Error ? err.message : tc("error") });
@@ -76,11 +95,40 @@ export function ExpensesTab({ projectId, meUserId, reloadKey }: { projectId: str
     }
   }
 
+  /** Reads amount, date and vendor off the receipt photo; fields already filled in are kept. */
+  async function scan() {
+    if (!receipt[0]) return;
+    setScanning(true);
+    setMessage(null);
+    try {
+      const result = await apiUpload<ReceiptExtraction>("/expenses/scan-receipt", receipt[0]);
+      if (result.amount === null && result.incurredAt === null && result.vendorGuess === null) {
+        setMessage({ type: "warning", text: t("scanReceiptNoData") });
+        return;
+      }
+      setForm((f) => ({
+        ...f,
+        amount: result.amount !== null ? String(result.amount) : f.amount,
+        incurredAt: result.incurredAt ? result.incurredAt.slice(0, 10) : f.incurredAt,
+        description: !f.description && result.vendorGuess ? result.vendorGuess : f.description,
+      }));
+      setMessage({ type: "success", text: t("scanReceiptDone") });
+    } catch (err) {
+      setMessage({ type: "warning", text: err instanceof NetworkError ? t("scanNeedsConnection") : t("scanReceiptFailed") });
+    } finally {
+      setScanning(false);
+    }
+  }
+
   if (error) return <Muted>{t("offline")}</Muted>;
   if (workers.length === 0) return <Loading />;
 
   return (
     <Card>
+      <PhotoPicker photos={receipt} onChange={setReceipt} max={1} label={t("receiptPhoto")} />
+      {receipt.length > 0 && (
+        <SecondaryButton label={scanning ? t("scanReceiptScanning") : t("scanReceiptButton")} onPress={scan} disabled={scanning} />
+      )}
       <SelectField
         label={tt("worker")}
         value={form.workerId}

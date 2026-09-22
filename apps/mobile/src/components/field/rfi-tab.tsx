@@ -3,7 +3,8 @@ import { StyleSheet, Text, View } from "react-native";
 import { useTranslations } from "use-intl";
 import { RFI_PRIORITIES, type RfiPriority } from "@cantero/shared";
 import { fetchCached, updateCache } from "@/lib/offline-cache";
-import { submitOrQueue } from "@/lib/offline-queue";
+import { attachFiles, submitOrQueue } from "@/lib/offline-queue";
+import type { LocalPhoto } from "@/lib/photos";
 import { useTheme, type Theme } from "@/theme";
 import {
   CachedNote,
@@ -17,6 +18,7 @@ import {
   TextField,
   type FieldMessageType,
 } from "./ui";
+import { PhotoPicker } from "./photo-picker";
 
 interface FieldRfi {
   id: string;
@@ -34,6 +36,7 @@ export function RfiTab({ projectId, reloadKey }: { projectId: string; reloadKey:
   const tc = useTranslations("common");
   const [items, setItems] = useState<FieldRfi[] | null>(null);
   const [form, setForm] = useState({ subject: "", question: "", priority: "medium" as RfiPriority });
+  const [photos, setPhotos] = useState<LocalPhoto[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ type: FieldMessageType; text: string } | null>(null);
   const [cachedAt, setCachedAt] = useState<number | null>(null);
@@ -55,13 +58,20 @@ export function RfiTab({ projectId, reloadKey }: { projectId: string; reloadKey:
     setBusy(true);
     setMessage(null);
     try {
-      const { queued } = await submitOrQueue("rfi", "/rfis", "POST", {
+      const record = await submitOrQueue<{ id: string }>("rfi", "/rfis", "POST", {
         projectId,
         subject: form.subject,
         question: form.question,
         priority: form.priority,
       });
-      setMessage({ type: "success", text: queued ? t("queuedOffline") : tc("saved") });
+      const { queued } = record;
+      const sent = photos.length > 0 ? await attachFiles("rfi-photo", record, photos, (id) => `/documents?rfiId=${encodeURIComponent(id)}&category=photo`) : { queued: 0, failed: 0 };
+      setPhotos([]);
+      setMessage(
+        sent.failed > 0
+          ? { type: "warning", text: t("photosFailed", { n: sent.failed }) }
+          : { type: "success", text: queued ? t("queuedOffline") : sent.queued > 0 ? t("photosQueued", { n: sent.queued }) : tc("saved") },
+      );
       if (queued) {
         const optimistic: FieldRfi = {
           id: `queued-${Date.now()}`,
@@ -105,6 +115,7 @@ export function RfiTab({ projectId, reloadKey }: { projectId: string; reloadKey:
           options={RFI_PRIORITIES.map((p) => ({ value: p, label: tr(p) }))}
           onChange={(priority) => setForm((f) => ({ ...f, priority }))}
         />
+        <PhotoPicker photos={photos} onChange={setPhotos} />
         <PrimaryButton
           label={tr("newRfi")}
           onPress={submit}

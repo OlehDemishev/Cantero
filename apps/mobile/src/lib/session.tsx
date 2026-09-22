@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { clearToken, restoreToken, setToken } from "./api-client";
+import { unregisterPush } from "./push";
 
 interface SessionValue {
   token: string | null;
@@ -27,6 +28,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    // While the token still authorizes the call.
+    await unregisterPush();
     await clearToken();
     setTokenState(null);
   }, []);

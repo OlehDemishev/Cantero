@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "use-intl";
+import { apiFetch, NetworkError } from "@/lib/api-client";
 import { fetchCached } from "@/lib/offline-cache";
 import { submitOrQueue } from "@/lib/offline-queue";
 import {
@@ -10,10 +11,12 @@ import {
   Muted,
   parseDecimal,
   PrimaryButton,
+  SecondaryButton,
   SelectField,
   TextField,
   type FieldMessageType,
 } from "./ui";
+import { BarcodeScanner } from "./barcode-scanner";
 
 interface Warehouse {
   id: string;
@@ -24,6 +27,7 @@ interface MaterialCatalogItem {
   code: string;
   name: string;
   unit: string;
+  barcode?: string | null;
 }
 
 type MovementType = "issue" | "receipt";
@@ -40,6 +44,7 @@ export function StockTab({ projectId, reloadKey }: { projectId: string; reloadKe
     quantity: "1",
     type: "issue" as MovementType,
   });
+  const [scanning, setScanning] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ type: FieldMessageType; text: string } | null>(null);
   const [error, setError] = useState(false);
@@ -80,6 +85,25 @@ export function StockTab({ projectId, reloadKey }: { projectId: string; reloadKe
     }
   }
 
+  /** Picks the material a scanned code belongs to: from the cached catalog first (works offline),
+   * then by asking the API, in case the code was assigned since the catalog was cached. */
+  async function onScanned(code: string) {
+    setScanning(false);
+    setMessage(null);
+    let match = materials.find((m) => m.barcode === code);
+    if (!match) {
+      try {
+        match = await apiFetch<MaterialCatalogItem>(`/materials/catalog/by-barcode/${encodeURIComponent(code)}`);
+        if (!materials.some((m) => m.id === match!.id)) setMaterials((list) => [...list, match!]);
+      } catch (err) {
+        setMessage({ type: "warning", text: err instanceof NetworkError ? t("scanUnknownOffline", { code }) : t("scanUnknown", { code }) });
+        return;
+      }
+    }
+    setForm((f) => ({ ...f, materialCatalogItemId: match!.id }));
+    setMessage({ type: "success", text: t("scanFound", { material: `${match.code} — ${match.name}` }) });
+  }
+
   if (error) return <Muted>{t("offline")}</Muted>;
   if (warehouses.length === 0 || materials.length === 0) return <Loading />;
 
@@ -91,6 +115,8 @@ export function StockTab({ projectId, reloadKey }: { projectId: string; reloadKe
         options={warehouses.map((w) => ({ value: w.id, label: w.name }))}
         onChange={(warehouseId) => setForm((f) => ({ ...f, warehouseId }))}
       />
+      <SecondaryButton label={t("scanBarcode")} onPress={() => setScanning(true)} />
+      <BarcodeScanner visible={scanning} onScanned={onScanned} onClose={() => setScanning(false)} />
       <SelectField
         label={tw("material")}
         value={form.materialCatalogItemId}

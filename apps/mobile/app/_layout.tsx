@@ -2,6 +2,7 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { LocaleProvider } from "@/i18n";
+import { BiometricGate } from "@/lib/biometric-lock";
 import { SessionProvider } from "@/lib/session";
 
 export default function RootLayout() {
@@ -10,7 +11,9 @@ export default function RootLayout() {
       <LocaleProvider>
         <SessionProvider>
           <StatusBar style="auto" />
-          <Stack screenOptions={{ headerShown: false }} />
+          <BiometricGate>
+            <Stack screenOptions={{ headerShown: false }} />
+          </BiometricGate>
         </SessionProvider>
       </LocaleProvider>
     </SafeAreaProvider>

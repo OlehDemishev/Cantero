@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useTranslations } from "use-intl";
 import { fetchCached, updateCache } from "@/lib/offline-cache";
-import { submitOrQueue } from "@/lib/offline-queue";
+import { attachFiles, submitOrQueue, submitOrQueueUpload } from "@/lib/offline-queue";
+import { capturePhoto, PhotoPermissionError, type LocalPhoto } from "@/lib/photos";
 import { useTheme, type Theme } from "@/theme";
 import {
   CachedNote,
@@ -16,6 +17,9 @@ import {
   TextField,
   type FieldMessageType,
 } from "./ui";
+import { PhotoPicker } from "./photo-picker";
+
+const photoPath = (itemId: string) => `/documents?punchListItemId=${encodeURIComponent(itemId)}&category=photo`;
 
 interface PunchListItem {
   id: string;
@@ -32,6 +36,7 @@ export function PunchTab({ projectId, reloadKey }: { projectId: string; reloadKe
   const tc = useTranslations("common");
   const [items, setItems] = useState<PunchListItem[] | null>(null);
   const [form, setForm] = useState({ title: "", location: "" });
+  const [photos, setPhotos] = useState<LocalPhoto[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ type: FieldMessageType; text: string } | null>(null);
   const [cachedAt, setCachedAt] = useState<number | null>(null);
@@ -53,12 +58,20 @@ export function PunchTab({ projectId, reloadKey }: { projectId: string; reloadKe
     setBusy(true);
     setMessage(null);
     try {
-      const { queued } = await submitOrQueue("punch-list-item", "/punch-list", "POST", {
+      const record = await submitOrQueue<{ id: string }>("punch-list-item", "/punch-list", "POST", {
         projectId,
         title: form.title,
         location: form.location || undefined,
       });
-      setMessage({ type: "success", text: queued ? t("queuedOffline") : tc("saved") });
+      const { queued } = record;
+      // The record is saved either way; its photos follow it (right now, or queued behind it).
+      const sent = photos.length > 0 ? await attachFiles("punch-photo", record, photos, photoPath) : { queued: 0, failed: 0 };
+      setPhotos([]);
+      setMessage(
+        sent.failed > 0
+          ? { type: "warning", text: t("photosFailed", { n: sent.failed }) }
+          : { type: "success", text: queued ? t("queuedOffline") : sent.queued > 0 ? t("photosQueued", { n: sent.queued }) : tc("saved") },
+      );
       if (queued) {
         const optimistic: PunchListItem = {
           id: `queued-${Date.now()}`,
@@ -95,6 +108,21 @@ export function PunchTab({ projectId, reloadKey }: { projectId: string; reloadKe
     }
   }
 
+  /** A photo for an item that already exists — typically the "after" shot once it's fixed. */
+  async function addPhoto(item: PunchListItem) {
+    try {
+      const photo = await capturePhoto("camera");
+      if (!photo) return;
+      const { queued } = await submitOrQueueUpload("punch-photo", photoPath(item.id), photo);
+      setMessage({ type: "success", text: queued ? t("photoQueued") : t("photoAdded", { item: item.title }) });
+    } catch (err) {
+      setMessage({
+        type: "error",
+        text: err instanceof PhotoPermissionError ? t("cameraDenied") : err instanceof Error ? err.message : tc("error"),
+      });
+    }
+  }
+
   const visible = (items ?? []).filter((i) => i.status !== "verified");
 
   return (
@@ -111,6 +139,7 @@ export function PunchTab({ projectId, reloadKey }: { projectId: string; reloadKe
             onChangeText={(location) => setForm((f) => ({ ...f, location }))}
           />
         </Field>
+        <PhotoPicker photos={photos} onChange={setPhotos} />
         <PrimaryButton label={tp("newItem")} onPress={submit} busy={busy} disabled={!form.title.trim()} />
         {message && <FieldMessage type={message.type} text={message.text} />}
       </Card>
@@ -126,6 +155,8 @@ export function PunchTab({ projectId, reloadKey }: { projectId: string; reloadKe
               <Text style={styles.title}>{item.title}</Text>
               {item.location && <Text style={styles.subtitle}>{item.location}</Text>}
             </View>
+            {/* An item still waiting in the offline queue has no id to attach a photo to yet. */}
+            {!item.id.startsWith("queued-") && <SecondaryButton label={t("photo")} onPress={() => addPhoto(item)} />}
             {item.status === "open" ? (
               <SecondaryButton label={tp("markResolved")} onPress={() => resolve(item.id)} />
             ) : (
