@@ -1999,6 +1999,7 @@
     "escalated": "Escalado"
   },
   "portfolio": {
+    "figuresRestricted": "Las cifras de la cartera están disponibles para propietarios, administradores, contables y presupuestadores.",
     "title": "Portafolio",
     "subtitle": "Estado del presupuesto y puntos de riesgo abiertos de todos los proyectos, en una vista.",
     "noProjects": "Aún no hay proyectos.",

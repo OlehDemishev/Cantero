@@ -20,6 +20,7 @@ import {
 } from "@/components/nav-icons";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { useReportAccess } from "@/lib/report-access";
 
 interface Overview {
   projectsTotal: number;
@@ -40,11 +41,15 @@ export default function DashboardPage() {
   const { data } = useMe();
   const [overview, setOverview] = useState<Overview | null>(null);
   const [periodComparison, setPeriodComparison] = useState<PeriodComparison | null>(null);
+  // The company figures are for finance roles; everyone else's dashboard starts at the quick links.
+  const canView = useReportAccess();
+  const showFigures = canView("overview");
 
   useEffect(() => {
+    if (!showFigures) return;
     apiFetch<Overview>("/reports/overview").then(setOverview);
     apiFetch<PeriodComparison>("/reports/period-comparison?months=1").then(setPeriodComparison);
-  }, []);
+  }, [showFigures]);
 
   const currency = data?.company.currency ?? "";
   const revenueTrend =

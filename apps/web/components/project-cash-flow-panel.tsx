@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { useReportAccess } from "@/lib/report-access";
 
 interface CashFlowWeek {
   weekStart: string;
@@ -23,10 +24,12 @@ export function ProjectCashFlowPanel({ projectId }: { projectId: string }) {
   const currency = me?.company.currency ?? "";
 
   const [cashFlow, setCashFlow] = useState<CashFlowForecast | null>(null);
+  const allowed = useReportAccess()("cash-flow-forecast");
 
   useEffect(() => {
+    if (!allowed) return;
     apiFetch<CashFlowForecast>(`/reports/cash-flow-forecast?projectId=${projectId}`).then(setCashFlow);
-  }, [projectId]);
+  }, [projectId, allowed]);
 
   if (!cashFlow) return null;
   if (cashFlow.totals.inflow === 0 && cashFlow.totals.outflow === 0) return null;

@@ -1999,6 +1999,7 @@
     "escalated": "Escalated"
   },
   "portfolio": {
+    "figuresRestricted": "Portfolio figures are available to owners, admins, accountants and estimators.",
     "title": "Portfolio",
     "subtitle": "Budget health and open risk items across every project, in one view.",
     "tab_overview": "Overview",

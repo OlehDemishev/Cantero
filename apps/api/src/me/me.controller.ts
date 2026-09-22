@@ -25,7 +25,16 @@ export class MeController {
     });
     const userRecord = await this.prisma.user.findUniqueOrThrow({ where: { id: user.userId }, select: { totpEnabledAt: true } });
     return {
-      user: { id: user.userId, email: user.email, name: user.name, role: user.role, totpEnabled: userRecord.totpEnabledAt !== null },
+      user: {
+        id: user.userId,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        // A custom role's added base roles — the web app hides what RolesGuard would refuse, and needs
+        // these to decide the same way.
+        additionalRoles: user.additionalRoles ?? [],
+        totpEnabled: userRecord.totpEnabledAt !== null,
+      },
       company,
       subscriptionStatus: subscription?.status ?? "incomplete",
       emailDigestFrequency: membership.emailDigestFrequency,

@@ -8,6 +8,7 @@ import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { TabNav, type TabNavItem } from "@/components/ui/tab-nav";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { useReportAccess } from "@/lib/report-access";
 import { formatCurrency } from "@/lib/format-currency";
 
 // Leaflet touches `window` at module load time, so it must never be part of the server render.
@@ -84,10 +85,13 @@ export default function PortfolioPage() {
   }
 
   const [data, setData] = useState<Portfolio | null>(null);
+  const canView = useReportAccess();
+  const figuresAllowed = canView("portfolio");
 
   useEffect(() => {
+    if (!figuresAllowed) return;
     apiFetch<Portfolio>("/reports/portfolio").then(setData);
-  }, []);
+  }, [figuresAllowed]);
 
   return (
     <AuthenticatedShell>
@@ -100,7 +104,7 @@ export default function PortfolioPage() {
       {activeTab === "map" && <ProjectMapPanel />}
 
       {activeTab === "overview" && (!data ? (
-        <p className="mt-8 text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        <p className="mt-8 text-gray-500 dark:text-gray-400">{me && !figuresAllowed ? t("figuresRestricted") : tc("loading")}</p>
       ) : data.projects.length === 0 ? (
         <p className="mt-8 text-sm text-gray-400 dark:text-gray-500">{t("noProjects")}</p>
       ) : (

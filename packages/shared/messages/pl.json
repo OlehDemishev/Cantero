@@ -1999,6 +1999,7 @@
     "escalated": "Eskalowano"
   },
   "portfolio": {
+    "figuresRestricted": "Dane portfela widzą właściciele, administratorzy, księgowi i kosztorysanci.",
     "title": "Portfolio",
     "subtitle": "Stan budżetu i otwarte ryzyka we wszystkich projektach w jednym miejscu.",
     "noProjects": "Brak projektów.",

@@ -4,6 +4,7 @@ import { test, expect } from "@playwright/test";
 import { Client } from "pg";
 import { TEST_RUN_PREFIX, apiUrl, databaseUrl, testProjectName } from "../fixtures";
 import { api, createApprovedEstimate, createProject, login } from "../api";
+import { REPORT_ROLES } from "../../../packages/shared/src/report-access";
 
 /**
  * Company-wide lists, summaries and exports must leave out a restricted project an employee isn't a
@@ -165,4 +166,31 @@ test("company-wide lists leave out a restricted project the caller isn't on", as
   test.info().annotations.push({ type: "searched", description: `${searched} responses over ${routes.length} routes × ${ROLES.length + 1} callers` });
   expect(created.length).toBeGreaterThan(10);
   expect(leaks).toEqual([]);
+});
+
+test("each report answers exactly the roles REPORT_ROLES names, and the web app shows what it answers", async ({ page }) => {
+  test.setTimeout(180_000);
+  const expected: string[] = [];
+  const actual: string[] = [];
+  for (const role of ROLES) {
+    await api("PATCH", `/company/members/${employeeId}`, ownerToken, { role });
+    for (const [report, roles] of Object.entries(REPORT_ROLES)) {
+      const res = await fetch(`${apiUrl()}/reports/${report}`, { headers: { Authorization: `Bearer ${employeeToken}` } });
+      await res.arrayBuffer();
+      expected.push(`${role} ${report} → ${(roles as readonly string[]).includes(role) ? "allowed" : "refused"}`);
+      actual.push(`${role} ${report} → ${res.status === 403 ? "refused" : res.ok ? "allowed" : `HTTP ${res.status}`}`);
+    }
+  }
+  expect(actual).toEqual(expected);
+
+  // The reports page leaves out what the role can't open instead of showing an empty panel.
+  await page.goto("/login");
+  await page.evaluate((t) => localStorage.setItem("cantero_token", t), employeeToken);
+  await api("PATCH", `/company/members/${employeeId}`, ownerToken, { role: "worker" });
+  await page.goto("/reports");
+  await expect(page.getByRole("heading", { name: "Reports", level: 1 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Project margins" })).toHaveCount(0);
+  await api("PATCH", `/company/members/${employeeId}`, ownerToken, { role: "accountant" });
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Project margins" })).toBeVisible();
 });

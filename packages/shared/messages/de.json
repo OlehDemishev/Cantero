@@ -1999,6 +1999,7 @@
     "escalated": "Eskaliert"
   },
   "portfolio": {
+    "figuresRestricted": "Portfolio-Kennzahlen sehen Inhaber, Admins, Buchhaltung und Kalkulation.",
     "title": "Portfolio",
     "subtitle": "Budgetstatus und offene Risikopunkte aller Projekte auf einen Blick.",
     "noProjects": "Noch keine Projekte.",

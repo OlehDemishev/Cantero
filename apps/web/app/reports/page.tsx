@@ -26,36 +26,38 @@ import { RevenueTrendPanel } from "@/components/revenue-trend-panel";
 import { TeamWorkloadPanel } from "@/components/team-workload-panel";
 import { ScheduledReportsPanel } from "@/components/scheduled-reports-panel";
 import { useMe } from "@/lib/use-me";
+import { useReportAccess } from "@/lib/report-access";
 
 export default function ReportsPage() {
   const t = useTranslations("reports");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
+  const canView = useReportAccess();
 
   return (
     <AuthenticatedShell>
       <h1 className="text-2xl font-semibold">{t("title")}</h1>
 
-      <ProjectMarginsReportPanel currency={currency} />
-      <EstimateAtCompletionReportPanel currency={currency} />
-      <WipReportPanel currency={currency} />
-      <WarehouseTurnoverReportPanel />
-      <InvoiceAgingReportPanel currency={currency} />
-      <CashFlowForecastPanel currency={currency} />
-      <RevenueTrendPanel />
+      {canView("project-margins") && <ProjectMarginsReportPanel currency={currency} />}
+      {canView("estimate-at-completion") && <EstimateAtCompletionReportPanel currency={currency} />}
+      {canView("wip-report") && <WipReportPanel currency={currency} />}
+      {canView("warehouse-turnover") && <WarehouseTurnoverReportPanel />}
+      {canView("invoice-aging") && <InvoiceAgingReportPanel currency={currency} />}
+      {canView("cash-flow-forecast") && <CashFlowForecastPanel currency={currency} />}
+      {canView("revenue-trend") && <RevenueTrendPanel />}
       <TeamWorkloadPanel currency={currency} />
       <ScheduledReportsPanel />
 
-      <ComplianceCalendarPanel />
+      {canView("compliance-calendar") && <ComplianceCalendarPanel />}
       <SafetyScorecardPanel />
-      <GeofenceViolationsPanel />
-      <EquipmentUtilizationPanel />
+      {canView("geofence-violations") && <GeofenceViolationsPanel />}
+      {canView("equipment-utilization") && <EquipmentUtilizationPanel />}
       <FixedAssetRegisterPanel />
       <MarketingRoiPanel />
       <WarrantyExpiringPanel />
       <TaxLiabilityPanel />
       <BenefitsCostSummaryPanel />
-      <WinRatePanel />
+      {canView("win-rate") && <WinRatePanel />}
       <ProductivityScorecardPanel />
       <DiversitySpendPanel />
       <CarbonSummaryPanel />
