@@ -48,3 +48,26 @@ export function readProjectId(row: unknown, path: string[]): string | null {
   const projectId = (at as { projectId?: unknown } | null)?.projectId;
   return typeof projectId === "string" ? projectId : null;
 }
+
+/**
+ * `where` for `model` keeping rows whose project isn't one of `hidden` — including rows with no
+ * project at all (a null projectId, or an empty optional link on the way to it; plain `NOT IN`
+ * would drop those, since SQL never matches NULL against a list).
+ */
+export function excludeProjectsWhere(model: string, hidden: string[]): Record<string, unknown> {
+  if (model === "Project") return { id: { notIn: hidden } };
+  const path = projectPathFor(model);
+  if (!path) throw new Error(`${model} has no path to a project`);
+  const build = (at: string, rest: string[]): Record<string, unknown> => {
+    const fields = models.get(at)!.fields;
+    if (rest.length === 0) {
+      const projectId = fields.find((f) => f.name === "projectId")!;
+      const notHidden = { projectId: { notIn: hidden } };
+      return projectId.isRequired ? notHidden : { OR: [{ projectId: null }, notHidden] };
+    }
+    const relation = fields.find((f) => f.name === rest[0])!;
+    const inner = { [relation.name]: { is: build(relation.type, rest.slice(1)) } };
+    return relation.isRequired ? inner : { OR: [{ [relation.name]: { is: null } }, inner] };
+  };
+  return build(model, path);
+}

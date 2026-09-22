@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import type { CreateTimeEntryInput, UpdateTimeEntryInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { checkGeofence } from "./geofence";
+import { ProjectAccessService, type ProjectViewer } from "../common/project-access/project-access.service";
 
 export interface TimeEntryFilter {
   projectId?: string;
@@ -12,15 +13,16 @@ export interface TimeEntryFilter {
 
 @Injectable()
 export class TimeEntriesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly projectAccess: ProjectAccessService) {}
 
   /** `pagination.cursor` (internal controller, id-based) and `pagination.skip` (public API,
    * offset-based — see PublicApiService.timeEntries()) are mutually exclusive ways to page
    * through the same deterministic [date desc, id desc] order; omit both for "everything",
    * unchanged from before pagination existed. */
-  list(companyId: string, filter: TimeEntryFilter, pagination?: { take?: number; skip?: number; cursor?: string }) {
+  async list(companyId: string, filter: TimeEntryFilter, pagination?: { take?: number; skip?: number; cursor?: string }, viewer: ProjectViewer = {}) {
+    const visible = await this.projectAccess.visibleWhere(companyId, "TimeEntry", viewer.userId, viewer.role);
     return this.prisma.timeEntry.findMany({
-      where: {
+      where: { AND: [{
         companyId,
         ...(filter.projectId ? { projectId: filter.projectId } : {}),
         ...(filter.workerId ? { workerId: filter.workerId } : {}),
@@ -32,7 +34,7 @@ export class TimeEntriesService {
               },
             }
           : {}),
-      },
+      }, visible] },
       include: { worker: true, task: true, project: true },
       // date is user-entered (a shift's calendar date), not a generated timestamp — an id
       // tiebreaker keeps the sort (and cursor pagination) deterministic across same-day entries.

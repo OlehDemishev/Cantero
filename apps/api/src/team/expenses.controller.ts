@@ -47,7 +47,7 @@ export class ExpensesController {
     @Query("status") status?: string,
     @Query("cursor") cursor?: string,
   ) {
-    return this.service.list(user.companyId, { projectId, workerId, status }, EXPENSES_PAGE_SIZE, cursor);
+    return this.service.list(user.companyId, { projectId, workerId, status }, EXPENSES_PAGE_SIZE, cursor, user);
   }
 
   @Post()

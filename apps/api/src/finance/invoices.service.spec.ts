@@ -12,6 +12,7 @@ import { OutboxService } from "../common/webhooks/outbox.service";
 import { ExchangeRateService } from "../common/exchange-rate/exchange-rate.service";
 import { GobdLedgerService } from "../common/gobd/gobd-ledger.service";
 import { PeppolAccessPointService } from "./peppol-access-point.service";
+import { projectAccessThatSeesAll } from "../common/project-access/project-access.testing";
 
 const COMPANY_A = "company-a";
 const ACTOR = { userId: "user-1", name: "Accountant" };
@@ -50,7 +51,7 @@ describe("InvoicesService — late fees & payment terms", () => {
     gobdLedger = { append: jest.fn() };
 
     const module = await Test.createTestingModule({
-      providers: [
+      providers: [projectAccessThatSeesAll(), 
         InvoicesService,
         { provide: PrismaService, useValue: prisma },
         { provide: PdfService, useValue: pdfService },
@@ -841,7 +842,7 @@ describe("InvoicesService — partial retainage release", () => {
     };
 
     const module = await Test.createTestingModule({
-      providers: [
+      providers: [projectAccessThatSeesAll(), 
         InvoicesService,
         { provide: PrismaService, useValue: prisma },
         { provide: PdfService, useValue: { render: jest.fn() } },

@@ -9,7 +9,7 @@ export class InsightsController {
 
   @Get("triage")
   triage(@CurrentUser() user: AuthUser) {
-    return this.service.triage(user.companyId);
+    return this.service.triage(user.companyId, undefined, user);
   }
 
   @Get("projects/:id/health")

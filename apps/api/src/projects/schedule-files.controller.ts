@@ -1,4 +1,6 @@
-import { BadRequestException, Controller, Get, Post, Query, Res, StreamableFile, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { BadRequestException, Controller, Get, Post, Query, Res, StreamableFile, UploadedFile, UseInterceptors,
+  ParseUUIDPipe,
+} from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import type { Response } from "express";
 import type { AuthUser } from "@cantero/shared";
@@ -14,7 +16,7 @@ export class ScheduleFilesController {
   @Roles("owner", "admin", "estimator")
   @Post("import")
   @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX_UPLOAD_BYTES } }))
-  import(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string, @UploadedFile() file: Express.Multer.File) {
+  import(@CurrentUser() user: AuthUser, @Query("projectId", ParseUUIDPipe) projectId: string, @UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException("No file provided");
     if (!projectId) throw new BadRequestException("projectId is required");
     return this.service.importFile(user.companyId, { userId: user.userId, name: user.name }, projectId, file, user.role);
@@ -23,7 +25,7 @@ export class ScheduleFilesController {
   @Get("export")
   async export(
     @CurrentUser() user: AuthUser,
-    @Query("projectId") projectId: string,
+    @Query("projectId", ParseUUIDPipe) projectId: string,
     @Query("format") format: string,
     @Res({ passthrough: true }) res: Response,
   ) {

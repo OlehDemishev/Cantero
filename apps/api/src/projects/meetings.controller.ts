@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Header, Param, Post, Query, StreamableFile } from "@nestjs/common";
+import { Body, Controller, Get, Header, Param, ParseUUIDPipe, Post, Query, StreamableFile } from "@nestjs/common";
 import {
   addMeetingActionItemSchema,
   createMeetingSchema,
@@ -20,12 +20,12 @@ export class MeetingsController {
   constructor(private readonly service: MeetingsService) {}
 
   @Get()
-  list(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string) {
+  list(@CurrentUser() user: AuthUser, @Query("projectId", ParseUUIDPipe) projectId: string) {
     return this.service.listForProject(user.companyId, projectId);
   }
 
   @Get("open-action-items")
-  openActionItems(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string) {
+  openActionItems(@CurrentUser() user: AuthUser, @Query("projectId", ParseUUIDPipe) projectId: string) {
     return this.service.openActionItems(user.companyId, projectId);
   }
 

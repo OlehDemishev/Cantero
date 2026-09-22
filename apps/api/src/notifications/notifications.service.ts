@@ -4,6 +4,7 @@ import { WeatherService } from "../weather/weather.service";
 import { BudgetService } from "../finance/budget.service";
 import { JobCostingService } from "../job-costing/job-costing.service";
 import { calculateCostCodeOverruns } from "../job-costing/cost-code-overrun";
+import { ProjectAccessService } from "../common/project-access/project-access.service";
 
 export type Severity = "warning" | "critical";
 
@@ -33,6 +34,9 @@ export interface NotificationItem {
   body: string;
   link: string;
   occurredAt: Date;
+  /** The project this is about, if any — list() drops items of a restricted project the reader
+   * isn't a member of. */
+  projectId?: string;
 }
 
 const REMINDER_LOOKAHEAD_DAYS = 3;
@@ -63,9 +67,10 @@ export class NotificationsService {
     private readonly weather: WeatherService,
     private readonly budget: BudgetService,
     private readonly jobCosting: JobCostingService,
+    private readonly projectAccess: ProjectAccessService,
   ) {}
 
-  async list(companyId: string, userId: string) {
+  async list(companyId: string, userId: string, role?: string) {
     const [
       lowStock,
       reminders,
@@ -109,6 +114,7 @@ export class NotificationsService {
     ]);
 
     const mutedTypes = new Set(membership?.mutedNotificationTypes ?? []);
+    const hiddenProjects = new Set(await this.projectAccess.hiddenProjectIds(companyId, userId, role));
     const items = [
       ...lowStock,
       ...reminders,
@@ -129,7 +135,7 @@ export class NotificationsService {
       ...costCodeOverruns,
       ...materialPriceChanges,
     ]
-      .filter((n) => !mutedTypes.has(n.type))
+      .filter((n) => !mutedTypes.has(n.type) && !(n.projectId && hiddenProjects.has(n.projectId)))
       .sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
 
     const lastViewedAt = membership?.notificationsLastViewedAt ?? null;
@@ -251,6 +257,7 @@ export class NotificationsService {
           : "warning") as Severity,
         title: `Invoice ${inv.number} is overdue`,
         body: `${inv.client.name} — ${Math.round(outstanding * 100) / 100} outstanding`,
+        projectId: inv.projectId ?? undefined,
         link: `/invoices/${inv.id}`,
         occurredAt: inv.dueDate!,
       }));
@@ -271,6 +278,7 @@ export class NotificationsService {
       severity: (rfi.dueDate && rfi.dueDate < now ? "critical" : "warning") as Severity,
       title: `${rfi.number}: ${rfi.subject}`,
       body: `${rfi.project.name} — awaiting an answer`,
+      projectId: rfi.project.id,
       link: `/projects/${rfi.project.id}`,
       occurredAt: rfi.createdAt,
     }));
@@ -291,6 +299,7 @@ export class NotificationsService {
       severity: (item.dueDate && item.dueDate < now ? "critical" : "warning") as Severity,
       title: item.title,
       body: `${item.project.name}${item.location ? ` — ${item.location}` : ""}`,
+      projectId: item.project.id,
       link: `/projects/${item.project.id}`,
       occurredAt: item.createdAt,
     }));
@@ -321,6 +330,7 @@ export class NotificationsService {
       severity: (s.status === "revise_and_resubmit" ? "critical" : "warning") as Severity,
       title: `${s.number}${s.revision > 0 ? ` rev.${s.revision}` : ""}: ${s.title}`,
       body: `${s.project.name} — ${s.status === "revise_and_resubmit" ? "needs resubmission" : "awaiting review"}`,
+      projectId: s.project.id,
       link: `/projects/${s.project.id}`,
       occurredAt: s.createdAt,
     }));
@@ -340,6 +350,7 @@ export class NotificationsService {
       severity: (incident.severity === "lost_time_injury" || incident.severity === "fatality" ? "critical" : "warning") as Severity,
       title: `${incident.severity.replace(/_/g, " ")} incident logged`,
       body: `${incident.project.name}${incident.location ? ` — ${incident.location}` : ""}`,
+      projectId: incident.project.id,
       link: `/projects/${incident.project.id}`,
       occurredAt: incident.createdAt,
     }));
@@ -360,6 +371,7 @@ export class NotificationsService {
       type: "warranty_claim_open" as const,
       title: claim.title,
       body: `${claim.project.name}${claim.location ? ` — ${claim.location}` : ""}`,
+      projectId: claim.project.id,
       link: `/projects/${claim.project.id}`,
       occurredAt: claim.createdAt,
     }));
@@ -391,6 +403,7 @@ export class NotificationsService {
         severity: "warning" as Severity,
         title: `${m.comment.authorName} mentioned you`,
         body: `${targetLabel}${project ? ` — ${project.name}` : ""}: ${m.comment.content.slice(0, 100)}`,
+        projectId: project?.id,
         link: project ? `/projects/${project.id}` : "/dashboard",
         occurredAt: m.createdAt,
       };
@@ -481,6 +494,7 @@ export class NotificationsService {
       severity: (permit.expiresAt! < now ? "critical" : "warning") as Severity,
       title: `${permit.permitType} — ${permit.project.name}`,
       body: permit.expiresAt! < now ? `Expired ${permit.expiresAt!.toLocaleDateString()}` : `Expires ${permit.expiresAt!.toLocaleDateString()}`,
+      projectId: permit.project.id,
       link: `/projects/${permit.project.id}`,
       occurredAt: permit.expiresAt!,
     }));
@@ -585,6 +599,7 @@ export class NotificationsService {
             : "warning") as Severity,
           title: `${task.name} may be affected by weather`,
           body: `${project.name} — ${day.condition.replace("_", " ")} forecast on ${task.startDate!.toLocaleDateString()}`,
+          projectId: project.id,
           link: `/projects/${project.id}`,
           occurredAt: startOfToday,
         });
@@ -622,6 +637,7 @@ export class NotificationsService {
         severity: (ratio >= 1 ? "critical" : "warning") as Severity,
         title: `${project.name} is ${ratio >= 1 ? "over budget" : "close to its budget"}`,
         body: `${Math.round(ratio * 100)}% of budget spent (${actualTotal.toFixed(2)} of ${b.grandTotalBudget.toFixed(2)})`,
+        projectId: project.id,
         link: `/projects/${project.id}`,
         occurredAt: new Date(),
       });
@@ -653,6 +669,7 @@ export class NotificationsService {
           severity: overrun.severity,
           title: `${overrun.code} ${overrun.name} is ${overrun.severity === "critical" ? "over budget" : "close to its budget"} on ${project.name}`,
           body: `${Math.round(overrun.ratioPercent)}% of estimated spent (${overrun.spent.toFixed(2)} of ${overrun.estimated.toFixed(2)})`,
+          projectId: project.id,
           link: `/projects/${project.id}`,
           occurredAt: new Date(),
         });

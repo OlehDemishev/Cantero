@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common";
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query } from "@nestjs/common";
 import { updateDeficiencySchema, type AuthUser, type UpdateDeficiencyInput } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
@@ -11,12 +11,12 @@ export class DeficienciesController {
   constructor(private readonly service: DeficienciesService) {}
 
   @Get()
-  list(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string) {
+  list(@CurrentUser() user: AuthUser, @Query("projectId", ParseUUIDPipe) projectId: string) {
     return this.service.listForProject(user.companyId, projectId);
   }
 
   @Get("heat-map")
-  heatMap(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string) {
+  heatMap(@CurrentUser() user: AuthUser, @Query("projectId", ParseUUIDPipe) projectId: string) {
     return this.service.heatMap(user.companyId, projectId);
   }
 

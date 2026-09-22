@@ -1,4 +1,6 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Query, StreamableFile, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Query, StreamableFile, UploadedFile, UseInterceptors,
+  ParseUUIDPipe,
+} from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { MAX_UPLOAD_BYTES } from "../common/upload-limits";
 import {
@@ -21,7 +23,7 @@ export class TakeoffsController {
   constructor(private readonly service: TakeoffsService) {}
 
   @Get()
-  list(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string) {
+  list(@CurrentUser() user: AuthUser, @Query("projectId", ParseUUIDPipe) projectId: string) {
     return this.service.list(user.companyId, projectId);
   }
 
@@ -41,7 +43,7 @@ export class TakeoffsController {
   async create(
     @CurrentUser() user: AuthUser,
     @UploadedFile() file: Express.Multer.File,
-    @Query("projectId") projectId: string,
+    @Query("projectId", ParseUUIDPipe) projectId: string,
     @Query("name") name: string,
     @Query("page") page?: string,
   ) {
@@ -51,7 +53,7 @@ export class TakeoffsController {
 
   /** projectId rides in the query string so the project access guard checks it. */
   @Post("from-sheet")
-  createFromSheet(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string, @Query("sheetId") sheetId: string, @Query("name") name?: string) {
+  createFromSheet(@CurrentUser() user: AuthUser, @Query("projectId", ParseUUIDPipe) projectId: string, @Query("sheetId") sheetId: string, @Query("name") name?: string) {
     if (!projectId || !sheetId) throw new BadRequestException("projectId and sheetId are required");
     return this.service.createFromSheet(user.companyId, projectId, sheetId, name);
   }

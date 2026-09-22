@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query } from "@nestjs/common";
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query } from "@nestjs/common";
 import { createScheduleBaselineSchema, type AuthUser, type CreateScheduleBaselineInput } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
@@ -11,7 +11,7 @@ export class ScheduleBaselineController {
   constructor(private readonly service: ScheduleBaselineService) {}
 
   @Get()
-  list(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string) {
+  list(@CurrentUser() user: AuthUser, @Query("projectId", ParseUUIDPipe) projectId: string) {
     return this.service.list(user.companyId, projectId);
   }
 
@@ -23,7 +23,7 @@ export class ScheduleBaselineController {
   @Post()
   create(
     @CurrentUser() user: AuthUser,
-    @Query("projectId") projectId: string,
+    @Query("projectId", ParseUUIDPipe) projectId: string,
     @Body(new ZodValidationPipe(createScheduleBaselineSchema)) body: CreateScheduleBaselineInput,
   ) {
     return this.service.create(user.companyId, user.name, projectId, body);

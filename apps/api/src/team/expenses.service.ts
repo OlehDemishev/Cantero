@@ -5,6 +5,7 @@ import { StorageService } from "../common/storage/storage.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { OutboxService } from "../common/webhooks/outbox.service";
 import { detectExpenseAnomalyFromAggregate } from "./expense-anomaly";
+import { ProjectAccessService, type ProjectViewer } from "../common/project-access/project-access.service";
 
 export interface ExpenseFilter {
   projectId?: string;
@@ -26,16 +27,18 @@ export class ExpensesService {
     private readonly storage: StorageService,
     private readonly audit: AuditService,
     private readonly outbox: OutboxService,
+    private readonly projectAccess: ProjectAccessService,
   ) {}
 
-  async list(companyId: string, filter: ExpenseFilter, take: number, cursor?: string) {
+  async list(companyId: string, filter: ExpenseFilter, take: number, cursor?: string, viewer: ProjectViewer = {}) {
+    const visible = await this.projectAccess.visibleWhere(companyId, "Expense", viewer.userId, viewer.role);
     const expenses = await this.prisma.expense.findMany({
-      where: {
+      where: { AND: [{
         companyId,
         ...(filter.projectId ? { projectId: filter.projectId } : {}),
         ...(filter.workerId ? { workerId: filter.workerId } : {}),
         ...(filter.status ? { status: filter.status as never } : {}),
-      },
+      }, visible] },
       include: { worker: { select: { id: true, name: true } }, project: { select: { id: true, name: true } } },
       // incurredAt is a user-entered date, not a generated timestamp — far more likely to
       // collide than an autoincrementing/uuid column, so it needs an id tiebreaker to keep the

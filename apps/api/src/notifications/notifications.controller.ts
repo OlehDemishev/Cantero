@@ -16,7 +16,7 @@ export class NotificationsController {
 
   @Get()
   list(@CurrentUser() user: AuthUser) {
-    return this.service.list(user.companyId, user.userId);
+    return this.service.list(user.companyId, user.userId, user.role);
   }
 
   @Post("mark-seen")

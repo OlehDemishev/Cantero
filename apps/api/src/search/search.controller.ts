@@ -1,4 +1,4 @@
-import { BadRequestException, Controller, Get, Query } from "@nestjs/common";
+import { BadRequestException, Controller, Get, ParseUUIDPipe, Query } from "@nestjs/common";
 import type { AuthUser } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { SearchService } from "./search.service";
@@ -29,7 +29,7 @@ export class SearchController {
   similar(
     @CurrentUser() user: AuthUser,
     @Query("type") type: string,
-    @Query("projectId") projectId: string,
+    @Query("projectId", ParseUUIDPipe) projectId: string,
     @Query("text") text: string,
     @Query("excludeId") excludeId?: string,
   ) {

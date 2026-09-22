@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Header, Param, Patch, Post, Query, StreamableFile } from "@nestjs/common";
+import { Body, Controller, Get, Header, Param, ParseUUIDPipe, Patch, Post, Query, StreamableFile } from "@nestjs/common";
 import {
   bulkActionIdsSchema,
   createPunchListItemSchema,
@@ -23,18 +23,18 @@ export class PunchListController {
   constructor(private readonly service: PunchListService) {}
 
   @Get()
-  list(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string) {
+  list(@CurrentUser() user: AuthUser, @Query("projectId", ParseUUIDPipe) projectId: string) {
     return this.service.listForProject(user.companyId, projectId);
   }
 
   @Get("company-open")
   listOpenForCompany(@CurrentUser() user: AuthUser) {
-    return this.service.listOpenForCompany(user.companyId);
+    return this.service.listOpenForCompany(user.companyId, user);
   }
 
   @Get("pdf")
   @Header("Content-Type", "application/pdf")
-  async pdf(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string) {
+  async pdf(@CurrentUser() user: AuthUser, @Query("projectId", ParseUUIDPipe) projectId: string) {
     const buffer = await this.service.generatePdf(user.companyId, projectId);
     return new StreamableFile(buffer, { disposition: `attachment; filename="punch-list.pdf"` });
   }

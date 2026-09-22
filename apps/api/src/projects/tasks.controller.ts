@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Query } from "@nestjs/common";
 import {
   createTaskCommitmentSchema,
   createTaskDependencySchema,
@@ -24,17 +24,17 @@ export class TasksController {
   constructor(private readonly service: TasksService) {}
 
   @Get()
-  list(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string) {
+  list(@CurrentUser() user: AuthUser, @Query("projectId", ParseUUIDPipe) projectId: string) {
     return this.service.listForProject(user.companyId, projectId);
   }
 
   @Get("critical-path")
-  criticalPath(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string) {
+  criticalPath(@CurrentUser() user: AuthUser, @Query("projectId", ParseUUIDPipe) projectId: string) {
     return this.service.getCriticalPath(user.companyId, projectId);
   }
 
   @Get("look-ahead")
-  lookAhead(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string, @Query("weeks") weeks?: string) {
+  lookAhead(@CurrentUser() user: AuthUser, @Query("projectId", ParseUUIDPipe) projectId: string, @Query("weeks") weeks?: string) {
     return this.service.getLookAhead(user.companyId, projectId, weeks ? Number(weeks) : undefined);
   }
 
@@ -44,7 +44,7 @@ export class TasksController {
   }
 
   @Get("commitments")
-  listCommitments(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string) {
+  listCommitments(@CurrentUser() user: AuthUser, @Query("projectId", ParseUUIDPipe) projectId: string) {
     return this.service.listCommitmentsForProject(user.companyId, projectId);
   }
 
@@ -61,7 +61,7 @@ export class TasksController {
   @Post("shift-schedule")
   shiftSchedule(
     @CurrentUser() user: AuthUser,
-    @Query("projectId") projectId: string,
+    @Query("projectId", ParseUUIDPipe) projectId: string,
     @Body(new ZodValidationPipe(shiftProjectScheduleSchema)) body: ShiftProjectScheduleInput,
   ) {
     return this.service.shiftProjectSchedule(user.companyId, projectId, body.days);

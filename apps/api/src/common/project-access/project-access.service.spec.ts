@@ -6,13 +6,13 @@ import { PrismaService } from "../prisma/prisma.service";
 describe("ProjectAccessService", () => {
   let service: ProjectAccessService;
   let prisma: {
-    project: { findFirst: jest.Mock };
+    project: { findFirst: jest.Mock; findMany: jest.Mock };
     projectMember: { findUnique: jest.Mock; findMany: jest.Mock };
   };
 
   beforeEach(async () => {
     prisma = {
-      project: { findFirst: jest.fn() },
+      project: { findFirst: jest.fn(), findMany: jest.fn().mockResolvedValue([]) },
       projectMember: { findUnique: jest.fn(), findMany: jest.fn() },
     };
 
@@ -90,6 +90,29 @@ describe("ProjectAccessService", () => {
       prisma.projectMember.findMany.mockResolvedValue([{ projectId: "p-restricted" }]);
       const result = await service.filterAccessible([OPEN, RESTRICTED], "user-2", "worker");
       expect(result).toEqual([OPEN, RESTRICTED]);
+    });
+  });
+
+  describe("hiddenProjectIds() / visibleWhere()", () => {
+    it("hides restricted projects the caller isn't a member of, within their company", async () => {
+      prisma.project.findMany.mockResolvedValue([{ id: "p-secret" }]);
+      expect(await service.hiddenProjectIds("company-a", "user-2", "worker")).toEqual(["p-secret"]);
+      expect(prisma.project.findMany).toHaveBeenCalledWith({
+        where: { companyId: "company-a", restrictedToMembers: true, members: { none: { userId: "user-2" } } },
+        select: { id: true },
+      });
+      expect(await service.visibleWhere("company-a", "DailyLog", "user-2", "worker")).toEqual({ projectId: { notIn: ["p-secret"] } });
+    });
+
+    it("hides nothing, without a query, from an owner, an admin or an internal caller", async () => {
+      expect(await service.hiddenProjectIds("company-a", "user-1", "owner")).toEqual([]);
+      expect(await service.hiddenProjectIds("company-a", "user-1", "admin")).toEqual([]);
+      expect(await service.hiddenProjectIds("company-a")).toEqual([]);
+      expect(prisma.project.findMany).not.toHaveBeenCalled();
+    });
+
+    it("adds no condition when nothing is hidden", async () => {
+      expect(await service.visibleWhere("company-a", "DailyLog", "user-2", "worker")).toEqual({});
     });
   });
 });

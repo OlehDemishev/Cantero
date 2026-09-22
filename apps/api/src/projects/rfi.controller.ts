@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common";
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query } from "@nestjs/common";
 import {
   answerRfiSchema,
   bulkActionIdsSchema,
@@ -30,7 +30,7 @@ export class RfiController {
   @Get()
   list(
     @CurrentUser() user: AuthUser,
-    @Query("projectId") projectId: string,
+    @Query("projectId", ParseUUIDPipe) projectId: string,
     @Query("ballInCourtParty") ballInCourtParty?: BallInCourtParty,
   ) {
     return this.service.listForProject(user.companyId, projectId, ballInCourtParty);
@@ -38,16 +38,16 @@ export class RfiController {
 
   @Get("company-open")
   listOpenForCompany(@CurrentUser() user: AuthUser) {
-    return this.service.listOpenForCompany(user.companyId);
+    return this.service.listOpenForCompany(user.companyId, user);
   }
 
   @Get("cost-impact-summary")
-  costImpactSummary(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string) {
+  costImpactSummary(@CurrentUser() user: AuthUser, @Query("projectId", ParseUUIDPipe) projectId: string) {
     return this.service.costImpactSummary(user.companyId, projectId);
   }
 
   @Get("analytics")
-  analytics(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string) {
+  analytics(@CurrentUser() user: AuthUser, @Query("projectId", ParseUUIDPipe) projectId: string) {
     return this.service.analytics(user.companyId, projectId);
   }
 

@@ -14,7 +14,7 @@ export class ReportsController {
 
   @Get("project-margins")
   projectMargins(@CurrentUser() user: AuthUser) {
-    return this.service.projectMargins(user.companyId);
+    return this.service.projectMargins(user.companyId, user);
   }
 
   @Get("warehouse-turnover")
@@ -24,12 +24,12 @@ export class ReportsController {
 
   @Get("invoice-aging")
   invoiceAging(@CurrentUser() user: AuthUser) {
-    return this.service.invoiceAging(user.companyId);
+    return this.service.invoiceAging(user.companyId, user);
   }
 
   @Get("portfolio")
   portfolio(@CurrentUser() user: AuthUser) {
-    return this.service.portfolio(user.companyId);
+    return this.service.portfolio(user.companyId, user);
   }
 
   @Get("cash-flow-forecast")
@@ -39,7 +39,7 @@ export class ReportsController {
 
   @Get("estimate-at-completion")
   estimateAtCompletion(@CurrentUser() user: AuthUser) {
-    return this.service.estimateAtCompletion(user.companyId);
+    return this.service.estimateAtCompletion(user.companyId, user);
   }
 
   @Get("win-rate")
@@ -65,7 +65,7 @@ export class ReportsController {
 
   @Get("wip-report")
   wipReport(@CurrentUser() user: AuthUser) {
-    return this.service.wipReport(user.companyId);
+    return this.service.wipReport(user.companyId, user);
   }
 
   @Get("backlog")
@@ -75,25 +75,25 @@ export class ReportsController {
 
   @Get("compliance-calendar")
   complianceCalendar(@CurrentUser() user: AuthUser, @Query("lookaheadDays") lookaheadDays?: string) {
-    return this.service.complianceCalendar(user.companyId, lookaheadDays ? Number(lookaheadDays) : undefined);
+    return this.service.complianceCalendar(user.companyId, lookaheadDays ? Number(lookaheadDays) : undefined, user);
   }
 
   @Get("wip-report/pdf")
   @Header("Content-Type", "application/pdf")
   async wipReportPdf(@CurrentUser() user: AuthUser) {
-    const buffer = await this.service.wipReportPdf(user.companyId);
+    const buffer = await this.service.wipReportPdf(user.companyId, user);
     return new StreamableFile(buffer, { disposition: `attachment; filename="wip-report.pdf"` });
   }
 
   @Get("geofence-violations")
   geofenceViolations(@CurrentUser() user: AuthUser, @Query("from") from?: string, @Query("to") to?: string) {
-    return this.service.geofenceViolations(user.companyId, from, to);
+    return this.service.geofenceViolations(user.companyId, from, to, user);
   }
 
   @Get("geofence-violations/csv")
   @Header("Content-Type", "text/csv")
   geofenceViolationsCsv(@CurrentUser() user: AuthUser, @Query("from") from?: string, @Query("to") to?: string) {
-    return this.service.geofenceViolationsCsv(user.companyId, from, to);
+    return this.service.geofenceViolationsCsv(user.companyId, from, to, user);
   }
 
   @Get("equipment-utilization")

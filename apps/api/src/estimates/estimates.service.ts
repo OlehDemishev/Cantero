@@ -28,6 +28,7 @@ import {
   type MaterialPrice,
   type RateItemForCalc,
 } from "./estimate-calc";
+import { ProjectAccessService, type ProjectViewer } from "../common/project-access/project-access.service";
 
 interface RevisionLineSnapshot {
   rateCatalogItemCode: string;
@@ -49,10 +50,12 @@ export class EstimatesService {
     private readonly config: ConfigService,
     private readonly mail: MailService,
     private readonly outbox: OutboxService,
+    private readonly projectAccess: ProjectAccessService,
   ) {}
 
-  async list(companyId: string, role?: string) {
-    const estimates = await this.prisma.estimate.findMany({ where: { companyId, isTemplate: false }, include: { project: true } });
+  async list(companyId: string, role?: string, viewer: ProjectViewer = {}) {
+    const visible = await this.projectAccess.visibleWhere(companyId, "Estimate", viewer.userId, viewer.role);
+    const estimates = await this.prisma.estimate.findMany({ where: { AND: [{ companyId, isTemplate: false }, visible] }, include: { project: true } });
     if (!(await this.shouldHideCostData(companyId, role))) return estimates;
     return estimates.map((e) => this.redactCostData(e));
   }

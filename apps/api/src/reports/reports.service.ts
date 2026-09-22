@@ -8,6 +8,7 @@ import { toCsv } from "../common/csv";
 import { PdfService } from "../common/pdf/pdf.service";
 import { StorageService } from "../common/storage/storage.service";
 import { ExchangeRateService } from "../common/exchange-rate/exchange-rate.service";
+import { ProjectAccessService, type ProjectViewer } from "../common/project-access/project-access.service";
 
 const CASH_FLOW_WEEKS = 13;
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -34,6 +35,7 @@ export class ReportsService {
     private readonly pdf: PdfService,
     private readonly storage: StorageService,
     private readonly exchangeRates: ExchangeRateService,
+    private readonly projectAccess: ProjectAccessService,
   ) {}
 
   async overview(companyId: string) {
@@ -112,9 +114,10 @@ export class ReportsService {
    * Budget is the sum of approved estimates, shown alongside for context but
    * margin itself is computed against actuals, not budget.
    */
-  async projectMargins(companyId: string) {
+  async projectMargins(companyId: string, viewer: ProjectViewer = {}) {
+    const visible = await this.projectAccess.visibleWhere(companyId, "Project", viewer.userId, viewer.role);
     const projects = await this.prisma.project.findMany({
-      where: { companyId },
+      where: { AND: [{ companyId }, visible] },
       include: {
         estimates: { where: { status: "approved" } },
         invoices: { include: { payments: true } },
@@ -168,9 +171,10 @@ export class ReportsService {
    * .percentComplete) — projects with no progress draws yet report 0% and the EAC conservatively
    * assumes on-budget completion until real progress data exists.
    */
-  async estimateAtCompletion(companyId: string) {
+  async estimateAtCompletion(companyId: string, viewer: ProjectViewer = {}) {
+    const visible = await this.projectAccess.visibleWhere(companyId, "Project", viewer.userId, viewer.role);
     const projects = await this.prisma.project.findMany({
-      where: { companyId },
+      where: { AND: [{ companyId }, visible] },
       include: {
         estimates: { where: { status: "approved" } },
         invoices: true,
@@ -282,9 +286,10 @@ export class ReportsService {
    * documents. A company running a project in an override currency will see that row's numbers
    * under the company's default currency label, not its own.
    */
-  async wipReport(companyId: string) {
+  async wipReport(companyId: string, viewer: ProjectViewer = {}) {
+    const visible = await this.projectAccess.visibleWhere(companyId, "Project", viewer.userId, viewer.role);
     const projects = await this.prisma.project.findMany({
-      where: { companyId, estimates: { some: { status: "approved" } } },
+      where: { AND: [{ companyId, estimates: { some: { status: "approved" } } }, visible] },
       include: {
         estimates: { where: { status: "approved" } },
         invoices: true,
@@ -374,7 +379,8 @@ export class ReportsService {
    * time; this rolls all five into a single calendar view instead of five separate places to
    * check. Already-expired items sort first (their expiresAt is in the past), so the most urgent
    * items are always at the top regardless of lookaheadDays. */
-  async complianceCalendar(companyId: string, lookaheadDays = 90) {
+  async complianceCalendar(companyId: string, lookaheadDays = 90, viewer: ProjectViewer = {}) {
+    const visible = await this.projectAccess.visibleWhere(companyId, "Permit", viewer.userId, viewer.role);
     const now = new Date();
     const cutoff = new Date(now.getTime() + lookaheadDays * 24 * 60 * 60 * 1000);
     const within = { lte: cutoff };
@@ -393,7 +399,7 @@ export class ReportsService {
         include: { worker: { select: { name: true } } },
       }),
       this.prisma.permit.findMany({
-        where: { companyId, expiresAt: within },
+        where: { AND: [{ companyId, expiresAt: within }, visible] },
         include: { project: { select: { name: true } } },
       }),
       this.prisma.companyDocument.findMany({ where: { companyId, expiresAt: within } }),
@@ -462,10 +468,10 @@ export class ReportsService {
     };
   }
 
-  async wipReportPdf(companyId: string): Promise<Buffer> {
+  async wipReportPdf(companyId: string, viewer: ProjectViewer = {}): Promise<Buffer> {
     const [company, { rows, totals }] = await Promise.all([
       this.prisma.company.findUniqueOrThrow({ where: { id: companyId } }),
-      this.wipReport(companyId),
+      this.wipReport(companyId, viewer),
     ]);
     const logoBuffer = company.logoStorageKey ? await this.storage.read(company.logoStorageKey).catch(() => undefined) : undefined;
     const currency = company.currency;
@@ -537,9 +543,10 @@ export class ReportsService {
    * invoices, bucketed by days past due date. DSO is approximated over the
    * trailing 90 days: total outstanding ÷ (invoiced in the last 90 days ÷ 90).
    */
-  async invoiceAging(companyId: string) {
+  async invoiceAging(companyId: string, viewer: ProjectViewer = {}) {
+    const visible = await this.projectAccess.visibleWhere(companyId, "Invoice", viewer.userId, viewer.role);
     const invoices = await this.prisma.invoice.findMany({
-      where: { companyId, status: { not: "void" } },
+      where: { AND: [{ companyId, status: { not: "void" } }, visible] },
       include: { payments: true, client: true },
     });
 
@@ -607,11 +614,12 @@ export class ReportsService {
    * "At risk" is deliberately narrow — an incomplete critical-path task past its due date is the
    * one signal that's unambiguously a schedule problem, not just busy.
    */
-  async portfolio(companyId: string) {
+  async portfolio(companyId: string, viewer: ProjectViewer = {}) {
+    const visible = await this.projectAccess.visibleWhere(companyId, "Project", viewer.userId, viewer.role);
     const now = new Date();
     const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId }, select: { currency: true } });
     const projects = await this.prisma.project.findMany({
-      where: { companyId },
+      where: { AND: [{ companyId }, visible] },
       include: {
         client: { select: { name: true } },
         estimates: { where: { status: "approved" } },
@@ -987,22 +995,23 @@ export class ReportsService {
    * project at once, since GeofencePanel only ever shows one project's entries at a time.
    * withinGeofence stays null (excluded here, not a violation) when the project had no geofence
    * configured at submission time. */
-  private async geofenceViolationEntries(companyId: string, from?: string, to?: string) {
+  private async geofenceViolationEntries(companyId: string, from?: string, to?: string, viewer: ProjectViewer = {}) {
+    const visible = await this.projectAccess.visibleWhere(companyId, "TimeEntry", viewer.userId, viewer.role);
     return this.prisma.timeEntry.findMany({
-      where: {
+      where: { AND: [{
         companyId,
         withinGeofence: false,
         ...(from || to
           ? { date: { ...(from ? { gte: new Date(from) } : {}), ...(to ? { lte: new Date(to) } : {}) } }
           : {}),
-      },
+      }, visible] },
       include: { worker: { select: { name: true } }, project: { select: { name: true } } },
       orderBy: { date: "desc" },
     });
   }
 
-  async geofenceViolations(companyId: string, from?: string, to?: string) {
-    const entries = await this.geofenceViolationEntries(companyId, from, to);
+  async geofenceViolations(companyId: string, from?: string, to?: string, viewer: ProjectViewer = {}) {
+    const entries = await this.geofenceViolationEntries(companyId, from, to, viewer);
     return entries.map((e) => ({
       id: e.id,
       date: e.date,
@@ -1013,8 +1022,8 @@ export class ReportsService {
     }));
   }
 
-  async geofenceViolationsCsv(companyId: string, from?: string, to?: string): Promise<string> {
-    const entries = await this.geofenceViolationEntries(companyId, from, to);
+  async geofenceViolationsCsv(companyId: string, from?: string, to?: string, viewer: ProjectViewer = {}): Promise<string> {
+    const entries = await this.geofenceViolationEntries(companyId, from, to, viewer);
     return toCsv(
       ["Date", "Worker", "Project", "Hours", "Distance from site (m)"],
       entries.map((e) => [

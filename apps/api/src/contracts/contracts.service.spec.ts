@@ -8,6 +8,7 @@ import { StorageService } from "../common/storage/storage.service";
 import { AuditService } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
 import { DocusignService } from "./docusign.service";
+import { projectAccessThatSeesAll } from "../common/project-access/project-access.testing";
 
 const COMPANY_A = "company-a";
 const ACTOR = { userId: "user-1", name: "Jane" };
@@ -54,7 +55,7 @@ describe("ContractsService", () => {
     audit = { record: jest.fn() };
 
     const module = await Test.createTestingModule({
-      providers: [
+      providers: [projectAccessThatSeesAll(), 
         ContractsService,
         { provide: PrismaService, useValue: prisma },
         { provide: PdfService, useValue: pdfService },

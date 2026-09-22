@@ -51,7 +51,7 @@ export class NotificationDigestService implements OnModuleInit {
       if (!due) continue;
 
       const cursor = membership.emailDigestLastSentAt?.getTime() ?? 0;
-      const { notifications } = await this.notifications.list(membership.companyId, membership.userId);
+      const { notifications } = await this.notifications.list(membership.companyId, membership.userId, membership.role);
       const fresh = notifications.filter((n) => n.occurredAt.getTime() > cursor);
 
       if (fresh.length > 0) {

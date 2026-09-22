@@ -2,6 +2,7 @@ import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { TimeEntriesService } from "./time-entries.service";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { projectAccessThatSeesAll } from "../common/project-access/project-access.testing";
 
 const COMPANY_A = "company-a";
 
@@ -23,7 +24,7 @@ describe("TimeEntriesService", () => {
     };
 
     const module = await Test.createTestingModule({
-      providers: [TimeEntriesService, { provide: PrismaService, useValue: prisma }],
+      providers: [projectAccessThatSeesAll(), TimeEntriesService, { provide: PrismaService, useValue: prisma }],
     }).compile();
 
     service = module.get(TimeEntriesService);

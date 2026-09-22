@@ -5,6 +5,7 @@ import { PrismaService } from "../common/prisma/prisma.service";
 import { StorageService } from "../common/storage/storage.service";
 import { AuditService } from "../common/audit/audit.service";
 import { OutboxService } from "../common/webhooks/outbox.service";
+import { projectAccessThatSeesAll } from "../common/project-access/project-access.testing";
 
 const COMPANY_A = "company-a";
 const ACTOR = { userId: "user-1", name: "Jane" };
@@ -35,7 +36,7 @@ describe("ExpensesService", () => {
     outbox = { enqueue: jest.fn() };
 
     const module = await Test.createTestingModule({
-      providers: [
+      providers: [projectAccessThatSeesAll(), 
         ExpensesService,
         { provide: PrismaService, useValue: prisma },
         { provide: StorageService, useValue: storage },

@@ -3,6 +3,7 @@ import { SafetyAnalyticsService } from "./safety-analytics.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { PdfService } from "../common/pdf/pdf.service";
 import { StorageService } from "../common/storage/storage.service";
+import { projectAccessThatSeesAll } from "../common/project-access/project-access.testing";
 
 const COMPANY_A = "company-a";
 
@@ -47,7 +48,7 @@ describe("SafetyAnalyticsService", () => {
     };
 
     const module = await Test.createTestingModule({
-      providers: [
+      providers: [projectAccessThatSeesAll(), 
         SafetyAnalyticsService,
         { provide: PrismaService, useValue: prisma },
         { provide: PdfService, useValue: { render: jest.fn().mockResolvedValue(Buffer.from("pdf")) } },

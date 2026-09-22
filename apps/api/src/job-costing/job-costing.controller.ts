@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query } from "@nestjs/common";
+import { Body, Controller, Get, ParseUUIDPipe, Post, Query } from "@nestjs/common";
 import { createCostCodeBudgetTransferSchema, type AuthUser, type CreateCostCodeBudgetTransferInput } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
@@ -9,17 +9,17 @@ export class JobCostingController {
   constructor(private readonly service: JobCostingService) {}
 
   @Get()
-  report(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string) {
+  report(@CurrentUser() user: AuthUser, @Query("projectId", ParseUUIDPipe) projectId: string) {
     return this.service.report(user.companyId, projectId);
   }
 
   @Get("forecast")
-  forecastReport(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string) {
+  forecastReport(@CurrentUser() user: AuthUser, @Query("projectId", ParseUUIDPipe) projectId: string) {
     return this.service.forecastReport(user.companyId, projectId);
   }
 
   @Get("history")
-  history(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string, @Query("months") months?: string) {
+  history(@CurrentUser() user: AuthUser, @Query("projectId", ParseUUIDPipe) projectId: string, @Query("months") months?: string) {
     return this.service.history(user.companyId, projectId, months ? Number(months) : undefined);
   }
 

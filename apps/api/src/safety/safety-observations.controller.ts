@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query } from "@nestjs/common";
+import { Body, Controller, Get, ParseUUIDPipe, Post, Query } from "@nestjs/common";
 import { createSafetyObservationSchema, type AuthUser, type CreateSafetyObservationInput } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
@@ -9,7 +9,7 @@ export class SafetyObservationsController {
   constructor(private readonly service: SafetyObservationsService) {}
 
   @Get()
-  list(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string) {
+  list(@CurrentUser() user: AuthUser, @Query("projectId", ParseUUIDPipe) projectId: string) {
     return this.service.listForProject(user.companyId, projectId);
   }
 

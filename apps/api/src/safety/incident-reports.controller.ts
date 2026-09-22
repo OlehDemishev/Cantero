@@ -1,4 +1,4 @@
-import { Controller, Get, Header, Body, Param, Patch, Post, Query, StreamableFile } from "@nestjs/common";
+import { Body, Controller, Get, Header, Param, ParseUUIDPipe, Patch, Post, Query, StreamableFile } from "@nestjs/common";
 import {
   createIncidentReportSchema,
   updateIncidentReportSchema,
@@ -17,7 +17,7 @@ export class IncidentReportsController {
   constructor(private readonly service: IncidentReportsService) {}
 
   @Get()
-  list(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string) {
+  list(@CurrentUser() user: AuthUser, @Query("projectId", ParseUUIDPipe) projectId: string) {
     return this.service.listForProject(user.companyId, projectId);
   }
 
@@ -25,7 +25,7 @@ export class IncidentReportsController {
   @Get("export")
   @Header("Content-Type", "text/csv")
   export(@CurrentUser() user: AuthUser) {
-    return this.service.exportCsv(user.companyId);
+    return this.service.exportCsv(user.companyId, user);
   }
 
   @Get(":id")

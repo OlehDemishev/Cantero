@@ -29,6 +29,16 @@ describe("project-scoped routes are visible to ProjectAccessGuard", () => {
     expect(routes.filter((r) => /(^|\/)projects\/:id(\/|$)/.test(r.path)).length).toBeGreaterThan(50);
   });
 
+  it("validates a required projectId query param instead of trusting it's there", () => {
+    // `@Query("projectId") projectId: string` is only a type: a request without it reaches the
+    // service with undefined, ProjectAccessGuard has no project to check, and a `where: { projectId }`
+    // then matches every row of every company. ParseUUIDPipe answers 400 instead.
+    const offenders = controllerFiles(join(__dirname, "../..")).flatMap((file) =>
+      [...readFileSync(file, "utf8").matchAll(/@Query\(\s*"projectId"\s*\)\s*projectId\s*:\s*string\b(?!\s*\|)/g)].map(() => file.replace(/^.*src\//, "")),
+    );
+    expect(offenders).toEqual([]);
+  });
+
   it("names the project param :id or :projectId right after projects/", () => {
     const offenders = routes.filter((r) => /(^|\/)projects\/:(?!id(\/|$)|projectId(\/|$))/.test(r.path));
     expect(offenders).toEqual([]);

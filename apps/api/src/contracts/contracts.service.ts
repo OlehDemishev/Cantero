@@ -9,6 +9,7 @@ import { decodePngDataUrl } from "../common/signature";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
 import { DocusignService } from "./docusign.service";
+import { ProjectAccessService, type ProjectViewer } from "../common/project-access/project-access.service";
 
 @Injectable()
 export class ContractsService {
@@ -20,11 +21,13 @@ export class ContractsService {
     private readonly config: ConfigService,
     private readonly mail: MailService,
     private readonly docusign: DocusignService,
+    private readonly projectAccess: ProjectAccessService,
   ) {}
 
-  list(companyId: string, projectId?: string) {
+  async list(companyId: string, projectId?: string, viewer: ProjectViewer = {}) {
+    const visible = await this.projectAccess.visibleWhere(companyId, "Contract", viewer.userId, viewer.role);
     return this.prisma.contract.findMany({
-      where: { companyId, ...(projectId ? { projectId } : {}) },
+      where: { AND: [{ companyId, ...(projectId ? { projectId } : {}) }, visible] },
       include: { client: { select: { id: true, name: true } }, subcontractor: { select: { id: true, name: true } } },
       orderBy: { createdAt: "desc" },
     });

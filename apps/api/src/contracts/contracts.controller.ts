@@ -18,7 +18,7 @@ export class ContractsController {
 
   @Get()
   list(@CurrentUser() user: AuthUser, @Query("projectId") projectId?: string) {
-    return this.service.list(user.companyId, projectId);
+    return this.service.list(user.companyId, projectId, user);
   }
 
   @Get(":id")

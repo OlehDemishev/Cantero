@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Query } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Post, Query } from "@nestjs/common";
 import { createGreenCertificationSchema, type AuthUser, type CreateGreenCertificationInput } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
@@ -10,7 +10,7 @@ export class SustainabilityController {
   constructor(private readonly service: SustainabilityService) {}
 
   @Get("certifications")
-  listCertifications(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string) {
+  listCertifications(@CurrentUser() user: AuthUser, @Query("projectId", ParseUUIDPipe) projectId: string) {
     return this.service.listCertifications(user.companyId, projectId);
   }
 
@@ -29,7 +29,7 @@ export class SustainabilityController {
   }
 
   @Get("carbon-report")
-  carbonReport(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string) {
+  carbonReport(@CurrentUser() user: AuthUser, @Query("projectId", ParseUUIDPipe) projectId: string) {
     return this.service.carbonReport(user.companyId, projectId);
   }
 

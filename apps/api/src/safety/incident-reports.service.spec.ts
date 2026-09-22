@@ -10,7 +10,12 @@ import { ProjectAccessService } from "../common/project-access/project-access.se
 
 const COMPANY_A = "company-a";
 const ACTOR = { userId: "user-1", name: "Foreman" };
-const projectAccessStub = { assertAccess: jest.fn(), filterAccessible: jest.fn(async (rows: unknown[]) => rows) };
+const projectAccessStub = {
+  assertAccess: jest.fn(),
+  filterAccessible: jest.fn(async (rows: unknown[]) => rows),
+  visibleWhere: jest.fn().mockResolvedValue({}),
+  hiddenProjectIds: jest.fn().mockResolvedValue([]),
+};
 
 describe("IncidentReportsService", () => {
   let service: IncidentReportsService;

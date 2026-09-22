@@ -4,6 +4,7 @@ import { PrismaService } from "../common/prisma/prisma.service";
 import { WeatherService } from "../weather/weather.service";
 import { BudgetService } from "../finance/budget.service";
 import { JobCostingService } from "../job-costing/job-costing.service";
+import { projectAccessThatSeesAll } from "../common/project-access/project-access.testing";
 
 const COMPANY_A = "company-a";
 const USER_A = "user-a";
@@ -64,7 +65,7 @@ describe("NotificationsService.list", () => {
     jobCosting = { report: jest.fn().mockResolvedValue({ rows: [], totals: {} }) };
 
     const module = await Test.createTestingModule({
-      providers: [
+      providers: [projectAccessThatSeesAll(), 
         NotificationsService,
         { provide: PrismaService, useValue: prisma },
         { provide: WeatherService, useValue: weather },
@@ -459,7 +460,7 @@ describe("NotificationsService — read tracking", () => {
     };
 
     const module = await Test.createTestingModule({
-      providers: [
+      providers: [projectAccessThatSeesAll(), 
         NotificationsService,
         { provide: PrismaService, useValue: prisma },
         { provide: WeatherService, useValue: { geocode: jest.fn(), forecast: jest.fn() } },

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query } from "@nestjs/common";
+import { Body, Controller, Get, ParseUUIDPipe, Post, Query } from "@nestjs/common";
 import {
   createBudgetRevisionSchema,
   createContingencyDrawSchema,
@@ -15,7 +15,7 @@ export class BudgetController {
   constructor(private readonly service: BudgetService) {}
 
   @Get()
-  get(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string) {
+  get(@CurrentUser() user: AuthUser, @Query("projectId", ParseUUIDPipe) projectId: string) {
     return this.service.getForProject(user.companyId, projectId);
   }
 

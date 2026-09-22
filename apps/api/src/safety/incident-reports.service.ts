@@ -6,7 +6,7 @@ import { OutboxService } from "../common/webhooks/outbox.service";
 import { toCsv } from "../common/csv";
 import { PdfService } from "../common/pdf/pdf.service";
 import { StorageService } from "../common/storage/storage.service";
-import { ProjectAccessService } from "../common/project-access/project-access.service";
+import { ProjectAccessService, type ProjectViewer } from "../common/project-access/project-access.service";
 
 @Injectable()
 export class IncidentReportsService {
@@ -89,9 +89,10 @@ export class IncidentReportsService {
   /** Columns mirror the shape of an OSHA 300 log (case, date, location, description,
    * classification) closely enough to hand to a safety officer for their own filing — this is
    * not an official OSHA-compliant export, just a familiar starting layout. */
-  async exportCsv(companyId: string): Promise<string> {
+  async exportCsv(companyId: string, viewer: ProjectViewer = {}): Promise<string> {
+    const visible = await this.projectAccess.visibleWhere(companyId, "IncidentReport", viewer.userId, viewer.role);
     const reports = await this.prisma.incidentReport.findMany({
-      where: { companyId },
+      where: { AND: [{ companyId }, visible] },
       include: { project: { select: { name: true } } },
       orderBy: { occurredAt: "asc" },
     });

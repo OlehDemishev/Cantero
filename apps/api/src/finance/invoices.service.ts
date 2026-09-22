@@ -23,6 +23,7 @@ import { calculateFxSettlement } from "./fx-settlement";
 import { createInvoiceWithNumber } from "./invoice-numbering";
 import { runSerializable } from "../common/prisma/serializable-transaction";
 import { GobdLedgerService } from "../common/gobd/gobd-ledger.service";
+import { ProjectAccessService, type ProjectViewer } from "../common/project-access/project-access.service";
 
 @Injectable()
 export class InvoicesService {
@@ -39,14 +40,16 @@ export class InvoicesService {
     private readonly exchangeRates: ExchangeRateService,
     private readonly peppolAccessPoint: PeppolAccessPointService,
     private readonly gobdLedger: GobdLedgerService,
+    private readonly projectAccess: ProjectAccessService,
   ) {}
 
   /** take omitted (public-api's JSON export, out of scope for this round's pagination pass —
    * paginates client-side via its own paginate() helper instead) returns every invoice, same as
    * before pagination existed here. */
-  list(companyId: string, take?: number, cursor?: string) {
+  async list(companyId: string, take?: number, cursor?: string, viewer: ProjectViewer = {}) {
+    const visible = await this.projectAccess.visibleWhere(companyId, "Invoice", viewer.userId, viewer.role);
     return this.prisma.invoice.findMany({
-      where: { companyId },
+      where: { AND: [{ companyId }, visible] },
       include: { client: true, project: true },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       ...(take !== undefined ? { take } : {}),
@@ -732,9 +735,10 @@ export class InvoicesService {
   }
 
   /** Accounting export: one row per invoice, with paid/outstanding derived from its payments. */
-  async exportCsv(companyId: string): Promise<string> {
+  async exportCsv(companyId: string, viewer: ProjectViewer = {}): Promise<string> {
+    const visible = await this.projectAccess.visibleWhere(companyId, "Invoice", viewer.userId, viewer.role);
     const invoices = await this.prisma.invoice.findMany({
-      where: { companyId },
+      where: { AND: [{ companyId }, visible] },
       include: { client: true, project: true, payments: true },
       orderBy: { number: "asc" },
     });

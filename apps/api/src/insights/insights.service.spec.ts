@@ -3,6 +3,7 @@ import { Test } from "@nestjs/testing";
 import { InsightsService } from "./insights.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { BudgetService } from "../finance/budget.service";
+import { projectAccessThatSeesAll } from "../common/project-access/project-access.testing";
 
 const COMPANY_A = "company-a";
 
@@ -24,7 +25,7 @@ describe("InsightsService", () => {
     budget = { getForProject: jest.fn() };
 
     const module = await Test.createTestingModule({
-      providers: [InsightsService, { provide: PrismaService, useValue: prisma }, { provide: BudgetService, useValue: budget }],
+      providers: [projectAccessThatSeesAll(), InsightsService, { provide: PrismaService, useValue: prisma }, { provide: BudgetService, useValue: budget }],
     }).compile();
 
     service = module.get(InsightsService);

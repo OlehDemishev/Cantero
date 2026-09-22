@@ -11,7 +11,7 @@ import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { OutboxService } from "../common/webhooks/outbox.service";
 import { PdfService } from "../common/pdf/pdf.service";
 import { StorageService } from "../common/storage/storage.service";
-import { ProjectAccessService } from "../common/project-access/project-access.service";
+import { ProjectAccessService, type ProjectViewer } from "../common/project-access/project-access.service";
 
 @Injectable()
 export class PunchListService {
@@ -34,9 +34,10 @@ export class PunchListService {
   }
 
   /** Every open punch-list item across every project the company has — see RfiService.listOpenForCompany for the same cross-project pattern. */
-  async listOpenForCompany(companyId: string) {
+  async listOpenForCompany(companyId: string, viewer: ProjectViewer = {}) {
+    const visible = await this.projectAccess.visibleWhere(companyId, "PunchListItem", viewer.userId, viewer.role);
     return this.prisma.punchListItem.findMany({
-      where: { companyId, status: "open" },
+      where: { AND: [{ companyId, status: "open" }, visible] },
       include: { project: { select: { id: true, name: true } } },
       orderBy: { createdAt: "desc" },
     });

@@ -30,7 +30,7 @@ export class EstimatesController {
 
   @Get()
   list(@CurrentUser() user: AuthUser) {
-    return this.service.list(user.companyId, user.role);
+    return this.service.list(user.companyId, user.role, user);
   }
 
   // Declared before ":id" so "templates" isn't swallowed as an estimate id.

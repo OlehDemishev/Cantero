@@ -4,6 +4,7 @@ import { PrismaService } from "../common/prisma/prisma.service";
 import { PdfService } from "../common/pdf/pdf.service";
 import { StorageService } from "../common/storage/storage.service";
 import { ExchangeRateService } from "../common/exchange-rate/exchange-rate.service";
+import { projectAccessThatSeesAll } from "../common/project-access/project-access.testing";
 
 const PDF_PROVIDERS = [
   { provide: PdfService, useValue: { render: jest.fn() } },
@@ -51,7 +52,7 @@ describe("ReportsService.portfolio", () => {
     };
 
     const module = await Test.createTestingModule({
-      providers: [ReportsService, { provide: PrismaService, useValue: prisma }, ...PDF_PROVIDERS],
+      providers: [projectAccessThatSeesAll(), ReportsService, { provide: PrismaService, useValue: prisma }, ...PDF_PROVIDERS],
     }).compile();
 
     service = module.get(ReportsService);
@@ -176,7 +177,7 @@ describe("ReportsService.portfolio", () => {
     ]);
     const exchangeRates = { convert: jest.fn().mockResolvedValue(92) };
     const module = await Test.createTestingModule({
-      providers: [
+      providers: [projectAccessThatSeesAll(), 
         ReportsService,
         { provide: PrismaService, useValue: prisma },
         ...PDF_PROVIDERS.filter((p) => p.provide !== ExchangeRateService),
@@ -218,7 +219,7 @@ describe("ReportsService.cashFlowForecast", () => {
     };
 
     const module = await Test.createTestingModule({
-      providers: [ReportsService, { provide: PrismaService, useValue: prisma }, ...PDF_PROVIDERS],
+      providers: [projectAccessThatSeesAll(), ReportsService, { provide: PrismaService, useValue: prisma }, ...PDF_PROVIDERS],
     }).compile();
 
     service = module.get(ReportsService);
@@ -363,7 +364,7 @@ describe("ReportsService.revenueTrend", () => {
     };
 
     const module = await Test.createTestingModule({
-      providers: [ReportsService, { provide: PrismaService, useValue: prisma }, ...PDF_PROVIDERS],
+      providers: [projectAccessThatSeesAll(), ReportsService, { provide: PrismaService, useValue: prisma }, ...PDF_PROVIDERS],
     }).compile();
 
     service = module.get(ReportsService);
@@ -405,7 +406,7 @@ describe("ReportsService.revenueTrend", () => {
     prisma.payment.findMany.mockResolvedValue([{ amount: "100", paidAt: now, invoice: { currency: "USD" } }]);
     const exchangeRates = { convert: jest.fn().mockResolvedValue(92) };
     const module = await Test.createTestingModule({
-      providers: [
+      providers: [projectAccessThatSeesAll(), 
         ReportsService,
         { provide: PrismaService, useValue: prisma },
         ...PDF_PROVIDERS.filter((p) => p.provide !== ExchangeRateService),
@@ -429,7 +430,7 @@ describe("ReportsService.periodComparison", () => {
     prisma = { payment: { findMany: jest.fn().mockResolvedValue([]) } };
 
     const module = await Test.createTestingModule({
-      providers: [ReportsService, { provide: PrismaService, useValue: prisma }, ...PDF_PROVIDERS],
+      providers: [projectAccessThatSeesAll(), ReportsService, { provide: PrismaService, useValue: prisma }, ...PDF_PROVIDERS],
     }).compile();
 
     service = module.get(ReportsService);
@@ -471,7 +472,7 @@ describe("ReportsService.wipReport", () => {
     prisma = { project: { findMany: jest.fn() } };
 
     const module = await Test.createTestingModule({
-      providers: [ReportsService, { provide: PrismaService, useValue: prisma }, ...PDF_PROVIDERS],
+      providers: [projectAccessThatSeesAll(), ReportsService, { provide: PrismaService, useValue: prisma }, ...PDF_PROVIDERS],
     }).compile();
 
     service = module.get(ReportsService);
@@ -574,7 +575,7 @@ describe("ReportsService.wipReport", () => {
     await service.wipReport(COMPANY_A);
 
     expect(prisma.project.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { companyId: COMPANY_A, estimates: { some: { status: "approved" } } } }),
+      expect.objectContaining({ where: { AND: [{ companyId: COMPANY_A, estimates: { some: { status: "approved" } } }, {}] } }),
     );
   });
 });
@@ -587,7 +588,7 @@ describe("ReportsService.backlog", () => {
     prisma = { project: { findMany: jest.fn() } };
 
     const module = await Test.createTestingModule({
-      providers: [ReportsService, { provide: PrismaService, useValue: prisma }, ...PDF_PROVIDERS],
+      providers: [projectAccessThatSeesAll(), ReportsService, { provide: PrismaService, useValue: prisma }, ...PDF_PROVIDERS],
     }).compile();
 
     service = module.get(ReportsService);
@@ -638,7 +639,7 @@ describe("ReportsService.complianceCalendar", () => {
     };
 
     const module = await Test.createTestingModule({
-      providers: [ReportsService, { provide: PrismaService, useValue: prisma }, ...PDF_PROVIDERS],
+      providers: [projectAccessThatSeesAll(), ReportsService, { provide: PrismaService, useValue: prisma }, ...PDF_PROVIDERS],
     }).compile();
 
     service = module.get(ReportsService);
@@ -715,7 +716,7 @@ describe("ReportsService.geofenceViolations", () => {
     prisma = { timeEntry: { findMany: jest.fn() } };
 
     const module = await Test.createTestingModule({
-      providers: [ReportsService, { provide: PrismaService, useValue: prisma }, ...PDF_PROVIDERS],
+      providers: [projectAccessThatSeesAll(), ReportsService, { provide: PrismaService, useValue: prisma }, ...PDF_PROVIDERS],
     }).compile();
 
     service = module.get(ReportsService);
@@ -727,8 +728,8 @@ describe("ReportsService.geofenceViolations", () => {
     await service.geofenceViolations(COMPANY_A);
 
     const call = prisma.timeEntry.findMany.mock.calls[0][0];
-    expect(call.where.withinGeofence).toBe(false);
-    expect(call.where.date).toBeUndefined();
+    expect(call.where.AND[0].withinGeofence).toBe(false);
+    expect(call.where.AND[0].date).toBeUndefined();
   });
 
   it("maps worker/project names and distance onto each violation", async () => {
@@ -756,8 +757,8 @@ describe("ReportsService.geofenceViolations", () => {
     await service.geofenceViolations(COMPANY_A, "2026-01-01", "2026-01-31");
 
     const call = prisma.timeEntry.findMany.mock.calls[0][0];
-    expect(call.where.date.gte).toEqual(new Date("2026-01-01"));
-    expect(call.where.date.lte).toEqual(new Date("2026-01-31"));
+    expect(call.where.AND[0].date.gte).toEqual(new Date("2026-01-01"));
+    expect(call.where.AND[0].date.lte).toEqual(new Date("2026-01-31"));
   });
 
   it("renders a CSV row per violation", async () => {
@@ -788,7 +789,7 @@ describe("ReportsService.equipmentUtilization", () => {
     prisma = { equipment: { findMany: jest.fn() } };
 
     const module = await Test.createTestingModule({
-      providers: [ReportsService, { provide: PrismaService, useValue: prisma }, ...PDF_PROVIDERS],
+      providers: [projectAccessThatSeesAll(), ReportsService, { provide: PrismaService, useValue: prisma }, ...PDF_PROVIDERS],
     }).compile();
 
     service = module.get(ReportsService);
@@ -878,7 +879,7 @@ describe("ReportsService.winRateReport", () => {
     prisma = { estimate: { findMany: jest.fn() } };
 
     const module = await Test.createTestingModule({
-      providers: [ReportsService, { provide: PrismaService, useValue: prisma }, ...PDF_PROVIDERS],
+      providers: [projectAccessThatSeesAll(), ReportsService, { provide: PrismaService, useValue: prisma }, ...PDF_PROVIDERS],
     }).compile();
 
     service = module.get(ReportsService);

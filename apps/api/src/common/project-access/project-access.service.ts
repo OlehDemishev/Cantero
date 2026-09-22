@@ -1,7 +1,7 @@
 import { ForbiddenException, Injectable } from "@nestjs/common";
 import type { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
-import { projectPathFor, projectSelect, readProjectId } from "./project-path";
+import { excludeProjectsWhere, projectPathFor, projectSelect, readProjectId } from "./project-path";
 
 /**
  * Single source of truth for "can this member see/touch this project" — a project with
@@ -14,6 +14,12 @@ import { projectPathFor, projectSelect, readProjectId } from "./project-path";
  * param, query string, or JSON body) or this service directly (for an endpoint that looks up a
  * child resource by its own id and only learns that resource's projectId after the fetch).
  */
+/** Who is asking — an AuthUser fits. No userId/role means an internal caller, which sees everything. */
+export interface ProjectViewer {
+  userId?: string;
+  role?: string;
+}
+
 @Injectable()
 export class ProjectAccessService {
   constructor(private readonly prisma: PrismaService) {}
@@ -52,6 +58,31 @@ export class ProjectAccessService {
     const delegate = (this.prisma as unknown as Record<string, { findUnique(args: unknown): Promise<unknown> }>)[model[0].toLowerCase() + model.slice(1)];
     const row = await delegate.findUnique({ where: { id }, select: projectSelect(path) }).catch(() => null);
     return readProjectId(row, path);
+  }
+
+  /**
+   * Restricted projects in `companyId` this caller isn't a member of — what every company-wide
+   * list, summary and export has to leave out. Empty for an owner/admin or when the company has
+   * no restricted projects, which is the common case and costs one small query.
+   */
+  async hiddenProjectIds(companyId: string, userId?: string, role?: string): Promise<string[]> {
+    if (!userId || !role || ProjectAccessService.seesEveryProject(userId, role)) return [];
+    const hidden = await this.prisma.project.findMany({
+      where: { companyId, restrictedToMembers: true, members: { none: { userId } } },
+      select: { id: true },
+    });
+    return hidden.map((p) => p.id);
+  }
+
+  /**
+   * A `where` fragment for `model` that drops rows belonging to a project the caller can't see,
+   * following the row to its project the same way @ProjectResource does. Rows not tied to any
+   * project stay. `{}` when nothing is hidden, so it can always be added:
+   * `where: { AND: [where, await this.projectAccess.visibleWhere(companyId, "DailyLog", userId, role)] }`.
+   */
+  async visibleWhere(companyId: string, model: Prisma.ModelName, userId?: string, role?: string): Promise<Record<string, unknown>> {
+    const hidden = await this.hiddenProjectIds(companyId, userId, role);
+    return hidden.length === 0 ? {} : excludeProjectsWhere(model, hidden);
   }
 
   /** Narrows a list of already-company-scoped project rows down to the ones `userId`/`role` may

@@ -41,7 +41,7 @@ export class InvoicesController {
 
   @Get()
   list(@CurrentUser() user: AuthUser, @Query("cursor") cursor?: string) {
-    return this.service.list(user.companyId, INVOICES_PAGE_SIZE, cursor);
+    return this.service.list(user.companyId, INVOICES_PAGE_SIZE, cursor, user);
   }
 
   // Declared before ":id" so "export.csv" isn't swallowed as an invoice id.
@@ -49,7 +49,7 @@ export class InvoicesController {
   @Header("Content-Type", "text/csv")
   async exportCsv(@CurrentUser() user: AuthUser, @Res({ passthrough: true }) res: Response) {
     res.set("Content-Disposition", 'attachment; filename="invoices.csv"');
-    return this.service.exportCsv(user.companyId);
+    return this.service.exportCsv(user.companyId, user);
   }
 
   @Get("export/quickbooks.csv")

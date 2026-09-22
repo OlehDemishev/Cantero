@@ -8,6 +8,7 @@ import { StorageService } from "../common/storage/storage.service";
 import { AuditService } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
 import { OutboxService } from "../common/webhooks/outbox.service";
+import { projectAccessThatSeesAll } from "../common/project-access/project-access.testing";
 
 const COMPANY_A = "company-a";
 const OTHER_COMPANY_ESTIMATE = {
@@ -35,7 +36,7 @@ describe("EstimatesService — currency resolution", () => {
     };
 
     const module = await Test.createTestingModule({
-      providers: [
+      providers: [projectAccessThatSeesAll(), 
         EstimatesService,
         { provide: PrismaService, useValue: prisma },
         { provide: PdfService, useValue: { render: jest.fn() } },
@@ -121,7 +122,7 @@ describe("EstimatesService — hideCostDataFromRoles", () => {
     };
 
     const module = await Test.createTestingModule({
-      providers: [
+      providers: [projectAccessThatSeesAll(), 
         EstimatesService,
         { provide: PrismaService, useValue: prisma },
         { provide: PdfService, useValue: { render: jest.fn() } },
@@ -303,7 +304,7 @@ describe("EstimatesService — cross-tenant isolation", () => {
     };
 
     const module = await Test.createTestingModule({
-      providers: [
+      providers: [projectAccessThatSeesAll(), 
         EstimatesService,
         { provide: PrismaService, useValue: prisma },
         { provide: PdfService, useValue: { render: jest.fn() } },
@@ -439,7 +440,7 @@ describe("EstimatesService — approval chains", () => {
     };
 
     const module = await Test.createTestingModule({
-      providers: [
+      providers: [projectAccessThatSeesAll(), 
         EstimatesService,
         { provide: PrismaService, useValue: prisma },
         { provide: PdfService, useValue: { render: jest.fn() } },
@@ -544,7 +545,7 @@ describe("EstimatesService.suggestedLines", () => {
     };
 
     const module = await Test.createTestingModule({
-      providers: [
+      providers: [projectAccessThatSeesAll(), 
         EstimatesService,
         { provide: PrismaService, useValue: prisma },
         { provide: PdfService, useValue: { render: jest.fn() } },
@@ -613,7 +614,7 @@ describe("EstimatesService.addAssemblyToEstimate", () => {
     };
 
     const module = await Test.createTestingModule({
-      providers: [
+      providers: [projectAccessThatSeesAll(), 
         EstimatesService,
         { provide: PrismaService, useValue: prisma },
         { provide: PdfService, useValue: { render: jest.fn() } },
@@ -676,7 +677,7 @@ describe("EstimatesService.diffRevisions", () => {
     };
 
     const module = await Test.createTestingModule({
-      providers: [
+      providers: [projectAccessThatSeesAll(), 
         EstimatesService,
         { provide: PrismaService, useValue: prisma },
         { provide: PdfService, useValue: { render: jest.fn() } },
@@ -740,7 +741,7 @@ describe("EstimatesService.declineOnBehalfOfClient", () => {
     audit = { record: jest.fn() };
 
     const module = await Test.createTestingModule({
-      providers: [
+      providers: [projectAccessThatSeesAll(), 
         EstimatesService,
         { provide: PrismaService, useValue: prisma },
         { provide: PdfService, useValue: { render: jest.fn() } },

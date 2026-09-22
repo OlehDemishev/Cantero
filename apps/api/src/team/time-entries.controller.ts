@@ -27,7 +27,7 @@ export class TimeEntriesController {
     @Query("to") to?: string,
     @Query("cursor") cursor?: string,
   ) {
-    return this.service.list(user.companyId, { projectId, workerId, from, to }, { take: TIME_ENTRIES_PAGE_SIZE, cursor });
+    return this.service.list(user.companyId, { projectId, workerId, from, to }, { take: TIME_ENTRIES_PAGE_SIZE, cursor }, user);
   }
 
   @Post()

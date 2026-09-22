@@ -21,7 +21,7 @@ export class SafetyAnalyticsController {
 
   @Get("scorecard")
   safetyScorecard(@CurrentUser() user: AuthUser, @Query("year") year?: string) {
-    return this.service.safetyScorecard(user.companyId, year ? Number(year) : new Date().getFullYear());
+    return this.service.safetyScorecard(user.companyId, year ? Number(year) : new Date().getFullYear(), user);
   }
 
   @Get("training-compliance")
@@ -31,6 +31,6 @@ export class SafetyAnalyticsController {
 
   @Get("near-miss")
   nearMissAnalytics(@CurrentUser() user: AuthUser, @Query("year") year?: string) {
-    return this.service.nearMissAnalytics(user.companyId, year ? Number(year) : new Date().getFullYear());
+    return this.service.nearMissAnalytics(user.companyId, year ? Number(year) : new Date().getFullYear(), user);
   }
 }

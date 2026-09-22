@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { BudgetService } from "../finance/budget.service";
+import { ProjectAccessService, type ProjectViewer } from "../common/project-access/project-access.service";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -26,18 +27,23 @@ export class InsightsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly budget: BudgetService,
+    private readonly projectAccess: ProjectAccessService,
   ) {}
 
-  async triage(companyId: string, limit = 20): Promise<TriageItem[]> {
+  async triage(companyId: string, limit = 20, viewer: ProjectViewer = {}): Promise<TriageItem[]> {
     const now = Date.now();
+    const [visibleRfis, visiblePunch] = await Promise.all([
+      this.projectAccess.visibleWhere(companyId, "Rfi", viewer.userId, viewer.role),
+      this.projectAccess.visibleWhere(companyId, "PunchListItem", viewer.userId, viewer.role),
+    ]);
 
     const [rfis, punchItems] = await Promise.all([
       this.prisma.rfi.findMany({
-        where: { companyId, status: "open" },
+        where: { AND: [{ companyId, status: "open" }, visibleRfis] },
         include: { project: { select: { id: true, name: true } } },
       }),
       this.prisma.punchListItem.findMany({
-        where: { companyId, status: "open" },
+        where: { AND: [{ companyId, status: "open" }, visiblePunch] },
         include: { project: { select: { id: true, name: true } } },
       }),
     ]);

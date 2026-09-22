@@ -4,6 +4,7 @@ import { PrismaService } from "../common/prisma/prisma.service";
 import { PdfService } from "../common/pdf/pdf.service";
 import { StorageService } from "../common/storage/storage.service";
 import { buildMonthlyNearMissTrend, calculateNearMissRatio } from "./near-miss-trend";
+import { ProjectAccessService, type ProjectViewer } from "../common/project-access/project-access.service";
 
 const round2 = (n: number): number => Math.round((n + Number.EPSILON) * 100) / 100;
 /** Standard OSHA incidence-rate base: (recordable cases × 200,000 hours) / total hours worked —
@@ -20,6 +21,7 @@ export class SafetyAnalyticsService {
     private readonly prisma: PrismaService,
     private readonly pdf: PdfService,
     private readonly storage: StorageService,
+    private readonly projectAccess: ProjectAccessService,
   ) {}
 
   /**
@@ -121,15 +123,20 @@ export class SafetyAnalyticsService {
    * company total with zero logged hours returns trir: null (not 0), since a rate computed against
    * no denominator would misleadingly read as "perfectly safe" rather than "not measurable yet".
    */
-  async safetyScorecard(companyId: string, year: number) {
+  async safetyScorecard(companyId: string, year: number, viewer: ProjectViewer = {}) {
     const { start, end } = yearRange(year);
+    // Every figure, the company-wide rate included, covers the same visible projects.
+    const [visibleIncidents, visibleHours] = await Promise.all([
+      this.projectAccess.visibleWhere(companyId, "IncidentReport", viewer.userId, viewer.role),
+      this.projectAccess.visibleWhere(companyId, "TimeEntry", viewer.userId, viewer.role),
+    ]);
     const [incidents, hoursByProject, totalHoursResult] = await Promise.all([
       this.prisma.incidentReport.findMany({
-        where: { companyId, occurredAt: { gte: start, lt: end } },
+        where: { AND: [{ companyId, occurredAt: { gte: start, lt: end } }, visibleIncidents] },
         include: { project: { select: { id: true, name: true } } },
       }),
-      this.prisma.timeEntry.groupBy({ by: ["projectId"], where: { companyId, date: { gte: start, lt: end } }, _sum: { hours: true } }),
-      this.prisma.timeEntry.aggregate({ where: { companyId, date: { gte: start, lt: end } }, _sum: { hours: true } }),
+      this.prisma.timeEntry.groupBy({ by: ["projectId"], where: { AND: [{ companyId, date: { gte: start, lt: end } }, visibleHours] }, _sum: { hours: true } }),
+      this.prisma.timeEntry.aggregate({ where: { AND: [{ companyId, date: { gte: start, lt: end } }, visibleHours] }, _sum: { hours: true } }),
     ]);
 
     const hoursByProjectId = new Map(hoursByProject.map((h) => [h.projectId, Number(h._sum.hours ?? 0)]));
@@ -178,10 +185,11 @@ export class SafetyAnalyticsService {
    * a *higher* ratio is the healthy direction here (Heinrich's triangle) and why zero recordable
    * cases yields a null ratio rather than a misleading number.
    */
-  async nearMissAnalytics(companyId: string, year: number) {
+  async nearMissAnalytics(companyId: string, year: number, viewer: ProjectViewer = {}) {
+    const visible = await this.projectAccess.visibleWhere(companyId, "IncidentReport", viewer.userId, viewer.role);
     const { start, end } = yearRange(year);
     const incidents = await this.prisma.incidentReport.findMany({
-      where: { companyId, occurredAt: { gte: start, lt: end } },
+      where: { AND: [{ companyId, occurredAt: { gte: start, lt: end } }, visible] },
       include: { project: { select: { id: true, name: true } } },
     });
 

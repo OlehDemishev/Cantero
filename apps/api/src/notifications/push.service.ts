@@ -105,7 +105,7 @@ export class PushService implements OnModuleInit {
     });
 
     for (const membership of memberships) {
-      const { notifications } = await this.notifications.list(membership.companyId, membership.userId);
+      const { notifications } = await this.notifications.list(membership.companyId, membership.userId, membership.role);
       const cursor = membership.pushNotificationsLastSentAt?.getTime() ?? 0;
       const fresh = notifications.filter((n) => n.occurredAt.getTime() > cursor);
       if (fresh.length === 0) continue;

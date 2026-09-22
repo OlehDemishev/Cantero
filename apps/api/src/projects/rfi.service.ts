@@ -12,7 +12,7 @@ import type {
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { OutboxService } from "../common/webhooks/outbox.service";
-import { ProjectAccessService } from "../common/project-access/project-access.service";
+import { ProjectAccessService, type ProjectViewer } from "../common/project-access/project-access.service";
 import { calculateCostImpactSummary, type CostImpactSourceItem } from "./cost-impact-summary";
 import { calculateRfiAnalytics } from "./rfi-analytics";
 
@@ -34,9 +34,10 @@ export class RfiService {
   }
 
   /** Every open RFI across every project the company has — the cross-project counterpart to listForProject, for a company-wide "open items" view. */
-  async listOpenForCompany(companyId: string) {
+  async listOpenForCompany(companyId: string, viewer: ProjectViewer = {}) {
+    const visible = await this.projectAccess.visibleWhere(companyId, "Rfi", viewer.userId, viewer.role);
     return this.prisma.rfi.findMany({
-      where: { companyId, status: { not: "closed" } },
+      where: { AND: [{ companyId, status: { not: "closed" } }, visible] },
       include: { project: { select: { id: true, name: true } } },
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],
     });
