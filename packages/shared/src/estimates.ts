@@ -152,7 +152,18 @@ export const calibrateTakeoffSchema = z.object({
 });
 export type CalibrateTakeoffInput = z.infer<typeof calibrateTakeoffSchema>;
 
-export const TAKEOFF_MEASUREMENT_TYPES = ["length", "area"] as const;
+/** Units a PDF takeoff's drawing scale can be stated in. */
+export const TAKEOFF_RATIO_UNITS = ["m", "cm", "mm", "ft", "in"] as const;
+export type TakeoffRatioUnit = (typeof TAKEOFF_RATIO_UNITS)[number];
+
+/** A PDF takeoff's scale as printed on the drawing: 1:100 is ratio 100; 1/4" = 1'-0" is 48. */
+export const calibrateTakeoffByRatioSchema = z.object({
+  ratio: z.number().positive().max(100_000),
+  unit: z.enum(TAKEOFF_RATIO_UNITS),
+});
+export type CalibrateTakeoffByRatioInput = z.infer<typeof calibrateTakeoffByRatioSchema>;
+
+export const TAKEOFF_MEASUREMENT_TYPES = ["length", "area", "count"] as const;
 export type TakeoffMeasurementType = (typeof TAKEOFF_MEASUREMENT_TYPES)[number];
 
 export const takeoffPointSchema = z.object({ x: z.number(), y: z.number() });
@@ -160,7 +171,8 @@ export const takeoffPointSchema = z.object({ x: z.number(), y: z.number() });
 export const createTakeoffMeasurementSchema = z.object({
   type: z.enum(TAKEOFF_MEASUREMENT_TYPES),
   label: z.string().min(1).max(160),
-  points: z.array(takeoffPointSchema).min(2),
+  /** At least 2 for a length, 3 for an area, 1 for a count — checked by the service. */
+  points: z.array(takeoffPointSchema).min(1).max(5000),
   rateCatalogItemId: z.string().uuid().optional(),
 });
 export type CreateTakeoffMeasurementInput = z.infer<typeof createTakeoffMeasurementSchema>;

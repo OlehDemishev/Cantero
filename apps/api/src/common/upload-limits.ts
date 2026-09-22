@@ -9,3 +9,5 @@
  */
 export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
 export const MAX_LOGO_UPLOAD_BYTES = 1 * 1024 * 1024;
+/** A whole drawing set in one PDF — tens of sheets of vector CAD output routinely pass 25MB. */
+export const MAX_DRAWING_SET_UPLOAD_BYTES = 100 * 1024 * 1024;

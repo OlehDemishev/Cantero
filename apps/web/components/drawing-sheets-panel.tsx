@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, apiUpload } from "@/lib/api-client";
+import { DrawingSetImport } from "@/components/drawing-set-import";
 
 interface DrawingSheet {
   id: string;
@@ -66,6 +67,8 @@ export function DrawingSheetsPanel({ projectId }: { projectId: string }) {
       <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
       <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
 
+      <DrawingSetImport projectId={projectId} onImported={load} />
+
       {!sheets ? (
         <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
       ) : sheets.length === 0 ? (
@@ -86,7 +89,8 @@ export function DrawingSheetsPanel({ projectId }: { projectId: string }) {
         </ul>
       )}
 
-      <form onSubmit={upload} className="flex flex-wrap items-end gap-2 border-t border-gray-100 pt-3 dark:border-gray-800">
+      <p className="border-t border-gray-100 pt-3 text-xs text-gray-500 dark:border-gray-800 dark:text-gray-400">{t("singleSheetHint")}</p>
+      <form onSubmit={upload} className="mt-1 flex flex-wrap items-end gap-2">
         <input required placeholder={t("sheetNumberPlaceholder")} className="input w-32" value={form.sheetNumber} onChange={(e) => setForm((f) => ({ ...f, sheetNumber: e.target.value }))} />
         <input placeholder={t("disciplinePlaceholder")} className="input w-32" value={form.discipline} onChange={(e) => setForm((f) => ({ ...f, discipline: e.target.value }))} />
         <input placeholder={t("titlePlaceholder")} className="input" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />

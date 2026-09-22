@@ -533,6 +533,7 @@ model Company {
   wageClassifications             WageClassification[]
   certifiedPayrollReports         CertifiedPayrollReport[]
   drawingSheets                   DrawingSheet[]
+  drawingSets                     DrawingSet[]
   annotations                     Annotation[]
   vendorBills                     VendorBill[]
   trainingCourses                 TrainingCourse[]
@@ -1235,9 +1236,16 @@ model Takeoff {
   scaleRealLength  Decimal? @db.Decimal(12, 4)
   scaleUnit        String?
   createdAt        DateTime @default(now())
+  /// For a PDF: which page is measured (1-based). Points on a PDF takeoff are in PDF units
+  /// (1/72 inch at the page's scale 1), not screen pixels, so a drawing ratio like 1:100 converts
+  /// them exactly — see TakeoffsService.calibrateByRatio(). Images keep natural-pixel points.
+  pageNumber       Int      @default(1)
+  /// Set when the takeoff was started from a Plan room sheet; it measures that sheet's own file.
+  sourceSheetId    String?
 
   company      Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
   project      Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sourceSheet  DrawingSheet?        @relation(fields: [sourceSheetId], references: [id], onDelete: SetNull)
   measurements TakeoffMeasurement[]
 
   @@index([companyId])
@@ -1248,6 +1256,8 @@ model Takeoff {
 enum TakeoffMeasurementType {
   length
   area
+  /// One point per counted item (outlets, doors, fixtures); value is the number of points.
+  count
 }
 
 /// `points` is an array of {x,y} pixel coordinates in the source image's natural pixel space —
@@ -2628,6 +2638,7 @@ model Project {
   contracts                   Contract[]
   certifiedPayrollReports     CertifiedPayrollReport[]
   drawingSheets               DrawingSheet[]
+  drawingSets                 DrawingSet[]
   permits                     Permit[]
   npsSurveys                  NpsSurvey[]
   crewSmsBroadcasts           CrewSmsBroadcast[]
@@ -5888,19 +5899,71 @@ model DrawingSheet {
   /// taking max(version). Annotations/RFI/punch-list pins stay attached to the specific sheet
   /// version they were made on, rather than migrating forward automatically.
   rootSheetId      String?
+  /// Set when the sheet came from a multi-page drawing set upload: the set and its 1-based page.
+  drawingSetId     String?
+  sourcePage       Int?
 
-  company        Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  company        Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project        Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  drawingSet     DrawingSet?        @relation(fields: [drawingSetId], references: [id], onDelete: SetNull)
+  links          DrawingSheetLink[]
+  takeoffs       Takeoff[]
   annotations    Annotation[]
   rfis           Rfi[]
   punchListItems PunchListItem[]
-  rootSheet      DrawingSheet?   @relation("DrawingSheetVersions", fields: [rootSheetId], references: [id], onDelete: Cascade)
-  versions       DrawingSheet[]  @relation("DrawingSheetVersions")
+  rootSheet      DrawingSheet?      @relation("DrawingSheetVersions", fields: [rootSheetId], references: [id], onDelete: Cascade)
+  versions       DrawingSheet[]     @relation("DrawingSheetVersions")
 
   @@index([companyId])
   @@index([projectId])
   @@index([rootSheetId])
   @@map("drawing_sheets")
+}
+
+/// One multi-page PDF uploaded to the Plan room. Uploading analyzes it (sheet numbers and titles
+/// read from each page's text — see sheet-recognition.ts) without creating anything; importing
+/// after the person has reviewed that proposal splits the pages into DrawingSheets.
+model DrawingSet {
+  id               String    @id @default(uuid())
+  companyId        String
+  projectId        String
+  fileName         String
+  storageKey       String
+  pageCount        Int
+  /// The per-page proposal shown for review: [{ page, sheetNumber, title, discipline, confidence }].
+  analysis         Json
+  uploadedByUserId String?
+  importedAt       DateTime?
+  createdAt        DateTime  @default(now())
+
+  company Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sheets  DrawingSheet[]
+
+  @@index([projectId])
+  @@map("drawing_sets")
+}
+
+/// A reference printed on a sheet to another sheet ("5/A-501", "SEE A-201"), found in the PDF's
+/// text layer. Stored by the referenced sheet *number* (normalized), not id, so a link keeps
+/// working when the target is revised or uploaded later; it resolves to the target's current
+/// version when the sheet is viewed. Box coordinates are fractions of the page (0–1, top-left).
+model DrawingSheetLink {
+  id        String @id @default(uuid())
+  sheetId   String
+  /// Uppercase, spaces/dashes/dots removed: "A-2.01" and "A201" match the same sheet.
+  targetKey String
+  label     String
+  x         Float
+  y         Float
+  width     Float
+  height    Float
+
+  sheet DrawingSheet @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+
+  @@index([sheetId])
+  @@index([targetKey])
+  @@map("drawing_sheet_links")
 }
 
 enum AnnotationType {

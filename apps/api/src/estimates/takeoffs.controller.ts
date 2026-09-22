@@ -2,9 +2,11 @@ import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post,
 import { FileInterceptor } from "@nestjs/platform-express";
 import { MAX_UPLOAD_BYTES } from "../common/upload-limits";
 import {
+  calibrateTakeoffByRatioSchema,
   calibrateTakeoffSchema,
   createTakeoffMeasurementSchema,
   type AuthUser,
+  type CalibrateTakeoffByRatioInput,
   type CalibrateTakeoffInput,
   type CreateTakeoffMeasurementInput,
 } from "@cantero/shared";
@@ -39,9 +41,17 @@ export class TakeoffsController {
     @UploadedFile() file: Express.Multer.File,
     @Query("projectId") projectId: string,
     @Query("name") name: string,
+    @Query("page") page?: string,
   ) {
     if (!file) throw new BadRequestException("No file provided");
-    return this.service.create(user.companyId, projectId, name, file);
+    return this.service.create(user.companyId, projectId, name, file, page ? Number(page) : 1);
+  }
+
+  /** projectId rides in the query string so the project access guard checks it. */
+  @Post("from-sheet")
+  createFromSheet(@CurrentUser() user: AuthUser, @Query("projectId") projectId: string, @Query("sheetId") sheetId: string, @Query("name") name?: string) {
+    if (!projectId || !sheetId) throw new BadRequestException("projectId and sheetId are required");
+    return this.service.createFromSheet(user.companyId, projectId, sheetId, name);
   }
 
   @Patch(":id/calibrate")
@@ -51,6 +61,15 @@ export class TakeoffsController {
     @Body(new ZodValidationPipe(calibrateTakeoffSchema)) body: CalibrateTakeoffInput,
   ) {
     return this.service.calibrate(user.companyId, id, body);
+  }
+
+  @Patch(":id/calibrate-ratio")
+  calibrateByRatio(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(calibrateTakeoffByRatioSchema)) body: CalibrateTakeoffByRatioInput,
+  ) {
+    return this.service.calibrateByRatio(user.companyId, id, body);
   }
 
   @Delete(":id")

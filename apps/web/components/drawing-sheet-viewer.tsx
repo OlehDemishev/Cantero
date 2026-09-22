@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { AnnotationType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
@@ -25,6 +27,23 @@ interface DrawingSheet {
   title: string | null;
   revision: string | null;
   mimeType: string;
+}
+/** A reference printed on this sheet, resolved to the referenced sheet's current version. Box is
+ * in fractions of the page. */
+interface SheetLink {
+  id: string;
+  label: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  targetSheetId: string;
+  targetSheetNumber: string;
+  targetTitle: string | null;
+}
+interface SheetLinks {
+  outgoing: SheetLink[];
+  referencedBy: { sheetId: string; sheetNumber: string; title: string | null; count: number }[];
 }
 interface PinnedItem {
   id: string;
@@ -114,6 +133,10 @@ export function DrawingSheetViewer({ sheetId }: { sheetId: string }) {
   const [pinTool, setPinTool] = useState(false);
   const [pinDraft, setPinDraft] = useState<{ point: Point; kind: "rfi" | "punch"; targetId: string } | null>(null);
 
+  const router = useRouter();
+  const [links, setLinks] = useState<SheetLinks | null>(null);
+  const [startingTakeoff, setStartingTakeoff] = useState(false);
+
   const baseCanvasRef = useRef<HTMLCanvasElement>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
   const drawingRef = useRef(false);
@@ -128,8 +151,24 @@ export function DrawingSheetViewer({ sheetId }: { sheetId: string }) {
   useEffect(() => {
     loadMeta();
     loadAnnotations();
+    setLinks(null);
+    apiFetch<SheetLinks>(`/drawing-sheets/${sheetId}/links`)
+      .then(setLinks)
+      .catch(() => setLinks({ outgoing: [], referencedBy: [] }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sheetId]);
+
+  /** Opens the Digital takeoff on this sheet, in the project's Documents tab. */
+  async function startTakeoff() {
+    if (!sheet) return;
+    setStartingTakeoff(true);
+    try {
+      const takeoff = await apiFetch<{ id: string }>(`/takeoffs/from-sheet?projectId=${sheet.projectId}&sheetId=${sheetId}`, { method: "POST" });
+      router.push(`/projects/${sheet.projectId}?tab=documents&takeoff=${takeoff.id}`);
+    } finally {
+      setStartingTakeoff(false);
+    }
+  }
 
   function loadPins() {
     if (!sheet) return;
@@ -337,6 +376,9 @@ export function DrawingSheetViewer({ sheetId }: { sheetId: string }) {
           >
             {t("tool_pin")}
           </button>
+          <button onClick={startTakeoff} disabled={startingTakeoff} className="btn-secondary rounded-md px-2 py-1 text-xs font-medium">
+            {t("measureSheet")}
+          </button>
         </div>
       </div>
 
@@ -350,7 +392,45 @@ export function DrawingSheetViewer({ sheetId }: { sheetId: string }) {
           onMouseUp={handleMouseUp}
           className={`absolute inset-0 h-full w-full ${tool || pinTool ? "cursor-crosshair" : ""}`}
         />
+        {/* Sheet references: clickable while no markup tool is active, so they never steal a markup click. */}
+        {!tool && !pinTool && links && links.outgoing.length > 0 && (
+          <div className="pointer-events-none absolute inset-0">
+            {links.outgoing.map((l) => (
+              <Link
+                key={l.id}
+                href={`/drawings/${l.targetSheetId}`}
+                title={t("openSheet", { sheet: [l.targetSheetNumber, l.targetTitle].filter(Boolean).join(" — ") })}
+                aria-label={t("openSheet", { sheet: l.targetSheetNumber })}
+                className="pointer-events-auto absolute rounded-sm bg-brand-500/15 outline outline-1 outline-brand-500/60 transition-colors hover:bg-brand-500/35 focus-visible:bg-brand-500/35 focus-visible:outline-2"
+                style={{
+                  left: `${(l.x - 0.003) * 100}%`,
+                  top: `${(l.y - 0.003) * 100}%`,
+                  width: `${(l.width + 0.006) * 100}%`,
+                  height: `${(l.height + 0.006) * 100}%`,
+                }}
+              />
+            ))}
+          </div>
+        )}
       </div>
+
+      {links && (links.outgoing.length > 0 || links.referencedBy.length > 0) && (
+        <div className="mt-3 flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+          {links.outgoing.length > 0 && <p>{t("linksHint", { n: links.outgoing.length })}</p>}
+          {links.referencedBy.length > 0 && (
+            <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span>{t("referencedBy")}</span>
+              {links.referencedBy.map((r) => (
+                <Link key={r.sheetId} href={`/drawings/${r.sheetId}`} className="text-brand-700 hover:underline dark:text-brand-400">
+                  {r.sheetNumber}
+                  {r.title && ` — ${r.title}`}
+                  {r.count > 1 && ` (×${r.count})`}
+                </Link>
+              ))}
+            </p>
+          )}
+        </div>
+      )}
 
       {busy && <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>}
 

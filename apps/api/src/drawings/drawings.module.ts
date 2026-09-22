@@ -3,9 +3,11 @@ import { DrawingSheetsController } from "./drawing-sheets.controller";
 import { DrawingSheetsService } from "./drawing-sheets.service";
 import { AnnotationsController } from "./annotations.controller";
 import { AnnotationsService } from "./annotations.service";
+import { DrawingSetsController } from "./drawing-sets.controller";
+import { DrawingSetsService } from "./drawing-sets.service";
 
 @Module({
-  controllers: [DrawingSheetsController, AnnotationsController],
-  providers: [DrawingSheetsService, AnnotationsService],
+  controllers: [DrawingSheetsController, DrawingSetsController, AnnotationsController],
+  providers: [DrawingSheetsService, DrawingSetsService, AnnotationsService],
 })
 export class DrawingsModule {}

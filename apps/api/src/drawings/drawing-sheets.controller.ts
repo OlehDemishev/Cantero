@@ -41,6 +41,11 @@ export class DrawingSheetsController {
     return this.service.get(user.companyId, id);
   }
 
+  @Get("drawing-sheets/:id/links")
+  links(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.links(user, id);
+  }
+
   @Get("drawing-sheets/:id/versions")
   versions(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.versions(user.companyId, id);

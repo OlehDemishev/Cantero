@@ -21,6 +21,23 @@ export const updateDrawingSheetSchema = z.object({
 });
 export type UpdateDrawingSheetInput = z.infer<typeof updateDrawingSheetSchema>;
 
+/** One reviewed page of an uploaded drawing set; pages left out of the list aren't imported. */
+export const importDrawingSetSchema = z.object({
+  pages: z
+    .array(
+      z.object({
+        page: z.number().int().min(1),
+        sheetNumber: z.string().trim().min(1).max(40),
+        title: z.string().trim().max(200).optional(),
+        discipline: z.string().trim().max(80).optional(),
+        revision: z.string().trim().max(40).optional(),
+      }),
+    )
+    .min(1)
+    .max(500),
+});
+export type ImportDrawingSetInput = z.infer<typeof importDrawingSetSchema>;
+
 const annotationPointSchema = z.object({
   x: z.number().min(0).max(1),
   y: z.number().min(0).max(1),

@@ -11,6 +11,7 @@ seams between browser, API, database and a third party are exactly where things 
 | `portal-signature` | a stranger with no account opens the emailed estimate link, is refused without a drawn signature, then signs and approves; the stored signature is a real PNG |
 | `offline-sync` | a field write made offline is queued, flushed once connectivity returns, and not duplicated — including when the first attempt committed but its response was lost (same `Idempotency-Key` on retry) |
 | `sso-saml` | SAML sign-in from the real login page through a throwaway IdP: JIT-provisions a worker; rejects a tampered assertion, a foreign signing key, an off-domain email, and a replayed assertion |
+| `drawing-set` | a multi-page PDF set (`files/drawing-set.pdf`) is read into per-page sheet numbers/titles for review, a duplicate number blocks the import, the imported sheets' printed references open each other, and a sheet measured in takeoff at its printed 1:100 scale snaps clicks to its line ends (checked to the exact PDF coordinates); counting needs no scale |
 
 Arranging state (a project, an approved estimate, a sent invoice) goes through the API directly
 (`api.ts`) rather than the UI, so each spec only drives the part it covers.

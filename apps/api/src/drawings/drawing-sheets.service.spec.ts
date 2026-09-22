@@ -4,6 +4,7 @@ import { DrawingSheetsService } from "./drawing-sheets.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { StorageService } from "../common/storage/storage.service";
 import { AuditService } from "../common/audit/audit.service";
+import { ProjectAccessService } from "../common/project-access/project-access.service";
 
 const COMPANY_A = "company-a";
 const PROJECT_A = "project-a";
@@ -43,6 +44,7 @@ describe("DrawingSheetsService.upload", () => {
         { provide: PrismaService, useValue: prisma },
         { provide: StorageService, useValue: storage },
         { provide: AuditService, useValue: audit },
+        { provide: ProjectAccessService, useValue: { assertAccess: jest.fn() } },
       ],
     }).compile();
 
@@ -98,6 +100,7 @@ describe("DrawingSheetsService.list", () => {
         { provide: PrismaService, useValue: prisma },
         { provide: StorageService, useValue: {} },
         { provide: AuditService, useValue: {} },
+        { provide: ProjectAccessService, useValue: { assertAccess: jest.fn() } },
       ],
     }).compile();
     service = module.get(DrawingSheetsService);
@@ -133,6 +136,7 @@ describe("DrawingSheetsService.supersede", () => {
         { provide: PrismaService, useValue: prisma },
         { provide: StorageService, useValue: storage },
         { provide: AuditService, useValue: audit },
+        { provide: ProjectAccessService, useValue: { assertAccess: jest.fn() } },
       ],
     }).compile();
     service = module.get(DrawingSheetsService);

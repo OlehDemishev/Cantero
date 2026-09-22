@@ -1,35 +1,88 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import type { CreateDrawingSheetInput, UpdateDrawingSheetInput } from "@cantero/shared";
+import { BadRequestException, Injectable, Logger, NotFoundException } from "@nestjs/common";
+import type { AuthUser, CreateDrawingSheetInput, UpdateDrawingSheetInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { StorageService } from "../common/storage/storage.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
+import { ProjectAccessService } from "../common/project-access/project-access.service";
+import { extractPdfText } from "./pdf-text";
+import { findSheetReferences, sheetKey } from "./sheet-recognition";
 
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = new Set(["application/pdf", "image/jpeg", "image/png", "image/webp"]);
 
+/** Latest version per chain, same "group by COALESCE(rootId, id), take max(version)" convention as DocumentsService.list(). */
+export function latestPerChain<T extends { id: string; rootSheetId: string | null; version: number }>(sheets: T[]): T[] {
+  const latestByChain = new Map<string, T>();
+  for (const sheet of sheets) {
+    const chainKey = sheet.rootSheetId ?? sheet.id;
+    const existing = latestByChain.get(chainKey);
+    if (!existing || sheet.version > existing.version) latestByChain.set(chainKey, sheet);
+  }
+  return Array.from(latestByChain.values());
+}
+
 @Injectable()
 export class DrawingSheetsService {
+  private readonly logger = new Logger(DrawingSheetsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
     private readonly audit: AuditService,
+    private readonly projectAccess: ProjectAccessService,
   ) {}
 
-  /** Latest version per chain, same "group by COALESCE(rootId, id), take max(version)" convention as DocumentsService.list(). */
   async list(companyId: string, projectId: string) {
-    const sheets = await this.prisma.drawingSheet.findMany({
-      where: { companyId, projectId },
-      orderBy: [{ sheetNumber: "asc" }, { createdAt: "desc" }],
+    const sheets = await this.prisma.drawingSheet.findMany({ where: { companyId, projectId } });
+    return latestPerChain(sheets).sort((a, b) => a.sheetNumber.localeCompare(b.sheetNumber));
+  }
+
+  /**
+   * The sheet's clickable references to other sheets, each resolved to that sheet's current
+   * version (unresolved ones — a sheet not uploaded, or a false match like a room number — are
+   * left out), plus the current sheets that reference this one.
+   */
+  async links(user: AuthUser, id: string) {
+    const sheet = await this.findOrThrow(user.companyId, id);
+    await this.projectAccess.assertAccess(user.companyId, sheet.projectId, user.userId, user.role);
+    const current = latestPerChain(await this.prisma.drawingSheet.findMany({ where: { companyId: user.companyId, projectId: sheet.projectId } }));
+    const byKey = new Map(current.map((s) => [sheetKey(s.sheetNumber), s]));
+
+    const outgoing = (await this.prisma.drawingSheetLink.findMany({ where: { sheetId: id } }))
+      .map((l) => ({ ...l, target: byKey.get(l.targetKey) }))
+      .filter((l) => l.target && l.target.id !== id)
+      .map(({ target, targetKey: _key, sheetId: _sheet, ...l }) => ({ ...l, targetSheetId: target!.id, targetSheetNumber: target!.sheetNumber, targetTitle: target!.title }));
+
+    const currentIds = new Set(current.map((s) => s.id));
+    const incoming = await this.prisma.drawingSheetLink.groupBy({
+      by: ["sheetId"],
+      where: { targetKey: sheetKey(sheet.sheetNumber), sheet: { companyId: user.companyId, projectId: sheet.projectId } },
+      _count: { _all: true },
     });
+    const referencedBy = incoming
+      .filter((g) => currentIds.has(g.sheetId) && g.sheetId !== id)
+      .map((g) => {
+        const from = current.find((s) => s.id === g.sheetId)!;
+        return { sheetId: from.id, sheetNumber: from.sheetNumber, title: from.title, count: g._count._all };
+      })
+      .sort((a, b) => a.sheetNumber.localeCompare(b.sheetNumber));
 
-    const latestByChain = new Map<string, (typeof sheets)[number]>();
-    for (const sheet of sheets) {
-      const chainKey = sheet.rootSheetId ?? sheet.id;
-      const existing = latestByChain.get(chainKey);
-      if (!existing || sheet.version > existing.version) latestByChain.set(chainKey, sheet);
+    return { outgoing, referencedBy };
+  }
+
+  /** Reads a single-sheet PDF's references to other sheets. Best effort: a sheet without a text
+   * layer (a scan) or one pdf.js can't read still uploads, just without links. */
+  private async storeLinks(sheetId: string, sheetNumber: string, file: Express.Multer.File) {
+    if (file.mimetype !== "application/pdf") return;
+    try {
+      const [page] = await extractPdfText(file.buffer, 1);
+      const refs = page ? findSheetReferences(page.words, sheetNumber) : [];
+      if (refs.length > 0) {
+        await this.prisma.drawingSheetLink.createMany({ data: refs.map((r) => ({ sheetId, targetKey: r.targetKey, label: r.label, x: r.x, y: r.y, width: r.width, height: r.height })) });
+      }
+    } catch (err) {
+      this.logger.warn(`Couldn't read sheet references from ${sheetId}: ${err instanceof Error ? err.message : err}`);
     }
-
-    return Array.from(latestByChain.values()).sort((a, b) => a.sheetNumber.localeCompare(b.sheetNumber));
   }
 
   async get(companyId: string, id: string) {
@@ -66,6 +119,7 @@ export class DrawingSheetsService {
       },
     });
 
+    await this.storeLinks(sheet.id, sheet.sheetNumber, file);
     this.audit.record(companyId, actor, "drawing_sheet.uploaded", "DrawingSheet", sheet.id, `Uploaded sheet ${sheet.sheetNumber}`);
     return sheet;
   }
@@ -105,6 +159,7 @@ export class DrawingSheetsService {
       },
     });
 
+    await this.storeLinks(sheet.id, sheet.sheetNumber, file);
     this.audit.record(
       companyId,
       actor,
