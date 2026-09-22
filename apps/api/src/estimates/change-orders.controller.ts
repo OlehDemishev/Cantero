@@ -13,7 +13,10 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { ChangeOrdersService } from "./change-orders.service";
+import { ProjectResource } from "../common/project-access/project-resource.decorator";
 
+@ProjectResource("Estimate", "estimateId")
+@ProjectResource("ChangeOrder")
 @Controller("estimates/:estimateId/change-orders")
 export class ChangeOrdersController {
   constructor(private readonly service: ChangeOrdersService) {}

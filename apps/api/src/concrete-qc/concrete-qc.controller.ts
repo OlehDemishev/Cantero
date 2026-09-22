@@ -13,6 +13,7 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { ConcreteQcService } from "./concrete-qc.service";
+import { ProjectResource } from "../common/project-access/project-resource.decorator";
 
 @Controller()
 export class ConcreteQcController {
@@ -32,6 +33,7 @@ export class ConcreteQcController {
     return this.service.createPour(user.companyId, { userId: user.userId, name: user.name }, projectId, body);
   }
 
+  @ProjectResource("ConcretePour")
   @Post("concrete-pours/:id/slump-tests")
   addSlumpTest(
     @CurrentUser() user: AuthUser,
@@ -41,6 +43,7 @@ export class ConcreteQcController {
     return this.service.addSlumpTest(user.companyId, pourId, body);
   }
 
+  @ProjectResource("ConcretePour")
   @Post("concrete-pours/:id/cylinder-breaks")
   addCylinderBreak(
     @CurrentUser() user: AuthUser,
@@ -50,6 +53,7 @@ export class ConcreteQcController {
     return this.service.addCylinderBreak(user.companyId, pourId, body);
   }
 
+  @ProjectResource("CylinderBreak")
   @Post("cylinder-breaks/:id/result")
   recordResult(
     @CurrentUser() user: AuthUser,

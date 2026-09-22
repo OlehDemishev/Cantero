@@ -16,7 +16,9 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { MAX_UPLOAD_BYTES } from "../common/upload-limits";
 import { BidRequestsService } from "./bid-requests.service";
+import { ProjectResource } from "../common/project-access/project-resource.decorator";
 
+@ProjectResource("BidRequest")
 @Controller("bid-requests")
 export class BidRequestsController {
   constructor(private readonly service: BidRequestsService) {}

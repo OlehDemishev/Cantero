@@ -10,7 +10,9 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { OffboardingTemplateService } from "./offboarding-template.service";
+import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
 
+@NotProjectScoped("company offboarding checklist template")
 @Controller("company/offboarding-template")
 export class OffboardingTemplateController {
   constructor(private readonly service: OffboardingTemplateService) {}

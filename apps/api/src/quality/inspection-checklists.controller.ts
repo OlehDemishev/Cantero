@@ -11,7 +11,9 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { InspectionChecklistsService } from "./inspection-checklists.service";
+import { ProjectResource } from "../common/project-access/project-resource.decorator";
 
+@ProjectResource("InspectionChecklist")
 @Controller("inspection-checklists")
 export class InspectionChecklistsController {
   constructor(private readonly service: InspectionChecklistsService) {}

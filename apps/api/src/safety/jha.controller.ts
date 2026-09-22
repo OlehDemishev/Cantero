@@ -9,7 +9,9 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { JhaService } from "./jha.service";
+import { ProjectResource } from "../common/project-access/project-resource.decorator";
 
+@ProjectResource("JobHazardAnalysis")
 @Controller("safety/jha")
 export class JhaController {
   constructor(private readonly service: JhaService) {}

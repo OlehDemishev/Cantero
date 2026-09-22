@@ -11,7 +11,9 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { DrawingSheetsService } from "./drawing-sheets.service";
+import { ProjectResource } from "../common/project-access/project-resource.decorator";
 
+@ProjectResource("DrawingSheet")
 @Controller()
 export class DrawingSheetsController {
   constructor(private readonly service: DrawingSheetsService) {}

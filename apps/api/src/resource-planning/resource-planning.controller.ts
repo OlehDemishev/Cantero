@@ -15,6 +15,7 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { ResourcePlanningService } from "./resource-planning.service";
+import { NotProjectScoped, ProjectResource } from "../common/project-access/project-resource.decorator";
 
 @Controller("resource-planning")
 export class ResourcePlanningController {
@@ -39,6 +40,7 @@ export class ResourcePlanningController {
     return this.service.create(user.companyId, { userId: user.userId, name: user.name }, body);
   }
 
+  @ProjectResource("ResourceAssignment")
   @Delete("assignments/:id")
   remove(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.delete(user.companyId, id);
@@ -54,6 +56,7 @@ export class ResourcePlanningController {
     return this.service.createCrew(user.companyId, { userId: user.userId, name: user.name }, body);
   }
 
+  @NotProjectScoped("crews are company-level")
   @Patch("crews/:id/members")
   updateCrewMembers(
     @CurrentUser() user: AuthUser,
@@ -63,6 +66,7 @@ export class ResourcePlanningController {
     return this.service.updateCrewMembers(user.companyId, id, body);
   }
 
+  @NotProjectScoped("crews are company-level")
   @Delete("crews/:id")
   deleteCrew(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.deleteCrew(user.companyId, id);

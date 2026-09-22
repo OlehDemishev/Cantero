@@ -20,7 +20,9 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { DocumentsService } from "./documents.service";
+import { ProjectResource } from "../common/project-access/project-resource.decorator";
 
+@ProjectResource("Document")
 @Controller("documents")
 export class DocumentsController {
   constructor(private readonly service: DocumentsService) {}

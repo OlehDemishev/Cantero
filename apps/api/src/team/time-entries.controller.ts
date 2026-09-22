@@ -9,9 +9,11 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { TimeEntriesService } from "./time-entries.service";
+import { ProjectResource } from "../common/project-access/project-resource.decorator";
 
 const TIME_ENTRIES_PAGE_SIZE = 100;
 
+@ProjectResource("TimeEntry")
 @Controller("time-entries")
 export class TimeEntriesController {
   constructor(private readonly service: TimeEntriesService) {}

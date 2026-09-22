@@ -9,7 +9,9 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { DashboardService } from "./dashboard.service";
+import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
 
+@NotProjectScoped("the caller's own dashboard widgets")
 @Controller("dashboard-widgets")
 export class DashboardController {
   constructor(private readonly service: DashboardService) {}

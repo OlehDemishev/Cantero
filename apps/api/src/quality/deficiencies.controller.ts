@@ -3,7 +3,9 @@ import { updateDeficiencySchema, type AuthUser, type UpdateDeficiencyInput } fro
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { DeficienciesService } from "./deficiencies.service";
+import { ProjectResource } from "../common/project-access/project-resource.decorator";
 
+@ProjectResource("Deficiency")
 @Controller("deficiencies")
 export class DeficienciesController {
   constructor(private readonly service: DeficienciesService) {}

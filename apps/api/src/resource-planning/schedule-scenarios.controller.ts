@@ -9,7 +9,9 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { ResourcePlanningService } from "./resource-planning.service";
+import { ProjectResource } from "../common/project-access/project-resource.decorator";
 
+@ProjectResource("ScheduleScenario")
 @Controller()
 export class ScheduleScenariosController {
   constructor(private readonly service: ResourcePlanningService) {}

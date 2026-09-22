@@ -10,7 +10,9 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Public } from "../common/decorators/public.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { ServiceVisitsService } from "./service-visits.service";
+import { ProjectResource } from "../common/project-access/project-resource.decorator";
 
+@ProjectResource("ServiceVisit")
 @Controller("service-visits")
 export class ServiceVisitsController {
   constructor(private readonly service: ServiceVisitsService) {}

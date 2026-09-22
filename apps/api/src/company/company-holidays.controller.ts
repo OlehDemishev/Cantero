@@ -4,7 +4,9 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { CompanyHolidaysService } from "./company-holidays.service";
+import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
 
+@NotProjectScoped("company holiday calendar")
 @Controller("company/holidays")
 export class CompanyHolidaysController {
   constructor(private readonly service: CompanyHolidaysService) {}

@@ -15,6 +15,7 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { UnitPriceTmService } from "./unit-price-tm.service";
+import { ProjectResource } from "../common/project-access/project-resource.decorator";
 
 @Controller()
 export class UnitPriceTmController {
@@ -34,6 +35,7 @@ export class UnitPriceTmController {
     return this.service.createUnitPriceItem(user.companyId, { userId: user.userId, name: user.name }, projectId, body);
   }
 
+  @ProjectResource("UnitPriceItem")
   @Post("unit-price-items/:id/measurements")
   addMeasurement(
     @CurrentUser() user: AuthUser,
@@ -43,6 +45,7 @@ export class UnitPriceTmController {
     return this.service.addMeasurement(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
+  @ProjectResource("UnitPriceItem")
   @Get("unit-price-items/:id/billing-summary")
   billingSummary(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.billingSummary(user.companyId, id);
@@ -62,6 +65,7 @@ export class UnitPriceTmController {
     return this.service.createTMTicket(user.companyId, { userId: user.userId, name: user.name }, projectId, body);
   }
 
+  @ProjectResource("TMTicket")
   @Post("tm-tickets/:id/decide")
   decideTMTicket(
     @CurrentUser() user: AuthUser,
@@ -71,6 +75,7 @@ export class UnitPriceTmController {
     return this.service.decideTMTicket(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
+  @ProjectResource("TMTicket")
   @Post("tm-tickets/:id/revise")
   reviseTMTicket(
     @CurrentUser() user: AuthUser,

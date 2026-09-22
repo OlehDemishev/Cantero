@@ -11,6 +11,7 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { LienComplianceService } from "./lien-compliance.service";
+import { ProjectResource } from "../common/project-access/project-resource.decorator";
 
 @Controller()
 export class LienComplianceController {
@@ -35,6 +36,7 @@ export class LienComplianceController {
     return this.service.createNotice(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
+  @ProjectResource("LienNotice")
   @Post("lien-notices/:id/mark-sent")
   markNoticeSent(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.markNoticeSent(user.companyId, { userId: user.userId, name: user.name }, id);
@@ -54,6 +56,7 @@ export class LienComplianceController {
     return this.service.createFiling(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
+  @ProjectResource("MechanicsLienFiling")
   @Post("lien-filings/:id/status")
   updateFilingStatus(
     @CurrentUser() user: AuthUser,

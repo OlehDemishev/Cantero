@@ -3,7 +3,9 @@ import { createSignatureRequestSchema, type AuthUser, type CreateSignatureReques
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { SignatureRequestsService } from "./signature-requests.service";
+import { ProjectResource } from "../common/project-access/project-resource.decorator";
 
+@ProjectResource("SignatureRequest")
 @Controller("signature-requests")
 export class SignatureRequestsController {
   constructor(private readonly service: SignatureRequestsService) {}

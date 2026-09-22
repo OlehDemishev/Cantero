@@ -25,7 +25,10 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { SubcontractorsService } from "./subcontractors.service";
+import { NotProjectScoped, ProjectResource } from "../common/project-access/project-resource.decorator";
 
+@NotProjectScoped("`:id` is a subcontractor company, not a project record")
+@ProjectResource("SubcontractorAssignment", "assignmentId")
 @Controller("finance/subcontractors")
 export class SubcontractorsController {
   constructor(private readonly service: SubcontractorsService) {}

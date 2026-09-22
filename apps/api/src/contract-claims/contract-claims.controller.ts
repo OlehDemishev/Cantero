@@ -13,7 +13,9 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { ContractClaimsService } from "./contract-claims.service";
+import { ProjectResource } from "../common/project-access/project-resource.decorator";
 
+@ProjectResource("ContractClaim")
 @Controller()
 export class ContractClaimsController {
   constructor(private readonly service: ContractClaimsService) {}

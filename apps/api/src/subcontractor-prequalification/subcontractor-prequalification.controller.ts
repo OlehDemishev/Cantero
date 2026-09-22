@@ -9,7 +9,9 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { SubcontractorPrequalificationService } from "./subcontractor-prequalification.service";
+import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
 
+@NotProjectScoped("subcontractor companies and their prequalification")
 @Controller()
 export class SubcontractorPrequalificationController {
   constructor(private readonly service: SubcontractorPrequalificationService) {}

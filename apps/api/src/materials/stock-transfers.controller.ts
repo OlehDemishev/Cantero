@@ -3,9 +3,11 @@ import { initiateStockTransferSchema, type AuthUser, type InitiateStockTransferI
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { StockTransfersService } from "./stock-transfers.service";
+import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
 
 const STOCK_TRANSFERS_PAGE_SIZE = 100;
 
+@NotProjectScoped("warehouse-to-warehouse stock transfers")
 @Controller("materials/stock-transfers")
 export class StockTransfersController {
   constructor(private readonly service: StockTransfersService) {}

@@ -9,6 +9,7 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { SubcontractorClaimsService } from "./subcontractor-claims.service";
+import { NotProjectScoped, ProjectResource } from "../common/project-access/project-resource.decorator";
 
 @Controller()
 export class SubcontractorClaimsController {
@@ -28,16 +29,19 @@ export class SubcontractorClaimsController {
     return this.service.createBackcharge(user.companyId, { userId: user.userId, name: user.name }, projectId, body);
   }
 
+  @NotProjectScoped("`:id` is a subcontractor company, not a project record")
   @Get("subcontractors/:id/backcharges")
   listBackchargesForSubcontractor(@CurrentUser() user: AuthUser, @Param("id") subcontractorId: string) {
     return this.service.listBackchargesForSubcontractor(user.companyId, subcontractorId);
   }
 
+  @ProjectResource("SubcontractorBackcharge")
   @Post("subcontractor-backcharges/:id/deduct")
   markBackchargeDeducted(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.markBackchargeDeducted(user.companyId, { userId: user.userId, name: user.name }, id);
   }
 
+  @ProjectResource("SubcontractorBackcharge")
   @Post("subcontractor-backcharges/:id/waive")
   markBackchargeWaived(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.markBackchargeWaived(user.companyId, { userId: user.userId, name: user.name }, id);
@@ -57,16 +61,19 @@ export class SubcontractorClaimsController {
     return this.service.createDefaultNotice(user.companyId, { userId: user.userId, name: user.name }, projectId, body);
   }
 
+  @NotProjectScoped("`:id` is a subcontractor company, not a project record")
   @Get("subcontractors/:id/default-notices")
   listNoticesForSubcontractor(@CurrentUser() user: AuthUser, @Param("id") subcontractorId: string) {
     return this.service.listNoticesForSubcontractor(user.companyId, subcontractorId);
   }
 
+  @ProjectResource("SubcontractorDefaultNotice")
   @Post("subcontractor-default-notices/:id/cure")
   markNoticeCured(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.markNoticeCured(user.companyId, { userId: user.userId, name: user.name }, id);
   }
 
+  @ProjectResource("SubcontractorDefaultNotice")
   @Post("subcontractor-default-notices/:id/terminate")
   markNoticeTerminated(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.markNoticeTerminated(user.companyId, { userId: user.userId, name: user.name }, id);

@@ -14,7 +14,9 @@ import { Public } from "../common/decorators/public.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { InvitesService } from "./invites.service";
+import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
 
+@NotProjectScoped("company member invites")
 @Controller()
 export class InvitesController {
   constructor(private readonly service: InvitesService) {}

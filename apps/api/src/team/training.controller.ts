@@ -13,7 +13,9 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { TrainingService } from "./training.service";
+import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
 
+@NotProjectScoped("training courses and worker enrollments")
 @Controller("training")
 export class TrainingController {
   constructor(private readonly service: TrainingService) {}

@@ -4,8 +4,10 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { ApiKeysService } from "./api-keys.service";
+import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
 
 @Roles("owner", "admin")
+@NotProjectScoped("company API keys")
 @Controller("company/api-keys")
 export class ApiKeysController {
   constructor(private readonly service: ApiKeysService) {}

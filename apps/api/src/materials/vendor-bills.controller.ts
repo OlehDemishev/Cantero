@@ -13,7 +13,9 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { VendorBillsService } from "./vendor-bills.service";
+import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
 
+@NotProjectScoped("vendor bills have no project link in the schema")
 @Controller("materials/vendor-bills")
 export class VendorBillsController {
   constructor(private readonly service: VendorBillsService) {}

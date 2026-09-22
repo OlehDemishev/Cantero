@@ -15,6 +15,7 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { TaxService } from "./tax.service";
+import { NotProjectScoped, ProjectResource } from "../common/project-access/project-resource.decorator";
 
 @Controller()
 export class TaxController {
@@ -30,6 +31,7 @@ export class TaxController {
     return this.service.createJurisdiction(user.companyId, { userId: user.userId, name: user.name }, body);
   }
 
+  @NotProjectScoped("company tax jurisdictions")
   @Patch("tax/jurisdictions/:id")
   updateJurisdiction(
     @CurrentUser() user: AuthUser,
@@ -39,6 +41,7 @@ export class TaxController {
     return this.service.updateJurisdiction(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
+  @NotProjectScoped("company tax jurisdictions")
   @Post("tax/jurisdictions/:id/rates")
   addRate(@CurrentUser() user: AuthUser, @Param("id") id: string, @Body(new ZodValidationPipe(createTaxRateSchema)) body: CreateTaxRateInput) {
     return this.service.addRate(user.companyId, { userId: user.userId, name: user.name }, id, body);
@@ -54,11 +57,13 @@ export class TaxController {
     return this.service.taxLiabilityReport(user.companyId, jurisdictionId, new Date(periodStart), new Date(periodEnd));
   }
 
+  @NotProjectScoped("`:id` is a client")
   @Get("clients/:id/tax-exemption-certificates")
   listExemptionCertificates(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.listExemptionCertificates(user.companyId, id);
   }
 
+  @NotProjectScoped("`:id` is a client")
   @Post("clients/:id/tax-exemption-certificates")
   addExemptionCertificate(
     @CurrentUser() user: AuthUser,
@@ -68,6 +73,7 @@ export class TaxController {
     return this.service.addExemptionCertificate(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
+  @NotProjectScoped("`:id` is a client")
   @Patch("clients/:id/tax-jurisdiction")
   setClientJurisdiction(
     @CurrentUser() user: AuthUser,
@@ -77,6 +83,7 @@ export class TaxController {
     return this.service.setClientJurisdiction(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
+  @ProjectResource("Invoice")
   @Post("invoices/:id/recalculate-tax")
   recalculateInvoiceTax(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.recalculateInvoiceTax(user.companyId, { userId: user.userId, name: user.name }, id);

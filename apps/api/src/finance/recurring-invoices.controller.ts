@@ -10,10 +10,12 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { RecurringInvoicesService } from "./recurring-invoices.service";
+import { ProjectResource } from "../common/project-access/project-resource.decorator";
 
 const RECURRING_INVOICES_PAGE_SIZE = 100;
 
 @Roles("owner", "admin", "accountant")
+@ProjectResource("RecurringInvoice")
 @Controller("recurring-invoices")
 export class RecurringInvoicesController {
   constructor(private readonly service: RecurringInvoicesService) {}

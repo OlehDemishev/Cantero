@@ -1,5 +1,7 @@
 import { ForbiddenException, Injectable } from "@nestjs/common";
+import type { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
+import { projectPathFor, projectSelect, readProjectId } from "./project-path";
 
 /**
  * Single source of truth for "can this member see/touch this project" — a project with
@@ -17,7 +19,7 @@ export class ProjectAccessService {
   constructor(private readonly prisma: PrismaService) {}
 
   async assertAccess(companyId: string, projectId: string, userId?: string, role?: string): Promise<void> {
-    if (!userId || !role || role === "owner" || role === "admin") return;
+    if (!userId || !role || ProjectAccessService.seesEveryProject(userId, role)) return;
 
     const project = await this.prisma.project.findFirst({
       where: { id: projectId, companyId },
@@ -31,6 +33,25 @@ export class ProjectAccessService {
       where: { projectId_userId: { projectId, userId } },
     });
     if (!membership) throw new ForbiddenException("You don't have access to this project");
+  }
+
+  /** Whether this caller skips the restricted-project check entirely (see the class comment). */
+  static seesEveryProject(userId?: string, role?: string): boolean {
+    return !userId || !role || role === "owner" || role === "admin";
+  }
+
+  /**
+   * The project a `model` row belongs to, following its parents when it has no projectId of its
+   * own (projectPathFor). Null when there's no such row or it isn't tied to a project. Not scoped
+   * to a company: the id is only used to find the project, and assertAccess then only looks the
+   * project up within the caller's company.
+   */
+  async projectIdOf(model: Prisma.ModelName, id: string): Promise<string | null> {
+    const path = projectPathFor(model);
+    if (!path) throw new Error(`${model} has no path to a project`);
+    const delegate = (this.prisma as unknown as Record<string, { findUnique(args: unknown): Promise<unknown> }>)[model[0].toLowerCase() + model.slice(1)];
+    const row = await delegate.findUnique({ where: { id }, select: projectSelect(path) }).catch(() => null);
+    return readProjectId(row, path);
   }
 
   /** Narrows a list of already-company-scoped project rows down to the ones `userId`/`role` may

@@ -9,7 +9,9 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { MaterialRfqsService } from "./material-rfqs.service";
+import { ProjectResource } from "../common/project-access/project-resource.decorator";
 
+@ProjectResource("MaterialRfq")
 @Controller("materials/rfqs")
 export class MaterialRfqsController {
   constructor(private readonly service: MaterialRfqsService) {}

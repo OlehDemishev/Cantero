@@ -3,7 +3,10 @@ import { createAnnotationSchema, type AuthUser, type CreateAnnotationInput } fro
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { AnnotationsService } from "./annotations.service";
+import { ProjectResource } from "../common/project-access/project-resource.decorator";
 
+@ProjectResource("DrawingSheet", "sheetId")
+@ProjectResource("Annotation")
 @Controller("drawing-sheets/:sheetId/annotations")
 export class AnnotationsController {
   constructor(private readonly service: AnnotationsService) {}

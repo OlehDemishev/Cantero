@@ -18,7 +18,9 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { WorkersService } from "./workers.service";
+import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
 
+@NotProjectScoped("workers are company-level")
 @Controller("workers")
 export class WorkersController {
   constructor(private readonly service: WorkersService) {}

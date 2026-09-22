@@ -16,7 +16,9 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { SuppliersService } from "./suppliers.service";
+import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
 
+@NotProjectScoped("suppliers and their own documents and reviews")
 @Controller("materials/suppliers")
 export class SuppliersController {
   constructor(private readonly service: SuppliersService) {}

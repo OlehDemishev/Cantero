@@ -3,7 +3,9 @@ import { createCatalogSchema, type AuthUser, type CreateCatalogInput } from "@ca
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { CatalogsService } from "./catalogs.service";
+import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
 
+@NotProjectScoped("company price catalogs")
 @Controller("catalogs")
 export class CatalogsController {
   constructor(private readonly service: CatalogsService) {}

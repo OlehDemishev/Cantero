@@ -11,6 +11,7 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { HazmatService } from "./hazmat.service";
+import { NotProjectScoped, ProjectResource } from "../common/project-access/project-resource.decorator";
 
 @Controller()
 export class HazmatController {
@@ -21,6 +22,7 @@ export class HazmatController {
     return this.service.listMaterials(user.companyId);
   }
 
+  @NotProjectScoped("the company's hazardous-material library")
   @Get("hazmat/materials/:id")
   get(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.get(user.companyId, id);
@@ -31,6 +33,7 @@ export class HazmatController {
     return this.service.createMaterial(user.companyId, { userId: user.userId, name: user.name }, body);
   }
 
+  @NotProjectScoped("the company's hazardous-material library")
   @Post("hazmat/materials/:id/sds")
   addSdsVersion(
     @CurrentUser() user: AuthUser,
@@ -59,6 +62,7 @@ export class HazmatController {
     return this.service.addToProjectInventory(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
+  @ProjectResource("ProjectHazmatInventory")
   @Delete("hazmat-inventory/:id")
   removeFromProjectInventory(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.removeFromProjectInventory(user.companyId, { userId: user.userId, name: user.name }, id);

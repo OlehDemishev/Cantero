@@ -12,7 +12,9 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { ChecklistTemplatesService } from "./checklist-templates.service";
+import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
 
+@NotProjectScoped("company-wide templates; applying one names the project in the body")
 @Controller("checklist-templates")
 export class ChecklistTemplatesController {
   constructor(private readonly service: ChecklistTemplatesService) {}

@@ -9,7 +9,9 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { MarketingService } from "./marketing.service";
+import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
 
+@NotProjectScoped("company marketing campaigns")
 @Controller("marketing")
 export class MarketingController {
   constructor(private readonly service: MarketingService) {}

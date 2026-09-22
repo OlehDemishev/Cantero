@@ -3,6 +3,7 @@ import { logProductivitySchema, type AuthUser, type LogProductivityInput } from 
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { ProductivityService } from "./productivity.service";
+import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
 
 @Controller()
 export class ProductivityController {
@@ -22,6 +23,7 @@ export class ProductivityController {
     return this.service.log(user.companyId, { userId: user.userId, name: user.name }, projectId, body);
   }
 
+  @NotProjectScoped("`:id` is a company cost code; the rate is company-wide")
   @Get("cost-codes/:id/productivity-rate")
   rate(@CurrentUser() user: AuthUser, @Param("id") costCodeId: string, @Query("projectId") projectId?: string) {
     return this.service.rateByCostCode(user.companyId, costCodeId, projectId);

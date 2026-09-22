@@ -15,7 +15,9 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { BenefitsService } from "./benefits.service";
+import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
 
+@NotProjectScoped("benefit plans and enrollments belong to workers, not projects")
 @Controller()
 export class BenefitsController {
   constructor(private readonly service: BenefitsService) {}

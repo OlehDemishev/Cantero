@@ -19,9 +19,11 @@ import { Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { ExpensesService } from "./expenses.service";
 import { ReceiptOcrService } from "./receipt-ocr.service";
+import { ProjectResource } from "../common/project-access/project-resource.decorator";
 
 const EXPENSES_PAGE_SIZE = 100;
 
+@ProjectResource("Expense")
 @Controller("expenses")
 export class ExpensesController {
   constructor(

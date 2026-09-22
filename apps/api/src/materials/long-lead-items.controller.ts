@@ -9,7 +9,9 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { LongLeadItemsService } from "./long-lead-items.service";
+import { ProjectResource } from "../common/project-access/project-resource.decorator";
 
+@ProjectResource("LongLeadItem")
 @Controller("long-lead-items")
 export class LongLeadItemsController {
   constructor(private readonly service: LongLeadItemsService) {}

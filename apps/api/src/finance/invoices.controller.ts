@@ -21,6 +21,7 @@ import { Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { InvoicesService } from "./invoices.service";
 import { AiaBillingService } from "./aia-billing.service";
+import { ProjectResource } from "../common/project-access/project-resource.decorator";
 
 class GenerateFromEstimateDto {
   @IsUUID()
@@ -29,6 +30,8 @@ class GenerateFromEstimateDto {
 
 const INVOICES_PAGE_SIZE = 100;
 
+@ProjectResource("Invoice")
+@ProjectResource("Estimate", "estimateId")
 @Controller("invoices")
 export class InvoicesController {
   constructor(

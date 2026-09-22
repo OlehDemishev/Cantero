@@ -2,6 +2,7 @@ import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import type { AuthUser } from "@cantero/shared";
 import { IS_PUBLIC_KEY } from "../decorators/public.decorator";
+import { PROJECT_RESOURCE_KEY, type ProjectResourceMeta } from "../project-access/project-resource.decorator";
 import { ProjectAccessService } from "../project-access/project-access.service";
 
 /**
@@ -15,10 +16,11 @@ import { ProjectAccessService } from "../project-access/project-access.service";
  * project `:id` rather than `:projectId`; that `:id` is read as the project too, so those routes
  * can't silently skip the check. project-routes.spec.ts fails on any other spelling.
  *
- * It does NOT cover a request that only carries the *child resource's own* id (e.g.
- * `PATCH /tasks/:id`, `GET /documents/:id/download`) — there, the project is only known after the
- * service looks the resource up, so that service must call ProjectAccessService itself once it
- * has the row's projectId.
+ * A request that only carries a *child resource's own* id (e.g. `PATCH /tasks/:id`,
+ * `GET /documents/:id/download`) is covered through @ProjectResource on the route or controller:
+ * the guard looks that row up, follows it to its project and applies the same check.
+ * project-resource-routes.spec.ts fails on an id-keyed route that declares neither
+ * @ProjectResource nor @NotProjectScoped.
  */
 @Injectable()
 export class ProjectAccessGuard implements CanActivate {
@@ -38,14 +40,27 @@ export class ProjectAccessGuard implements CanActivate {
     const user = request.user as AuthUser | undefined;
     if (!user) return true; // JwtAuthGuard already rejects an unauthenticated request
 
+    if (ProjectAccessService.seesEveryProject(user.userId, user.role)) return true;
+
     const projectId =
       firstString(request.params?.projectId) ??
       projectIdFromProjectsRoute(request) ??
       firstString(request.query?.projectId) ??
       firstString(request.body?.projectId);
-    if (!projectId) return true;
+    if (projectId) await this.projectAccess.assertAccess(user.companyId, projectId, user.userId, user.role);
 
-    await this.projectAccess.assertAccess(user.companyId, projectId, user.userId, user.role);
+    const checked = new Set(projectId ? [projectId] : []);
+    const resources = this.reflector.getAll<(ProjectResourceMeta[] | undefined)[]>(PROJECT_RESOURCE_KEY, [context.getHandler(), context.getClass()]).flat();
+    for (const resource of resources) {
+      if (!resource || !("model" in resource)) continue;
+      const id = firstString(request.params?.[resource.param]);
+      if (!id) continue;
+      // Not found, or not tied to a project: nothing to restrict here; the handler answers 404 itself.
+      const owner = await this.projectAccess.projectIdOf(resource.model, id);
+      if (!owner || checked.has(owner)) continue;
+      checked.add(owner);
+      await this.projectAccess.assertAccess(user.companyId, owner, user.userId, user.role);
+    }
     return true;
   }
 }

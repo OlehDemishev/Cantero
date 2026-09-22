@@ -21,7 +21,9 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { EstimatesService } from "./estimates.service";
+import { NotProjectScoped, ProjectResource } from "../common/project-access/project-resource.decorator";
 
+@ProjectResource("Estimate")
 @Controller("estimates")
 export class EstimatesController {
   constructor(private readonly service: EstimatesService) {}
@@ -37,6 +39,7 @@ export class EstimatesController {
     return this.service.listTemplates(user.companyId);
   }
 
+  @NotProjectScoped("the template is company-wide; the new estimate's project is in the body")
   @Post("from-template/:templateId")
   createFromTemplate(
     @CurrentUser() user: AuthUser,

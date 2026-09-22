@@ -15,6 +15,7 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { EnvironmentalService } from "./environmental.service";
+import { ProjectResource } from "../common/project-access/project-resource.decorator";
 
 @Controller()
 export class EnvironmentalController {
@@ -34,6 +35,7 @@ export class EnvironmentalController {
     return this.service.createPermit(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
+  @ProjectResource("StormwaterPermit")
   @Post("stormwater-permits/:id/file-not")
   fileNoticeOfTermination(
     @CurrentUser() user: AuthUser,
@@ -43,6 +45,7 @@ export class EnvironmentalController {
     return this.service.fileNoticeOfTermination(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
+  @ProjectResource("StormwaterPermit")
   @Post("stormwater-permits/:id/inspections")
   addBmpInspection(
     @CurrentUser() user: AuthUser,
@@ -66,6 +69,7 @@ export class EnvironmentalController {
     return this.service.reportIncident(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
+  @ProjectResource("EnvironmentalIncident")
   @Post("environmental-incidents/:id/status")
   updateIncidentStatus(
     @CurrentUser() user: AuthUser,

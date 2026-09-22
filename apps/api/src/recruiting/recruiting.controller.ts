@@ -17,7 +17,9 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { RecruitingService } from "./recruiting.service";
+import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
 
+@NotProjectScoped("job postings and candidates")
 @Controller("recruiting")
 export class RecruitingController {
   constructor(private readonly service: RecruitingService) {}

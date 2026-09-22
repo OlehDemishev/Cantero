@@ -10,7 +10,9 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { TimeOffService } from "./time-off.service";
+import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
 
+@NotProjectScoped("worker time-off requests")
 @Controller("time-off")
 export class TimeOffController {
   constructor(private readonly service: TimeOffService) {}

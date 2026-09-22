@@ -13,7 +13,9 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { PerformanceService } from "./performance.service";
+import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
 
+@NotProjectScoped("worker performance cycles, reviews and goals")
 @Controller("performance")
 export class PerformanceController {
   constructor(private readonly service: PerformanceService) {}

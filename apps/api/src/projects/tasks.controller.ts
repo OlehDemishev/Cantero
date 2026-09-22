@@ -17,6 +17,7 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { TasksService } from "./tasks.service";
+import { ProjectResource } from "../common/project-access/project-resource.decorator";
 
 @Controller("tasks")
 export class TasksController {
@@ -66,6 +67,7 @@ export class TasksController {
     return this.service.shiftProjectSchedule(user.companyId, projectId, body.days);
   }
 
+  @ProjectResource("Task")
   @Patch(":id")
   update(
     @CurrentUser() user: AuthUser,
@@ -75,6 +77,7 @@ export class TasksController {
     return this.service.update(user.companyId, id, body, user.userId, user.role);
   }
 
+  @ProjectResource("Task")
   @Post(":id/dependencies")
   addDependency(
     @CurrentUser() user: AuthUser,
@@ -84,11 +87,13 @@ export class TasksController {
     return this.service.addDependency(user.companyId, id, body, user.userId, user.role);
   }
 
+  @ProjectResource("TaskDependency", "dependencyId")
   @Delete("dependencies/:dependencyId")
   removeDependency(@CurrentUser() user: AuthUser, @Param("dependencyId") dependencyId: string) {
     return this.service.removeDependency(user.companyId, dependencyId, user.userId, user.role);
   }
 
+  @ProjectResource("Task")
   @Post(":id/commitments")
   commitTask(
     @CurrentUser() user: AuthUser,
@@ -98,6 +103,7 @@ export class TasksController {
     return this.service.commitTask(user.companyId, user.name, id, body, user.userId, user.role);
   }
 
+  @ProjectResource("TaskCommitment")
   @Post("commitments/:id/resolve")
   resolveCommitment(
     @CurrentUser() user: AuthUser,

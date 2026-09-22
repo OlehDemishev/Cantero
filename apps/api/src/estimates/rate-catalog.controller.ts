@@ -16,7 +16,9 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { RateCatalogService } from "./rate-catalog.service";
+import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
 
+@NotProjectScoped("company rate catalog items and their pending changes")
 @Controller("estimates/rate-catalog")
 export class RateCatalogController {
   constructor(private readonly service: RateCatalogService) {}

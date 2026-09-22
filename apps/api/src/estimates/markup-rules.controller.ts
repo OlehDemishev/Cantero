@@ -3,7 +3,9 @@ import { setMarkupRuleSchema, type AuthUser, type SetMarkupRuleInput } from "@ca
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { MarkupRulesService } from "./markup-rules.service";
+import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
 
+@NotProjectScoped("company markup rules")
 @Controller("markup-rules")
 export class MarkupRulesController {
   constructor(private readonly service: MarkupRulesService) {}

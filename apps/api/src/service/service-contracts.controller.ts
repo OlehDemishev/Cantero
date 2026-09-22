@@ -12,7 +12,9 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { ServiceContractsService } from "./service-contracts.service";
 import { ServiceVisitsService } from "./service-visits.service";
+import { ProjectResource } from "../common/project-access/project-resource.decorator";
 
+@ProjectResource("ServiceContract")
 @Controller("service-contracts")
 export class ServiceContractsController {
   constructor(

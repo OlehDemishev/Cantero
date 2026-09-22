@@ -10,7 +10,9 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { SubcontractorCostsService } from "./subcontractor-costs.service";
+import { ProjectResource } from "../common/project-access/project-resource.decorator";
 
+@ProjectResource("SubcontractorCost")
 @Controller("finance/subcontractor-costs")
 export class SubcontractorCostsController {
   constructor(private readonly service: SubcontractorCostsService) {}

@@ -15,6 +15,7 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { CommissioningService } from "./commissioning.service";
+import { ProjectResource } from "../common/project-access/project-resource.decorator";
 
 @Controller()
 export class CommissioningController {
@@ -34,6 +35,7 @@ export class CommissioningController {
     return this.service.createSystem(user.companyId, { userId: user.userId, name: user.name }, projectId, body);
   }
 
+  @ProjectResource("CommissioningSystem")
   @Post("commissioning-systems/:id/checklist-items")
   addChecklistItem(
     @CurrentUser() user: AuthUser,
@@ -43,11 +45,13 @@ export class CommissioningController {
     return this.service.addChecklistItem(user.companyId, systemId, body);
   }
 
+  @ProjectResource("CommissioningChecklistItem")
   @Post("commissioning-checklist-items/:id/toggle")
   toggleChecklistItem(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.toggleChecklistItem(user.companyId, id, user.name);
   }
 
+  @ProjectResource("CommissioningSystem")
   @Post("commissioning-systems/:id/functional-tests")
   addFunctionalTest(
     @CurrentUser() user: AuthUser,
@@ -57,6 +61,7 @@ export class CommissioningController {
     return this.service.addFunctionalTest(user.companyId, { userId: user.userId, name: user.name }, systemId, body);
   }
 
+  @ProjectResource("CommissioningSystem")
   @Post("commissioning-systems/:id/training-sessions")
   scheduleOwnerTraining(
     @CurrentUser() user: AuthUser,
@@ -66,6 +71,7 @@ export class CommissioningController {
     return this.service.scheduleOwnerTraining(user.companyId, { userId: user.userId, name: user.name }, systemId, body);
   }
 
+  @ProjectResource("OwnerTrainingSession")
   @Post("owner-training-sessions/:id/sign-off")
   signOffOwnerTraining(
     @CurrentUser() user: AuthUser,

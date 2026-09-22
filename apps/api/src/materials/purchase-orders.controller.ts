@@ -13,9 +13,11 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { PurchaseOrdersService } from "./purchase-orders.service";
+import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
 
 const PURCHASE_ORDERS_PAGE_SIZE = 100;
 
+@NotProjectScoped("purchase orders have no project link in the schema")
 @Controller("materials/purchase-orders")
 export class PurchaseOrdersController {
   constructor(private readonly service: PurchaseOrdersService) {}

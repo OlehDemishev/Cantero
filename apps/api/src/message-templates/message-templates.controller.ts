@@ -3,7 +3,9 @@ import { upsertMessageTemplateSchema, type AuthUser, type MessageTemplateKey, ty
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { MessageTemplatesService } from "./message-templates.service";
+import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
 
+@NotProjectScoped("company message templates, keyed by template key")
 @Controller("message-templates")
 export class MessageTemplatesController {
   constructor(private readonly service: MessageTemplatesService) {}

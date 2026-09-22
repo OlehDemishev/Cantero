@@ -5,7 +5,9 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { MAX_DRAWING_SET_UPLOAD_BYTES } from "../common/upload-limits";
 import { DrawingSetsService } from "./drawing-sets.service";
+import { ProjectResource } from "../common/project-access/project-resource.decorator";
 
+@ProjectResource("DrawingSet")
 @Controller()
 export class DrawingSetsController {
   constructor(private readonly service: DrawingSetsService) {}

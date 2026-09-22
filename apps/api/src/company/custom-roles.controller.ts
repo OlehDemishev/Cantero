@@ -4,7 +4,9 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { CustomRolesService } from "./custom-roles.service";
+import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
 
+@NotProjectScoped("company custom roles")
 @Controller("company/custom-roles")
 export class CustomRolesController {
   constructor(private readonly service: CustomRolesService) {}

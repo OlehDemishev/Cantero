@@ -3,7 +3,9 @@ import { createLoanSchema, recordLoanPaymentSchema, type AuthUser, type CreateLo
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { LoansService } from "./loans.service";
+import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
 
+@NotProjectScoped("company loans")
 @Controller("loans")
 export class LoansController {
   constructor(private readonly service: LoansService) {}

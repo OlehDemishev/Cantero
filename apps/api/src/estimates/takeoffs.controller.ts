@@ -13,7 +13,9 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { TakeoffsService } from "./takeoffs.service";
+import { ProjectResource } from "../common/project-access/project-resource.decorator";
 
+@ProjectResource("Takeoff")
 @Controller("takeoffs")
 export class TakeoffsController {
   constructor(private readonly service: TakeoffsService) {}
