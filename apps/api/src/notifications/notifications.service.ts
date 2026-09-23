@@ -28,7 +28,8 @@ export interface NotificationItem {
     | "weather_risk"
     | "budget_overrun"
     | "cost_code_overrun"
-    | "material_price_changed";
+    | "material_price_changed"
+    | "drawing_set_ready";
   severity: Severity;
   title: string;
   body: string;
@@ -43,6 +44,8 @@ const REMINDER_LOOKAHEAD_DAYS = 3;
 const DOCUMENT_EXPIRY_LOOKAHEAD_DAYS = 30;
 const WEATHER_RISK_LOOKAHEAD_DAYS = 7;
 const MATERIAL_PRICE_CHANGE_LOOKBACK_DAYS = 14;
+/** A drawing set that was read (or couldn't be) stays in the uploader's feed this long, or until imported or discarded. */
+const DRAWING_SET_LOOKBACK_DAYS = 14;
 /** This is a "what's new" activity feed fanning out into ~15 independent queries, not a list a
  * user pages through — there's no shared cursor across tables that would make sense to page. Each
  * source caps itself at its most urgent/recent N instead, bounding the whole fan-out to a small,
@@ -90,6 +93,7 @@ export class NotificationsService {
       budgetOverruns,
       costCodeOverruns,
       materialPriceChanges,
+      drawingSets,
       membership,
     ] = await Promise.all([
       this.lowStockItems(companyId),
@@ -110,6 +114,7 @@ export class NotificationsService {
       this.budgetOverruns(companyId),
       this.costCodeOverruns(companyId),
       this.materialPriceChanges(companyId),
+      this.drawingSets(companyId, userId),
       this.prisma.membership.findFirst({ where: { companyId, userId } }),
     ]);
 
@@ -134,6 +139,7 @@ export class NotificationsService {
       ...budgetOverruns,
       ...costCodeOverruns,
       ...materialPriceChanges,
+      ...drawingSets,
     ]
       .filter((n) => !mutedTypes.has(n.type) && !(n.projectId && hiddenProjects.has(n.projectId)))
       .sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
@@ -475,6 +481,29 @@ export class NotificationsService {
       body: `Price ${Number(change.changePercent) > 0 ? "rose" : "fell"} ${Math.abs(Number(change.changePercent))}% (${change.oldPrice} → ${change.newPrice})`,
       link: `/rate-catalog`,
       occurredAt: change.createdAt,
+    }));
+  }
+
+  /** Personal, like a mention: the person who uploaded a drawing set hears when it has been read in
+   * the background and is waiting for their review — or that it couldn't be read. Gone once the set
+   * is imported or discarded. */
+  private async drawingSets(companyId: string, userId: string): Promise<NotificationItem[]> {
+    const cutoff = new Date(Date.now() - DRAWING_SET_LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
+    const sets = await this.prisma.drawingSet.findMany({
+      where: { companyId, uploadedByUserId: userId, status: { in: ["ready", "failed"] }, importedAt: null, finishedAt: { gte: cutoff } },
+      select: { id: true, fileName: true, status: true, pageCount: true, finishedAt: true, project: { select: { id: true, name: true } } },
+      orderBy: { finishedAt: "desc" },
+      take: NOTIFICATION_SOURCE_LIMIT,
+    });
+    return sets.map((set) => ({
+      key: `drawing_set:${set.id}:${set.status}`,
+      type: "drawing_set_ready" as const,
+      severity: (set.status === "failed" ? "critical" : "warning") as Severity,
+      title: set.status === "failed" ? "Drawing set couldn't be read" : "Drawing set ready for review",
+      body: `${set.fileName}${set.status === "failed" ? "" : ` — ${set.pageCount} pages`} · ${set.project.name}`,
+      projectId: set.project.id,
+      link: `/projects/${set.project.id}?tab=documents&drawingSet=${set.id}`,
+      occurredAt: set.finishedAt!,
     }));
   }
 

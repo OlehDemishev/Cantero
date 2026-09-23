@@ -34,7 +34,7 @@ export const importDrawingSetSchema = z.object({
       }),
     )
     .min(1)
-    .max(500),
+    .max(600),
 });
 export type ImportDrawingSetInput = z.infer<typeof importDrawingSetSchema>;
 

@@ -19,6 +19,7 @@ import {
   CHANGE_ORDER_REMINDERS_QUEUE,
   ENPS_SURVEYS_QUEUE,
   OUTBOX_QUEUE,
+  DRAWING_SETS_QUEUE,
 } from "./queue.module";
 
 /**
@@ -62,6 +63,7 @@ export class QueueFailureReporterService implements OnModuleInit, OnModuleDestro
       CHANGE_ORDER_REMINDERS_QUEUE,
       ENPS_SURVEYS_QUEUE,
       OUTBOX_QUEUE,
+      DRAWING_SETS_QUEUE,
     ];
     for (const queueName of allQueueNames) {
       const events = new QueueEvents(queueName, {

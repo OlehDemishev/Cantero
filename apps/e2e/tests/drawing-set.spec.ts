@@ -1,6 +1,7 @@
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test, expect, type Locator, type Page } from "@playwright/test";
-import { testProjectName } from "../fixtures";
+import { apiUrl, testProjectName } from "../fixtures";
 import { api, createProject, login } from "../api";
 
 /**
@@ -43,7 +44,8 @@ test("a drawing set is split into reviewed sheets whose references link, and a s
 
   await test.step("uploading the set proposes a sheet per page for review", async () => {
     await page.locator('input[type="file"][accept="application/pdf"]').setInputFiles(SET);
-    await expect(page.getByRole("heading", { name: "Review drawing-set.pdf" })).toBeVisible();
+    // Read in the background: the review appears once the set's status turns "ready".
+    await expect(page.getByRole("heading", { name: "Review drawing-set.pdf" })).toBeVisible({ timeout: 30_000 });
     await expect(page.getByText("4 pages, 3 with a recognized sheet number")).toBeVisible();
     await expect(page.getByLabel("Sheet no., page 1")).toHaveValue("A-101");
     await expect(page.getByLabel("Title, page 1")).toHaveValue("GROUND FLOOR PLAN");
@@ -65,7 +67,7 @@ test("a drawing set is split into reviewed sheets whose references link, and a s
 
   await test.step("importing creates the three sheets", async () => {
     await page.getByRole("button", { name: "Add 3 sheets" }).click();
-    await expect(page.getByText("Added 3 new sheets.")).toBeVisible();
+    await expect(page.getByText("Added 3 new sheets.")).toBeVisible({ timeout: 30_000 });
     await expect(page.getByRole("link", { name: /A-101 — GROUND FLOOR PLAN/ })).toBeVisible();
     await expect(page.getByRole("link", { name: /EG-01 — Grundriss Erdgeschoss/ })).toBeVisible();
   });
@@ -131,4 +133,61 @@ test("a drawing set is split into reviewed sheets whose references link, and a s
     await page.getByRole("button", { name: "Finish" }).click();
     await expect(page.getByText("3 pcs")).toBeVisible();
   });
+});
+
+interface SetState {
+  id: string;
+  status: "analyzing" | "ready" | "importing" | "imported" | "failed";
+  pageCount: number;
+  pagesRead: number;
+  error: string | null;
+}
+
+async function uploadSet(token: string, projectId: string, name: string, bytes: Buffer): Promise<SetState> {
+  const form = new FormData();
+  form.append("file", new Blob([new Uint8Array(bytes)], { type: "application/pdf" }), name);
+  const res = await fetch(`${apiUrl()}/projects/${projectId}/drawing-sets`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: form });
+  expect(res.status).toBe(201);
+  return res.json();
+}
+
+async function settled(token: string, id: string): Promise<SetState> {
+  let set = await api<SetState>("GET", `/drawing-sets/${id}`, token);
+  await expect
+    .poll(async () => (set = await api<SetState>("GET", `/drawing-sets/${id}`, token)).status, { timeout: 30_000 })
+    .not.toBe("analyzing");
+  return set;
+}
+
+test("a set is read in the background: the upload answers at once, the uploader is notified, and an unreadable PDF fails with a reason", async ({ page }) => {
+  const token = await login();
+  const projectId = await createProject(token, testProjectName());
+
+  const uploaded = await uploadSet(token, projectId, "drawing-set.pdf", readFileSync(SET));
+  expect(uploaded).toMatchObject({ status: "analyzing", pageCount: 0 });
+  const ready = await settled(token, uploaded.id);
+  expect(ready).toMatchObject({ status: "ready", pageCount: 4, pagesRead: 4, error: null });
+
+  const broken = await uploadSet(token, projectId, "broken.pdf", Buffer.from("%PDF-1.7\nthis is not really a PDF\n"));
+  expect(await settled(token, broken.id)).toMatchObject({ status: "failed", error: "unreadable" });
+
+  // Both wait in the project's list of open sets, and in the uploader's notifications.
+  const open = await api<SetState[]>("GET", `/projects/${projectId}/drawing-sets`, token);
+  expect(open.map((s) => [s.id, s.status])).toEqual(expect.arrayContaining([[ready.id, "ready"], [broken.id, "failed"]]));
+  const { notifications } = await api<{ notifications: { key: string; severity: string; link: string }[] }>("GET", "/notifications", token);
+  expect(notifications.find((n) => n.key === `drawing_set:${ready.id}:ready`)).toMatchObject({ severity: "warning", link: `/projects/${projectId}?tab=documents&drawingSet=${ready.id}` });
+  expect(notifications.find((n) => n.key === `drawing_set:${broken.id}:failed`)).toMatchObject({ severity: "critical" });
+
+  // The notification's link opens the set: the unreadable one says why and can be discarded.
+  await page.goto("/login");
+  await page.evaluate((t) => localStorage.setItem("cantero_token", t), token);
+  await page.goto(`/projects/${projectId}?tab=documents&drawingSet=${broken.id}`);
+  await expect(page.getByText("This PDF couldn't be read — it may be damaged or password-protected.")).toBeVisible();
+  await page.getByRole("button", { name: "Discard" }).click();
+  await expect(page.getByRole("list", { name: "Drawing sets in progress" }).getByText("broken.pdf")).toHaveCount(0);
+  await expect(page.getByRole("list", { name: "Drawing sets in progress" }).getByText("drawing-set.pdf")).toBeVisible();
+
+  await api("DELETE", `/drawing-sets/${ready.id}`, token);
+  const after = await api<{ notifications: { key: string }[] }>("GET", "/notifications", token);
+  expect(after.notifications.filter((n) => n.key.startsWith(`drawing_set:${ready.id}`) || n.key.startsWith(`drawing_set:${broken.id}`))).toEqual([]);
 });

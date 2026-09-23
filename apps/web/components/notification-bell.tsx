@@ -23,7 +23,8 @@ type NotificationType =
   | "weather_risk"
   | "budget_overrun"
   | "cost_code_overrun"
-  | "material_price_changed";
+  | "material_price_changed"
+  | "drawing_set_ready";
 type Severity = "warning" | "critical";
 
 interface Notification {

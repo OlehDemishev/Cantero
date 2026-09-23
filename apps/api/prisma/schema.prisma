@@ -5925,6 +5925,9 @@ model DrawingSheet {
   rootSheetId      String?
   /// Set when the sheet came from a multi-page drawing set upload: the set and its 1-based page.
   drawingSetId     String?
+  /// When references to other sheets were last looked for in this sheet's text layer. Null on
+  /// sheets uploaded before that existed — a one-off background pass fills their links in.
+  linksScannedAt   DateTime?
   sourcePage       Int?
 
   company        Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -5947,6 +5950,14 @@ model DrawingSheet {
 /// One multi-page PDF uploaded to the Plan room. Uploading analyzes it (sheet numbers and titles
 /// read from each page's text — see sheet-recognition.ts) without creating anything; importing
 /// after the person has reviewed that proposal splits the pages into DrawingSheets.
+enum DrawingSetStatus {
+  analyzing
+  ready
+  importing
+  imported
+  failed
+}
+
 model DrawingSet {
   id               String    @id @default(uuid())
   companyId        String
@@ -5955,7 +5966,20 @@ model DrawingSet {
   storageKey       String
   pageCount        Int
   /// The per-page proposal shown for review: [{ page, sheetNumber, title, discipline, confidence }].
+  /// Empty until the background analysis has read the set.
   analysis         Json
+  /// Reading the PDF and splitting it into sheets both run in the background (drawing-sets queue):
+  /// analyzing → ready (for review) → importing → imported, or failed with `error`.
+  status           DrawingSetStatus @default(ready)
+  /// Pages read so far while analyzing, for the progress bar.
+  pagesRead        Int              @default(0)
+  /// Why analysis or import failed, in words the person can act on.
+  error            String?
+  /// The reviewed pages an import job splits out (ImportDrawingSetInput["pages"]); its outcome.
+  importPages      Json?
+  importResult     Json?
+  /// When the last analysis or import finished — the time its notification carries.
+  finishedAt       DateTime?
   uploadedByUserId String?
   importedAt       DateTime?
   createdAt        DateTime  @default(now())

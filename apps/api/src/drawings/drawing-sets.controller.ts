@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, StreamableFile, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Post, StreamableFile, UploadedFile, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { importDrawingSetSchema, type AuthUser, type ImportDrawingSetInput } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
@@ -15,7 +15,14 @@ import { Requires } from "../common/decorators/permissions.decorator";
 export class DrawingSetsController {
   constructor(private readonly service: DrawingSetsService) {}
 
-  /** Reads the set and proposes sheet numbers; nothing is created until import. */
+  /** The project's sets being read or awaiting review, so an unfinished one can be picked up again. */
+  @Get("projects/:projectId/drawing-sets")
+  listOpen(@CurrentUser() user: AuthUser, @Param("projectId", ParseUUIDPipe) projectId: string) {
+    return this.service.listOpen(user, projectId);
+  }
+
+  /** Stores the set and queues its reading (the set comes back "analyzing"); nothing is created
+   * until import. */
   @Post("projects/:projectId/drawing-sets")
   @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX_DRAWING_SET_UPLOAD_BYTES } }))
   analyze(@CurrentUser() user: AuthUser, @Param("projectId") projectId: string, @UploadedFile() file: Express.Multer.File) {
@@ -34,6 +41,7 @@ export class DrawingSetsController {
     return new StreamableFile(await this.service.file(user, id), { type: "application/pdf" });
   }
 
+  /** Queues the split into sheets; the set comes back "importing" and turns "imported". */
   @Post("drawing-sets/:id/import")
   import(@CurrentUser() user: AuthUser, @Param("id") id: string, @Body(new ZodValidationPipe(importDrawingSetSchema)) body: ImportDrawingSetInput) {
     return this.service.import(user, id, body);

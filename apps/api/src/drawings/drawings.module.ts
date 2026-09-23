@@ -5,9 +5,10 @@ import { AnnotationsController } from "./annotations.controller";
 import { AnnotationsService } from "./annotations.service";
 import { DrawingSetsController } from "./drawing-sets.controller";
 import { DrawingSetsService } from "./drawing-sets.service";
+import { DrawingSetsProcessor } from "./drawing-sets.processor";
 
 @Module({
   controllers: [DrawingSheetsController, DrawingSetsController, AnnotationsController],
-  providers: [DrawingSheetsService, DrawingSetsService, AnnotationsService],
+  providers: [DrawingSheetsService, DrawingSetsService, DrawingSetsProcessor, AnnotationsService],
 })
 export class DrawingsModule {}

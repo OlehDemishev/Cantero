@@ -46,9 +46,13 @@ interface Viewport {
 /**
  * Every page's words. `maxPages` bounds the work on a huge set. With `ocrScans`, a page with no
  * text layer at all (a scanned drawing) has its title-block corner read by OCR instead — up to
- * `ocrScans.maxPages` of them, since each takes a second or two.
+ * `ocrScans.maxPages` of them, since each takes a second or two. `onPage` reports progress.
  */
-export async function extractPdfText(pdf: Buffer, maxPages = Infinity, options: { ocrScans?: { maxPages: number } } = {}): Promise<PageText[]> {
+export async function extractPdfText(
+  pdf: Buffer | Uint8Array,
+  maxPages = Infinity,
+  options: { ocrScans?: { maxPages: number }; onPage?: (done: number, total: number) => void } = {},
+): Promise<PageText[]> {
   // pdfjs-dist is ESM-only; see extract-zugferd-xml-from-pdf.ts for why this is a dynamic import.
   const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
   const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(pdf) });
@@ -70,6 +74,7 @@ export async function extractPdfText(pdf: Buffer, maxPages = Infinity, options: 
         pages.push({ pageNumber: n, width: viewport.width, height: viewport.height, words });
       }
       page.cleanup();
+      options.onPage?.(n, Math.min(doc.numPages, maxPages));
     }
     return pages;
   } finally {
@@ -78,7 +83,7 @@ export async function extractPdfText(pdf: Buffer, maxPages = Infinity, options: 
   }
 }
 
-export async function pdfPageCount(pdf: Buffer): Promise<number> {
+export async function pdfPageCount(pdf: Buffer | Uint8Array): Promise<number> {
   const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
   const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(pdf) });
   try {

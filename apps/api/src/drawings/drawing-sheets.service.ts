@@ -4,8 +4,8 @@ import { PrismaService } from "../common/prisma/prisma.service";
 import { StorageService } from "../common/storage/storage.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { ProjectAccessService } from "../common/project-access/project-access.service";
-import { extractPdfText } from "./pdf-text";
-import { findSheetReferences, sheetKey } from "./sheet-recognition";
+import { analyzePdf } from "./pdf-analysis";
+import { sheetKey } from "./sheet-recognition";
 
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = new Set(["application/pdf", "image/jpeg", "image/png", "image/webp"]);
@@ -75,8 +75,9 @@ export class DrawingSheetsService {
   private async storeLinks(sheetId: string, sheetNumber: string, file: Express.Multer.File) {
     if (file.mimetype !== "application/pdf") return;
     try {
-      const [page] = await extractPdfText(file.buffer, 1);
-      const refs = page ? findSheetReferences(page.words, sheetNumber) : [];
+      // On a worker thread, like a whole set: pdf.js would otherwise parse on the request's thread.
+      const result = await analyzePdf({ kind: "links", pdf: file.buffer, ownSheetNumber: sheetNumber });
+      const refs = result.kind === "links" ? result.references : [];
       if (refs.length > 0) {
         await this.prisma.drawingSheetLink.createMany({ data: refs.map((r) => ({ sheetId, targetKey: r.targetKey, label: r.label, x: r.x, y: r.y, width: r.width, height: r.height })) });
       }
@@ -116,6 +117,7 @@ export class DrawingSheetsService {
         storageKey: stored.storageKey,
         mimeType: file.mimetype,
         uploadedByUserId: actor.userId,
+        linksScannedAt: new Date(),
       },
     });
 
@@ -156,6 +158,7 @@ export class DrawingSheetsService {
         uploadedByUserId: actor.userId,
         version: current.version + 1,
         rootSheetId: rootId,
+        linksScannedAt: new Date(),
       },
     });
 

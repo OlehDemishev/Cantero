@@ -14,6 +14,7 @@ describe("NotificationsService.list", () => {
   let prisma: {
     materialCatalogItem: { findMany: jest.Mock };
     materialPriceChange: { findMany: jest.Mock };
+    drawingSet: { findMany: jest.Mock };
     clientReminder: { findMany: jest.Mock };
     invoice: { findMany: jest.Mock };
     rfi: { findMany: jest.Mock };
@@ -41,6 +42,7 @@ describe("NotificationsService.list", () => {
     prisma = {
       materialCatalogItem: { findMany: jest.fn().mockResolvedValue([]) },
       materialPriceChange: { findMany: jest.fn().mockResolvedValue([]) },
+      drawingSet: { findMany: jest.fn().mockResolvedValue([]) },
       clientReminder: { findMany: jest.fn().mockResolvedValue([]) },
       invoice: { findMany: jest.fn().mockResolvedValue([]) },
       rfi: { findMany: jest.fn().mockResolvedValue([]) },
@@ -198,6 +200,25 @@ describe("NotificationsService.list", () => {
     expect(mention?.body).toContain("Door swing");
     expect(mention?.body).toContain("Site A");
     expect(mention?.link).toBe("/projects/project-1");
+  });
+
+  it("tells the uploader a drawing set is ready for review, or couldn't be read, and only them", async () => {
+    const project = { id: "project-1", name: "Site A" };
+    prisma.drawingSet.findMany.mockResolvedValue([
+      { id: "set-1", fileName: "Tender set.pdf", status: "ready", pageCount: 84, finishedAt: new Date("2026-06-02"), project },
+      { id: "set-2", fileName: "Scans.pdf", status: "failed", pageCount: 0, finishedAt: new Date("2026-06-01"), project },
+    ]);
+
+    const { notifications } = await service.list(COMPANY_A, USER_A);
+    const ready = notifications.find((n) => n.key === "drawing_set:set-1:ready");
+    const failed = notifications.find((n) => n.key === "drawing_set:set-2:failed");
+
+    expect(ready).toMatchObject({ type: "drawing_set_ready", severity: "warning", title: "Drawing set ready for review", link: "/projects/project-1?tab=documents&drawingSet=set-1" });
+    expect(ready?.body).toContain("84 pages");
+    expect(failed).toMatchObject({ severity: "critical", title: "Drawing set couldn't be read" });
+    expect(prisma.drawingSet.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ companyId: COMPANY_A, uploadedByUserId: USER_A, importedAt: null }) }),
+    );
   });
 
   it("flags an already-expired subcontractor document as critical and one expiring soon as a warning", async () => {
@@ -415,6 +436,7 @@ describe("NotificationsService — read tracking", () => {
   let prisma: {
     materialCatalogItem: { findMany: jest.Mock };
     materialPriceChange: { findMany: jest.Mock };
+    drawingSet: { findMany: jest.Mock };
     clientReminder: { findMany: jest.Mock };
     invoice: { findMany: jest.Mock };
     rfi: { findMany: jest.Mock };
@@ -439,6 +461,7 @@ describe("NotificationsService — read tracking", () => {
     prisma = {
       materialCatalogItem: { findMany: jest.fn().mockResolvedValue([]) },
       materialPriceChange: { findMany: jest.fn().mockResolvedValue([]) },
+      drawingSet: { findMany: jest.fn().mockResolvedValue([]) },
       clientReminder: { findMany: jest.fn().mockResolvedValue([]) },
       invoice: { findMany: jest.fn().mockResolvedValue([]) },
       rfi: { findMany: jest.fn().mockResolvedValue([]) },

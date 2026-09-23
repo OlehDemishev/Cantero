@@ -53,6 +53,7 @@ export const NOTIFICATION_TYPES = [
   "budget_overrun",
   "cost_code_overrun",
   "material_price_changed",
+  "drawing_set_ready",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
