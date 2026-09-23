@@ -10,12 +10,16 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { UnitsOfMeasureService } from "./units-of-measure.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @NotProjectScoped("company units of measure")
+@Requires("pricing.manage")
 @Controller("materials/units-of-measure")
 export class UnitsOfMeasureController {
   constructor(private readonly service: UnitsOfMeasureService) {}
 
+  @OpenToAllRoles("reference data every role estimates or works from")
   @Get()
   list(@CurrentUser() user: AuthUser) {
     return this.service.list(user.companyId);

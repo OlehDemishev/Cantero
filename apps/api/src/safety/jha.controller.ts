@@ -10,8 +10,11 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { JhaService } from "./jha.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @ProjectResource("JobHazardAnalysis")
+@Requires("site.manage")
 @Controller("safety/jha")
 export class JhaController {
   constructor(private readonly service: JhaService) {}
@@ -26,6 +29,7 @@ export class JhaController {
     return this.service.create(user.companyId, { userId: user.userId, name: user.name }, body);
   }
 
+  @OpenToAllRoles("site work every member does on a project")
   @Post(":id/acknowledge")
   acknowledge(
     @CurrentUser() user: AuthUser,

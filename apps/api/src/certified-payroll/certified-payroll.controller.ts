@@ -10,8 +10,10 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { CertifiedPayrollService } from "./certified-payroll.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @ProjectResource("CertifiedPayrollReport")
+@Requires("hr.payroll")
 @Controller()
 export class CertifiedPayrollController {
   constructor(private readonly service: CertifiedPayrollService) {}

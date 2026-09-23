@@ -12,8 +12,10 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { HrCasesService } from "./hr-cases.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @NotProjectScoped("HR cases belong to workers, not projects")
+@Requires("hr.cases")
 @Controller()
 export class HrCasesController {
   constructor(private readonly service: HrCasesService) {}

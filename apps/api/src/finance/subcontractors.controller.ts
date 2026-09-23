@@ -26,23 +26,28 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { SubcontractorsService } from "./subcontractors.service";
 import { NotProjectScoped, ProjectResource } from "../common/project-access/project-resource.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @NotProjectScoped("`:id` is a subcontractor company, not a project record")
 @ProjectResource("SubcontractorAssignment", "assignmentId")
+@Requires("subcontractors.manage")
 @Controller("finance/subcontractors")
 export class SubcontractorsController {
   constructor(private readonly service: SubcontractorsService) {}
 
+  @Requires("subcontractors.view")
   @Get()
   list(@CurrentUser() user: AuthUser) {
     return this.service.list(user.companyId);
   }
 
+  @Requires("finance.view")
   @Get("tax-summary")
   taxSummary(@CurrentUser() user: AuthUser, @Query("year") year: string) {
     return this.service.taxSummary(user.companyId, Number(year));
   }
 
+  @Requires("finance.view")
   @Get("diversity-spend-report")
   diversitySpendReport(@CurrentUser() user: AuthUser, @Query("projectId") projectId?: string) {
     return this.service.diversitySpendReport(user.companyId, projectId);
@@ -56,6 +61,7 @@ export class SubcontractorsController {
     return this.service.create(user.companyId, body);
   }
 
+  @Requires("subcontractors.view")
   @Get(":id/assignments")
   listAssignments(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.listAssignments(user.companyId, id);
@@ -75,6 +81,7 @@ export class SubcontractorsController {
     return this.service.unassign(user.companyId, id, assignmentId);
   }
 
+  @Requires("subcontractors.view")
   @Get(":id/documents")
   listDocuments(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.listDocuments(user.companyId, id);
@@ -94,6 +101,7 @@ export class SubcontractorsController {
     return this.service.deleteDocument(user.companyId, id, documentId);
   }
 
+  @Requires("subcontractors.view")
   @Get(":id/compliance")
   complianceStatus(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.complianceStatus(user.companyId, id);
@@ -109,6 +117,7 @@ export class SubcontractorsController {
     return this.service.setActualEndDate(user.companyId, id, assignmentId, body.actualEndDate);
   }
 
+  @Requires("subcontractors.view")
   @Get(":id/performance-reviews")
   listPerformanceReviews(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.listPerformanceReviews(user.companyId, id);
@@ -123,6 +132,7 @@ export class SubcontractorsController {
     return this.service.addPerformanceReview(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
+  @Requires("subcontractors.view")
   @Get(":id/scorecard")
   performanceScorecard(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.performanceScorecard(user.companyId, id);
@@ -137,11 +147,13 @@ export class SubcontractorsController {
     return this.service.updateProfile(user.companyId, id, body);
   }
 
+  @Requires("finance.taxProfiles")
   @Get(":id/tax-profile")
   getTaxProfile(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.getTaxProfile(user.companyId, id);
   }
 
+  @Requires("finance.taxProfiles")
   @Patch(":id/tax-profile")
   updateTaxProfile(
     @CurrentUser() user: AuthUser,
@@ -151,11 +163,13 @@ export class SubcontractorsController {
     return this.service.updateTaxProfile(user.companyId, id, body);
   }
 
+  @Requires("finance.view")
   @Get(":id/payments")
   listPayments(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.listPayments(user.companyId, id);
   }
 
+  @Requires("finance.manage")
   @Post(":id/payments")
   addPayment(
     @CurrentUser() user: AuthUser,

@@ -8,11 +8,12 @@ import {
   type SetCustomFieldValuesInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
-import { Roles } from "../common/decorators/roles.decorator";
+import { OpenToAllRoles, Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
 import { CustomFieldsService } from "./custom-fields.service";
 
+@OpenToAllRoles("site and project work every member does")
 @Controller("custom-fields")
 export class CustomFieldsController {
   constructor(private readonly service: CustomFieldsService) {}

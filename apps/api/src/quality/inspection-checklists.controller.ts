@@ -12,17 +12,22 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { InspectionChecklistsService } from "./inspection-checklists.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @ProjectResource("InspectionChecklist")
+@Requires("site.manage")
 @Controller("inspection-checklists")
 export class InspectionChecklistsController {
   constructor(private readonly service: InspectionChecklistsService) {}
 
+  @OpenToAllRoles("every member reads these to do their own site work")
   @Get()
   list(@CurrentUser() user: AuthUser, @Query("projectId", ParseUUIDPipe) projectId: string) {
     return this.service.listForProject(user.companyId, projectId);
   }
 
+  @OpenToAllRoles("every member reads these to do their own site work")
   @Get(":id")
   get(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.get(user.companyId, id);
@@ -36,6 +41,7 @@ export class InspectionChecklistsController {
     return this.service.create(user.companyId, { userId: user.userId, name: user.name }, body);
   }
 
+  @OpenToAllRoles("site work every member does on a project")
   @Post(":id/items/:itemId/result")
   recordItemResult(
     @CurrentUser() user: AuthUser,

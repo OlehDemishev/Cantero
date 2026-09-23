@@ -9,7 +9,9 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { NotificationsService } from "./notifications.service";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
 
+@OpenToAllRoles("each member's own account, settings and workspace")
 @Controller("notifications")
 export class NotificationsController {
   constructor(private readonly service: NotificationsService) {}

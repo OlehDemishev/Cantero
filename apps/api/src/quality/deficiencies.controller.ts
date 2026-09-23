@@ -4,12 +4,16 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { DeficienciesService } from "./deficiencies.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @ProjectResource("Deficiency")
+@Requires("site.manage")
 @Controller("deficiencies")
 export class DeficienciesController {
   constructor(private readonly service: DeficienciesService) {}
 
+  @OpenToAllRoles("every member reads these to do their own site work")
   @Get()
   list(@CurrentUser() user: AuthUser, @Query("projectId", ParseUUIDPipe) projectId: string) {
     return this.service.listForProject(user.companyId, projectId);
@@ -20,6 +24,7 @@ export class DeficienciesController {
     return this.service.heatMap(user.companyId, projectId);
   }
 
+  @OpenToAllRoles("every member reads these to do their own site work")
   @Get(":id")
   get(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.get(user.companyId, id);
@@ -34,6 +39,7 @@ export class DeficienciesController {
     return this.service.update(user.companyId, id, body);
   }
 
+  @OpenToAllRoles("site work every member does on a project")
   @Post(":id/resolve")
   resolve(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.resolve(user.companyId, { userId: user.userId, name: user.name }, id);

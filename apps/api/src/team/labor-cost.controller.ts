@@ -4,11 +4,13 @@ import type { AuthUser } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
 import { LaborCostService } from "./labor-cost.service";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @Controller("team/labor-cost-report")
 export class LaborCostController {
   constructor(private readonly service: LaborCostService) {}
 
+  @Requires("people.rates")
   @Get()
   get(@CurrentUser() user: AuthUser, @Query("from") from?: string, @Query("to") to?: string) {
     return this.service.report(user.companyId, { from, to });

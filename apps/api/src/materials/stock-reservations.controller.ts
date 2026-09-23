@@ -4,8 +4,11 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { StockReservationsService } from "./stock-reservations.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @ProjectResource("StockReservation")
+@Requires("site.manage")
 @Controller("materials/stock-reservations")
 export class StockReservationsController {
   constructor(private readonly service: StockReservationsService) {}

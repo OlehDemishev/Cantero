@@ -22,8 +22,11 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { ClientsService } from "./clients.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { RequiresFor } from "../common/decorators/permissions.decorator";
 
 @NotProjectScoped("clients are company-level CRM records")
+@RequiresFor("clients.view", "clients.manage")
 @Controller("clients")
 export class ClientsController {
   constructor(private readonly service: ClientsService) {}

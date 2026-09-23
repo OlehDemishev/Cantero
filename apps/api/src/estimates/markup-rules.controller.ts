@@ -4,12 +4,16 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { MarkupRulesService } from "./markup-rules.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @NotProjectScoped("company markup rules")
+@Requires("pricing.manage")
 @Controller("markup-rules")
 export class MarkupRulesController {
   constructor(private readonly service: MarkupRulesService) {}
 
+  @OpenToAllRoles("reference data every role estimates or works from")
   @Get()
   list(@CurrentUser() user: AuthUser) {
     return this.service.list(user.companyId);

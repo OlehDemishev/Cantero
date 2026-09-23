@@ -17,8 +17,11 @@ import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { MAX_UPLOAD_BYTES } from "../common/upload-limits";
 import { BidRequestsService } from "./bid-requests.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { RequiresFor } from "../common/decorators/permissions.decorator";
 
 @ProjectResource("BidRequest")
+@RequiresFor("estimates.view", "estimates.manage")
 @Controller("bid-requests")
 export class BidRequestsController {
   constructor(private readonly service: BidRequestsService) {}

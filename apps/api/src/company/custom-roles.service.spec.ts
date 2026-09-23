@@ -30,7 +30,15 @@ describe("CustomRolesService", () => {
 
     expect(result.name).toBe("Site Lead");
     expect(prisma.customRole.create).toHaveBeenCalledWith({
-      data: { companyId: COMPANY_A, name: "Site Lead", basePermissions: ["foreman", "estimator"] },
+      data: { companyId: COMPANY_A, name: "Site Lead", basePermissions: ["foreman", "estimator"], extraPermissions: [] },
+    });
+  });
+
+  it("stores the capabilities a custom role adds on top of its base roles", async () => {
+    prisma.customRole.create.mockResolvedValue({ id: "role-2", name: "Site Lead+", basePermissions: ["foreman"] });
+    await service.create(COMPANY_A, ACTOR, { name: "Site Lead+", basePermissions: ["foreman"], extraPermissions: ["costing.view"] });
+    expect(prisma.customRole.create).toHaveBeenCalledWith({
+      data: { companyId: COMPANY_A, name: "Site Lead+", basePermissions: ["foreman"], extraPermissions: ["costing.view"] },
     });
   });
 

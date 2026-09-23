@@ -11,23 +11,29 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { DailyLogsService } from "./daily-logs.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @ProjectResource("DailyLog")
+@Requires("site.dailyLogs.create")
 @Controller("daily-logs")
 export class DailyLogsController {
   constructor(private readonly service: DailyLogsService) {}
 
+  @OpenToAllRoles("every member reads these to do their own site work")
   @Get()
   list(@CurrentUser() user: AuthUser, @Query("projectId", ParseUUIDPipe) projectId: string) {
     return this.service.listForProject(user.companyId, projectId);
   }
 
   // Declared before ":id" so "weather-delay-report" isn't swallowed as a daily-log id.
+  @Requires("site.manage")
   @Get("weather-delay-report")
   weatherDelayReport(@CurrentUser() user: AuthUser, @Query("projectId", ParseUUIDPipe) projectId: string) {
     return this.service.weatherDelayReport(user.companyId, projectId);
   }
 
+  @Requires("site.manage")
   @Get("weather-delay-report/export")
   @Header("Content-Type", "text/csv")
   async weatherDelayReportExport(
@@ -39,6 +45,7 @@ export class DailyLogsController {
     return this.service.weatherDelayReportCsv(user.companyId, projectId);
   }
 
+  @OpenToAllRoles("every member reads these to do their own site work")
   @Get(":id")
   get(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.get(user.companyId, id);

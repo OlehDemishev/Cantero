@@ -10,8 +10,11 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { ClientChangeRequestsService } from "./client-change-requests.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { RequiresFor } from "../common/decorators/permissions.decorator";
 
 @ProjectResource("ClientChangeRequest")
+@RequiresFor("estimates.view", "estimates.manage")
 @Controller("client-change-requests")
 export class ClientChangeRequestsController {
   constructor(private readonly service: ClientChangeRequestsService) {}

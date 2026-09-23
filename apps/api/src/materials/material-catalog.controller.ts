@@ -26,43 +26,53 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { MaterialCatalogService } from "./material-catalog.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @NotProjectScoped("company material catalog items")
+@Requires("pricing.manage")
 @Controller("materials/catalog")
 export class MaterialCatalogController {
   constructor(private readonly service: MaterialCatalogService) {}
 
+  @OpenToAllRoles("every member reads these to do their own site work")
   @Get()
   list(@CurrentUser() user: AuthUser) {
     return this.service.list(user.companyId);
   }
 
   // Declared before ":id" so "price-changes"/"by-barcode" aren't swallowed as a material id.
+  @Requires("purchasing.view")
   @Get("price-changes")
   priceChanges(@CurrentUser() user: AuthUser, @Query("sinceDays") sinceDays?: string) {
     return this.service.priceChanges(user.companyId, sinceDays ? Number(sinceDays) : undefined);
   }
 
+  @OpenToAllRoles("every member reads these to do their own site work")
   @Get("by-barcode/:barcode")
   findByBarcode(@CurrentUser() user: AuthUser, @Param("barcode") barcode: string) {
     return this.service.findByBarcode(user.companyId, barcode);
   }
 
+  @OpenToAllRoles("every member reads these to do their own site work")
   @Get(":id")
   get(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.get(user.companyId, id);
   }
 
+  @Requires("purchasing.view")
   @Get(":id/price-history")
   priceHistory(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.priceHistory(user.companyId, id);
   }
 
+  @Requires("purchasing.view")
   @Get(":id/supplier-prices")
   supplierPrices(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.supplierPrices(user.companyId, id);
   }
 
+  @Requires("estimates.view")
   @Get(":id/affected-estimates")
   affectedOpenEstimates(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.affectedOpenEstimates(user.companyId, id);
@@ -92,6 +102,7 @@ export class MaterialCatalogController {
     return this.service.updatePrice(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
+  @Requires("purchasing.manage")
   @Patch(":id/reorder-settings")
   updateReorderSettings(
     @CurrentUser() user: AuthUser,
@@ -110,6 +121,7 @@ export class MaterialCatalogController {
     return this.service.updateSustainability(user.companyId, id, body);
   }
 
+  @Requires("purchasing.manage")
   @Patch(":id/barcode")
   updateBarcode(
     @CurrentUser() user: AuthUser,
@@ -119,6 +131,7 @@ export class MaterialCatalogController {
     return this.service.updateBarcode(user.companyId, id, body);
   }
 
+  @Requires("purchasing.manage")
   @Patch(":id/lot-tracked")
   updateLotTracked(
     @CurrentUser() user: AuthUser,
@@ -137,6 +150,7 @@ export class MaterialCatalogController {
     return this.service.updateUnits(user.companyId, id, body);
   }
 
+  @Requires("purchasing.manage")
   @Patch(":id/serial-tracked")
   updateSerialTracked(
     @CurrentUser() user: AuthUser,

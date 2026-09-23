@@ -10,12 +10,15 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { AllowancesService } from "./allowances.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
+import { Requires, RequiresFor } from "../common/decorators/permissions.decorator";
 
 @ProjectResource("Allowance")
+@RequiresFor("finance.view", "finance.manage")
 @Controller()
 export class AllowancesController {
   constructor(private readonly service: AllowancesService) {}
 
+  @Requires("costing.view")
   @Get("projects/:id/allowances")
   list(@CurrentUser() user: AuthUser, @Param("id") projectId: string) {
     return this.service.listForProject(user.companyId, projectId);

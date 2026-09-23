@@ -22,6 +22,7 @@ import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { InvoicesService } from "./invoices.service";
 import { AiaBillingService } from "./aia-billing.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
+import { Requires, RequiresFor } from "../common/decorators/permissions.decorator";
 
 class GenerateFromEstimateDto {
   @IsUUID()
@@ -32,6 +33,7 @@ const INVOICES_PAGE_SIZE = 100;
 
 @ProjectResource("Invoice")
 @ProjectResource("Estimate", "estimateId")
+@RequiresFor("finance.view", "finance.manage")
 @Controller("invoices")
 export class InvoicesController {
   constructor(
@@ -45,6 +47,7 @@ export class InvoicesController {
   }
 
   // Declared before ":id" so "export.csv" isn't swallowed as an invoice id.
+  @Requires("finance.export")
   @Get("export.csv")
   @Header("Content-Type", "text/csv")
   async exportCsv(@CurrentUser() user: AuthUser, @Res({ passthrough: true }) res: Response) {
@@ -52,6 +55,7 @@ export class InvoicesController {
     return this.service.exportCsv(user.companyId, user);
   }
 
+  @Requires("finance.export")
   @Get("export/quickbooks.csv")
   @Header("Content-Type", "text/csv")
   async exportQuickBooksCsv(@CurrentUser() user: AuthUser, @Res({ passthrough: true }) res: Response) {
@@ -59,6 +63,7 @@ export class InvoicesController {
     return this.service.exportQuickBooksCsv(user.companyId);
   }
 
+  @Requires("finance.export")
   @Get("export/xero.csv")
   @Header("Content-Type", "text/csv")
   async exportXeroCsv(@CurrentUser() user: AuthUser, @Res({ passthrough: true }) res: Response) {
@@ -66,6 +71,7 @@ export class InvoicesController {
     return this.service.exportXeroCsv(user.companyId);
   }
 
+  @Requires("finance.export")
   @Get("export/datev.csv")
   @Header("Content-Type", "text/csv")
   async exportDatevCsv(

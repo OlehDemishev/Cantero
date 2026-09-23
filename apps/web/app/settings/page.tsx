@@ -14,6 +14,7 @@ import { BillingPlanPanel } from "@/components/billing-plan-panel";
 import { FranchisePanel } from "@/components/franchise-panel";
 import { TeamMembersPanel } from "@/components/team-members-panel";
 import { CustomRolesPanel } from "@/components/custom-roles-panel";
+import { RolePermissionsPanel } from "@/components/role-permissions-panel";
 import { TeamInvitesPanel } from "@/components/team-invites-panel";
 import { ApiKeysPanel } from "@/components/api-keys-panel";
 import { WebhooksPanel } from "@/components/webhooks-panel";
@@ -103,6 +104,8 @@ export default function SettingsPage() {
         {activeTab === "billing" && isManager && <FranchisePanel />}
 
         {activeTab === "team" && <TeamMembersPanel isManager={!!isManager} />}
+
+        {activeTab === "team" && <RolePermissionsPanel />}
 
         {activeTab === "team" && <CustomRolesPanel isManager={!!isManager} />}
 

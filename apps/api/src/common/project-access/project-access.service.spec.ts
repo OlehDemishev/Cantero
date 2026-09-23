@@ -115,4 +115,35 @@ describe("ProjectAccessService", () => {
       expect(await service.visibleWhere("company-a", "DailyLog", "user-2", "worker")).toEqual({});
     });
   });
+
+  describe("only their own projects (projects.all revoked)", () => {
+    let own: ProjectAccessService;
+    let permissions: { effectiveFor: jest.Mock };
+    beforeEach(() => {
+      permissions = { effectiveFor: jest.fn().mockResolvedValue([]) };
+      Object.assign(prisma, {
+        membership: { findUnique: jest.fn().mockResolvedValue({ customRole: null }) },
+        resourceAssignment: { findMany: jest.fn().mockResolvedValue([{ projectId: "p-assigned" }]) },
+      });
+      prisma.projectMember.findMany.mockResolvedValue([{ projectId: "p-member" }]);
+      own = new ProjectAccessService(prisma as never, permissions as never);
+    });
+
+    it("counts projects they're a member of or assigned to as theirs", async () => {
+      expect(await own.ownProjectScope("company-a", "user-2", "worker")).toEqual(new Set(["p-member", "p-assigned"]));
+    });
+
+    it("refuses any other project of the company", async () => {
+      prisma.project.findFirst.mockResolvedValue({ id: "p-other", restrictedToMembers: false });
+      await expect(own.assertAccess("company-a", "p-other", "user-2", "worker")).rejects.toThrow(ForbiddenException);
+      prisma.project.findFirst.mockResolvedValue({ id: "p-assigned", restrictedToMembers: false });
+      await expect(own.assertAccess("company-a", "p-assigned", "user-2", "worker")).resolves.toBeUndefined();
+    });
+
+    it("changes nothing while the role has projects.all, the default", async () => {
+      permissions.effectiveFor.mockResolvedValue(["projects.all"]);
+      expect(await own.ownProjectScope("company-a", "user-2", "worker")).toBeNull();
+      expect(prisma.projectMember.findMany).not.toHaveBeenCalled();
+    });
+  });
 });

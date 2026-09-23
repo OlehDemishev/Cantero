@@ -13,8 +13,11 @@ import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { ServiceContractsService } from "./service-contracts.service";
 import { ServiceVisitsService } from "./service-visits.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { RequiresFor } from "../common/decorators/permissions.decorator";
 
 @ProjectResource("ServiceContract")
+@RequiresFor("contracts.view", "contracts.manage")
 @Controller("service-contracts")
 export class ServiceContractsController {
   constructor(

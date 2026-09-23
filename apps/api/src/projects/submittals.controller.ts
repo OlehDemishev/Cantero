@@ -14,8 +14,11 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { SubmittalsService } from "./submittals.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @ProjectResource("Submittal")
+@Requires("site.manage")
 @Controller("submittals")
 export class SubmittalsController {
   constructor(private readonly service: SubmittalsService) {}

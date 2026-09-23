@@ -3,7 +3,7 @@ import { ApiError } from "./api-client";
 import { fetchCached } from "./offline-cache";
 
 export interface Me {
-  user: { id: string; email: string; name: string; role: string };
+  user: { id: string; email: string; name: string; role: string; /** What this member may do — see packages/shared permissions.ts. */ permissions?: string[] };
 }
 
 export function useMe() {

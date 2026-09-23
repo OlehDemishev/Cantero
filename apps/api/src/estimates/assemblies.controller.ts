@@ -10,17 +10,22 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { AssembliesService } from "./assemblies.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @NotProjectScoped("company estimating assemblies")
+@Requires("pricing.manage")
 @Controller("assemblies")
 export class AssembliesController {
   constructor(private readonly service: AssembliesService) {}
 
+  @OpenToAllRoles("reference data every role estimates or works from")
   @Get()
   list(@CurrentUser() user: AuthUser) {
     return this.service.list(user.companyId);
   }
 
+  @OpenToAllRoles("reference data every role estimates or works from")
   @Get(":id")
   get(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.get(user.companyId, id);

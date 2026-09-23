@@ -10,8 +10,11 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { StockCountsService } from "./stock-counts.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @NotProjectScoped("warehouse stock counts")
+@Requires("site.manage")
 @Controller("materials/stock/counts")
 export class StockCountsController {
   constructor(private readonly service: StockCountsService) {}

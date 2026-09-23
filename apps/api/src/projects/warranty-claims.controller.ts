@@ -16,8 +16,11 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { WarrantyClaimsService } from "./warranty-claims.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @ProjectResource("WarrantyClaim")
+@Requires("site.manage")
 @Controller("warranty-claims")
 export class WarrantyClaimsController {
   constructor(private readonly service: WarrantyClaimsService) {}

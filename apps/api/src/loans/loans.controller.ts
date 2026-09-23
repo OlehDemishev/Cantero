@@ -4,8 +4,10 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { LoansService } from "./loans.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @NotProjectScoped("company loans")
+@Requires("hr.payroll")
 @Controller("loans")
 export class LoansController {
   constructor(private readonly service: LoansService) {}

@@ -17,12 +17,13 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import { MAX_UPLOAD_BYTES } from "../common/upload-limits";
 import { updateDocumentTagsSchema, type AuthUser, type Locale, type UpdateDocumentTagsInput } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
-import { Roles } from "../common/decorators/roles.decorator";
+import { OpenToAllRoles, Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { DocumentsService } from "./documents.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
 
 @ProjectResource("Document")
+@OpenToAllRoles("site and project work every member does")
 @Controller("documents")
 export class DocumentsController {
   constructor(private readonly service: DocumentsService) {}

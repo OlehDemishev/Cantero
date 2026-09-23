@@ -3,7 +3,9 @@ import { createSafetyObservationSchema, type AuthUser, type CreateSafetyObservat
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { SafetyObservationsService } from "./safety-observations.service";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
 
+@OpenToAllRoles("site and project work every member does")
 @Controller("safety/observations")
 export class SafetyObservationsController {
   constructor(private readonly service: SafetyObservationsService) {}

@@ -21,7 +21,7 @@ export class CustomRolesService {
   async create(companyId: string, actor: AuditActor, input: CreateCustomRoleInput) {
     try {
       const role = await this.prisma.customRole.create({
-        data: { companyId, name: input.name, basePermissions: input.basePermissions },
+        data: { companyId, name: input.name, basePermissions: input.basePermissions, extraPermissions: input.extraPermissions ?? [] },
       });
       this.audit.record(
         companyId,
@@ -29,7 +29,7 @@ export class CustomRolesService {
         "custom_role.created",
         "CustomRole",
         role.id,
-        `Created custom role "${role.name}" (${input.basePermissions.join(", ")})`,
+        `Created custom role "${role.name}" (${[...input.basePermissions, ...(input.extraPermissions ?? [])].join(", ")})`,
       );
       return role;
     } catch (err) {

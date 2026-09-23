@@ -15,31 +15,39 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { StockService } from "./stock.service";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
+@Requires("site.manage")
 @Controller("materials/stock")
 export class StockController {
   constructor(private readonly service: StockService) {}
 
+  @OpenToAllRoles("every member reads these to do their own site work")
   @Get("levels")
   levels(@CurrentUser() user: AuthUser, @Query("warehouseId") warehouseId?: string) {
     return this.service.listLevels(user.companyId, warehouseId);
   }
 
+  @OpenToAllRoles("every member reads these to do their own site work")
   @Get("movements")
   movements(@CurrentUser() user: AuthUser, @Query("warehouseId") warehouseId?: string, @Query("cursor") cursor?: string) {
     return this.service.listMovements(user.companyId, warehouseId, cursor);
   }
 
+  @Requires("finance.view")
   @Get("valuation")
   valuation(@CurrentUser() user: AuthUser, @Query("warehouseId") warehouseId?: string) {
     return this.service.inventoryValuation(user.companyId, warehouseId);
   }
 
+  @Requires("finance.view")
   @Get("standard-cost-variance")
   standardCostVariance(@CurrentUser() user: AuthUser, @Query("warehouseId") warehouseId?: string) {
     return this.service.standardCostVariance(user.companyId, warehouseId);
   }
 
+  @OpenToAllRoles("every member reads these to do their own site work")
   @Get("lots")
   lots(
     @CurrentUser() user: AuthUser,
@@ -49,6 +57,7 @@ export class StockController {
     return this.service.listLots(user.companyId, warehouseId, materialCatalogItemId);
   }
 
+  @OpenToAllRoles("every member reads these to do their own site work")
   @Get("serial-units")
   serialUnits(
     @CurrentUser() user: AuthUser,
@@ -58,6 +67,7 @@ export class StockController {
     return this.service.listSerialUnits(user.companyId, warehouseId, materialCatalogItemId);
   }
 
+  @OpenToAllRoles("site work every member does on a project")
   @Post("movements")
   recordMovement(
     @CurrentUser() user: AuthUser,

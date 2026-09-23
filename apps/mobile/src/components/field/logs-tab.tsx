@@ -3,6 +3,7 @@ import { Text } from "react-native";
 import { useFormatter, useTranslations } from "use-intl";
 import { WEATHER_CONDITIONS, type WeatherCondition } from "@cantero/shared";
 import { fetchCached } from "@/lib/offline-cache";
+import { useMe } from "@/lib/use-me";
 import { attachFiles, submitOrQueue } from "@/lib/offline-queue";
 import type { LocalPhoto } from "@/lib/photos";
 import { useTheme } from "@/theme";
@@ -36,6 +37,9 @@ export function LogsTab({ projectId, reloadKey }: { projectId: string; reloadKey
   const t = useTranslations("field");
   const td = useTranslations("dailyLogs");
   const tc = useTranslations("common");
+  const { me } = useMe();
+  // Writing the log is the site lead's by default (site.dailyLogs.create); everyone else reads it.
+  const canWrite = !!me?.user.permissions?.includes("site.dailyLogs.create");
   const [existingId, setExistingId] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [loaded, setLoaded] = useState(false);
@@ -101,7 +105,31 @@ export function LogsTab({ projectId, reloadKey }: { projectId: string; reloadKey
     }
   }
 
-  if (!loaded) return <Loading />;
+  if (!loaded || !me) return <Loading />;
+
+  if (!canWrite) {
+    return (
+      <Card>
+        <CachedNote cachedAt={cachedAt} />
+        <Text style={{ fontSize: 13, color: theme.textMuted }}>{format.dateTime(new Date(), { dateStyle: "full" })}</Text>
+        {existingId ? (
+          <>
+            <Field label={td("workPerformed")}>
+              <Text style={{ fontSize: 15, color: theme.text }}>{form.workPerformed}</Text>
+            </Field>
+            {!!form.delays && (
+              <Field label={td("delays")}>
+                <Text style={{ fontSize: 15, color: theme.text }}>{form.delays}</Text>
+              </Field>
+            )}
+          </>
+        ) : (
+          <Text style={{ fontSize: 15, color: theme.text }}>{t("noLogYet")}</Text>
+        )}
+        <Text style={{ fontSize: 13, color: theme.textMuted }}>{t("logReadOnlyHint")}</Text>
+      </Card>
+    );
+  }
 
   return (
     <Card>

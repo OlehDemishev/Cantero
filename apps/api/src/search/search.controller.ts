@@ -4,7 +4,9 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { SearchService } from "./search.service";
 import { SemanticSearchService } from "./semantic/semantic-search.service";
 import type { SemanticType } from "./semantic/sources";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
 
+@OpenToAllRoles("each member's own account, settings and workspace")
 @Controller("search")
 export class SearchController {
   constructor(

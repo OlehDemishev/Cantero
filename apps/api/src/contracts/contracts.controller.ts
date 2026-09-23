@@ -10,8 +10,11 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { ContractsService } from "./contracts.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { RequiresFor } from "../common/decorators/permissions.decorator";
 
 @ProjectResource("Contract")
+@RequiresFor("contracts.view", "contracts.manage")
 @Controller("contracts")
 export class ContractsController {
   constructor(private readonly service: ContractsService) {}

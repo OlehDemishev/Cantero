@@ -14,9 +14,12 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { ChangeOrdersService } from "./change-orders.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { RequiresFor } from "../common/decorators/permissions.decorator";
 
 @ProjectResource("Estimate", "estimateId")
 @ProjectResource("ChangeOrder")
+@RequiresFor("estimates.view", "estimates.manage")
 @Controller("estimates/:estimateId/change-orders")
 export class ChangeOrdersController {
   constructor(private readonly service: ChangeOrdersService) {}

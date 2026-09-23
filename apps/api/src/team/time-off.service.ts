@@ -28,9 +28,10 @@ export class TimeOffService {
     private readonly audit: AuditService,
   ) {}
 
-  list(companyId: string) {
+  /** `workerIds` narrows to those workers' requests — a member's own, when they can't see the crew's. */
+  list(companyId: string, workerIds?: string[]) {
     return this.prisma.timeOffRequest.findMany({
-      where: { companyId },
+      where: { companyId, ...(workerIds ? { workerId: { in: workerIds } } : {}) },
       include: { worker: { select: { id: true, name: true } } },
       orderBy: { startDate: "desc" },
     });

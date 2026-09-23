@@ -12,12 +12,16 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { DrawingSheetsService } from "./drawing-sheets.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @ProjectResource("DrawingSheet")
+@Requires("site.manage")
 @Controller()
 export class DrawingSheetsController {
   constructor(private readonly service: DrawingSheetsService) {}
 
+  @OpenToAllRoles("every member reads these to do their own site work")
   @Get("projects/:id/drawing-sheets")
   list(@CurrentUser() user: AuthUser, @Param("id") projectId: string) {
     return this.service.list(user.companyId, projectId);
@@ -38,16 +42,19 @@ export class DrawingSheetsController {
     return this.service.upload(user.companyId, { userId: user.userId, name: user.name }, projectId, file, input);
   }
 
+  @OpenToAllRoles("every member reads these to do their own site work")
   @Get("drawing-sheets/:id")
   get(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.get(user.companyId, id);
   }
 
+  @OpenToAllRoles("every member reads these to do their own site work")
   @Get("drawing-sheets/:id/links")
   links(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.links(user, id);
   }
 
+  @OpenToAllRoles("every member reads these to do their own site work")
   @Get("drawing-sheets/:id/versions")
   versions(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.versions(user.companyId, id);
@@ -79,6 +86,7 @@ export class DrawingSheetsController {
     return this.service.delete(user.companyId, { userId: user.userId, name: user.name }, id);
   }
 
+  @OpenToAllRoles("every member reads these to do their own site work")
   @Get("drawing-sheets/:id/file")
   async file(@CurrentUser() user: AuthUser, @Param("id") id: string, @Res({ passthrough: true }) res: Response) {
     const { buffer, mimeType } = await this.service.download(user.companyId, id);

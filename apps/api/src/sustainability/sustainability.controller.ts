@@ -4,7 +4,10 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { SustainabilityService } from "./sustainability.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
+@Requires("site.manage")
 @Controller("sustainability")
 export class SustainabilityController {
   constructor(private readonly service: SustainabilityService) {}

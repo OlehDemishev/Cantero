@@ -4,8 +4,11 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { ScheduleBaselineService } from "./schedule-baseline.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @ProjectResource("ScheduleBaseline")
+@Requires("site.manage")
 @Controller("schedule-baselines")
 export class ScheduleBaselineController {
   constructor(private readonly service: ScheduleBaselineService) {}

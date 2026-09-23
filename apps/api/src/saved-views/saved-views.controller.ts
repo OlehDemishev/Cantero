@@ -4,8 +4,10 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { SavedViewsService } from "./saved-views.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
 
 @NotProjectScoped("the caller's own saved list views")
+@OpenToAllRoles("each member's own account, settings and workspace")
 @Controller("saved-views")
 export class SavedViewsController {
   constructor(private readonly service: SavedViewsService) {}

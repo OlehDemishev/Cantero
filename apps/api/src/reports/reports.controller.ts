@@ -1,11 +1,11 @@
 import { Controller, Get, Header, Query, StreamableFile } from "@nestjs/common";
-import { REPORT_ROLES, type AuthUser, type ReportKey } from "@cantero/shared";
+import { REPORT_PERMISSIONS, type AuthUser, type ReportKey } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
-import { Roles } from "../common/decorators/roles.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 import { ReportsService } from "./reports.service";
 
-/** Who may open which report is one table shared with the web app — see REPORT_ROLES. */
-const ReportRoles = (report: ReportKey) => Roles(...REPORT_ROLES[report]);
+/** The capability each report needs is one table shared with the web app — see REPORT_PERMISSIONS. */
+const ReportRoles = (report: ReportKey) => Requires(REPORT_PERMISSIONS[report]);
 
 @Controller("reports")
 export class ReportsController {

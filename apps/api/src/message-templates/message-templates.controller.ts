@@ -4,12 +4,16 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { MessageTemplatesService } from "./message-templates.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @NotProjectScoped("company message templates, keyed by template key")
+@Requires("templates.company")
 @Controller("message-templates")
 export class MessageTemplatesController {
   constructor(private readonly service: MessageTemplatesService) {}
 
+  @OpenToAllRoles("every role may need the company's templates and certificates on hand")
   @Get()
   list(@CurrentUser() user: AuthUser) {
     return this.service.list(user.companyId);

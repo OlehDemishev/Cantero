@@ -1,5 +1,6 @@
-import { ForbiddenException, Injectable } from "@nestjs/common";
-import type { Prisma } from "@prisma/client";
+import { ForbiddenException, Injectable, Optional } from "@nestjs/common";
+import type { MembershipRole, Prisma } from "@prisma/client";
+import { PermissionsService } from "../permissions/permissions.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { excludeProjectsWhere, projectPathFor, projectSelect, readProjectId } from "./project-path";
 
@@ -22,10 +23,43 @@ export interface ProjectViewer {
 
 @Injectable()
 export class ProjectAccessService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    // Optional so a unit test that builds this service alone keeps the old behaviour: every
+    // project visible apart from restricted ones.
+    @Optional() private readonly permissions?: PermissionsService,
+  ) {}
+
+  /**
+   * Null when the member sees every project of the company (the "projects.all" capability, which
+   * every role has by default); otherwise the projects that are theirs — ones they're a member of,
+   * or where one of their worker records is assigned in resource planning.
+   */
+  async ownProjectScope(companyId: string, userId: string, role: string): Promise<Set<string> | null> {
+    if (!this.permissions || ProjectAccessService.seesEveryProject(userId, role)) return null;
+    let granted = await this.permissions.effectiveFor(companyId, role as MembershipRole);
+    if (!granted.includes("projects.all")) {
+      // A custom role can add it back.
+      const membership = await this.prisma.membership.findUnique({ where: { userId_companyId: { userId, companyId } }, include: { customRole: true } });
+      granted = await this.permissions.effectiveFor(companyId, role as MembershipRole, membership?.customRole);
+    }
+    if (granted.includes("projects.all")) return null;
+    const [members, assignments] = await Promise.all([
+      this.prisma.projectMember.findMany({ where: { companyId, userId }, select: { projectId: true } }),
+      this.prisma.resourceAssignment.findMany({ where: { companyId, worker: { userId } }, select: { projectId: true } }),
+    ]);
+    return new Set([...members, ...assignments].map((r) => r.projectId));
+  }
 
   async assertAccess(companyId: string, projectId: string, userId?: string, role?: string): Promise<void> {
     if (!userId || !role || ProjectAccessService.seesEveryProject(userId, role)) return;
+    const own = await this.ownProjectScope(companyId, userId, role);
+    if (own && !own.has(projectId)) {
+      const exists = await this.prisma.project.findFirst({ where: { id: projectId, companyId }, select: { id: true } });
+      // Same as below: a project of another company is left to the caller's own 404.
+      if (exists) throw new ForbiddenException("You don't have access to this project");
+      return;
+    }
 
     const project = await this.prisma.project.findFirst({
       where: { id: projectId, companyId },
@@ -67,11 +101,20 @@ export class ProjectAccessService {
    */
   async hiddenProjectIds(companyId: string, userId?: string, role?: string): Promise<string[]> {
     if (!userId || !role || ProjectAccessService.seesEveryProject(userId, role)) return [];
+    const own = await this.ownProjectScope(companyId, userId, role);
     const hidden = await this.prisma.project.findMany({
-      where: { companyId, restrictedToMembers: true, members: { none: { userId } } },
+      where: own
+        ? { companyId, id: { notIn: [...own] } }
+        : { companyId, restrictedToMembers: true, members: { none: { userId } } },
       select: { id: true },
     });
-    return hidden.map((p) => p.id);
+    if (!own) return hidden.map((p) => p.id);
+    // Their own projects can still be restricted ones they were assigned to without being a member.
+    const restrictedOwn = await this.prisma.project.findMany({
+      where: { companyId, id: { in: [...own] }, restrictedToMembers: true, members: { none: { userId } } },
+      select: { id: true },
+    });
+    return [...hidden, ...restrictedOwn].map((p) => p.id);
   }
 
   /**
@@ -94,6 +137,11 @@ export class ProjectAccessService {
     role?: string,
   ): Promise<T[]> {
     if (!userId || !role || role === "owner" || role === "admin") return projects;
+    if (projects.length > 0 && this.permissions) {
+      const company = await this.prisma.project.findFirst({ where: { id: projects[0].id }, select: { companyId: true } });
+      const own = company ? await this.ownProjectScope(company.companyId, userId, role) : null;
+      if (own) projects = projects.filter((p) => own.has(p.id));
+    }
 
     const restrictedIds = projects.filter((p) => p.restrictedToMembers).map((p) => p.id);
     if (restrictedIds.length === 0) return projects;

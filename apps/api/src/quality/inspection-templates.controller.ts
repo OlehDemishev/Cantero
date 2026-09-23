@@ -10,17 +10,22 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { InspectionTemplatesService } from "./inspection-templates.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @NotProjectScoped("company inspection templates")
+@Requires("templates.field")
 @Controller("inspection-templates")
 export class InspectionTemplatesController {
   constructor(private readonly service: InspectionTemplatesService) {}
 
+  @OpenToAllRoles("every role fills in checklists and inspections built from these")
   @Get()
   list(@CurrentUser() user: AuthUser) {
     return this.service.list(user.companyId);
   }
 
+  @OpenToAllRoles("every role fills in checklists and inspections built from these")
   @Get(":id")
   get(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.get(user.companyId, id);

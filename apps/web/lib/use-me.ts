@@ -6,7 +6,7 @@ import { resetStateInEffect } from "./effect-reset";
 import { ApiError } from "./api-client";
 
 export interface MeResponse {
-  user: { id: string; email: string; name: string; role: string; additionalRoles?: string[]; totpEnabled: boolean };
+  user: { id: string; email: string; name: string; role: string; additionalRoles?: string[]; permissions?: string[]; totpEnabled: boolean };
   company: {
     id: string;
     name: string;

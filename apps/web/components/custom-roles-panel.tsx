@@ -2,21 +2,23 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { MEMBERSHIP_ROLES_MANAGEABLE } from "@cantero/shared";
+import { MEMBERSHIP_ROLES_MANAGEABLE, PERMISSION_KEYS } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 
 interface CustomRole {
   id: string;
   name: string;
   basePermissions: string[];
+  extraPermissions?: string[];
   _count: { memberships: number };
 }
 
 export function CustomRolesPanel({ isManager }: { isManager: boolean }) {
   const t = useTranslations("settings");
   const tc = useTranslations("common");
+  const tp = useTranslations("permissions");
   const [customRoles, setCustomRoles] = useState<CustomRole[] | null>(null);
-  const [customRoleForm, setCustomRoleForm] = useState({ name: "", basePermissions: [] as string[] });
+  const [customRoleForm, setCustomRoleForm] = useState({ name: "", basePermissions: [] as string[], extraPermissions: [] as string[] });
   const [creatingCustomRole, setCreatingCustomRole] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -35,13 +37,20 @@ export function CustomRolesPanel({ isManager }: { isManager: boolean }) {
     }));
   }
 
+  function toggleExtraPermission(permission: string) {
+    setCustomRoleForm((f) => ({
+      ...f,
+      extraPermissions: f.extraPermissions.includes(permission) ? f.extraPermissions.filter((p) => p !== permission) : [...f.extraPermissions, permission],
+    }));
+  }
+
   async function createCustomRole(e: React.FormEvent) {
     e.preventDefault();
     if (!customRoleForm.name.trim() || customRoleForm.basePermissions.length === 0) return;
     setBusy(true);
     try {
       await apiFetch("/company/custom-roles", { method: "POST", body: JSON.stringify(customRoleForm) });
-      setCustomRoleForm({ name: "", basePermissions: [] });
+      setCustomRoleForm({ name: "", basePermissions: [], extraPermissions: [] });
       setCreatingCustomRole(false);
       load();
     } finally {
@@ -68,7 +77,9 @@ export function CustomRolesPanel({ isManager }: { isManager: boolean }) {
             <li key={cr.id} className="flex items-center justify-between rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2">
               <span className="text-sm">
                 <span className="font-medium text-gray-800 dark:text-gray-100">{cr.name}</span>{" "}
-                <span className="text-xs text-gray-500 dark:text-gray-400">({cr.basePermissions.map((p) => t(p)).join(" + ")})</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  ({[...cr.basePermissions.map((p) => t(p)), ...(cr.extraPermissions ?? []).map((p) => tp(`p_${p.replace(/\./g, "_")}`))].join(" + ")})
+                </span>
                 {cr._count.memberships > 0 && (
                   <span className="ml-1.5 text-xs text-gray-400 dark:text-gray-500">
                     {t("assignedToCount", { count: cr._count.memberships })}
@@ -112,6 +123,17 @@ export function CustomRolesPanel({ isManager }: { isManager: boolean }) {
                   </label>
                 ))}
               </div>
+              <details className="text-xs">
+                <summary className="cursor-pointer text-gray-600 dark:text-gray-300">{t("customRoleExtraPermissions")}</summary>
+                <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                  {PERMISSION_KEYS.map((p) => (
+                    <label key={p} className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
+                      <input type="checkbox" checked={customRoleForm.extraPermissions.includes(p)} onChange={() => toggleExtraPermission(p)} />
+                      {tp(`p_${p.replace(/\./g, "_")}`)}
+                    </label>
+                  ))}
+                </div>
+              </details>
               <div className="flex gap-2">
                 <button type="submit" disabled={busy} className="btn-primary">
                   {tc("create")}

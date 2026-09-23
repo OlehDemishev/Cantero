@@ -4,12 +4,16 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { CatalogsService } from "./catalogs.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @NotProjectScoped("company price catalogs")
+@Requires("pricing.manage")
 @Controller("catalogs")
 export class CatalogsController {
   constructor(private readonly service: CatalogsService) {}
 
+  @OpenToAllRoles("reference data every role estimates or works from")
   @Get()
   list(@CurrentUser() user: AuthUser) {
     return this.service.list(user.companyId);

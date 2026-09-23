@@ -7,7 +7,10 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { WarrantyRegistryService } from "./warranty-registry.service";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
+@Requires("site.manage")
 @Controller()
 export class WarrantyRegistryController {
   constructor(private readonly service: WarrantyRegistryService) {}

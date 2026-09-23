@@ -1,6 +1,6 @@
 import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, UploadedFile, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { Roles } from "../common/decorators/roles.decorator";
+import { OpenToAllRoles, Roles } from "../common/decorators/roles.decorator";
 import { MAX_UPLOAD_BYTES } from "../common/upload-limits";
 import {
   addSupplierDocumentSchema,
@@ -17,8 +17,10 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { SuppliersService } from "./suppliers.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
+import { RequiresFor } from "../common/decorators/permissions.decorator";
 
 @NotProjectScoped("suppliers and their own documents and reviews")
+@RequiresFor("purchasing.view", "purchasing.manage")
 @Controller("materials/suppliers")
 export class SuppliersController {
   constructor(private readonly service: SuppliersService) {}

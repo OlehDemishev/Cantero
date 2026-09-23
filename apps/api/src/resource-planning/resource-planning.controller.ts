@@ -16,7 +16,10 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { ResourcePlanningService } from "./resource-planning.service";
 import { NotProjectScoped, ProjectResource } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
+@Requires("site.manage")
 @Controller("resource-planning")
 export class ResourcePlanningController {
   constructor(private readonly service: ResourcePlanningService) {}

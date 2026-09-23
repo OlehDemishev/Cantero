@@ -3,7 +3,9 @@ import { createSiteSignInSchema, type AuthUser, type CreateSiteSignInInput } fro
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { SiteSignInsService } from "./site-sign-ins.service";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
 
+@OpenToAllRoles("site and project work every member does")
 @Controller("projects/:projectId/site-sign-ins")
 export class SiteSignInsController {
   constructor(private readonly service: SiteSignInsService) {}

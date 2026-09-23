@@ -14,11 +14,19 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { ToolCribService } from "./tool-crib.service";
 import { NotProjectScoped, ProjectResource } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
+import { CREW, SelfScopeService } from "../common/permissions/self-scope.service";
 
+@Requires("site.manage")
 @Controller()
 export class ToolCribController {
-  constructor(private readonly service: ToolCribService) {}
+  constructor(
+    private readonly service: ToolCribService,
+    private readonly selfScope: SelfScopeService,
+  ) {}
 
+  @OpenToAllRoles("every member reads these to do their own site work")
   @Get("tool-crib/items")
   list(@CurrentUser() user: AuthUser) {
     return this.service.list(user.companyId);
@@ -50,29 +58,35 @@ export class ToolCribController {
     return this.service.listUnits(user.companyId, id);
   }
 
+  @OpenToAllRoles("site work every member does on a project")
   @NotProjectScoped("company tool-crib items; the project, if any, is in the body")
   @Post("tool-crib/items/:id/check-out")
-  checkOut(
+  async checkOut(
     @CurrentUser() user: AuthUser,
     @Param("id") id: string,
     @Body(new ZodValidationPipe(checkOutToolSchema)) body: CheckOutToolInput,
   ) {
+    await this.selfScope.assertOwnWorker(user, body.workerId, CREW.tools);
     return this.service.checkOut(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
+  @OpenToAllRoles("site work every member does on a project")
   @ProjectResource("ToolCheckout")
   @Post("tool-checkouts/:id/check-in")
-  checkIn(
+  async checkIn(
     @CurrentUser() user: AuthUser,
     @Param("id") id: string,
     @Body(new ZodValidationPipe(checkInToolSchema)) body: CheckInToolInput,
   ) {
+    await this.selfScope.assertOwnRecord(user, "toolCheckout", id, CREW.tools);
     return this.service.checkIn(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
+  @OpenToAllRoles("every member reads these to do their own site work")
   @NotProjectScoped("workers are company-level")
   @Get("workers/:workerId/tool-checkouts")
-  listCheckoutsForWorker(@CurrentUser() user: AuthUser, @Param("workerId") workerId: string) {
+  async listCheckoutsForWorker(@CurrentUser() user: AuthUser, @Param("workerId") workerId: string) {
+    await this.selfScope.assertOwnWorker(user, workerId, CREW.tools);
     return this.service.listCheckoutsForWorker(user.companyId, workerId);
   }
 

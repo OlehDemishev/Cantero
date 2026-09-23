@@ -4,7 +4,9 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Public } from "../common/decorators/public.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { EnpsSurveysService } from "./enps-surveys.service";
+import { Requires } from "../common/decorators/permissions.decorator";
 
+@Requires("hr.cases")
 @Controller("enps-surveys")
 export class EnpsSurveysController {
   constructor(private readonly service: EnpsSurveysService) {}

@@ -4,12 +4,16 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { CostCodesService } from "./cost-codes.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @NotProjectScoped("company cost-code list")
+@Requires("pricing.manage")
 @Controller("cost-codes")
 export class CostCodesController {
   constructor(private readonly service: CostCodesService) {}
 
+  @OpenToAllRoles("reference data every role estimates or works from")
   @Get()
   list(@CurrentUser() user: AuthUser) {
     return this.service.list(user.companyId);

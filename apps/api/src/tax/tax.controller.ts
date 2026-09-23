@@ -16,7 +16,9 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { TaxService } from "./tax.service";
 import { NotProjectScoped, ProjectResource } from "../common/project-access/project-resource.decorator";
+import { RequiresFor } from "../common/decorators/permissions.decorator";
 
+@RequiresFor("finance.view", "finance.manage")
 @Controller()
 export class TaxController {
   constructor(private readonly service: TaxService) {}

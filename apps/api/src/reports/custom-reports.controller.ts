@@ -13,8 +13,10 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { CustomReportsService } from "./custom-reports.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @NotProjectScoped("saved report definitions, keyed by report id")
+@Requires("reports.custom")
 @Controller("custom-reports")
 export class CustomReportsController {
   constructor(private readonly service: CustomReportsService) {}

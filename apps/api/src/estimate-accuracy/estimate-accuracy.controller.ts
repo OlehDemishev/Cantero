@@ -4,8 +4,10 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { EstimateAccuracyService } from "./estimate-accuracy.service";
 import { CostBenchmarkService } from "./cost-benchmark.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @ProjectResource("Estimate", "estimateId")
+@Requires("costing.view")
 @Controller("estimate-accuracy")
 export class EstimateAccuracyController {
   constructor(

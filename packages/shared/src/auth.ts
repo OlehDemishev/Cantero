@@ -31,6 +31,10 @@ export interface AuthUser {
   role: string;
   /** Extra permission tiers granted via a company-defined CustomRole, additive on top of `role` — see CustomRole in schema.prisma. Absent or empty means no custom role assigned. */
   additionalRoles?: string[];
+  /** Effective capabilities (see permissions.ts): the role's defaults with the company's overrides and
+   * the custom role's additions applied. Filled in by the API on every request; absent on an internal
+   * caller, which is trusted. */
+  permissions?: string[];
   /** UserSession row id embedded as the JWT's session claim — lets a revoked session's tokens be rejected without changing the stateless-JWT scheme everywhere else. */
   sid: string;
 }

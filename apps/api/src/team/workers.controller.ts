@@ -15,12 +15,14 @@ import {
   type VerifyClockInPinInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
-import { Roles } from "../common/decorators/roles.decorator";
+import { OpenToAllRoles, Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { WorkersService } from "./workers.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @NotProjectScoped("workers are company-level")
+@OpenToAllRoles("the worker directory the field needs for time entry; whether pay rates show to every role is not decided yet")
 @Controller("workers")
 export class WorkersController {
   constructor(private readonly service: WorkersService) {}
@@ -31,6 +33,7 @@ export class WorkersController {
   }
 
   // Declared before ":id" so "certifications/dashboard" isn't swallowed as a worker id.
+  @Requires("site.manage")
   @Get("certifications/dashboard")
   certificationsDashboard(@CurrentUser() user: AuthUser) {
     return this.service.certificationsDashboard(user.companyId);
@@ -47,11 +50,13 @@ export class WorkersController {
     return this.service.get(user.companyId, id);
   }
 
+  @Requires("people.rates")
   @Get(":id/summary")
   summary(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.summary(user.companyId, id);
   }
 
+  @Requires("people.rates")
   @Get(":id/loaded-rate")
   loadedRate(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.loadedRate(user.companyId, id);
@@ -78,6 +83,7 @@ export class WorkersController {
     return this.service.listCertifications(user.companyId, id);
   }
 
+  @Requires("site.manage")
   @Post(":id/certifications")
   addCertification(
     @CurrentUser() user: AuthUser,
@@ -87,6 +93,7 @@ export class WorkersController {
     return this.service.addCertification(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
+  @Requires("site.manage")
   @Delete(":id/certifications/:certificationId")
   removeCertification(
     @CurrentUser() user: AuthUser,
@@ -131,21 +138,25 @@ export class WorkersController {
     return this.service.verifyClockInPin(user.companyId, id, body.pin);
   }
 
+  @Requires("hr.cases")
   @Get(":id/onboarding-tasks")
   listOnboardingTasks(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.listOnboardingTasks(user.companyId, id);
   }
 
+  @Requires("hr.cases")
   @Post(":id/onboarding-tasks/:taskId/toggle")
   toggleOnboardingTask(@CurrentUser() user: AuthUser, @Param("id") id: string, @Param("taskId") taskId: string) {
     return this.service.toggleOnboardingTask(user.companyId, id, taskId);
   }
 
+  @Requires("hr.cases")
   @Get(":id/offboarding-tasks")
   listOffboardingTasks(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.listOffboardingTasks(user.companyId, id);
   }
 
+  @Requires("hr.cases")
   @Post(":id/offboarding-tasks/:taskId/toggle")
   toggleOffboardingTask(@CurrentUser() user: AuthUser, @Param("id") id: string, @Param("taskId") taskId: string) {
     return this.service.toggleOffboardingTask(user.companyId, id, taskId);

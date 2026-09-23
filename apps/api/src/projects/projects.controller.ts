@@ -26,7 +26,10 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { ProjectsService } from "./projects.service";
 import { ProjectCloseoutService } from "./project-closeout.service";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
+@Requires("projects.manage")
 @Controller("projects")
 export class ProjectsController {
   constructor(
@@ -34,16 +37,19 @@ export class ProjectsController {
     private readonly closeout: ProjectCloseoutService,
   ) {}
 
+  @OpenToAllRoles("every member reads these to do their own site work")
   @Get()
   list(@CurrentUser() user: AuthUser) {
     return this.service.list(user.companyId, user.userId, user.role);
   }
 
+  @OpenToAllRoles("every member reads these to do their own site work")
   @Get(":id")
   get(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.get(user.companyId, id, user.userId, user.role);
   }
 
+  @Requires("site.manage")
   @Get(":id/members")
   listMembers(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.listMembers(user.companyId, id);
@@ -72,11 +78,13 @@ export class ProjectsController {
     return this.service.setRestricted(user.companyId, { userId: user.userId, name: user.name }, id, body.restrictedToMembers);
   }
 
+  @OpenToAllRoles("every member reads these to do their own site work")
   @Get(":id/weather-forecast")
   weatherForecast(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.weatherForecast(user.companyId, id);
   }
 
+  @OpenToAllRoles("every member reads these to do their own site work")
   @Get(":id/geocode")
   geocode(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.geocode(user.companyId, id);
@@ -156,11 +164,13 @@ export class ProjectsController {
     return this.service.updatePublicWork(user.companyId, id, body);
   }
 
+  @Requires("site.manage")
   @Get(":id/closeout-readiness")
   closeoutReadiness(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.closeout.readiness(user.companyId, id);
   }
 
+  @Requires("site.manage")
   @Get(":id/closeout-package")
   @Header("Content-Type", "application/zip")
   async closeoutPackage(@CurrentUser() user: AuthUser, @Param("id") id: string) {
@@ -168,11 +178,13 @@ export class ProjectsController {
     return new StreamableFile(buffer);
   }
 
+  @Requires("site.manage")
   @Post(":id/request-review")
   requestReview(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.requestReview(user.companyId, { userId: user.userId, name: user.name }, id);
   }
 
+  @OpenToAllRoles("every member reads these to do their own site work")
   @Get(":id/gallery")
   gallery(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.gallery(user.companyId, id);

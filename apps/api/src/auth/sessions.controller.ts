@@ -3,8 +3,10 @@ import type { AuthUser } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { SessionsService } from "../common/sessions/sessions.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
 
 @NotProjectScoped("the caller's own sign-in sessions")
+@OpenToAllRoles("each member's own account, settings and workspace")
 @Controller("auth/sessions")
 export class SessionsController {
   constructor(private readonly sessions: SessionsService) {}

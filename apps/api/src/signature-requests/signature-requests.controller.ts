@@ -4,8 +4,11 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { SignatureRequestsService } from "./signature-requests.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { RequiresFor } from "../common/decorators/permissions.decorator";
 
 @ProjectResource("SignatureRequest")
+@RequiresFor("contracts.view", "contracts.manage")
 @Controller("signature-requests")
 export class SignatureRequestsController {
   constructor(private readonly service: SignatureRequestsService) {}

@@ -16,8 +16,10 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { PunchListService } from "./punch-list.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
 
 @ProjectResource("PunchListItem")
+@OpenToAllRoles("site and project work every member does")
 @Controller("punch-list")
 export class PunchListController {
   constructor(private readonly service: PunchListService) {}

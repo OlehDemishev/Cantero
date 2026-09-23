@@ -4,8 +4,11 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { SupplierReturnsService } from "./supplier-returns.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { RequiresFor } from "../common/decorators/permissions.decorator";
 
 @NotProjectScoped("warehouse returns to suppliers")
+@RequiresFor("purchasing.view", "purchasing.manage")
 @Controller("materials/supplier-returns")
 export class SupplierReturnsController {
   constructor(private readonly service: SupplierReturnsService) {}

@@ -23,19 +23,22 @@ import {
   type UpdateCompanyInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
-import { Roles } from "../common/decorators/roles.decorator";
+import { OpenToAllRoles, Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { CompanyService } from "./company.service";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @Controller("company")
 export class CompanyController {
   constructor(private readonly service: CompanyService) {}
 
+  @OpenToAllRoles("every member reads their own company's profile")
   @Get()
   get(@CurrentUser() user: AuthUser) {
     return this.service.get(user.companyId);
   }
 
+  @OpenToAllRoles("the referral link is shared by any member")
   @Get("referral")
   referralStats(@CurrentUser() user: AuthUser) {
     return this.service.referralStats(user.companyId);
@@ -61,6 +64,7 @@ export class CompanyController {
     return this.service.uploadLogo(user.companyId, { userId: user.userId, name: user.name }, file);
   }
 
+  @OpenToAllRoles("the company logo appears on every page")
   @Get("logo")
   async logo(@CurrentUser() user: AuthUser) {
     const { buffer, mimeType } = await this.service.getLogo(user.companyId);
@@ -100,6 +104,7 @@ export class CompanyController {
     return this.service.linkToParent(user.companyId, { userId: user.userId, name: user.name }, body);
   }
 
+  @Requires("finance.view")
   @Get("franchise-overview")
   franchiseOverview(@CurrentUser() user: AuthUser) {
     return this.service.franchiseOverview(user.companyId);

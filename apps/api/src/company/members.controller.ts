@@ -7,12 +7,13 @@ import {
   type UpdateMemberRoleInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
-import { Roles } from "../common/decorators/roles.decorator";
+import { OpenToAllRoles, Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { MembersService } from "./members.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
 
 @NotProjectScoped("company members, keyed by user id")
+@OpenToAllRoles("company directory and calendars every member reads; changes carry their own @Roles")
 @Controller("company/members")
 export class MembersController {
   constructor(private readonly service: MembersService) {}

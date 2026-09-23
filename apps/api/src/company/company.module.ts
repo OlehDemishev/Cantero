@@ -13,6 +13,7 @@ import { WebhooksController } from "./webhooks.controller";
 import { DataExportController } from "./data-export.controller";
 import { DataExportService } from "./data-export.service";
 import { CustomRolesController } from "./custom-roles.controller";
+import { PermissionsController } from "./permissions.controller";
 import { CustomRolesService } from "./custom-roles.service";
 import { OnboardingTemplateController } from "./onboarding-template.controller";
 import { OnboardingTemplateService } from "./onboarding-template.service";
@@ -30,6 +31,7 @@ import { GobdService } from "./gobd.service";
 @Module({
   imports: [AuthModule],
   controllers: [
+    PermissionsController,
     CompanyController,
     MembersController,
     InvitesController,

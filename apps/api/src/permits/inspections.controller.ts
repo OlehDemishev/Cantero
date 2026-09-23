@@ -10,9 +10,12 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { InspectionsService } from "./inspections.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @ProjectResource("Permit", "permitId")
 @ProjectResource("Inspection")
+@Requires("site.manage")
 @Controller("permits/:permitId/inspections")
 export class InspectionsController {
   constructor(private readonly service: InspectionsService) {}

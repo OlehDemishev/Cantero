@@ -4,6 +4,7 @@ import { JwtService } from "@nestjs/jwt";
 import { JwtAuthGuard } from "./jwt-auth.guard";
 import { SessionsService } from "../sessions/sessions.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { PermissionsService } from "../permissions/permissions.service";
 
 function makeContext(request: Record<string, unknown>, isPublic = false) {
   const reflector = { getAllAndOverride: jest.fn().mockReturnValue(isPublic) } as unknown as Reflector;
@@ -20,22 +21,25 @@ describe("JwtAuthGuard", () => {
   let sessions: { isRevokedOrTimedOut: jest.Mock; touch: jest.Mock };
   let prisma: { membership: { findUnique: jest.Mock } };
   let guard: JwtAuthGuard;
+  let permissions: { effectiveFor: jest.Mock };
 
   beforeEach(() => {
     jwt = { verifyAsync: jest.fn() };
     sessions = { isRevokedOrTimedOut: jest.fn().mockResolvedValue(false), touch: jest.fn() };
     prisma = { membership: { findUnique: jest.fn() } };
+    permissions = { effectiveFor: jest.fn().mockResolvedValue(["projects.all"]) };
     guard = new JwtAuthGuard(
       jwt as unknown as JwtService,
       { getAllAndOverride: jest.fn().mockReturnValue(false) } as unknown as Reflector,
       sessions as unknown as SessionsService,
       prisma as unknown as PrismaService,
+      permissions as unknown as PermissionsService,
     );
   });
 
   it("allows a @Public() route without checking the token", async () => {
     const { reflector, context } = makeContext({ headers: {} }, true);
-    const publicGuard = new JwtAuthGuard(jwt as unknown as JwtService, reflector, sessions as unknown as SessionsService, prisma as unknown as PrismaService);
+    const publicGuard = new JwtAuthGuard(jwt as unknown as JwtService, reflector, sessions as unknown as SessionsService, prisma as unknown as PrismaService, permissions as unknown as PermissionsService);
 
     await expect(publicGuard.canActivate(context)).resolves.toBe(true);
   });

@@ -30,22 +30,28 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { EquipmentService } from "./equipment.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @NotProjectScoped("company-owned equipment; an assignment names the project in the body")
+@Requires("site.manage")
 @Controller("equipment")
 export class EquipmentController {
   constructor(private readonly service: EquipmentService) {}
 
+  @OpenToAllRoles("every member reads these to do their own site work")
   @Get()
   list(@CurrentUser() user: AuthUser) {
     return this.service.list(user.companyId);
   }
 
+  @Requires("equipment.costs")
   @Get("fixed-asset-register")
   fixedAssetRegister(@CurrentUser() user: AuthUser) {
     return this.service.fixedAssetRegister(user.companyId);
   }
 
+  @OpenToAllRoles("every member reads these to do their own site work")
   @Get(":id")
   get(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.get(user.companyId, id);
@@ -65,6 +71,7 @@ export class EquipmentController {
     return this.service.update(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
+  @OpenToAllRoles("site work every member does on a project")
   @Post(":id/check-out")
   checkOut(
     @CurrentUser() user: AuthUser,
@@ -74,6 +81,7 @@ export class EquipmentController {
     return this.service.checkOut(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
+  @OpenToAllRoles("site work every member does on a project")
   @Post(":id/check-in")
   checkIn(
     @CurrentUser() user: AuthUser,
@@ -116,6 +124,7 @@ export class EquipmentController {
     return this.service.retire(user.companyId, { userId: user.userId, name: user.name }, id);
   }
 
+  @Requires("equipment.costs")
   @Patch(":id/depreciation-schedule")
   setDepreciationSchedule(
     @CurrentUser() user: AuthUser,
@@ -125,6 +134,7 @@ export class EquipmentController {
     return this.service.setDepreciationSchedule(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
+  @Requires("equipment.costs")
   @Post(":id/dispose")
   dispose(
     @CurrentUser() user: AuthUser,
@@ -148,11 +158,13 @@ export class EquipmentController {
     return this.service.addMaintenanceRecord(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
+  @OpenToAllRoles("every member reads these to do their own site work")
   @Get(":id/fuel-logs")
   listFuelLogs(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.listFuelLogs(user.companyId, id);
   }
 
+  @OpenToAllRoles("site work every member does on a project")
   @Post(":id/fuel-logs")
   addFuelLog(
     @CurrentUser() user: AuthUser,
@@ -162,21 +174,25 @@ export class EquipmentController {
     return this.service.addFuelLog(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
+  @Requires("equipment.costs")
   @Get(":id/cost-per-hour")
   costPerHour(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.costPerHour(user.companyId, id);
   }
 
+  @Requires("equipment.costs")
   @Get(":id/tco")
   tco(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.tco(user.companyId, id);
   }
 
+  @Requires("equipment.costs")
   @Get(":id/rentals")
   listRentals(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.listRentals(user.companyId, id);
   }
 
+  @Requires("equipment.costs")
   @Post(":id/rentals")
   startRental(
     @CurrentUser() user: AuthUser,
@@ -186,6 +202,7 @@ export class EquipmentController {
     return this.service.startRental(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
+  @Requires("equipment.costs")
   @Post(":id/rentals/return")
   endRental(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.endRental(user.companyId, { userId: user.userId, name: user.name }, id);
@@ -196,6 +213,7 @@ export class EquipmentController {
     return this.service.listAssignments(user.companyId, id);
   }
 
+  @OpenToAllRoles("site work every member does on a project")
   @Post(":id/gps-pings")
   recordGpsPing(
     @CurrentUser() user: AuthUser,

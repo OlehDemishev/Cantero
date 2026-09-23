@@ -11,7 +11,9 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { TwoFactorService } from "./two-factor.service";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
 
+@OpenToAllRoles("each member's own account, settings and workspace")
 @Controller("auth/2fa")
 export class TwoFactorController {
   constructor(private readonly service: TwoFactorService) {}

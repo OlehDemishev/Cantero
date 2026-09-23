@@ -5,10 +5,12 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import type { Response } from "express";
 import type { AuthUser } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
-import { Roles } from "../common/decorators/roles.decorator";
+import { OpenToAllRoles, Roles } from "../common/decorators/roles.decorator";
 import { MAX_UPLOAD_BYTES } from "../common/upload-limits";
 import { ScheduleFilesService } from "./schedule-files.service";
+import { Requires } from "../common/decorators/permissions.decorator";
 
+@Requires("site.manage")
 @Controller("schedule-files")
 export class ScheduleFilesController {
   constructor(private readonly service: ScheduleFilesService) {}

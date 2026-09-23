@@ -17,8 +17,11 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { SupportTicketsService } from "./support-tickets.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @ProjectResource("SupportTicket")
+@Requires("site.manage")
 @Controller("support-tickets")
 export class SupportTicketsController {
   constructor(private readonly service: SupportTicketsService) {}

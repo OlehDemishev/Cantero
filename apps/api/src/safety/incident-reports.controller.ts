@@ -10,8 +10,11 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { IncidentReportsService } from "./incident-reports.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @ProjectResource("IncidentReport")
+@Requires("site.manage")
 @Controller("safety/incidents")
 export class IncidentReportsController {
   constructor(private readonly service: IncidentReportsService) {}
@@ -40,6 +43,7 @@ export class IncidentReportsController {
     return new StreamableFile(buffer, { disposition: `attachment; filename="incident-report.pdf"` });
   }
 
+  @OpenToAllRoles("site work every member does on a project")
   @Post()
   create(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(createIncidentReportSchema)) body: CreateIncidentReportInput) {
     return this.service.create(user.companyId, { userId: user.userId, name: user.name }, body);

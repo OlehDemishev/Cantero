@@ -19,7 +19,7 @@ export class WorkersService {
   ) {}
 
   async list(companyId: string) {
-    const workers = await this.prisma.worker.findMany({ where: { companyId }, orderBy: { name: "asc" } });
+    const workers = await this.prisma.worker.findMany({ where: { companyId }, orderBy: { name: "asc" }, omit: { clockInPinHash: false } });
     return workers.map((w) => this.redactPin(w));
   }
 
@@ -57,7 +57,7 @@ export class WorkersService {
   /** Internal-only lookup that keeps clockInPinHash — verifyClockInPin needs the real hash to
    * compare against; every externally-facing read goes through get()/list(), which redact it. */
   private async getRaw(companyId: string, id: string) {
-    const worker = await this.prisma.worker.findFirst({ where: { id, companyId } });
+    const worker = await this.prisma.worker.findFirst({ where: { id, companyId }, omit: { clockInPinHash: false } });
     if (!worker) throw new NotFoundException("Worker not found");
     return worker;
   }
@@ -71,7 +71,7 @@ export class WorkersService {
   /** Clones the company's onboarding template into fresh tasks for this worker — a snapshot at
    * creation time, so editing the template later never rewrites tasks already assigned. */
   async create(companyId: string, input: CreateWorkerInput) {
-    const worker = await this.prisma.worker.create({ data: { ...input, companyId } });
+    const worker = await this.prisma.worker.create({ omit: { clockInPinHash: false }, data: { ...input, companyId } });
 
     const templateItems = await this.prisma.onboardingTemplateItem.findMany({
       where: { companyId },
@@ -92,7 +92,7 @@ export class WorkersService {
 
   async update(companyId: string, actor: AuditActor, id: string, input: UpdateWorkerInput) {
     const before = await this.get(companyId, id);
-    const worker = await this.prisma.worker.update({ where: { id }, data: input });
+    const worker = await this.prisma.worker.update({ omit: { clockInPinHash: false }, where: { id }, data: input });
 
     if (input.hourlyCost !== undefined && Number(before.hourlyCost) !== Number(input.hourlyCost)) {
       this.audit.record(
@@ -238,6 +238,7 @@ export class WorkersService {
 
   async adjustPtoBalance(companyId: string, actor: AuditActor, workerId: string, input: AdjustPtoBalanceInput) {
     const worker = await this.get(companyId, workerId);
+    // Returned as is: the PIN hash is left out of every query by default (PrismaService GLOBAL_OMIT).
     const updated = await this.prisma.worker.update({
       where: { id: workerId },
       data: { ptoBalanceHours: { increment: input.deltaHours } },

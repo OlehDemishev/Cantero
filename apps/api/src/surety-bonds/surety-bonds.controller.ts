@@ -10,8 +10,10 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { SuretyBondsService } from "./surety-bonds.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
+import { RequiresFor } from "../common/decorators/permissions.decorator";
 
 @ProjectResource("SuretyBond")
+@RequiresFor("finance.view", "finance.manage")
 @Controller("surety-bonds")
 export class SuretyBondsController {
   constructor(private readonly service: SuretyBondsService) {}

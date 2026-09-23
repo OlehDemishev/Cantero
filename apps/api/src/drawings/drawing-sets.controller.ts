@@ -6,8 +6,11 @@ import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { MAX_DRAWING_SET_UPLOAD_BYTES } from "../common/upload-limits";
 import { DrawingSetsService } from "./drawing-sets.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @ProjectResource("DrawingSet")
+@Requires("site.manage")
 @Controller()
 export class DrawingSetsController {
   constructor(private readonly service: DrawingSetsService) {}
@@ -19,11 +22,13 @@ export class DrawingSetsController {
     return this.service.analyze(user.companyId, { userId: user.userId, name: user.name }, projectId, file);
   }
 
+  @OpenToAllRoles("every member reads these to do their own site work")
   @Get("drawing-sets/:id")
   get(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.get(user, id);
   }
 
+  @OpenToAllRoles("every member reads these to do their own site work")
   @Get("drawing-sets/:id/file")
   async file(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return new StreamableFile(await this.service.file(user, id), { type: "application/pdf" });

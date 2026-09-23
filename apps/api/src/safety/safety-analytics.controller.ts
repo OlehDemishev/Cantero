@@ -2,7 +2,10 @@ import { Controller, Get, Header, Query, StreamableFile } from "@nestjs/common";
 import type { AuthUser } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { SafetyAnalyticsService } from "./safety-analytics.service";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
+@Requires("site.manage")
 @Controller("safety/analytics")
 export class SafetyAnalyticsController {
   constructor(private readonly service: SafetyAnalyticsService) {}

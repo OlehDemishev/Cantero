@@ -9,11 +9,14 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { BudgetService } from "./budget.service";
+import { Requires, RequiresFor } from "../common/decorators/permissions.decorator";
 
+@RequiresFor("finance.view", "finance.manage")
 @Controller("finance/budget-vs-actual")
 export class BudgetController {
   constructor(private readonly service: BudgetService) {}
 
+  @Requires("costing.view")
   @Get()
   get(@CurrentUser() user: AuthUser, @Query("projectId", ParseUUIDPipe) projectId: string) {
     return this.service.getForProject(user.companyId, projectId);

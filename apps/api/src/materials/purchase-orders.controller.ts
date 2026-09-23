@@ -14,10 +14,13 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { PurchaseOrdersService } from "./purchase-orders.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { RequiresFor } from "../common/decorators/permissions.decorator";
 
 const PURCHASE_ORDERS_PAGE_SIZE = 100;
 
 @NotProjectScoped("purchase orders have no project link in the schema")
+@RequiresFor("purchasing.view", "purchasing.manage")
 @Controller("materials/purchase-orders")
 export class PurchaseOrdersController {
   constructor(private readonly service: PurchaseOrdersService) {}

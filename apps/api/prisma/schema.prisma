@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["omitApi"]
 }
 
 datasource db {
@@ -603,6 +604,7 @@ model Company {
   costCodeBudgetTransfers         CostCodeBudgetTransfer[]
   referredByCompany               Company?                         @relation("CompanyReferrals", fields: [referredByCompanyId], references: [id], onDelete: SetNull)
   referrals                       Company[]                        @relation("CompanyReferrals")
+  rolePermissionOverrides         RolePermissionOverride[]
 
   @@map("companies")
 }
@@ -885,11 +887,13 @@ model Membership {
 /// is deliberately restricted to the non-owner manageable tiers (see MEMBERSHIP_ROLES_MANAGEABLE)
 /// — a custom role can never grant owner-level access.
 model CustomRole {
-  id              String           @id @default(uuid())
-  companyId       String
-  name            String
-  basePermissions MembershipRole[]
-  createdAt       DateTime         @default(now())
+  id               String           @id @default(uuid())
+  companyId        String
+  name             String
+  basePermissions  MembershipRole[]
+  /// Capabilities (packages/shared/src/permissions.ts) this role adds on top of its base roles'.
+  extraPermissions String[]         @default([])
+  createdAt        DateTime         @default(now())
 
   company     Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
   memberships Membership[]
@@ -8089,4 +8093,21 @@ model SearchEmbedding {
   @@id([entityType, entityId])
   @@index([companyId])
   @@map("search_embeddings")
+}
+
+/// A company's change to one role's default capabilities (DEFAULT_GRANTS in
+/// packages/shared/src/permissions.ts). Only differences are stored: no row means the default
+/// applies, so an improved default still reaches every company that never changed it.
+model RolePermissionOverride {
+  companyId       String
+  role            MembershipRole
+  permission      String
+  granted         Boolean
+  updatedAt       DateTime       @updatedAt
+  updatedByUserId String?
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@id([companyId, role, permission])
+  @@map("role_permission_overrides")
 }

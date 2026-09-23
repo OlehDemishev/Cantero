@@ -5,6 +5,7 @@ import type { AuthUser } from "@cantero/shared";
 import { IS_PUBLIC_KEY } from "../decorators/public.decorator";
 import { SessionsService } from "../sessions/sessions.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { PermissionsService } from "../permissions/permissions.service";
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -13,6 +14,7 @@ export class JwtAuthGuard implements CanActivate {
     private readonly reflector: Reflector,
     private readonly sessions: SessionsService,
     private readonly prisma: PrismaService,
+    private readonly permissions: PermissionsService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -57,6 +59,7 @@ export class JwtAuthGuard implements CanActivate {
       ...payload,
       role: membership.role,
       additionalRoles: membership.customRole?.basePermissions,
+      permissions: await this.permissions.effectiveFor(payload.companyId, membership.role, membership.customRole),
     } satisfies AuthUser;
     return true;
   }

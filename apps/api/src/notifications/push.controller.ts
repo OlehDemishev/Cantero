@@ -13,7 +13,9 @@ import {
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { PushService } from "./push.service";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
 
+@OpenToAllRoles("each member's own account, settings and workspace")
 @Controller("notifications/push")
 export class PushController {
   constructor(private readonly service: PushService) {}

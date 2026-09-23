@@ -3,7 +3,10 @@ import { createMilestoneSchema, type AuthUser, type CreateMilestoneInput } from 
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { MilestonesService } from "./milestones.service";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
+@Requires("site.manage")
 @Controller("milestones")
 export class MilestonesController {
   constructor(private readonly service: MilestonesService) {}

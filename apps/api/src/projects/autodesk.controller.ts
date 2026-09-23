@@ -4,7 +4,7 @@ import { IsString, MaxLength, MinLength } from "class-validator";
 import type { Response } from "express";
 import type { AuthUser } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
-import { Roles } from "../common/decorators/roles.decorator";
+import { OpenToAllRoles, Roles } from "../common/decorators/roles.decorator";
 import { Public } from "../common/decorators/public.decorator";
 import { AutodeskService } from "./autodesk.service";
 
@@ -25,6 +25,7 @@ class SetAutodeskModelDto {
   name!: string;
 }
 
+@OpenToAllRoles("site and project work every member does")
 @Controller()
 export class AutodeskController {
   constructor(

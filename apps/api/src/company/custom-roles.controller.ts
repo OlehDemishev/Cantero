@@ -1,12 +1,13 @@
 import { Body, Controller, Delete, Get, Param, Post } from "@nestjs/common";
 import { createCustomRoleSchema, type AuthUser, type CreateCustomRoleInput } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
-import { Roles } from "../common/decorators/roles.decorator";
+import { OpenToAllRoles, Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { CustomRolesService } from "./custom-roles.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
 
 @NotProjectScoped("company custom roles")
+@OpenToAllRoles("company directory and calendars every member reads; changes carry their own @Roles")
 @Controller("company/custom-roles")
 export class CustomRolesController {
   constructor(private readonly service: CustomRolesService) {}

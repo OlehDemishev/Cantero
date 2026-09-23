@@ -3,7 +3,9 @@ import { createCommentSchema, type AuthUser, type CreateCommentInput } from "@ca
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { CommentsService } from "./comments.service";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
 
+@OpenToAllRoles("each member's own account, settings and workspace")
 @Controller("comments")
 export class CommentsController {
   constructor(private readonly service: CommentsService) {}

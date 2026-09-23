@@ -10,8 +10,11 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { ResourcePlanningService } from "./resource-planning.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @ProjectResource("ScheduleScenario")
+@Requires("site.manage")
 @Controller()
 export class ScheduleScenariosController {
   constructor(private readonly service: ResourcePlanningService) {}

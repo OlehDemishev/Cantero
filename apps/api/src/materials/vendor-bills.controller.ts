@@ -14,8 +14,10 @@ import { Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { VendorBillsService } from "./vendor-bills.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
+import { Requires, RequiresFor } from "../common/decorators/permissions.decorator";
 
 @NotProjectScoped("vendor bills have no project link in the schema")
+@RequiresFor("finance.view", "finance.manage")
 @Controller("materials/vendor-bills")
 export class VendorBillsController {
   constructor(private readonly service: VendorBillsService) {}
@@ -30,6 +32,7 @@ export class VendorBillsController {
     return this.service.agingReport(user.companyId);
   }
 
+  @Requires("finance.export")
   @Roles("owner", "admin", "accountant")
   @Get("export/sage-300-cre.txt")
   @Header("Content-Type", "application/octet-stream")

@@ -10,6 +10,8 @@ import { ProjectAccessService, type ProjectViewer } from "../common/project-acce
 export interface ExpenseFilter {
   projectId?: string;
   workerId?: string;
+  /** Only these workers' expenses — how a member without site.crewTime sees just their own. */
+  workerIds?: string[];
   status?: string;
 }
 
@@ -37,6 +39,7 @@ export class ExpensesService {
         companyId,
         ...(filter.projectId ? { projectId: filter.projectId } : {}),
         ...(filter.workerId ? { workerId: filter.workerId } : {}),
+        ...(filter.workerIds ? { workerId: { in: filter.workerIds } } : {}),
         ...(filter.status ? { status: filter.status as never } : {}),
       }, visible] },
       include: { worker: { select: { id: true, name: true } }, project: { select: { id: true, name: true } } },

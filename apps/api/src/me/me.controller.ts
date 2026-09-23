@@ -8,8 +8,10 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { SkipSubscriptionCheck } from "../common/decorators/skip-subscription-check.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { PrismaService } from "../common/prisma/prisma.service";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
 
 /** Returns the current user + their company's settings (locale/currency/unitSystem) for the frontend shell. */
+@OpenToAllRoles("each member's own account, settings and workspace")
 @Controller("me")
 export class MeController {
   constructor(private readonly prisma: PrismaService) {}
@@ -33,6 +35,8 @@ export class MeController {
         // A custom role's added base roles — the web app hides what RolesGuard would refuse, and needs
         // these to decide the same way.
         additionalRoles: user.additionalRoles ?? [],
+        // What this member may see and do — the web app hides the rest.
+        permissions: user.permissions ?? [],
         totpEnabled: userRecord.totpEnabledAt !== null,
       },
       company,

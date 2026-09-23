@@ -14,8 +14,10 @@ import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { MAX_UPLOAD_BYTES } from "../common/upload-limits";
 import { IncomingEInvoicesService } from "./incoming-e-invoices.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
+import { RequiresFor } from "../common/decorators/permissions.decorator";
 
 @NotProjectScoped("incoming supplier e-invoices, not tied to a project until converted")
+@RequiresFor("finance.view", "finance.manage")
 @Controller("finance/incoming-invoices")
 export class IncomingEInvoicesController {
   constructor(private readonly service: IncomingEInvoicesService) {}

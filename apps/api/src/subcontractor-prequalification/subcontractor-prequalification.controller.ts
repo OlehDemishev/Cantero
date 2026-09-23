@@ -10,17 +10,21 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { SubcontractorPrequalificationService } from "./subcontractor-prequalification.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @NotProjectScoped("subcontractor companies and their prequalification")
+@Requires("subcontractors.manage")
 @Controller()
 export class SubcontractorPrequalificationController {
   constructor(private readonly service: SubcontractorPrequalificationService) {}
 
+  @Requires("subcontractors.view")
   @Get("subcontractor-prequalifications/expiring")
   expiringSoon(@CurrentUser() user: AuthUser, @Query("days") days?: string) {
     return this.service.expiringSoon(user.companyId, days ? Number(days) : undefined);
   }
 
+  @Requires("subcontractors.view")
   @Get("subcontractors/:id/prequalifications")
   list(@CurrentUser() user: AuthUser, @Param("id") subcontractorId: string) {
     return this.service.listForSubcontractor(user.companyId, subcontractorId);

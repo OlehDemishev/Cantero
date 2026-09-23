@@ -10,8 +10,10 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { ScheduledReportsService } from "./scheduled-reports.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @NotProjectScoped("scheduled report definitions")
+@Requires("reports.custom")
 @Controller("scheduled-reports")
 export class ScheduledReportsController {
   constructor(private readonly service: ScheduledReportsService) {}

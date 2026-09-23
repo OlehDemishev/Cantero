@@ -7,6 +7,8 @@ import { ProjectAccessService, type ProjectViewer } from "../common/project-acce
 export interface TimeEntryFilter {
   projectId?: string;
   workerId?: string;
+  /** Only these workers' entries — how a member without site.crewTime sees just their own. */
+  workerIds?: string[];
   from?: string;
   to?: string;
 }
@@ -26,6 +28,7 @@ export class TimeEntriesService {
         companyId,
         ...(filter.projectId ? { projectId: filter.projectId } : {}),
         ...(filter.workerId ? { workerId: filter.workerId } : {}),
+        ...(filter.workerIds ? { workerId: { in: filter.workerIds } } : {}),
         ...(filter.from || filter.to
           ? {
               date: {

@@ -73,6 +73,8 @@ import { BimModelPanel } from "@/components/bim-model-panel";
 import { SUPPORTED_CURRENCIES } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { useCan } from "@/lib/permissions";
+import type { Permission } from "@cantero/shared";
 
 interface Project {
   id: string;
@@ -125,6 +127,8 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: me } = useMe();
+  const can = useCan();
+  const canEstimates = can("estimates.view");
 
   const [project, setProject] = useState<Project | null>(null);
   const [estimates, setEstimates] = useState<Estimate[] | null>(null);
@@ -154,7 +158,16 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
     router.replace(`/projects/${projectId}?tab=${key}`, { scroll: false });
   }
 
-  const TABS: TabNavItem[] = PROJECT_TAB_KEYS.map((key) => ({ key, label: tp(`tab_${key}`) }));
+  // A tab whose every panel needs a permission this member lacks isn't offered at all.
+  const TAB_NEEDS: Partial<Record<ProjectTabKey, Permission[]>> = {
+    financials: ["finance.view", "costing.view", "estimates.view", "contracts.view"],
+    compliance: ["site.manage", "finance.view", "contracts.view", "hr.payroll"],
+    subcontractors: ["estimates.view", "subcontractors.view", "finance.view"],
+  };
+  const TABS: TabNavItem[] = PROJECT_TAB_KEYS.filter((key) => !TAB_NEEDS[key] || TAB_NEEDS[key]!.some((p) => can(p))).map((key) => ({
+    key,
+    label: tp(`tab_${key}`),
+  }));
 
   useEffect(() => {
     apiFetch<Project>(`/projects/${projectId}`).then((p) => {
@@ -162,9 +175,14 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
       setBudgetThresholdDraft(p.budgetAlertThresholdPercent !== null ? String(p.budgetAlertThresholdPercent) : "");
       setContingencyDraft(p.contingencyAmount !== null ? p.contingencyAmount : "");
     });
+  }, [projectId]);
+
+  // Estimates carry prices: only fetched, and only shown, for someone who may see them.
+  useEffect(() => {
+    if (!canEstimates) return;
     apiFetch<Estimate[]>("/estimates").then((all) => setEstimates(all.filter((e) => e.project.id === projectId)));
     apiFetch<Template[]>("/estimates/templates").then(setTemplates);
-  }, [projectId]);
+  }, [projectId, canEstimates]);
 
   async function saveCurrency(value: string) {
     setCurrencyBusy(true);
@@ -247,7 +265,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
 
       {activeTab === "overview" && (
         <>
-          {project && (
+          {project && can("projects.manage") && (
             <label className="mt-4 flex w-fit items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
               {tp("billingCurrency")}
               <select
@@ -265,7 +283,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
               </select>
             </label>
           )}
-          {project && (
+          {project && can("projects.manage") && (
             <label className="mt-2 flex w-fit items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
               {tp("budgetAlertThreshold")}
               <input
@@ -282,7 +300,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
               %
             </label>
           )}
-          {project && (
+          {project && can("projects.manage") && (
             <label className="mt-2 flex w-fit items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
               {tp("contingencyAmount")}
               <input
@@ -307,9 +325,10 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
             </div>
           </div>
 
-          <PortalMessagesPanel projectId={projectId} />
-          <ClientChangeRequestsPanel projectId={projectId} />
+          {can("clients.view") && <PortalMessagesPanel projectId={projectId} />}
+          {can("estimates.view") && <ClientChangeRequestsPanel projectId={projectId} />}
 
+          {canEstimates && (
           <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
             <div className="card lg:col-span-1">
               <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("newEstimate")}</h2>
@@ -399,8 +418,9 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
               )}
             </div>
           </div>
+          )}
 
-          <ProjectMembersPanel projectId={projectId} />
+          {can("site.manage") && <ProjectMembersPanel projectId={projectId} />}
           <CustomFieldsValuesPanel entityType="project" entityId={projectId} />
         </>
       )}
@@ -408,38 +428,38 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
       {activeTab === "schedule" && (
         <>
           <SchedulingPanel projectId={projectId} />
-          <ScheduleBaselinePanel projectId={projectId} />
-          <ScheduleScenariosPanel projectId={projectId} />
+          {can("site.manage") && <ScheduleBaselinePanel projectId={projectId} />}
+          {can("site.manage") && <ScheduleScenariosPanel projectId={projectId} />}
           <LookAheadPanel projectId={projectId} />
-          <ProgressTrackingPanel projectId={projectId} />
-          <CommissioningPanel projectId={projectId} />
-          <ScheduleFilesPanel projectId={projectId} />
-          <MsProjectSyncPanel projectId={projectId} />
+          {can("site.manage") && <ProgressTrackingPanel projectId={projectId} />}
+          {can("site.manage") && <CommissioningPanel projectId={projectId} />}
+          {can("site.manage") && <ScheduleFilesPanel projectId={projectId} />}
+          {can("site.manage") && <MsProjectSyncPanel projectId={projectId} />}
         </>
       )}
 
       {activeTab === "financials" && (
         <>
-          <IntacctProjectPanel projectId={projectId} />
-          <BudgetPanel projectId={projectId} />
-          <AllowancesPanel projectId={projectId} />
-          <UnitPriceTmPanel projectId={projectId} />
-          <JobCostingPanel projectId={projectId} />
-          <DrawRequestsPanel projectId={projectId} />
+          {can("finance.view") && <IntacctProjectPanel projectId={projectId} />}
+          {can("costing.view") && <BudgetPanel projectId={projectId} />}
+          {can("costing.view") && <AllowancesPanel projectId={projectId} />}
+          {can("estimates.view") && <UnitPriceTmPanel projectId={projectId} />}
+          {can("costing.view") && <JobCostingPanel projectId={projectId} />}
+          {can("finance.view") && <DrawRequestsPanel projectId={projectId} />}
           <ProjectCashFlowPanel projectId={projectId} />
-          <ContractsPanel projectId={projectId} />
-          <CostImpactSummaryPanel projectId={projectId} />
+          {can("contracts.view") && <ContractsPanel projectId={projectId} />}
+          {can("estimates.view") && <CostImpactSummaryPanel projectId={projectId} />}
         </>
       )}
 
       {activeTab === "field" && (
         <>
           <DailyLogsPanel projectId={projectId} />
-          <CrewSmsBroadcastPanel projectId={projectId} />
+          {can("site.manage") && <CrewSmsBroadcastPanel projectId={projectId} />}
           <SiteSignInsPanel projectId={projectId} />
           <WeatherForecastPanel projectId={projectId} />
-          <WeatherDelayReportPanel projectId={projectId} />
-          <GeofencePanel projectId={projectId} />
+          {can("site.manage") && <WeatherDelayReportPanel projectId={projectId} />}
+          {can("projects.manage") && <GeofencePanel projectId={projectId} />}
           <SafetyPanel projectId={projectId} />
           <SafetyObservationsPanel projectId={projectId} />
         </>
@@ -449,51 +469,51 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
         <>
           <PunchListPanel projectId={projectId} />
           <RfiPanel projectId={projectId} />
-          <MeetingsPanel projectId={projectId} />
-          <LongLeadItemsPanel projectId={projectId} />
-          <QualityPanel projectId={projectId} />
-          <ConcreteQcPanel projectId={projectId} />
-          <SubmittalsPanel projectId={projectId} />
-          <TransmittalsPanel projectId={projectId} />
-          <WarrantyPanel projectId={projectId} />
+          {can("site.manage") && <MeetingsPanel projectId={projectId} />}
+          {can("site.manage") && <LongLeadItemsPanel projectId={projectId} />}
+          {can("site.manage") && <QualityPanel projectId={projectId} />}
+          {can("site.manage") && <ConcreteQcPanel projectId={projectId} />}
+          {can("site.manage") && <SubmittalsPanel projectId={projectId} />}
+          {can("site.manage") && <TransmittalsPanel projectId={projectId} />}
+          {can("site.manage") && <WarrantyPanel projectId={projectId} />}
           {project && <AutodeskSyncPanel projectId={projectId} initialAutodeskProjectId={project.autodeskProjectId} />}
         </>
       )}
 
       {activeTab === "compliance" && (
         <>
-          <PermitsPanel projectId={projectId} />
-          <SuretyBondsPanel projectId={projectId} />
-          <ContractClaimsPanel projectId={projectId} />
-          <WarrantyRegistrationsPanel projectId={projectId} />
-          <HazmatInventoryPanel projectId={projectId} />
-          <LienCompliancePanel projectId={projectId} />
-          <EnvironmentalPanel projectId={projectId} />
-          <CertifiedPayrollPanel projectId={projectId} />
-          <GreenCertificationsPanel projectId={projectId} />
-          <CarbonReportPanel projectId={projectId} />
+          {can("site.manage") && <PermitsPanel projectId={projectId} />}
+          {can("finance.view") && <SuretyBondsPanel projectId={projectId} />}
+          {can("contracts.view") && <ContractClaimsPanel projectId={projectId} />}
+          {can("site.manage") && <WarrantyRegistrationsPanel projectId={projectId} />}
+          {can("site.manage") && <HazmatInventoryPanel projectId={projectId} />}
+          {can("finance.view") && <LienCompliancePanel projectId={projectId} />}
+          {can("site.manage") && <EnvironmentalPanel projectId={projectId} />}
+          {can("hr.payroll") && <CertifiedPayrollPanel projectId={projectId} />}
+          {can("site.manage") && <GreenCertificationsPanel projectId={projectId} />}
+          {can("site.manage") && <CarbonReportPanel projectId={projectId} />}
         </>
       )}
 
       {activeTab === "subcontractors" && (
         <>
-          <BidRequestsPanel projectId={projectId} />
-          <SubcontractorAssignmentsPanel projectId={projectId} />
-          <SubcontractorCostsPanel projectId={projectId} />
-          <SubcontractorClaimsPanel projectId={projectId} />
+          {can("estimates.view") && <BidRequestsPanel projectId={projectId} />}
+          {can("subcontractors.view") && <SubcontractorAssignmentsPanel projectId={projectId} />}
+          {can("finance.view") && <SubcontractorCostsPanel projectId={projectId} />}
+          {can("subcontractors.view") && <SubcontractorClaimsPanel projectId={projectId} />}
         </>
       )}
 
       {activeTab === "documents" && (
         <>
-          <TakeoffPanel projectId={projectId} />
+          {can("estimates.view") && <TakeoffPanel projectId={projectId} />}
           <DrawingSheetsPanel projectId={projectId} />
           {project && <BimModelPanel projectId={projectId} role={me?.user.role} initial={project} />}
           <TimeTrackingPanel projectId={projectId} />
-          <ProductivityPanel projectId={projectId} />
+          {can("site.manage") && <ProductivityPanel projectId={projectId} />}
           <DocumentsPanel projectId={projectId} />
           <GalleryPanel projectId={projectId} />
-          <ProjectCloseoutPanel projectId={projectId} />
+          {can("site.manage") && <ProjectCloseoutPanel projectId={projectId} />}
         </>
       )}
     </AuthenticatedShell>

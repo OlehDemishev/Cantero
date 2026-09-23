@@ -6,6 +6,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { clearToken, getToken } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { useCan } from "@/lib/permissions";
+import type { Permission } from "@cantero/shared";
 import { useSidebar } from "@/context/SidebarContext";
 import { useTheme } from "@/context/ThemeContext";
 import { resetStateInEffect } from "@/lib/effect-reset";
@@ -152,6 +154,40 @@ export const NAV_GROUPS: { key: string; items: NavItem[] }[] = [
 
 const NAV_ITEMS = NAV_GROUPS.flatMap((group) => group.items);
 
+/**
+ * The capability a section needs before it shows up in the menu at all (packages/shared
+ * permissions.ts). A section missing here is for every member: their own work lives there.
+ */
+const NAV_PERMISSIONS: Partial<Record<string, Permission>> = {
+  schedule: "site.manage",
+  resourcePlanning: "site.manage",
+  clients: "clients.view",
+  contracts: "contracts.view",
+  serviceContracts: "contracts.view",
+  invoices: "finance.view",
+  bankReconciliation: "finance.view",
+  insuranceClaims: "finance.view",
+  loans: "hr.payroll",
+  stockKits: "site.manage",
+  equipment: "site.manage",
+  fleet: "site.manage",
+  suppliers: "purchasing.view",
+  subcontractors: "subcontractors.view",
+  purchaseOrders: "purchasing.view",
+  benefits: "hr.payroll",
+  recruiting: "hr.cases",
+  performance: "hr.cases",
+  hazmat: "site.manage",
+  supportTickets: "site.manage",
+};
+
+/** Menu items this member may open: not hidden by the company, and covered by their permissions. */
+function useVisibleNavItems(hiddenNavItems: string[]): (item: NavItem) => boolean {
+  const can = useCan();
+  const hidden = new Set(hiddenNavItems);
+  return (item) => !hidden.has(item.key) && (NAV_PERMISSIONS[item.key] === undefined || can(NAV_PERMISSIONS[item.key]!));
+}
+
 const COLLAPSED_NAV_GROUPS_STORAGE_KEY = "cantero:collapsedNavGroups";
 
 export function AuthenticatedShell({ children }: { children: React.ReactNode }) {
@@ -178,6 +214,8 @@ export function AuthenticatedShell({ children }: { children: React.ReactNode }) 
     if (data && data.subscriptionStatus !== "active") router.replace("/billing/pending");
   }, [data, router]);
 
+  const isNavItemVisible = useVisibleNavItems(data?.company.hiddenNavItems ?? []);
+
   if (loading || !data) {
     return <div className="flex min-h-screen items-center justify-center text-gray-500 dark:text-gray-400">{tc("loading")}</div>;
   }
@@ -192,7 +230,7 @@ export function AuthenticatedShell({ children }: { children: React.ReactNode }) 
         <AppHeader me={data} />
         <div className="mx-auto max-w-(--breakpoint-2xl) p-4 md:p-6 print:max-w-none print:p-0">{children}</div>
       </div>
-      <CommandPalette navItems={NAV_ITEMS} />
+      <CommandPalette navItems={NAV_ITEMS.filter(isNavItemVisible)} />
       <KeyboardShortcutsHelp />
     </div>
   );
@@ -207,10 +245,10 @@ function AppSidebar({ hiddenNavItems }: { hiddenNavItems: string[] }) {
 
   // A group that ends up with nothing left to show (every item in it hidden) doesn't render at
   // all — an empty section header would just be dead weight, not a useful "nothing here" signal.
-  const hiddenSet = new Set(hiddenNavItems);
+  const isVisible = useVisibleNavItems(hiddenNavItems);
   const visibleGroups = NAV_GROUPS.map((group) => ({
     ...group,
-    items: group.items.filter((item) => !hiddenSet.has(item.key)),
+    items: group.items.filter(isVisible),
   })).filter((group) => group.items.length > 0);
 
   // Read after mount, not in initial state — localStorage isn't available during SSR, and every

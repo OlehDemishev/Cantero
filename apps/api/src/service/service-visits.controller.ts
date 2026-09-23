@@ -11,8 +11,11 @@ import { Public } from "../common/decorators/public.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { ServiceVisitsService } from "./service-visits.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @ProjectResource("ServiceVisit")
+@Requires("site.manage")
 @Controller("service-visits")
 export class ServiceVisitsController {
   constructor(private readonly service: ServiceVisitsService) {}

@@ -14,8 +14,10 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { PerformanceService } from "./performance.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @NotProjectScoped("worker performance cycles, reviews and goals")
+@Requires("hr.cases")
 @Controller("performance")
 export class PerformanceController {
   constructor(private readonly service: PerformanceService) {}

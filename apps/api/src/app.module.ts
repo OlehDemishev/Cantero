@@ -2,6 +2,8 @@ import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { PrismaModule } from "./common/prisma/prisma.module";
+import { PermissionsModule } from "./common/permissions/permissions.module";
+import { WorkerFieldsInterceptor } from "./common/permissions/worker-fields.interceptor";
 import { PdfModule } from "./common/pdf/pdf.module";
 import { QueueModule } from "./common/queue/queue.module";
 import { StorageModule } from "./common/storage/storage.module";
@@ -106,6 +108,7 @@ import { ClientChangeRequestsModule } from "./client-change-requests/client-chan
 
 @Module({
   imports: [
+    PermissionsModule,
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
     PdfModule,
@@ -211,6 +214,7 @@ import { ClientChangeRequestsModule } from "./client-change-requests/client-chan
     { provide: APP_GUARD, useClass: ProjectAccessGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
     { provide: APP_INTERCEPTOR, useClass: IdempotencyInterceptor },
+    { provide: APP_INTERCEPTOR, useClass: WorkerFieldsInterceptor },
   ],
 })
 export class AppModule {}

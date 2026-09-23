@@ -3,8 +3,11 @@ import { createPortalMessageSchema, type AuthUser, type CreatePortalMessageInput
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { PortalMessagesService } from "./portal-messages.service";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
+import { RequiresFor } from "../common/decorators/permissions.decorator";
 
 /** The internal-staff side of the client project message thread — see PortalMessagesService. */
+@RequiresFor("clients.view", "clients.manage")
 @Controller("projects/:id/portal-messages")
 export class PortalMessagesController {
   constructor(private readonly service: PortalMessagesService) {}

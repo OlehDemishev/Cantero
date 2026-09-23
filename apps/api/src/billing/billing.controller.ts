@@ -4,11 +4,12 @@ import type { Request } from "express";
 import { changePlanSchema, updateSeatsSchema, type AuthUser, type ChangePlanInput, type UpdateSeatsInput } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Public } from "../common/decorators/public.decorator";
-import { Roles } from "../common/decorators/roles.decorator";
+import { OpenToAllRoles, Roles } from "../common/decorators/roles.decorator";
 import { SkipSubscriptionCheck } from "../common/decorators/skip-subscription-check.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { BillingService } from "./billing.service";
 
+@OpenToAllRoles("every member may see the plan and whether the subscription is active")
 @Controller("billing")
 export class BillingController {
   constructor(
@@ -16,6 +17,7 @@ export class BillingController {
     private readonly config: ConfigService,
   ) {}
 
+  @Roles("owner", "admin")
   @SkipSubscriptionCheck()
   @Post("checkout-session")
   createCheckoutSession(@CurrentUser() user: AuthUser) {

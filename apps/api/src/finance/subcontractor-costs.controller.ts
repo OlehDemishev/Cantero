@@ -11,8 +11,10 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { SubcontractorCostsService } from "./subcontractor-costs.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
+import { Requires, RequiresFor } from "../common/decorators/permissions.decorator";
 
 @ProjectResource("SubcontractorCost")
+@RequiresFor("finance.view", "finance.manage")
 @Controller("finance/subcontractor-costs")
 export class SubcontractorCostsController {
   constructor(private readonly service: SubcontractorCostsService) {}
@@ -23,6 +25,7 @@ export class SubcontractorCostsController {
   }
 
   // Declared before ":id" so "export" isn't swallowed as a cost id.
+  @Requires("finance.export")
   @Get("export/datev.csv")
   @Header("Content-Type", "text/csv")
   async exportDatevCsv(
