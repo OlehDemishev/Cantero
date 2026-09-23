@@ -16,12 +16,8 @@ import {
   TextField,
   type FieldMessageType,
 } from "./ui";
+import { useWorkerChoice, WorkerPicker } from "./worker-picker";
 
-interface Worker {
-  id: string;
-  name: string;
-  userId: string | null;
-}
 interface Task {
   id: string;
   name: string;
@@ -47,26 +43,26 @@ async function getCurrentPositionSafe(): Promise<{ lat: number; lng: number } | 
 
 const today = () => new Date().toISOString().slice(0, 10);
 
-export function TimeTab({ projectId, meUserId, reloadKey }: { projectId: string; meUserId: string | null; reloadKey: number }) {
+export function TimeTab({
+  projectId,
+  meUserId,
+  permissions,
+  reloadKey,
+}: {
+  projectId: string;
+  meUserId: string | null;
+  permissions: readonly string[] | undefined;
+  reloadKey: number;
+}) {
   const t = useTranslations("field");
   const tt = useTranslations("team");
   const tc = useTranslations("common");
-  const [workers, setWorkers] = useState<Worker[]>([]);
+  const worker = useWorkerChoice({ kind: "time", meUserId, permissions, reloadKey });
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [form, setForm] = useState({ workerId: "", taskId: "", hours: "8", date: today() });
+  const [form, setForm] = useState({ taskId: "", hours: "8", date: today() });
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ type: FieldMessageType; text: string } | null>(null);
   const [error, setError] = useState(false);
-
-  useEffect(() => {
-    fetchCached<Worker[]>("field:workers", "/workers")
-      .then(({ data: list }) => {
-        setWorkers(list);
-        const mine = list.find((w) => w.userId === meUserId);
-        setForm((f) => ({ ...f, workerId: f.workerId || ((mine ?? list[0])?.id ?? "") }));
-      })
-      .catch(() => setError(true));
-  }, [meUserId, reloadKey]);
 
   useEffect(() => {
     fetchCached<Task[]>(`field:tasks:${projectId}`, `/tasks?projectId=${encodeURIComponent(projectId)}`)
@@ -75,7 +71,7 @@ export function TimeTab({ projectId, meUserId, reloadKey }: { projectId: string;
   }, [projectId, reloadKey]);
 
   async function submit() {
-    if (!form.workerId) return;
+    if (!worker.workerId) return;
     setBusy(true);
     setMessage(null);
     try {
@@ -85,7 +81,7 @@ export function TimeTab({ projectId, meUserId, reloadKey }: { projectId: string;
         "/time-entries",
         "POST",
         {
-          workerId: form.workerId,
+          workerId: worker.workerId,
           projectId,
           taskId: form.taskId || undefined,
           hours: parseDecimal(form.hours),
@@ -109,17 +105,12 @@ export function TimeTab({ projectId, meUserId, reloadKey }: { projectId: string;
     }
   }
 
-  if (error) return <Muted>{t("offline")}</Muted>;
-  if (workers.length === 0) return <Loading />;
+  if (error || worker.error) return <Muted>{t("offline")}</Muted>;
+  if (!worker.loaded) return <Loading />;
 
   return (
     <Card>
-      <SelectField
-        label={tt("worker")}
-        value={form.workerId}
-        options={workers.map((w) => ({ value: w.id, label: w.name }))}
-        onChange={(workerId) => setForm((f) => ({ ...f, workerId }))}
-      />
+      <WorkerPicker choice={worker} />
       <SelectField
         label={tt("task")}
         value={form.taskId}
@@ -134,7 +125,7 @@ export function TimeTab({ projectId, meUserId, reloadKey }: { projectId: string;
         />
       </Field>
       <DateStepper label={tt("date")} value={form.date} onChange={(date) => setForm((f) => ({ ...f, date }))} />
-      <PrimaryButton label={t("logTimeButton")} onPress={submit} busy={busy} disabled={!form.hours.trim()} />
+      <PrimaryButton label={t("logTimeButton")} onPress={submit} busy={busy} disabled={!form.hours.trim() || !worker.workerId} />
       {message && <FieldMessage type={message.type} text={message.text} />}
     </Card>
   );

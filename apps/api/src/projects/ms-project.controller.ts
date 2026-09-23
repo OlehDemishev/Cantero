@@ -4,9 +4,9 @@ import { IsString } from "class-validator";
 import type { Response } from "express";
 import type { AuthUser } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
-import { Roles } from "../common/decorators/roles.decorator";
 import { Public } from "../common/decorators/public.decorator";
 import { MsProjectService } from "./ms-project.service";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 class AuthorizeMsProjectDto {
   @IsString()
@@ -20,26 +20,26 @@ export class MsProjectController {
     private readonly config: ConfigService,
   ) {}
 
-  @Roles("owner", "admin", "accountant")
+  @Requires("settings.integrations")
   @Get("company/ms-project/status")
   status(@CurrentUser() user: AuthUser) {
     return this.service.getStatus(user.companyId);
   }
 
-  @Roles("owner", "admin", "accountant")
+  @Requires("settings.integrations")
   @Get("company/ms-project/authorize-url")
   authorizeUrl(@CurrentUser() user: AuthUser, @Query() query: AuthorizeMsProjectDto) {
     if (!query.environmentUrl) throw new BadRequestException("environmentUrl is required");
     return { url: this.service.getAuthorizeUrl(user.companyId, query.environmentUrl) };
   }
 
-  @Roles("owner", "admin", "accountant")
+  @Requires("settings.integrations")
   @Delete("company/ms-project/connection")
   disconnect(@CurrentUser() user: AuthUser) {
     return this.service.disconnect(user.companyId);
   }
 
-  @Roles("owner", "admin", "accountant")
+  @Requires("settings.integrations")
   @Post("projects/:id/sync-ms-project")
   syncProject(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.syncProject(user.companyId, id);

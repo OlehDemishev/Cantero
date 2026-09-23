@@ -17,23 +17,21 @@ interface Crumb {
   name: string;
 }
 
-const EDIT_ROLES = new Set(["owner", "admin", "estimator", "foreman"]);
 
 /** The project's BIM model from Autodesk Construction Cloud, shown in Autodesk's viewer. Choosing
  * one walks the linked ACC project's Docs folders; the company-level connection lives in Settings →
  * Integrations, like the punch-list sync. */
 export function BimModelPanel({
   projectId,
-  role,
+  canEdit,
   initial,
 }: {
   projectId: string;
-  role: string | undefined;
+  canEdit: boolean;
   initial: { autodeskProjectId: string | null; autodeskModelUrn: string | null; autodeskModelName: string | null };
 }) {
   const t = useTranslations("bim");
   const locale = useLocale();
-  const canEdit = role !== undefined && EDIT_ROLES.has(role);
 
   const [accProjectId, setAccProjectId] = useState(initial.autodeskProjectId);
   const [model, setModel] = useState(initial.autodeskModelUrn ? { urn: initial.autodeskModelUrn, name: initial.autodeskModelName ?? "" } : null);

@@ -11,6 +11,7 @@ import { SessionsService, type SessionMeta } from "../common/sessions/sessions.s
 import { assertPasswordPolicy } from "../common/password-policy";
 import { TwoFactorService } from "../auth/two-factor.service";
 import { runSerializable } from "../common/prisma/serializable-transaction";
+import { assertMayAppointAdmin } from "../common/permissions/admin-appointment";
 
 /** Minimal shape assertSeatAvailable() needs — satisfied by both PrismaService directly (the
  * outer, fast-path check in accept()/completeAcceptAfterTwoFactor()) and a Prisma.TransactionClient
@@ -46,7 +47,8 @@ export class InvitesService {
     });
   }
 
-  async create(companyId: string, input: CreateInviteInput) {
+  async create(companyId: string, input: CreateInviteInput, actorRole?: string) {
+    assertMayAppointAdmin(actorRole, input.role === "admin");
     await this.assertSeatAvailable(this.prisma, companyId);
 
     const existingUser = await this.prisma.user.findUnique({ where: { email: input.email } });
@@ -81,9 +83,10 @@ export class InvitesService {
     return invite;
   }
 
-  async revoke(companyId: string, id: string) {
+  async revoke(companyId: string, id: string, actorRole?: string) {
     const invite = await this.prisma.invite.findFirst({ where: { id, companyId } });
     if (!invite) throw new NotFoundException("Invite not found");
+    assertMayAppointAdmin(actorRole, invite.role === "admin");
     await this.prisma.invite.delete({ where: { id } });
     return { revoked: true };
   }

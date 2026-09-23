@@ -7,6 +7,7 @@ import { SidebarProvider } from "@/context/SidebarContext";
 import { PwaRegister } from "@/components/pwa-register";
 import { SentryInit } from "@/components/sentry-init";
 import { ToastProvider } from "@/components/ui/toast-provider";
+import { RouteAccessGate } from "@/components/route-access-gate";
 import "./globals.css";
 
 const outfit = Outfit({
@@ -35,7 +36,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <ThemeProvider>
             <SidebarProvider>
               <ToastProvider>
-                {children}
+                <RouteAccessGate>{children}</RouteAccessGate>
                 <PwaRegister />
                 <SentryInit />
               </ToastProvider>

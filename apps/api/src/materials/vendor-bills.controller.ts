@@ -10,7 +10,6 @@ import {
   type VoidVendorBillInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
-import { Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { VendorBillsService } from "./vendor-bills.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
@@ -33,7 +32,7 @@ export class VendorBillsController {
   }
 
   @Requires("finance.export")
-  @Roles("owner", "admin", "accountant")
+  @Requires("finance.export")
   @Get("export/sage-300-cre.txt")
   @Header("Content-Type", "application/octet-stream")
   async exportSage300Cre(
@@ -87,7 +86,6 @@ export class VendorBillsController {
     return this.service.markPaid(user.companyId, { userId: user.userId, name: user.name }, id);
   }
 
-  @Roles("owner", "admin", "accountant")
   @Post(":id/void")
   void(
     @CurrentUser() user: AuthUser,

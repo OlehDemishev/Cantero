@@ -1,4 +1,4 @@
-import { BadRequestException, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, NotFoundException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { CustomRolesService } from "./custom-roles.service";
 import { PrismaService } from "../common/prisma/prisma.service";
@@ -58,11 +58,24 @@ describe("CustomRolesService", () => {
   });
 
   it("deletes a role that belongs to this company", async () => {
-    prisma.customRole.findFirst.mockResolvedValue({ id: "role-1", name: "Site Lead" });
+    prisma.customRole.findFirst.mockResolvedValue({ id: "role-1", name: "Site Lead", basePermissions: ["foreman"] });
 
     const result = await service.delete(COMPANY_A, ACTOR, "role-1");
 
     expect(result).toEqual({ ok: true });
     expect(prisma.customRole.delete).toHaveBeenCalledWith({ where: { id: "role-1" } });
+  });
+
+  it("leaves admin-based custom roles to the owner, creating or deleting", async () => {
+    const admin = { userId: "admin-1", name: "Admin", role: "admin" };
+    await expect(service.create(COMPANY_A, admin, { name: "Deputy", basePermissions: ["admin"] })).rejects.toThrow(ForbiddenException);
+    prisma.customRole.findFirst.mockResolvedValue({ id: "role-2", name: "Deputy", basePermissions: ["admin"] });
+    await expect(service.delete(COMPANY_A, admin, "role-2")).rejects.toThrow(ForbiddenException);
+    expect(prisma.customRole.create).not.toHaveBeenCalled();
+    expect(prisma.customRole.delete).not.toHaveBeenCalled();
+
+    prisma.customRole.create.mockResolvedValue({ id: "role-3", name: "Deputy", basePermissions: ["admin"] });
+    await service.create(COMPANY_A, { userId: "owner-1", name: "Owner", role: "owner" }, { name: "Deputy", basePermissions: ["admin"] });
+    expect(prisma.customRole.create).toHaveBeenCalled();
   });
 });

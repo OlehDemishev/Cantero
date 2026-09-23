@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { MEMBERSHIP_ROLES_MANAGEABLE, PERMISSION_KEYS } from "@cantero/shared";
+import { PERMISSION_KEYS } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useAssignableRoles } from "@/lib/permissions";
 
 interface CustomRole {
   id: string;
@@ -18,6 +19,7 @@ export function CustomRolesPanel({ isManager }: { isManager: boolean }) {
   const tc = useTranslations("common");
   const tp = useTranslations("permissions");
   const [customRoles, setCustomRoles] = useState<CustomRole[] | null>(null);
+  const { roles: assignableRoles, mayTouchAdmin } = useAssignableRoles();
   const [customRoleForm, setCustomRoleForm] = useState({ name: "", basePermissions: [] as string[], extraPermissions: [] as string[] });
   const [creatingCustomRole, setCreatingCustomRole] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -86,7 +88,7 @@ export function CustomRolesPanel({ isManager }: { isManager: boolean }) {
                   </span>
                 )}
               </span>
-              {isManager && (
+              {isManager && (mayTouchAdmin || !cr.basePermissions.includes("admin")) && (
                 <button onClick={() => deleteCustomRole(cr.id)} className="text-xs text-gray-400 dark:text-gray-500 hover:text-error-600">
                   {tc("delete")}
                 </button>
@@ -112,7 +114,7 @@ export function CustomRolesPanel({ isManager }: { isManager: boolean }) {
                 onChange={(e) => setCustomRoleForm((f) => ({ ...f, name: e.target.value }))}
               />
               <div className="flex flex-wrap gap-3">
-                {MEMBERSHIP_ROLES_MANAGEABLE.map((r) => (
+                {assignableRoles.map((r) => (
                   <label key={r} className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300">
                     <input
                       type="checkbox"

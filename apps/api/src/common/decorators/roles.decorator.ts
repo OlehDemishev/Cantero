@@ -5,8 +5,9 @@ export const ROLES_KEY = "roles";
 export const OPEN_TO_ALL_ROLES_KEY = "openToAllRoles";
 
 /** Restricts a route to callers whose Membership.role is one of the given roles — fixed, whatever the
- * company's permission settings. New restrictions use @Requires (permissions.decorator.ts), which a
- * company can adjust per role. */
+ * company's permission settings. Kept only for the few routes no permission may hand out (billing,
+ * SSO, API keys, deleting the company — the list in roles-coverage.spec.ts); everything else uses
+ * @Requires (permissions.decorator.ts), which a company can adjust per role. */
 export const Roles = (...roles: MembershipRole[]) => SetMetadata(ROLES_KEY, roles);
 
 /**

@@ -9,10 +9,10 @@ import {
   type UpdateIntacctSettingsInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
-import { Roles } from "../common/decorators/roles.decorator";
 import { Public } from "../common/decorators/public.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { IntacctService } from "./intacct.service";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @Controller()
 export class IntacctController {
@@ -21,31 +21,31 @@ export class IntacctController {
     private readonly config: ConfigService,
   ) {}
 
-  @Roles("owner", "admin", "accountant")
+  @Requires("finance.manage")
   @Get("company/intacct/status")
   status(@CurrentUser() user: AuthUser) {
     return this.service.getStatus(user.companyId);
   }
 
-  @Roles("owner", "admin", "accountant")
+  @Requires("finance.manage")
   @Get("company/intacct/authorize-url")
   authorizeUrl(@CurrentUser() user: AuthUser) {
     return { url: this.service.getAuthorizeUrl(user.companyId) };
   }
 
-  @Roles("owner", "admin", "accountant")
+  @Requires("finance.manage")
   @Patch("company/intacct/settings")
   updateSettings(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(updateIntacctSettingsSchema)) body: UpdateIntacctSettingsInput) {
     return this.service.updateSettings(user.companyId, body.changeOrderItemId);
   }
 
-  @Roles("owner", "admin", "accountant")
+  @Requires("finance.manage")
   @Delete("company/intacct/connection")
   disconnect(@CurrentUser() user: AuthUser) {
     return this.service.disconnect(user.companyId);
   }
 
-  @Roles("owner", "admin", "accountant")
+  @Requires("finance.manage")
   @Post("projects/:id/intacct/contract")
   pushContract(
     @CurrentUser() user: AuthUser,
@@ -55,7 +55,7 @@ export class IntacctController {
     return this.service.pushProjectContract(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
-  @Roles("owner", "admin", "accountant")
+  @Requires("finance.manage")
   @Post("projects/:id/intacct/change-orders")
   pushChangeOrders(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.pushChangeOrders(user.companyId, { userId: user.userId, name: user.name }, id);

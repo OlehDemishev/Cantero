@@ -59,6 +59,30 @@ describe("every internal route says which roles may call it", () => {
     expect(routes.filter((r) => !r.requires && !r.roles?.length && !r.open).map((r) => r.where)).toEqual([]);
   });
 
+  it("keeps fixed @Roles to the routes no permission may hand out", () => {
+    // Everything else is a capability a company can adjust per role. These stay with the owner (and
+    // admin), since whoever holds them can take the company over: billing, sign-in, API access,
+    // deleting the company, and tying it to a franchise parent.
+    const fixed = [
+      "ApiKeysController.create",
+      "ApiKeysController.list",
+      "ApiKeysController.revoke",
+      "BillingController.changePlan",
+      "BillingController.createCheckoutSession",
+      "BillingController.createPortalSession",
+      "BillingController.updateSeats",
+      "CompanyController.cancelDeletionRequest",
+      "CompanyController.generateFranchiseLinkCode",
+      "CompanyController.linkToParent",
+      "CompanyController.requestDeletion",
+      "SsoController.disable",
+      "SsoController.getConfig",
+      "SsoController.spMetadata",
+      "SsoController.updateConfig",
+    ];
+    expect(routes.filter((r) => r.roles?.length).map((r) => r.where).sort()).toEqual(fixed);
+  });
+
   it("gives a reason whenever it's open to all", () => {
     expect(routes.filter((r) => r.open !== undefined && r.open.trim().length < 15).map((r) => r.where)).toEqual([]);
   });

@@ -22,6 +22,7 @@ export const PERMISSIONS = {
   "estimates.view": { section: "commercial" },
   "estimates.manage": { section: "commercial" },
   "pricing.manage": { section: "commercial" },
+  "pricing.approve": { section: "commercial" },
   "clients.view": { section: "commercial" },
   "clients.manage": { section: "commercial" },
   "contracts.view": { section: "commercial" },
@@ -43,12 +44,17 @@ export const PERMISSIONS = {
   "hr.cases": { section: "people" },
   "hr.payroll": { section: "people" },
   "training.manage": { section: "people" },
+  "people.manage": { section: "people" },
   // Projects
   "projects.all": { section: "projects" },
   "projects.manage": { section: "projects" },
+  "documents.delete": { section: "projects" },
   // Company settings
   "templates.company": { section: "settings" },
   "settings.roles": { section: "settings" },
+  "settings.company": { section: "settings" },
+  "settings.integrations": { section: "settings" },
+  "settings.export": { section: "settings" },
 } as const satisfies Record<string, { section: PermissionSection }>;
 
 export type Permission = keyof typeof PERMISSIONS;
@@ -127,7 +133,10 @@ export const SENSITIVE_PERMISSIONS: readonly Permission[] = [
   "people.rates",
   "hr.cases",
   "hr.payroll",
+  "people.manage",
   "settings.roles",
+  "settings.integrations",
+  "settings.export",
 ];
 
 export interface PermissionOverride {
@@ -160,6 +169,24 @@ export function effectivePermissions(
   for (const base of customRole?.baseRoles ?? []) for (const p of forRole(base)) result.add(p);
   for (const p of customRole?.extra ?? []) if (p in PERMISSIONS) result.add(p as Permission);
   return result;
+}
+
+/**
+ * Who sees and acts on colleagues' records, per kind: the site lead runs the crew, payroll and
+ * finance need everyone's. Without one of these a member works with their own records only — the API
+ * enforces it (SelfScopeService) and the apps offer only the member themselves to pick.
+ */
+export const CREW_PERMISSIONS = {
+  time: ["site.crewTime", "hr.payroll"],
+  expenses: ["site.crewTime", "finance.view"],
+  timeOff: ["site.crewTime", "hr.cases", "hr.payroll"],
+  training: ["training.manage", "site.crewTime"],
+  tools: ["site.manage"],
+} as const satisfies Record<string, readonly Permission[]>;
+
+/** Whether a member holding these permissions may act for colleagues on this kind of record. */
+export function seesCrew(permissions: readonly string[] | undefined, kind: keyof typeof CREW_PERMISSIONS): boolean {
+  return CREW_PERMISSIONS[kind].some((p) => permissions?.includes(p));
 }
 
 export function isPermission(value: string): value is Permission {

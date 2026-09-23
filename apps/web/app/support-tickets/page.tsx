@@ -8,6 +8,7 @@ import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch } from "@/lib/api-client";
 import { formatDateTime } from "@/lib/format-date";
 import { useMe } from "@/lib/use-me";
+import { useCan } from "@/lib/permissions";
 
 interface Member {
   id: string;
@@ -63,7 +64,7 @@ export default function SupportTicketsPage() {
   const t = useTranslations("supportTickets");
   const tc = useTranslations("common");
   const { data: me } = useMe();
-  const isManager = me?.user.role === "owner" || me?.user.role === "admin";
+  const isManager = useCan()("site.manage");
 
   const [tickets, setTickets] = useState<Ticket[] | null>(null);
   const [statusFilter, setStatusFilter] = useState<TicketStatus | "">("");

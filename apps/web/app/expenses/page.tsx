@@ -12,6 +12,7 @@ import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
+import { useCan } from "@/lib/permissions";
 
 interface Expense {
   id: string;
@@ -50,10 +51,8 @@ export default function ExpensesPage() {
   const t = useTranslations("expenses");
   const tc = useTranslations("common");
   const { data: me } = useMe();
-  const canApprove =
-    me?.user.role === "owner" ||
-    me?.user.role === "admin" ||
-    me?.user.role === "accountant";
+  const can = useCan();
+  const canApprove = can("finance.manage");
   const currency = me?.company.currency ?? "";
 
   const [expenses, setExpenses] = useState<Expense[] | null>(null);

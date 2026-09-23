@@ -1500,6 +1500,7 @@
   "field": {
     "logReadOnlyHint": "The site lead keeps the daily log — you can add photos from the punch list and RFIs.",
     "noLogYet": "No entry for today yet.",
+    "noOwnWorker": "Your account isn't linked to an employee record yet — ask the office to link it.",
     "title": "Field",
     "project": "Project",
     "selectProject": "Select a project",
@@ -4544,6 +4545,26 @@
     "p_templates_company": "Company templates",
     "p_templates_company_hint": "Contract and message templates, insurance certificates, warehouses.",
     "p_settings_roles": "Roles & permissions",
-    "p_settings_roles_hint": "Change what each role may see and do."
+    "p_pricing_approve": "Approve rate changes",
+    "p_pricing_approve_hint": "Approve or reject proposed rate catalog changes, load the starter catalog.",
+    "p_people_manage": "Manage employees",
+    "p_people_manage_hint": "Add and edit employees, adjust time-off balances, set clock-in PINs.",
+    "p_documents_delete": "Delete documents",
+    "p_documents_delete_hint": "Delete documents, see the trash and restore from it.",
+    "p_settings_company": "Company settings",
+    "p_settings_company_hint": "Company profile, logo, portal domain, lead form, calendar feed link.",
+    "p_settings_integrations": "Integrations",
+    "p_settings_integrations_hint": "Connect DocuSign, MS Project and Autodesk, manage webhooks.",
+    "p_settings_export": "Data export & audit log",
+    "p_settings_export_hint": "Download all company data and read the audit log.",
+    "p_settings_roles_hint": "Change what each role may see and do; manage members, invites and custom roles."
+  },
+  "noAccess": {
+    "title": "No access",
+    "body": "This page needs the {permission} permission, which your role doesn't have.",
+    "howToGet": "Ask the owner or an admin — they can grant it in Settings → Team & Access.",
+    "back": "Go to the dashboard",
+    "quoted": "“{name}”",
+    "or": " or "
   }
 }

@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "use-intl";
 import { EXPENSE_CATEGORIES, type ExpenseCategory } from "@cantero/shared";
-import { fetchCached } from "@/lib/offline-cache";
 import { apiUpload, NetworkError } from "@/lib/api-client";
 import { attachFiles, submitOrQueue } from "@/lib/offline-queue";
 import { extractAmount, extractDate, extractVendor } from "@cantero/shared";
@@ -22,6 +21,7 @@ import {
   type FieldMessageType,
 } from "./ui";
 import { PhotoPicker } from "./photo-picker";
+import { useWorkerChoice, WorkerPicker } from "./worker-picker";
 
 interface ReceiptExtraction {
   amount: number | null;
@@ -29,24 +29,26 @@ interface ReceiptExtraction {
   vendorGuess: string | null;
 }
 
-interface Worker {
-  id: string;
-  name: string;
-  userId: string | null;
-}
-
 const today = () => new Date().toISOString().slice(0, 10);
 
 /** An expense with its receipt photo: scanned (when online) to prefill amount, date and vendor, then
  * uploaded after the expense — queued behind it when the expense itself was saved offline. */
-export function ExpensesTab({ projectId, meUserId, reloadKey }: { projectId: string; meUserId: string | null; reloadKey: number }) {
+export function ExpensesTab({
+  projectId,
+  meUserId,
+  permissions,
+  reloadKey,
+}: {
+  projectId: string;
+  meUserId: string | null;
+  permissions: readonly string[] | undefined;
+  reloadKey: number;
+}) {
   const t = useTranslations("field");
-  const tt = useTranslations("team");
   const te = useTranslations("expenses");
   const tc = useTranslations("common");
-  const [workers, setWorkers] = useState<Worker[]>([]);
+  const worker = useWorkerChoice({ kind: "expenses", meUserId, permissions, reloadKey });
   const [form, setForm] = useState({
-    workerId: "",
     category: "materials" as ExpenseCategory,
     amount: "",
     description: "",
@@ -56,26 +58,15 @@ export function ExpensesTab({ projectId, meUserId, reloadKey }: { projectId: str
   const [scanning, setScanning] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ type: FieldMessageType; text: string } | null>(null);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    fetchCached<Worker[]>("field:workers", "/workers")
-      .then(({ data: list }) => {
-        setWorkers(list);
-        const mine = list.find((w) => w.userId === meUserId);
-        setForm((f) => ({ ...f, workerId: f.workerId || ((mine ?? list[0])?.id ?? "") }));
-      })
-      .catch(() => setError(true));
-  }, [meUserId, reloadKey]);
 
   async function submit() {
-    if (!form.workerId || !form.amount.trim()) return;
+    if (!worker.workerId || !form.amount.trim()) return;
     setBusy(true);
     setMessage(null);
     try {
       const record = await submitOrQueue<{ id: string }>("expense", "/expenses", "POST", {
         projectId,
-        workerId: form.workerId,
+        workerId: worker.workerId,
         category: form.category,
         amount: parseDecimal(form.amount),
         description: form.description || undefined,
@@ -136,8 +127,8 @@ export function ExpensesTab({ projectId, meUserId, reloadKey }: { projectId: str
     }
   }
 
-  if (error) return <Muted>{t("offline")}</Muted>;
-  if (workers.length === 0) return <Loading />;
+  if (worker.error) return <Muted>{t("offline")}</Muted>;
+  if (!worker.loaded) return <Loading />;
 
   return (
     <Card>
@@ -145,12 +136,7 @@ export function ExpensesTab({ projectId, meUserId, reloadKey }: { projectId: str
       {receipt.length > 0 && (
         <SecondaryButton label={scanning ? t("scanReceiptScanning") : t("scanReceiptButton")} onPress={scan} disabled={scanning} />
       )}
-      <SelectField
-        label={tt("worker")}
-        value={form.workerId}
-        options={workers.map((w) => ({ value: w.id, label: w.name }))}
-        onChange={(workerId) => setForm((f) => ({ ...f, workerId }))}
-      />
+      <WorkerPicker choice={worker} />
       <SelectField<ExpenseCategory>
         label={te("category")}
         value={form.category}
@@ -172,7 +158,7 @@ export function ExpensesTab({ projectId, meUserId, reloadKey }: { projectId: str
       <Field label={te("description")}>
         <TextField value={form.description} onChangeText={(description) => setForm((f) => ({ ...f, description }))} />
       </Field>
-      <PrimaryButton label={te("submit")} onPress={submit} busy={busy} disabled={!form.amount.trim()} />
+      <PrimaryButton label={te("submit")} onPress={submit} busy={busy} disabled={!form.amount.trim() || !worker.workerId} />
       {message && <FieldMessage type={message.type} text={message.text} />}
     </Card>
   );

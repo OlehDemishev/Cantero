@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import type { CreateCustomRoleInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
+import { assertMayAppointAdmin } from "../common/permissions/admin-appointment";
 
 @Injectable()
 export class CustomRolesService {
@@ -18,7 +19,8 @@ export class CustomRolesService {
     });
   }
 
-  async create(companyId: string, actor: AuditActor, input: CreateCustomRoleInput) {
+  async create(companyId: string, actor: AuditActor & { role?: string }, input: CreateCustomRoleInput) {
+    assertMayAppointAdmin(actor.role, input.basePermissions.includes("admin"));
     try {
       const role = await this.prisma.customRole.create({
         data: { companyId, name: input.name, basePermissions: input.basePermissions, extraPermissions: input.extraPermissions ?? [] },
@@ -40,9 +42,10 @@ export class CustomRolesService {
     }
   }
 
-  async delete(companyId: string, actor: AuditActor, id: string) {
+  async delete(companyId: string, actor: AuditActor & { role?: string }, id: string) {
     const role = await this.prisma.customRole.findFirst({ where: { id, companyId } });
     if (!role) throw new NotFoundException("Custom role not found");
+    assertMayAppointAdmin(actor.role, role.basePermissions.includes("admin"));
 
     // Members holding this role fall back to their own base role (no schema change needed —
     // customRoleId just goes null via the FK's onDelete: SetNull).

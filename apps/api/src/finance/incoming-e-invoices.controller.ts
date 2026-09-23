@@ -9,7 +9,6 @@ import {
   type RejectIncomingEInvoiceInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
-import { Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { MAX_UPLOAD_BYTES } from "../common/upload-limits";
 import { IncomingEInvoicesService } from "./incoming-e-invoices.service";
@@ -62,13 +61,11 @@ export class IncomingEInvoicesController {
   // Converting to a real payable and rejecting are money-moving/legally-significant actions —
   // gated the same way invoices.controller.ts gates its own equivalent actions (:id/send,
   // :id/payments, etc.), unlike the open-to-everyone upload/match routes above.
-  @Roles("owner", "admin", "accountant")
   @Post(":id/convert")
   convert(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.convertToVendorBill(user.companyId, { userId: user.userId, name: user.name }, id);
   }
 
-  @Roles("owner", "admin", "accountant")
   @Post(":id/reject")
   reject(
     @CurrentUser() user: AuthUser,

@@ -7,6 +7,8 @@ import { apiUpload } from "@/lib/api-client";
 import { submitOrQueue, submitOrQueueUpload } from "@/lib/offline-queue";
 import { fetchCached } from "@/lib/offline-cache";
 import { FieldMessage, type FieldMessageType } from "@/components/field-message";
+import { useCrewChoices } from "@/lib/permissions";
+import { resetStateInEffect } from "@/lib/effect-reset";
 
 interface Worker {
   id: string;
@@ -19,7 +21,7 @@ interface ReceiptExtraction {
   vendorGuess: string | null;
 }
 
-export function ExpensesTab({ projectId, meUserId }: { projectId: string; meUserId: string }) {
+export function ExpensesTab({ projectId }: { projectId: string }) {
   const t = useTranslations("field");
   const tt = useTranslations("team");
   const te = useTranslations("expenses");
@@ -68,12 +70,16 @@ export function ExpensesTab({ projectId, meUserId }: { projectId: string; meUser
     fetchCached<Worker[]>("field:workers", "/workers")
       .then(({ data: list }) => {
         setWorkers(list);
-        const mine = list.find((w) => w.userId === meUserId);
-        setForm((f) => ({ ...f, workerId: (mine ?? list[0])?.id ?? "" }));
       })
       .catch(() => setError(true));
+  }, []);
 
-  }, [meUserId]);
+  const { crew, choices, initialId } = useCrewChoices(workers, "expenses");
+  // Keep the pick on a worker this member may record for (their own record unless they run the crew).
+  useEffect(() => {
+    if (choices.some((w) => w.id === form.workerId)) return;
+    resetStateInEffect(() => setForm((f) => ({ ...f, workerId: initialId })));
+  }, [choices, initialId, form.workerId]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -120,13 +126,14 @@ export function ExpensesTab({ projectId, meUserId }: { projectId: string; meUser
 
   if (error) return <p className="text-sm text-gray-400 dark:text-gray-500">{t("offline")}</p>;
   if (workers.length === 0) return <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>;
+  if (choices.length === 0) return <p className="text-sm text-gray-500 dark:text-gray-400">{t("noOwnWorker")}</p>;
 
   return (
     <form onSubmit={submit} className="card flex flex-col gap-3">
       <label className="flex flex-col gap-1.5 text-sm">
         <span className="font-medium text-gray-700 dark:text-gray-200">{tt("worker")}</span>
-        <select className="input" value={form.workerId} onChange={(e) => setForm((f) => ({ ...f, workerId: e.target.value }))}>
-          {workers.map((w) => (
+        <select className="input" value={form.workerId} disabled={!crew} onChange={(e) => setForm((f) => ({ ...f, workerId: e.target.value }))}>
+          {choices.map((w) => (
             <option key={w.id} value={w.id}>
               {w.name}
             </option>

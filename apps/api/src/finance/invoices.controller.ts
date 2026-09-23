@@ -17,7 +17,6 @@ import {
   type VoidInvoiceInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
-import { Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { InvoicesService } from "./invoices.service";
 import { AiaBillingService } from "./aia-billing.service";
@@ -123,7 +122,6 @@ export class InvoicesController {
     return this.service.releaseRetainage(user.companyId, estimateId, body);
   }
 
-  @Roles("owner", "admin", "accountant")
   @Patch(":id")
   update(
     @CurrentUser() user: AuthUser,
@@ -133,13 +131,11 @@ export class InvoicesController {
     return this.service.update(user.companyId, id, body);
   }
 
-  @Roles("owner", "admin", "accountant")
   @Post(":id/send")
   send(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.send(user.companyId, { userId: user.userId, name: user.name }, id);
   }
 
-  @Roles("owner", "admin", "accountant")
   @Post(":id/void")
   void(
     @CurrentUser() user: AuthUser,
@@ -149,13 +145,11 @@ export class InvoicesController {
     return this.service.void(user.companyId, { userId: user.userId, name: user.name }, id, body.reason);
   }
 
-  @Roles("owner", "admin", "accountant")
   @Post(":id/charge-late-fee")
   chargeLateFee(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.chargeLateFee(user.companyId, { userId: user.userId, name: user.name }, id);
   }
 
-  @Roles("owner", "admin", "accountant")
   @Post(":id/installments")
   addInstallment(
     @CurrentUser() user: AuthUser,
@@ -165,7 +159,6 @@ export class InvoicesController {
     return this.service.addInstallment(user.companyId, id, body);
   }
 
-  @Roles("owner", "admin", "accountant")
   @Post(":id/payments")
   recordPayment(
     @CurrentUser() user: AuthUser,
@@ -212,7 +205,6 @@ export class InvoicesController {
     return xml;
   }
 
-  @Roles("owner", "admin", "accountant")
   @Post(":id/peppol/send")
   async sendPeppol(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     await this.service.sendPeppolInvoice(user.companyId, id);

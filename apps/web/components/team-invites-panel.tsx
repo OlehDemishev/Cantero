@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { MEMBERSHIP_ROLES_MANAGEABLE } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useAssignableRoles } from "@/lib/permissions";
 
 interface Invite {
   id: string;
@@ -15,6 +15,7 @@ interface Invite {
 export function TeamInvitesPanel() {
   const t = useTranslations("settings");
   const [invites, setInvites] = useState<Invite[] | null>(null);
+  const { roles: assignableRoles } = useAssignableRoles();
   const [inviteForm, setInviteForm] = useState({ email: "", role: "worker" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -82,7 +83,7 @@ export function TeamInvitesPanel() {
           value={inviteForm.role}
           onChange={(e) => setInviteForm((f) => ({ ...f, role: e.target.value }))}
         >
-          {MEMBERSHIP_ROLES_MANAGEABLE.map((r) => (
+          {assignableRoles.map((r) => (
             <option key={r} value={r}>
               {t(r)}
             </option>

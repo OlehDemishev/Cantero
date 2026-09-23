@@ -4,9 +4,9 @@ import { IsString, MinLength } from "class-validator";
 import type { Response } from "express";
 import { ACCOUNTING_PROVIDERS, type AccountingProviderType, type AuthUser } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
-import { Roles } from "../common/decorators/roles.decorator";
 import { Public } from "../common/decorators/public.decorator";
 import { AccountingSyncService } from "./accounting-sync.service";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 class ConnectLexofficeDto {
   @IsString()
@@ -28,49 +28,49 @@ export class AccountingSyncController {
     private readonly config: ConfigService,
   ) {}
 
-  @Roles("owner", "admin", "accountant")
+  @Requires("finance.manage")
   @Get("company/accounting/status")
   status(@CurrentUser() user: AuthUser) {
     return this.service.getStatus(user.companyId);
   }
 
-  @Roles("owner", "admin", "accountant")
+  @Requires("finance.manage")
   @Get("company/accounting/authorize-url")
   authorizeUrl(@CurrentUser() user: AuthUser, @Query("provider") provider: string) {
     return { url: this.service.getAuthorizeUrl(user.companyId, assertProvider(provider)) };
   }
 
-  @Roles("owner", "admin", "accountant")
+  @Requires("finance.manage")
   @Post("company/accounting/connect-lexoffice")
   connectLexoffice(@CurrentUser() user: AuthUser, @Body() body: ConnectLexofficeDto) {
     return this.service.connectLexoffice(user.companyId, body.apiKey);
   }
 
-  @Roles("owner", "admin", "accountant")
+  @Requires("finance.manage")
   @Delete("company/accounting/connection")
   disconnect(@CurrentUser() user: AuthUser) {
     return this.service.disconnect(user.companyId);
   }
 
-  @Roles("owner", "admin", "accountant")
+  @Requires("finance.manage")
   @Post("company/accounting/sync")
   sync(@CurrentUser() user: AuthUser) {
     return this.service.syncInvoices(user.companyId);
   }
 
-  @Roles("owner", "admin", "accountant")
+  @Requires("finance.manage")
   @Post("company/accounting/sync-bills")
   syncBills(@CurrentUser() user: AuthUser) {
     return this.service.syncBills(user.companyId);
   }
 
-  @Roles("owner", "admin", "accountant")
+  @Requires("finance.manage")
   @Get("company/accounting/sync-history")
   syncHistory(@CurrentUser() user: AuthUser) {
     return this.service.syncHistory(user.companyId);
   }
 
-  @Roles("owner", "admin", "accountant")
+  @Requires("finance.manage")
   @Get("company/accounting/integrity-check")
   integrityCheck(@CurrentUser() user: AuthUser) {
     return this.service.integrityCheck(user.companyId);

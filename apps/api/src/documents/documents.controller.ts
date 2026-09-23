@@ -17,10 +17,11 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import { MAX_UPLOAD_BYTES } from "../common/upload-limits";
 import { updateDocumentTagsSchema, type AuthUser, type Locale, type UpdateDocumentTagsInput } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
-import { OpenToAllRoles, Roles } from "../common/decorators/roles.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { DocumentsService } from "./documents.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @ProjectResource("Document")
 @OpenToAllRoles("site and project work every member does")
@@ -77,13 +78,13 @@ export class DocumentsController {
     );
   }
 
-  @Roles("owner", "admin")
+  @Requires("documents.delete")
   @Get("deleted")
   listDeleted(@CurrentUser() user: AuthUser, @Query("cursor") cursor?: string) {
     return this.service.listDeleted(user.companyId, undefined, cursor);
   }
 
-  @Roles("owner", "admin")
+  @Requires("documents.delete")
   @Patch(":id/restore")
   restore(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.restore(user.companyId, { userId: user.userId, name: user.name }, id);
@@ -164,7 +165,7 @@ export class DocumentsController {
     return new StreamableFile(buffer, { disposition: `attachment; filename="${name}"` });
   }
 
-  @Roles("owner", "admin")
+  @Requires("documents.delete")
   @Delete(":id")
   delete(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.delete(user.companyId, { userId: user.userId, name: user.name }, id, user.userId, user.role);

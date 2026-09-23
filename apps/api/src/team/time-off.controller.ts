@@ -7,11 +7,12 @@ import {
   type DecideTimeOffRequestInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
-import { OpenToAllRoles, Roles } from "../common/decorators/roles.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { TimeOffService } from "./time-off.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
 import { CREW, SelfScopeService } from "../common/permissions/self-scope.service";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @NotProjectScoped("worker time-off requests")
 @OpenToAllRoles("site and project work every member does")
@@ -33,7 +34,7 @@ export class TimeOffController {
     return this.service.create(user.companyId, { userId: user.userId, name: user.name }, body);
   }
 
-  @Roles("owner", "admin", "foreman")
+  @Requires("site.crewTime")
   @Post(":id/decision")
   decide(
     @CurrentUser() user: AuthUser,

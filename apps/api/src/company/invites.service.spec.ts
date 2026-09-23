@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, UnauthorizedException } from "@nestjs/common";
+import { BadRequestException, ConflictException, UnauthorizedException, ForbiddenException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
@@ -99,6 +99,15 @@ describe("InvitesService", () => {
           text: expect.stringContaining(`/accept-invite/${generatedToken}`),
         }),
       );
+    });
+
+    it("leaves inviting an admin to the owner", async () => {
+      prisma.subscription.findUnique.mockResolvedValue({ seats: 5 });
+      prisma.membership.count.mockResolvedValue(1);
+      prisma.invite.count.mockResolvedValue(0);
+
+      await expect(service.create(COMPANY_A, { email: "new@example.com", role: "admin" }, "admin")).rejects.toThrow(ForbiddenException);
+      expect(prisma.invite.create).not.toHaveBeenCalled();
     });
   });
 

@@ -195,13 +195,13 @@ function FieldShell({ token }: { token: string }) {
             // pull-to-refresh (reloadKey) keeps whatever the worker has already typed.
             <View key={projectId}>
               {tab === "tasks" && <TasksTab projectId={projectId} reloadKey={reloadKey} />}
-              {tab === "time" && <TimeTab projectId={projectId} meUserId={meUserId} reloadKey={reloadKey} />}
+              {tab === "time" && <TimeTab projectId={projectId} meUserId={meUserId} permissions={me?.user.permissions} reloadKey={reloadKey} />}
               {tab === "stock" && <StockTab projectId={projectId} reloadKey={reloadKey} />}
               {tab === "logs" && <LogsTab projectId={projectId} reloadKey={reloadKey} />}
               {tab === "punch" && <PunchTab projectId={projectId} reloadKey={reloadKey} />}
               {tab === "plans" && <PlansTab projectId={projectId} reloadKey={reloadKey} />}
               {tab === "rfi" && <RfiTab projectId={projectId} reloadKey={reloadKey} />}
-              {tab === "expenses" && <ExpensesTab projectId={projectId} meUserId={meUserId} reloadKey={reloadKey} />}
+              {tab === "expenses" && <ExpensesTab projectId={projectId} meUserId={meUserId} permissions={me?.user.permissions} reloadKey={reloadKey} />}
             </View>
           )}
         </ScrollView>

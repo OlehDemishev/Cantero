@@ -2,7 +2,6 @@ import { Controller, Get, Header, Query, Res } from "@nestjs/common";
 import type { Response } from "express";
 import type { AuthUser } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
-import { Roles } from "../common/decorators/roles.decorator";
 import { LaborCostService } from "./labor-cost.service";
 import { Requires } from "../common/decorators/permissions.decorator";
 
@@ -16,7 +15,7 @@ export class LaborCostController {
     return this.service.report(user.companyId, { from, to });
   }
 
-  @Roles("owner", "admin", "accountant")
+  @Requires("hr.payroll")
   @Get("payroll-export")
   @Header("Content-Type", "text/csv")
   async payrollExport(
@@ -29,7 +28,7 @@ export class LaborCostController {
     return this.service.payrollExportCsv(user.companyId, { from, to });
   }
 
-  @Roles("owner", "admin", "accountant")
+  @Requires("hr.payroll")
   @Get("payroll-export/adp")
   @Header("Content-Type", "text/csv")
   async payrollExportAdp(
@@ -42,7 +41,7 @@ export class LaborCostController {
     return this.service.payrollExportAdpCsv(user.companyId, { from, to });
   }
 
-  @Roles("owner", "admin", "accountant")
+  @Requires("hr.payroll")
   @Get("payroll-export/gusto")
   @Header("Content-Type", "text/csv")
   async payrollExportGusto(

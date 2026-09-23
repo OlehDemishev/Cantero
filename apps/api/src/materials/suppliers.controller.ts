@@ -1,6 +1,5 @@
 import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, UploadedFile, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { OpenToAllRoles, Roles } from "../common/decorators/roles.decorator";
 import { MAX_UPLOAD_BYTES } from "../common/upload-limits";
 import {
   addSupplierDocumentSchema,
@@ -81,7 +80,6 @@ export class SuppliersController {
     return this.service.create(user.companyId, body);
   }
 
-  @Roles("owner", "admin", "accountant")
   @Patch(":id")
   update(@CurrentUser() user: AuthUser, @Param("id") id: string, @Body(new ZodValidationPipe(updateSupplierSchema)) body: UpdateSupplierInput) {
     return this.service.update(user.companyId, id, body);

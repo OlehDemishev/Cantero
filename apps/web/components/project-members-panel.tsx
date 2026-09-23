@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { HelpTooltip } from "@/components/help-tooltip";
+import { useCan } from "@/lib/permissions";
 
 interface ProjectMember {
   id: string;
@@ -23,7 +24,7 @@ export function ProjectMembersPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("projectMembers");
   const tc = useTranslations("common");
   const { data: me } = useMe();
-  const canManage = me?.user.role === "owner" || me?.user.role === "admin";
+  const canManage = useCan()("projects.manage");
 
   const [project, setProject] = useState<Project | null>(null);
   const [members, setMembers] = useState<ProjectMember[] | null>(null);

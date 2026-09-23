@@ -18,6 +18,7 @@ import { WorkerBenefitsPanel } from "@/components/worker-benefits-panel";
 import { WorkerToolCheckoutsPanel } from "@/components/worker-tool-checkouts-panel";
 import { WorkerPerformancePanel } from "@/components/worker-performance-panel";
 import { WorkerHrCasesPanel } from "@/components/worker-hr-cases-panel";
+import { useCan } from "@/lib/permissions";
 
 interface ProjectBreakdown {
   projectId: string;
@@ -37,7 +38,8 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
   const tc = useTranslations("common");
   const router = useRouter();
   const { data: me } = useMe();
-  const isManager = me?.user.role === "owner" || me?.user.role === "admin";
+  const can = useCan();
+  const isManager = can("people.manage");
 
   const [summary, setSummary] = useState<Summary | null>(null);
 
@@ -127,7 +129,7 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
 
           <WorkerPerformancePanel workerId={workerId} />
 
-          {isManager && <WorkerHrCasesPanel workerId={workerId} />}
+          {can("hr.cases") && <WorkerHrCasesPanel workerId={workerId} />}
         </div>
 
         <div className="lg:col-span-2">

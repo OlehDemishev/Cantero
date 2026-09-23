@@ -53,6 +53,20 @@ export function Field({ label, children }: { label: string; children: ReactNode 
   );
 }
 
+/** A value the member can't change, laid out like the fields around it. */
+export function ReadOnlyField({ label, value }: { label: string; value: string }) {
+  const { styles } = useStyles();
+  return (
+    <Field label={label}>
+      <View style={[styles.input, styles.select]}>
+        <Text style={styles.selectText} numberOfLines={1}>
+          {value}
+        </Text>
+      </View>
+    </Field>
+  );
+}
+
 export function TextField(props: TextInputProps) {
   const { theme, styles } = useStyles();
   return (

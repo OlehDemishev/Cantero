@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { MEMBERSHIP_ROLES_MANAGEABLE } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useAssignableRoles } from "@/lib/permissions";
 
 interface CustomRole {
   id: string;
   name: string;
+  basePermissions: string[];
 }
 interface Member {
   userId: string;
@@ -21,6 +22,10 @@ export function TeamMembersPanel({ isManager }: { isManager: boolean }) {
   const tc = useTranslations("common");
   const [members, setMembers] = useState<Member[] | null>(null);
   const [customRoles, setCustomRoles] = useState<CustomRole[]>([]);
+  const { roles: assignableRoles, mayTouchAdmin } = useAssignableRoles();
+  const isAdminLevel = (customRoleId: string | undefined) => !!customRoles.find((cr) => cr.id === customRoleId)?.basePermissions.includes("admin");
+  // Owner rows are never editable; admin rows (or an admin-based custom role) only by the owner.
+  const editable = (m: Member) => isManager && m.role !== "owner" && (mayTouchAdmin || (m.role !== "admin" && !isAdminLevel(m.customRole?.id)));
 
   function load() {
     apiFetch<Member[]>("/company/members").then(setMembers);
@@ -71,13 +76,13 @@ export function TeamMembersPanel({ isManager }: { isManager: boolean }) {
                 <td className="py-2">{m.user.name}</td>
                 <td>{m.user.email}</td>
                 <td>
-                  {isManager && m.role !== "owner" ? (
+                  {editable(m) ? (
                     <select
                       className="input w-auto"
                       value={m.role}
                       onChange={(e) => updateMemberRole(m.userId, e.target.value)}
                     >
-                      {MEMBERSHIP_ROLES_MANAGEABLE.map((r) => (
+                      {assignableRoles.map((r) => (
                         <option key={r} value={r}>
                           {t(r)}
                         </option>
@@ -88,14 +93,14 @@ export function TeamMembersPanel({ isManager }: { isManager: boolean }) {
                   )}
                 </td>
                 <td>
-                  {isManager && m.role !== "owner" ? (
+                  {editable(m) ? (
                     <select
                       className="input w-auto"
                       value={m.customRole?.id ?? ""}
                       onChange={(e) => assignCustomRole(m.userId, e.target.value)}
                     >
                       <option value="">{t("noCustomRole")}</option>
-                      {customRoles.map((cr) => (
+                      {customRoles.filter((cr) => mayTouchAdmin || !cr.basePermissions.includes("admin")).map((cr) => (
                         <option key={cr.id} value={cr.id}>
                           {cr.name}
                         </option>
@@ -107,7 +112,7 @@ export function TeamMembersPanel({ isManager }: { isManager: boolean }) {
                 </td>
                 {isManager && (
                   <td>
-                    {m.role !== "owner" && (
+                    {editable(m) && (
                       <button onClick={() => removeMember(m.userId)} className="btn-secondary px-2 py-1 text-xs">
                         {t("remove")}
                       </button>

@@ -44,19 +44,19 @@ export class CompanyController {
     return this.service.referralStats(user.companyId);
   }
 
-  @Roles("owner", "admin")
+  @Requires("settings.company")
   @Patch()
   update(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(updateCompanySchema)) body: UpdateCompanyInput) {
     return this.service.update(user.companyId, { userId: user.userId, name: user.name }, body);
   }
 
-  @Roles("owner", "admin")
+  @Requires("settings.company")
   @Post("complete-onboarding")
   completeOnboarding(@CurrentUser() user: AuthUser) {
     return this.service.completeOnboarding(user.companyId, { userId: user.userId, name: user.name });
   }
 
-  @Roles("owner", "admin")
+  @Requires("settings.company")
   @Post("logo")
   @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX_LOGO_UPLOAD_BYTES } }))
   async uploadLogo(@CurrentUser() user: AuthUser, @UploadedFile() file: Express.Multer.File) {
@@ -83,7 +83,7 @@ export class CompanyController {
     return this.service.cancelDeletionRequest(user.companyId, { userId: user.userId, name: user.name });
   }
 
-  @Roles("owner", "admin")
+  @Requires("settings.company")
   @Post("calendar-feed-token")
   generateCalendarFeedToken(@CurrentUser() user: AuthUser) {
     return this.service.generateCalendarFeedToken(user.companyId, { userId: user.userId, name: user.name });
@@ -110,7 +110,7 @@ export class CompanyController {
     return this.service.franchiseOverview(user.companyId);
   }
 
-  @Roles("owner", "admin")
+  @Requires("settings.company")
   @Post("portal-domain")
   setCustomPortalDomain(
     @CurrentUser() user: AuthUser,
@@ -119,7 +119,7 @@ export class CompanyController {
     return this.service.setCustomPortalDomain(user.companyId, { userId: user.userId, name: user.name }, body);
   }
 
-  @Roles("owner", "admin")
+  @Requires("settings.company")
   @Post("portal-domain/verify")
   verifyCustomPortalDomain(@CurrentUser() user: AuthUser) {
     return this.service.verifyCustomPortalDomain(user.companyId, { userId: user.userId, name: user.name });

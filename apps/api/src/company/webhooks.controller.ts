@@ -7,12 +7,12 @@ import {
   type UpdateWebhookEndpointInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
-import { Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { WebhooksService } from "../common/webhooks/webhooks.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
-@Roles("owner", "admin")
+@Requires("settings.integrations")
 @NotProjectScoped("company webhook endpoints")
 @Controller("company/webhooks")
 export class WebhooksController {

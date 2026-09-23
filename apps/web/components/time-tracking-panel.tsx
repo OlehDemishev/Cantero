@@ -4,10 +4,13 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
+import { useCrewChoices } from "@/lib/permissions";
+import { resetStateInEffect } from "@/lib/effect-reset";
 
 interface Worker {
   id: string;
   name: string;
+  userId: string | null;
 }
 interface Task {
   id: string;
@@ -67,13 +70,17 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
 
   useEffect(() => {
     load();
-    apiFetch<Worker[]>("/workers").then((list) => {
-      setWorkers(list);
-      if (list[0]) setForm((f) => ({ ...f, workerId: list[0].id }));
-    });
+    apiFetch<Worker[]>("/workers").then(setWorkers);
     apiFetch<Task[]>(`/tasks?projectId=${projectId}`).then(setTasks);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
+
+  const { crew, choices, initialId } = useCrewChoices(workers, "time");
+  // Keep the pick on a worker this member may record for (their own record unless they run the crew).
+  useEffect(() => {
+    if (choices.some((w) => w.id === form.workerId)) return;
+    resetStateInEffect(() => setForm((f) => ({ ...f, workerId: initialId })));
+  }, [choices, initialId, form.workerId]);
 
   function startEdit(entry: TimeEntry) {
     setEditingId(entry.id);
@@ -215,7 +222,7 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
         </div>
       )}
 
-      {workers.length > 0 && (
+      {choices.length > 0 && (
         <form
           onSubmit={logTime}
           className="mt-4 flex flex-wrap items-end gap-2"
@@ -223,11 +230,12 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
           <select
             className="input w-auto"
             value={form.workerId}
+            disabled={!crew}
             onChange={(e) =>
               setForm((f) => ({ ...f, workerId: e.target.value }))
             }
           >
-            {workers.map((w) => (
+            {choices.map((w) => (
               <option key={w.id} value={w.id}>
                 {w.name}
               </option>

@@ -161,12 +161,12 @@ export default function FieldPage() {
 
             <div className="mt-4">
               {tab === "tasks" && <TasksTab projectId={projectId} />}
-              {tab === "time" && <TimeTab projectId={projectId} meUserId={me.user.id} />}
+              {tab === "time" && <TimeTab projectId={projectId} />}
               {tab === "stock" && <StockTab projectId={projectId} />}
               {tab === "logs" && <LogsTab projectId={projectId} />}
               {tab === "punch" && <PunchTab projectId={projectId} />}
               {tab === "rfi" && <RfiTab projectId={projectId} />}
-              {tab === "expenses" && <ExpensesTab projectId={projectId} meUserId={me.user.id} />}
+              {tab === "expenses" && <ExpensesTab projectId={projectId} />}
             </div>
           </>
         )}

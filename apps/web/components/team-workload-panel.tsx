@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { useCan } from "@/lib/permissions";
 
 interface WorkloadRow {
   workerId: string;
@@ -29,7 +30,7 @@ export function TeamWorkloadPanel({ currency }: { currency: string }) {
   const tc = useTranslations("common");
   const tt = useTranslations("team");
   const { data: me } = useMe();
-  const canExportPayroll = me?.user.role === "owner" || me?.user.role === "admin" || me?.user.role === "accountant";
+  const canExportPayroll = useCan()("hr.payroll");
 
   const [workload, setWorkload] = useState<LaborCostReport | null>(null);
   const [workloadFrom, setWorkloadFrom] = useState(isoDaysAgo(30));

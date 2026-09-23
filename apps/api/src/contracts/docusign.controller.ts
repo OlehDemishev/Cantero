@@ -3,9 +3,9 @@ import { ConfigService } from "@nestjs/config";
 import type { Response } from "express";
 import type { AuthUser } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
-import { Roles } from "../common/decorators/roles.decorator";
 import { Public } from "../common/decorators/public.decorator";
 import { DocusignService } from "./docusign.service";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @Controller()
 export class DocusignController {
@@ -14,19 +14,19 @@ export class DocusignController {
     private readonly config: ConfigService,
   ) {}
 
-  @Roles("owner", "admin", "accountant")
+  @Requires("settings.integrations")
   @Get("company/docusign/status")
   status(@CurrentUser() user: AuthUser) {
     return this.service.getStatus(user.companyId);
   }
 
-  @Roles("owner", "admin", "accountant")
+  @Requires("settings.integrations")
   @Get("company/docusign/authorize-url")
   authorizeUrl(@CurrentUser() user: AuthUser) {
     return { url: this.service.getAuthorizeUrl(user.companyId) };
   }
 
-  @Roles("owner", "admin", "accountant")
+  @Requires("settings.integrations")
   @Delete("company/docusign/connection")
   disconnect(@CurrentUser() user: AuthUser) {
     return this.service.disconnect(user.companyId);

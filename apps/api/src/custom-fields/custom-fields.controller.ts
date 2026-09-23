@@ -8,10 +8,11 @@ import {
   type SetCustomFieldValuesInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
-import { OpenToAllRoles, Roles } from "../common/decorators/roles.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
 import { CustomFieldsService } from "./custom-fields.service";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @OpenToAllRoles("site and project work every member does")
 @Controller("custom-fields")
@@ -23,7 +24,7 @@ export class CustomFieldsController {
     return this.service.listDefinitions(user.companyId, entityType);
   }
 
-  @Roles("owner", "admin")
+  @Requires("templates.company")
   @Post("definitions")
   createDefinition(
     @CurrentUser() user: AuthUser,
@@ -32,7 +33,7 @@ export class CustomFieldsController {
     return this.service.createDefinition(user.companyId, { userId: user.userId, name: user.name }, body);
   }
 
-  @Roles("owner", "admin")
+  @Requires("templates.company")
   @NotProjectScoped("field definitions are company-wide")
   @Delete("definitions/:id")
   deleteDefinition(@CurrentUser() user: AuthUser, @Param("id") id: string) {

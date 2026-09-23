@@ -6,6 +6,7 @@ import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { EmptyState } from "@/components/ui/empty-state";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { useCan } from "@/lib/permissions";
 
 interface Worker {
   id: string;
@@ -33,7 +34,7 @@ export default function BenefitsPage() {
   const tc = useTranslations("common");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
-  const isManager = me?.user.role === "owner" || me?.user.role === "admin";
+  const isManager = useCan()("hr.payroll");
 
   const [summary, setSummary] = useState<CostSummary | null>(null);
   const [workers, setWorkers] = useState<Worker[]>([]);

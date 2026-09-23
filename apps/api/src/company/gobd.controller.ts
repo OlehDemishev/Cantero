@@ -2,13 +2,13 @@ import { Controller, Get, Header, Query, Res, StreamableFile } from "@nestjs/com
 import type { Response } from "express";
 import type { AuthUser } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
-import { Roles } from "../common/decorators/roles.decorator";
 import { GobdLedgerService } from "../common/gobd/gobd-ledger.service";
 import { GobdService } from "./gobd.service";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 const PAGE_SIZE = 100;
 
-@Roles("owner", "admin", "accountant")
+@Requires("finance.export")
 @Controller("company/gobd")
 export class GobdController {
   constructor(

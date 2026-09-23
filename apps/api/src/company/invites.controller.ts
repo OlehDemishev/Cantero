@@ -11,32 +11,32 @@ import {
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Public } from "../common/decorators/public.decorator";
-import { Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { InvitesService } from "./invites.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 @NotProjectScoped("company member invites")
 @Controller()
 export class InvitesController {
   constructor(private readonly service: InvitesService) {}
 
-  @Roles("owner", "admin")
+  @Requires("settings.roles")
   @Get("company/invites")
   listPending(@CurrentUser() user: AuthUser) {
     return this.service.listPending(user.companyId);
   }
 
-  @Roles("owner", "admin")
+  @Requires("settings.roles")
   @Post("company/invites")
   create(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(createInviteSchema)) body: CreateInviteInput) {
-    return this.service.create(user.companyId, body);
+    return this.service.create(user.companyId, body, user.role);
   }
 
-  @Roles("owner", "admin")
+  @Requires("settings.roles")
   @Delete("company/invites/:id")
   revoke(@CurrentUser() user: AuthUser, @Param("id") id: string) {
-    return this.service.revoke(user.companyId, id);
+    return this.service.revoke(user.companyId, id, user.role);
   }
 
   @Public()

@@ -1500,6 +1500,7 @@
   "field": {
     "logReadOnlyHint": "El diario de obra lo lleva el jefe de obra; puede añadir fotos desde las incidencias y las consultas.",
     "noLogYet": "Aún no hay entrada para hoy.",
+    "noOwnWorker": "Tu cuenta aún no está vinculada a un empleado; pide a la oficina que la vincule.",
     "title": "Campo",
     "project": "Proyecto",
     "selectProject": "Selecciona un proyecto",
@@ -4544,6 +4545,26 @@
     "p_templates_company": "Plantillas de la empresa",
     "p_templates_company_hint": "Plantillas de contratos y mensajes, certificados de seguro, almacenes.",
     "p_settings_roles": "Roles y permisos",
-    "p_settings_roles_hint": "Cambiar qué puede ver y hacer cada rol."
+    "p_pricing_approve": "Aprobar cambios de precios",
+    "p_pricing_approve_hint": "Aprobar o rechazar cambios propuestos al catálogo de precios, cargar el catálogo inicial.",
+    "p_people_manage": "Gestionar empleados",
+    "p_people_manage_hint": "Crear y editar empleados, ajustar saldos de vacaciones, asignar PIN de fichaje.",
+    "p_documents_delete": "Eliminar documentos",
+    "p_documents_delete_hint": "Eliminar documentos, ver la papelera y restaurar desde ella.",
+    "p_settings_company": "Ajustes de la empresa",
+    "p_settings_company_hint": "Perfil de la empresa, logotipo, dominio del portal, formulario de contacto, enlace del calendario.",
+    "p_settings_integrations": "Integraciones",
+    "p_settings_integrations_hint": "Conectar DocuSign, MS Project y Autodesk, gestionar webhooks.",
+    "p_settings_export": "Exportación y registro",
+    "p_settings_export_hint": "Descargar todos los datos de la empresa y leer el registro de actividad.",
+    "p_settings_roles_hint": "Cambiar lo que cada rol puede ver y hacer; gestionar miembros, invitaciones y roles propios."
+  },
+  "noAccess": {
+    "title": "Sin acceso",
+    "body": "Esta página requiere el permiso {permission}, que tu rol no tiene.",
+    "howToGet": "Pídeselo al propietario o a un administrador: pueden concederlo en Ajustes → Equipo y acceso.",
+    "back": "Ir al panel",
+    "quoted": "«{name}»",
+    "or": " o "
   }
 }

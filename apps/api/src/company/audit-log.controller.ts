@@ -1,12 +1,12 @@
 import { Controller, Get, Header, Query } from "@nestjs/common";
 import type { AuthUser } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
-import { Roles } from "../common/decorators/roles.decorator";
 import { AuditService, type AuditLogFilter } from "../common/audit/audit.service";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 const PAGE_SIZE = 50;
 
-@Roles("owner", "admin")
+@Requires("settings.export")
 @Controller("company/audit-log")
 export class AuditLogController {
   constructor(private readonly audit: AuditService) {}

@@ -246,6 +246,20 @@ test("the role ladder: each route answers the roles whose default permissions co
     ["site.dailyLogs.create", "POST", "/daily-logs", {}],
     ["projects.manage", "POST", "/projects", {}],
     ["settings.roles", "GET", "/company/permissions"],
+    // Formerly fixed @Roles, now permissions a company can move between roles.
+    ["settings.roles", "GET", "/company/invites"],
+    ["settings.company", "PATCH", "/company", { name: "x" }],
+    ["settings.integrations", "GET", "/company/webhooks"],
+    ["settings.integrations", "GET", "/company/docusign/status"],
+    ["settings.export", "GET", "/company/audit-log"],
+    ["finance.manage", "GET", "/company/accounting/status"],
+    ["finance.manage", "GET", "/bank-transactions/rules"],
+    ["finance.export", "GET", "/company/gobd/verify"],
+    ["hr.payroll", "GET", "/team/labor-cost-report/payroll-export"],
+    ["people.manage", "POST", "/workers", {}],
+    ["pricing.approve", "POST", `/estimates/rate-catalog/pending-changes/${none}/approve`, {}],
+    ["site.crewTime", "POST", `/time-off/${none}/decision`, {}],
+    ["templates.company", "POST", "/company/holidays", {}],
     ["everyone", "GET", "/cost-codes"],
     ["everyone", "GET", "/projects"],
     ["everyone", "GET", "/materials/catalog"],
@@ -289,11 +303,68 @@ test("an owner widens and narrows a role's permissions, and the API follows at o
   expect(await statusOf("PATCH", "/company/permissions", employeeToken, { role: "worker", permission: "finance.view", granted: true })).toBe(403);
 });
 
-test("a worker sees and logs only their own hours and not colleagues' pay, while the site lead sees the crew", async () => {
+test("team management can be handed to another role, but only the owner makes an admin", async ({ page }) => {
+  await setRole("foreman");
+  const email = `${testProjectName().replace(/\W+/g, "-").toLowerCase()}-delegated@example.com`;
+  expect(await statusOf("POST", "/company/invites", employeeToken, { email, role: "worker" })).toBe(403);
+  await setGrant("foreman", "settings.roles", true);
+  try {
+    // Inviting and re-roling ordinary members works once granted...
+    const invite = await api<{ id: string }>("POST", "/company/invites", employeeToken, { email, role: "worker" });
+    expect(await statusOf("DELETE", `/company/invites/${invite.id}`, employeeToken)).toBe(200);
+    // ...but not making anyone an admin, themselves included, nor an admin-based custom role.
+    expect(await statusOf("POST", "/company/invites", employeeToken, { email, role: "admin" })).toBe(403);
+    expect(await statusOf("PATCH", `/company/members/${employeeId}`, employeeToken, { role: "admin" })).toBe(403);
+    expect(await statusOf("POST", "/company/custom-roles", employeeToken, { name: `${testProjectName()} deputy`, basePermissions: ["admin"] })).toBe(403);
+    // The fixed owner-and-admin routes stay out of reach whatever the grants.
+    expect(await statusOf("GET", "/company/api-keys", employeeToken)).toBe(403);
+    expect(await statusOf("GET", "/company/sso", employeeToken)).toBe(403);
+
+    // The settings screen offers the same: members and invites, with no admin among the choices.
+    await page.goto("/login");
+    await page.evaluate((t) => localStorage.setItem("cantero_token", t), employeeToken);
+    await page.goto("/settings?tab=team");
+    const inviteRole = page.locator("form select").filter({ has: page.locator("option", { hasText: "Worker" }) }).first();
+    await expect(inviteRole).toBeVisible();
+    expect(await inviteRole.locator("option").allTextContents()).not.toContain("Admin");
+  } finally {
+    await setGrant("foreman", "settings.roles", false);
+  }
+});
+
+test("a page opened by link without its permission shows 'no access' and asks the API for nothing", async ({ page }) => {
+  await setRole("worker");
+  const invoiceCalls: string[] = [];
+  page.on("request", (r) => {
+    const url = new URL(r.url());
+    if (url.origin === new URL(apiUrl()).origin && url.pathname.startsWith("/invoices")) invoiceCalls.push(url.pathname);
+  });
+  await page.goto("/login");
+  await page.evaluate((t) => localStorage.setItem("cantero_token", t), employeeToken);
+  await page.goto("/invoices");
+  await expect(page.getByRole("heading", { name: "No access", level: 1 })).toBeVisible();
+  await expect(page.getByText("“See invoices and finances”", { exact: false })).toBeVisible();
+  expect(invoiceCalls).toEqual([]);
+  // The menu leaves out what the page refuses, including the sections newly covered by the table.
+  await expect(page.getByRole("link", { name: "Invoices" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Integration status" })).toHaveCount(0);
+  await page.getByRole("link", { name: "Go to the dashboard" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  // Once the role holds the permission, the same link opens the page.
+  await setRole("accountant");
+  await page.goto("/invoices");
+  await expect(page.getByRole("heading", { name: "No access" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { level: 1 }).first()).toBeVisible();
+});
+
+test("a worker sees and logs only their own hours and not colleagues' pay, while the site lead sees the crew", async ({ page }) => {
   test.setTimeout(120_000);
   const projectId = await createProject(ownerToken, `${testProjectName()} crew time`);
-  const own = await api<{ id: string }>("POST", "/workers", ownerToken, { name: `${testProjectName()} own` });
-  const colleague = await api<{ id: string }>("POST", "/workers", ownerToken, { name: `${testProjectName()} colleague` });
+  const ownName = `${testProjectName()} own`;
+  const colleagueName = `${testProjectName()} colleague`;
+  const own = await api<{ id: string }>("POST", "/workers", ownerToken, { name: ownName });
+  const colleague = await api<{ id: string }>("POST", "/workers", ownerToken, { name: colleagueName });
   await api("PATCH", `/workers/${colleague.id}`, ownerToken, { hourlyCost: 55, phone: "+49 170 0000000" });
   const db = new Client({ connectionString: databaseUrl() });
   await db.connect();
@@ -318,7 +389,28 @@ test("a worker sees and logs only their own hours and not colleagues' pay, while
   expect(asWorker).not.toHaveProperty("hourlyCost");
   expect(asWorker).not.toHaveProperty("phone");
 
+  // The field forms offer the worker only themselves, where the site lead picks from the crew.
+  const workerChoices = async (tab: "Time" | "Expenses") => {
+    await page.getByRole("button", { name: tab, exact: true }).click();
+    const select = page.locator("label").filter({ has: page.locator("span", { hasText: /^Worker$/ }) }).locator("select");
+    await expect(select).toBeVisible();
+    return { options: await select.locator("option").allTextContents(), disabled: await select.isDisabled() };
+  };
+  await page.goto("/login");
+  await page.evaluate(([t, p]) => {
+    localStorage.setItem("cantero_token", t);
+    localStorage.setItem("cantero_field_project", p);
+  }, [employeeToken, projectId]);
+  await page.goto("/field");
+  expect(await workerChoices("Time")).toEqual({ options: [ownName], disabled: true });
+  expect(await workerChoices("Expenses")).toEqual({ options: [ownName], disabled: true });
+
   await setRole("foreman");
+  await page.reload();
+  const crewTime = await workerChoices("Time");
+  expect(crewTime.disabled).toBe(false);
+  expect(crewTime.options).toEqual(expect.arrayContaining([ownName, colleagueName]));
+
   const crew = await api<{ workerId: string }[] | { items: { workerId: string }[] }>("GET", `/time-entries?projectId=${projectId}`, employeeToken);
   expect(new Set((Array.isArray(crew) ? crew : crew.items).map((r) => r.workerId))).toEqual(new Set([own.id, colleague.id]));
   const asForeman = await api<Record<string, unknown>>("GET", `/workers/${colleague.id}`, employeeToken);

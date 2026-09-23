@@ -1,5 +1,5 @@
 import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
-import type { AuthUser, Permission } from "@cantero/shared";
+import { CREW_PERMISSIONS, type AuthUser, type Permission } from "@cantero/shared";
 import { PrismaService } from "../prisma/prisma.service";
 
 /**
@@ -10,14 +10,8 @@ import { PrismaService } from "../prisma/prisma.service";
 /** The capability (or any of several) that lets a member see and act on colleagues' records. */
 export type Crew = Permission | readonly Permission[];
 
-/** Who sees whose records, per kind: the site lead runs the crew, payroll and finance need everyone's. */
-export const CREW = {
-  time: ["site.crewTime", "hr.payroll"],
-  expenses: ["site.crewTime", "finance.view"],
-  timeOff: ["site.crewTime", "hr.cases", "hr.payroll"],
-  training: ["training.manage", "site.crewTime"],
-  tools: ["site.manage"],
-} as const satisfies Record<string, readonly Permission[]>;
+/** Who sees whose records, per kind — shared with the apps so they offer the same choice. */
+export const CREW = CREW_PERMISSIONS;
 
 @Injectable()
 export class SelfScopeService {

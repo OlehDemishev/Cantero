@@ -508,7 +508,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
         <>
           {can("estimates.view") && <TakeoffPanel projectId={projectId} />}
           <DrawingSheetsPanel projectId={projectId} />
-          {project && <BimModelPanel projectId={projectId} role={me?.user.role} initial={project} />}
+          {project && <BimModelPanel projectId={projectId} canEdit={can("site.manage")} initial={project} />}
           <TimeTrackingPanel projectId={projectId} />
           {can("site.manage") && <ProductivityPanel projectId={projectId} />}
           <DocumentsPanel projectId={projectId} />

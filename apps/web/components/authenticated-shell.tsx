@@ -7,7 +7,7 @@ import { useTranslations } from "next-intl";
 import { clearToken, getToken } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { useCan } from "@/lib/permissions";
-import type { Permission } from "@cantero/shared";
+import { permissionsFor } from "@/lib/route-access";
 import { useSidebar } from "@/context/SidebarContext";
 import { useTheme } from "@/context/ThemeContext";
 import { resetStateInEffect } from "@/lib/effect-reset";
@@ -154,38 +154,15 @@ export const NAV_GROUPS: { key: string; items: NavItem[] }[] = [
 
 const NAV_ITEMS = NAV_GROUPS.flatMap((group) => group.items);
 
-/**
- * The capability a section needs before it shows up in the menu at all (packages/shared
- * permissions.ts). A section missing here is for every member: their own work lives there.
- */
-const NAV_PERMISSIONS: Partial<Record<string, Permission>> = {
-  schedule: "site.manage",
-  resourcePlanning: "site.manage",
-  clients: "clients.view",
-  contracts: "contracts.view",
-  serviceContracts: "contracts.view",
-  invoices: "finance.view",
-  bankReconciliation: "finance.view",
-  insuranceClaims: "finance.view",
-  loans: "hr.payroll",
-  stockKits: "site.manage",
-  equipment: "site.manage",
-  fleet: "site.manage",
-  suppliers: "purchasing.view",
-  subcontractors: "subcontractors.view",
-  purchaseOrders: "purchasing.view",
-  benefits: "hr.payroll",
-  recruiting: "hr.cases",
-  performance: "hr.cases",
-  hazmat: "site.manage",
-  supportTickets: "site.manage",
-};
-
 /** Menu items this member may open: not hidden by the company, and covered by their permissions. */
 function useVisibleNavItems(hiddenNavItems: string[]): (item: NavItem) => boolean {
   const can = useCan();
   const hidden = new Set(hiddenNavItems);
-  return (item) => !hidden.has(item.key) && (NAV_PERMISSIONS[item.key] === undefined || can(NAV_PERMISSIONS[item.key]!));
+  // The same table decides the menu and whether a page opens (lib/route-access.ts).
+  return (item) => {
+    const needs = permissionsFor(item.href);
+    return !hidden.has(item.key) && (!needs || needs.some(can));
+  };
 }
 
 const COLLAPSED_NAV_GROUPS_STORAGE_KEY = "cantero:collapsedNavGroups";

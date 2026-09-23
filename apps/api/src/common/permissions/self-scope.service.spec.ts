@@ -1,5 +1,6 @@
 import { ForbiddenException } from "@nestjs/common";
 import type { AuthUser } from "@cantero/shared";
+import { DEFAULT_GRANTS, seesCrew } from "@cantero/shared";
 import { CREW, SelfScopeService } from "./self-scope.service";
 import { redactWorkerFields } from "./worker-fields.interceptor";
 
@@ -73,3 +74,17 @@ describe("redactWorkerFields", () => {
     expect(out.entries[0].worker).not.toHaveProperty("phone");
   });
 });
+
+describe("seesCrew — what the apps offer to pick, from the same table the API enforces", () => {
+  it("fixes a worker to themselves and lets the site lead, payroll and finance pick the crew", () => {
+    expect(seesCrew(DEFAULT_GRANTS.worker, "time")).toBe(false);
+    expect(seesCrew(DEFAULT_GRANTS.worker, "expenses")).toBe(false);
+    expect(seesCrew(DEFAULT_GRANTS.foreman, "time")).toBe(true);
+    expect(seesCrew(DEFAULT_GRANTS.accountant, "expenses")).toBe(true);
+    expect(seesCrew(DEFAULT_GRANTS.estimator, "time")).toBe(false);
+    expect(seesCrew(undefined, "time")).toBe(false);
+    // A worker granted the site lead's crew permission picks colleagues too.
+    expect(seesCrew([...DEFAULT_GRANTS.worker, "site.crewTime"], "time")).toBe(true);
+  });
+});
+

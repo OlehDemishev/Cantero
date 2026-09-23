@@ -1500,6 +1500,7 @@
   "field": {
     "logReadOnlyHint": "Dziennik budowy prowadzi kierownik — zdjęcia dodasz przy usterkach i zapytaniach.",
     "noLogYet": "Brak wpisu na dziś.",
+    "noOwnWorker": "Twoje konto nie jest jeszcze powiązane z pracownikiem — poproś biuro o powiązanie.",
     "title": "Teren",
     "project": "Projekt",
     "selectProject": "Wybierz projekt",
@@ -4544,6 +4545,26 @@
     "p_templates_company": "Szablony firmy",
     "p_templates_company_hint": "Szablony umów i wiadomości, certyfikaty ubezpieczeń, magazyny.",
     "p_settings_roles": "Role i uprawnienia",
-    "p_settings_roles_hint": "Zmiana tego, co każda rola może widzieć i robić."
+    "p_pricing_approve": "Zatwierdzanie zmian cen",
+    "p_pricing_approve_hint": "Zatwierdzanie lub odrzucanie proponowanych zmian w cenniku, wczytanie cennika startowego.",
+    "p_people_manage": "Zarządzanie pracownikami",
+    "p_people_manage_hint": "Dodawanie i edycja pracowników, korekta sald urlopowych, PIN-y do rejestracji czasu.",
+    "p_documents_delete": "Usuwanie dokumentów",
+    "p_documents_delete_hint": "Usuwanie dokumentów, przegląd kosza i przywracanie.",
+    "p_settings_company": "Ustawienia firmy",
+    "p_settings_company_hint": "Profil firmy, logo, domena portalu, formularz zapytań, link do kalendarza.",
+    "p_settings_integrations": "Integracje",
+    "p_settings_integrations_hint": "Łączenie DocuSign, MS Project i Autodesk, zarządzanie webhookami.",
+    "p_settings_export": "Eksport danych i dziennik",
+    "p_settings_export_hint": "Pobieranie wszystkich danych firmy i przegląd dziennika zdarzeń.",
+    "p_settings_roles_hint": "Zmiana tego, co każda rola może widzieć i robić; zarządzanie członkami, zaproszeniami i własnymi rolami."
+  },
+  "noAccess": {
+    "title": "Brak dostępu",
+    "body": "Ta strona wymaga uprawnienia {permission}, którego Twoja rola nie ma.",
+    "howToGet": "Poproś właściciela lub administratora — mogą je nadać w Ustawienia → Zespół i dostęp.",
+    "back": "Przejdź do pulpitu",
+    "quoted": "„{name}”",
+    "or": " lub "
   }
 }

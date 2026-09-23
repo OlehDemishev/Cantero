@@ -5,7 +5,6 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import type { Response } from "express";
 import type { AuthUser } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
-import { OpenToAllRoles, Roles } from "../common/decorators/roles.decorator";
 import { MAX_UPLOAD_BYTES } from "../common/upload-limits";
 import { ScheduleFilesService } from "./schedule-files.service";
 import { Requires } from "../common/decorators/permissions.decorator";
@@ -15,7 +14,6 @@ import { Requires } from "../common/decorators/permissions.decorator";
 export class ScheduleFilesController {
   constructor(private readonly service: ScheduleFilesService) {}
 
-  @Roles("owner", "admin", "estimator")
   @Post("import")
   @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX_UPLOAD_BYTES } }))
   import(@CurrentUser() user: AuthUser, @Query("projectId", ParseUUIDPipe) projectId: string, @UploadedFile() file: Express.Multer.File) {

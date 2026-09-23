@@ -4,9 +4,10 @@ import { IsString, MaxLength, MinLength } from "class-validator";
 import type { Response } from "express";
 import type { AuthUser } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
-import { OpenToAllRoles, Roles } from "../common/decorators/roles.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
 import { Public } from "../common/decorators/public.decorator";
 import { AutodeskService } from "./autodesk.service";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 class SyncAutodeskDto {
   @IsString()
@@ -33,19 +34,19 @@ export class AutodeskController {
     private readonly config: ConfigService,
   ) {}
 
-  @Roles("owner", "admin", "accountant")
+  @Requires("settings.integrations")
   @Get("company/autodesk/status")
   status(@CurrentUser() user: AuthUser) {
     return this.service.getStatus(user.companyId);
   }
 
-  @Roles("owner", "admin", "accountant")
+  @Requires("settings.integrations")
   @Get("company/autodesk/authorize-url")
   authorizeUrl(@CurrentUser() user: AuthUser) {
     return { url: this.service.getAuthorizeUrl(user.companyId) };
   }
 
-  @Roles("owner", "admin", "accountant")
+  @Requires("settings.integrations")
   @Delete("company/autodesk/connection")
   disconnect(@CurrentUser() user: AuthUser) {
     return this.service.disconnect(user.companyId);
@@ -58,25 +59,25 @@ export class AutodeskController {
     return this.service.syncPunchList(user.companyId, projectId, body.autodeskProjectId);
   }
 
-  @Roles("owner", "admin", "estimator", "foreman")
+  @Requires("site.manage")
   @Put("projects/:projectId/autodesk/project")
   linkProject(@CurrentUser() user: AuthUser, @Param("projectId") projectId: string, @Body() body: SyncAutodeskDto) {
     return this.service.linkProject(user.companyId, projectId, body.autodeskProjectId);
   }
 
-  @Roles("owner", "admin", "estimator", "foreman")
+  @Requires("site.manage")
   @Get("projects/:projectId/autodesk/models")
   browseModels(@CurrentUser() user: AuthUser, @Param("projectId") projectId: string, @Query("folderId") folderId?: string) {
     return this.service.browseModels(user.companyId, projectId, folderId || undefined);
   }
 
-  @Roles("owner", "admin", "estimator", "foreman")
+  @Requires("site.manage")
   @Put("projects/:projectId/autodesk/model")
   setModel(@CurrentUser() user: AuthUser, @Param("projectId") projectId: string, @Body() body: SetAutodeskModelDto) {
     return this.service.setModel(user.companyId, projectId, { urn: body.urn, name: body.name });
   }
 
-  @Roles("owner", "admin", "estimator", "foreman")
+  @Requires("site.manage")
   @Delete("projects/:projectId/autodesk/model")
   clearModel(@CurrentUser() user: AuthUser, @Param("projectId") projectId: string) {
     return this.service.setModel(user.companyId, projectId, null);

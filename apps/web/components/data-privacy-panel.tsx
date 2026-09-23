@@ -9,7 +9,8 @@ interface Company {
   deletionRequestedAt: string | null;
 }
 
-export function DataPrivacyPanel({ canManage }: { canManage: boolean }) {
+/** Exporting the data needs settings.export; asking to delete the company stays with owner and admin. */
+export function DataPrivacyPanel({ canExport, canDelete }: { canExport: boolean; canDelete: boolean }) {
   const t = useTranslations("dataPrivacy");
 
   const [company, setCompany] = useState<Company | null>(null);
@@ -64,7 +65,7 @@ export function DataPrivacyPanel({ canManage }: { canManage: boolean }) {
     }
   }
 
-  if (!company || !canManage) return null;
+  if (!company || (!canExport && !canDelete)) return null;
 
   return (
     <section className="card lg:col-span-2">
@@ -72,6 +73,8 @@ export function DataPrivacyPanel({ canManage }: { canManage: boolean }) {
       <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
 
       <div className="flex flex-col gap-4">
+        {canExport && (
+        <>
         <div>
           <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("exportTitle")}</h3>
           <p className="mb-2 text-sm text-gray-600 dark:text-gray-300">{t("exportHint")}</p>
@@ -87,8 +90,11 @@ export function DataPrivacyPanel({ canManage }: { canManage: boolean }) {
             {exportingOperational ? t("exporting") : t("operationalExportButton")}
           </button>
         </div>
+        </>
+        )}
 
-        <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
+        {canDelete && (
+        <div className={canExport ? "border-t border-gray-100 dark:border-gray-700 pt-4" : ""}>
           <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("deletionTitle")}</h3>
           {company.deletionRequestedAt ? (
               <>
@@ -108,6 +114,7 @@ export function DataPrivacyPanel({ canManage }: { canManage: boolean }) {
               </>
             )}
           </div>
+        )}
       </div>
     </section>
   );

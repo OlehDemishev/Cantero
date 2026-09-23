@@ -13,7 +13,7 @@ import {
   type DecideRateCatalogPendingChangeInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
-import { OpenToAllRoles, Roles } from "../common/decorators/roles.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { RateCatalogService } from "./rate-catalog.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
@@ -32,7 +32,7 @@ export class RateCatalogController {
   }
 
   // Declared before ":id" so "starter"/"import" aren't swallowed as an item id.
-  @Roles("owner", "admin")
+  @Requires("pricing.approve")
   @Post("starter")
   seedStarter(@CurrentUser() user: AuthUser) {
     return this.service.seedStarter(user.companyId, { userId: user.userId, name: user.name });
@@ -51,7 +51,7 @@ export class RateCatalogController {
     return this.service.listPendingChanges(user.companyId);
   }
 
-  @Roles("owner", "admin")
+  @Requires("pricing.approve")
   @Post("pending-changes/:id/approve")
   approvePendingChange(
     @CurrentUser() user: AuthUser,
@@ -61,7 +61,7 @@ export class RateCatalogController {
     return this.service.approvePendingChange(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
-  @Roles("owner", "admin")
+  @Requires("pricing.approve")
   @Post("pending-changes/:id/reject")
   rejectPendingChange(
     @CurrentUser() user: AuthUser,

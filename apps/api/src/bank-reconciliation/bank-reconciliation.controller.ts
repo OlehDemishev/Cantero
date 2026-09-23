@@ -11,12 +11,12 @@ import {
   type SetBankTransactionCategoryInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
-import { Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { BankReconciliationService } from "./bank-reconciliation.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
+import { RequiresFor } from "../common/decorators/permissions.decorator";
 
-@Roles("owner", "admin", "accountant")
+@RequiresFor("finance.view", "finance.manage")
 @NotProjectScoped("the company bank feed; matching names an invoice or expense in the body")
 @Controller("bank-transactions")
 export class BankReconciliationController {

@@ -15,14 +15,14 @@ import {
   type VerifyClockInPinInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
-import { OpenToAllRoles, Roles } from "../common/decorators/roles.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { WorkersService } from "./workers.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
 import { Requires } from "../common/decorators/permissions.decorator";
 
 @NotProjectScoped("workers are company-level")
-@OpenToAllRoles("the worker directory the field needs for time entry; whether pay rates show to every role is not decided yet")
+@OpenToAllRoles("the worker directory the field needs for time entry; pay rates and contacts are redacted without people.rates / people.contacts")
 @Controller("workers")
 export class WorkersController {
   constructor(private readonly service: WorkersService) {}
@@ -62,13 +62,13 @@ export class WorkersController {
     return this.service.loadedRate(user.companyId, id);
   }
 
-  @Roles("owner", "admin")
+  @Requires("people.manage")
   @Post()
   create(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(createWorkerSchema)) body: CreateWorkerInput) {
     return this.service.create(user.companyId, body);
   }
 
-  @Roles("owner", "admin")
+  @Requires("people.manage")
   @Patch(":id")
   update(
     @CurrentUser() user: AuthUser,
@@ -103,7 +103,7 @@ export class WorkersController {
     return this.service.deleteCertification(user.companyId, id, certificationId);
   }
 
-  @Roles("owner", "admin")
+  @Requires("people.manage")
   @Post(":id/pto-balance/adjust")
   adjustPtoBalance(
     @CurrentUser() user: AuthUser,
@@ -113,7 +113,7 @@ export class WorkersController {
     return this.service.adjustPtoBalance(user.companyId, { userId: user.userId, name: user.name }, id, body);
   }
 
-  @Roles("owner", "admin")
+  @Requires("people.manage")
   @Patch(":id/clock-in-pin")
   setClockInPin(
     @CurrentUser() user: AuthUser,
@@ -123,7 +123,7 @@ export class WorkersController {
     return this.service.setClockInPin(user.companyId, { userId: user.userId, name: user.name }, id, body.pin);
   }
 
-  @Roles("owner", "admin")
+  @Requires("people.manage")
   @Delete(":id/clock-in-pin")
   clearClockInPin(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.clearClockInPin(user.companyId, { userId: user.userId, name: user.name }, id);

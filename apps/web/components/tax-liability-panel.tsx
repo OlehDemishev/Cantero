@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { EmptyState } from "@/components/ui/empty-state";
+import { useCan } from "@/lib/permissions";
 
 interface TaxJurisdiction {
   id: string;
@@ -27,7 +28,7 @@ export function TaxLiabilityPanel() {
   const t = useTranslations("tax");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
-  const isManager = me?.user.role === "owner" || me?.user.role === "admin";
+  const isManager = useCan()("finance.manage");
 
   const [jurisdictions, setJurisdictions] = useState<TaxJurisdiction[]>([]);
   const [jurisdictionId, setJurisdictionId] = useState("");

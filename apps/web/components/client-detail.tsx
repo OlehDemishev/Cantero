@@ -13,6 +13,7 @@ import { ClientRemindersPanel } from "@/components/client-reminders-panel";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { goBack } from "@/lib/back-navigation";
+import { useCan } from "@/lib/permissions";
 
 type ClientStage = "lead" | "contacted" | "qualified" | "won" | "lost";
 const STAGES: ClientStage[] = ["lead", "contacted", "qualified", "won", "lost"];
@@ -34,7 +35,7 @@ export function ClientDetail({ clientId }: { clientId: string }) {
   const router = useRouter();
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
-  const isManager = me?.user.role === "owner" || me?.user.role === "admin";
+  const isManager = useCan()("clients.manage");
 
   const [client, setClient] = useState<Client | null>(null);
   const [busy, setBusy] = useState(false);

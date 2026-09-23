@@ -15,17 +15,18 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import { MAX_UPLOAD_BYTES } from "../common/upload-limits";
 import { createExpenseSchema, rejectExpenseSchema, type AuthUser, type CreateExpenseInput, type RejectExpenseInput } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
-import { OpenToAllRoles, Roles } from "../common/decorators/roles.decorator";
+import { OpenToAllRoles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { ExpensesService } from "./expenses.service";
 import { ReceiptOcrService } from "./receipt-ocr.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
 import { CREW, SelfScopeService } from "../common/permissions/self-scope.service";
+import { Requires } from "../common/decorators/permissions.decorator";
 
 const EXPENSES_PAGE_SIZE = 100;
 
 @ProjectResource("Expense")
-@OpenToAllRoles("commercial records open to every role as before; role limits not decided yet (see role audit)")
+@OpenToAllRoles("every member files their own expenses; seeing the crew's needs site.crewTime or finance.view, approving needs finance.manage")
 @Controller("expenses")
 export class ExpensesController {
   constructor(
@@ -79,13 +80,13 @@ export class ExpensesController {
     return new StreamableFile(buffer, { type: mimeType });
   }
 
-  @Roles("owner", "admin", "accountant")
+  @Requires("finance.manage")
   @Post(":id/approve")
   approve(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.approve(user.companyId, { userId: user.userId, name: user.name }, id);
   }
 
-  @Roles("owner", "admin", "accountant")
+  @Requires("finance.manage")
   @Post(":id/reject")
   reject(
     @CurrentUser() user: AuthUser,

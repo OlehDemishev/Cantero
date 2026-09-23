@@ -1500,6 +1500,7 @@
   "field": {
     "logReadOnlyHint": "Das Bautagebuch führt die Bauleitung — Fotos können Sie über Mängel und Rückfragen hinzufügen.",
     "noLogYet": "Für heute gibt es noch keinen Eintrag.",
+    "noOwnWorker": "Ihr Konto ist noch keinem Mitarbeiter zugeordnet — bitten Sie das Büro, es zu verknüpfen.",
     "title": "Vor Ort",
     "project": "Projekt",
     "selectProject": "Projekt auswählen",
@@ -4544,6 +4545,26 @@
     "p_templates_company": "Unternehmensvorlagen",
     "p_templates_company_hint": "Vertrags- und Nachrichtenvorlagen, Versicherungsnachweise, Lager.",
     "p_settings_roles": "Rollen & Berechtigungen",
-    "p_settings_roles_hint": "Festlegen, was jede Rolle sehen und tun darf."
+    "p_pricing_approve": "Preisänderungen freigeben",
+    "p_pricing_approve_hint": "Vorgeschlagene Änderungen am Preiskatalog freigeben oder ablehnen, Startkatalog laden.",
+    "p_people_manage": "Mitarbeiter verwalten",
+    "p_people_manage_hint": "Mitarbeiter anlegen und bearbeiten, Urlaubskonten korrigieren, Stempel-PINs setzen.",
+    "p_documents_delete": "Dokumente löschen",
+    "p_documents_delete_hint": "Dokumente löschen, Papierkorb einsehen und wiederherstellen.",
+    "p_settings_company": "Firmeneinstellungen",
+    "p_settings_company_hint": "Firmenprofil, Logo, Portal-Domain, Anfrageformular, Kalender-Link.",
+    "p_settings_integrations": "Integrationen",
+    "p_settings_integrations_hint": "DocuSign, MS Project und Autodesk verbinden, Webhooks verwalten.",
+    "p_settings_export": "Datenexport & Protokoll",
+    "p_settings_export_hint": "Alle Firmendaten herunterladen und das Aktivitätsprotokoll lesen.",
+    "p_settings_roles_hint": "Festlegen, was jede Rolle sehen und tun darf; Mitglieder, Einladungen und eigene Rollen verwalten."
+  },
+  "noAccess": {
+    "title": "Kein Zugriff",
+    "body": "Für diese Seite ist die Berechtigung {permission} nötig, die Ihre Rolle nicht hat.",
+    "howToGet": "Wenden Sie sich an den Inhaber oder einen Admin – sie können sie unter Einstellungen → Team & Zugriff erteilen.",
+    "back": "Zum Dashboard",
+    "quoted": "„{name}“",
+    "or": " oder "
   }
 }
