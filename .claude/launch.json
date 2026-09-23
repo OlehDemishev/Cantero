@@ -4,14 +4,38 @@
     {
       "name": "web",
       "runtimeExecutable": "env",
-      "runtimeArgs": ["NODE_OPTIONS=--max-old-space-size=3072", "pnpm", "dev:web"],
+      "runtimeArgs": [
+        "NODE_OPTIONS=--max-old-space-size=3072",
+        "pnpm",
+        "dev:web"
+      ],
       "port": 3000
     },
     {
       "name": "api",
       "runtimeExecutable": "env",
-      "runtimeArgs": ["NODE_OPTIONS=--max-old-space-size=3072", "pnpm", "dev:api"],
+      "runtimeArgs": [
+        "NODE_OPTIONS=--max-old-space-size=3072",
+        "pnpm",
+        "dev:api"
+      ],
       "port": 4000
+    },
+    {
+      "name": "mobile",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "NODE_OPTIONS=--max-old-space-size=3072",
+        "pnpm",
+        "--filter",
+        "mobile",
+        "exec",
+        "expo",
+        "start",
+        "--port",
+        "8081"
+      ],
+      "port": 8081
     }
   ]
 }

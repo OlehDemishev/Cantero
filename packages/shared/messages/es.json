@@ -1501,6 +1501,7 @@
     "logReadOnlyHint": "El diario de obra lo lleva el jefe de obra; puede añadir fotos desde las incidencias y las consultas.",
     "noLogYet": "Aún no hay entrada para hoy.",
     "noOwnWorker": "Tu cuenta aún no está vinculada a un empleado; pide a la oficina que la vincule.",
+    "noWorkers": "Aún no hay empleados: añádelos primero en Equipo.",
     "title": "Campo",
     "project": "Proyecto",
     "selectProject": "Selecciona un proyecto",

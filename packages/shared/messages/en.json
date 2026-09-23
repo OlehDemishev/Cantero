@@ -1501,6 +1501,7 @@
     "logReadOnlyHint": "The site lead keeps the daily log — you can add photos from the punch list and RFIs.",
     "noLogYet": "No entry for today yet.",
     "noOwnWorker": "Your account isn't linked to an employee record yet — ask the office to link it.",
+    "noWorkers": "No employees yet — add them under Team first.",
     "title": "Field",
     "project": "Project",
     "selectProject": "Select a project",

@@ -1501,6 +1501,7 @@
     "logReadOnlyHint": "Das Bautagebuch führt die Bauleitung — Fotos können Sie über Mängel und Rückfragen hinzufügen.",
     "noLogYet": "Für heute gibt es noch keinen Eintrag.",
     "noOwnWorker": "Ihr Konto ist noch keinem Mitarbeiter zugeordnet — bitten Sie das Büro, es zu verknüpfen.",
+    "noWorkers": "Noch keine Mitarbeiter — legen Sie sie zuerst unter Team an.",
     "title": "Vor Ort",
     "project": "Projekt",
     "selectProject": "Projekt auswählen",

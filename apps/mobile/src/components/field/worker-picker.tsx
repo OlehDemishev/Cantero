@@ -54,7 +54,7 @@ export function WorkerPicker({ choice }: { choice: ReturnType<typeof useWorkerCh
   const tt = useTranslations("team");
   const { crew, choices, workerId, setWorkerId } = choice;
 
-  if (choices.length === 0) return <Muted>{t("noOwnWorker")}</Muted>;
+  if (choices.length === 0) return <Muted>{t(crew ? "noWorkers" : "noOwnWorker")}</Muted>;
   if (!crew) return <ReadOnlyField label={tt("worker")} value={choices[0].name} />;
   return <SelectField label={tt("worker")} value={workerId} options={choices.map((w) => ({ value: w.id, label: w.name }))} onChange={setWorkerId} />;
 }

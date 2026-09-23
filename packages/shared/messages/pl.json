@@ -1501,6 +1501,7 @@
     "logReadOnlyHint": "Dziennik budowy prowadzi kierownik — zdjęcia dodasz przy usterkach i zapytaniach.",
     "noLogYet": "Brak wpisu na dziś.",
     "noOwnWorker": "Twoje konto nie jest jeszcze powiązane z pracownikiem — poproś biuro o powiązanie.",
+    "noWorkers": "Nie ma jeszcze pracowników — najpierw dodaj ich w sekcji Zespół.",
     "title": "Teren",
     "project": "Projekt",
     "selectProject": "Wybierz projekt",

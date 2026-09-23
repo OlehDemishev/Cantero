@@ -21,12 +21,14 @@ interface ReceiptExtraction {
   vendorGuess: string | null;
 }
 
+const NO_WORKERS: Worker[] = [];
+
 export function ExpensesTab({ projectId }: { projectId: string }) {
   const t = useTranslations("field");
   const tt = useTranslations("team");
   const te = useTranslations("expenses");
   const tc = useTranslations("common");
-  const [workers, setWorkers] = useState<Worker[]>([]);
+  const [workers, setWorkers] = useState<Worker[] | null>(null);
   const [form, setForm] = useState({
     workerId: "",
     category: "materials" as ExpenseCategory,
@@ -74,7 +76,7 @@ export function ExpensesTab({ projectId }: { projectId: string }) {
       .catch(() => setError(true));
   }, []);
 
-  const { crew, choices, initialId } = useCrewChoices(workers, "expenses");
+  const { crew, choices, initialId } = useCrewChoices(workers ?? NO_WORKERS, "expenses");
   // Keep the pick on a worker this member may record for (their own record unless they run the crew).
   useEffect(() => {
     if (choices.some((w) => w.id === form.workerId)) return;
@@ -125,8 +127,8 @@ export function ExpensesTab({ projectId }: { projectId: string }) {
   }
 
   if (error) return <p className="text-sm text-gray-400 dark:text-gray-500">{t("offline")}</p>;
-  if (workers.length === 0) return <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>;
-  if (choices.length === 0) return <p className="text-sm text-gray-500 dark:text-gray-400">{t("noOwnWorker")}</p>;
+  if (workers === null) return <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>;
+  if (choices.length === 0) return <p className="text-sm text-gray-500 dark:text-gray-400">{t(crew ? "noWorkers" : "noOwnWorker")}</p>;
 
   return (
     <form onSubmit={submit} className="card flex flex-col gap-3">
