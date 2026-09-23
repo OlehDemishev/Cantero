@@ -9,6 +9,7 @@ import { apiFetch } from "@/lib/api-client";
 import { useCan } from "@/lib/permissions";
 import { useMe } from "@/lib/use-me";
 import { NotificationPreferencesPanel } from "@/components/notification-preferences-panel";
+import { LanguagePanel } from "@/components/language-panel";
 import { CompanySettingsPanel } from "@/components/company-settings-panel";
 import { NavItemsSettingsPanel } from "@/components/nav-items-settings-panel";
 import { BillingPlanPanel } from "@/components/billing-plan-panel";
@@ -96,6 +97,7 @@ export default function SettingsPage() {
 
       <TabNav tabs={TABS} active={activeTab} onChange={setTab} />
 
+      {activeTab === "account" && <LanguagePanel />}
       {activeTab === "account" && <NotificationPreferencesPanel />}
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">

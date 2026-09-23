@@ -1,9 +1,22 @@
 import { useEffect, useState } from "react";
 import { ApiError } from "./api-client";
+import type { Locale } from "@cantero/shared";
 import { fetchCached } from "./offline-cache";
 
 export interface Me {
-  user: { id: string; email: string; name: string; role: string; /** What this member may do — see packages/shared permissions.ts. */ permissions?: string[] };
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    role: string;
+    /** What this member may do — see packages/shared permissions.ts. */
+    permissions?: string[];
+    /** Their own language choice; null follows the company's. */
+    locale?: Locale | null;
+  };
+  /** The language to show them in: their own choice, else the company's. */
+  locale?: Locale;
+  company?: { locale: Locale };
 }
 
 export function useMe() {

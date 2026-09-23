@@ -90,8 +90,6 @@ export function SelectField<T extends string>({
   onChange: (value: T) => void;
 }) {
   const { styles } = useStyles();
-  const tc = useTranslations("common");
-  const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
   const selected = options.find((o) => o.value === value);
 
@@ -103,36 +101,60 @@ export function SelectField<T extends string>({
         </Text>
         <Text style={styles.chevron}>▾</Text>
       </Pressable>
-      <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
-        <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
-          {/* Inner Pressable swallows taps so touching the sheet itself doesn't close it. */}
-          <Pressable style={[styles.sheet, { paddingBottom: insets.bottom }]} onPress={() => {}}>
-            <Text style={styles.sheetTitle}>{label}</Text>
-            <FlatList
-              data={options}
-              keyExtractor={(o) => o.value || "__none"}
-              renderItem={({ item }) => {
-                const active = item.value === value;
-                return (
-                  <Pressable
-                    onPress={() => {
-                      onChange(item.value);
-                      setOpen(false);
-                    }}
-                    style={[styles.option, active && styles.optionActive]}
-                  >
-                    <Text style={[styles.optionText, active && styles.optionTextActive]}>{item.label}</Text>
-                  </Pressable>
-                );
-              }}
-            />
-            <Pressable onPress={() => setOpen(false)} style={styles.cancel}>
-              <Text style={styles.cancelText}>{tc("cancel")}</Text>
-            </Pressable>
+      <OptionSheet visible={open} title={label} options={options} value={value} onPick={onChange} onClose={() => setOpen(false)} />
+    </Field>
+  );
+}
+
+/** A bottom sheet of choices — the list behind SelectField, and anything else picked from a list. */
+export function OptionSheet<T extends string>({
+  visible,
+  title,
+  options,
+  value,
+  onPick,
+  onClose,
+}: {
+  visible: boolean;
+  title: string;
+  options: { value: T; label: string }[];
+  value: T;
+  onPick: (value: T) => void;
+  onClose: () => void;
+}) {
+  const { styles } = useStyles();
+  const tc = useTranslations("common");
+  const insets = useSafeAreaInsets();
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <Pressable style={styles.backdrop} onPress={onClose}>
+        {/* Inner Pressable swallows taps so touching the sheet itself doesn't close it. */}
+        <Pressable style={[styles.sheet, { paddingBottom: insets.bottom }]} onPress={() => {}}>
+          <Text style={styles.sheetTitle}>{title}</Text>
+          <FlatList
+            data={options}
+            keyExtractor={(o) => o.value || "__none"}
+            renderItem={({ item }) => {
+              const active = item.value === value;
+              return (
+                <Pressable
+                  onPress={() => {
+                    onPick(item.value);
+                    onClose();
+                  }}
+                  style={[styles.option, active && styles.optionActive]}
+                >
+                  <Text style={[styles.optionText, active && styles.optionTextActive]}>{item.label}</Text>
+                </Pressable>
+              );
+            }}
+          />
+          <Pressable onPress={onClose} style={styles.cancel}>
+            <Text style={styles.cancelText}>{tc("cancel")}</Text>
           </Pressable>
         </Pressable>
-      </Modal>
-    </Field>
+      </Pressable>
+    </Modal>
   );
 }
 

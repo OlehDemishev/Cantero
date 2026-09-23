@@ -18,8 +18,8 @@ export default function SsoCallbackPage() {
       if (errorParam) throw new Error(errorParam);
       if (!token) throw new Error(t("ssoError"));
       setToken(token);
-      const me = await apiFetch<{ company: { locale: string } }>("/me");
-      document.cookie = `NEXT_LOCALE=${me.company.locale};path=/;max-age=31536000`;
+      const me = await apiFetch<{ locale: string }>("/me");
+      document.cookie = `NEXT_LOCALE=${me.locale};path=/;max-age=31536000`;
       window.location.href = "/dashboard";
     }
 

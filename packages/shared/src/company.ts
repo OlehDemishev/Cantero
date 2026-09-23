@@ -7,6 +7,19 @@ export const SUPPORTED_CURRENCIES = ["EUR", "USD", "GBP", "CHF", "CAD", "PLN", "
 export type Currency = (typeof SUPPORTED_CURRENCIES)[number];
 
 export const SUPPORTED_LOCALES = ["en", "de", "es", "pl", "uk"] as const;
+
+/** Each language in its own words, the way a language picker shows it to someone who reads it. */
+export const LOCALE_NAMES: Record<(typeof SUPPORTED_LOCALES)[number], string> = {
+  en: "English",
+  de: "Deutsch",
+  es: "Español",
+  pl: "Polski",
+  uk: "Українська",
+};
+
+/** A person's own app language; null goes back to following the company's. */
+export const updateMyLanguageSchema = z.object({ locale: z.enum(SUPPORTED_LOCALES).nullable() });
+export type UpdateMyLanguageInput = z.infer<typeof updateMyLanguageSchema>;
 export type Locale = (typeof SUPPORTED_LOCALES)[number];
 
 /** Fallback when no locale has been chosen yet, and the language the message catalogs in

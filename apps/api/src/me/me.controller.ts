@@ -1,7 +1,9 @@
 import { Body, Controller, Get, Patch } from "@nestjs/common";
 import {
+  updateMyLanguageSchema,
   updateNotificationPreferencesSchema,
   type AuthUser,
+  type UpdateMyLanguageInput,
   type UpdateNotificationPreferencesInput,
 } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
@@ -25,7 +27,7 @@ export class MeController {
       where: { userId_companyId: { userId: user.userId, companyId: user.companyId } },
       select: { emailDigestFrequency: true, mutedNotificationTypes: true },
     });
-    const userRecord = await this.prisma.user.findUniqueOrThrow({ where: { id: user.userId }, select: { totpEnabledAt: true } });
+    const userRecord = await this.prisma.user.findUniqueOrThrow({ where: { id: user.userId }, select: { totpEnabledAt: true, locale: true } });
     return {
       user: {
         id: user.userId,
@@ -38,7 +40,11 @@ export class MeController {
         // What this member may see and do — the web app hides the rest.
         permissions: user.permissions ?? [],
         totpEnabled: userRecord.totpEnabledAt !== null,
+        // Their own language choice; null follows the company's.
+        locale: userRecord.locale,
       },
+      // The language to show them in: their own choice, else the company's.
+      locale: userRecord.locale ?? company.locale,
       company,
       subscriptionStatus: subscription?.status ?? "incomplete",
       emailDigestFrequency: membership.emailDigestFrequency,
@@ -67,6 +73,15 @@ export class MeController {
       { key: "create_estimate", done: estimateCount > 0, link: "/projects" },
       { key: "invite_team", done: memberCount > 1, link: "/settings" },
     ];
+  }
+
+  /** Sets (or, with null, clears) the language this person reads the app in. */
+  @SkipSubscriptionCheck()
+  @Patch("language")
+  async updateLanguage(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(updateMyLanguageSchema)) body: UpdateMyLanguageInput) {
+    await this.prisma.user.update({ where: { id: user.userId }, data: { locale: body.locale } });
+    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: user.companyId }, select: { locale: true } });
+    return { userLocale: body.locale, locale: body.locale ?? company.locale };
   }
 
   @SkipSubscriptionCheck()

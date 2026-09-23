@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { SUPPORTED_LOCALES, SUPPORTED_CURRENCIES } from "@cantero/shared";
+import { LOCALE_NAMES, SUPPORTED_LOCALES, SUPPORTED_CURRENCIES } from "@cantero/shared";
 import { apiFetch, apiUpload } from "@/lib/api-client";
 import { HelpTooltip } from "@/components/help-tooltip";
 import { CompanyHolidaysPanel } from "@/components/company-holidays-panel";
@@ -320,7 +320,9 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
           reportingCurrency: companyForm.reportingCurrency || null,
         }),
       });
-      document.cookie = `NEXT_LOCALE=${companyForm.locale};path=/;max-age=31536000`;
+      // The company's language applies to whoever hasn't picked their own (Settings → Account).
+      const me = await apiFetch<{ locale: string }>("/me");
+      document.cookie = `NEXT_LOCALE=${me.locale};path=/;max-age=31536000`;
       window.location.reload();
     } finally {
       setBusy(false);
@@ -389,7 +391,7 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
           >
             {SUPPORTED_LOCALES.map((l) => (
               <option key={l} value={l}>
-                {l.toUpperCase()}
+                {LOCALE_NAMES[l]}
               </option>
             ))}
           </select>

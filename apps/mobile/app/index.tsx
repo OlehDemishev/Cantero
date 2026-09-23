@@ -29,6 +29,8 @@ import { useOfflineQueue } from "@/lib/offline-queue";
 import { registerForPush, usePushNavigation } from "@/lib/push";
 import { useSession } from "@/lib/session";
 import { useMe } from "@/lib/use-me";
+import { useAppLocale } from "@/i18n";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { useTheme, type Theme } from "@/theme";
 
 interface Project {
@@ -116,14 +118,23 @@ function FieldShell({ token }: { token: string }) {
   }
 
   const meUserId = me?.user.id ?? null;
+  // Show the language the profile says — the person's own choice, else the company's.
+  const { setLocale } = useAppLocale();
+  const profileLocale = me?.locale;
+  useEffect(() => {
+    if (profileLocale) setLocale(profileLocale);
+  }, [profileLocale, setLocale]);
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <Text style={styles.title}>{t("title")}</Text>
-        <Pressable onPress={signOut} hitSlop={12}>
-          <Text style={styles.signOut}>{tc("signOut")}</Text>
-        </Pressable>
+        <View style={styles.headerActions}>
+          <LanguageSwitcher me={me} style={styles.signOut} />
+          <Pressable onPress={signOut} hitSlop={12}>
+            <Text style={styles.signOut}>{tc("signOut")}</Text>
+          </Pressable>
+        </View>
       </View>
 
       {projects !== null && projects.length > 1 && (
@@ -224,6 +235,7 @@ function makeStyles(theme: Theme) {
     },
     title: { fontSize: 26, fontWeight: "700", color: theme.text },
     signOut: { fontSize: 15, color: theme.accent, fontWeight: "500" },
+    headerActions: { flexDirection: "row", alignItems: "center", gap: 18 },
     // A horizontal ScrollView otherwise takes a flex share of the column's height and stretches
     // every chip to match it.
     scroller: { flexGrow: 0 },

@@ -779,6 +779,9 @@ model User {
   passwordHash      String
   name              String
   createdAt         DateTime  @default(now())
+  /// The language this person reads the app in, on the web and the phone alike — a Polish crew
+  /// member at a German company picks Polish once. Null follows their company's language.
+  locale            Locale?
   /// TOTP secret (base32) actually in effect — null means 2FA is off. Only enable() ever writes
   /// here, once a code from pendingTotpSecret is verified, so an in-progress re-setup can never
   /// disable a working authenticator by being abandoned before confirmation.

@@ -19,8 +19,8 @@ export default function LoginPage() {
   const [twoFactorCode, setTwoFactorCode] = useState("");
 
   async function finishLogin() {
-    const me = await apiFetch<{ company: { locale: string } }>("/me");
-    document.cookie = `NEXT_LOCALE=${me.company.locale};path=/;max-age=31536000`;
+    const me = await apiFetch<{ locale: string }>("/me");
+    document.cookie = `NEXT_LOCALE=${me.locale};path=/;max-age=31536000`;
     // Full navigation, not router.push: the root layout reads the locale cookie
     // server-side, and the Router Cache can otherwise reuse the already-rendered
     // (pre-login, default-locale) layout on a client-side transition.

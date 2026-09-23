@@ -4,9 +4,12 @@ import { useCallback, useEffect, useState } from "react";
 import { fetchCached } from "./offline-cache";
 import { resetStateInEffect } from "./effect-reset";
 import { ApiError } from "./api-client";
+import type { Locale } from "@cantero/shared";
 
 export interface MeResponse {
-  user: { id: string; email: string; name: string; role: string; additionalRoles?: string[]; permissions?: string[]; totpEnabled: boolean };
+  user: { id: string; email: string; name: string; role: string; additionalRoles?: string[]; permissions?: string[]; totpEnabled: boolean; locale: Locale | null };
+  /** The language to show: the person's own choice, else the company's. */
+  locale: Locale;
   company: {
     id: string;
     name: string;
