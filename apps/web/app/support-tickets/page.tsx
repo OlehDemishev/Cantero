@@ -7,7 +7,6 @@ import { TICKET_PRIORITIES, TICKET_STATUSES, type TicketPriority, type TicketSta
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch } from "@/lib/api-client";
 import { formatDateTime } from "@/lib/format-date";
-import { useMe } from "@/lib/use-me";
 import { useCan } from "@/lib/permissions";
 
 interface Member {
@@ -63,7 +62,6 @@ const PRIORITY_STYLES: Record<TicketPriority, string> = {
 export default function SupportTicketsPage() {
   const t = useTranslations("supportTickets");
   const tc = useTranslations("common");
-  const { data: me } = useMe();
   const isManager = useCan()("site.manage");
 
   const [tickets, setTickets] = useState<Ticket[] | null>(null);

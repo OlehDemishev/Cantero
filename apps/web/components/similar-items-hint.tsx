@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { resetStateInEffect } from "@/lib/effect-reset";
 
 interface SimilarItem {
   id: string;
@@ -27,7 +28,7 @@ export function SimilarItemsHint({ type, projectId, text }: { type: "rfi" | "pun
   useEffect(() => {
     const trimmed = text.trim();
     if (trimmed.length < 12) {
-      setItems([]);
+      resetStateInEffect(() => setItems([]));
       return;
     }
     let cancelled = false;

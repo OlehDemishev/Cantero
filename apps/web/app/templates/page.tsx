@@ -131,8 +131,8 @@ export default function TemplatesPage() {
         defaultPpe: type === "jha" ? defaultPpe || undefined : undefined,
       };
       if (editingId) {
-        const { type: _type, ...updateBody } = body;
-        await apiFetch(`/checklist-templates/${editingId}`, { method: "PATCH", body: JSON.stringify(updateBody) });
+        // A template's type is fixed once created; undefined drops it from the JSON.
+        await apiFetch(`/checklist-templates/${editingId}`, { method: "PATCH", body: JSON.stringify({ ...body, type: undefined }) });
       } else {
         await apiFetch("/checklist-templates", { method: "POST", body: JSON.stringify(body) });
       }

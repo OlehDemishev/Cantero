@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
-import { useMe } from "@/lib/use-me";
 import { useCan } from "@/lib/permissions";
 
 interface WorkloadRow {
@@ -29,7 +28,6 @@ export function TeamWorkloadPanel({ currency }: { currency: string }) {
   const t = useTranslations("reports");
   const tc = useTranslations("common");
   const tt = useTranslations("team");
-  const { data: me } = useMe();
   const canExportPayroll = useCan()("hr.payroll");
 
   const [workload, setWorkload] = useState<LaborCostReport | null>(null);

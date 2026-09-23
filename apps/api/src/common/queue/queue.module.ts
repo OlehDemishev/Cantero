@@ -24,6 +24,30 @@ export const DOCUSIGN_POLL_QUEUE = "docusign-poll";
 export const SEMANTIC_INDEX_QUEUE = "semantic-index";
 export const DRAWING_SETS_QUEUE = "drawing-sets";
 
+/** Every queue, in one list: each is registered below and watched for failures by
+ * QueueFailureReporterService, so a new queue can't be added without its failures being reported. */
+export const QUEUE_NAMES = [
+  STOCK_ALERTS_QUEUE,
+  PUSH_CHECK_QUEUE,
+  RECURRING_INVOICES_QUEUE,
+  SCHEDULED_REPORTS_QUEUE,
+  SLA_ESCALATION_QUEUE,
+  EQUIPMENT_MAINTENANCE_QUEUE,
+  NOTIFICATION_DIGEST_QUEUE,
+  INVOICE_REMINDERS_QUEUE,
+  SERVICE_VISIT_REMINDERS_QUEUE,
+  LEAD_FOLLOW_UP_QUEUE,
+  ESTIMATE_REMINDERS_QUEUE,
+  PERMIT_EXPIRING_QUEUE,
+  CHANGE_ORDER_REMINDERS_QUEUE,
+  ENPS_SURVEYS_QUEUE,
+  OUTBOX_QUEUE,
+  STOCK_LOT_EXPIRING_QUEUE,
+  DOCUSIGN_POLL_QUEUE,
+  SEMANTIC_INDEX_QUEUE,
+  DRAWING_SETS_QUEUE,
+] as const;
+
 @Global()
 @Module({
   imports: [
@@ -35,25 +59,7 @@ export const DRAWING_SETS_QUEUE = "drawing-sets";
         connection: new IORedis(config.getOrThrow<string>("REDIS_URL"), { maxRetriesPerRequest: null }),
       }),
     }),
-    BullModule.registerQueue({ name: STOCK_ALERTS_QUEUE }),
-    BullModule.registerQueue({ name: PUSH_CHECK_QUEUE }),
-    BullModule.registerQueue({ name: RECURRING_INVOICES_QUEUE }),
-    BullModule.registerQueue({ name: SCHEDULED_REPORTS_QUEUE }),
-    BullModule.registerQueue({ name: SLA_ESCALATION_QUEUE }),
-    BullModule.registerQueue({ name: EQUIPMENT_MAINTENANCE_QUEUE }),
-    BullModule.registerQueue({ name: NOTIFICATION_DIGEST_QUEUE }),
-    BullModule.registerQueue({ name: INVOICE_REMINDERS_QUEUE }),
-    BullModule.registerQueue({ name: SERVICE_VISIT_REMINDERS_QUEUE }),
-    BullModule.registerQueue({ name: LEAD_FOLLOW_UP_QUEUE }),
-    BullModule.registerQueue({ name: ESTIMATE_REMINDERS_QUEUE }),
-    BullModule.registerQueue({ name: PERMIT_EXPIRING_QUEUE }),
-    BullModule.registerQueue({ name: CHANGE_ORDER_REMINDERS_QUEUE }),
-    BullModule.registerQueue({ name: ENPS_SURVEYS_QUEUE }),
-    BullModule.registerQueue({ name: OUTBOX_QUEUE }),
-    BullModule.registerQueue({ name: STOCK_LOT_EXPIRING_QUEUE }),
-    BullModule.registerQueue({ name: DOCUSIGN_POLL_QUEUE }),
-    BullModule.registerQueue({ name: SEMANTIC_INDEX_QUEUE }),
-    BullModule.registerQueue({ name: DRAWING_SETS_QUEUE }),
+    ...QUEUE_NAMES.map((name) => BullModule.registerQueue({ name })),
   ],
   providers: [QueueFailureReporterService],
   exports: [BullModule],

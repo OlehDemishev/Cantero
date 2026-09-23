@@ -16,7 +16,7 @@ export function SlaPoliciesPanel() {
   const t = useTranslations("supportTickets");
   const tc = useTranslations("common");
 
-  const [policies, setPolicies] = useState<Record<TicketPriority, SlaPolicy | undefined>>({} as Record<TicketPriority, SlaPolicy>);
+  const [, setPolicies] = useState<Record<TicketPriority, SlaPolicy | undefined>>({} as Record<TicketPriority, SlaPolicy>);
   const [forms, setForms] = useState<Record<TicketPriority, { responseMinutes: string; resolutionMinutes: string }>>(
     Object.fromEntries(TICKET_PRIORITIES.map((p) => [p, { responseMinutes: "", resolutionMinutes: "" }])) as Record<
       TicketPriority,

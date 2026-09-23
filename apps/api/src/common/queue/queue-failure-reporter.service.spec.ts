@@ -1,6 +1,9 @@
 import type { ConfigService } from "@nestjs/config";
 import * as Sentry from "@sentry/node";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { QueueFailureReporterService } from "./queue-failure-reporter.service";
+import { QUEUE_NAMES } from "./queue.module";
 
 jest.mock("@sentry/node", () => ({ captureException: jest.fn() }));
 
@@ -21,15 +24,16 @@ describe("QueueFailureReporterService", () => {
     service = new QueueFailureReporterService(config as unknown as ConfigService);
   });
 
-  it("attaches a 'failed' listener to every registered queue on init", () => {
+  it("attaches a 'failed' listener to every queue the app declares", () => {
     service.onModuleInit();
 
-    // Tied to the real registered-queue count (16 today) rather than "at least one" — a queue
-    // added to queue.module.ts without being added to ALL_QUEUE_NAMES here would silently regress
-    // back to unreported failures, and this test would still pass if it only checked ">= 1".
+    // Every *_QUEUE constant in queue.module.ts, read from the source: a queue declared there but
+    // left out of QUEUE_NAMES would be neither registered nor watched, and this catches it.
+    const declared = [...readFileSync(join(__dirname, "queue.module.ts"), "utf-8").matchAll(/^export const \w+_QUEUE = "([^"]+)";/gm)].map((m) => m[1]);
+    expect(declared.length).toBeGreaterThanOrEqual(19);
     const { QueueEvents } = jest.requireMock("bullmq") as { QueueEvents: jest.Mock };
-    expect(QueueEvents).toHaveBeenCalledTimes(16);
-    expect(mockOn).toHaveBeenCalledTimes(16);
+    expect(QueueEvents.mock.calls.map((c) => c[0]).sort()).toEqual([...declared].sort());
+    expect(mockOn).toHaveBeenCalledTimes(declared.length);
     expect(mockOn).toHaveBeenCalledWith("failed", expect.any(Function));
   });
 
@@ -48,6 +52,6 @@ describe("QueueFailureReporterService", () => {
   it("closes every listener on module destroy", async () => {
     service.onModuleInit();
     await service.onModuleDestroy();
-    expect(mockClose).toHaveBeenCalledTimes(16);
+    expect(mockClose).toHaveBeenCalledTimes(QUEUE_NAMES.length);
   });
 });

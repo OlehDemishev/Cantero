@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { AnnotationType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { resetStateInEffect } from "@/lib/effect-reset";
 
 interface Point {
   x: number;
@@ -151,7 +152,7 @@ export function DrawingSheetViewer({ sheetId }: { sheetId: string }) {
   useEffect(() => {
     loadMeta();
     loadAnnotations();
-    setLinks(null);
+    resetStateInEffect(() => setLinks(null));
     apiFetch<SheetLinks>(`/drawing-sheets/${sheetId}/links`)
       .then(setLinks)
       .catch(() => setLinks({ outgoing: [], referencedBy: [] }));

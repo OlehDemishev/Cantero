@@ -10,7 +10,6 @@ import { MaterialPricesPanel } from "@/components/material-prices-panel";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CloseIcon, RateCatalogIcon } from "@/components/nav-icons";
 import { apiFetch } from "@/lib/api-client";
-import { useMe } from "@/lib/use-me";
 import { formatDate, formatDateTime } from "@/lib/format-date";
 
 interface MaterialCatalogItem {
@@ -66,7 +65,6 @@ export default function RateCatalogPage() {
   const t = useTranslations("rateCatalog");
   const tc = useTranslations("common");
   const ti = useTranslations("import");
-  const { data: me } = useMe();
 
   const [items, setItems] = useState<RateCatalogItem[] | null>(null);
   const [materials, setMaterials] = useState<MaterialCatalogItem[]>([]);

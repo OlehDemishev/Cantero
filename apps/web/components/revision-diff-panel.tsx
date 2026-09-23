@@ -29,7 +29,6 @@ interface RevisionDiff {
 
 export function RevisionDiffPanel({ estimateId, revisions, currency }: { estimateId: string; revisions: RevisionSummary[]; currency: string }) {
   const t = useTranslations("estimates");
-  const tc = useTranslations("common");
 
   const [fromId, setFromId] = useState(revisions[0]?.id ?? "");
   const [toId, setToId] = useState(revisions[revisions.length - 1]?.id ?? "");

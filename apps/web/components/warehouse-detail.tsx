@@ -388,9 +388,8 @@ export function WarehouseDetail({
         setSupplierReturnForm((f) => ({ ...f, purchaseOrderId: pos[0]?.id ?? "" }));
       });
     } else {
-      setSupplierReturnPOs([]);
+      resetStateInEffect(() => setSupplierReturnPOs([]));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supplierReturnForm.supplierId]);
 
   async function startCount() {
@@ -471,9 +470,9 @@ export function WarehouseDetail({
     if (movementMaterial?.serialTracked && movement.type !== "receipt") {
       loadAvailableSerialUnits(movementMaterial.id);
     } else {
-      setAvailableSerialUnits([]);
+      resetStateInEffect(() => setAvailableSerialUnits([]));
     }
-    setSelectedUnitIds([]);
+    resetStateInEffect(() => setSelectedUnitIds([]));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [movementMaterial?.id, movement.type]);
 

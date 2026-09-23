@@ -13,7 +13,6 @@ interface Assembly {
 
 export function AssemblyQuickAddPanel({ estimateId, onAdded }: { estimateId: string; onAdded: () => void }) {
   const t = useTranslations("assemblies");
-  const tc = useTranslations("common");
 
   const [assemblies, setAssemblies] = useState<Assembly[]>([]);
   const [assemblyId, setAssemblyId] = useState("");

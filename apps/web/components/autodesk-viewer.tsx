@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { resetStateInEffect } from "@/lib/effect-reset";
 
 /** Autodesk Viewer v7, served by Autodesk (it isn't distributed on npm). Both origins are allowed
  * in next.config.ts's CSP. */
@@ -77,8 +78,10 @@ export function AutodeskViewer({ projectId, urn, language }: { projectId: string
   useEffect(() => {
     let viewer: GuiViewer | null = null;
     let cancelled = false;
-    setError(null);
-    setLoading(true);
+    resetStateInEffect(() => {
+      setError(null);
+      setLoading(true);
+    });
 
     const fetchToken = () => apiFetch<ViewerToken>(`/projects/${projectId}/autodesk/viewer-token`);
 

@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
-import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { useCan } from "@/lib/permissions";
 
@@ -27,7 +26,6 @@ interface TimeOffRequest {
 export function TimeOffPanel() {
   const t = useTranslations("timeOff");
   const tc = useTranslations("common");
-  const { data: me } = useMe();
   const canDecide = useCan()("site.crewTime");
 
   const [requests, setRequests] = useState<TimeOffRequest[] | null>(null);

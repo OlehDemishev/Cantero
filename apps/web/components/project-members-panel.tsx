@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
-import { useMe } from "@/lib/use-me";
 import { HelpTooltip } from "@/components/help-tooltip";
 import { useCan } from "@/lib/permissions";
 
@@ -23,7 +22,6 @@ interface Project {
 export function ProjectMembersPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("projectMembers");
   const tc = useTranslations("common");
-  const { data: me } = useMe();
   const canManage = useCan()("projects.manage");
 
   const [project, setProject] = useState<Project | null>(null);

@@ -8,7 +8,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test modules/on-device-ocr/rows.test.ts"
+    "test": "node --experimental-strip-types --test modules/on-device-ocr/rows.test.ts src/intl-plural-rules.test.ts"
   },
   "dependencies": {
     "@cantero/shared": "workspace:*",

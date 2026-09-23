@@ -27,7 +27,6 @@ interface Inspection {
 }
 
 const PERMIT_STATUSES: PermitStatus[] = ["draft", "submitted", "approved", "rejected", "expired"];
-const INSPECTION_RESULTS: InspectionResult[] = ["pending", "passed", "failed", "cancelled"];
 
 const STATUS_STYLES: Record<PermitStatus, string> = {
   draft: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",

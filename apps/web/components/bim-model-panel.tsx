@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { AutodeskViewer } from "@/components/autodesk-viewer";
+import { resetStateInEffect } from "@/lib/effect-reset";
 
 interface BrowserEntry {
   kind: "folder" | "file";
@@ -128,8 +129,10 @@ function ModelPicker({
   useEffect(() => {
     if (linking) return;
     let cancelled = false;
-    setEntries(null);
-    setError(null);
+    resetStateInEffect(() => {
+      setEntries(null);
+      setError(null);
+    });
     apiFetch<{ entries: BrowserEntry[]; truncated: boolean }>(`/projects/${projectId}/autodesk/models${folderId ? `?folderId=${encodeURIComponent(folderId)}` : ""}`)
       .then((res) => {
         if (cancelled) return;

@@ -1,3 +1,5 @@
+// Before anything formats a message: Hermes has no Intl.PluralRules of its own.
+import "@/intl-plural-rules";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
