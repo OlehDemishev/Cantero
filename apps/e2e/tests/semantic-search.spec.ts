@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { testProjectName } from "../fixtures";
+import { apiUrl, testProjectName } from "../fixtures";
 import { api, createProject, login } from "../api";
 
 /**
@@ -23,6 +23,9 @@ test("a repeated daily log entry is found by meaning in another language and lis
   // The first run loads the model (a few seconds) and embeds whatever else is new.
   test.setTimeout(120_000);
   const token = await login();
+  // Local dev can run the API with the embedding model off (SEMANTIC_SEARCH_ENABLED=false) to save memory.
+  const probe = await fetch(`${apiUrl()}/search/semantic?q=probe`, { headers: { Authorization: `Bearer ${token}` } });
+  test.skip(probe.status === 400 && /turned off/.test(await probe.text()), "meaning-based search is turned off on this API (SEMANTIC_SEARCH_ENABLED=false)");
   const projectId = await createProject(token, testProjectName());
   for (const day of ["2026-03-02", "2026-03-03", "2026-03-04"]) {
     await api("POST", "/daily-logs", token, { projectId, date: `${day}T08:00:00.000Z`, workPerformed: WORK });

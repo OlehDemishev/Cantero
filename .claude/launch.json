@@ -3,14 +3,14 @@
   "configurations": [
     {
       "name": "web",
-      "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["dev:web"],
+      "runtimeExecutable": "env",
+      "runtimeArgs": ["NODE_OPTIONS=--max-old-space-size=3072", "pnpm", "dev:web"],
       "port": 3000
     },
     {
       "name": "api",
-      "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["dev:api"],
+      "runtimeExecutable": "env",
+      "runtimeArgs": ["NODE_OPTIONS=--max-old-space-size=3072", "pnpm", "dev:api"],
       "port": 4000
     }
   ]
