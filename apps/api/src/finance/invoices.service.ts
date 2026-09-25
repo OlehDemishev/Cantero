@@ -509,41 +509,26 @@ export class InvoicesService {
       };
     }
 
+    // The payment row, the invoice's derived status and the outbox event commit together — a crash
+    // between them used to leave a recorded payment on an invoice still marked "sent" (reminders,
+    // late fees) with no event for integrations, and Stripe's redelivery of the same webhook then
+    // hit the duplicate branch and returned without ever repairing it. A redelivery now finds its
+    // payment already there and still recomputes the status, so it heals such an invoice instead.
+    const record = (tx: Prisma.TransactionClient) => this.recordPaymentTx(tx, companyId, invoice, amount, input.method, fxFields, stripeCheckoutSessionId);
+    let result: Awaited<ReturnType<typeof record>>;
     try {
-      await this.prisma.payment.create({
-        data: { invoiceId: id, amount, method: input.method, stripeCheckoutSessionId, ...fxFields },
-      });
+      result = await runSerializable(this.prisma, record);
     } catch (err) {
-      if (stripeCheckoutSessionId && isDuplicateStripeSession(err)) {
-        this.logger.warn(`Stripe checkout session ${stripeCheckoutSessionId} already recorded on invoice ${id} — ignoring redelivered webhook`);
-        return this.findOrThrow(companyId, id);
-      }
-      throw err;
+      // Two deliveries of one Stripe event racing: the loser's insert hits the unique index. Run
+      // once more — it now sees the winner's payment and takes the duplicate path.
+      if (!(stripeCheckoutSessionId && isDuplicateStripeSession(err))) throw err;
+      result = await runSerializable(this.prisma, record);
     }
-
-    const payments = await this.prisma.payment.findMany({ where: { invoiceId: id } });
-    const paidTotal = payments.reduce((sum, p) => sum + Number(p.amount), 0);
-    const newStatus = paidTotal >= Number(invoice.total) ? "paid" : "sent";
-
-    // The payment row itself is already committed above (its own try/catch needs to run first to
-    // detect a redelivered Stripe webhook) — this transaction covers only the invoice's derived
-    // status update, which is what the webhook payload actually describes, so the two commit
-    // together.
-    const updated = await this.prisma.$transaction(async (tx) => {
-      const updated = await tx.invoice.update({
-        where: { id },
-        data: { status: newStatus },
-        include: { lines: true, client: true, project: true, payments: true, installments: true },
-      });
-      await this.outbox.enqueue(tx, companyId, "invoice.payment_recorded", {
-        invoiceId: id,
-        number: invoice.number,
-        amount,
-        method: input.method,
-        newStatus,
-      });
+    const { updated, duplicate } = result;
+    if (duplicate) {
+      this.logger.warn(`Stripe payment ${stripeCheckoutSessionId} already recorded on invoice ${id} — ignoring redelivered webhook`);
       return updated;
-    });
+    }
 
     this.audit.record(
       companyId,
@@ -556,6 +541,39 @@ export class InvoicesService {
     );
 
     return updated;
+  }
+
+  private async recordPaymentTx(
+    tx: Prisma.TransactionClient,
+    companyId: string,
+    invoice: { id: string; number: string; total: Prisma.Decimal | number | string },
+    amount: number,
+    method: RecordPaymentInput["method"],
+    fxFields: Pick<Prisma.PaymentUncheckedCreateInput, "currency" | "foreignAmount" | "exchangeRate" | "fxGainLoss">,
+    stripeCheckoutSessionId: string | undefined,
+  ) {
+    const duplicate = stripeCheckoutSessionId ? !!(await tx.payment.findUnique({ where: { stripeCheckoutSessionId } })) : false;
+    if (!duplicate) {
+      await tx.payment.create({ data: { invoiceId: invoice.id, amount, method, stripeCheckoutSessionId, ...fxFields } });
+    }
+    // Summed in the database, in Decimal — not as JS floats that drift a cent off the total.
+    const paid = await tx.payment.aggregate({ where: { invoiceId: invoice.id }, _sum: { amount: true } });
+    const newStatus = new Prisma.Decimal(paid._sum.amount ?? 0).gte(new Prisma.Decimal(invoice.total)) ? "paid" : "sent";
+    const updated = await tx.invoice.update({
+      where: { id: invoice.id },
+      data: { status: newStatus },
+      include: { lines: true, client: true, project: true, payments: true, installments: true },
+    });
+    if (!duplicate) {
+      await this.outbox.enqueue(tx, companyId, "invoice.payment_recorded", {
+        invoiceId: invoice.id,
+        number: invoice.number,
+        amount,
+        method,
+        newStatus,
+      });
+    }
+    return { updated, duplicate };
   }
 
   /** Shared by generatePdf() and generateZugferdPdf() — the two only differ in which PdfService

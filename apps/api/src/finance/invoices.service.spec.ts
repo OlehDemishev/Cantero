@@ -23,11 +23,12 @@ describe("InvoicesService — late fees & payment terms", () => {
     invoice: { findFirst: jest.Mock; findMany: jest.Mock; update: jest.Mock; create: jest.Mock; count: jest.Mock };
     invoiceLine: { create: jest.Mock };
     company: { findUniqueOrThrow: jest.Mock };
-    payment: { create: jest.Mock; findMany: jest.Mock };
+    payment: { create: jest.Mock; findMany: jest.Mock; findUnique: jest.Mock; aggregate: jest.Mock };
     estimate: { findFirst: jest.Mock };
     $transaction: jest.Mock;
   };
   let audit: { record: jest.Mock };
+  let outbox: { enqueue: jest.Mock };
   let mail: { send: jest.Mock };
   let exchangeRates: { getRate: jest.Mock };
   let pdfService: { render: jest.Mock; renderZugferdInvoice: jest.Mock };
@@ -39,11 +40,12 @@ describe("InvoicesService — late fees & payment terms", () => {
       invoice: { findFirst: jest.fn(), findMany: jest.fn(), update: jest.fn(), create: jest.fn(), count: jest.fn().mockResolvedValue(0) },
       invoiceLine: { create: jest.fn() },
       company: { findUniqueOrThrow: jest.fn() },
-      payment: { create: jest.fn(), findMany: jest.fn().mockResolvedValue([]) },
+      payment: { create: jest.fn(), findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn().mockResolvedValue(null), aggregate: jest.fn().mockResolvedValue({ _sum: { amount: null } }) },
       estimate: { findFirst: jest.fn() },
       $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
     };
     audit = { record: jest.fn() };
+    outbox = { enqueue: jest.fn() };
     mail = { send: jest.fn() };
     exchangeRates = { getRate: jest.fn() };
     pdfService = { render: jest.fn(), renderZugferdInvoice: jest.fn().mockResolvedValue(Buffer.from("pdf-bytes")) };
@@ -59,7 +61,7 @@ describe("InvoicesService — late fees & payment terms", () => {
         { provide: AuditService, useValue: audit },
         { provide: ConfigService, useValue: { get: () => undefined } },
         { provide: MailService, useValue: mail },
-        { provide: OutboxService, useValue: { enqueue: jest.fn() } },
+        { provide: OutboxService, useValue: outbox },
         { provide: ExchangeRateService, useValue: exchangeRates },
         { provide: PeppolAccessPointService, useValue: peppolAccessPoint },
         { provide: GobdLedgerService, useValue: gobdLedger },
@@ -569,22 +571,55 @@ describe("InvoicesService — late fees & payment terms", () => {
       expect(prisma.payment.create).not.toHaveBeenCalled();
     });
 
-    it("ignores a redelivered Stripe webhook for a checkout session already recorded, instead of double-crediting it", async () => {
+    it("ignores a redelivered Stripe webhook for a payment already recorded, instead of double-crediting it", async () => {
       // Stripe explicitly does not guarantee exactly-once webhook delivery — a second delivery of
       // the same checkout.session.completed event must not create a second Payment row.
       prisma.invoice.findFirst.mockResolvedValue(baseInvoice);
-      const clashError = Object.assign(new Error("Unique constraint failed"), {
-        code: "P2002",
-        meta: { target: ["stripeCheckoutSessionId"] },
-      });
-      Object.setPrototypeOf(clashError, Prisma.PrismaClientKnownRequestError.prototype);
-      prisma.payment.create.mockRejectedValue(clashError);
+      prisma.payment.findUnique.mockResolvedValue({ id: "pay-1", stripeCheckoutSessionId: "cs_test_abc123" });
+      prisma.payment.aggregate.mockResolvedValue({ _sum: { amount: 1000 } });
+      prisma.invoice.update.mockResolvedValue({ ...baseInvoice, status: "paid" });
 
-      const result = await service.recordPayment(COMPANY_A, ACTOR, "inv-1", { amount: 60, method: "card" }, "cs_test_abc123");
+      await service.recordPayment(COMPANY_A, ACTOR, "inv-1", { amount: 1000, method: "card" }, "cs_test_abc123");
 
-      expect(result).toEqual(baseInvoice);
-      expect(prisma.invoice.update).not.toHaveBeenCalled();
+      expect(prisma.payment.create).not.toHaveBeenCalled();
+      expect(outbox.enqueue).not.toHaveBeenCalled();
       expect(audit.record).not.toHaveBeenCalled();
+    });
+
+    it("repairs the status of an invoice whose payment was recorded but whose status update never committed", async () => {
+      // The redelivery is the one chance to fix it: the invoice still says "sent" although the
+      // money is recorded, so it must come out "paid" even though no new payment is written.
+      prisma.invoice.findFirst.mockResolvedValue({ ...baseInvoice, status: "sent" });
+      prisma.payment.findUnique.mockResolvedValue({ id: "pay-1" });
+      prisma.payment.aggregate.mockResolvedValue({ _sum: { amount: new Prisma.Decimal("1000.00") } });
+      prisma.invoice.update.mockResolvedValue({ ...baseInvoice, status: "paid" });
+
+      await service.recordPayment(COMPANY_A, ACTOR, "inv-1", { amount: 1000, method: "card" }, "cs_test_abc123");
+
+      expect(prisma.invoice.update).toHaveBeenCalledWith(expect.objectContaining({ data: { status: "paid" } }));
+    });
+
+    it("writes the payment, the invoice status and the outbox event in one serializable transaction", async () => {
+      prisma.invoice.findFirst.mockResolvedValue(baseInvoice);
+      prisma.payment.aggregate.mockResolvedValue({ _sum: { amount: 400 } });
+      prisma.invoice.update.mockResolvedValue({ ...baseInvoice, status: "sent" });
+
+      await service.recordPayment(COMPANY_A, ACTOR, "inv-1", { amount: 400, method: "bank_transfer" });
+
+      expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), { isolationLevel: "Serializable" });
+      expect(prisma.invoice.update).toHaveBeenCalledWith(expect.objectContaining({ data: { status: "sent" } }));
+      expect(outbox.enqueue).toHaveBeenCalledWith(prisma, COMPANY_A, "invoice.payment_recorded", expect.objectContaining({ amount: 400, newStatus: "sent" }));
+    });
+
+    it("marks the invoice paid when payments reach the total exactly, compared in Decimal", async () => {
+      // 0.1 + 0.2 as floats is 0.30000000000000004 — a float sum could miss (or overshoot) the total.
+      prisma.invoice.findFirst.mockResolvedValue({ ...baseInvoice, total: new Prisma.Decimal("0.3") });
+      prisma.payment.aggregate.mockResolvedValue({ _sum: { amount: new Prisma.Decimal("0.3") } });
+      prisma.invoice.update.mockResolvedValue({ ...baseInvoice, status: "paid" });
+
+      await service.recordPayment(COMPANY_A, ACTOR, "inv-1", { amount: 0.2, method: "cash" });
+
+      expect(prisma.invoice.update).toHaveBeenCalledWith(expect.objectContaining({ data: { status: "paid" } }));
     });
 
     it("stores the Stripe checkout session id on the payment when given one", async () => {
