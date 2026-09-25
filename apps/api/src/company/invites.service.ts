@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import * as bcrypt from "bcryptjs";
 import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
@@ -12,6 +12,13 @@ import { assertPasswordPolicy } from "../common/password-policy";
 import { TwoFactorService } from "../auth/two-factor.service";
 import { runSerializable } from "../common/prisma/serializable-transaction";
 import { assertMayAppointAdmin } from "../common/permissions/admin-appointment";
+
+/** Invites are stored by the SHA-256 of their token, like password-reset tokens: the raw token
+ * exists only in the emailed link, so a leaked database or backup can't be used to accept one. */
+const hashInviteToken = (raw: string) => createHash("sha256").update(raw).digest("hex");
+
+/** What an invite looks like to the people managing them — never its token. */
+const INVITE_LIST_SELECT = { id: true, email: true, role: true, expiresAt: true, createdAt: true, acceptedAt: true, companyId: true } as const;
 
 /** Minimal shape assertSeatAvailable() needs — satisfied by both PrismaService directly (the
  * outer, fast-path check in accept()/completeAcceptAfterTwoFactor()) and a Prisma.TransactionClient
@@ -43,6 +50,7 @@ export class InvitesService {
   listPending(companyId: string) {
     return this.prisma.invite.findMany({
       where: { companyId, acceptedAt: null, expiresAt: { gt: new Date() } },
+      select: INVITE_LIST_SELECT,
       orderBy: { createdAt: "desc" },
     });
   }
@@ -61,11 +69,12 @@ export class InvitesService {
 
     const token = randomBytes(24).toString("hex");
     const invite = await this.prisma.invite.create({
+      select: INVITE_LIST_SELECT,
       data: {
         companyId,
         email: input.email,
         role: input.role,
-        token,
+        token: hashInviteToken(token),
         expiresAt: new Date(Date.now() + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000),
       },
     });
@@ -91,9 +100,16 @@ export class InvitesService {
     return { revoked: true };
   }
 
-  /** Public lookup — no auth, used by the accept-invite page to show what company/role the invite is for. */
+  /** Public lookup — no auth, used by the accept-invite page to show what company/role the invite
+   * is for. Only what that page shows: anyone holding the link gets this, so never the company row
+   * itself (its chat webhook URLs, feed tokens, ...). */
+  async getPublicByToken(token: string) {
+    const invite = await this.getByToken(token);
+    return { email: invite.email, role: invite.role, expiresAt: invite.expiresAt, company: { name: invite.company.name, locale: invite.company.locale } };
+  }
+
   async getByToken(token: string) {
-    const invite = await this.prisma.invite.findUnique({ where: { token }, include: { company: true } });
+    const invite = await this.prisma.invite.findUnique({ where: { token: hashInviteToken(token) }, include: { company: true } });
     if (!invite || invite.acceptedAt || invite.expiresAt < new Date()) {
       throw new NotFoundException("Invite not found or expired");
     }
@@ -124,7 +140,7 @@ export class InvitesService {
 
       if (existingUser.totpEnabledAt) {
         const challengeToken = this.jwtService.sign(
-          { userId: existingUser.id, inviteToken: invite.token, kind: "invite_2fa_challenge" },
+          { userId: existingUser.id, inviteToken: input.token, kind: "invite_2fa_challenge" },
           { expiresIn: "10m" },
         );
         return { requires2fa: true, challengeToken };

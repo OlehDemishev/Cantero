@@ -42,7 +42,7 @@ export class InvitesController {
   @Public()
   @Get("invites/:token")
   getByToken(@Param("token") token: string) {
-    return this.service.getByToken(token);
+    return this.service.getPublicByToken(token);
   }
 
   @Public()

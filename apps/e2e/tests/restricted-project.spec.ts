@@ -49,8 +49,11 @@ test.beforeAll(async () => {
   const db = new Client({ connectionString: databaseUrl() });
   await db.connect();
   try {
-    const { rows } = await db.query<{ token: string }>(`SELECT token FROM invites WHERE email = $1`, [email]);
-    const accepted = await api<{ accessToken: string }>("POST", "/invites/accept", null, { token: rows[0].token, name: "Site Worker", password: `pw-${Date.now()}-e2e` });
+    // Only the token's hash is stored and the raw one only goes out by email, so give the invite a
+    // token this test knows.
+    const inviteToken = `e2e-invite-${Date.now()}`;
+    await db.query(`UPDATE invites SET token = encode(sha256(convert_to($1, 'UTF8')), 'hex') WHERE email = $2`, [inviteToken, email]);
+    const accepted = await api<{ accessToken: string }>("POST", "/invites/accept", null, { token: inviteToken, name: "Site Worker", password: `pw-${Date.now()}-e2e` });
     workerToken = accepted.accessToken;
     workerUserId = (await db.query<{ id: string }>(`SELECT id FROM users WHERE email = $1`, [email])).rows[0].id;
   } finally {

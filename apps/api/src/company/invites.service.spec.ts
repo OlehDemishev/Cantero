@@ -1,4 +1,5 @@
-import { BadRequestException, ConflictException, UnauthorizedException, ForbiddenException } from "@nestjs/common";
+import { createHash } from "node:crypto";
+import { BadRequestException, ConflictException, UnauthorizedException, ForbiddenException, NotFoundException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
@@ -81,7 +82,7 @@ describe("InvitesService", () => {
       expect(prisma.invite.create).not.toHaveBeenCalled();
     });
 
-    it("emails the invited address with a link containing the generated invite token when a seat is available", async () => {
+    it("emails the invited address a link with the raw token, storing only its hash", async () => {
       prisma.subscription.findUnique.mockResolvedValue({ seats: 5 });
       prisma.membership.count.mockResolvedValue(1);
       prisma.invite.count.mockResolvedValue(0);
@@ -91,14 +92,38 @@ describe("InvitesService", () => {
 
       await service.create(COMPANY_A, { email: "new@example.com", role: "worker" });
 
-      const generatedToken = prisma.invite.create.mock.calls[0][0].data.token;
-      expect(generatedToken).toMatch(/^[0-9a-f]{48}$/);
-      expect(mail.send).toHaveBeenCalledWith(
-        expect.objectContaining({
-          to: "new@example.com",
-          text: expect.stringContaining(`/accept-invite/${generatedToken}`),
-        }),
+      const storedToken = prisma.invite.create.mock.calls[0][0].data.token;
+      const emailedToken = /\/accept-invite\/([0-9a-f]+)/.exec(mail.send.mock.calls[0][0].text)![1];
+      expect(emailedToken).toMatch(/^[0-9a-f]{48}$/);
+      expect(storedToken).toBe(createHash("sha256").update(emailedToken).digest("hex"));
+      expect(mail.send).toHaveBeenCalledWith(expect.objectContaining({ to: "new@example.com" }));
+      // The token never goes back to the inviter either.
+      expect(prisma.invite.create.mock.calls[0][0].select).not.toHaveProperty("token");
+    });
+
+    it("looks an invite up by the hash of the token in the link", async () => {
+      prisma.invite.findUnique.mockResolvedValue(null);
+
+      await expect(service.getByToken("a".repeat(48))).rejects.toThrow(NotFoundException);
+
+      expect(prisma.invite.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { token: createHash("sha256").update("a".repeat(48)).digest("hex") } }),
       );
+    });
+
+    it("shows the public accept page only the company's name and language, never the company row", async () => {
+      prisma.invite.findUnique.mockResolvedValue({
+        email: "new@example.com",
+        role: "worker",
+        expiresAt: new Date(Date.now() + 86_400_000),
+        acceptedAt: null,
+        company: { name: "Acme Co", locale: "de", slackWebhookUrl: "https://hooks.slack.com/secret", calendarFeedToken: "feed" },
+      });
+
+      const result = await service.getPublicByToken("a".repeat(48));
+
+      expect(result.company).toEqual({ name: "Acme Co", locale: "de" });
+      expect(JSON.stringify(result)).not.toContain("hooks.slack.com");
     });
 
     it("leaves inviting an admin to the owner", async () => {

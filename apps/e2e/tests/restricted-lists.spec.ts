@@ -99,8 +99,11 @@ test.beforeAll(async () => {
   try {
     const email = `employee.${Date.now()}@${EMAIL_DOMAIN}`;
     await api("POST", "/company/invites", t, { email, role: "worker" });
-    const { rows } = await db.query<{ token: string }>(`SELECT token FROM invites WHERE email = $1`, [email]);
-    employeeToken = (await api<{ accessToken: string }>("POST", "/invites/accept", null, { token: rows[0].token, name: "Restricted Lists Employee", password: `pw-${Date.now()}-e2e` })).accessToken;
+    // Only the token's hash is stored and the raw one only goes out by email, so give the invite a
+    // token this test knows.
+    const inviteToken = `e2e-invite-${Date.now()}`;
+    await db.query(`UPDATE invites SET token = encode(sha256(convert_to($1, 'UTF8')), 'hex') WHERE email = $2`, [inviteToken, email]);
+    employeeToken = (await api<{ accessToken: string }>("POST", "/invites/accept", null, { token: inviteToken, name: "Restricted Lists Employee", password: `pw-${Date.now()}-e2e` })).accessToken;
     employeeId = (await db.query<{ id: string }>(`SELECT id FROM users WHERE email = $1`, [email])).rows[0].id;
     const outsider = await api<{ accessToken: string; companyId: string }>("POST", "/auth/signup", null, {
         companyName: `${TEST_RUN_PREFIX} other company ${Date.now()}`,
