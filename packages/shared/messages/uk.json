@@ -176,6 +176,13 @@
     "widgetBacklogDetail": "{contractValue} {currency} за контрактами, {billedToDate} {currency} виставлено"
   },
   "settings": {
+    "onlinePayments": "Онлайн-оплати від клієнтів",
+    "onlinePaymentsHint": "Клієнти оплачують рахунки онлайн, а автоплатіж списує кошти через ваш власний обліковий запис Stripe — гроші надходять безпосередньо вам.",
+    "stripeConnected": "Ваш обліковий запис Stripe підключено, він може приймати платежі.",
+    "stripeOnboardingIncomplete": "Налаштування Stripe ще не завершено — доти клієнти не можуть платити онлайн.",
+    "stripeNotConnected": "Обліковий запис Stripe не підключено — клієнти не можуть оплачувати рахунки онлайн.",
+    "stripeConnect": "Підключити Stripe",
+    "stripeContinueOnboarding": "Завершити налаштування Stripe",
     "title": "Налаштування",
     "company": "Компанія",
     "companyName": "Назва компанії",

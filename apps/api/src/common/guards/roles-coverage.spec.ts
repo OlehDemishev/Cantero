@@ -70,6 +70,8 @@ describe("every internal route says which roles may call it", () => {
       "BillingController.changePlan",
       "BillingController.createCheckoutSession",
       "BillingController.createPortalSession",
+      "BillingController.stripeConnectOnboardingLink",
+      "BillingController.stripeConnectStatus",
       "BillingController.updateSeats",
       "CompanyController.cancelDeletionRequest",
       "CompanyController.generateFranchiseLinkCode",

@@ -10,7 +10,7 @@ import { RECURRING_INVOICES_QUEUE } from "../common/queue/queue.module";
 import { advanceDate, calculateRecurringInvoice } from "./recurring-invoice-schedule";
 import { InvoicesService } from "./invoices.service";
 import { createInvoiceWithNumber } from "./invoice-numbering";
-import { ClientPaymentMethodsService } from "./client-payment-methods.service";
+import { ClientPaymentMethodsService, hasUsablePaymentMethod } from "./client-payment-methods.service";
 
 const RECURRING_INVOICES_CHECK_INTERVAL_MS = 60 * 60 * 1000;
 const AUTOPAY_ACTOR: AuditActor = { name: "Autopay" };
@@ -97,8 +97,8 @@ export class RecurringInvoicesService implements OnModuleInit {
     const existing = await this.findOrThrow(companyId, id);
 
     if (input.autopayEnabled) {
-      const client = await this.prisma.client.findUniqueOrThrow({ where: { id: existing.clientId } });
-      if (!client.stripePaymentMethodId) {
+      const client = await this.prisma.client.findUniqueOrThrow({ where: { id: existing.clientId }, include: { company: { select: { stripeAccountId: true } } } });
+      if (!hasUsablePaymentMethod(client, client.company.stripeAccountId)) {
         throw new BadRequestException("This client has no saved card — save one from the portal before turning on autopay");
       }
     }

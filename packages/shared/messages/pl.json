@@ -176,6 +176,13 @@
     "widgetBacklogDetail": "{contractValue} {currency} w kontraktach, {billedToDate} {currency} zafakturowano"
   },
   "settings": {
+    "onlinePayments": "Płatności online od klientów",
+    "onlinePaymentsHint": "Klienci płacą faktury online, a autopłatność obciąża ich przez Twoje własne konto Stripe — pieniądze trafiają bezpośrednio do Ciebie.",
+    "stripeConnected": "Twoje konto Stripe jest połączone i może przyjmować płatności.",
+    "stripeOnboardingIncomplete": "Konfiguracja Stripe nie jest jeszcze zakończona — do tego czasu klienci nie mogą płacić online.",
+    "stripeNotConnected": "Brak połączonego konta Stripe — klienci nie mogą płacić faktur online.",
+    "stripeConnect": "Połącz Stripe",
+    "stripeContinueOnboarding": "Dokończ konfigurację Stripe",
     "title": "Ustawienia",
     "company": "Firma",
     "companyName": "Nazwa firmy",

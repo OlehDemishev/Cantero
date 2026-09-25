@@ -15,6 +15,7 @@ import { PublicSubcontractorsController } from "./public-subcontractors.controll
 import { DrawRequestsController } from "./draw-requests.controller";
 import { DrawRequestsService } from "./draw-requests.service";
 import { ClientPaymentMethodsService } from "./client-payment-methods.service";
+import { StripeConnectService } from "./stripe-connect.service";
 import { PeppolAccessPointService } from "./peppol-access-point.service";
 import { IncomingEInvoicesController } from "./incoming-e-invoices.controller";
 import { IncomingEInvoicesService } from "./incoming-e-invoices.service";
@@ -42,9 +43,10 @@ import { SubcontractorPrequalificationModule } from "../subcontractor-prequalifi
     AiaBillingService,
     DrawRequestsService,
     ClientPaymentMethodsService,
+    StripeConnectService,
     PeppolAccessPointService,
     IncomingEInvoicesService,
   ],
-  exports: [InvoicesService, SubcontractorsService, BudgetService, ClientPaymentMethodsService],
+  exports: [InvoicesService, SubcontractorsService, BudgetService, ClientPaymentMethodsService, StripeConnectService],
 })
 export class FinanceModule {}

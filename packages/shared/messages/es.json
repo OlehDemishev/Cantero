@@ -176,6 +176,13 @@
     "widgetBacklogDetail": "{contractValue} {currency} contratado, {billedToDate} {currency} facturado"
   },
   "settings": {
+    "onlinePayments": "Pagos en línea de clientes",
+    "onlinePaymentsHint": "Los clientes pagan facturas en línea y el pago automático les cobra a través de su propia cuenta de Stripe: el dinero le llega directamente a usted.",
+    "stripeConnected": "Su cuenta de Stripe está conectada y puede recibir pagos.",
+    "stripeOnboardingIncomplete": "La configuración de Stripe aún no ha terminado: los clientes no pueden pagar en línea hasta entonces.",
+    "stripeNotConnected": "No hay ninguna cuenta de Stripe conectada: los clientes no pueden pagar facturas en línea.",
+    "stripeConnect": "Conectar Stripe",
+    "stripeContinueOnboarding": "Terminar la configuración de Stripe",
     "title": "Ajustes",
     "company": "Empresa",
     "companyName": "Nombre de la empresa",

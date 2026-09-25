@@ -209,6 +209,15 @@ model Company {
   locale                               Locale                 @default(en)
   country                              String // ISO 3166-1 alpha-2
   createdAt                            DateTime               @default(now())
+  /// The company's own Stripe account (Stripe Connect, Standard) that its clients' invoice
+  /// payments, saved payment methods and autopay charges are created on — money for a company's
+  /// invoices lands in that company's Stripe balance, never the platform's. Null until an owner/admin
+  /// finishes Stripe onboarding from Settings; online payment is refused until then.
+  stripeAccountId                      String?                @unique
+  /// Mirrors the connected account's charges_enabled (refreshed on account.updated and whenever
+  /// Settings reads the status) — onboarding can be started but not finished, or Stripe can
+  /// suspend charges later, so a stored account id alone doesn't mean it can take a payment.
+  stripeChargesEnabled                 Boolean                @default(false)
   onboardingCompletedAt                DateTime?
   /// Storage key for the uploaded logo image (PNG/JPEG — pdfkit can't rasterize SVG), read back via StorageService.
   logoStorageKey                       String?
@@ -5066,6 +5075,10 @@ model Client {
   stripePaymentMethodType  String?
   stripePaymentMethodBrand String?
   stripePaymentMethodLast4 String?
+  /// The Stripe account stripeCustomerId/stripePaymentMethodId were created on. Null on rows saved
+  /// before Stripe Connect, when they lived on the platform account — those can't be charged on
+  /// the company's own account and read as "nothing on file" until the client saves one again.
+  stripeAccountId          String?
   /// Free-text acquisition channel (e.g. "referral", "google_ads", "trade_show", "cold_call") —
   /// independent of campaignId, since not every source is a tracked, spend-attributed campaign.
   source                   String?

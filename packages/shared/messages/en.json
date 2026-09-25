@@ -176,6 +176,13 @@
     "widgetBacklogDetail": "{contractValue} {currency} contracted, {billedToDate} {currency} billed"
   },
   "settings": {
+    "onlinePayments": "Online payments from clients",
+    "onlinePaymentsHint": "Clients pay invoices online, and autopay charges them, through your own Stripe account — the money goes straight to you.",
+    "stripeConnected": "Your Stripe account is connected and can take payments.",
+    "stripeOnboardingIncomplete": "Stripe setup isn't finished yet — clients can't pay online until it is.",
+    "stripeNotConnected": "No Stripe account connected — clients can't pay invoices online.",
+    "stripeConnect": "Connect Stripe",
+    "stripeContinueOnboarding": "Finish Stripe setup",
     "title": "Settings",
     "company": "Company",
     "companyName": "Company name",

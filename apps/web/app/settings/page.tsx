@@ -13,6 +13,7 @@ import { LanguagePanel } from "@/components/language-panel";
 import { CompanySettingsPanel } from "@/components/company-settings-panel";
 import { NavItemsSettingsPanel } from "@/components/nav-items-settings-panel";
 import { BillingPlanPanel } from "@/components/billing-plan-panel";
+import { StripeConnectPanel } from "@/components/stripe-connect-panel";
 import { FranchisePanel } from "@/components/franchise-panel";
 import { TeamMembersPanel } from "@/components/team-members-panel";
 import { CustomRolesPanel } from "@/components/custom-roles-panel";
@@ -106,6 +107,7 @@ export default function SettingsPage() {
         {activeTab === "company" && <NavItemsSettingsPanel canManage={can("settings.company")} />}
 
         {activeTab === "billing" && <BillingPlanPanel isManager={!!isManager} />}
+        {activeTab === "billing" && isManager && <StripeConnectPanel />}
 
         {activeTab === "billing" && isManager && <FranchisePanel />}
 

@@ -324,7 +324,7 @@ describe("RecurringInvoicesService", () => {
   describe("update()", () => {
     it("refuses to turn on autopay for a client with no saved card", async () => {
       prisma.recurringInvoice.findFirst.mockResolvedValue({ id: "rec-1", companyId: COMPANY_A, clientId: "client-1", lines: [] });
-      prisma.client.findUniqueOrThrow.mockResolvedValue({ id: "client-1", stripePaymentMethodId: null });
+      prisma.client.findUniqueOrThrow.mockResolvedValue({ id: "client-1", stripePaymentMethodId: null, company: { stripeAccountId: "acct_1" } });
 
       await expect(
         service.update(COMPANY_A, { name: "Admin" }, "rec-1", { autopayEnabled: true }),
@@ -334,7 +334,13 @@ describe("RecurringInvoicesService", () => {
 
     it("allows turning on autopay once the client has a saved card", async () => {
       prisma.recurringInvoice.findFirst.mockResolvedValue({ id: "rec-1", companyId: COMPANY_A, clientId: "client-1", lines: [] });
-      prisma.client.findUniqueOrThrow.mockResolvedValue({ id: "client-1", stripePaymentMethodId: "pm_123" });
+      prisma.client.findUniqueOrThrow.mockResolvedValue({
+        id: "client-1",
+        stripeAccountId: "acct_1",
+        stripeCustomerId: "cus_1",
+        stripePaymentMethodId: "pm_123",
+        company: { stripeAccountId: "acct_1" },
+      });
       prisma.recurringInvoice.update.mockResolvedValue({ id: "rec-1", autopayEnabled: true });
 
       await service.update(COMPANY_A, { name: "Admin" }, "rec-1", { autopayEnabled: true });

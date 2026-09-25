@@ -52,10 +52,20 @@ export async function createSentInvoice(token: string, projectName: string): Pro
 
 /** The API's own webhook secret, so a spec can sign events exactly the way Stripe does. Read from
  * E2E_STRIPE_WEBHOOK_SECRET, falling back to apps/api/.env for a local run. */
-export function stripeWebhookSecret(): string {
-  if (process.env.E2E_STRIPE_WEBHOOK_SECRET) return process.env.E2E_STRIPE_WEBHOOK_SECRET;
+function apiEnvSecret(name: string): string {
+  const fromEnv = process.env[`E2E_${name}`] ?? process.env[name];
+  if (fromEnv) return fromEnv;
   const env = readFileSync(join(__dirname, "../api/.env"), "utf-8");
-  const match = /^STRIPE_WEBHOOK_SECRET="?([^"\n]+)"?/m.exec(env);
-  if (!match) throw new Error("Set E2E_STRIPE_WEBHOOK_SECRET (or STRIPE_WEBHOOK_SECRET in apps/api/.env)");
+  const match = new RegExp(`^${name}="?([^"\\n]+)"?`, "m").exec(env);
+  if (!match) throw new Error(`Set E2E_${name} (or ${name} in apps/api/.env)`);
   return match[1];
+}
+
+export function stripeWebhookSecret(): string {
+  return apiEnvSecret("STRIPE_WEBHOOK_SECRET");
+}
+
+/** The Stripe Connect endpoint's secret — events on companies' own connected accounts. */
+export function stripeConnectWebhookSecret(): string {
+  return apiEnvSecret("STRIPE_CONNECT_WEBHOOK_SECRET");
 }

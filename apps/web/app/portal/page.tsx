@@ -10,6 +10,7 @@ interface Me {
   name: string;
   companyName: string;
   currency: string;
+  onlinePaymentsEnabled: boolean;
   savedPaymentMethodLabel: string | null;
   savedPaymentMethodLast4: string | null;
 }
@@ -427,26 +428,28 @@ export default function PortalDashboardPage() {
           )}
         </section>
 
-        <section className="card mt-6">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("paymentMethod")}</h2>
-          {me.savedPaymentMethodLast4 ? (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-700 dark:text-gray-200">
-                {t("cardOnFile", { brand: me.savedPaymentMethodLabel ?? "", last4: me.savedPaymentMethodLast4 })}
-              </span>
-              <button onClick={removeCard} disabled={paymentMethodBusy} className="btn-secondary px-2 py-1 text-xs">
-                {t("removePaymentMethod")}
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-500 dark:text-gray-400">{t("noPaymentMethodOnFile")}</span>
-              <button onClick={saveCard} disabled={paymentMethodBusy} className="btn-secondary px-2 py-1 text-xs">
-                {t("savePaymentMethod")}
-              </button>
-            </div>
-          )}
-        </section>
+        {me.onlinePaymentsEnabled && (
+          <section className="card mt-6">
+            <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("paymentMethod")}</h2>
+            {me.savedPaymentMethodLast4 ? (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-700 dark:text-gray-200">
+                  {t("cardOnFile", { brand: me.savedPaymentMethodLabel ?? "", last4: me.savedPaymentMethodLast4 })}
+                </span>
+                <button onClick={removeCard} disabled={paymentMethodBusy} className="btn-secondary px-2 py-1 text-xs">
+                  {t("removePaymentMethod")}
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-500 dark:text-gray-400">{t("noPaymentMethodOnFile")}</span>
+                <button onClick={saveCard} disabled={paymentMethodBusy} className="btn-secondary px-2 py-1 text-xs">
+                  {t("savePaymentMethod")}
+                </button>
+              </div>
+            )}
+          </section>
+        )}
 
         <section className="card mt-6">
           <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("warranty")}</h2>

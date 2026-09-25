@@ -176,6 +176,13 @@
     "widgetBacklogDetail": "{contractValue} {currency} beauftragt, {billedToDate} {currency} abgerechnet"
   },
   "settings": {
+    "onlinePayments": "Online-Zahlungen von Kunden",
+    "onlinePaymentsHint": "Kunden bezahlen Rechnungen online und per Autopay über Ihr eigenes Stripe-Konto — das Geld geht direkt an Sie.",
+    "stripeConnected": "Ihr Stripe-Konto ist verbunden und kann Zahlungen annehmen.",
+    "stripeOnboardingIncomplete": "Die Stripe-Einrichtung ist noch nicht abgeschlossen — bis dahin können Kunden nicht online bezahlen.",
+    "stripeNotConnected": "Kein Stripe-Konto verbunden — Kunden können Rechnungen nicht online bezahlen.",
+    "stripeConnect": "Stripe verbinden",
+    "stripeContinueOnboarding": "Stripe-Einrichtung abschließen",
     "title": "Einstellungen",
     "company": "Unternehmen",
     "companyName": "Firmenname",

@@ -30,6 +30,7 @@ interface PortalInvoice {
   id: string;
   number: string;
   status: "draft" | "sent" | "paid" | "void";
+  onlinePaymentsEnabled: boolean;
   subtotal: string;
   taxAmount: string;
   total: string;
@@ -188,7 +189,7 @@ export default function PortalInvoicePage({ params }: { params: Promise<{ id: st
                       </td>
                       <td className="text-right font-medium">{inst.amount}</td>
                       <td className="pl-2 text-right">
-                        {!inst.fulfilled && invoice.status === "sent" && balanceDue > 0 && (
+                        {!inst.fulfilled && invoice.onlinePaymentsEnabled && invoice.status === "sent" && balanceDue > 0 && (
                           <button onClick={() => payNow(Number(inst.amount))} disabled={payBusy} className="btn-secondary px-2 py-1 text-xs">
                             {t("payThisInstallment")}
                           </button>
@@ -209,7 +210,7 @@ export default function PortalInvoicePage({ params }: { params: Promise<{ id: st
           </div>
         </div>
 
-        {invoice.status === "sent" && balanceDue > 0 && (
+        {invoice.onlinePaymentsEnabled && invoice.status === "sent" && balanceDue > 0 && (
           <div className="sticky bottom-0 mt-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 py-3">
             <button onClick={() => payNow()} disabled={payBusy} className="btn-primary w-full">
               {t("payNow")} ({balanceDue})

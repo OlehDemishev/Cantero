@@ -10,7 +10,7 @@ import { PrismaService } from "../common/prisma/prisma.service";
 import { EstimatesService } from "../estimates/estimates.service";
 import { ChangeOrdersService } from "../estimates/change-orders.service";
 import { InvoicesService } from "../finance/invoices.service";
-import { ClientPaymentMethodsService } from "../finance/client-payment-methods.service";
+import { ClientPaymentMethodsService, hasUsablePaymentMethod } from "../finance/client-payment-methods.service";
 import { OutboxService } from "../common/webhooks/outbox.service";
 import { BillingService } from "../billing/billing.service";
 import { addMonthsUtc } from "../common/date-utils";
@@ -45,15 +45,20 @@ export class PortalService {
   async me(client: PortalClientContext) {
     const record = await this.prisma.client.findUniqueOrThrow({
       where: { id: client.clientId },
-      include: { company: { select: { name: true, currency: true } } },
+      include: { company: { select: { name: true, currency: true, stripeAccountId: true, stripeChargesEnabled: true } } },
     });
+    const onlinePaymentsEnabled = !!record.company.stripeAccountId && record.company.stripeChargesEnabled;
+    // A method saved on another Stripe account (the platform's, before Stripe Connect) can't be
+    // charged any more — show nothing on file so the client is offered to save one again.
+    const usable = hasUsablePaymentMethod(record, record.company.stripeAccountId);
     return {
       name: record.name,
       email: record.email,
       companyName: record.company.name,
       currency: record.company.currency,
-      savedPaymentMethodLabel: paymentMethodLabel(record.stripePaymentMethodType, record.stripePaymentMethodBrand),
-      savedPaymentMethodLast4: record.stripePaymentMethodLast4,
+      onlinePaymentsEnabled,
+      savedPaymentMethodLabel: usable ? paymentMethodLabel(record.stripePaymentMethodType, record.stripePaymentMethodBrand) : null,
+      savedPaymentMethodLast4: usable ? record.stripePaymentMethodLast4 : null,
     };
   }
 
@@ -198,7 +203,11 @@ export class PortalService {
       include: { lines: true, payments: true, installments: true, project: { select: { name: true } } },
     });
     if (!invoice) throw new NotFoundException("Invoice not found");
-    return invoice;
+    const company = await this.prisma.company.findUniqueOrThrow({
+      where: { id: client.companyId },
+      select: { stripeAccountId: true, stripeChargesEnabled: true },
+    });
+    return { ...invoice, onlinePaymentsEnabled: !!company.stripeAccountId && company.stripeChargesEnabled };
   }
 
   async getInvoicePdf(client: PortalClientContext, id: string): Promise<Buffer> {

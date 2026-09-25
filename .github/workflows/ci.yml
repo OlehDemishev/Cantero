@@ -119,6 +119,8 @@ jobs:
       # checkout or web push — placeholders satisfy the throw without ever reaching a real API.
       STRIPE_SECRET_KEY: "sk_test_ci_placeholder"
       STRIPE_WEBHOOK_SECRET: "whsec_ci_placeholder"
+      # The Connect endpoint's secret — sepa-autopay.spec.ts signs its events with it.
+      STRIPE_CONNECT_WEBHOOK_SECRET: "whsec_ci_connect_placeholder"
       # PushService validates the key pair's shape at boot (web-push rejects a public key that
       # doesn't decode to 65 bytes) even though nothing in this suite sends a real push — so unlike
       # the other placeholders above, this has to be a genuine (if otherwise unused) VAPID pair.

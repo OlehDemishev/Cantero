@@ -107,11 +107,16 @@ describe("PortalService.me() — payment method label", () => {
     service = module.get(PortalService);
   });
 
-  function mockClient(overrides: Partial<{ stripePaymentMethodType: string | null; stripePaymentMethodBrand: string | null; stripePaymentMethodLast4: string | null }>) {
+  function mockClient(
+    overrides: Partial<{ stripePaymentMethodId: string | null; stripeAccountId: string | null; stripePaymentMethodType: string | null; stripePaymentMethodBrand: string | null; stripePaymentMethodLast4: string | null }>,
+  ) {
     prisma.client.findUniqueOrThrow.mockResolvedValue({
       name: "Acme",
       email: "acme@example.com",
-      company: { name: "Cantero Demo", currency: "EUR" },
+      company: { name: "Cantero Demo", currency: "EUR", stripeAccountId: "acct_1", stripeChargesEnabled: true },
+      stripeAccountId: "acct_1",
+      stripeCustomerId: "cus_1",
+      stripePaymentMethodId: "pm_1",
       stripePaymentMethodType: null,
       stripePaymentMethodBrand: null,
       stripePaymentMethodLast4: null,
@@ -143,8 +148,16 @@ describe("PortalService.me() — payment method label", () => {
     expect(result.savedPaymentMethodLabel).toBe("Bank account");
   });
 
+  it("shows nothing on file for a method saved on the platform account before Stripe Connect", async () => {
+    mockClient({ stripeAccountId: null, stripePaymentMethodType: "card", stripePaymentMethodBrand: "visa", stripePaymentMethodLast4: "4242" });
+    const result = await service.me(CLIENT_1);
+    expect(result.savedPaymentMethodLabel).toBeNull();
+    expect(result.savedPaymentMethodLast4).toBeNull();
+    expect(result.onlinePaymentsEnabled).toBe(true);
+  });
+
   it("returns null when nothing is saved", async () => {
-    mockClient({});
+    mockClient({ stripePaymentMethodId: null });
     const result = await service.me(CLIENT_1);
     expect(result.savedPaymentMethodLabel).toBeNull();
     expect(result.savedPaymentMethodLast4).toBeNull();
