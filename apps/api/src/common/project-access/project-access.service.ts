@@ -1,5 +1,5 @@
-import { ForbiddenException, Injectable, Optional } from "@nestjs/common";
-import type { MembershipRole, Prisma } from "@prisma/client";
+import { ForbiddenException, Injectable, Optional, ServiceUnavailableException } from "@nestjs/common";
+import { Prisma, type MembershipRole } from "@prisma/client";
 import { PermissionsService } from "../permissions/permissions.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { excludeProjectsWhere, projectPathFor, projectSelect, readProjectId } from "./project-path";
@@ -90,7 +90,13 @@ export class ProjectAccessService {
     const path = projectPathFor(model);
     if (!path) throw new Error(`${model} has no path to a project`);
     const delegate = (this.prisma as unknown as Record<string, { findUnique(args: unknown): Promise<unknown> }>)[model[0].toLowerCase() + model.slice(1)];
-    const row = await delegate.findUnique({ where: { id }, select: projectSelect(path) }).catch(() => null);
+    const row = await delegate.findUnique({ where: { id }, select: projectSelect(path) }).catch((err: unknown) => {
+      // A malformed id can't name a row — the same as not found, and the handler answers 404.
+      if (err instanceof Prisma.PrismaClientValidationError) return null;
+      // Anything else (pool timeout, lost connection) must not read as "not tied to a project":
+      // that would let the request through without the restricted-project check at all.
+      throw new ServiceUnavailableException("Couldn't check access to this project — try again");
+    });
     return readProjectId(row, path);
   }
 

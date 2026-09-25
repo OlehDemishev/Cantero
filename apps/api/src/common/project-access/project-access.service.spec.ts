@@ -1,4 +1,5 @@
-import { ForbiddenException } from "@nestjs/common";
+import { ForbiddenException, ServiceUnavailableException } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
 import { Test } from "@nestjs/testing";
 import { ProjectAccessService } from "./project-access.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -8,12 +9,14 @@ describe("ProjectAccessService", () => {
   let prisma: {
     project: { findFirst: jest.Mock; findMany: jest.Mock };
     projectMember: { findUnique: jest.Mock; findMany: jest.Mock };
+    task: { findUnique: jest.Mock };
   };
 
   beforeEach(async () => {
     prisma = {
       project: { findFirst: jest.fn(), findMany: jest.fn().mockResolvedValue([]) },
       projectMember: { findUnique: jest.fn(), findMany: jest.fn() },
+      task: { findUnique: jest.fn() },
     };
 
     const module = await Test.createTestingModule({
@@ -21,6 +24,23 @@ describe("ProjectAccessService", () => {
     }).compile();
 
     service = module.get(ProjectAccessService);
+  });
+
+  describe("projectIdOf()", () => {
+    it("reads the project a record belongs to", async () => {
+      prisma.task.findUnique.mockResolvedValue({ projectId: "p1" });
+      await expect(service.projectIdOf("Task", "t1")).resolves.toBe("p1");
+    });
+
+    it("treats a malformed id as not found", async () => {
+      prisma.task.findUnique.mockRejectedValue(new Prisma.PrismaClientValidationError("bad id", { clientVersion: "5" }));
+      await expect(service.projectIdOf("Task", "not-an-id")).resolves.toBeNull();
+    });
+
+    it("fails closed when the database can't answer, rather than skipping the restricted-project check", async () => {
+      prisma.task.findUnique.mockRejectedValue(new Error("Timed out fetching a new connection from the connection pool"));
+      await expect(service.projectIdOf("Task", "t1")).rejects.toThrow(ServiceUnavailableException);
+    });
   });
 
   describe("assertAccess()", () => {
