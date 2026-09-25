@@ -6,6 +6,7 @@ import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
 import { addMonthsUtc } from "../common/date-utils";
+import { html } from "../common/mail/html";
 
 @Injectable()
 export class ServiceVisitsService {
@@ -66,7 +67,7 @@ export class ServiceVisitsService {
         to: visit.serviceContract.client.email,
         subject: "How was your service visit?",
         text: `Hi ${visit.serviceContract.client.name},\n\nWe just completed a service visit for "${visit.serviceContract.title}". We'd love your feedback: ${link}\n\nThank you!`,
-        html: `<p>Hi ${visit.serviceContract.client.name},</p><p>We just completed a service visit for <strong>${visit.serviceContract.title}</strong>. We'd love your feedback:</p><p><a href="${link}">${link}</a></p><p>Thank you!</p>`,
+        html: html`<p>Hi ${visit.serviceContract.client.name},</p><p>We just completed a service visit for <strong>${visit.serviceContract.title}</strong>. We'd love your feedback:</p><p><a href="${link}">${link}</a></p><p>Thank you!</p>`,
       });
     }
 

@@ -7,6 +7,7 @@ import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
 import { OutboxService } from "../common/webhooks/outbox.service";
 import { MessageTemplatesService } from "../message-templates/message-templates.service";
+import { html, multiline } from "../common/mail/html";
 
 const PROMOTER_MIN_SCORE = 9;
 const DETRACTOR_MAX_SCORE = 6;
@@ -54,8 +55,8 @@ export class NpsSurveysService {
         custom ??
         `Hi ${project.client.name},\n\nNow that "${project.name}" is wrapping up, we'd love to know how we did. Just one quick question: ${link}\n\nThank you!`,
       html: custom
-        ? `<p>${custom.replace(/\n/g, "<br>")}</p>`
-        : `<p>Hi ${project.client.name},</p><p>Now that <strong>${project.name}</strong> is wrapping up, we'd love to know how we did. Just one quick question:</p><p><a href="${link}">${link}</a></p><p>Thank you!</p>`,
+        ? html`<p>${multiline(custom)}</p>`
+        : html`<p>Hi ${project.client.name},</p><p>Now that <strong>${project.name}</strong> is wrapping up, we'd love to know how we did. Just one quick question:</p><p><a href="${link}">${link}</a></p><p>Thank you!</p>`,
     });
 
     this.audit.record(companyId, actor, "project.nps_survey_sent", "Project", projectId, `Sent an NPS survey for "${project.name}"`);
@@ -134,7 +135,7 @@ export class NpsSurveysService {
       await this.mail.send({
         to: owner.user.email,
         subject: `[${companyName}] ${subject}`,
-        html: `<div style="font-family:sans-serif;max-width:480px;"><h2 style="margin-bottom:4px;">${subject}</h2><p>${body}</p><p style="margin-top:16px;"><a href="${link}">Open in Cantero →</a></p></div>`,
+        html: html`<div style="font-family:sans-serif;max-width:480px;"><h2 style="margin-bottom:4px;">${subject}</h2><p>${body}</p><p style="margin-top:16px;"><a href="${link}">Open in Cantero →</a></p></div>`,
         text: `${subject}\n\n${body}\n\nOpen: ${link}`,
       });
     }

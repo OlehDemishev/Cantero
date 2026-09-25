@@ -16,6 +16,7 @@ import { parseCsvRecords } from "../common/csv";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
 import { MessageTemplatesService } from "../message-templates/message-templates.service";
+import { html, multiline } from "../common/mail/html";
 
 @Injectable()
 export class ProjectsService {
@@ -267,8 +268,8 @@ export class ProjectsService {
         custom ??
         `Hi ${project.client.name},\n\nThank you for choosing ${company.name} for ${project.name}. If you have a moment, we'd really appreciate a review: ${company.reviewRequestUrl}\n\nThank you!`,
       html: custom
-        ? `<p>${custom.replace(/\n/g, "<br>")}</p>`
-        : `<p>Hi ${project.client.name},</p><p>Thank you for choosing ${company.name} for <strong>${project.name}</strong>. If you have a moment, we'd really appreciate a review:</p><p><a href="${company.reviewRequestUrl}">${company.reviewRequestUrl}</a></p><p>Thank you!</p>`,
+        ? html`<p>${multiline(custom)}</p>`
+        : html`<p>Hi ${project.client.name},</p><p>Thank you for choosing ${company.name} for <strong>${project.name}</strong>. If you have a moment, we'd really appreciate a review:</p><p><a href="${company.reviewRequestUrl}">${company.reviewRequestUrl}</a></p><p>Thank you!</p>`,
     });
 
     const updated = await this.prisma.project.update({

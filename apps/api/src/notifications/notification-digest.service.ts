@@ -6,6 +6,7 @@ import { PrismaService } from "../common/prisma/prisma.service";
 import { MailService } from "../common/mail/mail.service";
 import { NOTIFICATION_DIGEST_QUEUE } from "../common/queue/queue.module";
 import { NotificationsService } from "./notifications.service";
+import { html } from "../common/mail/html";
 
 const CHECK_INTERVAL_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -72,18 +73,16 @@ export class NotificationDigestService implements OnModuleInit {
     items: { title: string; body: string; link: string; severity: string }[],
   ): Promise<void> {
     const webOrigin = this.config.get<string>("WEB_ORIGIN") ?? "http://localhost:3000";
-    const rowsHtml = items
-      .map(
-        (n) =>
-          `<tr><td style="padding:8px 12px;border-bottom:1px solid #eee;"><a href="${webOrigin}${n.link}" style="color:#111;text-decoration:none;font-weight:600;">${n.title}</a><div style="color:#6b7280;font-size:13px;margin-top:2px;">${n.body}</div></td></tr>`,
-      )
-      .join("");
+    const rowsHtml = items.map(
+      (n) =>
+        html`<tr><td style="padding:8px 12px;border-bottom:1px solid #eee;"><a href="${webOrigin}${n.link}" style="color:#111;text-decoration:none;font-weight:600;">${n.title}</a><div style="color:#6b7280;font-size:13px;margin-top:2px;">${n.body}</div></td></tr>`,
+    );
     const rowsText = items.map((n) => `${n.title} — ${n.body} (${webOrigin}${n.link})`).join("\n");
 
     await this.mail.send({
       to,
       subject: `${companyName}: ${items.length} new notification${items.length === 1 ? "" : "s"}`,
-      html: `<div style="font-family:sans-serif;max-width:520px;"><h2 style="margin-bottom:4px;">Hi ${name},</h2><p style="color:#6b7280;margin-top:0;">Here's what's new in ${companyName} since your last digest:</p><table style="border-collapse:collapse;width:100%;">${rowsHtml}</table><p style="margin-top:16px;"><a href="${webOrigin}/dashboard">Open Cantero →</a></p></div>`,
+      html: html`<div style="font-family:sans-serif;max-width:520px;"><h2 style="margin-bottom:4px;">Hi ${name},</h2><p style="color:#6b7280;margin-top:0;">Here's what's new in ${companyName} since your last digest:</p><table style="border-collapse:collapse;width:100%;">${rowsHtml}</table><p style="margin-top:16px;"><a href="${webOrigin}/dashboard">Open Cantero →</a></p></div>`,
       text: `Hi ${name},\n\nHere's what's new in ${companyName} since your last digest:\n\n${rowsText}\n\nOpen Cantero: ${webOrigin}/dashboard`,
     });
   }

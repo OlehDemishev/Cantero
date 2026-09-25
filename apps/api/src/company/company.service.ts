@@ -8,6 +8,7 @@ import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
 import { ExchangeRateService } from "../common/exchange-rate/exchange-rate.service";
 import { assertPublicWebhookUrl } from "../common/webhooks/webhook-url";
+import { html } from "../common/mail/html";
 
 const MAX_LOGO_SIZE_BYTES = 1 * 1024 * 1024; // 1MB — a logo, not a photo
 // pdfkit only rasterizes JPEG/PNG, so SVG (however common for logos) isn't accepted here.
@@ -97,7 +98,7 @@ export class CompanyService {
       to: requesterEmail,
       subject: "Account deletion request received",
       text: `We've received your request to delete the ${updated.name} account, submitted by ${actor.name}. Our support team will follow up to confirm retention/legal requirements before proceeding. You can cancel this request any time from Settings.`,
-      html: `<p>We've received your request to delete the <strong>${updated.name}</strong> account, submitted by ${actor.name}.</p><p>Our support team will follow up to confirm retention/legal requirements before proceeding. You can cancel this request any time from Settings.</p>`,
+      html: html`<p>We've received your request to delete the <strong>${updated.name}</strong> account, submitted by ${actor.name}.</p><p>Our support team will follow up to confirm retention/legal requirements before proceeding. You can cancel this request any time from Settings.</p>`,
     });
     return updated;
   }

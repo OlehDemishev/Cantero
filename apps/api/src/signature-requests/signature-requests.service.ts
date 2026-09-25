@@ -8,6 +8,7 @@ import { MailService } from "../common/mail/mail.service";
 import { decodePngDataUrl } from "../common/signature";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { OutboxService } from "../common/webhooks/outbox.service";
+import { html } from "../common/mail/html";
 
 @Injectable()
 export class SignatureRequestsService {
@@ -156,7 +157,7 @@ export class SignatureRequestsService {
     this.mail.send({
       to: signer.email,
       subject: `${requestTitle} — please sign`,
-      html: `<p>${company.name} has sent you a document to review and sign: <strong>${requestTitle}</strong>.</p><p><a href="${link}">View and sign</a></p>`,
+      html: html`<p>${company.name} has sent you a document to review and sign: <strong>${requestTitle}</strong>.</p><p><a href="${link}">View and sign</a></p>`,
       text: `${company.name} has sent you a document to review and sign: ${requestTitle}.\n\nView and sign: ${link}`,
     });
     await this.prisma.signatureRequestSigner.update({ where: { id: signer.id }, data: { notifiedAt: new Date() } });

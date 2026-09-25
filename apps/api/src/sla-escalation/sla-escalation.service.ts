@@ -5,6 +5,7 @@ import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { MailService } from "../common/mail/mail.service";
 import { SLA_ESCALATION_QUEUE } from "../common/queue/queue.module";
+import { html } from "../common/mail/html";
 
 const SLA_ESCALATION_CHECK_INTERVAL_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -140,7 +141,7 @@ export class SlaEscalationService implements OnModuleInit {
       await this.mail.send({
         to: owner.user.email,
         subject: `[${company.name}] ${subject}`,
-        html: `<div style="font-family:sans-serif;max-width:480px;"><h2 style="margin-bottom:4px;">${subject}</h2><p>${itemLabel} ${reason}.</p><p style="margin-top:16px;"><a href="${link}">Open in Cantero →</a></p></div>`,
+        html: html`<div style="font-family:sans-serif;max-width:480px;"><h2 style="margin-bottom:4px;">${subject}</h2><p>${itemLabel} ${reason}.</p><p style="margin-top:16px;"><a href="${link}">Open in Cantero →</a></p></div>`,
         text: `${subject}\n\n${itemLabel} ${reason}.\n\nOpen: ${link}`,
       });
     }

@@ -5,6 +5,7 @@ import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { MailService } from "../common/mail/mail.service";
 import { PERMIT_EXPIRING_QUEUE } from "../common/queue/queue.module";
+import { html } from "../common/mail/html";
 
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const LOOKAHEAD_DAYS = 30;
@@ -54,7 +55,7 @@ export class PermitExpiringRemindersService implements OnModuleInit {
           to: owner.user.email,
           subject: `[${permit.company.name}] Permit expiring: ${label}`,
           text: `The ${permit.permitType} permit (${label}) for "${permit.project.name}" expires on ${permit.expiresAt!.toLocaleDateString()}. Renew or follow up here: ${link}`,
-          html: `<p>The <strong>${permit.permitType}</strong> permit (${label}) for "${permit.project.name}" expires on ${permit.expiresAt!.toLocaleDateString()}.</p><p><a href="${link}">Open project →</a></p>`,
+          html: html`<p>The <strong>${permit.permitType}</strong> permit (${label}) for "${permit.project.name}" expires on ${permit.expiresAt!.toLocaleDateString()}.</p><p><a href="${link}">Open project →</a></p>`,
         });
       }
       await this.prisma.permit.update({ where: { id: permit.id }, data: { expiringNotifiedAt: new Date() } });

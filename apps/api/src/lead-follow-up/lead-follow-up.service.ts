@@ -4,6 +4,7 @@ import type { Queue } from "bullmq";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { MailService } from "../common/mail/mail.service";
 import { LEAD_FOLLOW_UP_QUEUE } from "../common/queue/queue.module";
+import { html, multiline } from "../common/mail/html";
 
 const CHECK_INTERVAL_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -89,7 +90,7 @@ export class LeadFollowUpService implements OnModuleInit {
     await this.mail.send({
       to: lead.email!,
       subject: `[${company.name}] ${subject}`,
-      html: `<div style="font-family:sans-serif;max-width:480px;"><h2 style="margin-bottom:4px;">${subject}</h2><p>${body.replace(/\n/g, "<br/>")}</p></div>`,
+      html: html`<div style="font-family:sans-serif;max-width:480px;"><h2 style="margin-bottom:4px;">${subject}</h2><p>${multiline(body)}</p></div>`,
       text: body,
     });
   }

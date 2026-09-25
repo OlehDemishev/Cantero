@@ -10,6 +10,7 @@ import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { MailService } from "../common/mail/mail.service";
 import { DocusignService } from "./docusign.service";
 import { ProjectAccessService, type ProjectViewer } from "../common/project-access/project-access.service";
+import { html } from "../common/mail/html";
 
 @Injectable()
 export class ContractsService {
@@ -102,7 +103,7 @@ export class ContractsService {
       this.mail.send({
         to: updated.client.email,
         subject: `${contract.title} — please sign`,
-        html: `<p>${company.name} has sent you a contract to review and sign: <strong>${contract.title}</strong>.</p><p><a href="${link}">View and sign the contract</a></p>`,
+        html: html`<p>${company.name} has sent you a contract to review and sign: <strong>${contract.title}</strong>.</p><p><a href="${link}">View and sign the contract</a></p>`,
         text: `${company.name} has sent you a contract to review and sign: ${contract.title}.\n\nView and sign: ${link}`,
       });
     }

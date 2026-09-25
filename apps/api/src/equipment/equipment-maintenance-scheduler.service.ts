@@ -7,6 +7,7 @@ import { MailService } from "../common/mail/mail.service";
 import { AuditService } from "../common/audit/audit.service";
 import { EQUIPMENT_MAINTENANCE_QUEUE } from "../common/queue/queue.module";
 import type { EquipmentStatus } from "@cantero/shared";
+import { html } from "../common/mail/html";
 
 const CHECK_INTERVAL_MS = 60 * 60 * 1000;
 
@@ -124,7 +125,7 @@ export class EquipmentMaintenanceSchedulerService implements OnModuleInit {
       await this.mail.send({
         to: owner.user.email,
         subject: `[${companyName}] Preventive maintenance due: ${equipmentName}`,
-        html: `<div style="font-family:sans-serif;max-width:480px;"><h2 style="margin-bottom:4px;">Preventive maintenance due</h2><p>${equipmentName} is due for scheduled maintenance. ${statusNote}</p><p style="margin-top:16px;"><a href="${link}">Open in Cantero →</a></p></div>`,
+        html: html`<div style="font-family:sans-serif;max-width:480px;"><h2 style="margin-bottom:4px;">Preventive maintenance due</h2><p>${equipmentName} is due for scheduled maintenance. ${statusNote}</p><p style="margin-top:16px;"><a href="${link}">Open in Cantero →</a></p></div>`,
         text: `Preventive maintenance due\n\n${equipmentName} is due for scheduled maintenance. ${statusNote}\n\nOpen: ${link}`,
       });
     }

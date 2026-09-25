@@ -134,7 +134,7 @@ describe("InvoiceRemindersService", () => {
     await service.runDuePass();
 
     const { html, text } = mail.send.mock.calls[0][0];
-    expect(html).toContain("Amount due: <strong>1000 EUR</strong>");
+    expect(String(html)).toContain("Amount due: <strong>1000 EUR</strong>");
     expect(text).toContain("Amount due: 1000 EUR");
   });
 

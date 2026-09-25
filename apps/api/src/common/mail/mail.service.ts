@@ -1,6 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as nodemailer from "nodemailer";
+import type { SafeHtml } from "./html";
 
 export interface MailAttachment {
   filename: string;
@@ -11,7 +12,8 @@ export interface MailAttachment {
 export interface MailMessage {
   to: string;
   subject: string;
-  html: string;
+  /** Build it with html`` (./html.ts) so interpolated values are escaped. */
+  html: string | SafeHtml;
   text: string;
   attachments?: MailAttachment[];
 }
@@ -55,7 +57,7 @@ export class MailService {
         from: this.from,
         to: message.to,
         subject: message.subject,
-        html: message.html,
+        html: String(message.html),
         text: message.text,
         attachments: message.attachments,
       });

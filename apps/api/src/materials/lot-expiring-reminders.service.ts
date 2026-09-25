@@ -5,6 +5,7 @@ import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { MailService } from "../common/mail/mail.service";
 import { STOCK_LOT_EXPIRING_QUEUE } from "../common/queue/queue.module";
+import { html } from "../common/mail/html";
 
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const LOOKAHEAD_DAYS = 14;
@@ -61,7 +62,7 @@ export class LotExpiringRemindersService implements OnModuleInit {
           to: owner.user.email,
           subject,
           text: `${body} Review it here: ${link}`,
-          html: `<p>${body}</p><p><a href="${link}">Open warehouses →</a></p>`,
+          html: html`<p>${body}</p><p><a href="${link}">Open warehouses →</a></p>`,
         });
       }
       await this.prisma.stockLot.update({ where: { id: lot.id }, data: { expiringNotifiedAt: new Date() } });

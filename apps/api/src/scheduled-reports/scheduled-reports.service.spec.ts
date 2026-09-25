@@ -90,7 +90,7 @@ describe("ScheduledReportsService", () => {
       expect(mail.send).toHaveBeenCalledTimes(2);
       const [firstCall] = mail.send.mock.calls;
       expect(firstCall[0].to).toBe("a@example.com");
-      expect(firstCall[0].html).toContain("12000 EUR");
+      expect(String(firstCall[0].html)).toContain("12000 EUR");
       expect(firstCall[0].subject).toContain("Weekly overview");
       expect(prisma.scheduledReport.update).not.toHaveBeenCalled();
     });

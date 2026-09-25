@@ -6,6 +6,7 @@ import { PrismaService } from "../common/prisma/prisma.service";
 import { MailService } from "../common/mail/mail.service";
 import { ChangeOrdersService } from "../estimates/change-orders.service";
 import { CHANGE_ORDER_REMINDERS_QUEUE } from "../common/queue/queue.module";
+import { html } from "../common/mail/html";
 
 const CHECK_INTERVAL_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -115,7 +116,7 @@ export class ChangeOrderRemindersService implements OnModuleInit {
     await this.mail.send({
       to: email,
       subject: `[${company.name}] ${subject}`,
-      html: `<div style="font-family:sans-serif;max-width:480px;"><h2 style="margin-bottom:4px;">${subject}</h2><p>${body}</p>${link ? `<p style="margin-top:16px;"><a href="${link}">Review change order →</a></p>` : ""}</div>`,
+      html: html`<div style="font-family:sans-serif;max-width:480px;"><h2 style="margin-bottom:4px;">${subject}</h2><p>${body}</p>${link ? html`<p style="margin-top:16px;"><a href="${link}">Review change order →</a></p>` : ""}</div>`,
       text: `${subject}\n\n${body}${link ? `\n\nReview: ${link}` : ""}`,
       ...(pdf ? { attachments: [{ filename: `${changeOrder.title}.pdf`, content: pdf, contentType: "application/pdf" }] } : {}),
     });

@@ -4,6 +4,7 @@ import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { MailService } from "../common/mail/mail.service";
 import { SupplierPortalJwtService } from "./supplier-portal-jwt.service";
+import { html } from "../common/mail/html";
 
 const LOGIN_TOKEN_TTL_MS = 15 * 60 * 1000;
 
@@ -33,7 +34,7 @@ export class SupplierPortalAuthService {
       this.mail.send({
         to: email,
         subject: `Sign in to your ${supplier.company.name} supplier portal`,
-        html: `<p>Click below to sign in to your ${supplier.company.name} supplier portal:</p><p><a href="${link}">Sign in</a></p><p>This link expires in 15 minutes and can only be used once.</p>`,
+        html: html`<p>Click below to sign in to your ${supplier.company.name} supplier portal:</p><p><a href="${link}">Sign in</a></p><p>This link expires in 15 minutes and can only be used once.</p>`,
         text: `Sign in to your ${supplier.company.name} supplier portal: ${link}\n\nThis link expires in 15 minutes and can only be used once.`,
       });
     }

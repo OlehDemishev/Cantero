@@ -101,6 +101,21 @@ describe("InvitesService", () => {
       expect(prisma.invite.create.mock.calls[0][0].select).not.toHaveProperty("token");
     });
 
+    it("escapes the company name in the invite email, so a company can't put its own links in mail Cantero sends", async () => {
+      prisma.subscription.findUnique.mockResolvedValue({ seats: 5 });
+      prisma.membership.count.mockResolvedValue(1);
+      prisma.invite.count.mockResolvedValue(0);
+      prisma.user.findUnique.mockResolvedValue(null);
+      prisma.invite.create.mockImplementation(({ data }) => Promise.resolve({ id: "invite-1", ...data }));
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ id: COMPANY_A, name: '<a href="https://evil.example">Verify your bank</a>' });
+
+      await service.create(COMPANY_A, { email: "new@example.com", role: "worker" });
+
+      const html = String(mail.send.mock.calls[0][0].html);
+      expect(html).not.toContain('<a href="https://evil.example">');
+      expect(html).toContain("&lt;a href=&quot;https://evil.example&quot;&gt;");
+    });
+
     it("looks an invite up by the hash of the token in the link", async () => {
       prisma.invite.findUnique.mockResolvedValue(null);
 

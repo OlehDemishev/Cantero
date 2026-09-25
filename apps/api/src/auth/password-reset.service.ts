@@ -7,6 +7,7 @@ import { PrismaService } from "../common/prisma/prisma.service";
 import { MailService } from "../common/mail/mail.service";
 import { assertPasswordPolicy } from "../common/password-policy";
 import { RateLimiterService } from "../common/rate-limiter/rate-limiter.service";
+import { html } from "../common/mail/html";
 
 const TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 const BCRYPT_ROUNDS = 12;
@@ -50,7 +51,7 @@ export class PasswordResetService {
       to: user.email,
       subject: "Reset your Cantero password",
       text: `We received a request to reset your password. This link is valid for 1 hour: ${link}\n\nIf you didn't request this, you can ignore this email.`,
-      html: `<p>We received a request to reset your password. This link is valid for 1 hour:</p><p><a href="${link}">${link}</a></p><p>If you didn't request this, you can ignore this email.</p>`,
+      html: html`<p>We received a request to reset your password. This link is valid for 1 hour:</p><p><a href="${link}">${link}</a></p><p>If you didn't request this, you can ignore this email.</p>`,
     });
     return { ok: true };
   }

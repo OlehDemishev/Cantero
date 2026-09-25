@@ -5,6 +5,7 @@ import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { MailService } from "../common/mail/mail.service";
 import { SERVICE_VISIT_REMINDERS_QUEUE } from "../common/queue/queue.module";
+import { html } from "../common/mail/html";
 
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const LOOKAHEAD_DAYS = 14;
@@ -53,7 +54,7 @@ export class ServiceVisitRemindersService implements OnModuleInit {
           to: owner.user.email,
           subject: `[${contract.company.name}] Service visit due: ${contract.title}`,
           text: `"${contract.title}" (${contract.project.name}) is due for its next service visit on ${contract.nextVisitDate.toLocaleDateString()}. Schedule it here: ${link}`,
-          html: `<p><strong>${contract.title}</strong> (${contract.project.name}) is due for its next service visit on ${contract.nextVisitDate.toLocaleDateString()}.</p><p><a href="${link}">Schedule it →</a></p>`,
+          html: html`<p><strong>${contract.title}</strong> (${contract.project.name}) is due for its next service visit on ${contract.nextVisitDate.toLocaleDateString()}.</p><p><a href="${link}">Schedule it →</a></p>`,
         });
       }
       notified++;

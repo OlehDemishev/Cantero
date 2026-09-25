@@ -12,6 +12,7 @@ import { assertPasswordPolicy } from "../common/password-policy";
 import { TwoFactorService } from "../auth/two-factor.service";
 import { runSerializable } from "../common/prisma/serializable-transaction";
 import { assertMayAppointAdmin } from "../common/permissions/admin-appointment";
+import { html } from "../common/mail/html";
 
 /** Invites are stored by the SHA-256 of their token, like password-reset tokens: the raw token
  * exists only in the emailed link, so a leaked database or backup can't be used to accept one. */
@@ -85,7 +86,7 @@ export class InvitesService {
     this.mail.send({
       to: invite.email,
       subject: `You're invited to join ${company.name} on Cantero`,
-      html: `<p>You've been invited to join <strong>${company.name}</strong> on Cantero as ${invite.role}.</p><p><a href="${acceptUrl}">Accept invite</a></p><p>This link expires in ${INVITE_TTL_DAYS} days.</p>`,
+      html: html`<p>You've been invited to join <strong>${company.name}</strong> on Cantero as ${invite.role}.</p><p><a href="${acceptUrl}">Accept invite</a></p><p>This link expires in ${INVITE_TTL_DAYS} days.</p>`,
       text: `You've been invited to join ${company.name} on Cantero as ${invite.role}.\n\nAccept your invite: ${acceptUrl}\n\nThis link expires in ${INVITE_TTL_DAYS} days.`,
     });
 

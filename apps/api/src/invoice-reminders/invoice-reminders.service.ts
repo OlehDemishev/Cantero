@@ -6,6 +6,7 @@ import { PrismaService } from "../common/prisma/prisma.service";
 import { MailService } from "../common/mail/mail.service";
 import { InvoicesService } from "../finance/invoices.service";
 import { INVOICE_REMINDERS_QUEUE } from "../common/queue/queue.module";
+import { html } from "../common/mail/html";
 
 const CHECK_INTERVAL_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -127,7 +128,7 @@ export class InvoiceRemindersService implements OnModuleInit {
     await this.mail.send({
       to: invoice.client.email!,
       subject: `[${company.name}] ${subject}`,
-      html: `<div style="font-family:sans-serif;max-width:480px;"><h2 style="margin-bottom:4px;">${subject}</h2><p>${body}</p><p>Amount due: <strong>${balanceDue} ${invoice.currency}</strong></p><p style="margin-top:16px;"><a href="${link}">View invoice →</a></p></div>`,
+      html: html`<div style="font-family:sans-serif;max-width:480px;"><h2 style="margin-bottom:4px;">${subject}</h2><p>${body}</p><p>Amount due: <strong>${balanceDue} ${invoice.currency}</strong></p><p style="margin-top:16px;"><a href="${link}">View invoice →</a></p></div>`,
       text: `${subject}\n\n${body}\n\nAmount due: ${balanceDue} ${invoice.currency}\n\nView: ${link}`,
       ...(pdf ? { attachments: [{ filename: `${invoice.number}.pdf`, content: pdf, contentType: "application/pdf" }] } : {}),
     });

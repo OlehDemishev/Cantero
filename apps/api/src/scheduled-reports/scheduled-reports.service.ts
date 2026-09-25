@@ -8,6 +8,7 @@ import { MailService } from "../common/mail/mail.service";
 import { SCHEDULED_REPORTS_QUEUE } from "../common/queue/queue.module";
 import { advanceDate } from "../finance/recurring-invoice-schedule";
 import { ReportsService } from "../reports/reports.service";
+import { html } from "../common/mail/html";
 
 const SCHEDULED_REPORTS_CHECK_INTERVAL_MS = 60 * 60 * 1000;
 
@@ -113,14 +114,14 @@ export class ScheduledReportsService implements OnModuleInit {
     const webOrigin = this.config.get<string>("WEB_ORIGIN") ?? "http://localhost:3000";
     const typeLabel = REPORT_TYPE_LABELS[report.reportType];
 
-    const rowsHtml = highlights.map((h) => `<tr><td style="padding:6px 12px;color:#6b7280;">${h.label}</td><td style="padding:6px 12px;font-weight:600;">${h.value}</td></tr>`).join("");
+    const rowsHtml = highlights.map((h) => html`<tr><td style="padding:6px 12px;color:#6b7280;">${h.label}</td><td style="padding:6px 12px;font-weight:600;">${h.value}</td></tr>`);
     const rowsText = highlights.map((h) => `${h.label}: ${h.value}`).join("\n");
 
     for (const to of report.recipientEmails) {
       await this.mail.send({
         to,
         subject: `${report.name} — ${typeLabel}`,
-        html: `<div style="font-family:sans-serif;max-width:480px;"><h2 style="margin-bottom:4px;">${report.name}</h2><p style="color:#6b7280;margin-top:0;">${typeLabel}</p><table style="border-collapse:collapse;width:100%;">${rowsHtml}</table><p style="margin-top:16px;"><a href="${webOrigin}/reports">Open full report in Cantero →</a></p></div>`,
+        html: html`<div style="font-family:sans-serif;max-width:480px;"><h2 style="margin-bottom:4px;">${report.name}</h2><p style="color:#6b7280;margin-top:0;">${typeLabel}</p><table style="border-collapse:collapse;width:100%;">${rowsHtml}</table><p style="margin-top:16px;"><a href="${webOrigin}/reports">Open full report in Cantero →</a></p></div>`,
         text: `${report.name} — ${typeLabel}\n\n${rowsText}\n\nOpen full report: ${webOrigin}/reports`,
       });
     }
