@@ -4,6 +4,7 @@ import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { callbackUrl, exchangeCode, refreshIfExpiring, requestToken, signState, tokenExpiry, verifyState, type TokenEndpoint } from "../common/oauth/oauth";
+import { encryptSecret, withDecryptedTokens, withEncryptedTokens } from "../common/crypto/secret-box";
 
 const FETCH_TIMEOUT_MS = 10_000;
 const MICROSOFT_IDENTITY_BASE_URL = "https://login.microsoftonline.com/common/oauth2/v2.0";
@@ -50,7 +51,7 @@ export class MsProjectService {
   ) {}
 
   async getStatus(companyId: string) {
-    const connection = await this.prisma.msProjectConnection.findUnique({ where: { companyId } });
+    const connection = withDecryptedTokens(await this.prisma.msProjectConnection.findUnique({ where: { companyId } }));
     if (!connection) return { connected: false as const };
     return { connected: true as const, environmentUrl: connection.environmentUrl, connectedAt: connection.connectedAt };
   }
@@ -86,14 +87,14 @@ export class MsProjectService {
       where: { companyId },
       create: {
         companyId,
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
+        accessToken: encryptSecret(tokens.access_token),
+        refreshToken: encryptSecret(tokens.refresh_token),
         tokenExpiresAt: tokenExpiry(tokens),
         environmentUrl,
       },
       update: {
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
+        accessToken: encryptSecret(tokens.access_token),
+        refreshToken: encryptSecret(tokens.refresh_token),
         tokenExpiresAt: tokenExpiry(tokens),
         environmentUrl,
       },
@@ -203,7 +204,7 @@ export class MsProjectService {
   }
 
   private async getConnectionOrThrow(companyId: string): Promise<MsProjectConnection> {
-    const connection = await this.prisma.msProjectConnection.findUnique({ where: { companyId } });
+    const connection = withDecryptedTokens(await this.prisma.msProjectConnection.findUnique({ where: { companyId } }));
     if (!connection) throw new NotFoundException("No MS Project environment connected");
     return this.ensureFreshToken(connection);
   }
@@ -212,13 +213,14 @@ export class MsProjectService {
     return refreshIfExpiring(connection, {
       kind: "ms-project",
       reconnectMessage: "Failed to refresh the MS Project connection — reconnect it in Settings",
-      reload: () => this.prisma.msProjectConnection.findUnique({ where: { id: connection.id } }),
+      reload: async () => withDecryptedTokens(await this.prisma.msProjectConnection.findUnique({ where: { id: connection.id } })),
       refresh: async (c) => {
         const tokens = await requestToken(this.tokenEndpoint(), { grant_type: "refresh_token", refresh_token: c.refreshToken, scope: scopeFor(c.environmentUrl) });
-        return this.prisma.msProjectConnection.update({
+        const updated = await this.prisma.msProjectConnection.update({
           where: { id: c.id },
-          data: { accessToken: tokens.access_token, refreshToken: tokens.refresh_token ?? c.refreshToken, tokenExpiresAt: tokenExpiry(tokens) },
+          data: withEncryptedTokens({ accessToken: tokens.access_token, refreshToken: tokens.refresh_token ?? c.refreshToken, tokenExpiresAt: tokenExpiry(tokens) }),
         });
+        return withDecryptedTokens(updated);
       },
     });
   }

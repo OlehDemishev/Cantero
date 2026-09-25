@@ -5,6 +5,7 @@ import { WEBHOOK_EVENTS, type CreateWebhookEndpointInput, type UpdateWebhookEndp
 import { PrismaService } from "../prisma/prisma.service";
 import { AuditService, type AuditActor } from "../audit/audit.service";
 import { assertPublicWebhookUrl, resolvePinnedWebhookDispatcher } from "./webhook-url";
+import { decryptSecret, encryptSecret } from "../crypto/secret-box";
 
 const DELIVERY_TIMEOUT_MS = 8000;
 
@@ -55,7 +56,7 @@ export class WebhooksService {
     await assertPublicWebhookUrl(input.url);
     const secret = randomBytes(24).toString("hex");
     const endpoint = await this.prisma.webhookEndpoint.create({
-      data: { companyId, url: input.url, events: input.events, secret },
+      data: { companyId, url: input.url, events: input.events, secret: encryptSecret(secret) },
     });
     this.audit.record(companyId, actor, "webhook.created", "WebhookEndpoint", endpoint.id, `Created webhook for ${input.url}`);
     return { ...endpoint, secret };
@@ -76,7 +77,7 @@ export class WebhooksService {
     const endpoint = await this.prisma.webhookEndpoint.findFirst({ where: { id, companyId } });
     if (!endpoint) throw new NotFoundException("Webhook not found");
     const secret = randomBytes(24).toString("hex");
-    await this.prisma.webhookEndpoint.update({ where: { id }, data: { secret } });
+    await this.prisma.webhookEndpoint.update({ where: { id }, data: { secret: encryptSecret(secret) } });
     this.audit.record(companyId, actor, "webhook.secret_regenerated", "WebhookEndpoint", id, `Regenerated secret for webhook ${endpoint.url}`);
     return { secret };
   }
@@ -161,7 +162,7 @@ export class WebhooksService {
   ): Promise<boolean> {
     const { id: endpointId, url, secret } = endpoint;
     const body = JSON.stringify({ event, data: payload, timestamp: new Date().toISOString() });
-    const signature = createHmac("sha256", secret).update(body).digest("hex");
+    const signature = createHmac("sha256", decryptSecret(secret)).update(body).digest("hex");
 
     let success = false;
     let statusCode: number | undefined;

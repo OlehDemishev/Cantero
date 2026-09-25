@@ -15,6 +15,7 @@ import {
   type OAuthTokens,
   type TokenEndpoint,
 } from "../common/oauth/oauth";
+import { withDecryptedTokens, withEncryptedTokens } from "../common/crypto/secret-box";
 
 const FETCH_TIMEOUT_MS = 10_000;
 const APS_AUTH_BASE_URL = "https://developer.api.autodesk.com/authentication/v2";
@@ -126,7 +127,7 @@ export class AutodeskService {
   ) {}
 
   async getStatus(companyId: string) {
-    const connection = await this.prisma.autodeskConnection.findUnique({ where: { companyId } });
+    const connection = withDecryptedTokens(await this.prisma.autodeskConnection.findUnique({ where: { companyId } }));
     if (!connection) return { connected: false as const };
     return { connected: true as const, hubId: connection.hubId, connectedAt: connection.connectedAt };
   }
@@ -165,14 +166,14 @@ export class AutodeskService {
       throw err;
     });
 
-    const data = {
+    const data = withEncryptedTokens({
       accessToken: tokens.access_token,
       viewerAccessToken: viewer.access_token,
       refreshToken: viewer.refresh_token ?? tokens.refresh_token,
       tokenExpiresAt: tokenExpiry({ ...viewer, expires_in: Math.min(tokens.expires_in, viewer.expires_in) }),
       hubId: hub.id,
       hubRegion: hub.attributes?.region ?? null,
-    };
+    });
     await this.prisma.autodeskConnection.upsert({ where: { companyId }, create: { companyId, ...data }, update: data });
     return { companyId };
   }
@@ -346,7 +347,7 @@ export class AutodeskService {
   }
 
   private async getConnectionOrThrow(companyId: string): Promise<AutodeskConnection> {
-    const connection = await this.prisma.autodeskConnection.findUnique({ where: { companyId } });
+    const connection = withDecryptedTokens(await this.prisma.autodeskConnection.findUnique({ where: { companyId } }));
     if (!connection) throw new NotFoundException("No Autodesk account connected");
     return this.ensureFreshToken(connection);
   }
@@ -363,24 +364,25 @@ export class AutodeskService {
       kind: "autodesk",
       force: !connection.viewerAccessToken,
       reconnectMessage: "Failed to refresh the Autodesk connection — reconnect it in Settings",
-      reload: () => this.prisma.autodeskConnection.findUnique({ where: { id: connection.id } }),
+      reload: async () => withDecryptedTokens(await this.prisma.autodeskConnection.findUnique({ where: { id: connection.id } })),
       refresh: async (c) => {
         const server = await requestToken(this.tokenEndpoint(), { grant_type: "refresh_token", refresh_token: c.refreshToken, scope: APS_SCOPE });
         const serverRefreshToken = server.refresh_token ?? c.refreshToken;
         await this.prisma.autodeskConnection.update({
           where: { id: c.id },
-          data: { accessToken: server.access_token, viewerAccessToken: null, refreshToken: serverRefreshToken, tokenExpiresAt: tokenExpiry(server) },
+          data: withEncryptedTokens({ accessToken: server.access_token, viewerAccessToken: null, refreshToken: serverRefreshToken, tokenExpiresAt: tokenExpiry(server) }),
         });
         const viewer = await this.viewerRefresh(serverRefreshToken);
-        return this.prisma.autodeskConnection.update({
+        const updated = await this.prisma.autodeskConnection.update({
           where: { id: c.id },
-          data: {
+          data: withEncryptedTokens({
             viewerAccessToken: viewer.access_token,
             refreshToken: viewer.refresh_token ?? serverRefreshToken,
             // Minted moments apart; the earlier expiry bounds both.
             tokenExpiresAt: tokenExpiry({ ...viewer, expires_in: Math.min(server.expires_in, viewer.expires_in) }),
-          },
+          }),
         });
+        return withDecryptedTokens(updated);
       },
     });
   }

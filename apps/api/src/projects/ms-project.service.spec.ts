@@ -1,6 +1,7 @@
 import { JwtService } from "@nestjs/jwt";
 import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { MsProjectService } from "./ms-project.service";
+import { encrypted } from "../common/crypto/testing";
 
 function jsonResponse(body: unknown, ok = true, status = ok ? 200 : 400) {
   return { ok, status, json: async () => body } as unknown as Response;
@@ -86,7 +87,7 @@ describe("MsProjectService", () => {
       expect(prisma.msProjectConnection.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { companyId: "company-a" },
-          create: expect.objectContaining({ accessToken: "at", environmentUrl: ENV_URL }),
+          create: expect.objectContaining({ accessToken: encrypted("at"), environmentUrl: ENV_URL }),
         }),
       );
     });

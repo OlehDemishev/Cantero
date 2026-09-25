@@ -1,3 +1,5 @@
+import { parseEncryptionKey } from "../crypto/secret-box";
+
 /**
  * Settings a production deployment must not start without — each one, left at its development
  * default, fails silently rather than loudly: uploads vanish on the next redeploy, or every client
@@ -31,6 +33,23 @@ export function assertProductionConfig(env: NodeJS.ProcessEnv): void {
     );
   } else if (!/^\d+$/.test(env.TRUST_PROXY_HOPS.trim())) {
     problems.push(`TRUST_PROXY_HOPS="${env.TRUST_PROXY_HOPS}" isn't a whole number of proxy hops.`);
+  }
+
+  // OAuth tokens, webhook secrets and TOTP secrets are encrypted with this (see secret-box.ts);
+  // without it they'd fall back to the public development key.
+  for (const name of ["DATA_ENCRYPTION_KEY", "DATA_ENCRYPTION_KEY_PREVIOUS"] as const) {
+    const raw = env[name];
+    if (!raw) {
+      if (name === "DATA_ENCRYPTION_KEY") {
+        problems.push("DATA_ENCRYPTION_KEY is unset — stored integration tokens and 2FA secrets need it. Generate one with `openssl rand -base64 32`.");
+      }
+      continue;
+    }
+    try {
+      parseEncryptionKey(raw);
+    } catch (err) {
+      problems.push(`${name} ${(err as Error).message}.`);
+    }
   }
 
   if (problems.length > 0) {

@@ -5,6 +5,7 @@ import type { AccountingConnection, AccountingProvider as AccountingProviderEnum
 import type { AccountingProviderType } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { apiOrigin, exchangeCode, refreshIfExpiring, requestToken, signState, tokenExpiry, verifyState, type TokenEndpoint } from "../common/oauth/oauth";
+import { encryptSecret, withDecryptedTokens, withEncryptedTokens } from "../common/crypto/secret-box";
 
 const FETCH_TIMEOUT_MS = 10_000;
 /// Intuit, unlike Xero, splits sandbox and production data onto different API hosts (the OAuth
@@ -121,14 +122,14 @@ export class AccountingSyncService {
       create: {
         companyId,
         provider: "lexoffice",
-        accessToken: apiKey,
+        accessToken: encryptSecret(apiKey),
         refreshToken: "",
         tokenExpiresAt: LEXOFFICE_NO_EXPIRY,
         externalAccountId: profile.organizationId,
       },
       update: {
         provider: "lexoffice",
-        accessToken: apiKey,
+        accessToken: encryptSecret(apiKey),
         refreshToken: "",
         tokenExpiresAt: LEXOFFICE_NO_EXPIRY,
         externalAccountId: profile.organizationId,
@@ -188,15 +189,15 @@ export class AccountingSyncService {
       create: {
         companyId: decoded.companyId,
         provider: provider as AccountingProviderEnum,
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
+        accessToken: encryptSecret(tokens.access_token),
+        refreshToken: encryptSecret(tokens.refresh_token),
         tokenExpiresAt: tokenExpiry(tokens),
         externalAccountId,
       },
       update: {
         provider: provider as AccountingProviderEnum,
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
+        accessToken: encryptSecret(tokens.access_token),
+        refreshToken: encryptSecret(tokens.refresh_token),
         tokenExpiresAt: tokenExpiry(tokens),
         externalAccountId,
       },
@@ -346,7 +347,7 @@ export class AccountingSyncService {
   private async getConnectionOrThrow(companyId: string) {
     const connection = await this.prisma.accountingConnection.findUnique({ where: { companyId } });
     if (!connection) throw new NotFoundException("No accounting system connected");
-    return connection;
+    return withDecryptedTokens(connection);
   }
 
   /** Refreshes and persists the access token when it's expired (or about to), so callers always get a usable one. */
@@ -356,13 +357,14 @@ export class AccountingSyncService {
     return refreshIfExpiring(connection, {
       kind: "accounting",
       reconnectMessage: "Failed to refresh the accounting connection — reconnect it in Settings",
-      reload: () => this.prisma.accountingConnection.findUnique({ where: { id: connection.id } }),
+      reload: async () => withDecryptedTokens(await this.prisma.accountingConnection.findUnique({ where: { id: connection.id } })),
       refresh: async (c) => {
         const tokens = await requestToken(this.tokenEndpoint(provider), { grant_type: "refresh_token", refresh_token: c.refreshToken });
-        return this.prisma.accountingConnection.update({
+        const updated = await this.prisma.accountingConnection.update({
           where: { id: c.id },
-          data: { accessToken: tokens.access_token, refreshToken: tokens.refresh_token ?? c.refreshToken, tokenExpiresAt: tokenExpiry(tokens) },
+          data: withEncryptedTokens({ accessToken: tokens.access_token, refreshToken: tokens.refresh_token ?? c.refreshToken, tokenExpiresAt: tokenExpiry(tokens) }),
         });
+        return withDecryptedTokens(updated);
       },
     });
   }

@@ -4,6 +4,7 @@ import { JwtService } from "@nestjs/jwt";
 import { IntacctService } from "./intacct.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService } from "../common/audit/audit.service";
+import { encrypted } from "../common/crypto/testing";
 
 const COMPANY = "company-a";
 const ACTOR = { userId: "u1", name: "Jane" };
@@ -66,7 +67,7 @@ describe("IntacctService", () => {
       expect(url).toBe("https://api.intacct.com/ia/api/v1/oauth2/token");
       expect((init.body as URLSearchParams).get("grant_type")).toBe("authorization_code");
       expect((init.body as URLSearchParams).get("code")).toBe("CODE");
-      expect(prisma.intacctConnection.upsert.mock.calls[0][0].create).toMatchObject({ companyId: COMPANY, accessToken: "A", refreshToken: "R" });
+      expect(prisma.intacctConnection.upsert.mock.calls[0][0].create).toMatchObject({ companyId: COMPANY, accessToken: encrypted("A"), refreshToken: encrypted("R") });
     });
 
     it("rejects a callback without a refresh token, since the connection couldn't outlive 12 hours", async () => {

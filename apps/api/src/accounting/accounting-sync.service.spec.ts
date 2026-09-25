@@ -1,6 +1,7 @@
 import { JwtService } from "@nestjs/jwt";
 import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { AccountingSyncService } from "./accounting-sync.service";
+import { encrypted } from "../common/crypto/testing";
 
 function jsonResponse(body: unknown, ok = true, status = ok ? 200 : 400) {
   return { ok, status, json: async () => body } as Response;
@@ -62,7 +63,7 @@ describe("AccountingSyncService", () => {
       expect(prisma.accountingConnection.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { companyId: "company-a" },
-          create: expect.objectContaining({ provider: "lexoffice", accessToken: "lexoffice-key", refreshToken: "", externalAccountId: "org-123" }),
+          create: expect.objectContaining({ provider: "lexoffice", accessToken: encrypted("lexoffice-key"), refreshToken: "", externalAccountId: "org-123" }),
         }),
       );
       expect(result).toEqual({ ok: true });
@@ -131,7 +132,7 @@ describe("AccountingSyncService", () => {
       expect(prisma.accountingConnection.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { companyId: "company-a" },
-          create: expect.objectContaining({ externalAccountId: "realm-42", accessToken: "at", refreshToken: "rt" }),
+          create: expect.objectContaining({ externalAccountId: "realm-42", accessToken: encrypted("at"), refreshToken: encrypted("rt") }),
         }),
       );
     });

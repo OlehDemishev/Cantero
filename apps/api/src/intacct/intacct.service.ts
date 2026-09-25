@@ -5,6 +5,7 @@ import type { PushIntacctContractInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { callbackUrl, exchangeCode, refreshIfExpiring, requestToken, signState, tokenExpiry, verifyState, type TokenEndpoint } from "../common/oauth/oauth";
+import { encryptSecret, withDecryptedTokens, withEncryptedTokens } from "../common/crypto/secret-box";
 
 const FETCH_TIMEOUT_MS = 15_000;
 const DEFAULT_BASE_URL = "https://api.intacct.com/ia/api/v1";
@@ -54,7 +55,7 @@ export class IntacctService {
   ) {}
 
   async getStatus(companyId: string) {
-    const connection = await this.prisma.intacctConnection.findUnique({ where: { companyId } });
+    const connection = withDecryptedTokens(await this.prisma.intacctConnection.findUnique({ where: { companyId } }));
     if (!connection) return { connected: false as const };
     return { connected: true as const, connectedAt: connection.connectedAt, changeOrderItemId: connection.changeOrderItemId };
   }
@@ -76,7 +77,7 @@ export class IntacctService {
     const { companyId } = verifyState(this.jwt, state);
     const tokens = await exchangeCode(this.tokenEndpoint(), { code, redirect_uri: this.callbackUrl() });
 
-    const data = { accessToken: tokens.access_token, refreshToken: tokens.refresh_token, tokenExpiresAt: tokenExpiry(tokens) };
+    const data = { accessToken: encryptSecret(tokens.access_token), refreshToken: encryptSecret(tokens.refresh_token), tokenExpiresAt: tokenExpiry(tokens) };
     await this.prisma.intacctConnection.upsert({ where: { companyId }, create: { companyId, ...data }, update: data });
     return { companyId };
   }
@@ -87,7 +88,12 @@ export class IntacctService {
 
   async updateSettings(companyId: string, changeOrderItemId: string | null) {
     await this.getConnectionOrThrow(companyId, false);
-    return this.prisma.intacctConnection.update({ where: { companyId }, data: { changeOrderItemId: changeOrderItemId || null } });
+    // Never the whole row: it carries the connection's OAuth tokens.
+    return this.prisma.intacctConnection.update({
+      where: { companyId },
+      data: { changeOrderItemId: changeOrderItemId || null },
+      select: { changeOrderItemId: true, connectedAt: true },
+    });
   }
 
   /** Creates the project's contract in Intacct, once. The two Intacct IDs are typed in by the
@@ -163,7 +169,7 @@ export class IntacctService {
   }
 
   private async getConnectionOrThrow(companyId: string, refresh = true): Promise<IntacctConnection> {
-    const connection = await this.prisma.intacctConnection.findUnique({ where: { companyId } });
+    const connection = withDecryptedTokens(await this.prisma.intacctConnection.findUnique({ where: { companyId } }));
     if (!connection) throw new NotFoundException("No Sage Intacct account connected");
     return refresh ? this.ensureFreshToken(connection) : connection;
   }
@@ -172,13 +178,14 @@ export class IntacctService {
     return refreshIfExpiring(connection, {
       kind: "intacct",
       reconnectMessage: "Failed to refresh the Sage Intacct connection — reconnect it in Settings",
-      reload: () => this.prisma.intacctConnection.findUnique({ where: { id: connection.id } }),
+      reload: async () => withDecryptedTokens(await this.prisma.intacctConnection.findUnique({ where: { id: connection.id } })),
       refresh: async (c) => {
         const tokens = await requestToken(this.tokenEndpoint(), { grant_type: "refresh_token", refresh_token: c.refreshToken });
-        return this.prisma.intacctConnection.update({
+        const updated = await this.prisma.intacctConnection.update({
           where: { id: c.id },
-          data: { accessToken: tokens.access_token, refreshToken: tokens.refresh_token ?? c.refreshToken, tokenExpiresAt: tokenExpiry(tokens) },
+          data: withEncryptedTokens({ accessToken: tokens.access_token, refreshToken: tokens.refresh_token ?? c.refreshToken, tokenExpiresAt: tokenExpiry(tokens) }),
         });
+        return withDecryptedTokens(updated);
       },
     });
   }

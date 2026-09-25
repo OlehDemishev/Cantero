@@ -3,6 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { callbackUrl, exchangeCode, refreshIfExpiring, requestToken, signState, tokenExpiry, verifyState, type TokenEndpoint } from "../common/oauth/oauth";
+import { encryptSecret, withDecryptedTokens, withEncryptedTokens } from "../common/crypto/secret-box";
 
 const FETCH_TIMEOUT_MS = 10_000;
 
@@ -61,7 +62,7 @@ export class DocusignService {
   ) {}
 
   async getStatus(companyId: string) {
-    const connection = await this.prisma.docusignConnection.findUnique({ where: { companyId } });
+    const connection = withDecryptedTokens(await this.prisma.docusignConnection.findUnique({ where: { companyId } }));
     if (!connection) return { connected: false as const };
     return { connected: true as const, accountId: connection.accountId, connectedAt: connection.connectedAt };
   }
@@ -99,15 +100,15 @@ export class DocusignService {
       where: { companyId },
       create: {
         companyId,
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
+        accessToken: encryptSecret(tokens.access_token),
+        refreshToken: encryptSecret(tokens.refresh_token),
         tokenExpiresAt: tokenExpiry(tokens),
         accountId: account.account_id,
         apiBaseUrl: account.base_uri,
       },
       update: {
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
+        accessToken: encryptSecret(tokens.access_token),
+        refreshToken: encryptSecret(tokens.refresh_token),
         tokenExpiresAt: tokenExpiry(tokens),
         accountId: account.account_id,
         apiBaseUrl: account.base_uri,
@@ -121,7 +122,7 @@ export class DocusignService {
   }
 
   async getConnectionOrThrow(companyId: string): Promise<DocusignConnection> {
-    const connection = await this.prisma.docusignConnection.findUnique({ where: { companyId } });
+    const connection = withDecryptedTokens(await this.prisma.docusignConnection.findUnique({ where: { companyId } }));
     if (!connection) throw new NotFoundException("No DocuSign account connected");
     return this.ensureFreshToken(connection);
   }
@@ -176,13 +177,14 @@ export class DocusignService {
     return refreshIfExpiring(connection, {
       kind: "docusign",
       reconnectMessage: "Failed to refresh the DocuSign connection — reconnect it in Settings",
-      reload: () => this.prisma.docusignConnection.findUnique({ where: { id: connection.id } }),
+      reload: async () => withDecryptedTokens(await this.prisma.docusignConnection.findUnique({ where: { id: connection.id } })),
       refresh: async (c) => {
         const tokens = await requestToken(this.tokenEndpoint(), { grant_type: "refresh_token", refresh_token: c.refreshToken });
-        return this.prisma.docusignConnection.update({
+        const updated = await this.prisma.docusignConnection.update({
           where: { id: c.id },
-          data: { accessToken: tokens.access_token, refreshToken: tokens.refresh_token ?? c.refreshToken, tokenExpiresAt: tokenExpiry(tokens) },
+          data: withEncryptedTokens({ accessToken: tokens.access_token, refreshToken: tokens.refresh_token ?? c.refreshToken, tokenExpiresAt: tokenExpiry(tokens) }),
         });
+        return withDecryptedTokens(updated);
       },
     });
   }

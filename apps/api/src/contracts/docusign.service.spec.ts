@@ -1,6 +1,7 @@
 import { JwtService } from "@nestjs/jwt";
 import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { DocusignService } from "./docusign.service";
+import { encrypted } from "../common/crypto/testing";
 
 function jsonResponse(body: unknown, ok = true, status = ok ? 200 : 400) {
   return { ok, status, json: async () => body, arrayBuffer: async () => Buffer.from("pdf-bytes") } as unknown as Response;
@@ -89,7 +90,7 @@ describe("DocusignService", () => {
       expect(prisma.docusignConnection.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { companyId: "company-a" },
-          create: expect.objectContaining({ accountId: "acct-2", apiBaseUrl: "https://na3.docusign.net", accessToken: "at" }),
+          create: expect.objectContaining({ accountId: "acct-2", apiBaseUrl: "https://na3.docusign.net", accessToken: encrypted("at") }),
         }),
       );
     });
@@ -161,7 +162,7 @@ describe("DocusignService", () => {
       const result = await service.getConnectionOrThrow("company-a");
 
       expect(fetchMock).not.toHaveBeenCalled();
-      expect(result).toBe(fresh);
+      expect(result).toEqual(fresh);
     });
   });
 

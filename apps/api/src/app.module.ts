@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { PrismaModule } from "./common/prisma/prisma.module";
+import { CryptoModule } from "./common/crypto/crypto.module";
 import { PermissionsModule } from "./common/permissions/permissions.module";
 import { WorkerFieldsInterceptor } from "./common/permissions/worker-fields.interceptor";
 import { PdfModule } from "./common/pdf/pdf.module";
@@ -111,6 +112,7 @@ import { ClientChangeRequestsModule } from "./client-change-requests/client-chan
     PermissionsModule,
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
+    CryptoModule,
     PdfModule,
     QueueModule,
     StorageModule,

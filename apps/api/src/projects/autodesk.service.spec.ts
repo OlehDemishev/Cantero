@@ -1,6 +1,7 @@
 import { JwtService } from "@nestjs/jwt";
 import { BadGatewayException, BadRequestException, NotFoundException } from "@nestjs/common";
 import { AutodeskService, versionUrn } from "./autodesk.service";
+import { encrypted } from "../common/crypto/testing";
 
 function jsonResponse(body: unknown, ok = true, status = ok ? 200 : 400) {
   return { ok, status, json: async () => body } as unknown as Response;
@@ -83,7 +84,7 @@ describe("AutodeskService", () => {
       expect(prisma.autodeskConnection.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { companyId: "company-a" },
-          create: expect.objectContaining({ hubId: "b.hub-1", hubRegion: "EMEA", accessToken: "at", viewerAccessToken: "viewer-at", refreshToken: "rt-2" }),
+          create: expect.objectContaining({ hubId: "b.hub-1", hubRegion: "EMEA", accessToken: encrypted("at"), viewerAccessToken: encrypted("viewer-at"), refreshToken: encrypted("rt-2") }),
         }),
       );
     });
@@ -140,8 +141,8 @@ describe("AutodeskService", () => {
       expect([second.get("refresh_token"), second.get("scope")]).toEqual(["rt-1", "viewables:read"]);
       // Each step is saved as soon as it succeeds, so a failed viewer step never leaves a spent refresh token stored.
       const [afterServer, afterViewer] = prisma.autodeskConnection.update.mock.calls.map((c) => c[0].data);
-      expect(afterServer).toMatchObject({ accessToken: "server-at", viewerAccessToken: null, refreshToken: "rt-1" });
-      expect(afterViewer).toMatchObject({ viewerAccessToken: "viewer-at", refreshToken: "rt-2" });
+      expect(afterServer).toMatchObject({ accessToken: encrypted("server-at"), viewerAccessToken: null, refreshToken: encrypted("rt-1") });
+      expect(afterViewer).toMatchObject({ viewerAccessToken: encrypted("viewer-at"), refreshToken: encrypted("rt-2") });
       expect(token.accessToken).toBe("viewer-at");
       expect(token.expiresIn).toBeGreaterThan(3500);
     });
@@ -155,7 +156,7 @@ describe("AutodeskService", () => {
 
       await expect(service.getViewerToken("company-a")).rejects.toThrow(/reconnect/);
       expect(prisma.autodeskConnection.update).toHaveBeenCalledTimes(1);
-      expect(prisma.autodeskConnection.update.mock.calls[0][0].data).toMatchObject({ refreshToken: "rt-1", viewerAccessToken: null });
+      expect(prisma.autodeskConnection.update.mock.calls[0][0].data).toMatchObject({ refreshToken: encrypted("rt-1"), viewerAccessToken: null });
     });
 
     it("refreshes a still-valid connection that predates the viewer so it gets a viewer token", async () => {

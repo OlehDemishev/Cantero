@@ -90,8 +90,15 @@ comment for the full picture. In short:
    `docker-compose.prod.yml` injects into the `api` container as runtime secrets.
 4. `docker compose -f docker-compose.prod.yml build && docker compose -f docker-compose.prod.yml up -d`
 
-Database backups: `scripts/backup-db.sh` (daily `pg_dump` → gzip → S3-compatible bucket, 14-day
-rolling retention) — install it as a cron job per the script's own header comment.
+In production the API refuses to start without `DATA_ENCRYPTION_KEY` (encrypts stored integration
+tokens and 2FA secrets), `S3_BUCKET` (uploads) and an explicit `TRUST_PROXY_HOPS`
+(`docker-compose.prod.yml` sets it to 1 for Caddy). Clients' online invoice payments go to each
+company's own Stripe account via Stripe Connect — enable Connect in the Stripe dashboard and add the
+second webhook endpoint described next to `STRIPE_CONNECT_WEBHOOK_SECRET` in `apps/api/.env.example`.
+
+Database backups: `scripts/backup-db.sh` (daily `pg_dump` → gzip → age encryption to a public key →
+S3-compatible bucket, 14-day rolling retention) — install it as a cron job per the script's own
+header comment, which also covers restoring.
 
 ## CI
 

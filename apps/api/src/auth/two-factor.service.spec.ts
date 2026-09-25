@@ -7,6 +7,7 @@ import { TwoFactorService } from "./two-factor.service";
 import { AuthService } from "./auth.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { RateLimiterService } from "../common/rate-limiter/rate-limiter.service";
+import { encrypted } from "../common/crypto/testing";
 
 describe("TwoFactorService", () => {
   let service: TwoFactorService;
@@ -48,7 +49,7 @@ describe("TwoFactorService", () => {
 
       const result = await service.setup("user-1", "jane@example.com");
 
-      expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: "user-1" }, data: { pendingTotpSecret: result.secret } });
+      expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: "user-1" }, data: { pendingTotpSecret: encrypted(result.secret) } });
       expect(result.otpauthUrl).toContain("otpauth://totp/");
       expect(result.otpauthUrl).toContain("Cantero");
     });
@@ -78,7 +79,7 @@ describe("TwoFactorService", () => {
       // The audit scenario this whole pending-secret design closes: re-authenticating and calling
       // setup() again must never itself disable the still-working old authenticator — only
       // enable() (confirming a code from the NEW secret) may do that.
-      expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: "user-1" }, data: { pendingTotpSecret: result.secret } });
+      expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: "user-1" }, data: { pendingTotpSecret: encrypted(result.secret) } });
       expect(prisma.user.update).not.toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ totpSecret: expect.anything() }) }));
     });
   });
@@ -106,7 +107,7 @@ describe("TwoFactorService", () => {
 
       expect(result.backupCodes).toHaveLength(8);
       const updateCall = prisma.user.update.mock.calls[0][0];
-      expect(updateCall.data.totpSecret).toBe(secret);
+      expect(updateCall.data.totpSecret).toEqual(encrypted(secret));
       expect(updateCall.data.pendingTotpSecret).toBeNull();
       expect(updateCall.data.totpEnabledAt).toBeInstanceOf(Date);
       expect(updateCall.data.totpBackupCodes).toHaveLength(8);

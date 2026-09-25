@@ -7,6 +7,7 @@ import { PrismaService } from "../common/prisma/prisma.service";
 import type { SessionMeta } from "../common/sessions/sessions.service";
 import { RateLimiterService } from "../common/rate-limiter/rate-limiter.service";
 import { AuthService } from "./auth.service";
+import { decryptSecret, encryptSecret } from "../common/crypto/secret-box";
 
 const BACKUP_CODE_COUNT = 8;
 const BCRYPT_ROUNDS = 10;
@@ -48,7 +49,7 @@ export class TwoFactorService {
     }
 
     const secret = authenticator.generateSecret();
-    await this.prisma.user.update({ where: { id: userId }, data: { pendingTotpSecret: secret } });
+    await this.prisma.user.update({ where: { id: userId }, data: { pendingTotpSecret: encryptSecret(secret) } });
     const otpauthUrl = authenticator.keyuri(email, "Cantero", secret);
     return { secret, otpauthUrl };
   }
@@ -61,7 +62,8 @@ export class TwoFactorService {
   async enable(userId: string, code: string): Promise<{ backupCodes: string[] }> {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
     if (!user.pendingTotpSecret) throw new BadRequestException("Call setup first");
-    if (!authenticator.verify({ token: code, secret: user.pendingTotpSecret })) {
+    const pendingSecret = decryptSecret(user.pendingTotpSecret);
+    if (!authenticator.verify({ token: code, secret: pendingSecret })) {
       throw new BadRequestException("Invalid code");
     }
 
@@ -69,7 +71,7 @@ export class TwoFactorService {
     const hashed = await Promise.all(backupCodes.map((c) => bcrypt.hash(c, BCRYPT_ROUNDS)));
     await this.prisma.user.update({
       where: { id: userId },
-      data: { totpSecret: user.pendingTotpSecret, pendingTotpSecret: null, totpEnabledAt: new Date(), totpBackupCodes: hashed },
+      data: { totpSecret: encryptSecret(pendingSecret), pendingTotpSecret: null, totpEnabledAt: new Date(), totpBackupCodes: hashed },
     });
     return { backupCodes };
   }
@@ -136,7 +138,7 @@ export class TwoFactorService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user || !user.totpSecret || !user.totpEnabledAt) return false;
 
-    const totpOk = authenticator.verify({ token: code, secret: user.totpSecret });
+    const totpOk = authenticator.verify({ token: code, secret: decryptSecret(user.totpSecret) });
     if (!totpOk) {
       const matchIndex = await this.findBackupCodeIndex(user.totpBackupCodes, code);
       if (matchIndex === -1) return false;
