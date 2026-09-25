@@ -53,7 +53,9 @@ COPY --from=deploy /out/api ./
 COPY --from=build /app/apps/api/dist ./dist
 COPY --from=build /app/apps/api/prisma ./prisma
 COPY apps/api/docker-entrypoint.sh ./docker-entrypoint.sh
-RUN chmod +x ./docker-entrypoint.sh && chown -R app:app /app
+# uploads/ and .models/ exist in the image so a named volume mounted over either starts out owned
+# by `app` (Docker copies the image directory's ownership into a fresh volume) rather than root.
+RUN mkdir -p ./uploads ./.models && chmod +x ./docker-entrypoint.sh && chown -R app:app /app
 USER app
 EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \

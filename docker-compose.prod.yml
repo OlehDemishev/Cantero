@@ -49,6 +49,15 @@ services:
     restart: unless-stopped
     env_file:
       - .env.prod
+    environment:
+      # Caddy is the one reverse proxy in front of the API — without this every client would share
+      # Caddy's IP and so one login rate-limit bucket. `environment` wins over env_file, so a
+      # TRUST_PROXY_HOPS copied into .env.prod from the local-dev example can't undo it.
+      TRUST_PROXY_HOPS: "1"
+    volumes:
+      # The meaning-based search model (EMBEDDINGS_CACHE_DIR, ~0.5 GB) — kept across redeploys
+      # instead of being downloaded again by every new container.
+      - api_models:/app/.models
     depends_on:
       postgres:
         condition: service_healthy
@@ -86,6 +95,7 @@ networks:
   internal:
 
 volumes:
+  api_models:
   postgres_data:
   redis_data:
   caddy_data:

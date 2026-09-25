@@ -1,20 +1,22 @@
 import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
-import { ValidationPipe } from "@nestjs/common";
+import { Logger, ValidationPipe } from "@nestjs/common";
 import type { NestExpressApplication } from "@nestjs/platform-express";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { AppModule } from "./app.module";
 import { PublicApiModule } from "./public-api/public-api.module";
-import { resolveTrustProxyHops } from "./common/trust-proxy";
+import { resolveTrustProxyHops, warnOnceIfProxiedButUntrusted } from "./common/trust-proxy";
 import { initSentry } from "./common/sentry/init-sentry";
 import { SentryExceptionsFilter } from "./common/sentry/sentry-exceptions.filter";
 import { assertQuickbooksProductionSafety } from "./accounting/quickbooks-production-safety";
+import { assertProductionConfig } from "./common/config/production-config";
 
 // Must run before the Nest app is created so Sentry's instrumentation can hook whatever it needs
 // (http, the DB driver, ...) before those modules load. No-op unless SENTRY_DSN is set.
 initSentry();
 
 async function bootstrap() {
+  assertProductionConfig(process.env);
   assertQuickbooksProductionSafety(process.env);
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });
   app.enableCors({ origin: process.env.WEB_ORIGIN ?? "http://localhost:3000", credentials: true });
@@ -34,6 +36,7 @@ async function bootstrap() {
   // Left unset (0) by default — safe for local dev and any deployment with no proxy in front.
   const trustProxyHops = resolveTrustProxyHops(process.env.TRUST_PROXY_HOPS);
   if (trustProxyHops > 0) app.set("trust proxy", trustProxyHops);
+  else app.use(warnOnceIfProxiedButUntrusted((message) => new Logger("TrustProxy").error(message)));
 
   // Docs cover only the public v1 integration API (PublicApiModule), not the internal
   // JWT-authenticated app surface — this is a reference for third-party integrators.

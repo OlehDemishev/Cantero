@@ -13,6 +13,14 @@ services:
   api:
     ports:
       - "4001:4000"
+    environment:
+      # Reached directly on 4001 here, not through Caddy — no proxy hop to trust.
+      TRUST_PROXY_HOPS: "0"
+      # No S3 bucket locally: keep uploads on a named volume so they survive a rebuild (production
+      # refuses local-disk uploads unless UPLOADS_DIR is set explicitly like this).
+      UPLOADS_DIR: /app/uploads
+    volumes:
+      - api_uploads:/app/uploads
   postgres:
     ports:
       - "5433:5432"
@@ -21,3 +29,6 @@ services:
       - "6380:6379"
   caddy:
     ports: []
+
+volumes:
+  api_uploads:
