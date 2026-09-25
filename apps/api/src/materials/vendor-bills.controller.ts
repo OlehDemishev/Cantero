@@ -14,6 +14,7 @@ import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { VendorBillsService } from "./vendor-bills.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
 import { Requires, RequiresFor } from "../common/decorators/permissions.decorator";
+import { DateQueryPipe } from "../common/pipes/query-pipes";
 
 @NotProjectScoped("vendor bills have no project link in the schema")
 @RequiresFor("finance.view", "finance.manage")
@@ -38,8 +39,8 @@ export class VendorBillsController {
   async exportSage300Cre(
     @CurrentUser() user: AuthUser,
     @Res({ passthrough: true }) res: Response,
-    @Query("from") from?: string,
-    @Query("to") to?: string,
+    @Query("from", DateQueryPipe) from?: string,
+    @Query("to", DateQueryPipe) to?: string,
     @Query("expenseAccount") expenseAccount?: string,
     @Query("apAccount") apAccount?: string,
   ) {

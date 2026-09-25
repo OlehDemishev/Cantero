@@ -20,6 +20,7 @@ import { TasksService } from "./tasks.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
 import { OpenToAllRoles } from "../common/decorators/roles.decorator";
 import { Requires } from "../common/decorators/permissions.decorator";
+import { IdListQueryPipe, OptionalIntPipe } from "../common/pipes/query-pipes";
 
 @OpenToAllRoles("site and project work every member does")
 @Controller("tasks")
@@ -38,14 +39,14 @@ export class TasksController {
   }
 
   @Get("look-ahead")
-  lookAhead(@CurrentUser() user: AuthUser, @Query("projectId", ParseUUIDPipe) projectId: string, @Query("weeks") weeks?: string) {
-    return this.service.getLookAhead(user.companyId, projectId, weeks ? Number(weeks) : undefined);
+  lookAhead(@CurrentUser() user: AuthUser, @Query("projectId", ParseUUIDPipe) projectId: string, @Query("weeks", OptionalIntPipe) weeks?: number) {
+    return this.service.getLookAhead(user.companyId, projectId, weeks);
   }
 
   @Requires("site.manage")
   @Get("portfolio-schedule")
-  portfolioSchedule(@CurrentUser() user: AuthUser, @Query("projectIds") projectIds: string) {
-    return this.service.portfolioSchedule(user.companyId, projectIds.split(",").filter(Boolean));
+  portfolioSchedule(@CurrentUser() user: AuthUser, @Query("projectIds", IdListQueryPipe) projectIds: string[]) {
+    return this.service.portfolioSchedule(user.companyId, projectIds);
   }
 
   @Requires("site.manage")

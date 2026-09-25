@@ -5,6 +5,7 @@ import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { CalibrationService } from "./calibration.service";
 import { OpenToAllRoles } from "../common/decorators/roles.decorator";
 import { Requires } from "../common/decorators/permissions.decorator";
+import { OptionalIntPipe } from "../common/pipes/query-pipes";
 
 @Requires("site.manage")
 @Controller("calibration-records")
@@ -17,8 +18,8 @@ export class CalibrationController {
   }
 
   @Get("due")
-  dueList(@CurrentUser() user: AuthUser, @Query("days") days?: string) {
-    return this.service.dueList(user.companyId, days ? Number(days) : undefined);
+  dueList(@CurrentUser() user: AuthUser, @Query("days", OptionalIntPipe) days?: number) {
+    return this.service.dueList(user.companyId, days);
   }
 
   @Post()

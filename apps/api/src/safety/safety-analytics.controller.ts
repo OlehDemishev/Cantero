@@ -4,6 +4,7 @@ import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { SafetyAnalyticsService } from "./safety-analytics.service";
 import { OpenToAllRoles } from "../common/decorators/roles.decorator";
 import { Requires } from "../common/decorators/permissions.decorator";
+import { OptionalIntPipe } from "../common/pipes/query-pipes";
 
 @Requires("site.manage")
 @Controller("safety/analytics")
@@ -11,20 +12,20 @@ export class SafetyAnalyticsController {
   constructor(private readonly service: SafetyAnalyticsService) {}
 
   @Get("osha-300a")
-  osha300aSummary(@CurrentUser() user: AuthUser, @Query("year") year?: string) {
-    return this.service.osha300aSummary(user.companyId, year ? Number(year) : new Date().getFullYear());
+  osha300aSummary(@CurrentUser() user: AuthUser, @Query("year", OptionalIntPipe) year?: number) {
+    return this.service.osha300aSummary(user.companyId, year ?? new Date().getFullYear());
   }
 
   @Get("osha-300a/pdf")
   @Header("Content-Type", "application/pdf")
-  async osha300aPdf(@CurrentUser() user: AuthUser, @Query("year") year?: string) {
-    const buffer = await this.service.osha300aPdf(user.companyId, year ? Number(year) : new Date().getFullYear());
+  async osha300aPdf(@CurrentUser() user: AuthUser, @Query("year", OptionalIntPipe) year?: number) {
+    const buffer = await this.service.osha300aPdf(user.companyId, year ?? new Date().getFullYear());
     return new StreamableFile(buffer, { disposition: `attachment; filename="osha-300a-summary.pdf"` });
   }
 
   @Get("scorecard")
-  safetyScorecard(@CurrentUser() user: AuthUser, @Query("year") year?: string) {
-    return this.service.safetyScorecard(user.companyId, year ? Number(year) : new Date().getFullYear(), user);
+  safetyScorecard(@CurrentUser() user: AuthUser, @Query("year", OptionalIntPipe) year?: number) {
+    return this.service.safetyScorecard(user.companyId, year ?? new Date().getFullYear(), user);
   }
 
   @Get("training-compliance")
@@ -33,7 +34,7 @@ export class SafetyAnalyticsController {
   }
 
   @Get("near-miss")
-  nearMissAnalytics(@CurrentUser() user: AuthUser, @Query("year") year?: string) {
-    return this.service.nearMissAnalytics(user.companyId, year ? Number(year) : new Date().getFullYear(), user);
+  nearMissAnalytics(@CurrentUser() user: AuthUser, @Query("year", OptionalIntPipe) year?: number) {
+    return this.service.nearMissAnalytics(user.companyId, year ?? new Date().getFullYear(), user);
   }
 }

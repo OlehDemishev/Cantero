@@ -24,6 +24,7 @@ import { EstimatesService } from "./estimates.service";
 import { NotProjectScoped, ProjectResource } from "../common/project-access/project-resource.decorator";
 import { OpenToAllRoles } from "../common/decorators/roles.decorator";
 import { RequiresFor } from "../common/decorators/permissions.decorator";
+import { DateQueryPipe } from "../common/pipes/query-pipes";
 
 @ProjectResource("Estimate")
 @RequiresFor("estimates.view", "estimates.manage")
@@ -126,8 +127,8 @@ export class EstimatesController {
   diffRevisions(
     @CurrentUser() user: AuthUser,
     @Param("id") id: string,
-    @Query("from") from: string,
-    @Query("to") to: string,
+    @Query("from", DateQueryPipe) from: string,
+    @Query("to", DateQueryPipe) to: string,
   ) {
     return this.service.diffRevisions(user.companyId, id, from, to);
   }

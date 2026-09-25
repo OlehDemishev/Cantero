@@ -32,6 +32,7 @@ import { EquipmentService } from "./equipment.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
 import { OpenToAllRoles } from "../common/decorators/roles.decorator";
 import { Requires } from "../common/decorators/permissions.decorator";
+import { DateQueryPipe } from "../common/pipes/query-pipes";
 
 @NotProjectScoped("company-owned equipment; an assignment names the project in the body")
 @Requires("site.manage")
@@ -224,7 +225,7 @@ export class EquipmentController {
   }
 
   @Get(":id/gps-pings")
-  listGpsPings(@CurrentUser() user: AuthUser, @Param("id") id: string, @Query("date") date?: string) {
+  listGpsPings(@CurrentUser() user: AuthUser, @Param("id") id: string, @Query("date", DateQueryPipe) date?: string) {
     return this.service.listGpsPings(user.companyId, id, date);
   }
 }

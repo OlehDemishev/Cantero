@@ -1,4 +1,4 @@
-import { Body, Controller, Get, ParseUUIDPipe, Post, Query } from "@nestjs/common";
+import { Body, Controller, Get, ParseUUIDPipe, Post, Query, ParseIntPipe } from "@nestjs/common";
 import { createSafetyObservationSchema, type AuthUser, type CreateSafetyObservationInput } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
@@ -21,7 +21,7 @@ export class SafetyObservationsController {
   }
 
   @Get("rate")
-  rateByYear(@CurrentUser() user: AuthUser, @Query("year") year: string) {
-    return this.service.rateByYear(user.companyId, Number(year));
+  rateByYear(@CurrentUser() user: AuthUser, @Query("year", ParseIntPipe) year: number) {
+    return this.service.rateByYear(user.companyId, year);
   }
 }

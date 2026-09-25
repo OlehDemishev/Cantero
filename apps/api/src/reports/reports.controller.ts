@@ -3,6 +3,7 @@ import { REPORT_PERMISSIONS, type AuthUser, type ReportKey } from "@cantero/shar
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { Requires } from "../common/decorators/permissions.decorator";
 import { ReportsService } from "./reports.service";
+import { DateQueryPipe, OptionalIntPipe } from "../common/pipes/query-pipes";
 
 /** The capability each report needs is one table shared with the web app — see REPORT_PERMISSIONS. */
 const ReportRoles = (report: ReportKey) => Requires(REPORT_PERMISSIONS[report]);
@@ -67,8 +68,8 @@ export class ReportsController {
 
   @ReportRoles("period-comparison")
   @Get("period-comparison")
-  periodComparison(@CurrentUser() user: AuthUser, @Query("months") months?: string) {
-    return this.service.periodComparison(user.companyId, months ? Number(months) : undefined);
+  periodComparison(@CurrentUser() user: AuthUser, @Query("months", OptionalIntPipe) months?: number) {
+    return this.service.periodComparison(user.companyId, months);
   }
 
   @ReportRoles("tax-summary")
@@ -106,20 +107,20 @@ export class ReportsController {
 
   @ReportRoles("geofence-violations")
   @Get("geofence-violations")
-  geofenceViolations(@CurrentUser() user: AuthUser, @Query("from") from?: string, @Query("to") to?: string) {
+  geofenceViolations(@CurrentUser() user: AuthUser, @Query("from", DateQueryPipe) from?: string, @Query("to", DateQueryPipe) to?: string) {
     return this.service.geofenceViolations(user.companyId, from, to, user);
   }
 
   @ReportRoles("geofence-violations")
   @Get("geofence-violations/csv")
   @Header("Content-Type", "text/csv")
-  geofenceViolationsCsv(@CurrentUser() user: AuthUser, @Query("from") from?: string, @Query("to") to?: string) {
+  geofenceViolationsCsv(@CurrentUser() user: AuthUser, @Query("from", DateQueryPipe) from?: string, @Query("to", DateQueryPipe) to?: string) {
     return this.service.geofenceViolationsCsv(user.companyId, from, to, user);
   }
 
   @ReportRoles("equipment-utilization")
   @Get("equipment-utilization")
-  equipmentUtilization(@CurrentUser() user: AuthUser, @Query("from") from?: string, @Query("to") to?: string) {
+  equipmentUtilization(@CurrentUser() user: AuthUser, @Query("from", DateQueryPipe) from?: string, @Query("to", DateQueryPipe) to?: string) {
     return this.service.equipmentUtilization(user.companyId, from, to);
   }
 }

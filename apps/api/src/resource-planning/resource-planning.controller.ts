@@ -18,6 +18,7 @@ import { ResourcePlanningService } from "./resource-planning.service";
 import { NotProjectScoped, ProjectResource } from "../common/project-access/project-resource.decorator";
 import { OpenToAllRoles } from "../common/decorators/roles.decorator";
 import { Requires } from "../common/decorators/permissions.decorator";
+import { DateQueryPipe } from "../common/pipes/query-pipes";
 
 @Requires("site.manage")
 @Controller("resource-planning")
@@ -30,7 +31,7 @@ export class ResourcePlanningController {
   }
 
   @Get("workload-heatmap")
-  workloadHeatmap(@CurrentUser() user: AuthUser, @Query("from") from?: string, @Query("to") to?: string) {
+  workloadHeatmap(@CurrentUser() user: AuthUser, @Query("from", DateQueryPipe) from?: string, @Query("to", DateQueryPipe) to?: string) {
     if (!from || !to) throw new BadRequestException("from and to are required");
     return this.service.workloadHeatmap(user.companyId, new Date(from), new Date(to));
   }

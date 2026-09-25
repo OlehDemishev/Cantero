@@ -9,6 +9,7 @@ import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { WarrantyRegistryService } from "./warranty-registry.service";
 import { OpenToAllRoles } from "../common/decorators/roles.decorator";
 import { Requires } from "../common/decorators/permissions.decorator";
+import { OptionalIntPipe } from "../common/pipes/query-pipes";
 
 @Requires("site.manage")
 @Controller()
@@ -30,7 +31,7 @@ export class WarrantyRegistryController {
   }
 
   @Get("warranty-registrations/expiring")
-  expiringWithin(@CurrentUser() user: AuthUser, @Query("days") days?: string) {
-    return this.service.expiringWithin(user.companyId, days ? Number(days) : 90);
+  expiringWithin(@CurrentUser() user: AuthUser, @Query("days", OptionalIntPipe) days?: number) {
+    return this.service.expiringWithin(user.companyId, days ?? 90);
   }
 }

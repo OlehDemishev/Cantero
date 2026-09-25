@@ -4,6 +4,7 @@ import type { AuthUser } from "@cantero/shared";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { LaborCostService } from "./labor-cost.service";
 import { Requires } from "../common/decorators/permissions.decorator";
+import { DateQueryPipe } from "../common/pipes/query-pipes";
 
 @Controller("team/labor-cost-report")
 export class LaborCostController {
@@ -11,7 +12,7 @@ export class LaborCostController {
 
   @Requires("people.rates")
   @Get()
-  get(@CurrentUser() user: AuthUser, @Query("from") from?: string, @Query("to") to?: string) {
+  get(@CurrentUser() user: AuthUser, @Query("from", DateQueryPipe) from?: string, @Query("to", DateQueryPipe) to?: string) {
     return this.service.report(user.companyId, { from, to });
   }
 
@@ -21,8 +22,8 @@ export class LaborCostController {
   async payrollExport(
     @CurrentUser() user: AuthUser,
     @Res({ passthrough: true }) res: Response,
-    @Query("from") from?: string,
-    @Query("to") to?: string,
+    @Query("from", DateQueryPipe) from?: string,
+    @Query("to", DateQueryPipe) to?: string,
   ) {
     res.set("Content-Disposition", "attachment; filename=payroll-export.csv");
     return this.service.payrollExportCsv(user.companyId, { from, to });
@@ -34,8 +35,8 @@ export class LaborCostController {
   async payrollExportAdp(
     @CurrentUser() user: AuthUser,
     @Res({ passthrough: true }) res: Response,
-    @Query("from") from?: string,
-    @Query("to") to?: string,
+    @Query("from", DateQueryPipe) from?: string,
+    @Query("to", DateQueryPipe) to?: string,
   ) {
     res.set("Content-Disposition", "attachment; filename=payroll-export-adp.csv");
     return this.service.payrollExportAdpCsv(user.companyId, { from, to });
@@ -47,8 +48,8 @@ export class LaborCostController {
   async payrollExportGusto(
     @CurrentUser() user: AuthUser,
     @Res({ passthrough: true }) res: Response,
-    @Query("from") from?: string,
-    @Query("to") to?: string,
+    @Query("from", DateQueryPipe) from?: string,
+    @Query("to", DateQueryPipe) to?: string,
   ) {
     res.set("Content-Disposition", "attachment; filename=payroll-export-gusto.csv");
     return this.service.payrollExportGustoCsv(user.companyId, { from, to });

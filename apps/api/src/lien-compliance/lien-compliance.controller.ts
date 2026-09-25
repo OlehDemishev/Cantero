@@ -13,6 +13,7 @@ import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { LienComplianceService } from "./lien-compliance.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
 import { RequiresFor } from "../common/decorators/permissions.decorator";
+import { OptionalIntPipe } from "../common/pipes/query-pipes";
 
 @RequiresFor("finance.view", "finance.manage")
 @Controller()
@@ -20,8 +21,8 @@ export class LienComplianceController {
   constructor(private readonly service: LienComplianceService) {}
 
   @Get("lien-notices/upcoming")
-  upcomingDeadlines(@CurrentUser() user: AuthUser, @Query("days") days?: string) {
-    return this.service.upcomingDeadlines(user.companyId, days ? Number(days) : undefined);
+  upcomingDeadlines(@CurrentUser() user: AuthUser, @Query("days", OptionalIntPipe) days?: number) {
+    return this.service.upcomingDeadlines(user.companyId, days);
   }
 
   @Get("projects/:id/lien-notices")

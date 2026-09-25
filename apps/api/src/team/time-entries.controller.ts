@@ -12,6 +12,7 @@ import { TimeEntriesService } from "./time-entries.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
 import { OpenToAllRoles } from "../common/decorators/roles.decorator";
 import { CREW, SelfScopeService } from "../common/permissions/self-scope.service";
+import { DateQueryPipe } from "../common/pipes/query-pipes";
 
 const TIME_ENTRIES_PAGE_SIZE = 100;
 
@@ -29,8 +30,8 @@ export class TimeEntriesController {
     @CurrentUser() user: AuthUser,
     @Query("projectId") projectId?: string,
     @Query("workerId") workerId?: string,
-    @Query("from") from?: string,
-    @Query("to") to?: string,
+    @Query("from", DateQueryPipe) from?: string,
+    @Query("to", DateQueryPipe) to?: string,
     @Query("cursor") cursor?: string,
   ) {
     const workerIds = await this.selfScope.listScope(user, workerId, CREW.time);

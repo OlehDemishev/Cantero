@@ -22,6 +22,7 @@ import { InvoicesService } from "./invoices.service";
 import { AiaBillingService } from "./aia-billing.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
 import { Requires, RequiresFor } from "../common/decorators/permissions.decorator";
+import { DateQueryPipe } from "../common/pipes/query-pipes";
 
 class GenerateFromEstimateDto {
   @IsUUID()
@@ -76,8 +77,8 @@ export class InvoicesController {
   async exportDatevCsv(
     @CurrentUser() user: AuthUser,
     @Res({ passthrough: true }) res: Response,
-    @Query("from") from?: string,
-    @Query("to") to?: string,
+    @Query("from", DateQueryPipe) from?: string,
+    @Query("to", DateQueryPipe) to?: string,
   ) {
     const { csv, warnings } = await this.service.exportDatevSalesCsv(
       user.companyId,

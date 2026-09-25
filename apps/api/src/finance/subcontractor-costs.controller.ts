@@ -12,6 +12,7 @@ import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { SubcontractorCostsService } from "./subcontractor-costs.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
 import { Requires, RequiresFor } from "../common/decorators/permissions.decorator";
+import { DateQueryPipe } from "../common/pipes/query-pipes";
 
 @ProjectResource("SubcontractorCost")
 @RequiresFor("finance.view", "finance.manage")
@@ -31,8 +32,8 @@ export class SubcontractorCostsController {
   async exportDatevCsv(
     @CurrentUser() user: AuthUser,
     @Res({ passthrough: true }) res: Response,
-    @Query("from") from?: string,
-    @Query("to") to?: string,
+    @Query("from", DateQueryPipe) from?: string,
+    @Query("to", DateQueryPipe) to?: string,
   ) {
     const { csv, warnings } = await this.service.exportDatevPurchasesCsv(
       user.companyId,

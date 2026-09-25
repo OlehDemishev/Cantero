@@ -11,6 +11,7 @@ import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { SubcontractorPrequalificationService } from "./subcontractor-prequalification.service";
 import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
 import { Requires } from "../common/decorators/permissions.decorator";
+import { OptionalIntPipe } from "../common/pipes/query-pipes";
 
 @NotProjectScoped("subcontractor companies and their prequalification")
 @Requires("subcontractors.manage")
@@ -20,8 +21,8 @@ export class SubcontractorPrequalificationController {
 
   @Requires("subcontractors.view")
   @Get("subcontractor-prequalifications/expiring")
-  expiringSoon(@CurrentUser() user: AuthUser, @Query("days") days?: string) {
-    return this.service.expiringSoon(user.companyId, days ? Number(days) : undefined);
+  expiringSoon(@CurrentUser() user: AuthUser, @Query("days", OptionalIntPipe) days?: number) {
+    return this.service.expiringSoon(user.companyId, days);
   }
 
   @Requires("subcontractors.view")

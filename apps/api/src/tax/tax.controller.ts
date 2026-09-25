@@ -17,6 +17,7 @@ import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { TaxService } from "./tax.service";
 import { NotProjectScoped, ProjectResource } from "../common/project-access/project-resource.decorator";
 import { RequiresFor } from "../common/decorators/permissions.decorator";
+import { DateQueryPipe } from "../common/pipes/query-pipes";
 
 @RequiresFor("finance.view", "finance.manage")
 @Controller()
@@ -53,8 +54,8 @@ export class TaxController {
   taxLiabilityReport(
     @CurrentUser() user: AuthUser,
     @Query("jurisdictionId") jurisdictionId: string,
-    @Query("periodStart") periodStart: string,
-    @Query("periodEnd") periodEnd: string,
+    @Query("periodStart", DateQueryPipe) periodStart: string,
+    @Query("periodEnd", DateQueryPipe) periodEnd: string,
   ) {
     return this.service.taxLiabilityReport(user.companyId, jurisdictionId, new Date(periodStart), new Date(periodEnd));
   }

@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, ParseIntPipe } from "@nestjs/common";
 import {
   addSubcontractorDocumentSchema,
   addSubcontractorPaymentSchema,
@@ -43,8 +43,8 @@ export class SubcontractorsController {
 
   @Requires("finance.view")
   @Get("tax-summary")
-  taxSummary(@CurrentUser() user: AuthUser, @Query("year") year: string) {
-    return this.service.taxSummary(user.companyId, Number(year));
+  taxSummary(@CurrentUser() user: AuthUser, @Query("year", ParseIntPipe) year: number) {
+    return this.service.taxSummary(user.companyId, year);
   }
 
   @Requires("finance.view")
