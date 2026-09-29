@@ -19,6 +19,10 @@ const VALID = {
   SUPPLIER_PORTAL_JWT_SECRET: secret(4),
   STRIPE_SECRET_KEY: "sk_live_x",
   STRIPE_WEBHOOK_SECRET: "whsec_x",
+  STRIPE_CONNECT_WEBHOOK_SECRET: "whsec_connect_x",
+  VAPID_PUBLIC_KEY: "BPublicKey",
+  VAPID_PRIVATE_KEY: "privateKey",
+  VAPID_SUBJECT: "mailto:ops@cantero.example",
 };
 
 describe("assertProductionConfig", () => {
@@ -71,6 +75,7 @@ describe("assertProductionConfig", () => {
     expect(() => assertProductionConfig({ ...VALID, DATABASE_URL: "" })).toThrow(/DATABASE_URL is unset/);
     expect(() => assertProductionConfig({ ...VALID, REDIS_URL: undefined })).toThrow(/REDIS_URL is unset/);
     expect(() => assertProductionConfig({ ...VALID, STRIPE_WEBHOOK_SECRET: undefined })).toThrow(/STRIPE_WEBHOOK_SECRET is unset/);
+    expect(() => assertProductionConfig({ ...VALID, VAPID_PRIVATE_KEY: undefined })).toThrow(/VAPID_PRIVATE_KEY is unset/);
   });
 
   it("requires a strong, separate signing secret for staff and each portal", () => {
@@ -84,11 +89,14 @@ describe("assertProductionConfig", () => {
     expect(() => assertProductionConfig({ NODE_ENV: "production" })).toThrow(/S3_BUCKET[\s\S]*TRUST_PROXY_HOPS[\s\S]*SMTP_HOST[\s\S]*JWT_SECRET[\s\S]*STRIPE_SECRET_KEY/);
   });
 
-  it("warns, without refusing, about test Stripe keys and missing error reporting", () => {
+  it("warns, without refusing, about test Stripe keys, unrecorded client payments and missing error reporting", () => {
     expect(productionConfigWarnings({ ...VALID, STRIPE_SECRET_KEY: "sk_test_x", SENTRY_DSN: "https://x@sentry.example/1" })).toEqual([
       "STRIPE_SECRET_KEY is a test key: no real payments will be taken.",
     ]);
     expect(productionConfigWarnings({ ...VALID })).toEqual(["SENTRY_DSN is unset: server errors are only in the container log."]);
+    expect(productionConfigWarnings({ ...VALID, STRIPE_CONNECT_WEBHOOK_SECRET: undefined, SENTRY_DSN: "https://x@sentry.example/1" })).toEqual([
+      "STRIPE_CONNECT_WEBHOOK_SECRET is unset: clients' online invoice payments won't be recorded.",
+    ]);
     expect(productionConfigWarnings({ NODE_ENV: "development", STRIPE_SECRET_KEY: "sk_test_x" })).toEqual([]);
   });
 });

@@ -89,6 +89,11 @@ export function assertProductionConfig(env: NodeJS.ProcessEnv): void {
   for (const name of ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"] as const) {
     if (!env[name]?.trim()) problems.push(`${name} is unset — subscriptions can't be taken or renewed.`);
   }
+  // PushService signs every web push with this key pair and reads it at boot, so without it the
+  // API wouldn't start anyway — only with a far less helpful error.
+  for (const name of ["VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "VAPID_SUBJECT"] as const) {
+    if (!env[name]?.trim()) problems.push(`${name} is unset — generate a key pair with \`npx web-push generate-vapid-keys\` (VAPID_SUBJECT is a mailto: address).`);
+  }
 
   if (problems.length > 0) {
     throw new Error(`Refusing to start in production:\n${problems.map((p) => `  - ${p}`).join("\n")}`);
@@ -103,6 +108,7 @@ export function productionConfigWarnings(env: NodeJS.ProcessEnv): string[] {
   if (env.NODE_ENV !== "production") return [];
   const warnings: string[] = [];
   if (env.STRIPE_SECRET_KEY?.startsWith("sk_test_")) warnings.push("STRIPE_SECRET_KEY is a test key: no real payments will be taken.");
+  if (!env.STRIPE_CONNECT_WEBHOOK_SECRET) warnings.push("STRIPE_CONNECT_WEBHOOK_SECRET is unset: clients' online invoice payments won't be recorded.");
   if (!env.SENTRY_DSN) warnings.push("SENTRY_DSN is unset: server errors are only in the container log.");
   return warnings;
 }
