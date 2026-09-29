@@ -194,29 +194,42 @@ jobs:
           retention-days: 14
 
   docker:
-    name: Docker — build the production images
-    # Nothing else builds the Dockerfiles, so a broken image would only show up on the server. Build
-    # both (without pushing anywhere) and check the API image runs the intended Node and can load its
-    # native modules — the ONNX runtime behind meaning-based search is the one a Node upgrade breaks.
+    name: Docker — production stack rehearsal
+    # Builds both production images and runs the whole production stack from them — the same
+    # docker-compose.prod.yml, with production settings — swapping only what needs a real server
+    # (docker-compose.local.yml: local TLS on *.localhost, MinIO for S3, Mailpit for SMTP). Then
+    # it checks what a deploy depends on: migrations on an empty database, TLS and security
+    # headers, refusal of an unsafe setting, the E2E suite through Caddy, email delivery, uploads
+    # landing in the bucket, and an encrypted backup that restores somewhere else.
     runs-on: ubuntu-latest
+    env:
+      COMPOSE_PROJECT_NAME: cantero
+      COMPOSE_FILE: docker-compose.prod.yml:docker-compose.local.yml
+      E2E_WEB_URL: https://app.localhost:8443
+      E2E_API_URL: https://api.localhost:8443/api
+      BACKUP_S3_ENDPOINT: http://127.0.0.1:49000
     steps:
       - uses: actions/checkout@v4
 
       - uses: docker/setup-buildx-action@v3
 
+      # Tagged <project>-<service>, the names Compose gives the images it would build itself, so
+      # `up --no-build` below runs exactly these.
       - name: Build API image
         uses: docker/build-push-action@v6
         with:
           context: .
           file: apps/api/Dockerfile
           load: true
-          tags: cantero-api:ci
+          tags: cantero-api:latest
           cache-from: type=gha,scope=api
           cache-to: type=gha,mode=max,scope=api
 
+      # The ONNX runtime behind meaning-based search is the native module a Node upgrade breaks,
+      # and semantic search is off in the rehearsal — so load it here directly.
       - name: Check the API image
         run: |
-          docker run --rm --entrypoint node cantero-api:ci -e "
+          docker run --rm --entrypoint node cantero-api:latest -e "
             if (!process.version.startsWith('v22.')) throw new Error('expected Node 22, got ' + process.version);
             import('@huggingface/transformers').then(() => console.log('Node', process.version, '— transformers and ONNX runtime load'));
           "
@@ -227,7 +240,132 @@ jobs:
           context: .
           file: apps/web/Dockerfile
           load: true
-          tags: cantero-web:ci
-          build-args: NEXT_PUBLIC_API_URL=https://api.example.com
+          tags: cantero-web:latest
+          build-args: NEXT_PUBLIC_API_URL=https://api.localhost:8443/api
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build:shared
+
+      - name: Install tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq age libnss3-tools
+          # Chromium resolves *.localhost itself; Node and the AWS CLI go through the resolver.
+          echo "127.0.0.1 app.localhost api.localhost" | sudo tee -a /etc/hosts
+
+      - name: Write the stack's settings
+        run: scripts/local-prod-env.sh
+
+      - name: Start the stack
+        run: |
+          docker compose up -d --no-build
+          for i in $(seq 1 90); do
+            if curl -sfk -o /dev/null https://api.localhost:8443/api/health && curl -sfk -o /dev/null https://app.localhost:8443/login; then
+              docker compose ps
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "The stack didn't come up" >&2
+          exit 1
+
+      - name: Trust Caddy's local certificate authority
+        run: |
+          docker compose cp caddy:/data/caddy/pki/authorities/local/root.crt /tmp/caddy-root.crt
+          echo "NODE_EXTRA_CA_CERTS=/tmp/caddy-root.crt" >> "$GITHUB_ENV"
+          mkdir -p "$HOME/.pki/nssdb"
+          certutil -d "sql:$HOME/.pki/nssdb" -N --empty-password 2>/dev/null || true
+          certutil -d "sql:$HOME/.pki/nssdb" -A -t "C,," -n caddy-local -i /tmp/caddy-root.crt
+
+      - name: Check TLS, security headers and migrations
+        run: |
+          curl -sS --fail --cacert /tmp/caddy-root.crt -D /tmp/api.headers -o /dev/null https://api.localhost:8443/api/health
+          curl -sS --fail --cacert /tmp/caddy-root.crt -D /tmp/web.headers -o /dev/null https://app.localhost:8443/login
+          grep -qi '^strict-transport-security:' /tmp/api.headers
+          grep -qi '^x-content-type-options: nosniff' /tmp/api.headers
+          grep -qi "^content-security-policy: default-src 'none'" /tmp/api.headers
+          grep -qi '^permissions-policy: .*geolocation=(self)' /tmp/web.headers
+          if grep -qi '^x-powered-by' /tmp/api.headers /tmp/web.headers; then echo "x-powered-by is still sent" >&2; exit 1; fi
+          migrations=$(find apps/api/prisma/migrations -mindepth 1 -maxdepth 1 -type d | wc -l)
+          applied=$(docker compose exec -T postgres sh -c 'psql -At -U "$POSTGRES_USER" "$POSTGRES_DB" -c "SELECT count(*) FROM _prisma_migrations WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL"')
+          echo "migrations: $migrations in the repo, $applied applied"
+          test "$migrations" -eq "$applied"
+
+      - name: Refuse to start with an unsafe setting
+        run: |
+          if docker compose run --rm --no-deps -e JWT_SECRET=too-short api > /tmp/refusal.log 2>&1; then
+            cat /tmp/refusal.log; echo "The API started with a short JWT_SECRET" >&2; exit 1
+          fi
+          grep -q "JWT_SECRET is too short" /tmp/refusal.log
+
+      - name: Load the demo data
+        working-directory: apps/api
+        run: |
+          set -a; . ../../.env; set +a
+          url="postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@127.0.0.1:45432/$POSTGRES_DB"
+          echo "::add-mask::$POSTGRES_PASSWORD"
+          echo "DATABASE_URL=$url" >> "$GITHUB_ENV"
+          npx prisma generate
+          DATABASE_URL="$url" npx ts-node prisma/seed.ts
+
+      - name: Install Playwright browsers
+        working-directory: apps/e2e
+        run: npx playwright install --with-deps chromium
+
+      # Everything except SSO (its test identity provider runs inside the test process, out of the
+      # API container's reach) and semantic search (off here: the model isn't downloaded).
+      - name: Run E2E through Caddy
+        working-directory: apps/e2e
+        run: |
+          # The webhook secrets the specs sign Stripe events with — not the whole of .env.prod,
+          # whose DATABASE_URL is the address inside the Docker network.
+          setting() { grep "^$1=" ../../.env.prod | cut -d= -f2-; }
+          export E2E_STRIPE_WEBHOOK_SECRET="$(setting STRIPE_WEBHOOK_SECRET)"
+          export E2E_STRIPE_CONNECT_WEBHOOK_SECRET="$(setting STRIPE_CONNECT_WEBHOOK_SECRET)"
+          npx playwright test $(ls tests/*.spec.ts | grep -v -e sso-saml -e semantic-search)
+
+      - name: Check email went out through SMTP
+        run: curl -sf http://127.0.0.1:48025/api/v1/messages | jq -e '.total > 0'
+
+      - name: Check uploads landed in the bucket
+        run: |
+          set -a; . ./.env; set +a
+          AWS_ACCESS_KEY_ID="$S3_ACCESS_KEY_ID" AWS_SECRET_ACCESS_KEY="$S3_SECRET_ACCESS_KEY" \
+            aws s3 ls s3://cantero-uploads --recursive --endpoint-url "$BACKUP_S3_ENDPOINT" | grep -q .
+
+      - name: Back up, then restore the backup elsewhere
+        run: |
+          age-keygen -o /tmp/backup.key 2>/dev/null
+          BACKUP_AGE_RECIPIENT=$(age-keygen -y /tmp/backup.key) scripts/backup-db.sh
+          scripts/verify-backup.sh /tmp/backup.key > /tmp/restored.txt
+          for table in $(cut -d' ' -f1 /tmp/restored.txt); do
+            echo "$table $(docker compose exec -T postgres sh -c "psql -At -U \"\$POSTGRES_USER\" \"\$POSTGRES_DB\" -c 'SELECT count(*) FROM \"$table\"'")"
+          done > /tmp/live.txt
+          diff /tmp/live.txt /tmp/restored.txt
+          awk '$2 > 0' /tmp/restored.txt | grep -q '^invoices '
+
+      - name: Show the stack's logs
+        if: failure()
+        run: |
+          docker compose ps -a
+          docker compose logs --no-color --tail 200
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rehearsal-playwright-report
+          path: apps/e2e/playwright-report/
+          retention-days: 14

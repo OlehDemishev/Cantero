@@ -47,20 +47,21 @@ The seed script prints its own demo logins on completion — three companies (EU
 UA/metric/EUR with the fullest demo data set), same password for all. Re-run `pnpm --filter api prisma:seed`
 any time; it skips companies that already exist.
 
-### Running the full stack in Docker locally
+### Running the production stack locally
 
-To run api/web/postgres/redis/caddy exactly as they run in production, but with ports published
-on localhost instead of real domains:
+`docker-compose.local.yml` runs the production stack on this machine exactly as it runs on a
+server — same images, production settings — with local stand-ins for what needs a real server:
+Caddy's own certificates on `*.localhost`, MinIO for S3, Mailpit for SMTP. CI's "Docker" job runs
+this same stack end to end on every push, so it is also the rehearsal for a deploy.
 
 ```bash
-cp .env.example .env                    # Compose-substitution vars (POSTGRES_*, NEXT_PUBLIC_API_URL)
-cp apps/api/.env.example .env.prod      # Runtime secrets for the api container
-# Edit both for local values — NEXT_PUBLIC_API_URL should point at http://localhost:4001/api.
+scripts/local-prod-env.sh   # writes .env and .env.prod with fresh secrets (never overwrites them)
 docker compose -f docker-compose.prod.yml -f docker-compose.local.yml up -d --build
 ```
 
-Web on `http://localhost:3001`, API on `http://localhost:4001/api` — see
-`docker-compose.local.yml`'s own comment.
+Web on `https://app.localhost:8443`, API on `https://api.localhost:8443/api` (the browser will ask
+you to accept Caddy's local certificate), emails at `http://127.0.0.1:48025`. Building both images
+needs about 8 GB of free disk. `down -v` with the same two `-f` flags removes it all again.
 
 ## Tests
 
@@ -90,17 +91,24 @@ comment for the full picture. In short:
    `docker-compose.prod.yml` injects into the `api` container as runtime secrets.
 4. `docker compose -f docker-compose.prod.yml build && docker compose -f docker-compose.prod.yml up -d`
 
-In production the API refuses to start without `DATA_ENCRYPTION_KEY` (encrypts stored integration
-tokens and 2FA secrets), `S3_BUCKET` (uploads) and an explicit `TRUST_PROXY_HOPS`
-(`docker-compose.prod.yml` sets it to 1 for Caddy). Clients' online invoice payments go to each
+In production the API refuses to start while a setting is missing or unsafe, and lists every
+problem at once — among them `DATA_ENCRYPTION_KEY` (encrypts stored integration tokens and 2FA
+secrets), `S3_BUCKET` (uploads), an explicit `TRUST_PROXY_HOPS` (`docker-compose.prod.yml` sets it
+to 1 for Caddy), https origins, SMTP, four distinct JWT secrets and the VAPID key pair for push
+(see `apps/api/src/common/config/production-config.ts`). Clients' online invoice payments go to each
 company's own Stripe account via Stripe Connect — enable Connect in the Stripe dashboard and add the
 second webhook endpoint described next to `STRIPE_CONNECT_WEBHOOK_SECRET` in `apps/api/.env.example`.
 
 Database backups: `scripts/backup-db.sh` (daily `pg_dump` → gzip → age encryption to a public key →
 S3-compatible bucket, 14-day rolling retention) — install it as a cron job per the script's own
-header comment, which also covers restoring.
+header comment, which also covers restoring. `scripts/verify-backup.sh <private key>` proves the
+newest backup restores: it decrypts it into a throwaway Postgres container and prints what came back
+— run it regularly from a machine holding the key, never the server.
 
 ## CI
 
 `.github/workflows/ci.yml` runs on every push/PR to `main`: API typecheck + Jest, web typecheck +
-lint, and the E2E smoke test against real Postgres/Redis service containers.
+lint, the E2E smoke test against real Postgres/Redis service containers, and the production stack
+rehearsal: both Docker images built and run with production settings (see "Running the production
+stack locally"), checked for migrations, TLS and security headers, the E2E suite through Caddy,
+email, uploads, and a backup that restores.

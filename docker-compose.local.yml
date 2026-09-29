@@ -1,34 +1,71 @@
-# Local-only override — publishes ports on this Mac so you can hit the stack directly in a
-# browser without Caddy/real domains. The prod file itself is untouched.
+# The production stack on this machine, for a rehearsal before a real deploy (and CI's "Docker"
+# job). Everything in docker-compose.prod.yml runs unchanged, with production settings; only what
+# needs a real server is swapped out:
 #
+#   - Caddy serves https://app.localhost:8443 and https://api.localhost:8443 with certificates from
+#     its own local CA instead of Let's Encrypt (Caddyfile.local). Browsers resolve *.localhost to
+#     this machine by themselves.
+#   - MinIO stands in for the S3 buckets (uploads and backups), Mailpit for the SMTP server —
+#     every email the app sends shows up at http://127.0.0.1:48025.
+#   - Postgres (45432) and MinIO (49000) are published on loopback only, for the demo seed and
+#     scripts/backup-db.sh. Ports are chosen not to clash with a local development database.
+#
+#   scripts/local-prod-env.sh          # writes .env and .env.prod with fresh secrets, once
 #   docker compose -f docker-compose.prod.yml -f docker-compose.local.yml up -d --build
-#
-# Web:  http://localhost:3001
-# API:  http://localhost:4001/api
+#   docker compose -f docker-compose.prod.yml -f docker-compose.local.yml down -v   # and wipe it
 
 services:
-  web:
-    ports:
-      - "3001:3000"
-  api:
-    ports:
-      - "4001:4000"
-    environment:
-      # Reached directly on 4001 here, not through Caddy — no proxy hop to trust.
-      TRUST_PROXY_HOPS: "0"
-      # No S3 bucket locally: keep uploads on a named volume so they survive a rebuild (production
-      # refuses local-disk uploads unless UPLOADS_DIR is set explicitly like this).
-      UPLOADS_DIR: /app/uploads
-    volumes:
-      - api_uploads:/app/uploads
   postgres:
-    ports:
-      - "5433:5432"
-  redis:
-    ports:
-      - "6380:6379"
+    ports: ["127.0.0.1:45432:5432"]
+
+  api:
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
+
   caddy:
-    ports: []
+    ports: !override
+      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:8443:8443"
+    volumes: !override
+      - ./Caddyfile.local:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+  minio:
+    image: minio/minio:latest
+    command: ["server", "/data"]
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY}
+    ports: ["127.0.0.1:49000:9000"]
+    volumes: [minio_data:/data]
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [internal]
+
+  # Creates the two buckets production would already have, then exits.
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+    entrypoint:
+      - /bin/sh
+      - -c
+      - mc alias set local http://minio:9000 "$$S3_ACCESS_KEY_ID" "$$S3_SECRET_ACCESS_KEY" && mc mb -p local/cantero-uploads local/cantero-backups
+    networks: [internal]
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports: ["127.0.0.1:48025:8025"]
+    networks: [internal]
 
 volumes:
-  api_uploads:
+  minio_data:
