@@ -52,7 +52,57 @@ export function assertProductionConfig(env: NodeJS.ProcessEnv): void {
     }
   }
 
+  // Where the app runs and what it talks to. Each has a development fallback (localhost, the
+  // console instead of email) that would pass unnoticed in production.
+  for (const name of ["DATABASE_URL", "REDIS_URL"] as const) {
+    if (!env[name]?.trim()) problems.push(`${name} is unset.`);
+  }
+  for (const name of ["WEB_ORIGIN", "API_ORIGIN"] as const) {
+    const value = env[name]?.trim();
+    if (!value) problems.push(`${name} is unset — links in emails and OAuth/SSO callbacks are built from it.`);
+    else if (!/^https:\/\//.test(value) || /\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(value)) {
+      problems.push(`${name}="${value}" must be the public https:// address, not a local one.`);
+    }
+  }
+  // Without SMTP the mailer only logs: invitations, password resets and invoices would never arrive.
+  for (const name of ["SMTP_HOST", "SMTP_FROM"] as const) {
+    if (!env[name]?.trim()) problems.push(`${name} is unset — outgoing email would only be written to the log.`);
+  }
+  // Every token the app signs. The portal secrets fall back to JWT_SECRET in development; in
+  // production each portal gets its own, so a leaked portal secret can't mint staff tokens.
+  const secrets = ["JWT_SECRET", "PORTAL_JWT_SECRET", "SUBCONTRACTOR_PORTAL_JWT_SECRET", "SUPPLIER_PORTAL_JWT_SECRET"] as const;
+  const seen = new Map<string, string>();
+  for (const name of secrets) {
+    const value = env[name];
+    if (!value) {
+      problems.push(`${name} is unset. Generate one with \`openssl rand -base64 48\`.`);
+      continue;
+    }
+    if (value.length < 32 || /change-?me|dev-only|placeholder/i.test(value)) {
+      problems.push(`${name} is too short or still a placeholder — use at least 32 random characters.`);
+    }
+    const twin = seen.get(value);
+    if (twin) problems.push(`${name} is the same as ${twin}; each must be different.`);
+    seen.set(value, name);
+  }
+  // Company subscriptions are billed through Stripe; without these nobody can subscribe or renew.
+  for (const name of ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"] as const) {
+    if (!env[name]?.trim()) problems.push(`${name} is unset — subscriptions can't be taken or renewed.`);
+  }
+
   if (problems.length > 0) {
     throw new Error(`Refusing to start in production:\n${problems.map((p) => `  - ${p}`).join("\n")}`);
   }
+}
+
+/**
+ * Settings that are allowed in production but usually a mistake there — logged at startup rather
+ * than refused, since a staging server legitimately runs NODE_ENV=production on test keys.
+ */
+export function productionConfigWarnings(env: NodeJS.ProcessEnv): string[] {
+  if (env.NODE_ENV !== "production") return [];
+  const warnings: string[] = [];
+  if (env.STRIPE_SECRET_KEY?.startsWith("sk_test_")) warnings.push("STRIPE_SECRET_KEY is a test key: no real payments will be taken.");
+  if (!env.SENTRY_DSN) warnings.push("SENTRY_DSN is unset: server errors are only in the container log.");
+  return warnings;
 }

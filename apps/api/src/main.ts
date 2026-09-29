@@ -9,7 +9,8 @@ import { resolveTrustProxyHops, warnOnceIfProxiedButUntrusted } from "./common/t
 import { initSentry } from "./common/sentry/init-sentry";
 import { SentryExceptionsFilter } from "./common/sentry/sentry-exceptions.filter";
 import { assertQuickbooksProductionSafety } from "./accounting/quickbooks-production-safety";
-import { assertProductionConfig } from "./common/config/production-config";
+import { assertProductionConfig, productionConfigWarnings } from "./common/config/production-config";
+import { securityHeaders } from "./common/http/security-headers";
 
 // Must run before the Nest app is created so Sentry's instrumentation can hook whatever it needs
 // (http, the DB driver, ...) before those modules load. No-op unless SENTRY_DSN is set.
@@ -19,6 +20,9 @@ async function bootstrap() {
   assertProductionConfig(process.env);
   assertQuickbooksProductionSafety(process.env);
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });
+  for (const warning of productionConfigWarnings(process.env)) new Logger("Config").warn(warning);
+  app.disable("x-powered-by");
+  app.use(securityHeaders({ production: process.env.NODE_ENV === "production" }));
   app.enableCors({ origin: process.env.WEB_ORIGIN ?? "http://localhost:3000", credentials: true });
   // Reports every unexpected error (a raw thrown error, or a 500+ HttpException) to Sentry, then
   // delegates to Nest's normal error-response handling — a no-op response-wise either way, and a

@@ -61,7 +61,10 @@ const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+  // Geolocation stays on for this site: the field time clock records where hours were logged
+  // (geofence check) and equipment GPS tracking follows a machine. Camera and microphone aren't used
+  // by the web app (the phone app scans), so they stay off.
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(self)" },
   ...(isDev
     ? []
     : [{ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" }]),
