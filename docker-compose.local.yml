@@ -33,10 +33,11 @@ services:
       - caddy_config:/config
 
   # SeaweedFS as the S3 service — a real object store, speaking the S3 API on 8333. It runs
-  # without access keys here, so any key the app and the scripts present is accepted.
+  # without access keys here, so any key the app and the scripts present is accepted. Small
+  # volumes, as many as the disk allows: each bucket claims several volumes of its own.
   s3:
     image: chrislusf/seaweedfs:latest
-    command: ["server", "-dir=/data", "-s3", "-volume.max=5"]
+    command: ["server", "-dir=/data", "-s3", "-volume.max=0", "-master.volumeSizeLimitMB=64"]
     ports: ["127.0.0.1:49000:8333"]
     volumes: [s3_data:/data]
     networks: [internal]
