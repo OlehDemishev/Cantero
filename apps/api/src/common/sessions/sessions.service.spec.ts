@@ -53,33 +53,60 @@ describe("SessionsService", () => {
     });
   });
 
-  describe("isRevokedOrTimedOut", () => {
-    it("treats a missing session as revoked without checking the company policy", async () => {
+  describe("stillActive", () => {
+    beforeEach(() => prisma.userSession.update.mockResolvedValue({}));
+
+    it("rejects a missing session without checking the company policy", async () => {
       prisma.userSession.findUnique.mockResolvedValue(null);
 
-      expect(await service.isRevokedOrTimedOut("nope", "company-a")).toBe(true);
+      expect(await service.stillActive("nope", "company-a")).toBe(false);
       expect(prisma.company.findUnique).not.toHaveBeenCalled();
     });
 
-    it("returns false when the company has no timeout policy configured", async () => {
+    it("rejects a revoked session", async () => {
+      prisma.userSession.findUnique.mockResolvedValue({ revokedAt: new Date(), lastSeenAt: new Date() });
+
+      expect(await service.stillActive("session-1", "company-a")).toBe(false);
+      expect(prisma.userSession.update).not.toHaveBeenCalled();
+    });
+
+    it("accepts a long-idle session when the company has no timeout policy configured", async () => {
       prisma.userSession.findUnique.mockResolvedValue({ revokedAt: null, lastSeenAt: new Date(Date.now() - 1000 * 60 * 60 * 24) });
       prisma.company.findUnique.mockResolvedValue({ sessionTimeoutMinutes: null });
 
-      expect(await service.isRevokedOrTimedOut("session-1", "company-a")).toBe(false);
+      expect(await service.stillActive("session-1", "company-a")).toBe(true);
     });
 
-    it("returns true once lastSeenAt is older than the configured timeout", async () => {
+    it("rejects a session idle for longer than the configured timeout, without marking it seen", async () => {
       prisma.userSession.findUnique.mockResolvedValue({ revokedAt: null, lastSeenAt: new Date(Date.now() - 31 * 60 * 1000) });
       prisma.company.findUnique.mockResolvedValue({ sessionTimeoutMinutes: 30 });
 
-      expect(await service.isRevokedOrTimedOut("session-1", "company-a")).toBe(true);
+      expect(await service.stillActive("session-1", "company-a")).toBe(false);
+      expect(prisma.userSession.update).not.toHaveBeenCalled();
     });
 
-    it("returns false while still within the configured timeout", async () => {
+    it("accepts a session still within the configured timeout and marks it seen", async () => {
       prisma.userSession.findUnique.mockResolvedValue({ revokedAt: null, lastSeenAt: new Date(Date.now() - 5 * 60 * 1000) });
       prisma.company.findUnique.mockResolvedValue({ sessionTimeoutMinutes: 30 });
 
-      expect(await service.isRevokedOrTimedOut("session-1", "company-a")).toBe(false);
+      expect(await service.stillActive("session-1", "company-a")).toBe(true);
+      expect(prisma.userSession.update).toHaveBeenCalledWith({ where: { id: "session-1" }, data: { lastSeenAt: expect.any(Date) } });
+    });
+
+    it("doesn't write lastSeenAt again within a minute of the last write", async () => {
+      prisma.userSession.findUnique.mockResolvedValue({ revokedAt: null, lastSeenAt: new Date(Date.now() - 20 * 1000) });
+      prisma.company.findUnique.mockResolvedValue({ sessionTimeoutMinutes: null });
+
+      expect(await service.stillActive("session-1", "company-a")).toBe(true);
+      expect(prisma.userSession.update).not.toHaveBeenCalled();
+    });
+
+    it("still accepts the request when marking the session seen fails", async () => {
+      prisma.userSession.findUnique.mockResolvedValue({ revokedAt: null, lastSeenAt: new Date(Date.now() - 5 * 60 * 1000) });
+      prisma.company.findUnique.mockResolvedValue({ sessionTimeoutMinutes: null });
+      prisma.userSession.update.mockRejectedValue(new Error("connection reset"));
+
+      expect(await service.stillActive("session-1", "company-a")).toBe(true);
     });
   });
 

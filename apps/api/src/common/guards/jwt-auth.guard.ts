@@ -40,10 +40,9 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException("Invalid or expired token");
     }
 
-    if (payload.sid && (await this.sessions.isRevokedOrTimedOut(payload.sid, payload.companyId))) {
+    if (payload.sid && !(await this.sessions.stillActive(payload.sid, payload.companyId))) {
       throw new UnauthorizedException("Session has been signed out");
     }
-    if (payload.sid) this.sessions.touch(payload.sid);
 
     // The token's own role/additionalRoles are a snapshot from whenever it was issued — up to 7
     // days stale. A removed member or one whose role/custom-role changed since must be caught

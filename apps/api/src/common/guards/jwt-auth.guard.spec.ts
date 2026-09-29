@@ -18,14 +18,14 @@ function makeContext(request: Record<string, unknown>, isPublic = false) {
 
 describe("JwtAuthGuard", () => {
   let jwt: { verifyAsync: jest.Mock };
-  let sessions: { isRevokedOrTimedOut: jest.Mock; touch: jest.Mock };
+  let sessions: { stillActive: jest.Mock };
   let prisma: { membership: { findUnique: jest.Mock } };
   let guard: JwtAuthGuard;
   let permissions: { effectiveFor: jest.Mock };
 
   beforeEach(() => {
     jwt = { verifyAsync: jest.fn() };
-    sessions = { isRevokedOrTimedOut: jest.fn().mockResolvedValue(false), touch: jest.fn() };
+    sessions = { stillActive: jest.fn().mockResolvedValue(true) };
     prisma = { membership: { findUnique: jest.fn() } };
     permissions = { effectiveFor: jest.fn().mockResolvedValue(["projects.all"]) };
     guard = new JwtAuthGuard(
@@ -63,7 +63,7 @@ describe("JwtAuthGuard", () => {
 
   it("rejects a token whose session was revoked", async () => {
     jwt.verifyAsync.mockResolvedValue({ userId: "u1", companyId: "c1", sid: "s1" });
-    sessions.isRevokedOrTimedOut.mockResolvedValue(true);
+    sessions.stillActive.mockResolvedValue(false);
     const { context } = makeContext({ headers: { authorization: "Bearer x" } });
     await expect(guard.canActivate(context)).rejects.toThrow(UnauthorizedException);
   });

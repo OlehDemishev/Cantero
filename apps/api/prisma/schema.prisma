@@ -615,6 +615,8 @@ model Company {
   referrals                       Company[]                        @relation("CompanyReferrals")
   rolePermissionOverrides         RolePermissionOverride[]
 
+  @@index([parentCompanyId])
+  @@index([referredByCompanyId])
   @@map("companies")
 }
 
@@ -892,6 +894,7 @@ model Membership {
 
   @@unique([userId, companyId])
   @@index([companyId])
+  @@index([customRoleId])
   @@map("memberships")
 }
 
@@ -1002,6 +1005,7 @@ model Subscription {
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   plan    Plan    @relation(fields: [planId], references: [id])
 
+  @@index([planId])
   @@map("subscriptions")
 }
 
@@ -1030,6 +1034,7 @@ model UnitOfMeasure {
 
   @@unique([companyId, code])
   @@index([companyId])
+  @@index([baseUnitId])
   @@map("units_of_measure")
 }
 
@@ -1257,6 +1262,7 @@ model RateCatalogItemMaterial {
 
   @@unique([rateCatalogItemId, materialCatalogItemId])
   @@index([rateCatalogItemId])
+  @@index([materialCatalogItemId])
   @@map("rate_catalog_item_materials")
 }
 
@@ -1289,6 +1295,7 @@ model Takeoff {
 
   @@index([companyId])
   @@index([projectId])
+  @@index([sourceSheetId])
   @@map("takeoffs")
 }
 
@@ -1318,6 +1325,7 @@ model TakeoffMeasurement {
   rateCatalogItem RateCatalogItem? @relation(fields: [rateCatalogItemId], references: [id], onDelete: SetNull)
 
   @@index([takeoffId])
+  @@index([rateCatalogItemId])
   @@map("takeoff_measurements")
 }
 
@@ -1351,6 +1359,7 @@ model AssemblyItem {
   rateCatalogItem RateCatalogItem @relation(fields: [rateCatalogItemId], references: [id], onDelete: Restrict)
 
   @@index([assemblyId])
+  @@index([rateCatalogItemId])
   @@map("assembly_items")
 }
 
@@ -1573,6 +1582,7 @@ model ChangeOrderLine {
 
   @@index([changeOrderId])
   @@index([costCodeId])
+  @@index([rateCatalogItemId])
   @@map("change_order_lines")
 }
 
@@ -1703,6 +1713,8 @@ model EstimateLine {
 
   @@index([estimateId])
   @@index([costCodeId])
+  @@index([rateCatalogItemId])
+  @@index([sectionId])
   @@map("estimate_lines")
 }
 
@@ -1719,6 +1731,7 @@ model EstimateMaterialRequirement {
 
   @@unique([estimateId, materialCatalogItemId])
   @@index([estimateId])
+  @@index([materialCatalogItemId])
   @@map("estimate_material_requirements")
 }
 
@@ -1775,6 +1788,7 @@ model StockLevel {
 
   @@unique([warehouseId, materialCatalogItemId])
   @@index([binLocationId])
+  @@index([materialCatalogItemId])
   @@map("stock_levels")
 }
 
@@ -1812,6 +1826,7 @@ model WarehouseLocation {
   @@unique([warehouseId, parentId, code])
   @@index([companyId])
   @@index([warehouseId])
+  @@index([parentId])
   @@map("warehouse_locations")
 }
 
@@ -1844,6 +1859,8 @@ model StockReservation {
 
   @@index([companyId])
   @@index([warehouseId, materialCatalogItemId, status])
+  @@index([materialCatalogItemId])
+  @@index([projectId])
   @@map("stock_reservations")
 }
 
@@ -1879,6 +1896,7 @@ model StockKitComponent {
 
   @@unique([stockKitId, materialCatalogItemId])
   @@index([stockKitId])
+  @@index([materialCatalogItemId])
   @@map("stock_kit_components")
 }
 
@@ -1913,6 +1931,9 @@ model StockMovement {
   @@index([companyId])
   @@index([warehouseId])
   @@index([toWarehouseId])
+  @@index([estimateLineId])
+  @@index([materialCatalogItemId])
+  @@index([projectId])
   @@map("stock_movements")
 }
 
@@ -1948,6 +1969,7 @@ model StockLot {
   @@unique([warehouseId, materialCatalogItemId, lotNumber])
   @@index([companyId])
   @@index([warehouseId, materialCatalogItemId, expiresAt])
+  @@index([materialCatalogItemId])
   @@map("stock_lots")
 }
 
@@ -1992,6 +2014,7 @@ model InventoryCostLayer {
 
   @@index([companyId])
   @@index([warehouseId, materialCatalogItemId, receivedAt])
+  @@index([materialCatalogItemId])
   @@map("inventory_cost_layers")
 }
 
@@ -2024,6 +2047,7 @@ model StockTransfer {
   @@index([companyId])
   @@index([fromWarehouseId])
   @@index([toWarehouseId])
+  @@index([materialCatalogItemId])
   @@map("stock_transfers")
 }
 
@@ -2068,6 +2092,7 @@ model StockCountLine {
 
   @@unique([stockCountId, materialCatalogItemId])
   @@index([stockCountId])
+  @@index([materialCatalogItemId])
   @@map("stock_count_lines")
 }
 
@@ -2224,6 +2249,7 @@ model MaterialRfqLine {
   quotes              MaterialRfqQuote[]
 
   @@index([rfqId])
+  @@index([materialCatalogItemId])
   @@map("material_rfq_lines")
 }
 
@@ -2278,6 +2304,7 @@ model PurchaseOrder {
   /// cross-tenant guard PurchaseOrder.supplier already has against Supplier.
   @@unique([id, companyId])
   @@index([companyId])
+  @@index([supplierId, companyId])
   @@map("purchase_orders")
 }
 
@@ -2298,6 +2325,7 @@ model PurchaseOrderLine {
   receivingDiscrepancies ReceivingDiscrepancy[]
 
   @@index([purchaseOrderId])
+  @@index([materialCatalogItemId])
   @@map("purchase_order_lines")
 }
 
@@ -2347,6 +2375,7 @@ model SupplierReturn {
   @@index([companyId])
   @@index([supplierId])
   @@index([purchaseOrderId])
+  @@index([warehouseId])
   @@map("supplier_returns")
 }
 
@@ -2363,6 +2392,8 @@ model SupplierReturnLine {
   stockMovement       StockMovement?      @relation(fields: [stockMovementId], references: [id], onDelete: SetNull)
 
   @@index([supplierReturnId])
+  @@index([materialCatalogItemId])
+  @@index([stockMovementId])
   @@map("supplier_return_lines")
 }
 
@@ -2470,6 +2501,7 @@ model VendorBillLine {
   materialCatalogItem MaterialCatalogItem? @relation(fields: [materialCatalogItemId], references: [id], onDelete: SetNull)
 
   @@index([vendorBillId])
+  @@index([materialCatalogItemId])
   @@map("vendor_bill_lines")
 }
 
@@ -2554,6 +2586,7 @@ model IncomingEInvoice {
 
   @@index([companyId])
   @@index([companyId, status])
+  @@index([supplierId])
   @@map("incoming_e_invoices")
 }
 
@@ -2715,6 +2748,7 @@ model Project {
 
   @@unique([id, companyId])
   @@index([companyId])
+  @@index([clientId])
   @@map("projects")
 }
 
@@ -2908,6 +2942,7 @@ model ProjectMember {
   @@unique([projectId, userId])
   @@index([companyId])
   @@index([projectId])
+  @@index([userId])
   @@map("project_members")
 }
 
@@ -2946,6 +2981,7 @@ model Task {
 
   @@index([companyId])
   @@index([projectId])
+  @@index([estimateLineId])
   @@map("tasks")
 }
 
@@ -3055,6 +3091,7 @@ model ScheduleScenarioTaskOverride {
 
   @@unique([scenarioId, taskId])
   @@index([scenarioId])
+  @@index([taskId])
   @@map("schedule_scenario_task_overrides")
 }
 
@@ -3079,6 +3116,7 @@ model TaskDependency {
   successor   Task @relation("TaskSuccessor", fields: [successorId], references: [id], onDelete: Cascade)
 
   @@unique([predecessorId, successorId])
+  @@index([successorId])
   @@map("task_dependencies")
 }
 
@@ -3124,6 +3162,7 @@ model DailyLog {
 
   @@unique([projectId, date])
   @@index([companyId])
+  @@index([authorUserId])
   @@map("daily_logs")
 }
 
@@ -3178,6 +3217,8 @@ model PunchListItem {
   @@index([companyId])
   @@index([assigneeSubcontractorId])
   @@index([changeOrderId])
+  @@index([assigneeWorkerId])
+  @@index([drawingSheetId])
   @@map("punch_list_items")
 }
 
@@ -3229,6 +3270,7 @@ model Rfi {
   @@unique([projectId, number])
   @@index([companyId])
   @@index([changeOrderId])
+  @@index([drawingSheetId])
   @@map("rfis")
 }
 
@@ -3367,6 +3409,9 @@ model Invoice {
   @@unique([recurringInvoiceId, recurringBillingPeriod])
   @@index([companyId])
   @@index([taxJurisdictionId])
+  @@index([clientId, companyId])
+  @@index([estimateId])
+  @@index([projectId, companyId])
   @@map("invoices")
 }
 
@@ -3403,6 +3448,8 @@ model RecurringInvoice {
 
   @@index([companyId])
   @@index([active, nextRunDate])
+  @@index([clientId])
+  @@index([projectId])
   @@map("recurring_invoices")
 }
 
@@ -3569,6 +3616,8 @@ model BankTransaction {
   matchedExpense Expense? @relation(fields: [matchedExpenseId], references: [id], onDelete: SetNull)
 
   @@index([companyId])
+  @@index([matchedExpenseId])
+  @@index([matchedInvoiceId])
   @@map("bank_transactions")
 }
 
@@ -3737,6 +3786,7 @@ model SubcontractorBackcharge {
   @@index([projectId])
   @@index([subcontractorId])
   @@index([warrantyClaimId])
+  @@index([punchListItemId])
   @@map("subcontractor_backcharges")
 }
 
@@ -4065,6 +4115,7 @@ model SubcontractorPerformanceReview {
 
   @@index([companyId])
   @@index([subcontractorId])
+  @@index([assignmentId])
   @@map("subcontractor_performance_reviews")
 }
 
@@ -4458,6 +4509,7 @@ model LienWaiver {
 
   @@index([companyId])
   @@index([subcontractorId])
+  @@index([projectId])
   @@map("lien_waivers")
 }
 
@@ -4633,6 +4685,8 @@ model Contract {
 
   @@index([companyId])
   @@index([projectId])
+  @@index([clientId])
+  @@index([subcontractorId])
   @@map("contracts")
 }
 
@@ -4817,6 +4871,7 @@ model SignatureRequest {
 
   @@index([companyId])
   @@index([documentId])
+  @@index([createdByUserId])
   @@map("signature_requests")
 }
 
@@ -5380,6 +5435,8 @@ model Worker {
   toolCheckouts            ToolCheckout[]
 
   @@index([companyId])
+  @@index([userId])
+  @@index([wageClassificationId])
   @@map("workers")
 }
 
@@ -5459,6 +5516,7 @@ model BenefitEnrollment {
   @@index([companyId])
   @@index([workerId])
   @@index([planId])
+  @@index([tierId])
   @@map("benefit_enrollments")
 }
 
@@ -5657,6 +5715,7 @@ model TimeEntry {
 
   @@index([workerId])
   @@index([projectId])
+  @@index([taskId])
   @@map("time_entries")
 }
 
@@ -5818,6 +5877,9 @@ model Document {
   @@index([rfiId])
   @@index([safetyDataSheetId])
   @@index([receivingDiscrepancyId])
+  @@index([invoiceId])
+  @@index([projectId])
+  @@index([uploadedByUserId])
   @@map("documents")
 }
 
@@ -5966,6 +6028,7 @@ model DrawingSheet {
   @@index([companyId])
   @@index([projectId])
   @@index([rootSheetId])
+  @@index([drawingSetId])
   @@map("drawing_sheets")
 }
 
@@ -5981,7 +6044,7 @@ enum DrawingSetStatus {
 }
 
 model DrawingSet {
-  id               String    @id @default(uuid())
+  id               String           @id @default(uuid())
   companyId        String
   projectId        String
   fileName         String
@@ -6004,13 +6067,14 @@ model DrawingSet {
   finishedAt       DateTime?
   uploadedByUserId String?
   importedAt       DateTime?
-  createdAt        DateTime  @default(now())
+  createdAt        DateTime         @default(now())
 
   company Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
   project Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
   sheets  DrawingSheet[]
 
   @@index([projectId])
+  @@index([companyId])
   @@map("drawing_sets")
 }
 
@@ -6063,6 +6127,7 @@ model Annotation {
   sheet   DrawingSheet @relation(fields: [drawingSheetId], references: [id], onDelete: Cascade)
 
   @@index([drawingSheetId])
+  @@index([companyId])
   @@map("annotations")
 }
 
@@ -6183,6 +6248,7 @@ model Loan {
   payments  LoanPayment[]
 
   @@index([companyId])
+  @@index([equipmentId])
   @@map("loans")
 }
 
@@ -6387,6 +6453,7 @@ model ToolCribUnit {
   @@unique([toolCribItemId, serialNumber])
   @@unique([warehouseId, materialCatalogItemId, serialNumber])
   @@index([companyId])
+  @@index([materialCatalogItemId])
   @@map("tool_crib_units")
 }
 
@@ -6499,6 +6566,7 @@ model EquipmentFuelLog {
   supplier  Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
 
   @@index([equipmentId])
+  @@index([supplierId])
   @@map("equipment_fuel_logs")
 }
 
@@ -6548,6 +6616,7 @@ model EquipmentAssignment {
 
   @@index([equipmentId])
   @@index([projectId])
+  @@index([workerId])
   @@map("equipment_assignments")
 }
 
@@ -6568,6 +6637,7 @@ model EquipmentMaintenanceRecord {
   supplier  Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
 
   @@index([equipmentId])
+  @@index([supplierId])
   @@map("equipment_maintenance_records")
 }
 
@@ -6900,6 +6970,7 @@ model SafetyBriefingAttendance {
   worker   Worker         @relation(fields: [workerId], references: [id], onDelete: Cascade)
 
   @@unique([briefingId, workerId])
+  @@index([workerId])
   @@map("safety_briefing_attendance")
 }
 
@@ -6947,6 +7018,7 @@ model JhaAcknowledgment {
   worker Worker            @relation(fields: [workerId], references: [id], onDelete: Cascade)
 
   @@unique([jhaId, workerId])
+  @@index([workerId])
   @@map("jha_acknowledgments")
 }
 
@@ -7125,6 +7197,8 @@ model WarrantyClaim {
 
   @@index([projectId])
   @@index([companyId])
+  @@index([assigneeWorkerId])
+  @@index([submittedByClientId])
   @@map("warranty_claims")
 }
 
@@ -7184,6 +7258,7 @@ model ServiceContract {
 
   @@index([companyId])
   @@index([projectId])
+  @@index([clientId])
   @@map("service_contracts")
 }
 
@@ -7207,6 +7282,7 @@ model ServiceVisit {
 
   @@index([serviceContractId])
   @@index([companyId])
+  @@index([technicianWorkerId])
   @@map("service_visits")
 }
 
@@ -7241,6 +7317,7 @@ model Comment {
   @@index([rfiId])
   @@index([punchListItemId])
   @@index([projectId])
+  @@index([authorUserId])
   @@map("comments")
 }
 
@@ -7265,6 +7342,8 @@ model PortalMessage {
 
   @@index([companyId])
   @@index([projectId])
+  @@index([authorClientId])
+  @@index([authorUserId])
   @@map("portal_messages")
 }
 
@@ -7331,6 +7410,7 @@ model SupportTicket {
   @@index([companyId])
   @@index([projectId])
   @@index([requesterClientId])
+  @@index([assignedToUserId])
   @@map("support_tickets")
 }
 
@@ -7614,6 +7694,7 @@ model InspectionChecklist {
 
   @@index([companyId])
   @@index([projectId])
+  @@index([inspectorWorkerId])
   @@map("inspection_checklists")
 }
 
@@ -7675,6 +7756,7 @@ model Deficiency {
   @@index([companyId])
   @@index([projectId])
   @@index([inspectionChecklistItemId])
+  @@index([assigneeWorkerId])
   @@map("deficiencies")
 }
 
@@ -7935,6 +8017,7 @@ model CustomReport {
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
+  @@index([userId])
   @@map("custom_reports")
 }
 
@@ -8089,6 +8172,8 @@ model LongLeadItem {
 
   @@index([companyId])
   @@index([projectId])
+  @@index([purchaseOrderId])
+  @@index([supplierId])
   @@map("long_lead_items")
 }
 
@@ -8116,6 +8201,8 @@ model CostCodeBudgetTransfer {
 
   @@index([companyId])
   @@index([projectId])
+  @@index([fromCostCodeId])
+  @@index([toCostCodeId])
   @@map("cost_code_budget_transfers")
 }
 
