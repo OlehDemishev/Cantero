@@ -48,7 +48,7 @@ cd "$REPO_ROOT"
 
 : "${POSTGRES_USER:?POSTGRES_USER not set — check .env}"
 : "${POSTGRES_DB:?POSTGRES_DB not set — check .env}"
-: "${BACKUP_AGE_RECIPIENT:?BACKUP_AGE_RECIPIENT not set — refusing to upload an unencrypted backup (see this script's header)}"
+: "${BACKUP_AGE_RECIPIENT:?BACKUP_AGE_RECIPIENT not set — refusing to upload an unencrypted backup (see the header of this script)}"
 command -v age >/dev/null 2>&1 || { echo "age is not installed (apt install age)" >&2; exit 1; }
 
 BUCKET="${BACKUP_S3_BUCKET:-${S3_BUCKET:-}}"
@@ -73,8 +73,11 @@ trap 'rm -f "$TMP_SQL" "$TMP_GZ" "$TMP_AGE"' EXIT
 
 ENDPOINT="${BACKUP_S3_ENDPOINT:-${S3_ENDPOINT:-}}"
 REGION="${BACKUP_S3_REGION:-${S3_REGION:-}}"
+# The AWS CLI's default integrity checksums aren't accepted by every S3-compatible store, so only
+# send them when an operation requires one (same as the API's StorageService).
 s3() {
-  AWS_ACCESS_KEY_ID="${BACKUP_S3_ACCESS_KEY_ID:-${S3_ACCESS_KEY_ID:-}}" \
+  AWS_REQUEST_CHECKSUM_CALCULATION=when_required AWS_RESPONSE_CHECKSUM_VALIDATION=when_required \
+    AWS_ACCESS_KEY_ID="${BACKUP_S3_ACCESS_KEY_ID:-${S3_ACCESS_KEY_ID:-}}" \
     AWS_SECRET_ACCESS_KEY="${BACKUP_S3_SECRET_ACCESS_KEY:-${S3_SECRET_ACCESS_KEY:-}}" \
     aws s3 "$@" ${ENDPOINT:+--endpoint-url "$ENDPOINT"} ${REGION:+--region "$REGION"}
 }

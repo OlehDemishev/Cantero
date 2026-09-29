@@ -33,6 +33,10 @@ export class StorageService {
           region: process.env.S3_REGION ?? "us-east-1",
           endpoint: process.env.S3_ENDPOINT,
           forcePathStyle: process.env.S3_FORCE_PATH_STYLE === "true",
+          // Since early 2025 the SDK adds integrity checksums to every request by default, which
+          // not every S3-compatible store (Hetzner, R2, ...) accepts. Against any endpoint other
+          // than AWS itself, only send them when an operation requires one.
+          ...(process.env.S3_ENDPOINT ? { requestChecksumCalculation: "WHEN_REQUIRED", responseChecksumValidation: "WHEN_REQUIRED" } : {}),
           credentials:
             process.env.S3_ACCESS_KEY_ID && process.env.S3_SECRET_ACCESS_KEY
               ? { accessKeyId: process.env.S3_ACCESS_KEY_ID, secretAccessKey: process.env.S3_SECRET_ACCESS_KEY }

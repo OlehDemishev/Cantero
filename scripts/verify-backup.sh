@@ -29,8 +29,11 @@ BUCKET="${BACKUP_S3_BUCKET:-${S3_BUCKET:-}}"
 : "${BUCKET:?Neither BACKUP_S3_BUCKET nor S3_BUCKET is set — check .env.prod}"
 ENDPOINT="${BACKUP_S3_ENDPOINT:-${S3_ENDPOINT:-}}"
 REGION="${BACKUP_S3_REGION:-${S3_REGION:-}}"
+# The AWS CLI's default integrity checksums aren't accepted by every S3-compatible store, so only
+# send them when an operation requires one (same as the API's StorageService).
 s3() {
-  AWS_ACCESS_KEY_ID="${BACKUP_S3_ACCESS_KEY_ID:-${S3_ACCESS_KEY_ID:-}}" \
+  AWS_REQUEST_CHECKSUM_CALCULATION=when_required AWS_RESPONSE_CHECKSUM_VALIDATION=when_required \
+    AWS_ACCESS_KEY_ID="${BACKUP_S3_ACCESS_KEY_ID:-${S3_ACCESS_KEY_ID:-}}" \
     AWS_SECRET_ACCESS_KEY="${BACKUP_S3_SECRET_ACCESS_KEY:-${S3_SECRET_ACCESS_KEY:-}}" \
     aws s3 "$@" ${ENDPOINT:+--endpoint-url "$ENDPOINT"} ${REGION:+--region "$REGION"}
 }
