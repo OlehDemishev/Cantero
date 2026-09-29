@@ -51,7 +51,10 @@ Stornorechnung) wird zusätzlich zur normalen Aktivitätshistorie in einem eigen
 kryptographisch verketteten Journal protokolliert. Jeder Eintrag enthält den Hash-Wert des \
 vorherigen Eintrags; eine nachträgliche Änderung oder Löschung eines beliebigen Eintrags macht \
 sich dadurch in jedem nachfolgenden Eintrag bemerkbar und lässt sich über die \
-Prüffunktion ("Kette prüfen" in den Compliance-Einstellungen) jederzeit nachweisen. Dieses \
+Prüffunktion ("Kette prüfen" in den Compliance-Einstellungen) jederzeit nachweisen. Die \
+Datenbank selbst lässt an diesem Journal nur das Anfügen neuer Einträge zu und weist \
+Änderungen und Löschungen ab. Ebenso verhindert sie, dass Rechnungen und Eingangsrechnungen \
+durch das Löschen eines Projekts oder des Unternehmens mitgelöscht werden. Dieses \
 Journal ist bewusst getrennt von der allgemeinen Aktivitätshistorie (Audit-Log), die für die \
 laufende Nachvollziehbarkeit aller Aktionen gedacht ist, aber keine kryptographische \
 Manipulationssicherung bietet.

@@ -647,8 +647,9 @@ model AuditLog {
 /// SERIALIZABLE transaction as the event it documents (see GobdLedgerService.append and
 /// runSerializable) and chains to the previous row's hash, so altering or deleting any historical
 /// row breaks the chain from that point forward — detectable via GobdLedgerService.verifyChain.
-/// This does NOT replace real backup/retention procedures or restrict raw DB access; see the
-/// generated Verfahrensdokumentation for what is and isn't covered.
+/// A trigger makes the table append-only for every DB role, but the table's owner can still drop
+/// that trigger, and this does NOT replace real backup/retention procedures; see the generated
+/// Verfahrensdokumentation for what is and isn't covered.
 model GobdLedgerEntry {
   id           String   @id @default(uuid())
   companyId    String
@@ -671,7 +672,9 @@ model GobdLedgerEntry {
   hash         String
   createdAt    DateTime @default(now())
 
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  /// Restrict: the chain outlives the account. The table is also append-only at the DB level —
+  /// a trigger rejects UPDATE, DELETE and TRUNCATE (migration 20261015090000_gobd_retention).
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
 
   @@unique([companyId, sequence])
   @@index([companyId, entityType, entityId])
@@ -2442,7 +2445,8 @@ model VendorBill {
   /// (see VendorBillsService.void).
   voidReason           String?
 
-  company          Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  /// Restrict: a supplier's bill is a retained accounting record (GoBD), same as Invoice.
+  company          Company           @relation(fields: [companyId], references: [id], onDelete: Restrict)
   supplier         Supplier          @relation(fields: [supplierId], references: [id], onDelete: Restrict)
   purchaseOrder    PurchaseOrder?    @relation(fields: [purchaseOrderId], references: [id], onDelete: SetNull)
   lines            VendorBillLine[]
@@ -3340,10 +3344,12 @@ model Invoice {
   /// and paired with a brand-new invoice carrying the exact negation of its amounts.
   correctsInvoiceId          String?       @unique
 
-  company            Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  /// Restrict, not Cascade: GoBD/HGB keep invoices 8–10 years, so deleting the company or the
+  /// project must fail while any invoice exists rather than silently take the invoices with it.
+  company            Company              @relation(fields: [companyId], references: [id], onDelete: Restrict)
   /// Composite FKs (not just projectId/clientId) so the DB rejects an invoice pointing at a
   /// project or client belonging to a different company — see AUDIT-2026-09-07.md "составные FK".
-  project            Project              @relation(fields: [projectId, companyId], references: [id, companyId], onDelete: Cascade)
+  project            Project              @relation(fields: [projectId, companyId], references: [id, companyId], onDelete: Restrict)
   client             Client               @relation(fields: [clientId, companyId], references: [id, companyId], onDelete: Restrict)
   estimate           Estimate?            @relation(fields: [estimateId], references: [id], onDelete: SetNull)
   recurringInvoice   RecurringInvoice?    @relation(fields: [recurringInvoiceId], references: [id], onDelete: SetNull)
