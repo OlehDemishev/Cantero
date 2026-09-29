@@ -3,7 +3,7 @@
 # Build context must be the repo root (not apps/web/), since this needs packages/shared too:
 #   docker build -f apps/web/Dockerfile --build-arg NEXT_PUBLIC_API_URL=https://api.example.com/api .
 
-FROM node:20-bookworm-slim AS base
+FROM node:22-bookworm-slim AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
@@ -29,7 +29,7 @@ RUN pnpm --filter @cantero/shared build
 RUN pnpm --filter web build
 
 # ---- runtime: lean final image, standalone Next.js server ----
-FROM node:20-bookworm-slim AS runtime
+FROM node:22-bookworm-slim AS runtime
 RUN groupadd --system app && useradd --system --gid app app
 ENV NODE_ENV=production PORT=3000 HOSTNAME=0.0.0.0
 WORKDIR /app

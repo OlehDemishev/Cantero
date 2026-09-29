@@ -27,7 +27,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
@@ -55,7 +55,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
@@ -138,7 +138,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
@@ -192,3 +192,42 @@ jobs:
           name: playwright-report
           path: apps/e2e/playwright-report/
           retention-days: 14
+
+  docker:
+    name: Docker — build the production images
+    # Nothing else builds the Dockerfiles, so a broken image would only show up on the server. Build
+    # both (without pushing anywhere) and check the API image runs the intended Node and can load its
+    # native modules — the ONNX runtime behind meaning-based search is the one a Node upgrade breaks.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build API image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          load: true
+          tags: cantero-api:ci
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+
+      - name: Check the API image
+        run: |
+          docker run --rm --entrypoint node cantero-api:ci -e "
+            if (!process.version.startsWith('v22.')) throw new Error('expected Node 22, got ' + process.version);
+            import('@huggingface/transformers').then(() => console.log('Node', process.version, '— transformers and ONNX runtime load'));
+          "
+
+      - name: Build web image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          load: true
+          tags: cantero-web:ci
+          build-args: NEXT_PUBLIC_API_URL=https://api.example.com
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web

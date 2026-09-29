@@ -7,7 +7,7 @@
 # materializes the api package's prod dependency graph (including `@cantero/shared`) as real
 # files instead, which is what a Docker `COPY --from=` needs.
 
-FROM node:20-bookworm-slim AS base
+FROM node:22-bookworm-slim AS base
 RUN apt-get update && apt-get install -y --no-install-recommends openssl \
     && rm -rf /var/lib/apt/lists/*
 ENV PNPM_HOME="/pnpm"
@@ -40,7 +40,7 @@ RUN pnpm --filter=api --prod deploy --ignore-scripts /out/api
 RUN cd /out/api && node_modules/.bin/prisma generate
 
 # ---- runtime: lean final image ----
-FROM node:20-bookworm-slim AS runtime
+FROM node:22-bookworm-slim AS runtime
 RUN apt-get update && apt-get install -y --no-install-recommends openssl \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --system app && useradd --system --gid app app
