@@ -22,6 +22,19 @@ export default async function globalSetup() {
     if (rowCount === 0) {
       throw new Error(`No company found for ${DEMO_EMAIL} — has the database been seeded?`);
     }
+    // The seed gives the demo company 3 seats, and several specs invite or provision people into
+    // it — in parallel on CI, so one spec's new member can use up the seat another spec's invite
+    // needs. Only raised, never lowered, so a larger plan someone set up by hand stays.
+    await client.query(
+      `UPDATE subscriptions SET seats = GREATEST(seats, 50)
+       WHERE "companyId" = (
+         SELECT m."companyId" FROM memberships m
+         JOIN users u ON u.id = m."userId"
+         WHERE u.email = $1
+         LIMIT 1
+       )`,
+      [DEMO_EMAIL],
+    );
   } finally {
     await client.end();
   }
