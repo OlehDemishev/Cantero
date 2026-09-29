@@ -24,6 +24,14 @@ Eingangsrechnungen des Lieferanten (VendorBill) werden gesperrt, sobald sie frei
 Positionen oder Beträge nach der Erfassung zu bearbeiten — die Sperre dokumentiert hier vor allem \
 den Zeitpunkt, ab dem der Beleg als endgültig gilt.
 
+Auslagen von Mitarbeitern (Expense) werden gesperrt, sobald sie freigegeben werden (Status \
+"approved"). Dabei wird neben Betrag, Datum und Kategorie auch ein SHA-256-Hashwert der \
+hinterlegten Belegdatei (Foto oder Scan) im GoBD-Ledger festgehalten, sodass ein nachträglich \
+ausgetauschter Beleg nachweisbar ist — auch dann, wenn die Datei direkt im Speicher ersetzt \
+würde. Nach der Freigabe oder Ablehnung lässt sich der Beleg in der Anwendung nicht mehr \
+ersetzen. Für freigegebene Auslagen gibt es derzeit keine Stornofunktion; eine Korrektur ist \
+als eigener, neuer Vorgang zu erfassen.
+
 Bekannte Ausnahme: Verzugszinsen (Late Fee) können auf eine bereits versendete Rechnung als \
 zusätzliche Position nachgetragen werden, statt einen eigenen Beleg zu erzeugen. Dies ist eine \
 bewusste Design-Entscheidung dieser Software und keine Lücke in der Sperrlogik — sie sollte \
@@ -53,8 +61,9 @@ vorherigen Eintrags; eine nachträgliche Änderung oder Löschung eines beliebig
 sich dadurch in jedem nachfolgenden Eintrag bemerkbar und lässt sich über die \
 Prüffunktion ("Kette prüfen" in den Compliance-Einstellungen) jederzeit nachweisen. Die \
 Datenbank selbst lässt an diesem Journal nur das Anfügen neuer Einträge zu und weist \
-Änderungen und Löschungen ab. Ebenso verhindert sie, dass Rechnungen und Eingangsrechnungen \
-durch das Löschen eines Projekts oder des Unternehmens mitgelöscht werden. Dieses \
+Änderungen und Löschungen ab. Ebenso verhindert sie, dass Rechnungen, Eingangsrechnungen und \
+Auslagen durch das Löschen eines Projekts, eines Mitarbeiters oder des Unternehmens mitgelöscht \
+werden. Dieses \
 Journal ist bewusst getrennt von der allgemeinen Aktivitätshistorie (Audit-Log), die für die \
 laufende Nachvollziehbarkeit aller Aktionen gedacht ist, aber keine kryptographische \
 Manipulationssicherung bietet.

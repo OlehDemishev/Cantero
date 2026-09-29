@@ -136,6 +136,9 @@ test.afterAll(async () => {
     await db.query(`DELETE FROM invites WHERE email LIKE $1`, [`%@${EMAIL_DOMAIN}`]);
     await db.query(`DELETE FROM companies WHERE name LIKE $1`, [`${TEST_RUN_PREFIX} other company %`]);
     await db.query(`DELETE FROM users WHERE email LIKE $1`, [`%@${EMAIL_DOMAIN}`]);
+    // Expenses are kept for GoBD retention (onDelete: Restrict), so a worker with any can't be
+    // deleted until they're gone.
+    await db.query(`DELETE FROM expenses WHERE "workerId" IN (SELECT id FROM workers WHERE name LIKE $1)`, [`${TEST_RUN_PREFIX}%`]);
     await db.query(`DELETE FROM workers WHERE name LIKE $1`, [`${TEST_RUN_PREFIX}%`]);
   } finally {
     await db.end();

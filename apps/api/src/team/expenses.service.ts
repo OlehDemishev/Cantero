@@ -1,9 +1,12 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
+import { createHash } from "crypto";
 import type { CreateExpenseInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { StorageService } from "../common/storage/storage.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { OutboxService } from "../common/webhooks/outbox.service";
+import { GobdLedgerService } from "../common/gobd/gobd-ledger.service";
+import { runSerializable } from "../common/prisma/serializable-transaction";
 import { detectExpenseAnomalyFromAggregate } from "./expense-anomaly";
 import { ProjectAccessService, type ProjectViewer } from "../common/project-access/project-access.service";
 
@@ -30,6 +33,7 @@ export class ExpensesService {
     private readonly audit: AuditService,
     private readonly outbox: OutboxService,
     private readonly projectAccess: ProjectAccessService,
+    private readonly gobdLedger: GobdLedgerService,
   ) {}
 
   async list(companyId: string, filter: ExpenseFilter, take: number, cursor?: string, viewer: ProjectViewer = {}) {
@@ -97,13 +101,22 @@ export class ExpensesService {
     });
   }
 
+  /** Only while the expense is pending: once approved, its receipt is part of the GoBD record
+   * (hashed into the ledger entry), and a rejected expense is closed. */
   async uploadReceipt(companyId: string, id: string, file: { originalname: string; mimetype: string; buffer: Buffer }) {
     const expense = await this.findOrThrow(companyId, id);
+    if (expense.status !== "pending") {
+      throw new BadRequestException("Only a pending expense's receipt can be changed — once approved or rejected, the receipt on file is part of its record.");
+    }
     const stored = await this.storage.save(companyId, file.originalname, file.buffer);
-    return this.prisma.expense.update({
-      where: { id: expense.id },
+    // Conditional, so an approval landing between the check above and this write can't end up
+    // locking one receipt while the expense then points at another.
+    const { count } = await this.prisma.expense.updateMany({
+      where: { id: expense.id, companyId, status: "pending" },
       data: { receiptStorageKey: stored.storageKey, receiptMimeType: file.mimetype },
     });
+    if (count === 0) throw new ConflictException("This expense was approved or rejected meanwhile, so its receipt can no longer be changed.");
+    return this.prisma.expense.findUniqueOrThrow({ where: { id: expense.id } });
   }
 
   async downloadReceipt(companyId: string, id: string): Promise<{ buffer: Buffer; mimeType: string }> {
@@ -113,17 +126,41 @@ export class ExpensesService {
     return { buffer, mimeType: expense.receiptMimeType ?? "application/octet-stream" };
   }
 
+  /** Approval books the expense, so it's also its GoBD Festschreibung: the amount, date and the
+   * receipt's own bytes (SHA-256) go into the ledger, which makes a receipt swapped later — even
+   * directly in storage — provable, not just a changed pointer. */
   async approve(companyId: string, actor: AuditActor, id: string) {
     const expense = await this.findOrThrow(companyId, id);
     if (expense.status !== "pending") throw new BadRequestException("Only a pending expense can be approved");
 
-    const updated = await this.prisma.$transaction(async (tx) => {
-      const updated = await tx.expense.update({
-        where: { id },
-        data: { status: "approved", approvedByUserId: actor.userId, approvedAt: new Date() },
+    const receipt = expense.receiptStorageKey
+      ? {
+          storageKey: expense.receiptStorageKey,
+          mimeType: expense.receiptMimeType,
+          sha256: createHash("sha256").update(await this.storage.read(expense.receiptStorageKey)).digest("hex"),
+        }
+      : null;
+    const approvedAt = new Date();
+
+    const updated = await runSerializable(this.prisma, async (tx) => {
+      // Still pending, and still the receipt hashed above — otherwise the ledger would vouch for
+      // a file the expense no longer points at.
+      const { count } = await tx.expense.updateMany({
+        where: { id, companyId, status: "pending", receiptStorageKey: expense.receiptStorageKey },
+        data: { status: "approved", approvedByUserId: actor.userId, approvedAt },
+      });
+      if (count === 0) throw new ConflictException("This expense changed while it was being approved — reload it and try again.");
+      await this.gobdLedger.append(tx, companyId, actor, "expense.locked", "Expense", id, `GoBD Festschreibung: locked expense of ${expense.amount} at approval`, {
+        amount: expense.amount.toString(),
+        category: expense.category,
+        incurredAt: expense.incurredAt.toISOString(),
+        description: expense.description,
+        projectId: expense.projectId,
+        workerId: expense.workerId,
+        receipt,
       });
       await this.outbox.enqueue(tx, companyId, "expense.approved", { expenseId: id, amount: expense.amount.toString() });
-      return updated;
+      return tx.expense.findUniqueOrThrow({ where: { id } });
     });
     this.audit.record(companyId, actor, "expense.approved", "Expense", id, `Approved expense of ${expense.amount}`);
     return updated;

@@ -1,10 +1,12 @@
 import { Test } from "@nestjs/testing";
-import { BadRequestException, NotFoundException } from "@nestjs/common";
+import { createHash } from "crypto";
+import { BadRequestException, ConflictException, NotFoundException } from "@nestjs/common";
 import { ExpensesService } from "./expenses.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { StorageService } from "../common/storage/storage.service";
 import { AuditService } from "../common/audit/audit.service";
 import { OutboxService } from "../common/webhooks/outbox.service";
+import { GobdLedgerService } from "../common/gobd/gobd-ledger.service";
 import { projectAccessThatSeesAll } from "../common/project-access/project-access.testing";
 
 const COMPANY_A = "company-a";
@@ -15,25 +17,27 @@ describe("ExpensesService", () => {
   let prisma: {
     project: { findFirst: jest.Mock };
     worker: { findFirst: jest.Mock };
-    expense: { create: jest.Mock; findFirst: jest.Mock; findMany: jest.Mock; update: jest.Mock };
+    expense: { create: jest.Mock; findFirst: jest.Mock; findMany: jest.Mock; update: jest.Mock; updateMany: jest.Mock; findUniqueOrThrow: jest.Mock };
     $transaction: jest.Mock;
     $queryRaw: jest.Mock;
   };
   let storage: { save: jest.Mock; read: jest.Mock };
   let audit: { record: jest.Mock };
   let outbox: { enqueue: jest.Mock };
+  let gobdLedger: { append: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
       project: { findFirst: jest.fn() },
       worker: { findFirst: jest.fn() },
-      expense: { create: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), update: jest.fn() },
+      expense: { create: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), update: jest.fn(), updateMany: jest.fn(), findUniqueOrThrow: jest.fn() },
       $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
       $queryRaw: jest.fn(),
     };
     storage = { save: jest.fn(), read: jest.fn() };
     audit = { record: jest.fn() };
     outbox = { enqueue: jest.fn() };
+    gobdLedger = { append: jest.fn() };
 
     const module = await Test.createTestingModule({
       providers: [projectAccessThatSeesAll(), 
@@ -42,6 +46,7 @@ describe("ExpensesService", () => {
         { provide: StorageService, useValue: storage },
         { provide: AuditService, useValue: audit },
         { provide: OutboxService, useValue: outbox },
+        { provide: GobdLedgerService, useValue: gobdLedger },
       ],
     }).compile();
 
@@ -119,18 +124,67 @@ describe("ExpensesService", () => {
       await expect(service.approve(COMPANY_A, ACTOR, "exp-1")).rejects.toThrow(BadRequestException);
     });
 
-    it("approves a pending expense, audits it, and fires the webhook", async () => {
-      prisma.expense.findFirst.mockResolvedValue({ id: "exp-1", status: "pending", amount: "42.00" });
-      prisma.expense.update.mockResolvedValue({ id: "exp-1", status: "approved" });
+    const PENDING = {
+      id: "exp-1",
+      status: "pending",
+      amount: "42.00",
+      category: "fuel",
+      incurredAt: new Date("2026-09-01T00:00:00.000Z"),
+      description: "Diesel",
+      projectId: "proj-1",
+      workerId: "worker-1",
+      receiptStorageKey: "company-a/r.jpg",
+      receiptMimeType: "image/jpeg",
+    };
 
-      await service.approve(COMPANY_A, ACTOR, "exp-1");
+    it("locks a pending expense in the GoBD ledger with its receipt's hash, audits it, and fires the webhook", async () => {
+      prisma.expense.findFirst.mockResolvedValue(PENDING);
+      storage.read.mockResolvedValue(Buffer.from("receipt bytes"));
+      prisma.expense.updateMany.mockResolvedValue({ count: 1 });
+      prisma.expense.findUniqueOrThrow.mockResolvedValue({ ...PENDING, status: "approved" });
 
-      expect(prisma.expense.update).toHaveBeenCalledWith({
-        where: { id: "exp-1" },
+      const result = await service.approve(COMPANY_A, ACTOR, "exp-1");
+
+      expect(prisma.expense.updateMany).toHaveBeenCalledWith({
+        where: { id: "exp-1", companyId: COMPANY_A, status: "pending", receiptStorageKey: "company-a/r.jpg" },
         data: { status: "approved", approvedByUserId: "user-1", approvedAt: expect.any(Date) },
+      });
+      expect(gobdLedger.append).toHaveBeenCalledWith(prisma, COMPANY_A, ACTOR, "expense.locked", "Expense", "exp-1", expect.any(String), {
+        amount: "42.00",
+        category: "fuel",
+        incurredAt: "2026-09-01T00:00:00.000Z",
+        description: "Diesel",
+        projectId: "proj-1",
+        workerId: "worker-1",
+        receipt: {
+          storageKey: "company-a/r.jpg",
+          mimeType: "image/jpeg",
+          sha256: createHash("sha256").update("receipt bytes").digest("hex"),
+        },
       });
       expect(audit.record).toHaveBeenCalled();
       expect(outbox.enqueue).toHaveBeenCalledWith(prisma, COMPANY_A, "expense.approved", { expenseId: "exp-1", amount: "42.00" });
+      expect(result).toMatchObject({ status: "approved" });
+    });
+
+    it("locks an expense without a receipt as having none", async () => {
+      prisma.expense.findFirst.mockResolvedValue({ ...PENDING, receiptStorageKey: null, receiptMimeType: null });
+      prisma.expense.updateMany.mockResolvedValue({ count: 1 });
+
+      await service.approve(COMPANY_A, ACTOR, "exp-1");
+
+      expect(storage.read).not.toHaveBeenCalled();
+      expect(gobdLedger.append.mock.calls[0][7]).toMatchObject({ receipt: null });
+    });
+
+    it("refuses, and records nothing, when the expense changed while being approved", async () => {
+      prisma.expense.findFirst.mockResolvedValue(PENDING);
+      storage.read.mockResolvedValue(Buffer.from("receipt bytes"));
+      prisma.expense.updateMany.mockResolvedValue({ count: 0 });
+
+      await expect(service.approve(COMPANY_A, ACTOR, "exp-1")).rejects.toThrow(ConflictException);
+      expect(gobdLedger.append).not.toHaveBeenCalled();
+      expect(outbox.enqueue).not.toHaveBeenCalled();
     });
 
     it("rejects a pending expense with a reason", async () => {
@@ -159,17 +213,37 @@ describe("ExpensesService", () => {
       await expect(service.downloadReceipt(COMPANY_A, "exp-1")).rejects.toThrow(NotFoundException);
     });
 
-    it("stores the uploaded receipt and records it on the expense", async () => {
-      prisma.expense.findFirst.mockResolvedValue({ id: "exp-1" });
+    it("stores the uploaded receipt and records it on a pending expense", async () => {
+      prisma.expense.findFirst.mockResolvedValue({ id: "exp-1", status: "pending" });
       storage.save.mockResolvedValue({ storageKey: "company-a/x-receipt.jpg", size: 100 });
-      prisma.expense.update.mockResolvedValue({ id: "exp-1", receiptStorageKey: "company-a/x-receipt.jpg" });
+      prisma.expense.updateMany.mockResolvedValue({ count: 1 });
+      prisma.expense.findUniqueOrThrow.mockResolvedValue({ id: "exp-1", receiptStorageKey: "company-a/x-receipt.jpg" });
 
       await service.uploadReceipt(COMPANY_A, "exp-1", { originalname: "receipt.jpg", mimetype: "image/jpeg", buffer: Buffer.from("x") });
 
-      expect(prisma.expense.update).toHaveBeenCalledWith({
-        where: { id: "exp-1" },
+      expect(prisma.expense.updateMany).toHaveBeenCalledWith({
+        where: { id: "exp-1", companyId: COMPANY_A, status: "pending" },
         data: { receiptStorageKey: "company-a/x-receipt.jpg", receiptMimeType: "image/jpeg" },
       });
+    });
+
+    it.each(["approved", "rejected"])("won't replace the receipt of an %s expense", async (status) => {
+      prisma.expense.findFirst.mockResolvedValue({ id: "exp-1", status });
+
+      await expect(
+        service.uploadReceipt(COMPANY_A, "exp-1", { originalname: "other.jpg", mimetype: "image/jpeg", buffer: Buffer.from("y") }),
+      ).rejects.toThrow(BadRequestException);
+      expect(storage.save).not.toHaveBeenCalled();
+    });
+
+    it("refuses when the expense was approved between the check and the write", async () => {
+      prisma.expense.findFirst.mockResolvedValue({ id: "exp-1", status: "pending" });
+      storage.save.mockResolvedValue({ storageKey: "company-a/late.jpg", size: 1 });
+      prisma.expense.updateMany.mockResolvedValue({ count: 0 });
+
+      await expect(
+        service.uploadReceipt(COMPANY_A, "exp-1", { originalname: "late.jpg", mimetype: "image/jpeg", buffer: Buffer.from("z") }),
+      ).rejects.toThrow(ConflictException);
     });
   });
 });
