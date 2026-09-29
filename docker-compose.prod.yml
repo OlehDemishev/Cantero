@@ -1,7 +1,8 @@
 # Production stack — one VPS, Docker Compose, Caddy for automatic HTTPS.
 #
-# Only `caddy` publishes host ports; postgres/redis/api/web are reachable only from other
-# containers on the `internal` network, addressed by service name.
+# Only `caddy` publishes host ports; postgres/redis/api/worker/web are reachable only from other
+# containers on the `internal` network, addressed by service name. `api` serves HTTP and puts jobs
+# on the queues; `worker` (same image) runs them.
 #
 # Two separate env files, on purpose:
 #   .env       — plain vars Compose substitutes into THIS YAML file (e.g. the web build arg).
@@ -54,6 +55,8 @@ services:
       # Caddy's IP and so one login rate-limit bucket. `environment` wins over env_file, so a
       # TRUST_PROXY_HOPS copied into .env.prod from the local-dev example can't undo it.
       TRUST_PROXY_HOPS: "1"
+      # HTTP only: jobs go on the queues and the `worker` service below runs them.
+      PROCESS_ROLE: api
     volumes:
       # The meaning-based search model (EMBEDDINGS_CACHE_DIR, ~0.5 GB) — kept across redeploys
       # instead of being downloaded again by every new container.
@@ -62,6 +65,37 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+    networks: [internal]
+
+  # The background half: the same image running dist/src/worker — every queue processor (drawing
+  # OCR, the search index, reminders, digests, recurring invoices, webhook delivery), no HTTP. It
+  # waits for the api to be healthy, which means migrations have run (docker-entrypoint.sh), and
+  # skips that entrypoint itself so the two never migrate at once.
+  worker:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    entrypoint: ["node"]
+    command: ["dist/src/worker"]
+    env_file:
+      - .env.prod
+    environment:
+      # Serves no HTTP, so no proxy sits in front of it — the startup check wants it said.
+      TRUST_PROXY_HOPS: "0"
+    volumes:
+      # The worker builds the search index, so it's the one that needs the embeddings model.
+      - api_models:/app/.models
+    healthcheck:
+      # No endpoint to ask: the worker rewrites this file every 30 s while its event loop runs.
+      test: ["CMD", "node", "-e", "process.exit(Date.now() - require('fs').statSync('/tmp/cantero-worker-alive').mtimeMs < 90000 ? 0 : 1)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    depends_on:
+      api:
         condition: service_healthy
     networks: [internal]
 

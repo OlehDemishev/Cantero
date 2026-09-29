@@ -11,16 +11,22 @@ import { SentryExceptionsFilter } from "./common/sentry/sentry-exceptions.filter
 import { assertQuickbooksProductionSafety } from "./accounting/quickbooks-production-safety";
 import { assertProductionConfig, productionConfigWarnings } from "./common/config/production-config";
 import { securityHeaders } from "./common/http/security-headers";
+import { processRole } from "./common/queue/process-role";
 
 // Must run before the Nest app is created so Sentry's instrumentation can hook whatever it needs
 // (http, the DB driver, ...) before those modules load. No-op unless SENTRY_DSN is set.
 initSentry();
 
 async function bootstrap() {
+  const role = processRole();
+  if (role === "worker") throw new Error("PROCESS_ROLE=worker runs dist/src/worker, not the HTTP server (main.ts).");
   assertProductionConfig(process.env);
   assertQuickbooksProductionSafety(process.env);
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });
   for (const warning of productionConfigWarnings(process.env)) new Logger("Config").warn(warning);
+  new Logger("Queues").log(
+    role === "api" ? "Queue processors are off here (PROCESS_ROLE=api): the worker process runs them" : "Running the queue processors in this process too (PROCESS_ROLE unset)",
+  );
   app.disable("x-powered-by");
   app.use(securityHeaders({ production: process.env.NODE_ENV === "production" }));
   app.enableCors({ origin: process.env.WEB_ORIGIN ?? "http://localhost:3000", credentials: true });

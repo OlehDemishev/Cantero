@@ -3,6 +3,7 @@ import { BullModule } from "@nestjs/bullmq";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import IORedis from "ioredis";
 import { QueueFailureReporterService } from "./queue-failure-reporter.service";
+import { backgroundProviders } from "./process-role";
 
 export const STOCK_ALERTS_QUEUE = "stock-alerts";
 export const PUSH_CHECK_QUEUE = "push-check";
@@ -61,7 +62,7 @@ export const QUEUE_NAMES = [
     }),
     ...QUEUE_NAMES.map((name) => BullModule.registerQueue({ name })),
   ],
-  providers: [QueueFailureReporterService],
+  providers: [...backgroundProviders(QueueFailureReporterService)],
   exports: [BullModule],
 })
 export class QueueModule {}

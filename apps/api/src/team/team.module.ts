@@ -17,6 +17,7 @@ import { EnpsSurveysService } from "./enps-surveys.service";
 import { EnpsSurveysProcessor } from "./enps-surveys.processor";
 import { TrainingController } from "./training.controller";
 import { TrainingService } from "./training.service";
+import { backgroundProviders } from "../common/queue/process-role";
 
 @Module({
   controllers: [
@@ -38,7 +39,7 @@ import { TrainingService } from "./training.service";
     TimeOffService,
     CrewSmsBroadcastService,
     EnpsSurveysService,
-    EnpsSurveysProcessor,
+    ...backgroundProviders(EnpsSurveysProcessor),
     TrainingService,
   ],
   exports: [WorkersService, TimeEntriesService, LaborCostService],

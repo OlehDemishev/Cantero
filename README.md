@@ -81,7 +81,9 @@ pnpm e2e
 ## Production deployment
 
 Single VPS, Docker Compose, Caddy for automatic HTTPS — see `docker-compose.prod.yml`'s own header
-comment for the full picture. In short:
+comment for the full picture. The API image runs as two services: `api` serves HTTP and only puts
+jobs on the queues, `worker` runs them (drawing OCR, the search index, reminders, webhook delivery),
+so background work never slows requests down. In short:
 
 1. Point DNS A records at the VPS for both hostnames you'll use, then edit `Caddyfile` to match.
 2. `cp .env.example .env` and fill in `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` /

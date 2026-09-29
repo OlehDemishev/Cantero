@@ -221,7 +221,10 @@ jobs:
           context: .
           file: apps/api/Dockerfile
           load: true
-          tags: cantero-api:latest
+          # The worker service runs this same image (dist/src/worker).
+          tags: |
+            cantero-api:latest
+            cantero-worker:latest
           cache-from: type=gha,scope=api
           cache-to: type=gha,mode=max,scope=api
 
@@ -336,14 +339,44 @@ jobs:
           export E2E_STRIPE_CONNECT_WEBHOOK_SECRET="$(setting STRIPE_CONNECT_WEBHOOK_SECRET)"
           npx playwright test $(ls tests/*.spec.ts | grep -v -e sso-saml -e semantic-search)
 
+      # The API only enqueues; every queue must be served by the worker container and nothing else.
+      - name: Check background jobs run in the worker, not the API
+        run: |
+          # Through a file: with pipefail, grep -q closing the pipe early would fail the step.
+          docker compose logs api > /tmp/api.log
+          grep -q "Queue processors are off here (PROCESS_ROLE=api)" /tmp/api.log
+          worker=$(docker compose ps -q worker)
+          test "$(docker inspect -f '{{.State.Health.Status}}' "$worker")" = healthy
+          worker_ip=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$worker")
+          docker compose exec -T -e WORKER_IP="$worker_ip" worker node -e "
+            const { Queue } = require('bullmq');
+            const IORedis = require('ioredis');
+            const { QUEUE_NAMES } = require('./dist/src/common/queue/queue.module');
+            (async () => {
+              const connection = new IORedis(process.env.REDIS_URL, { maxRetriesPerRequest: null });
+              const problems = [];
+              for (const name of QUEUE_NAMES) {
+                const q = new Queue(name, { connection });
+                const hosts = (await q.getWorkers()).map((w) => w.addr.split(':')[0]);
+                if (hosts.length === 0) problems.push(name + ': no worker');
+                for (const host of hosts) if (host !== process.env.WORKER_IP) problems.push(name + ': served from ' + host);
+                await q.close();
+              }
+              await connection.quit();
+              if (problems.length) { console.error(problems.join('\\n')); process.exit(1); }
+              console.log('All ' + QUEUE_NAMES.length + ' queues are served by the worker container only');
+            })();
+          "
+
       - name: Check email went out through SMTP
         run: curl -sf http://127.0.0.1:48025/api/v1/messages | jq -e '.total > 0'
 
       - name: Check uploads landed in the bucket
         run: |
           set -a; . ./.env; set +a
-          AWS_ACCESS_KEY_ID="$S3_ACCESS_KEY_ID" AWS_SECRET_ACCESS_KEY="$S3_SECRET_ACCESS_KEY" \
-            aws s3 ls s3://cantero-uploads --recursive --endpoint-url "$BACKUP_S3_ENDPOINT" | grep -q .
+          uploads=$(AWS_ACCESS_KEY_ID="$S3_ACCESS_KEY_ID" AWS_SECRET_ACCESS_KEY="$S3_SECRET_ACCESS_KEY" \
+            aws s3 ls s3://cantero-uploads --recursive --endpoint-url "$BACKUP_S3_ENDPOINT")
+          test -n "$uploads"
 
       - name: Back up, then restore the backup elsewhere
         run: |
@@ -354,7 +387,7 @@ jobs:
             echo "$table $(docker compose exec -T postgres sh -c "psql -At -U \"\$POSTGRES_USER\" \"\$POSTGRES_DB\" -c 'SELECT count(*) FROM \"$table\"'")"
           done > /tmp/live.txt
           diff /tmp/live.txt /tmp/restored.txt
-          awk '$2 > 0' /tmp/restored.txt | grep -q '^invoices '
+          awk '$1 == "invoices" && $2 > 0 { found = 1 } END { exit !found }' /tmp/restored.txt
 
       - name: Show the stack's logs
         if: failure()

@@ -9,10 +9,11 @@ import { NotificationDigestProcessor } from "./notification-digest.processor";
 import { WeatherModule } from "../weather/weather.module";
 import { FinanceModule } from "../finance/finance.module";
 import { JobCostingModule } from "../job-costing/job-costing.module";
+import { backgroundProviders } from "../common/queue/process-role";
 
 @Module({
   imports: [WeatherModule, FinanceModule, JobCostingModule],
   controllers: [NotificationsController, PushController],
-  providers: [NotificationsService, PushService, PushCheckProcessor, NotificationDigestService, NotificationDigestProcessor],
+  providers: [NotificationsService, PushService, ...backgroundProviders(PushCheckProcessor), NotificationDigestService, ...backgroundProviders(NotificationDigestProcessor)],
 })
 export class NotificationsModule {}

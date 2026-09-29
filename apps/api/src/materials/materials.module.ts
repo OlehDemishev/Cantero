@@ -32,6 +32,7 @@ import { SupplierReturnsController } from "./supplier-returns.controller";
 import { SupplierReturnsService } from "./supplier-returns.service";
 import { StockKitsController } from "./stock-kits.controller";
 import { StockKitsService } from "./stock-kits.service";
+import { backgroundProviders } from "../common/queue/process-role";
 
 @Module({
   controllers: [
@@ -57,14 +58,14 @@ import { StockKitsService } from "./stock-kits.service";
     StockService,
     SuppliersService,
     PurchaseOrdersService,
-    LowStockProcessor,
+    ...backgroundProviders(LowStockProcessor),
     StockCountsService,
     MaterialRfqsService,
     VendorBillsService,
     StockTransfersService,
     LongLeadItemsService,
     LotExpiringRemindersService,
-    LotExpiringRemindersProcessor,
+    ...backgroundProviders(LotExpiringRemindersProcessor),
     StockReservationsService,
     UnitsOfMeasureService,
     WarehouseLocationsService,

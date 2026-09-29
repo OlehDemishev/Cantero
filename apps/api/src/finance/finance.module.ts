@@ -20,6 +20,7 @@ import { PeppolAccessPointService } from "./peppol-access-point.service";
 import { IncomingEInvoicesController } from "./incoming-e-invoices.controller";
 import { IncomingEInvoicesService } from "./incoming-e-invoices.service";
 import { SubcontractorPrequalificationModule } from "../subcontractor-prequalification/subcontractor-prequalification.module";
+import { backgroundProviders } from "../common/queue/process-role";
 
 @Module({
   imports: [SubcontractorPrequalificationModule],
@@ -39,7 +40,7 @@ import { SubcontractorPrequalificationModule } from "../subcontractor-prequalifi
     SubcontractorsService,
     SubcontractorCostsService,
     RecurringInvoicesService,
-    RecurringInvoicesProcessor,
+    ...backgroundProviders(RecurringInvoicesProcessor),
     AiaBillingService,
     DrawRequestsService,
     ClientPaymentMethodsService,

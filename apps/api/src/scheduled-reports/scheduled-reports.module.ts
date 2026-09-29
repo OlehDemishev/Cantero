@@ -3,10 +3,11 @@ import { ScheduledReportsController } from "./scheduled-reports.controller";
 import { ScheduledReportsService } from "./scheduled-reports.service";
 import { ScheduledReportsProcessor } from "./scheduled-reports.processor";
 import { ReportsModule } from "../reports/reports.module";
+import { backgroundProviders } from "../common/queue/process-role";
 
 @Module({
   imports: [ReportsModule],
   controllers: [ScheduledReportsController],
-  providers: [ScheduledReportsService, ScheduledReportsProcessor],
+  providers: [ScheduledReportsService, ...backgroundProviders(ScheduledReportsProcessor)],
 })
 export class ScheduledReportsModule {}
