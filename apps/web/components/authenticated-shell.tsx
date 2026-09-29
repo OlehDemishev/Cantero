@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { clearToken, getToken } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { OfflineOthersNotice } from "@/components/offline-others-notice";
 import { useCan } from "@/lib/permissions";
 import { permissionsFor } from "@/lib/route-access";
 import { useSidebar } from "@/context/SidebarContext";
@@ -205,7 +206,10 @@ export function AuthenticatedShell({ children }: { children: React.ReactNode }) 
       <SidebarBackdrop />
       <div className={`flex-1 transition-all duration-300 ease-in-out print:ml-0 ${mainMargin}`}>
         <AppHeader me={data} />
-        <div className="mx-auto max-w-(--breakpoint-2xl) p-4 md:p-6 print:max-w-none print:p-0">{children}</div>
+        <div className="mx-auto max-w-(--breakpoint-2xl) p-4 md:p-6 print:max-w-none print:p-0">
+          <OfflineOthersNotice />
+          {children}
+        </div>
       </div>
       <CommandPalette navItems={NAV_ITEMS.filter(isNavItemVisible)} />
       <KeyboardShortcutsHelp />

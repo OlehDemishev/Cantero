@@ -5,6 +5,8 @@ import { fetchCached } from "./offline-cache";
 import { resetStateInEffect } from "./effect-reset";
 import { ApiError } from "./api-client";
 import type { Locale } from "@cantero/shared";
+import { currentAccount } from "./account";
+import { rememberAccount } from "./offline-db";
 
 export interface MeResponse {
   user: { id: string; email: string; name: string; role: string; additionalRoles?: string[]; permissions?: string[]; totpEnabled: boolean; locale: Locale | null };
@@ -46,7 +48,13 @@ export function useMe() {
   const reload = useCallback(() => {
     setLoading(true);
     fetchCached<MeResponse>("me", "/me")
-      .then(({ data }) => setData(data))
+      .then(({ data }) => {
+        setData(data);
+        // Names this device's offline store after its owner, on every page that loads /me — so a
+        // colleague signing in later can be told whose unsent entries are waiting (OfflineOthersNotice).
+        const account = currentAccount();
+        if (account) rememberAccount(account.key, data.user.name, data.company.name);
+      })
       .catch((err) => {
         setError(err.message);
         setUnauthorized(err instanceof ApiError && err.status === 401);

@@ -1,11 +1,10 @@
-import { clearOfflineData } from "./offline-db";
+import { TOKEN_KEY, accountOf } from "./account";
+import { forgetCachedReads } from "./offline-db";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
-const TOKEN_KEY = "cantero_token";
-/** Fingerprint of whose data is currently sitting in the offline IndexedDB store (see
- * offline-db.ts) — deliberately NOT cleared on logout, only compared and overwritten on the next
- * setToken(). That's what lets the same person log out and back in without losing their own
- * still-unsynced offline work, while still catching a genuine account switch on a shared device. */
+/** Whose session was last signed in on this device (see offline-db.ts) — deliberately NOT cleared
+ * on logout, only compared and overwritten on the next setToken(), so an account switch on a shared
+ * device is noticed even across a sign-out. */
 const ACCOUNT_KEY = "cantero_account";
 
 /**
@@ -24,29 +23,19 @@ export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
 }
 
-/** Reads the `userId` claim straight out of the JWT payload without verifying the signature —
- * fine here, since this only ever feeds a client-side "is this the same person as before" check,
- * never an authorization decision (the server independently verifies the token on every request). */
-function decodeUserId(token: string): string | null {
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
-    return typeof payload?.userId === "string" ? payload.userId : null;
-  } catch {
-    return null;
-  }
-}
-
 export function setToken(token: string): void {
-  const previousUserId = localStorage.getItem(ACCOUNT_KEY);
-  const newUserId = decodeUserId(token);
-  if (newUserId && previousUserId && previousUserId !== newUserId) {
-    clearOfflineData();
+  const previous = localStorage.getItem(ACCOUNT_KEY);
+  const next = accountOf(token)?.key ?? null;
+  if (next && previous && previous !== next) {
+    // Another person, or the same person in another company: their cached reads go, their unsent
+    // writes stay in their own store until they sign in again.
+    void forgetCachedReads(previous);
     // The service worker's own API response cache (public/sw.js) is keyed by request, not by
     // account, and has no way to notice this switch on its own — tell it directly. No-op if no
     // worker is controlling this page yet (nothing would be cached for it to serve anyway).
     navigator.serviceWorker?.controller?.postMessage({ type: "CLEAR_API_CACHE" });
   }
-  if (newUserId) localStorage.setItem(ACCOUNT_KEY, newUserId);
+  if (next) localStorage.setItem(ACCOUNT_KEY, next);
   localStorage.setItem(TOKEN_KEY, token);
 }
 

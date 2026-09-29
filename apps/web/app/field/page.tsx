@@ -16,6 +16,7 @@ import { StockTab } from "@/components/field-stock-tab";
 import { LogsTab } from "@/components/field-logs-tab";
 import { PunchTab } from "@/components/field-punch-tab";
 import { RfiTab } from "@/components/field-rfi-tab";
+import { OfflineOthersNotice } from "@/components/offline-others-notice";
 
 interface Project {
   id: string;
@@ -128,6 +129,7 @@ export default function FieldPage() {
       <OfflineConflictsBanner items={failedItems} onChange={refreshQueue} />
 
       <div className="mx-auto max-w-lg px-4 py-4">
+        <OfflineOthersNotice />
         {projectsError ? (
           <p className="text-sm text-gray-500 dark:text-gray-400">{t("offline")}</p>
         ) : !projects || projects.length === 0 ? (

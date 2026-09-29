@@ -36,6 +36,14 @@ const MIGRATIONS: string[] = [
      entityId TEXT NOT NULL,
      createdAt INTEGER NOT NULL
    );`,
+  // 3: whose each queued write is ("<userId>:<companyId>"), so a colleague signing in on the same
+  // phone neither sends it nor loses it; and the names to tell them whose writes are waiting.
+  `ALTER TABLE mutations ADD COLUMN owner TEXT;
+   CREATE TABLE IF NOT EXISTS accounts (
+     key TEXT PRIMARY KEY,
+     name TEXT NOT NULL,
+     companyName TEXT
+   );`,
 ];
 
 export function getDb(): Promise<SQLite.SQLiteDatabase> {
@@ -56,23 +64,53 @@ export function getDb(): Promise<SQLite.SQLiteDatabase> {
   return dbPromise;
 }
 
-/** Wipes every queued (unsynced) mutation and every cached response — called when the signed-in
- * account changes (see api-client.ts), so a phone handed to another worker never replays one
- * account's queued writes, or shows its cached reads, under another's session. Best-effort: a
- * failure here must not block the login that triggered it. Queued photo files go too. */
-export async function clearOfflineData(): Promise<void> {
+/**
+ * Called when a different account signs in on this phone (api-client.ts setToken): drops what was
+ * only a copy of the server's data — cached reads and downloaded drawing sheets. The previous
+ * account's unsent writes, and the photos queued with them, stay until that account signs in again
+ * (offline-queue.ts only sends the signed-in account's own). Best-effort: a failure here must not
+ * block the login that triggered it.
+ */
+export async function forgetCachedReads(): Promise<void> {
   try {
     const db = await getDb();
-    await db.execAsync("DELETE FROM mutations; DELETE FROM cache; DELETE FROM results;");
+    await db.execAsync("DELETE FROM cache;");
   } catch {
     // a corrupt or locked database shouldn't break signing in
   }
   try {
-    const { clearQueuedFiles } = await import("./photos");
-    clearQueuedFiles();
     const { clearDownloadedSheets } = await import("./sheets");
     clearDownloadedSheets();
   } catch {
-    // same: best effort
+    // best-effort
   }
+}
+
+/** Remembers the signed-in account's name, so a colleague can be told whose writes are waiting. */
+export async function rememberAccount(key: string, name: string, companyName?: string): Promise<void> {
+  try {
+    const db = await getDb();
+    await db.runAsync("INSERT OR REPLACE INTO accounts (key, name, companyName) VALUES (?, ?, ?)", key, name, companyName ?? null);
+  } catch {
+    // only the notice loses its name
+  }
+}
+
+export interface WaitingElsewhere {
+  accountKey: string;
+  name: string | null;
+  companyName: string | null;
+  count: number;
+}
+
+/** Other accounts' writes still waiting on this phone. */
+export async function unsentForOtherAccounts(currentKey: string | null): Promise<WaitingElsewhere[]> {
+  const db = await getDb();
+  return db.getAllAsync<WaitingElsewhere>(
+    `SELECT m.owner AS accountKey, a.name AS name, a.companyName AS companyName, COUNT(*) AS count
+       FROM mutations m LEFT JOIN accounts a ON a.key = m.owner
+      WHERE m.owner IS NOT NULL AND m.owner != ?
+      GROUP BY m.owner, a.name, a.companyName`,
+    currentKey ?? "",
+  );
 }

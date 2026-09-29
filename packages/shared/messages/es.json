@@ -1509,6 +1509,7 @@
     "noEntries": "Aún no se han registrado eventos relevantes para GoBD."
   },
   "field": {
+    "unsentForOthers": "{name} tiene {count, plural, one {# registro sin enviar} other {# registros sin enviar}} en este dispositivo. Se enviarán cuando {name} vuelva a iniciar sesión aquí.",
     "logReadOnlyHint": "El diario de obra lo lleva el jefe de obra; puede añadir fotos desde las incidencias y las consultas.",
     "noLogYet": "Aún no hay entrada para hoy.",
     "noOwnWorker": "Tu cuenta aún no está vinculada a un empleado; pide a la oficina que la vincule.",

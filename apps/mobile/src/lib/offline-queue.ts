@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { addNetworkStateListener, getNetworkStateAsync } from "expo-network";
-import { ApiError, apiFetch, apiUpload, NetworkError, type UploadFile } from "./api-client";
+import { ApiError, apiFetch, apiUpload, currentAccountKey, NetworkError, type UploadFile } from "./api-client";
 import { getDb } from "./offline-db";
 import { deletePhoto } from "./photos";
 
@@ -76,7 +76,12 @@ function newMutationId(): string {
 
 export async function listQueued(): Promise<QueuedMutation[]> {
   const db = await getDb();
-  const rows = await db.getAllAsync<MutationRow>("SELECT * FROM mutations ORDER BY createdAt ASC, id ASC");
+  // Only the signed-in account's own writes: a colleague's stay queued, unsent, until they sign in.
+  // Rows from before owners were recorded (owner NULL) count as the current account's.
+  const rows = await db.getAllAsync<MutationRow>(
+    "SELECT * FROM mutations WHERE owner = ? OR owner IS NULL ORDER BY createdAt ASC, id ASC",
+    currentAccountKey() ?? "",
+  );
   return rows.map(toMutation);
 }
 
@@ -92,7 +97,7 @@ async function queueMutation(
 ): Promise<void> {
   const db = await getDb();
   await db.runAsync(
-    "INSERT INTO mutations (mutationId, kind, path, method, body, createdAt, dependsOn) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    "INSERT INTO mutations (mutationId, kind, path, method, body, createdAt, dependsOn, owner) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
     mutationId,
     kind,
     path,
@@ -100,6 +105,7 @@ async function queueMutation(
     JSON.stringify(body),
     Date.now(),
     dependsOn ?? null,
+    currentAccountKey(),
   );
   notifyQueueChanged();
 }
@@ -107,7 +113,7 @@ async function queueMutation(
 async function queueUpload(kind: string, path: string, file: UploadFile, mutationId: string, dependsOn?: string): Promise<void> {
   const db = await getDb();
   await db.runAsync(
-    "INSERT INTO mutations (mutationId, kind, path, method, body, createdAt, fileUri, fileName, fileType, dependsOn) VALUES (?, ?, ?, 'POST', NULL, ?, ?, ?, ?, ?)",
+    "INSERT INTO mutations (mutationId, kind, path, method, body, createdAt, fileUri, fileName, fileType, dependsOn, owner) VALUES (?, ?, ?, 'POST', NULL, ?, ?, ?, ?, ?, ?)",
     mutationId,
     kind,
     path,
@@ -116,6 +122,7 @@ async function queueUpload(kind: string, path: string, file: UploadFile, mutatio
     file.name,
     file.type,
     dependsOn ?? null,
+    currentAccountKey(),
   );
   notifyQueueChanged();
 }

@@ -1509,6 +1509,7 @@
     "noEntries": "Nie zarejestrowano jeszcze żadnych zdarzeń istotnych dla GoBD."
   },
   "field": {
+    "unsentForOthers": "{name} ma na tym urządzeniu {count, plural, one {# niewysłany wpis} few {# niewysłane wpisy} many {# niewysłanych wpisów} other {# niewysłanego wpisu}}. Zostaną wysłane, gdy {name} ponownie się tu zaloguje.",
     "logReadOnlyHint": "Dziennik budowy prowadzi kierownik — zdjęcia dodasz przy usterkach i zapytaniach.",
     "noLogYet": "Brak wpisu na dziś.",
     "noOwnWorker": "Twoje konto nie jest jeszcze powiązane z pracownikiem — poproś biuro o powiązanie.",

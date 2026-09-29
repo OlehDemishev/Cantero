@@ -1,6 +1,6 @@
 import { File as ExpoFile, UploadType } from "expo-file-system";
 import * as SecureStore from "expo-secure-store";
-import { clearOfflineData } from "./offline-db";
+import { forgetCachedReads } from "./offline-db";
 
 /** Inlined at build time by Expo. On a physical device `localhost` is the phone itself, so this
  * has to be the dev machine's LAN address — see .env.example. */
@@ -51,22 +51,32 @@ function decodeBase64Url(input: string): string {
 /** Reads the `userId` claim out of the JWT payload without verifying the signature — fine here,
  * since it only ever feeds a client-side "is this the same person as before" check, never an
  * authorization decision (the server verifies the token on every request). */
-function decodeUserId(token: string): string | null {
+
+/** Whose session a token is: "<userId>:<companyId>" — which of this phone's queued writes are theirs. */
+export function accountKeyOf(token: string | null): string | null {
+  if (!token) return null;
   try {
     const payload = JSON.parse(decodeBase64Url(token.split(".")[1]));
-    return typeof payload?.userId === "string" ? payload.userId : null;
+    return typeof payload?.userId === "string" && typeof payload?.companyId === "string" ? `${payload.userId}:${payload.companyId}` : null;
   } catch {
     return null;
   }
 }
 
+/** The signed-in account's key, or null when signed out. */
+export function currentAccountKey(): string | null {
+  return accountKeyOf(cachedToken);
+}
+
 export async function setToken(token: string): Promise<void> {
-  const previousUserId = await SecureStore.getItemAsync(ACCOUNT_KEY);
-  const newUserId = decodeUserId(token);
-  if (newUserId && previousUserId && previousUserId !== newUserId) {
-    await clearOfflineData();
+  const previous = await SecureStore.getItemAsync(ACCOUNT_KEY);
+  const next = accountKeyOf(token);
+  if (next && previous && previous !== next) {
+    // Another person (or the same one in another company): their cached reads go, their unsent
+    // writes stay for when they sign in again.
+    await forgetCachedReads();
   }
-  if (newUserId) await SecureStore.setItemAsync(ACCOUNT_KEY, newUserId);
+  if (next) await SecureStore.setItemAsync(ACCOUNT_KEY, next);
   cachedToken = token;
   await SecureStore.setItemAsync(TOKEN_KEY, token);
 }

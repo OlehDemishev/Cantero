@@ -68,8 +68,3 @@ export function deletePhoto(uri: string): void {
   }
 }
 
-/** Every file waiting to upload — for when the signed-in account changes (offline-db.ts). */
-export function clearQueuedFiles(): void {
-  const dir = new Directory(Paths.document, "offline-uploads");
-  if (dir.exists) dir.delete();
-}

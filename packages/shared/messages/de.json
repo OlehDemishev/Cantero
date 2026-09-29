@@ -1509,6 +1509,7 @@
     "noEntries": "Noch keine GoBD-relevanten Ereignisse erfasst."
   },
   "field": {
+    "unsentForOthers": "Auf diesem Gerät {count, plural, one {liegt # nicht gesendeter Eintrag} other {liegen # nicht gesendete Einträge}} von {name}. Sie werden gesendet, sobald sich {name} hier wieder anmeldet.",
     "logReadOnlyHint": "Das Bautagebuch führt die Bauleitung — Fotos können Sie über Mängel und Rückfragen hinzufügen.",
     "noLogYet": "Für heute gibt es noch keinen Eintrag.",
     "noOwnWorker": "Ihr Konto ist noch keinem Mitarbeiter zugeordnet — bitten Sie das Büro, es zu verknüpfen.",

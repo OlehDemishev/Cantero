@@ -16,7 +16,7 @@ export interface Me {
   };
   /** The language to show them in: their own choice, else the company's. */
   locale?: Locale;
-  company?: { locale: Locale };
+  company?: { locale: Locale; name?: string };
 }
 
 export function useMe() {

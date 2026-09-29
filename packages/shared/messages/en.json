@@ -1509,6 +1509,7 @@
     "noEntries": "No GoBD-relevant events recorded yet."
   },
   "field": {
+    "unsentForOthers": "{name} has {count, plural, one {# unsent entry} other {# unsent entries}} on this device. They'll be sent when {name} signs in here again.",
     "logReadOnlyHint": "The site lead keeps the daily log — you can add photos from the punch list and RFIs.",
     "noLogYet": "No entry for today yet.",
     "noOwnWorker": "Your account isn't linked to an employee record yet — ask the office to link it.",

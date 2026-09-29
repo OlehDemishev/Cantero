@@ -26,6 +26,8 @@ import { OfflineConflictsBanner } from "@/components/offline-conflicts-banner";
 import { ApiError } from "@/lib/api-client";
 import { fetchCached } from "@/lib/offline-cache";
 import { useOfflineQueue } from "@/lib/offline-queue";
+import { currentAccountKey } from "@/lib/api-client";
+import { rememberAccount, unsentForOtherAccounts, type WaitingElsewhere } from "@/lib/offline-db";
 import { registerForPush, usePushNavigation } from "@/lib/push";
 import { useSession } from "@/lib/session";
 import { useMe } from "@/lib/use-me";
@@ -65,6 +67,17 @@ function FieldShell({ token }: { token: string }) {
   const { signOut } = useSession();
   const { me, unauthorized } = useMe();
   const { pendingCount, failedItems, flush, refresh: refreshQueue } = useOfflineQueue();
+  // A colleague's entries still waiting on this phone (a shared crew device): they stay until that
+  // colleague signs in, and whoever holds the phone now is told so.
+  const [waitingElsewhere, setWaitingElsewhere] = useState<WaitingElsewhere[]>([]);
+  useEffect(() => {
+    const key = currentAccountKey();
+    if (!me || !key) return;
+    rememberAccount(key, me.user.name, me.company?.name);
+    unsentForOtherAccounts(key)
+      .then(setWaitingElsewhere)
+      .catch(() => {});
+  }, [me]);
 
   const [projects, setProjects] = useState<Project[] | null>(null);
   const [projectsError, setProjectsError] = useState<string | null>(null);
@@ -194,6 +207,14 @@ function FieldShell({ token }: { token: string }) {
               <Text style={styles.syncText}>{t("pendingSync", { count: pendingCount })}</Text>
             </View>
           )}
+
+          {waitingElsewhere.map((w) => (
+            <View key={w.accountKey} style={styles.syncBox}>
+              <Text style={styles.syncText}>
+                {t("unsentForOthers", { name: w.name ? (w.companyName ? `${w.name} (${w.companyName})` : w.name) : "?", count: w.count })}
+              </Text>
+            </View>
+          ))}
 
           {projectsError !== null ? (
             <Muted>{projectsError}</Muted>
