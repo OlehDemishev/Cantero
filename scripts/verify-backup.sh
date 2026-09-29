@@ -55,8 +55,10 @@ gunzip "$WORK/backup.sql.gz"
 
 # Same major version as docker-compose.prod.yml's postgres service.
 docker run -d --name "$CONTAINER" -e POSTGRES_PASSWORD=verify-only postgres:16-alpine >/dev/null
+# Over TCP: while the image initialises a fresh data directory it runs a temporary server on the
+# Unix socket only, then restarts — a socket check would pass during that first, short-lived one.
 i=0
-until docker exec "$CONTAINER" pg_isready -U postgres >/dev/null 2>&1; do
+until docker exec "$CONTAINER" pg_isready -h 127.0.0.1 -U postgres >/dev/null 2>&1; do
   i=$((i + 1)); [ "$i" -lt 60 ] || { echo "The throwaway Postgres didn't start" >&2; exit 1; }
   sleep 1
 done
