@@ -197,7 +197,7 @@ jobs:
     name: Docker — production stack rehearsal
     # Builds both production images and runs the whole production stack from them — the same
     # docker-compose.prod.yml, with production settings — swapping only what needs a real server
-    # (docker-compose.local.yml: local TLS on *.localhost, MinIO for S3, Mailpit for SMTP). Then
+    # (docker-compose.local.yml: local TLS on *.localhost, SeaweedFS for S3, Mailpit for SMTP). Then
     # it checks what a deploy depends on: migrations on an empty database, TLS and security
     # headers, refusal of an unsafe setting, the E2E suite through Caddy, email delivery, uploads
     # landing in the bucket, and an encrypted backup that restores somewhere else.

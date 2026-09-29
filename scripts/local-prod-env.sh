@@ -1,6 +1,6 @@
 #!/bin/sh
 # Writes .env and .env.prod for docker-compose.local.yml: production settings with freshly
-# generated secrets, addresses on *.localhost, and MinIO/Mailpit standing in for S3 and SMTP.
+# generated secrets, addresses on *.localhost, and SeaweedFS/Mailpit standing in for S3 and SMTP.
 # Refuses to touch either file if it already exists — move yours aside first.
 #
 # For a real server, start from apps/api/.env.example instead: this file's placeholders (a test
@@ -63,7 +63,7 @@ SMTP_SECURE=false
 SMTP_FROM="Cantero <noreply@cantero.localhost>"
 S3_BUCKET=cantero-uploads
 S3_REGION=eu-central-1
-S3_ENDPOINT=http://minio:9000
+S3_ENDPOINT=http://s3:8333
 S3_FORCE_PATH_STYLE=true
 S3_ACCESS_KEY_ID=cantero
 S3_SECRET_ACCESS_KEY=$S3_SECRET

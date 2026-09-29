@@ -5,10 +5,10 @@
 #   - Caddy serves https://app.localhost:8443 and https://api.localhost:8443 with certificates from
 #     its own local CA instead of Let's Encrypt (Caddyfile.local). Browsers resolve *.localhost to
 #     this machine by themselves.
-#   - MinIO stands in for the S3 buckets (uploads and backups), Mailpit for the SMTP server —
+#   - SeaweedFS stands in for the S3 buckets (uploads and backups), Mailpit for the SMTP server —
 #     every email the app sends shows up at http://127.0.0.1:48025.
-#   - Postgres (45432) and MinIO (49000) are published on loopback only, for the demo seed and
-#     scripts/backup-db.sh. Ports are chosen not to clash with a local development database.
+#   - Postgres (45432) and the S3 service (49000) are published on loopback only, for the demo
+#     seed and scripts/backup-db.sh. Ports are chosen not to clash with a local development database.
 #
 #   scripts/local-prod-env.sh          # writes .env and .env.prod with fresh secrets, once
 #   docker compose -f docker-compose.prod.yml -f docker-compose.local.yml up -d --build
@@ -20,7 +20,7 @@ services:
 
   api:
     depends_on:
-      minio-init:
+      s3-init:
         condition: service_completed_successfully
 
   caddy:
@@ -32,34 +32,30 @@ services:
       - caddy_data:/data
       - caddy_config:/config
 
-  minio:
-    image: minio/minio:latest
-    command: ["server", "/data"]
-    environment:
-      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID}
-      MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY}
-    ports: ["127.0.0.1:49000:9000"]
-    volumes: [minio_data:/data]
-    healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
+  # SeaweedFS as the S3 service — a real object store, speaking the S3 API on 8333. It runs
+  # without access keys here, so any key the app and the scripts present is accepted.
+  s3:
+    image: chrislusf/seaweedfs:latest
+    command: ["server", "-dir=/data", "-s3", "-volume.max=5"]
+    ports: ["127.0.0.1:49000:8333"]
+    volumes: [s3_data:/data]
     networks: [internal]
 
   # Creates the two buckets production would already have, then exits.
-  minio-init:
-    image: minio/mc:latest
-    depends_on:
-      minio:
-        condition: service_healthy
+  s3-init:
+    image: amazon/aws-cli:latest
+    depends_on: [s3]
     environment:
-      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
-      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+      AWS_DEFAULT_REGION: eu-central-1
+      AWS_REQUEST_CHECKSUM_CALCULATION: when_required
     entrypoint:
       - /bin/sh
       - -c
-      - mc alias set local http://minio:9000 "$$S3_ACCESS_KEY_ID" "$$S3_SECRET_ACCESS_KEY" && mc mb -p local/cantero-uploads local/cantero-backups
+      - |
+        i=0; until aws --endpoint-url http://s3:8333 s3 ls >/dev/null 2>&1 || [ $$i -ge 60 ]; do i=$$((i + 1)); sleep 1; done
+        aws --endpoint-url http://s3:8333 s3 mb s3://cantero-uploads && aws --endpoint-url http://s3:8333 s3 mb s3://cantero-backups
     networks: [internal]
 
   mailpit:
@@ -68,4 +64,4 @@ services:
     networks: [internal]
 
 volumes:
-  minio_data:
+  s3_data:

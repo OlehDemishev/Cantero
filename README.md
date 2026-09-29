@@ -51,7 +51,7 @@ any time; it skips companies that already exist.
 
 `docker-compose.local.yml` runs the production stack on this machine exactly as it runs on a
 server — same images, production settings — with local stand-ins for what needs a real server:
-Caddy's own certificates on `*.localhost`, MinIO for S3, Mailpit for SMTP. CI's "Docker" job runs
+Caddy's own certificates on `*.localhost`, SeaweedFS for S3, Mailpit for SMTP. CI's "Docker" job runs
 this same stack end to end on every push, so it is also the rehearsal for a deploy.
 
 ```bash
