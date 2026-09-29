@@ -74,6 +74,8 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
   },
+  // No "X-Powered-By: Next.js" — it only tells an attacker which framework to probe.
+  poweredByHeader: false,
   // Docker deployment: a self-contained server bundle instead of requiring the full node_modules
   // tree on the host — see apps/web/Dockerfile.
   output: "standalone",
