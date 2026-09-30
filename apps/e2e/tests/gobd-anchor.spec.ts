@@ -1,9 +1,8 @@
 import { test, expect } from "@playwright/test";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { rootCertificates } from "node:tls";
 import { Client } from "pg";
 import { apiUrl, databaseUrl, testProjectName } from "../fixtures";
 import { api, createSentInvoice, login } from "../api";
@@ -45,7 +44,9 @@ test("the ledger's newest entry is timestamped by an outside authority, verifiab
   const dir = mkdtempSync(join(tmpdir(), "gobd-anchor-"));
   writeFileSync(join(dir, "token.tsr"), Buffer.from(await res.arrayBuffer()));
   writeFileSync(join(dir, "head.bin"), Buffer.from(head.hash, "hex"));
-  writeFileSync(join(dir, "roots.pem"), rootCertificates.join("\n"));
+  // The same TSA roots the API trusts (apps/api/src/common/gobd/tsa-roots.ts), not Node's TLS roots.
+  const roots = readFileSync(join(__dirname, "../../api/src/common/gobd/tsa-roots.ts"), "utf8").match(/-----BEGIN CERTIFICATE-----[\s\S]+?-----END CERTIFICATE-----/g);
+  writeFileSync(join(dir, "roots.pem"), roots!.join("\n"));
   const openssl = (data: string) =>
     execFileSync("openssl", ["ts", "-verify", "-data", join(dir, data), "-in", join(dir, "token.tsr"), "-token_in", "-CAfile", join(dir, "roots.pem")], {
       encoding: "utf8",

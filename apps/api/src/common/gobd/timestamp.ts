@@ -1,7 +1,8 @@
 import { createHash, randomBytes } from "crypto";
-import { rootCertificates } from "tls";
+import { readFileSync } from "fs";
 import * as asn1js from "asn1js";
 import * as pkijs from "pkijs";
+import { TSA_ROOTS_PEM } from "./tsa-roots";
 
 /**
  * RFC 3161 trusted timestamps: a Time Stamping Authority signs "data with this SHA-256 existed at
@@ -27,13 +28,21 @@ function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
 
 const sha256 = (data: Buffer) => createHash("sha256").update(data).digest();
 
-/** The public web PKI roots bundled with Node — the ones well-known TSAs (DigiCert, Sectigo,
- * GlobalSign, ...) chain up to, so no CA file has to be configured or kept current. */
-function bundledRoots(): pkijs.Certificate[] {
-  return rootCertificates.map((pem) => {
-    const der = Buffer.from(pem.replace(/-----(BEGIN|END) CERTIFICATE-----|\s/g, ""), "base64");
-    return pkijs.Certificate.fromBER(toArrayBuffer(der));
-  });
+function certificatesFromPem(pem: string): pkijs.Certificate[] {
+  return [...pem.matchAll(/-----BEGIN CERTIFICATE-----([\s\S]+?)-----END CERTIFICATE-----/g)].map((m) =>
+    pkijs.Certificate.fromBER(toArrayBuffer(Buffer.from(m[1].replace(/\s/g, ""), "base64"))),
+  );
+}
+
+/** The shipped TSA roots (tsa-roots.ts), plus any in the PEM file GOBD_TSA_EXTRA_ROOTS names. */
+function trustedRoots(): pkijs.Certificate[] {
+  const extra = process.env.GOBD_TSA_EXTRA_ROOTS?.trim();
+  return [...TSA_ROOTS_PEM.flatMap(certificatesFromPem), ...(extra ? certificatesFromPem(readFileSync(extra, "utf8")) : [])];
+}
+
+/** A certificate's public key — shared by a root and every cross-signed copy of it. */
+function keyOf(certificate: pkijs.Certificate): string {
+  return Buffer.from(certificate.subjectPublicKeyInfo.toSchema().toBER()).toString("hex");
 }
 
 let roots: pkijs.Certificate[] | undefined;
@@ -109,11 +118,17 @@ export async function verifyTimestampToken(
     }
   }
 
+  const trusted = options.trustedRoots ?? (roots ??= trustedRoots());
+  // A TSA ships its root cross-signed by an older root as well; given that copy, pkijs follows it
+  // to the older root and stops there. Dropping copies of roots we trust makes it end at ours.
+  const trustedKeys = new Set(trusted.map(keyOf));
+  signedData.certificates = signedData.certificates?.filter((c) => !(c instanceof pkijs.Certificate) || !trustedKeys.has(keyOf(c)));
+
   try {
     const result = await signedData.verify({
       signer: 0,
       data: toArrayBuffer(data),
-      trustedCerts: options.trustedRoots ?? (roots ??= bundledRoots()),
+      trustedCerts: trusted,
       checkChain: true,
       checkDate: tstInfo.genTime,
       extendedMode: true,

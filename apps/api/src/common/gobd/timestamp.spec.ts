@@ -4,10 +4,11 @@ import { join } from "path";
 import * as pkijs from "pkijs";
 import { requestTimestamp, verifyTimestampToken } from "./timestamp";
 
-// A real token from http://timestamp.digicert.com (2026-09-30) over these 32 bytes. The signer's
-// chain is checked as of the token's own time, so the fixture stays valid after the TSA
-// certificate expires.
+// Real tokens from http://timestamp.digicert.com and http://timestamp.sectigo.com (2026-09-30)
+// over these 32 bytes. The signer's chain is checked as of the token's own time, so the fixtures
+// stay valid after the TSA certificates expire.
 const TOKEN = readFileSync(join(__dirname, "__fixtures__/digicert-token.tsr"));
+const SECTIGO_TOKEN = readFileSync(join(__dirname, "__fixtures__/sectigo-token.tsr"));
 const DATA = Buffer.from("cd2473129ac2cf31e6dfb8bb6582866cce61726598da95a2715b7017475285b9", "hex");
 
 function replyWith(status: number, token?: Buffer): typeof fetch {
@@ -22,6 +23,12 @@ function replyWith(status: number, token?: Buffer): typeof fetch {
 describe("verifyTimestampToken", () => {
   it("accepts a TSA's token for the data it timestamped", async () => {
     await expect(verifyTimestampToken(TOKEN, DATA)).resolves.toEqual({ valid: true, timestampedAt: new Date("2026-09-30T07:51:58.000Z") });
+  });
+
+  // Both tokens carry their root cross-signed by an older TLS root as well; they must verify
+  // against the shipped timestamping roots alone, whatever Node's own root bundle holds.
+  it("accepts a token whose TSA also ships its root cross-signed by an older one", async () => {
+    await expect(verifyTimestampToken(SECTIGO_TOKEN, DATA)).resolves.toMatchObject({ valid: true });
   });
 
   it("rejects it for any other data", async () => {

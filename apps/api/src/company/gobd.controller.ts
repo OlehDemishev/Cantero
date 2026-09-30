@@ -6,6 +6,7 @@ import { GobdLedgerService } from "../common/gobd/gobd-ledger.service";
 import { GobdAnchorService } from "../common/gobd/gobd-anchor.service";
 import { GobdService } from "./gobd.service";
 import { RequiresFor } from "../common/decorators/permissions.decorator";
+import { NotProjectScoped } from "../common/project-access/project-resource.decorator";
 
 const PAGE_SIZE = 100;
 
@@ -48,6 +49,7 @@ export class GobdController {
   /** The RFC 3161 token itself. The timestamped data is the 32 bytes of the entry's hash:
    * `echo <hash> | xxd -r -p > head.bin && openssl ts -verify -data head.bin -in <file> -token_in -CAfile <roots>`. */
   @Get("anchors/:id/token.tsr")
+  @NotProjectScoped("the company's GoBD ledger timestamps")
   @Header("Content-Type", "application/timestamp-reply")
   async anchorToken(@CurrentUser() user: AuthUser, @Param("id") id: string, @Res({ passthrough: true }) res: Response): Promise<StreamableFile> {
     const { token, sequence } = await this.anchors.token(user.companyId, id);
