@@ -79,6 +79,9 @@ importers:
       archiver:
         specifier: ^7.0.1
         version: 7.0.1
+      asn1js:
+        specifier: ^3.0.10
+        version: 3.0.10
       bcryptjs:
         specifier: ^2.4.3
         version: 2.4.3
@@ -112,6 +115,9 @@ importers:
       pdfkit:
         specifier: ^0.15.1
         version: 0.15.2
+      pkijs:
+        specifier: ^3.4.0
+        version: 3.4.0
       prisma:
         specifier: ^5.22.0
         version: 5.22.0

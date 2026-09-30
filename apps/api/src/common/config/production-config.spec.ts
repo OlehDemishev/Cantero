@@ -23,6 +23,7 @@ const VALID = {
   VAPID_PUBLIC_KEY: "BPublicKey",
   VAPID_PRIVATE_KEY: "privateKey",
   VAPID_SUBJECT: "mailto:ops@cantero.example",
+  GOBD_TSA_URL: "http://timestamp.digicert.com",
 };
 
 describe("assertProductionConfig", () => {
@@ -96,6 +97,9 @@ describe("assertProductionConfig", () => {
     expect(productionConfigWarnings({ ...VALID })).toEqual(["SENTRY_DSN is unset: server errors are only in the container log."]);
     expect(productionConfigWarnings({ ...VALID, STRIPE_CONNECT_WEBHOOK_SECRET: undefined, SENTRY_DSN: "https://x@sentry.example/1" })).toEqual([
       "STRIPE_CONNECT_WEBHOOK_SECRET is unset: clients' online invoice payments won't be recorded.",
+    ]);
+    expect(productionConfigWarnings({ ...VALID, GOBD_TSA_URL: undefined, SENTRY_DSN: "https://x@sentry.example/1" })).toEqual([
+      "GOBD_TSA_URL is unset: the GoBD ledger isn't timestamped outside the database.",
     ]);
     expect(productionConfigWarnings({ NODE_ENV: "development", STRIPE_SECRET_KEY: "sk_test_x" })).toEqual([]);
   });

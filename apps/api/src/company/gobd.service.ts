@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { PdfService } from "../common/pdf/pdf.service";
+import { GobdAnchorService } from "../common/gobd/gobd-anchor.service";
 import { StorageService } from "../common/storage/storage.service";
 
 const BODY_DE = `Diese Verfahrensdokumentation beschreibt, wie Cantero die GoBD-Anforderungen an die \
@@ -63,10 +64,19 @@ Prüffunktion ("Kette prüfen" in den Compliance-Einstellungen) jederzeit nachwe
 Datenbank selbst lässt an diesem Journal nur das Anfügen neuer Einträge zu und weist \
 Änderungen und Löschungen ab. Ebenso verhindert sie, dass Rechnungen, Eingangsrechnungen und \
 Auslagen durch das Löschen eines Projekts, eines Mitarbeiters oder des Unternehmens mitgelöscht \
-werden. Dieses \
-Journal ist bewusst getrennt von der allgemeinen Aktivitätshistorie (Audit-Log), die für die \
-laufende Nachvollziehbarkeit aller Aktionen gedacht ist, aber keine kryptographische \
-Manipulationssicherung bietet.
+werden. Dieses Journal ist bewusst getrennt von der allgemeinen Aktivitätshistorie (Audit-Log), \
+die für die laufende Nachvollziehbarkeit aller Aktionen gedacht ist, aber keine \
+kryptographische Manipulationssicherung bietet.
+
+Zusätzlich wird das Journal außerhalb der Anwendung verankert, sofern auf dem Server ein \
+Zeitstempeldienst eingerichtet ist (siehe Kopfzeile dieses Dokuments): Einmal täglich lässt die \
+Anwendung den Hashwert des jeweils neuesten Journaleintrags von einem unabhängigen \
+Zeitstempeldienst nach RFC 3161 signieren. Weil jeder Hashwert alle vorherigen Einträge \
+einschließt, passt eine nachträgliche Änderung früherer Einträge — selbst wenn die gesamte Kette \
+neu berechnet würde — nicht mehr zu diesen Signaturen. An den Dienst wird dabei ausschließlich \
+ein Hashwert übermittelt, keine Inhalte. Die Zeitstempel werden bei der Prüffunktion mit geprüft \
+und lassen sich einzeln herunterladen und unabhängig von dieser Anwendung prüfen \
+(openssl ts -verify).
 
 4. WAS DIESE DOKUMENTATION NICHT ABDECKT
 
@@ -88,16 +98,25 @@ export class GobdService {
     private readonly prisma: PrismaService,
     private readonly pdfService: PdfService,
     private readonly storage: StorageService,
+    private readonly anchors: GobdAnchorService,
   ) {}
 
   async generateVerfahrensdokumentation(companyId: string): Promise<Buffer> {
     const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
     const logoBuffer = company.logoStorageKey ? await this.storage.read(company.logoStorageKey) : undefined;
+    const tsaUrl = this.anchors.tsaUrl;
+    const [lastAnchor] = tsaUrl ? await this.anchors.list(companyId) : [];
+    const anchoring = !tsaUrl
+      ? "nicht eingerichtet"
+      : `aktiv (${new URL(tsaUrl).hostname})${lastAnchor ? `, zuletzt ${lastAnchor.timestampedAt.toISOString().slice(0, 10)} (Eintrag #${lastAnchor.sequence})` : ", noch keiner erstellt"}`;
 
     return this.pdfService.renderTextDocument({
       title: "Verfahrensdokumentation GoBD",
       subtitle: company.name,
-      meta: [{ label: "Erstellt am", value: new Date().toISOString().slice(0, 10) }],
+      meta: [
+        { label: "Erstellt am", value: new Date().toISOString().slice(0, 10) },
+        { label: "Externe Zeitstempel", value: anchoring },
+      ],
       body: BODY_DE,
       branding: { logoBuffer, accentColor: company.brandColor ?? undefined },
     });

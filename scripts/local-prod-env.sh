@@ -69,6 +69,8 @@ S3_ACCESS_KEY_ID=cantero
 S3_SECRET_ACCESS_KEY=$S3_SECRET
 BACKUP_S3_BUCKET=cantero-backups
 SEMANTIC_SEARCH_ENABLED=false
+# A real, free timestamp authority: the rehearsal anchors the GoBD ledger the way production does.
+GOBD_TSA_URL=http://timestamp.digicert.com
 EOF
 
 echo "Wrote .env and .env.prod for the local production stack."

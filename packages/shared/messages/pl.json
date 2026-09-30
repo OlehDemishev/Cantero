@@ -1501,12 +1501,23 @@
   },
   "gobd": {
     "title": "Zgodność z GoBD",
-    "hint": "Wysłane faktury i zatwierdzone faktury od dostawców są blokowane (Festschreibung) i można je tylko korygować, nigdy edytować — każda blokada i korekta jest rejestrowana poniżej w dzienniku odpornym na manipulacje.",
+    "hint": "Wysłane faktury, zatwierdzone faktury od dostawców i zatwierdzone wydatki są blokowane (Festschreibung) i można je tylko korygować, nigdy edytować — każda blokada i korekta jest rejestrowana poniżej w dzienniku odpornym na manipulacje.",
     "downloadDocumentation": "Pobierz Verfahrensdokumentation (PDF)",
     "verifyChain": "Zweryfikuj integralność dziennika",
     "chainValid": "Ważny — {count} {count, plural, one {wpis} few {wpisy} other {wpisów}}",
     "chainBroken": "Przerwany na wpisie #{sequence} — dziennik mógł zostać zmanipulowany",
-    "noEntries": "Nie zarejestrowano jeszcze żadnych zdarzeń istotnych dla GoBD."
+    "noEntries": "Nie zarejestrowano jeszcze żadnych zdarzeń istotnych dla GoBD.",
+    "anchorsTitle": "Zewnętrzne znaczniki czasu",
+    "anchorsHint": "Raz dziennie niezależny urząd znacznika czasu podpisuje hash najnowszego wpisu w dzienniku. Przepisanie wcześniejszych wpisów — nawet z przeliczeniem całego łańcucha — nie zgadza się już z tymi podpisami.",
+    "anchorsOff": "Nieskonfigurowane na tym serwerze (GOBD_TSA_URL): dziennik chroni tylko jego łańcuch hashy.",
+    "anchorsNone": "Brak jeszcze zewnętrznych znaczników czasu — pierwszy powstanie w ciągu doby.",
+    "anchorNow": "Oznacz teraz",
+    "anchorDone": "Najnowszy wpis ma już znacznik czasu.",
+    "anchorUpToDate": "Od ostatniego znacznika czasu nie przybyło nic nowego.",
+    "anchorFailed": "Nie udało się połączyć z urzędem znacznika czasu — spróbuj później.",
+    "downloadToken": "Token (.tsr)",
+    "anchorsConfirm": "{count, plural, one {potwierdzony # zewnętrznym znacznikiem czasu} few {potwierdzony # zewnętrznymi znacznikami czasu} other {potwierdzony # zewnętrznymi znacznikami czasu}}",
+    "anchorBroken": "Zewnętrzny znacznik czasu wpisu #{sequence} już się nie zgadza — dziennik zmieniono po oznaczeniu"
   },
   "field": {
     "unsentForOthers": "{name} ma na tym urządzeniu {count, plural, one {# niewysłany wpis} few {# niewysłane wpisy} many {# niewysłanych wpisów} other {# niewysłanego wpisu}}. Zostaną wysłane, gdy {name} ponownie się tu zaloguje.",

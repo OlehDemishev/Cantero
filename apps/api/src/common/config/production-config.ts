@@ -109,6 +109,7 @@ export function productionConfigWarnings(env: NodeJS.ProcessEnv): string[] {
   const warnings: string[] = [];
   if (env.STRIPE_SECRET_KEY?.startsWith("sk_test_")) warnings.push("STRIPE_SECRET_KEY is a test key: no real payments will be taken.");
   if (!env.STRIPE_CONNECT_WEBHOOK_SECRET) warnings.push("STRIPE_CONNECT_WEBHOOK_SECRET is unset: clients' online invoice payments won't be recorded.");
+  if (!env.GOBD_TSA_URL) warnings.push("GOBD_TSA_URL is unset: the GoBD ledger isn't timestamped outside the database.");
   if (!env.SENTRY_DSN) warnings.push("SENTRY_DSN is unset: server errors are only in the container log.");
   return warnings;
 }

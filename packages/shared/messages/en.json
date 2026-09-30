@@ -1501,12 +1501,23 @@
   },
   "gobd": {
     "title": "GoBD compliance",
-    "hint": "Sent invoices and approved bills are locked (Festschreibung) and can only be corrected, never edited — every lock and correction is recorded in a tamper-evident ledger below.",
+    "hint": "Sent invoices, approved bills and approved expenses are locked (Festschreibung) and can only be corrected, never edited — every lock and correction is recorded in a tamper-evident ledger below.",
     "downloadDocumentation": "Download Verfahrensdokumentation (PDF)",
     "verifyChain": "Verify ledger integrity",
     "chainValid": "Valid — {count} {count, plural, one {entry} other {entries}}",
     "chainBroken": "Broken at entry #{sequence} — the ledger may have been tampered with",
-    "noEntries": "No GoBD-relevant events recorded yet."
+    "noEntries": "No GoBD-relevant events recorded yet.",
+    "anchorsTitle": "External timestamps",
+    "anchorsHint": "Once a day an independent timestamp authority signs the hash of the newest ledger entry. Rewriting earlier entries — even recomputing the whole chain — can then no longer match those signatures.",
+    "anchorsOff": "Not set up on this server (GOBD_TSA_URL): the ledger is protected by its hash chain alone.",
+    "anchorsNone": "No external timestamps yet — the first one is made within a day.",
+    "anchorNow": "Timestamp now",
+    "anchorDone": "The newest entry is now timestamped.",
+    "anchorUpToDate": "Nothing new since the last timestamp.",
+    "anchorFailed": "The timestamp authority couldn't be reached — try again later.",
+    "downloadToken": "Token (.tsr)",
+    "anchorsConfirm": "{count, plural, one {confirmed by # external timestamp} other {confirmed by # external timestamps}}",
+    "anchorBroken": "The external timestamp of entry #{sequence} no longer matches — the ledger was changed after it was timestamped"
   },
   "field": {
     "unsentForOthers": "{name} has {count, plural, one {# unsent entry} other {# unsent entries}} on this device. They'll be sent when {name} signs in here again.",

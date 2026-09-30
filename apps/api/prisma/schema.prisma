@@ -516,6 +516,7 @@ model Company {
   autodeskConnection              AutodeskConnection?
   incomingEInvoices               IncomingEInvoice[]
   gobdLedgerEntries               GobdLedgerEntry[]
+  gobdLedgerAnchors               GobdLedgerAnchor[]
   intacctConnection               IntacctConnection?
   samlConsumedAssertions          SamlConsumedAssertion[]
   expenses                        Expense[]
@@ -681,6 +682,30 @@ model GobdLedgerEntry {
   @@unique([companyId, sequence])
   @@index([companyId, entityType, entityId])
   @@map("gobd_ledger_entries")
+}
+
+/// An RFC 3161 timestamp of the ledger's head, from an outside Time Stamping Authority: signed
+/// proof that the entry at `sequence` had `hash` by `timestampedAt`. Since each hash covers every
+/// entry before it, rewriting any of them — even with the whole chain recomputed — no longer
+/// matches a timestamp the TSA signed. The timestamped data is the 32 bytes of `hash`; only their
+/// SHA-256 left the server. Append-only like the ledger (migration 20261017090000_gobd_anchors);
+/// written by GobdAnchorService.
+model GobdLedgerAnchor {
+  id            String   @id @default(uuid())
+  companyId     String
+  sequence      Int
+  hash          String
+  tsaUrl        String
+  /// The TimeStampToken exactly as the TSA returned it (DER-encoded CMS SignedData) — verifiable
+  /// on its own with `openssl ts -verify`.
+  token         Bytes
+  timestampedAt DateTime
+  createdAt     DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@unique([companyId, sequence])
+  @@map("gobd_ledger_anchors")
 }
 
 /// Company-level credential for the read-only external integration API (/api/v1/*).

@@ -73,6 +73,6 @@ applied=$(q "SELECT count(*) FROM _prisma_migrations WHERE finished_at IS NOT NU
   || { echo "The restored database lacks the GoBD ledger's append-only trigger" >&2; exit 1; }
 echo "Restored: ${applied} migrations applied, GoBD ledger trigger present." >&2
 
-for table in companies users projects invoices payments vendor_bills documents gobd_ledger_entries; do
+for table in companies users projects invoices payments vendor_bills documents gobd_ledger_entries gobd_ledger_anchors; do
   echo "$table $(q "SELECT count(*) FROM \"$table\"")"
 done

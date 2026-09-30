@@ -85,6 +85,7 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
   if (
     contentType.includes("application/pdf") ||
     contentType.includes("application/octet-stream") ||
+    contentType.includes("application/timestamp-reply") ||
     contentType.includes("application/xml") ||
     contentType.includes("text/csv") ||
     contentType.startsWith("image/")

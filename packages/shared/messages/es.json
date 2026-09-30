@@ -1501,12 +1501,23 @@
   },
   "gobd": {
     "title": "Cumplimiento GoBD",
-    "hint": "Las facturas enviadas y las facturas de proveedor aprobadas quedan bloqueadas (Festschreibung) y solo pueden corregirse, nunca editarse — cada bloqueo y corrección se registra abajo en un libro a prueba de manipulaciones.",
+    "hint": "Las facturas enviadas, las facturas de proveedor aprobadas y los gastos aprobados quedan bloqueados (Festschreibung) y solo pueden corregirse, nunca editarse — cada bloqueo y corrección se registra abajo en un libro a prueba de manipulaciones.",
     "downloadDocumentation": "Descargar Verfahrensdokumentation (PDF)",
     "verifyChain": "Verificar integridad del libro",
     "chainValid": "Válido — {count} {count, plural, one {entrada} other {entradas}}",
     "chainBroken": "Rota en la entrada n.º {sequence} — el libro podría haber sido manipulado",
-    "noEntries": "Aún no se han registrado eventos relevantes para GoBD."
+    "noEntries": "Aún no se han registrado eventos relevantes para GoBD.",
+    "anchorsTitle": "Sellos de tiempo externos",
+    "anchorsHint": "Una vez al día, una autoridad de sellado de tiempo independiente firma el hash de la entrada más reciente del libro. Reescribir entradas anteriores — incluso recalculando toda la cadena — ya no coincide con esas firmas.",
+    "anchorsOff": "No configurado en este servidor (GOBD_TSA_URL): el libro solo está protegido por su cadena de hashes.",
+    "anchorsNone": "Aún no hay sellos de tiempo externos — el primero se crea en el plazo de un día.",
+    "anchorNow": "Sellar ahora",
+    "anchorDone": "La entrada más reciente ya tiene sello de tiempo.",
+    "anchorUpToDate": "No hay nada nuevo desde el último sello de tiempo.",
+    "anchorFailed": "No se pudo contactar con la autoridad de sellado de tiempo — inténtalo más tarde.",
+    "downloadToken": "Token (.tsr)",
+    "anchorsConfirm": "{count, plural, one {confirmado por # sello de tiempo externo} other {confirmado por # sellos de tiempo externos}}",
+    "anchorBroken": "El sello de tiempo externo de la entrada n.º {sequence} ya no coincide — el libro se modificó después de sellarse"
   },
   "field": {
     "unsentForOthers": "{name} tiene {count, plural, one {# registro sin enviar} other {# registros sin enviar}} en este dispositivo. Se enviarán cuando {name} vuelva a iniciar sesión aquí.",

@@ -1501,12 +1501,23 @@
   },
   "gobd": {
     "title": "GoBD-Konformität",
-    "hint": "Versendete Rechnungen und freigegebene Eingangsrechnungen werden gesperrt (Festschreibung) und können nur noch korrigiert, nicht mehr bearbeitet werden — jede Sperre und Korrektur wird unten in einem manipulationssicheren Journal protokolliert.",
+    "hint": "Versendete Rechnungen, freigegebene Eingangsrechnungen und freigegebene Auslagen werden gesperrt (Festschreibung) und können nur noch korrigiert, nicht mehr bearbeitet werden — jede Sperre und Korrektur wird unten in einem manipulationssicheren Journal protokolliert.",
     "downloadDocumentation": "Verfahrensdokumentation herunterladen (PDF)",
     "verifyChain": "Journal-Integrität prüfen",
     "chainValid": "Gültig — {count} {count, plural, one {Eintrag} other {Einträge}}",
     "chainBroken": "Unterbrochen bei Eintrag #{sequence} — das Journal könnte manipuliert worden sein",
-    "noEntries": "Noch keine GoBD-relevanten Ereignisse erfasst."
+    "noEntries": "Noch keine GoBD-relevanten Ereignisse erfasst.",
+    "anchorsTitle": "Externe Zeitstempel",
+    "anchorsHint": "Einmal täglich signiert ein unabhängiger Zeitstempeldienst den Hashwert des neuesten Journaleintrags. Wer frühere Einträge umschreibt — selbst wenn er die ganze Kette neu berechnet —, passt danach nicht mehr zu diesen Signaturen.",
+    "anchorsOff": "Auf diesem Server nicht eingerichtet (GOBD_TSA_URL): Das Journal ist nur durch seine Hash-Kette geschützt.",
+    "anchorsNone": "Noch keine externen Zeitstempel — der erste entsteht innerhalb eines Tages.",
+    "anchorNow": "Jetzt Zeitstempel holen",
+    "anchorDone": "Der neueste Eintrag hat jetzt einen Zeitstempel.",
+    "anchorUpToDate": "Seit dem letzten Zeitstempel ist nichts Neues hinzugekommen.",
+    "anchorFailed": "Der Zeitstempeldienst war nicht erreichbar — bitte später erneut versuchen.",
+    "downloadToken": "Token (.tsr)",
+    "anchorsConfirm": "{count, plural, one {bestätigt durch # externen Zeitstempel} other {bestätigt durch # externe Zeitstempel}}",
+    "anchorBroken": "Der externe Zeitstempel von Eintrag #{sequence} passt nicht mehr — das Journal wurde nach dem Zeitstempel verändert"
   },
   "field": {
     "unsentForOthers": "Auf diesem Gerät {count, plural, one {liegt # nicht gesendeter Eintrag} other {liegen # nicht gesendete Einträge}} von {name}. Sie werden gesendet, sobald sich {name} hier wieder anmeldet.",
