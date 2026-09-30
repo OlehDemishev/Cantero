@@ -57,10 +57,7 @@ services:
       TRUST_PROXY_HOPS: "1"
       # HTTP only: jobs go on the queues and the `worker` service below runs them.
       PROCESS_ROLE: api
-    volumes:
-      # The meaning-based search model (EMBEDDINGS_CACHE_DIR, ~0.5 GB) — kept across redeploys
-      # instead of being downloaded again by every new container.
-      - api_models:/app/.models
+    # No model volume: the API has the worker compute its search vectors (see Embedder).
     depends_on:
       postgres:
         condition: service_healthy
@@ -85,7 +82,9 @@ services:
       # Serves no HTTP, so no proxy sits in front of it — the startup check wants it said.
       TRUST_PROXY_HOPS: "0"
     volumes:
-      # The worker builds the search index, so it's the one that needs the embeddings model.
+      # The meaning-based search model (EMBEDDINGS_CACHE_DIR, ~0.5 GB download, ~1.7 GB in memory):
+      # only the worker loads it — it builds the index and embeds the API's search queries. Kept
+      # across redeploys instead of being downloaded again by every new container.
       - api_models:/app/.models
     healthcheck:
       # No endpoint to ask: the worker rewrites this file every 30 s while its event loop runs.

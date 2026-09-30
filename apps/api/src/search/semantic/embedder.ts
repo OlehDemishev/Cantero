@@ -1,6 +1,11 @@
 import { join } from "node:path";
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy, ServiceUnavailableException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { InjectQueue } from "@nestjs/bullmq";
+import { Queue, QueueEvents } from "bullmq";
+import IORedis from "ioredis";
+import { EMBED_QUEUE } from "../../common/queue/queue.module";
+import { processRole } from "../../common/queue/process-role";
 
 /**
  * BAAI bge-m3 (MIT licence, 100+ languages, 1024 dimensions, ~560 MB int8). Chosen over the smaller
@@ -53,6 +58,14 @@ const prefixesFor = (model: string) => (/e5/i.test(model) ? { query: "query: ", 
 const poolingFor = (model: string): "cls" | "mean" => (/bge/i.test(model) ? "cls" : "mean");
 /** Past this the model truncates anyway (512 tokens); cutting early saves tokenizer work. */
 const MAX_CHARS = 2000;
+/** How long a request waits for the worker's vectors — long enough to ride out the model still
+ * loading right after the worker starts. */
+const WORKER_TIMEOUT_MS = 60_000;
+
+export interface EmbedJob {
+  /** Already prefixed and truncated — what goes into the model as is. */
+  texts: string[];
+}
 
 type Extractor = (texts: string[], options: { pooling: "mean" | "cls"; normalize: true }) => Promise<{ tolist(): number[][] }>;
 
@@ -61,13 +74,31 @@ type Extractor = (texts: string[], options: { pooling: "mean" | "cls"; normalize
  * anywhere: the model's weights are fetched once from the Hugging Face hub into
  * EMBEDDINGS_CACHE_DIR (or pre-placed there, with EMBEDDINGS_ALLOW_DOWNLOAD=false, for a server
  * with no outbound access) and every embedding is computed locally from then on.
+ *
+ * Only one process holds the model (~1.7 GB): with the API and worker split (PROCESS_ROLE), the API
+ * puts what it needs embedded — a search query, a new record checked for duplicates — on the embed
+ * queue and waits for the worker's answer (EmbedProcessor). A single process does it all itself.
  */
 @Injectable()
-export class Embedder {
+export class Embedder implements OnApplicationBootstrap, OnModuleDestroy {
   private readonly logger = new Logger(Embedder.name);
   private extractor: Promise<Extractor> | null = null;
+  private events: Promise<QueueEvents> | null = null;
 
-  constructor(private readonly config: ConfigService) {}
+  constructor(
+    private readonly config: ConfigService,
+    @InjectQueue(EMBED_QUEUE) private readonly queue: Queue,
+  ) {}
+
+  /** The worker loads the model as it starts, so the first search after a deploy doesn't wait for it. */
+  onApplicationBootstrap() {
+    if (processRole() !== "worker" || !this.enabled) return;
+    this.load().catch((err: unknown) => this.logger.error(`Couldn't load embedding model ${this.model}: ${(err as Error).message}`));
+  }
+
+  async onModuleDestroy() {
+    if (this.events) await (await this.events).close();
+  }
 
   get model(): string {
     return this.config.get<string>("EMBEDDINGS_MODEL") || DEFAULT_EMBEDDING_MODEL;
@@ -93,14 +124,43 @@ export class Embedder {
     return v;
   }
 
-  private async embed(texts: string[]): Promise<number[][]> {
+  private embed(texts: string[]): Promise<number[][]> {
+    return processRole() === "api" ? this.embedInWorker(texts) : this.embedHere(texts);
+  }
+
+  /** Vectors computed in this process, from texts already prefixed — also what EmbedProcessor runs. */
+  async embedHere(texts: string[]): Promise<number[][]> {
     if (texts.length === 0) return [];
     const extractor = await this.load();
     const out = await extractor(texts, { pooling: poolingFor(this.model), normalize: true });
     return out.tolist();
   }
 
+  private async embedInWorker(texts: string[]): Promise<number[][]> {
+    if (texts.length === 0) return [];
+    // Listening before the job goes out, so its completion can't slip past unseen.
+    this.events ??= this.listen();
+    const events = await this.events;
+    // Kept a minute after completing: if it finishes before we start waiting, the result is still there.
+    const job = await this.queue.add("embed", { texts } satisfies EmbedJob, { removeOnComplete: { age: 60 }, removeOnFail: { age: 3600 } });
+    try {
+      return (await job.waitUntilFinished(events, WORKER_TIMEOUT_MS)) as number[][];
+    } catch (err) {
+      this.logger.error(`Embedding in the worker failed: ${(err as Error).message}`);
+      throw new ServiceUnavailableException("Meaning-based search isn't available right now — try again in a moment.");
+    }
+  }
+
+  private async listen(): Promise<QueueEvents> {
+    const events = new QueueEvents(EMBED_QUEUE, {
+      connection: new IORedis(this.config.getOrThrow<string>("REDIS_URL"), { maxRetriesPerRequest: null }),
+    });
+    await events.waitUntilReady();
+    return events;
+  }
+
   private load(): Promise<Extractor> {
+    if (processRole() === "api") throw new Error("The API process doesn't load the embedding model; the worker does");
     this.extractor ??= (async () => {
       // ESM-only package; see drawings/pdf-text.ts for why this is a dynamic import.
       const transformers = await import("@huggingface/transformers");

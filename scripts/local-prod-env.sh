@@ -68,7 +68,8 @@ S3_FORCE_PATH_STYLE=true
 S3_ACCESS_KEY_ID=cantero
 S3_SECRET_ACCESS_KEY=$S3_SECRET
 BACKUP_S3_BUCKET=cantero-backups
-SEMANTIC_SEARCH_ENABLED=false
+# Meaning-based search on, as in production: the worker downloads and loads the model (~1.7 GB).
+SEMANTIC_SEARCH_ENABLED=true
 # A real, free timestamp authority: the rehearsal anchors the GoBD ledger the way production does.
 GOBD_TSA_URL=http://timestamp.digicert.com
 EOF

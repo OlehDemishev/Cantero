@@ -327,8 +327,8 @@ jobs:
         working-directory: apps/e2e
         run: npx playwright install --with-deps chromium
 
-      # Everything except SSO (its test identity provider runs inside the test process, out of the
-      # API container's reach) and semantic search (off here: the model isn't downloaded).
+      # Everything except SSO: its test identity provider runs inside the test process, out of the
+      # API container's reach.
       - name: Run E2E through Caddy
         working-directory: apps/e2e
         run: |
@@ -337,7 +337,7 @@ jobs:
           setting() { grep "^$1=" ../../.env.prod | cut -d= -f2-; }
           export E2E_STRIPE_WEBHOOK_SECRET="$(setting STRIPE_WEBHOOK_SECRET)"
           export E2E_STRIPE_CONNECT_WEBHOOK_SECRET="$(setting STRIPE_CONNECT_WEBHOOK_SECRET)"
-          npx playwright test $(ls tests/*.spec.ts | grep -v -e sso-saml -e semantic-search)
+          npx playwright test $(ls tests/*.spec.ts | grep -v sso-saml)
 
       # The API only enqueues; every queue must be served by the worker container and nothing else.
       - name: Check background jobs run in the worker, not the API
@@ -345,6 +345,10 @@ jobs:
           # Through a file: with pipefail, grep -q closing the pipe early would fail the step.
           docker compose logs api > /tmp/api.log
           grep -q "Queue processors are off here (PROCESS_ROLE=api)" /tmp/api.log
+          # The embedding model (~1.7 GB) lives in the worker alone; the API asks it for vectors.
+          docker compose logs worker > /tmp/worker.log
+          grep -q "Loaded embedding model" /tmp/worker.log
+          if grep -q "Loaded embedding model" /tmp/api.log; then echo "The API loaded the embedding model" >&2; exit 1; fi
           worker=$(docker compose ps -q worker)
           test "$(docker inspect -f '{{.State.Health.Status}}' "$worker")" = healthy
           worker_ip=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$worker")

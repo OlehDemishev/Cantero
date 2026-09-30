@@ -25,6 +25,7 @@ export const DOCUSIGN_POLL_QUEUE = "docusign-poll";
 export const SEMANTIC_INDEX_QUEUE = "semantic-index";
 export const DRAWING_SETS_QUEUE = "drawing-sets";
 export const GOBD_ANCHOR_QUEUE = "gobd-anchor";
+export const EMBED_QUEUE = "embed";
 
 /** Every queue, in one list: each is registered below and watched for failures by
  * QueueFailureReporterService, so a new queue can't be added without its failures being reported. */
@@ -49,6 +50,7 @@ export const QUEUE_NAMES = [
   SEMANTIC_INDEX_QUEUE,
   DRAWING_SETS_QUEUE,
   GOBD_ANCHOR_QUEUE,
+  EMBED_QUEUE,
 ] as const;
 
 @Global()
