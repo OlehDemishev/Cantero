@@ -33,7 +33,7 @@ cp apps/web/.env.example apps/web/.env.local
 # file's own comments for what each does when left blank.
 
 pnpm --filter api prisma:migrate
-pnpm --filter api prisma:seed
+pnpm --filter api prisma:seed   # builds packages/shared first, so it works on a fresh checkout
 ```
 
 Then, in separate terminals:
