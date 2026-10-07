@@ -14,11 +14,11 @@ specialty trades, and remodelers — plus client, subcontractor, and supplier po
 - **E2E** (`apps/e2e`) — Playwright, one critical-path smoke test run against real running
   servers.
 
-A pnpm workspace monorepo (`pnpm-workspace.yaml`); Node >= 20.
+A pnpm workspace monorepo (`pnpm-workspace.yaml`); Node >= 22.
 
 ## Local development
 
-Prerequisites: Node 20+, pnpm, Docker (for Postgres/Redis).
+Prerequisites: Node 22+, pnpm, Docker (for Postgres/Redis).
 
 ```bash
 pnpm install
