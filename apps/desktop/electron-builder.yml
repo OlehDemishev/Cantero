@@ -34,8 +34,13 @@ mac:
   # notarization (APPLE_ID/APPLE_APP_SPECIFIC_PASSWORD or APPLE_API_KEY) — plus hardenedRuntime:
   # true and an entitlements plist once that's set up, neither of which this config has yet.
 
-# No update feed configured yet (electron-updater in src/main.ts is wired up but has nothing to
-# check against) — set this to a real provider (e.g. `github`, or `generic` with a `url`) once
-# there's an actual place to publish releases, then electron-builder will also emit the
-# latest.yml metadata electron-updater needs.
-publish: null
+# GitHub Releases — safe now that the repo is public (a private repo would need a token embedded
+# in every shipped copy of the app just so end users' installs could download release assets,
+# which is a real credential-leak risk: anyone can extract a string from a distributed binary).
+# `electron-builder --publish always` uploads the installers here (needs a GH_TOKEN env var with
+# `repo` scope at publish time only — end users' running apps just read the already-published
+# release over plain HTTPS, no token needed on their side).
+publish:
+  provider: github
+  owner: OlehDemishev
+  repo: Cantero

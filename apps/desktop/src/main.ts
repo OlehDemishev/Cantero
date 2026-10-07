@@ -1,7 +1,7 @@
 import { app, BrowserWindow, Menu, shell } from "electron";
 import path from "node:path";
-import { autoUpdater } from "electron-updater";
 import { buildMenu } from "./menu";
+import { startAutoUpdater } from "./updater";
 
 // No fallback to a guessed production domain here on purpose — until a real one is configured,
 // the honest default is the local dev server this whole app is actually built and tested
@@ -90,11 +90,7 @@ if (!gotSingleInstanceLock) {
     Menu.setApplicationMenu(buildMenu());
     createWindow();
 
-    if (app.isPackaged) {
-      autoUpdater.checkForUpdatesAndNotify().catch(() => {
-        // Best-effort: no update feed configured yet is not a reason to disrupt startup.
-      });
-    }
+    if (app.isPackaged) startAutoUpdater();
 
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();
