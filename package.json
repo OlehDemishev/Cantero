@@ -2,6 +2,7 @@
   "name": "cantero",
   "private": true,
   "version": "0.0.1",
+  "packageManager": "pnpm@9.15.0",
   "scripts": {
     "build:shared": "pnpm --filter @cantero/shared build",
     "dev:api": "pnpm build:shared && pnpm --filter api start:dev",
