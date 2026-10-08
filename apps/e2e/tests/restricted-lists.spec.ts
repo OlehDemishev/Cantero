@@ -462,8 +462,13 @@ test("Settings → Roles & permissions changes a role in the grid, and the web a
   await expect(cell).not.toBeChecked();
   await cell.check();
   await expect(cell).toBeChecked();
-  const matrix = await api<{ grants: { role: string; permission: string; granted: boolean; isDefault: boolean }[] }>("GET", "/company/permissions", ownerToken);
-  expect(matrix.grants.find((g) => g.role === "foreman" && g.permission === "costing.view")).toMatchObject({ granted: true, isDefault: false });
+  // The checkbox flips before the save request finishes, so poll the API until it lands.
+  await expect
+    .poll(async () => {
+      const matrix = await api<{ grants: { role: string; permission: string; granted: boolean; isDefault: boolean }[] }>("GET", "/company/permissions", ownerToken);
+      return matrix.grants.find((g) => g.role === "foreman" && g.permission === "costing.view");
+    })
+    .toMatchObject({ granted: true, isDefault: false });
   await expect(page.getByRole("button", { name: "Reset Foreman" })).toBeVisible();
   await page.getByRole("button", { name: "Reset Foreman" }).click();
   await expect(cell).not.toBeChecked();
