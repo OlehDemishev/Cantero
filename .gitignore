@@ -12,3 +12,6 @@ apps/api/uploads/
 .claude/settings.local.json
 # Local AI models downloaded at runtime (embeddings) — see apps/api/.env.example
 apps/api/.models/
+
+# Local dev runtime (scripts/dev-up.sh): PID files and logs
+.dev/

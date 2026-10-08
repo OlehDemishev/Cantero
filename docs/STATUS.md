@@ -22,3 +22,17 @@ All four jobs passed on the PR. The Docker job took 22.5 min there (previous max
 
 Left: merge PR #2 (the user merges it). Watch the Docker job's duration; the e2e fix has one
 green CI run so far.
+
+## 2026-10-08 — dev start/stop scripts (branch chore/dev-scripts)
+
+`scripts/dev-up.sh`: checks Docker and pnpm 9.15.0, `docker compose up -d`, waits for Postgres,
+`prisma migrate deploy` + `generate` (no seed), builds `@cantero/shared` once, starts API (:4000)
+and web (:3000) in their own process groups with logs in `.dev/logs/` and PIDs in `.dev/`, waits
+for `/api/health` and the web root, prints URLs and demo logins. Re-running only reports status;
+a port held by a foreign process is an error. `scripts/dev-down.sh`: kills each process group
+(TERM, KILL after 15 s), then `docker compose stop`. `.dev/` is gitignored; README mentions both.
+
+Verified: up (~14 s warm), second up (no duplicates), down (no leftover processes or listeners),
+up again (no pending migrations, data kept), down. Docker-unavailable path exits 1 with a message.
+
+Left: merge the PR (the user merges it).
