@@ -11,3 +11,14 @@ local `.env`; 2 skipped — gobd-anchor (no GOBD_TSA_URL), semantic-search
 
 Left: `apps/api/.env` still
 lacks the optional integration keys from `.env.example` (left as they are on purpose).
+
+## 2026-10-08 — CI stability (PR #2, branch fix/ci-stability)
+
+Job timeouts (Docker 40, E2E 20, API 15, Web 10 min); apt in the Docker job's Install tools
+step retries (`Acquire::Retries=3`, `http::Timeout=30`) under a 5-minute step timeout; the
+flaky permissions check in `apps/e2e/tests/restricted-lists.spec.ts` now uses `expect.poll`.
+
+All four jobs passed on the PR. The Docker job took 22.5 min there (previous max 19), hence 40.
+
+Left: merge PR #2 (the user merges it). Watch the Docker job's duration; the e2e fix has one
+green CI run so far.
