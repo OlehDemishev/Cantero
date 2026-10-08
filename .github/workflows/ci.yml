@@ -258,9 +258,12 @@ jobs:
       - run: pnpm build:shared
 
       - name: Install tools
+        # A stuck apt mirror once hung this job for 6 hours: retry and time out instead.
+        timeout-minutes: 5
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq age libnss3-tools
+          APT_OPTS="-o Acquire::Retries=3 -o Acquire::http::Timeout=30"
+          sudo apt-get update -qq $APT_OPTS
+          sudo apt-get install -y -qq $APT_OPTS age libnss3-tools
           # Chromium resolves *.localhost itself; Node and the AWS CLI go through the resolver.
           echo "127.0.0.1 app.localhost api.localhost" | sudo tee -a /etc/hosts
 
