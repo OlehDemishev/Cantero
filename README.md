@@ -43,6 +43,15 @@ pnpm dev:api   # http://localhost:4000/api
 pnpm dev:web   # http://localhost:3000
 ```
 
+Or, once `.env` files exist and the seed has run, start and stop everything with one command each
+(Postgres/Redis, pending migrations, `@cantero/shared`, API and web in the background with logs in
+`.dev/logs/`):
+
+```bash
+scripts/dev-up.sh     # idempotent: re-running only prints the status
+scripts/dev-down.sh   # stops API/web, then `docker compose stop` (data is kept)
+```
+
 The seed script prints its own demo logins on completion — three companies (EU/metric/EUR, US/imperial/USD,
 UA/metric/EUR with the fullest demo data set), same password for all. Re-run `pnpm --filter api prisma:seed`
 any time; it skips companies that already exist.
