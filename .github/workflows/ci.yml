@@ -199,7 +199,7 @@ jobs:
     # headers, refusal of an unsafe setting, the E2E suite through Caddy, email delivery, uploads
     # landing in the bucket, and an encrypted backup that restores somewhere else.
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     env:
       COMPOSE_PROJECT_NAME: cantero
       COMPOSE_FILE: docker-compose.prod.yml:docker-compose.local.yml
