@@ -18,6 +18,7 @@ jobs:
   api:
     name: API — typecheck & test
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -44,6 +45,7 @@ jobs:
   web:
     name: Web — typecheck & lint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -80,6 +82,7 @@ jobs:
   e2e:
     name: E2E — critical path smoke test
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     # Unlike the two jobs above (mocked Prisma, no real connection needed), this one drives the
     # actual app over HTTP end to end — it needs a real Postgres to seed and a real Redis for the
     # API's BullMQ queues (REDIS_URL is a hard getOrThrow at boot, see queue.module.ts).
@@ -196,6 +199,7 @@ jobs:
     # headers, refusal of an unsafe setting, the E2E suite through Caddy, email delivery, uploads
     # landing in the bucket, and an encrypted backup that restores somewhere else.
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       COMPOSE_PROJECT_NAME: cantero
       COMPOSE_FILE: docker-compose.prod.yml:docker-compose.local.yml
