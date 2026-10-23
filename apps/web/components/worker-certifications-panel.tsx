@@ -69,7 +69,7 @@ export function WorkerCertificationsPanel({ workerId }: { workerId: string }) {
                     {formatDate(new Date(cert.expiresAt))}
                   </span>
                 </span>
-                <button onClick={() => removeCertification(cert.id)} className="text-fg-subtle hover:text-danger-fg">
+                <button aria-label={ta("removeItem", { name: cert.name })} onClick={() => removeCertification(cert.id)} className="text-fg-subtle hover:text-danger-fg">
                   ×
                 </button>
               </li>

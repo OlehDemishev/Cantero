@@ -39,6 +39,7 @@ interface DraftSigner {
 export function SignatureRequestsPanel({ documents }: { documents: DocumentOption[] }) {
   const t = useTranslations("signatureRequests");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   // Signature requests belong to contracts (contracts.view); the panel is left out without it.
   const canSee = useCan()("contracts.view");
@@ -150,7 +151,7 @@ export function SignatureRequestsPanel({ documents }: { documents: DocumentOptio
                   onChange={(e) => setSigners((arr) => arr.map((row, j) => (j === i ? { ...row, email: e.target.value } : row)))}
                 />
                 {signers.length > 1 && (
-                  <button type="button" onClick={() => removeSignerRow(i)} className="text-xs text-fg-subtle hover:text-danger-fg">
+                  <button aria-label={ta("remove")} type="button" onClick={() => removeSignerRow(i)} className="text-xs text-fg-subtle hover:text-danger-fg">
                     ×
                   </button>
                 )}

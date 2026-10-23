@@ -361,7 +361,7 @@ export default function SuppliersPage() {
                                     </span>
                                     <span className="flex items-center gap-2">
                                       <CertificateAttachment param="supplierDocumentId" entityId={doc.id} />
-                                      <button onClick={() => removeDocument(s.id, doc.id)} className="text-fg-subtle hover:text-danger-fg">
+                                      <button aria-label={ta("removeItem", { name: doc.name })} onClick={() => removeDocument(s.id, doc.id)} className="text-fg-subtle hover:text-danger-fg">
                                         ×
                                       </button>
                                     </span>

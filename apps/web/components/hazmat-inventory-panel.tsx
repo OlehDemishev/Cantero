@@ -90,7 +90,7 @@ export function HazmatInventoryPanel({ projectId }: { projectId: string }) {
                 {item.quantity && <span className="ml-1.5 text-xs text-fg-subtle">{item.quantity}</span>}
                 {item.location && <span className="ml-1.5 text-xs text-fg-subtle">— {item.location}</span>}
               </span>
-              <button onClick={() => removeItem(item.id)} disabled={busy} className="text-xs text-danger-fg hover:underline">
+              <button aria-label={ta("removeItem", { name: item.hazardousMaterial.name })} onClick={() => removeItem(item.id)} disabled={busy} className="text-xs text-danger-fg hover:underline">
                 ×
               </button>
             </li>

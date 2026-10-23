@@ -403,7 +403,7 @@ export function SubcontractorListItem({
                       </span>
                       <span className="flex items-center gap-2">
                         <CertificateAttachment param="subcontractorDocumentId" entityId={doc.id} />
-                        <button onClick={() => removeDocument(doc.id)} className="text-fg-subtle hover:text-danger-fg">
+                        <button aria-label={ta("removeItem", { name: doc.name })} onClick={() => removeDocument(doc.id)} className="text-fg-subtle hover:text-danger-fg">
                           ×
                         </button>
                       </span>

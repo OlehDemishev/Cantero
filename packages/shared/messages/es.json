@@ -4921,6 +4921,16 @@
     "pin": "PIN de fichaje",
     "skipToContent": "Saltar al contenido",
     "mainNavigation": "Navegación principal",
-    "userMenu": "Menú de usuario"
+    "userMenu": "Menú de usuario",
+    "remove": "Quitar",
+    "removeItem": "Quitar {name}",
+    "dismiss": "Descartar",
+    "moveUp": "Subir",
+    "moveDown": "Bajar",
+    "color_red": "Rojo",
+    "color_amber": "Ámbar",
+    "color_green": "Verde",
+    "color_blue": "Azul",
+    "color_black": "Negro"
   }
 }

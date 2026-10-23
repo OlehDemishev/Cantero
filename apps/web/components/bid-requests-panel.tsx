@@ -351,7 +351,7 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                   value={row.unit}
                   onChange={(e) => updateLineRow(i, "unit", e.target.value)}
                 />
-                <button type="button" onClick={() => removeLineRow(i)} className="text-fg-subtle hover:text-danger-fg">
+                <button aria-label={ta("remove")} type="button" onClick={() => removeLineRow(i)} className="text-fg-subtle hover:text-danger-fg">
                   ×
                 </button>
               </div>
@@ -405,7 +405,7 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                         {d.criteria.map((c) => (
                           <Badge tone="neutral" className="flex" key={c.id}>
                             {c.label} ({c.weight})
-                            <button onClick={() => removeCriterion(r.id, c.id)} className="text-fg-subtle hover:text-danger-fg">
+                            <button aria-label={ta("removeItem", { name: c.label })} onClick={() => removeCriterion(r.id, c.id)} className="text-fg-subtle hover:text-danger-fg">
                               ×
                             </button>
                           </Badge>

@@ -23,6 +23,7 @@ export function DrawingSheetsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("drawings");
   const confirm = useConfirm();
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const { data: sheets = null, reload: reloadSheets, error: sheetsError } = useApi<DrawingSheet[]>(`/projects/${projectId}/drawing-sheets`);
   const [form, setForm] = useState({ sheetNumber: "", discipline: "", title: "", revision: "" });
@@ -85,7 +86,7 @@ export function DrawingSheetsPanel({ projectId }: { projectId: string }) {
                 {s.sheetNumber} {s.title && `— ${s.title}`} {s.discipline && <span className="text-fg-subtle">({s.discipline})</span>}
                 {s.revision && <span className="text-fg-subtle"> · {t("revision")} {s.revision}</span>}
               </a>
-              <button onClick={() => remove(s.id)} className="text-fg-subtle hover:text-danger-fg">
+              <button aria-label={ta("removeItem", { name: s.sheetNumber })} onClick={() => remove(s.id)} className="text-fg-subtle hover:text-danger-fg">
                 ×
               </button>
             </li>

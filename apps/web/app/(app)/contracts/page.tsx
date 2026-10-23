@@ -31,6 +31,7 @@ export default function ContractsPage() {
   const t = useTranslations("contracts");
   const confirm = useConfirm();
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const { data: contracts = null, reload: reloadContracts, error: contractsError } = useApi<Contract[]>("/contracts");
   const { data: templates = null, reload: reloadTemplates } = useApi<ContractTemplate[]>("/contract-templates");
@@ -100,7 +101,7 @@ export default function ContractsPage() {
                 {templates.map((tpl) => (
                   <li key={tpl.id} className="flex items-center justify-between text-sm">
                     <span className="text-fg-muted">{tpl.name}</span>
-                    <button onClick={() => deleteTemplate(tpl.id)} className="text-fg-subtle hover:text-danger-fg">
+                    <button aria-label={ta("removeItem", { name: tpl.name })} onClick={() => deleteTemplate(tpl.id)} className="text-fg-subtle hover:text-danger-fg">
                       ×
                     </button>
                   </li>

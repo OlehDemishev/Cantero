@@ -69,7 +69,7 @@ export function MarkupRulesPanel() {
               <span className="text-fg-muted">
                 {t(`costType_${r.costType}`)} — {formatNumber(r.markupPercent)}%
               </span>
-              <button onClick={() => remove(r.id)} className="text-fg-subtle hover:text-danger-fg">
+              <button aria-label={ta("remove")} onClick={() => remove(r.id)} className="text-fg-subtle hover:text-danger-fg">
                 ×
               </button>
             </li>

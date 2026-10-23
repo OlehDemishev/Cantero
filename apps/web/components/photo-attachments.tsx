@@ -15,7 +15,13 @@ interface DocumentSummary {
   category: string;
 }
 
-const MARKUP_COLORS = ["#dc2626", "#f59e0b", "#16a34a", "#2563eb", "#000000"];
+const MARKUP_COLORS = [
+  { value: "#dc2626", name: "red" },
+  { value: "#f59e0b", name: "amber" },
+  { value: "#16a34a", name: "green" },
+  { value: "#2563eb", name: "blue" },
+  { value: "#000000", name: "black" },
+] as const;
 
 /** Reusable photo strip for the field modules — punch list items, daily logs, incidents, warranty
  * claims, QC deficiencies, RFIs — all attach through the same Document model via one of these id params.
@@ -198,10 +204,11 @@ function PhotoMarkupModal({
 }) {
   const t = useTranslations("photos");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const drawingRef = useRef(false);
-  const [color, setColor] = useState(MARKUP_COLORS[0]);
+  const [color, setColor] = useState<string>(MARKUP_COLORS[0].value);
   const [annotating, setAnnotating] = useState(false);
   const [hasMarks, setHasMarks] = useState(false);
 
@@ -289,14 +296,20 @@ function PhotoMarkupModal({
         <div className="mt-3 flex flex-wrap items-center gap-2">
           {annotating ? (
             <>
+              {/* Named and marked when picked (ring + dot), not told apart by colour alone. */}
               {MARKUP_COLORS.map((c) => (
                 <button
-                  key={c}
+                  key={c.value}
                   type="button"
-                  onClick={() => setColor(c)}
-                  className={`h-5 w-5 rounded-full border-2 ${color === c ? "border-gray-900" : "border-transparent"}`}
-                  style={{ backgroundColor: c }}
-                />
+                  onClick={() => setColor(c.value)}
+                  aria-label={ta(`color_${c.name}`)}
+                  aria-pressed={color === c.value}
+                  title={ta(`color_${c.name}`)}
+                  className={`flex h-6 w-6 items-center justify-center rounded-full ring-offset-2 ring-offset-surface ${color === c.value ? "ring-2 ring-fg" : ""}`}
+                  style={{ backgroundColor: c.value }}
+                >
+                  {color === c.value && <span aria-hidden="true" className="h-2 w-2 rounded-full bg-white" />}
+                </button>
               ))}
               <button type="button" onClick={clearMarkup} className="btn-secondary px-2 py-1 text-xs">
                 {t("clearMarkup")}

@@ -101,6 +101,7 @@ function isoDaysFromNow(days: number) {
 
 export default function ResourcePlanningPage() {
   const t = useTranslations("resourcePlanning");
+  const ta = useTranslations("a11y");
   const confirm = useConfirm();
 
   const { data: calendar = null, error: calendarError, reload: reloadCalendar } = useApi<Calendar>("/resource-planning/calendar");
@@ -366,7 +367,7 @@ export default function ResourcePlanningPage() {
                             {formatDate(new Date(a.startDate))} – {formatDate(new Date(a.endDate))}
                             {a.note && <span className="text-fg-subtle"> · {a.note}</span>}
                           </span>
-                          <button onClick={() => removeAssignment(a.id)} className="text-fg-subtle hover:text-danger-fg">
+                          <button aria-label={ta("removeItem", { name: a.projectName })} onClick={() => removeAssignment(a.id)} className="text-fg-subtle hover:text-danger-fg">
                             ×
                           </button>
                         </li>

@@ -229,7 +229,7 @@ export function MaterialRfqsPanel() {
                   onChange={(e) => updateLine(i, "quantity", e.target.value)}
                 />
                 {lines.length > 1 && (
-                  <button type="button" onClick={() => removeLine(i)} className="text-fg-subtle hover:text-danger-fg">
+                  <button aria-label={ta("remove")} type="button" onClick={() => removeLine(i)} className="text-fg-subtle hover:text-danger-fg">
                     ×
                   </button>
                 )}

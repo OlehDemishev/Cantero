@@ -305,7 +305,7 @@ export default function RateCatalogPage() {
             value={newCatalogName}
             onChange={(e) => setNewCatalogName(e.target.value)}
           />
-          <button type="submit" disabled={catalogBusy} className="btn-secondary px-2 py-1 text-xs">
+          <button aria-label={tc("add")} type="submit" disabled={catalogBusy} className="btn-secondary px-2 py-1 text-xs">
             +
           </button>
         </form>
@@ -393,7 +393,7 @@ export default function RateCatalogPage() {
 
             <div className="mt-2 flex items-center justify-between">
               <span className="text-xs font-semibold text-fg-subtle">{t("materials")}</span>
-              <button type="button" onClick={addLine} className="btn-secondary px-2 py-1 text-xs">
+              <button aria-label={tc("add")} type="button" onClick={addLine} className="btn-secondary px-2 py-1 text-xs">
                 +
               </button>
             </div>

@@ -164,10 +164,10 @@ export function DashboardWidgetsPanel() {
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t(`widgetType_${w.type}`)}</span>
                 <div className="flex items-center gap-1">
-                  <button onClick={() => move(i, -1)} disabled={i === 0} className="text-xs text-fg-subtle hover:text-fg-muted disabled:opacity-30">
+                  <button aria-label={ta("moveUp")} onClick={() => move(i, -1)} disabled={i === 0} className="text-xs text-fg-subtle hover:text-fg-muted disabled:opacity-30">
                     ↑
                   </button>
-                  <button
+                  <button aria-label={ta("moveDown")}
                     onClick={() => move(i, 1)}
                     disabled={i === widgets.length - 1}
                     className="text-xs text-fg-subtle hover:text-fg-muted disabled:opacity-30"

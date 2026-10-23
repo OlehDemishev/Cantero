@@ -4921,6 +4921,16 @@
     "pin": "Clock-in PIN",
     "skipToContent": "Skip to content",
     "mainNavigation": "Main navigation",
-    "userMenu": "User menu"
+    "userMenu": "User menu",
+    "remove": "Remove",
+    "removeItem": "Remove {name}",
+    "dismiss": "Dismiss",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "color_red": "Red",
+    "color_amber": "Amber",
+    "color_green": "Green",
+    "color_blue": "Blue",
+    "color_black": "Black"
   }
 }

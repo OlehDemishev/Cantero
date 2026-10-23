@@ -111,7 +111,7 @@ export function ProjectMembersPanel({ projectId }: { projectId: string }) {
                     <span className="text-fg-muted">
                       {m.user.name} <span className="text-fg-subtle">({m.user.email})</span>
                     </span>
-                    <button onClick={() => removeMember(m.userId)} className="text-fg-subtle hover:text-danger-fg">
+                    <button aria-label={ta("removeItem", { name: m.user.name })} onClick={() => removeMember(m.userId)} className="text-fg-subtle hover:text-danger-fg">
                       ×
                     </button>
                   </li>

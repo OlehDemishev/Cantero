@@ -4921,6 +4921,16 @@
     "pin": "Stempel-PIN",
     "skipToContent": "Zum Inhalt springen",
     "mainNavigation": "Hauptnavigation",
-    "userMenu": "Benutzermenü"
+    "userMenu": "Benutzermenü",
+    "remove": "Entfernen",
+    "removeItem": "{name} entfernen",
+    "dismiss": "Ausblenden",
+    "moveUp": "Nach oben",
+    "moveDown": "Nach unten",
+    "color_red": "Rot",
+    "color_amber": "Gelb",
+    "color_green": "Grün",
+    "color_blue": "Blau",
+    "color_black": "Schwarz"
   }
 }

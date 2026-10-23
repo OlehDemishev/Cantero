@@ -4921,6 +4921,16 @@
     "pin": "PIN для відмітки",
     "skipToContent": "Перейти до вмісту",
     "mainNavigation": "Головна навігація",
-    "userMenu": "Меню користувача"
+    "userMenu": "Меню користувача",
+    "remove": "Видалити",
+    "removeItem": "Видалити {name}",
+    "dismiss": "Закрити",
+    "moveUp": "Перемістити вгору",
+    "moveDown": "Перемістити вниз",
+    "color_red": "Червоний",
+    "color_amber": "Бурштиновий",
+    "color_green": "Зелений",
+    "color_blue": "Синій",
+    "color_black": "Чорний"
   }
 }

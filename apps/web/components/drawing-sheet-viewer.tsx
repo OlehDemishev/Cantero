@@ -128,6 +128,7 @@ export function DrawingSheetViewer({ sheetId }: { sheetId: string }) {
   const confirm = useConfirm();
   const td = useTranslations("dialog");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const { data: sheet = null, error: sheetError, reload: reloadSheet } = useApi<DrawingSheet>(`/drawing-sheets/${sheetId}`);
   const { data: annotations = null, reload: reloadAnnotations } = useApi<Annotation[]>(`/drawing-sheets/${sheetId}/annotations`);
@@ -478,7 +479,7 @@ export function DrawingSheetViewer({ sheetId }: { sheetId: string }) {
                 {t(`tool_${a.type}`)} — {a.authorName}
                 {a.text && `: "${a.text}"`}
               </span>
-              <button onClick={() => deleteAnnotation(a.id)} className="text-fg-subtle hover:text-danger-fg">
+              <button aria-label={ta("remove")} onClick={() => deleteAnnotation(a.id)} className="text-fg-subtle hover:text-danger-fg">
                 ×
               </button>
             </li>

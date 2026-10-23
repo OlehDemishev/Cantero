@@ -4921,6 +4921,16 @@
     "pin": "PIN do rejestracji czasu",
     "skipToContent": "Przejdź do treści",
     "mainNavigation": "Nawigacja główna",
-    "userMenu": "Menu użytkownika"
+    "userMenu": "Menu użytkownika",
+    "remove": "Usuń",
+    "removeItem": "Usuń {name}",
+    "dismiss": "Zamknij",
+    "moveUp": "Przenieś w górę",
+    "moveDown": "Przenieś w dół",
+    "color_red": "Czerwony",
+    "color_amber": "Bursztynowy",
+    "color_green": "Zielony",
+    "color_blue": "Niebieski",
+    "color_black": "Czarny"
   }
 }

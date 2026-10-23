@@ -47,6 +47,7 @@ export default function TemplatesPage() {
   const t = useTranslations("checklistTemplates");
   const confirm = useConfirm();
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const { data: templates = null, reload: reloadTemplates, error: templatesError } = useApi<Template[]>("/checklist-templates");
   const [type, setType] = useState<ChecklistTemplateType>("punch_list");
@@ -199,7 +200,7 @@ export default function TemplatesPage() {
                     onChange={(e) => updateItem(i, { location: e.target.value })}
                   />
                   {items.length > 1 && (
-                    <button type="button" onClick={() => removeItem(i)} className="text-fg-subtle hover:text-danger-fg">
+                    <button aria-label={ta("remove")} type="button" onClick={() => removeItem(i)} className="text-fg-subtle hover:text-danger-fg">
                       ×
                     </button>
                   )}
@@ -281,7 +282,7 @@ export default function TemplatesPage() {
                             {t("history")}
                           </button>
                         )}
-                        <button onClick={() => remove(tpl.id)} className="text-fg-subtle hover:text-danger-fg">
+                        <button aria-label={ta("removeItem", { name: tpl.name })} onClick={() => remove(tpl.id)} className="text-fg-subtle hover:text-danger-fg">
                           ×
                         </button>
                       </div>

@@ -158,7 +158,7 @@ export function NotificationBell() {
                           </div>
                         </a>
                         {!n.read && (
-                          <button
+                          <button aria-label={t("markRead")}
                             onClick={() => markRead(n.key)}
                             title={t("markRead")}
                             className="mt-2 flex-shrink-0 text-xs text-fg-subtle hover:text-brand-700"

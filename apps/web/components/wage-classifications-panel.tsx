@@ -113,7 +113,7 @@ export function WageClassificationsPanel() {
                   {Number(wc.fringeRate) > 0 && <span className="text-fg-subtle"> + {formatCurrency(wc.fringeRate, currency)} {t("fringeAbbr")}</span>}
                   {wc.apprenticeRatio && <Badge tone="brand" size="sm" className="ml-1.5">{t("ratioAbbr", { ratio: wc.apprenticeRatio })}</Badge>}
                 </button>
-                <button onClick={() => remove(wc.id)} className="text-fg-subtle hover:text-danger-fg">
+                <button aria-label={ta("removeItem", { name: wc.trade })} onClick={() => remove(wc.id)} className="text-fg-subtle hover:text-danger-fg">
                   ×
                 </button>
               </div>
@@ -127,7 +127,7 @@ export function WageClassificationsPanel() {
                           <span>
                             {t(`fundType_${fund.fundType}`)}: {fund.name} — {formatCurrency(fund.ratePerHour, currency)}/{tc("hour")}
                           </span>
-                          <button onClick={() => removeFund(fund.id)} className="text-fg-subtle hover:text-danger-fg">
+                          <button aria-label={ta("removeItem", { name: fund.name })} onClick={() => removeFund(fund.id)} className="text-fg-subtle hover:text-danger-fg">
                             ×
                           </button>
                         </li>

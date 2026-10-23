@@ -19,6 +19,7 @@ export function CostCodesPanel() {
   const t = useTranslations("costCodes");
   const confirm = useConfirm();
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const { data: costCodes = null, reload: reloadCostCodes, error: costCodesError } = useApi<CostCode[]>("/cost-codes");
   const [form, setForm] = useState({ code: "", name: "" });
@@ -89,7 +90,7 @@ export function CostCodesPanel() {
               <span className="text-fg-muted">
                 <span className="font-mono text-xs text-fg-subtle">{cc.code}</span> {cc.name}
               </span>
-              <button onClick={() => remove(cc.id)} className="text-fg-subtle hover:text-danger-fg">
+              <button aria-label={ta("removeItem", { name: cc.name })} onClick={() => remove(cc.id)} className="text-fg-subtle hover:text-danger-fg">
                 ×
               </button>
             </li>

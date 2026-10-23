@@ -201,7 +201,7 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
                         <li key={link.id} className="flex items-center gap-1 text-xs text-fg-subtle">
                           {t("dependsOn")}: {link.predecessor.name} ({t(`depType_${link.type}`)}
                           {link.lagDays !== 0 ? `${link.lagDays > 0 ? "+" : ""}${link.lagDays}d` : ""})
-                          <button onClick={() => removeDependency(link.id)} className="text-fg-subtle hover:text-danger-fg">
+                          <button aria-label={ta("removeItem", { name: link.predecessor.name })} onClick={() => removeDependency(link.id)} className="text-fg-subtle hover:text-danger-fg">
                             ×
                           </button>
                         </li>
