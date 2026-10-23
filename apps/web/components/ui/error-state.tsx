@@ -93,3 +93,16 @@ export function ErrorState({ error, onRetry, backHref, compact = false, classNam
     </div>
   );
 }
+
+/**
+ * A panel that couldn't load: its heading, then a one-line ErrorState. For report and dashboard
+ * widgets that otherwise stay hidden while loading or when they have nothing to show.
+ */
+export function PanelErrorState({ title, error, onRetry, className = "mt-10" }: { title: string; error: unknown; onRetry?: () => void; className?: string }) {
+  return (
+    <div className={className}>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{title}</h2>
+      <ErrorState error={error} onRetry={onRetry} compact />
+    </div>
+  );
+}

@@ -11,6 +11,9 @@ import {
 } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { useCan } from "@/lib/permissions";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 import { useReportAccess } from "@/lib/report-access";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -31,7 +34,13 @@ export function ScheduledReportsPanel() {
   const confirm = useConfirm();
   const td = useTranslations("dialog");
   const tc = useTranslations("common");
-  const { data: scheduledReports = null, reload: reloadScheduledReports } = useApi<ScheduledReport[]>("/scheduled-reports");
+  // Scheduling a report is part of custom reporting (reports.custom) — nothing to show without it.
+  const canSchedule = useCan()("reports.custom");
+  const {
+    data: scheduledReports = null,
+    error: scheduledReportsError,
+    reload: reloadScheduledReports,
+  } = useApi<ScheduledReport[]>(canSchedule ? "/scheduled-reports" : null);
   const [scheduleForm, setScheduleForm] = useState({
     name: "",
     reportType: "overview" as ScheduledReportType,
@@ -85,6 +94,8 @@ export function ScheduledReportsPanel() {
     await apiFetch(`/scheduled-reports/${id}/send-now`, { method: "POST" });
     setSentNowId(id);
   }
+
+  if (!canSchedule) return null;
 
   return (
     <>
@@ -145,7 +156,11 @@ export function ScheduledReportsPanel() {
       </div>
 
       {!scheduledReports ? (
-        <p className="mt-4 text-fg-subtle">{tc("loading")}</p>
+        scheduledReportsError ? (
+          <ErrorState error={scheduledReportsError} onRetry={reloadScheduledReports} compact className="mt-4" />
+        ) : (
+          <Skeleton className="mt-4" lines={2} />
+        )
       ) : scheduledReports.length === 0 ? (
         <p className="mt-4 text-sm text-fg-subtle">{t("noScheduledReports")}</p>
       ) : (

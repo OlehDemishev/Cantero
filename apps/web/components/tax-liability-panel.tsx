@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useCan } from "@/lib/permissions";
@@ -18,6 +20,8 @@ interface LiabilityReport {
   totalTaxCollected: number;
 }
 
+const NO_JURISDICTIONS: TaxJurisdiction[] = [];
+
 function startOfYear() {
   return `${new Date().getFullYear()}-01-01`;
 }
@@ -31,37 +35,39 @@ export function TaxLiabilityPanel() {
   const currency = me?.company.currency ?? "";
   const isManager = useCan()("finance.manage");
 
-  const [jurisdictions, setJurisdictions] = useState<TaxJurisdiction[]>([]);
-  const [jurisdictionId, setJurisdictionId] = useState("");
+  const canSee = useCan()("finance.view");
+  const {
+    data: jurisdictions = NO_JURISDICTIONS,
+    error: jurisdictionsError,
+    loading: jurisdictionsLoading,
+    reload: reloadJurisdictions,
+  } = useApi<TaxJurisdiction[]>(canSee ? "/tax/jurisdictions" : null);
+  const [pickedJurisdictionId, setJurisdictionId] = useState("");
+  const jurisdictionId = pickedJurisdictionId || jurisdictions[0]?.id || "";
   const [periodStart, setPeriodStart] = useState(startOfYear());
   const [periodEnd, setPeriodEnd] = useState(today());
-  const [report, setReport] = useState<LiabilityReport | null>(null);
+  // periodEnd is inclusive of the whole day the user picked; the API's range is exclusive at the
+  // end, so push it to the start of the next day.
+  const exclusiveEnd = new Date(periodEnd);
+  exclusiveEnd.setDate(exclusiveEnd.getDate() + 1);
+  const { data: report, error: reportError, reload: reloadReport } = useApi<LiabilityReport>(
+    jurisdictionId
+      ? `/tax/liability-report?jurisdictionId=${jurisdictionId}&periodStart=${new Date(periodStart).toISOString()}&periodEnd=${exclusiveEnd.toISOString()}`
+      : null,
+  );
 
-  useEffect(() => {
-    apiFetch<TaxJurisdiction[]>("/tax/jurisdictions").then((list) => {
-      setJurisdictions(list);
-      if (list[0]) setJurisdictionId(list[0].id);
-    });
-  }, []);
-
-  function load() {
-    if (!jurisdictionId) return;
-    // periodEnd is inclusive of the whole day the user picked; the API's range is exclusive at
-    // the end, so push it to the start of the next day.
-    const exclusiveEnd = new Date(periodEnd);
-    exclusiveEnd.setDate(exclusiveEnd.getDate() + 1);
-    apiFetch<LiabilityReport>(
-      `/tax/liability-report?jurisdictionId=${jurisdictionId}&periodStart=${new Date(periodStart).toISOString()}&periodEnd=${exclusiveEnd.toISOString()}`,
-    ).then(setReport);
-  }
-  useEffect(load, [jurisdictionId, periodStart, periodEnd]);
+  if (!canSee) return null;
 
   return (
     <div className="mt-10">
       <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("liabilityReportTitle")}</h2>
       <p className="mb-3 text-xs text-fg-subtle">{t("liabilityReportHint")}</p>
 
-      {jurisdictions.length === 0 ? (
+      {jurisdictionsError && jurisdictions.length === 0 ? (
+        <ErrorState error={jurisdictionsError} onRetry={reloadJurisdictions} compact />
+      ) : jurisdictionsLoading ? (
+        <Skeleton lines={2} />
+      ) : jurisdictions.length === 0 ? (
         <EmptyState
           message={t("noJurisdictionsConfigured")}
           cta={isManager ? { label: t("manageJurisdictions"), href: "/settings?tab=billing" } : undefined}
@@ -80,6 +86,7 @@ export function TaxLiabilityPanel() {
             <input type="date" className="input w-auto" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} />
           </div>
 
+          {reportError && !report && <ErrorState error={reportError} onRetry={reloadReport} compact />}
           {report && (
             <div className="card grid grid-cols-2 gap-3 max-w-md">
               <div>

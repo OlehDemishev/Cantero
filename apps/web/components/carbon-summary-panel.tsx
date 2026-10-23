@@ -2,6 +2,8 @@
 
 import { useTranslations } from "next-intl";
 import { useApi } from "@/lib/use-api";
+import { useCan } from "@/lib/permissions";
+import { PanelErrorState } from "@/components/ui/error-state";
 
 interface CarbonRow {
   materialCatalogItemId: string;
@@ -23,8 +25,11 @@ interface CarbonSummary {
 export function CarbonSummaryPanel() {
   const t = useTranslations("sustainability");
 
-  const { data: summary = null } = useApi<CarbonSummary>("/sustainability/carbon-summary");
+  const canSee = useCan()("site.manage");
+  const { data: summary = null, error, reload } = useApi<CarbonSummary>(canSee ? "/sustainability/carbon-summary" : null);
 
+  if (!canSee) return null;
+  if (error && !summary) return <PanelErrorState title={t("carbonSummary")} error={error} onRetry={reload} />;
   if (!summary || summary.rows.length === 0) return null;
 
   const topMaterials = summary.rows.filter((r) => r.kgCo2e !== null).slice(0, 10);

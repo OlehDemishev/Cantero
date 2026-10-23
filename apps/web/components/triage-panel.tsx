@@ -2,6 +2,8 @@
 
 import { useTranslations } from "next-intl";
 import { useApi } from "@/lib/use-api";
+import { useCan } from "@/lib/permissions";
+import { PanelErrorState } from "@/components/ui/error-state";
 
 interface TriageItem {
   kind: "rfi" | "punch_list_item";
@@ -15,8 +17,11 @@ interface TriageItem {
 
 export function TriagePanel() {
   const t = useTranslations("dashboard");
-  const { data: items = null } = useApi<TriageItem[]>("/insights/triage");
+  const canSee = useCan()("site.manage");
+  const { data: items = null, error, reload } = useApi<TriageItem[]>(canSee ? "/insights/triage" : null);
 
+  if (!canSee) return null;
+  if (error && !items) return <PanelErrorState title={t("triageTitle")} error={error} onRetry={reload} className="mt-8" />;
   if (!items || items.length === 0) return null;
 
   return (

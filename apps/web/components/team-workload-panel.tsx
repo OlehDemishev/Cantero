@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useCan } from "@/lib/permissions";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/format-currency";
 
 interface WorkloadRow {
@@ -29,17 +32,16 @@ export function TeamWorkloadPanel({ currency }: { currency: string }) {
   const t = useTranslations("reports");
   const tc = useTranslations("common");
   const tt = useTranslations("team");
-  const canExportPayroll = useCan()("hr.payroll");
+  const can = useCan();
+  const canExportPayroll = can("hr.payroll");
 
-  const [workload, setWorkload] = useState<LaborCostReport | null>(null);
+  // Hours with their cost: for members who may see pay rates (people.rates).
+  const canSee = can("people.rates");
   const [workloadFrom, setWorkloadFrom] = useState(isoDaysAgo(30));
   const [workloadTo, setWorkloadTo] = useState(isoDaysAgo(0));
-
-  useEffect(() => {
-    apiFetch<LaborCostReport>(
-      `/team/labor-cost-report?from=${new Date(workloadFrom).toISOString()}&to=${new Date(workloadTo).toISOString()}`,
-    ).then(setWorkload);
-  }, [workloadFrom, workloadTo]);
+  const { data: workload, error, reload } = useApi<LaborCostReport>(
+    canSee ? `/team/labor-cost-report?from=${new Date(workloadFrom).toISOString()}&to=${new Date(workloadTo).toISOString()}` : null,
+  );
 
   async function downloadPayrollExport() {
     const blob = await apiFetch<Blob>(
@@ -67,6 +69,8 @@ export function TeamWorkloadPanel({ currency }: { currency: string }) {
     downloadBlob(blob, "incident-report-export.csv");
   }
 
+  if (!canSee) return null;
+
   return (
     <>
       <div className="mb-3 mt-10 flex flex-wrap items-center justify-between gap-2">
@@ -88,13 +92,15 @@ export function TeamWorkloadPanel({ currency }: { currency: string }) {
               </button>
             </>
           )}
-          <button onClick={downloadSafetyExport} className="btn-secondary px-3 py-1 text-xs">
-            {t("downloadSafetyExport")}
-          </button>
+          {can("site.manage") && (
+            <button onClick={downloadSafetyExport} className="btn-secondary px-3 py-1 text-xs">
+              {t("downloadSafetyExport")}
+            </button>
+          )}
         </div>
       </div>
       {!workload ? (
-        <p className="text-fg-subtle">{tc("loading")}</p>
+        error ? <ErrorState error={error} onRetry={reload} compact /> : <Skeleton variant="table" rows={4} columns={4} />
       ) : workload.byWorker.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noWorkload")}</p>
       ) : (

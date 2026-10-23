@@ -2,6 +2,9 @@
 
 import { useTranslations } from "next-intl";
 import { useApi } from "@/lib/use-api";
+import { useCan } from "@/lib/permissions";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatNumber } from "@/lib/format-currency";
 
 interface UnitRate {
@@ -20,11 +23,11 @@ interface CrewRow {
 
 export function ProductivityScorecardPanel() {
   const t = useTranslations("productivityScorecard");
-  const tc = useTranslations("common");
 
-  const { data: rows = null } = useApi<CrewRow[]>("/productivity-logs/crew-scorecard");
+  const canSee = useCan()("site.manage");
+  const { data: rows = null, error, reload } = useApi<CrewRow[]>(canSee ? "/productivity-logs/crew-scorecard" : null);
 
-  if (rows && rows.length === 0) return null;
+  if (!canSee || (rows && rows.length === 0)) return null;
 
   return (
     <div className="mt-10">
@@ -32,7 +35,7 @@ export function ProductivityScorecardPanel() {
       <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
 
       {rows === null ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        error ? <ErrorState error={error} onRetry={reload} compact /> : <Skeleton lines={3} />
       ) : (
         <ul className="flex flex-col gap-2">
           {rows.map((row) => (

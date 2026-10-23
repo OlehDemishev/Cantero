@@ -2,6 +2,8 @@
 
 import { useTranslations } from "next-intl";
 import { useApi } from "@/lib/use-api";
+import { useCan } from "@/lib/permissions";
+import { PanelErrorState } from "@/components/ui/error-state";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 
@@ -15,8 +17,11 @@ export function BenefitsCostSummaryPanel() {
   const t = useTranslations("benefits");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
-  const { data: summary = null } = useApi<CostSummary>("/benefits/cost-summary");
+  const canSee = useCan()("hr.payroll");
+  const { data: summary = null, error, reload } = useApi<CostSummary>(canSee ? "/benefits/cost-summary" : null);
 
+  if (!canSee) return null;
+  if (error && !summary) return <PanelErrorState title={t("costSummaryTitle")} error={error} onRetry={reload} />;
   if (!summary || summary.activeEnrollmentCount === 0) return null;
 
   return (

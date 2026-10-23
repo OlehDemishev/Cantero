@@ -4,6 +4,8 @@ import { useTranslations } from "next-intl";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { chartColors, chartAxisProps, chartGridProps, chartTooltipProps } from "@/components/charts/chart-theme";
 import { useApi } from "@/lib/use-api";
+import { useCan } from "@/lib/permissions";
+import { PanelErrorState } from "@/components/ui/error-state";
 
 interface EnpsComment {
   comment: string | null;
@@ -27,9 +29,12 @@ interface EnpsMonthBucket {
 
 export function EnpsTrendPanel() {
   const t = useTranslations("enpsTrend");
-  const { data = null } = useApi<EnpsTrend>("/enps-surveys/trend");
-  const { data: history = null } = useApi<EnpsMonthBucket[]>("/enps-surveys/trend-by-period");
+  const canSee = useCan()("hr.cases");
+  const { data = null, error, reload } = useApi<EnpsTrend>(canSee ? "/enps-surveys/trend" : null);
+  const { data: history = null } = useApi<EnpsMonthBucket[]>(canSee ? "/enps-surveys/trend-by-period" : null);
 
+  if (!canSee) return null;
+  if (error && !data) return <PanelErrorState title={t("title")} error={error} onRetry={reload} className="mt-8" />;
   if (!data || data.totalResponses === 0) return null;
 
   const scoreColor = data.enpsScore! >= 50 ? "text-success-fg" : data.enpsScore! >= 0 ? "text-amber-600" : "text-danger-fg";

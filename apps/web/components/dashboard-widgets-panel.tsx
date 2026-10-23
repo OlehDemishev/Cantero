@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { DASHBOARD_WIDGET_TYPES, type DashboardWidgetType } from "@cantero/shared";
+import { DASHBOARD_WIDGET_TYPES, type DashboardWidgetType, type Permission, type ReportKey } from "@cantero/shared";
 import { apiFetch, downloadBlob, ApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
@@ -10,6 +10,10 @@ import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatCurrency } from "@/lib/format-currency";
 import { useReportFieldLabel } from "@/lib/report-field-label";
+import { useCan } from "@/lib/permissions";
+import { useReportAccess } from "@/lib/report-access";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface CustomReportOption {
   id: string;
@@ -23,6 +27,20 @@ interface Widget {
   data: unknown;
 }
 
+/** What a member needs to add each widget: the report it shows, or a permission of its own. */
+const WIDGET_ACCESS: Record<DashboardWidgetType, { report: ReportKey; permission?: never } | { report?: never; permission: Permission }> = {
+  revenue_trend: { report: "revenue-trend" },
+  cash_flow_forecast: { report: "cash-flow-forecast" },
+  project_margins: { report: "project-margins" },
+  portfolio_summary: { report: "portfolio" },
+  invoice_aging: { report: "invoice-aging" },
+  warehouse_turnover: { report: "warehouse-turnover" },
+  labor_cost: { permission: "people.rates" },
+  custom_report: { permission: "reports.custom" },
+  backlog: { report: "backlog" },
+  compliance_calendar: { report: "compliance-calendar" },
+};
+
 export function DashboardWidgetsPanel() {
   const t = useTranslations("dashboard");
   const confirm = useConfirm();
@@ -31,9 +49,23 @@ export function DashboardWidgetsPanel() {
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const { data: widgets = null, setData: setWidgets, reload: reloadWidgets } = useApi<Widget[]>("/dashboard-widgets");
-  const { data: customReports = [] } = useApi<CustomReportOption[]>("/custom-reports");
-  const [newType, setNewType] = useState<DashboardWidgetType>("revenue_trend");
+  const can = useCan();
+  const canView = useReportAccess();
+  const {
+    data: widgets = null,
+    error: widgetsError,
+    setData: setWidgets,
+    reload: reloadWidgets,
+  } = useApi<Widget[]>("/dashboard-widgets");
+  const canCustomReports = can("reports.custom");
+  const { data: customReports = [] } = useApi<CustomReportOption[]>(canCustomReports ? "/custom-reports" : null);
+  // Only the widgets whose report this member may open are offered (the same tables the report pages use).
+  const widgetTypes = DASHBOARD_WIDGET_TYPES.filter((ty) => {
+    const needs = WIDGET_ACCESS[ty];
+    return needs.report ? canView(needs.report) : can(needs.permission);
+  });
+  const [pickedType, setNewType] = useState<DashboardWidgetType | null>(null);
+  const newType: DashboardWidgetType | undefined = pickedType && widgetTypes.includes(pickedType) ? pickedType : widgetTypes[0];
   const [newCustomReportId, setNewCustomReportId] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +76,7 @@ export function DashboardWidgetsPanel() {
 
   async function addWidget(e: React.FormEvent) {
     e.preventDefault();
+    if (!newType) return;
     setBusy(true);
     setError(null);
     try {
@@ -97,6 +130,9 @@ export function DashboardWidgetsPanel() {
     downloadBlob(blob, "dashboard.pdf");
   }
 
+  // Nothing this member could add and nothing added yet: no panel at all.
+  if (widgetTypes.length === 0 && widgets?.length === 0) return null;
+
   return (
     <div className="mt-10">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -108,32 +144,34 @@ export function DashboardWidgetsPanel() {
         )}
       </div>
 
-      <form onSubmit={addWidget} className="mb-4 flex flex-wrap items-end gap-2">
-        <select className="input w-auto" value={newType} onChange={(e) => setNewType(e.target.value as DashboardWidgetType)}>
-          {DASHBOARD_WIDGET_TYPES.map((ty) => (
-            <option key={ty} value={ty}>
-              {t(`widgetType_${ty}`)}
-            </option>
-          ))}
-        </select>
-        {newType === "custom_report" && (
-          <select className="input w-auto" value={newCustomReportId} onChange={(e) => setNewCustomReportId(e.target.value)}>
-            <option value="">{t("selectCustomReport")}</option>
-            {customReports.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name}
+      {widgetTypes.length > 0 && (
+        <form onSubmit={addWidget} className="mb-4 flex flex-wrap items-end gap-2">
+          <select className="input w-auto" value={newType} onChange={(e) => setNewType(e.target.value as DashboardWidgetType)}>
+            {widgetTypes.map((ty) => (
+              <option key={ty} value={ty}>
+                {t(`widgetType_${ty}`)}
               </option>
             ))}
           </select>
-        )}
-        <button type="submit" disabled={busy} className="btn-secondary">
-          {t("addWidget")}
-        </button>
-      </form>
+          {newType === "custom_report" && (
+            <select className="input w-auto" value={newCustomReportId} onChange={(e) => setNewCustomReportId(e.target.value)}>
+              <option value="">{t("selectCustomReport")}</option>
+              {customReports.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
+          )}
+          <button type="submit" disabled={busy} className="btn-secondary">
+            {t("addWidget")}
+          </button>
+        </form>
+      )}
       {error && <p className="mb-3 text-xs text-danger-fg">{error}</p>}
 
       {!widgets ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        widgetsError ? <ErrorState error={widgetsError} onRetry={reloadWidgets} compact /> : <Skeleton variant="block" height="h-24" />
       ) : widgets.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noWidgets")}</p>
       ) : (

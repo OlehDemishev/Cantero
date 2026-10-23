@@ -9,6 +9,7 @@ import { CloseIcon, TeamIcon } from "@/components/nav-icons";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
+import { useCan } from "@/lib/permissions";
 import { formatCurrency } from "@/lib/format-currency";
 
 interface Worker {
@@ -42,7 +43,9 @@ export default function TeamPage() {
     Number(me?.company.workersCompBurdenPercent ?? 0) +
     Number(me?.company.benefitsBurdenPercent ?? 0) +
     Number(me?.company.otherBurdenPercent ?? 0);
-  const { data: report = null, reload: reloadReport } = useApi<LaborCostReport>("/team/labor-cost-report");
+  // Hours with their cost: only for members who may see pay rates (people.rates).
+  const seesRates = useCan()("people.rates");
+  const { data: report = null, reload: reloadReport } = useApi<LaborCostReport>(seesRates ? "/team/labor-cost-report" : null);
   const [showInactive, setShowInactive] = useState(false);
   const [form, setForm] = useState({ name: "", role: "", hourlyCost: "" });
   const [submitting, setSubmitting] = useState(false);
@@ -191,8 +194,8 @@ export default function TeamPage() {
             </div>
           )}
 
-          <h2 className="mb-3 mt-10 text-sm font-semibold text-fg-muted">{t("laborCostReport")}</h2>
-          {!report ? (
+          {seesRates && <h2 className="mb-3 mt-10 text-sm font-semibold text-fg-muted">{t("laborCostReport")}</h2>}
+          {!seesRates ? null : !report ? (
             <p className="text-fg-subtle">{tc("loading")}</p>
           ) : report.byWorker.length === 0 ? (
             <p className="text-sm text-fg-subtle">{t("noLaborCost")}</p>

@@ -2,6 +2,8 @@
 
 import { useTranslations } from "next-intl";
 import { useApi } from "@/lib/use-api";
+import { useCan } from "@/lib/permissions";
+import { PanelErrorState } from "@/components/ui/error-state";
 import { formatDate } from "@/lib/format-date";
 
 interface ExpiringRegistration {
@@ -14,8 +16,11 @@ interface ExpiringRegistration {
 
 export function WarrantyExpiringPanel() {
   const t = useTranslations("warrantyRegistry");
-  const { data: items = null } = useApi<ExpiringRegistration[]>("/warranty-registrations/expiring?days=90");
+  const canSee = useCan()("site.manage");
+  const { data: items = null, error, reload } = useApi<ExpiringRegistration[]>(canSee ? "/warranty-registrations/expiring?days=90" : null);
 
+  if (!canSee) return null;
+  if (error && !items) return <PanelErrorState title={t("expiringTitle")} error={error} onRetry={reload} />;
   if (!items || items.length === 0) return null;
 
   return (

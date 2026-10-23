@@ -2,6 +2,8 @@
 
 import { useTranslations } from "next-intl";
 import { useApi } from "@/lib/use-api";
+import { useCan } from "@/lib/permissions";
+import { PanelErrorState } from "@/components/ui/error-state";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 
@@ -21,8 +23,11 @@ export function MarketingRoiPanel() {
   const tl = useTranslations("labels");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
-  const { data: rows = null } = useApi<ChannelRoi[]>("/marketing/roi-by-channel");
+  const canSee = useCan()("finance.view");
+  const { data: rows = null, error, reload } = useApi<ChannelRoi[]>(canSee ? "/marketing/roi-by-channel" : null);
 
+  if (!canSee) return null;
+  if (error && !rows) return <PanelErrorState title={t("roiTitle")} error={error} onRetry={reload} />;
   if (!rows || rows.length === 0) return null;
 
   return (

@@ -2,6 +2,8 @@
 
 import { useTranslations } from "next-intl";
 import { useApi } from "@/lib/use-api";
+import { useCan } from "@/lib/permissions";
+import { PanelErrorState } from "@/components/ui/error-state";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
@@ -29,8 +31,11 @@ export function FixedAssetRegisterPanel() {
   const t = useTranslations("fixedAssetRegister");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
-  const { data: entries = null } = useApi<RegisterEntry[]>("/equipment/fixed-asset-register");
+  const canSee = useCan()("equipment.costs");
+  const { data: entries = null, error, reload } = useApi<RegisterEntry[]>(canSee ? "/equipment/fixed-asset-register" : null);
 
+  if (!canSee) return null;
+  if (error && !entries) return <PanelErrorState title={t("title")} error={error} onRetry={reload} />;
   if (!entries || entries.length === 0) return null;
 
   return (

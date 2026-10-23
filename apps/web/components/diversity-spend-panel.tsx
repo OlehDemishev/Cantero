@@ -2,6 +2,8 @@
 
 import { useTranslations } from "next-intl";
 import { useApi } from "@/lib/use-api";
+import { useCan } from "@/lib/permissions";
+import { PanelErrorState } from "@/components/ui/error-state";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 
@@ -22,8 +24,11 @@ export function DiversitySpendPanel() {
   const currency = me?.company.currency ?? "USD";
   const money = (amount: number) => formatCurrency(amount, currency);
 
-  const { data: report = null } = useApi<DiversitySpendReport>("/finance/subcontractors/diversity-spend-report");
+  const canSee = useCan()("finance.view");
+  const { data: report = null, error, reload } = useApi<DiversitySpendReport>(canSee ? "/finance/subcontractors/diversity-spend-report" : null);
 
+  if (!canSee) return null;
+  if (error && !report) return <PanelErrorState title={t("title")} error={error} onRetry={reload} />;
   if (!report || report.totalSpend === 0) return null;
 
   return (

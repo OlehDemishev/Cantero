@@ -4,6 +4,8 @@ import { useTranslations } from "next-intl";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { chartColors, chartAxisProps, chartGridProps, chartTooltipProps } from "@/components/charts/chart-theme";
 import { useApi } from "@/lib/use-api";
+import { useCan } from "@/lib/permissions";
+import { PanelErrorState } from "@/components/ui/error-state";
 import { formatDate } from "@/lib/format-date";
 
 interface NpsResponse {
@@ -25,8 +27,11 @@ interface NpsTrend {
 
 export function NpsTrendPanel() {
   const t = useTranslations("npsTrend");
-  const { data = null } = useApi<NpsTrend>("/nps-surveys/trend");
+  const canSee = useCan()("site.manage");
+  const { data = null, error, reload } = useApi<NpsTrend>(canSee ? "/nps-surveys/trend" : null);
 
+  if (!canSee) return null;
+  if (error && !data) return <PanelErrorState title={t("title")} error={error} onRetry={reload} className="mt-8" />;
   if (!data || data.totalResponses === 0) return null;
 
   const scoreColor = data.npsScore! >= 50 ? "text-success-fg" : data.npsScore! >= 0 ? "text-amber-600" : "text-danger-fg";

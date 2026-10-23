@@ -5,8 +5,11 @@ import { useTranslations } from "next-intl";
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { chartColors, chartAxisProps, chartGridProps, chartTooltipProps } from "@/components/charts/chart-theme";
 import { AGGREGATE_REPORT_DATASETS, REPORT_DATASETS, type ReportDataset } from "@cantero/shared";
-import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { apiFetch, downloadBlob, notifyApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { useCan } from "@/lib/permissions";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 import { resetStateInEffect } from "@/lib/effect-reset";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -54,7 +57,9 @@ export function CustomReportsPanel() {
   const tc = useTranslations("common");
   const fieldLabel = useReportFieldLabel();
 
-  const { data: saved = null, reload: reloadSaved } = useApi<SavedReport[]>("/custom-reports");
+  // The report builder is its own permission (reports.custom); without it the panel isn't shown.
+  const canSee = useCan()("reports.custom");
+  const { data: saved = null, error: savedError, reload: reloadSaved } = useApi<SavedReport[]>(canSee ? "/custom-reports" : null);
   const [dataset, setDataset] = useState<ReportDataset>("projects");
   const [fields, setFields] = useState<ReportField[]>([]);
   const [columns, setColumns] = useState<string[]>([]);
@@ -71,15 +76,23 @@ export function CustomReportsPanel() {
   }
 
   useEffect(() => {
-    apiFetch<ReportField[]>(`/custom-reports/fields?dataset=${dataset}`).then((f) => {
-      setFields(f);
-      setColumns(f.map((field) => field.key));
-    });
+    if (!canSee) return;
+    let current = true;
+    apiFetch<ReportField[]>(`/custom-reports/fields?dataset=${dataset}`)
+      .then((f) => {
+        if (!current) return;
+        setFields(f);
+        setColumns(f.map((field) => field.key));
+      })
+      .catch(notifyApiError);
     resetStateInEffect(() => {
       setStatusEquals("");
       setResult(null);
     });
-  }, [dataset]);
+    return () => {
+      current = false;
+    };
+  }, [dataset, canSee]);
 
   function toggleColumn(key: string) {
     setColumns((cols) => (cols.includes(key) ? cols.filter((c) => c !== key) : [...cols, key]));
@@ -146,6 +159,8 @@ export function CustomReportsPanel() {
   }
 
   const isAggregate = AGGREGATE_DATASETS.has(dataset);
+
+  if (!canSee) return null;
 
   return (
     <div className="mt-10">
@@ -226,7 +241,7 @@ export function CustomReportsPanel() {
 
       <h3 className="mb-2 mt-6 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("savedReports")}</h3>
       {saved === null ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        savedError ? <ErrorState error={savedError} onRetry={reloadSaved} compact /> : <Skeleton lines={2} />
       ) : saved.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noSavedReports")}</p>
       ) : (

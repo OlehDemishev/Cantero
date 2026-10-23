@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { chartColors, chartAxisProps, chartGridProps, chartTooltipProps } from "@/components/charts/chart-theme";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
-import { resetStateInEffect } from "@/lib/effect-reset";
+import { useCan } from "@/lib/permissions";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ProjectSafetyRow {
   projectId: string;
@@ -61,19 +63,13 @@ export function SafetyScorecardPanel() {
   const t = useTranslations("sustainability");
 
   const [year, setYear] = useState(CURRENT_YEAR);
-  const [scorecard, setScorecard] = useState<SafetyScorecard | null>(null);
+  const canSee = useCan()("site.manage");
+  const { data: scorecard, error: scorecardError, reload: reloadScorecard } = useApi<SafetyScorecard>(
+    canSee ? `/safety/analytics/scorecard?year=${year}` : null,
+  );
   const [exporting, setExporting] = useState(false);
-  const { data: training = null } = useApi<TrainingCompliance>("/safety/analytics/training-compliance");
-  const [nearMiss, setNearMiss] = useState<NearMissAnalytics | null>(null);
-
-  useEffect(() => {
-    resetStateInEffect(() => {
-      setScorecard(null);
-      setNearMiss(null);
-    });
-    apiFetch<SafetyScorecard>(`/safety/analytics/scorecard?year=${year}`).then(setScorecard);
-    apiFetch<NearMissAnalytics>(`/safety/analytics/near-miss?year=${year}`).then(setNearMiss);
-  }, [year]);
+  const { data: training = null } = useApi<TrainingCompliance>(canSee ? "/safety/analytics/training-compliance" : null);
+  const { data: nearMiss } = useApi<NearMissAnalytics>(canSee ? `/safety/analytics/near-miss?year=${year}` : null);
 
   async function downloadOsha300a() {
     setExporting(true);
@@ -84,6 +80,8 @@ export function SafetyScorecardPanel() {
       setExporting(false);
     }
   }
+
+  if (!canSee) return null;
 
   return (
     <div className="mt-10">
@@ -105,7 +103,7 @@ export function SafetyScorecardPanel() {
       <p className="mb-3 text-xs text-fg-subtle">{t("safetyScorecardHint")}</p>
 
       {!scorecard ? (
-        <p className="text-sm text-fg-subtle">…</p>
+        scorecardError ? <ErrorState error={scorecardError} onRetry={reloadScorecard} compact /> : <Skeleton variant="block" height="h-40" />
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
