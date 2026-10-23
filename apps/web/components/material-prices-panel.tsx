@@ -7,6 +7,8 @@ import { useApi } from "@/lib/use-api";
 import { useCan } from "@/lib/permissions";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface MaterialCatalogItem {
   id: string;
@@ -39,7 +41,7 @@ export function MaterialPricesPanel() {
   const currency = me?.company.currency ?? "";
 
   const canSeePriceChanges = useCan()("purchasing.view");
-  const { data: materials = null, reload: reloadMaterials } = useApi<MaterialCatalogItem[]>("/materials/catalog");
+  const { data: materials = null, reload: reloadMaterials, error: materialsError } = useApi<MaterialCatalogItem[]>("/materials/catalog");
   const { data: changes = null, reload: reloadChanges } = useApi<PriceChange[]>(canSeePriceChanges ? "/materials/catalog/price-changes" : null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [priceDraft, setPriceDraft] = useState("");
@@ -103,7 +105,7 @@ export function MaterialPricesPanel() {
     setAffected(result);
   }
 
-  if (!materials) return null;
+  if (!materials) return materialsError ? <ErrorState error={materialsError} onRetry={reloadMaterials} compact /> : <Skeleton lines={3} />;
 
   return (
     <div className="mt-8">

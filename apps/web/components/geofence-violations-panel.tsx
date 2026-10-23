@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, downloadBlob, notifyApiError } from "@/lib/api-client";
+import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Violation {
   id: string;
@@ -16,6 +18,7 @@ interface Violation {
 export function GeofenceViolationsPanel() {
   const t = useTranslations("geofenceViolations");
   const [violations, setViolations] = useState<Violation[] | null>(null);
+  const [violationsError, setViolationsError] = useState<Error | null>(null);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [busy, setBusy] = useState(false);
@@ -24,7 +27,10 @@ export function GeofenceViolationsPanel() {
     const query = new URLSearchParams();
     if (from) query.set("from", new Date(from).toISOString());
     if (to) query.set("to", new Date(to).toISOString());
-    apiFetch<Violation[]>(`/reports/geofence-violations?${query.toString()}`).then(setViolations).catch(notifyApiError);
+    apiFetch<Violation[]>(`/reports/geofence-violations?${query.toString()}`).then((result) => {
+      setViolationsError(null);
+      setViolations(result);
+    }).catch(setViolationsError);
   }
 
   useEffect(load, []);
@@ -42,7 +48,7 @@ export function GeofenceViolationsPanel() {
     }
   }
 
-  if (violations === null) return null;
+  if (violations === null) return violationsError ? <ErrorState error={violationsError} onRetry={load} compact /> : <Skeleton lines={3} />;
 
   return (
     <div className="mt-10">

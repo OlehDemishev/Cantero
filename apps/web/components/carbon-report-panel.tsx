@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useApi } from "@/lib/use-api";
+import { PanelErrorState } from "@/components/ui/error-state";
 
 interface CarbonRow {
   materialCatalogItemId: string;
@@ -22,8 +23,9 @@ interface CarbonReport {
 export function CarbonReportPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("sustainability");
 
-  const { data: report = null } = useApi<CarbonReport>(`/sustainability/carbon-report?projectId=${projectId}`);
+  const { data: report = null, error: reportError, reload: reloadReport } = useApi<CarbonReport>(`/sustainability/carbon-report?projectId=${projectId}`);
 
+  if (reportError && !report) return <PanelErrorState title={t("carbonReport")} error={reportError} onRetry={reloadReport} className="mt-8" />;
   if (!report || report.rows.length === 0) return null;
 
   return (

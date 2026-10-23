@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { ApprenticeRatioViolation, CertifiedPayrollLine } from "@cantero/shared";
-import { apiFetch, downloadBlob, notifyApiError } from "@/lib/api-client";
+import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency, formatNumber } from "@/lib/format-currency";
 import { ErrorState } from "@/components/ui/error-state";
@@ -41,6 +41,7 @@ export function CertifiedPayrollPanel({ projectId }: { projectId: string }) {
   const currency = me?.company.currency ?? "";
 
   const [project, setProject] = useState<Project | null>(null);
+  const [projectError, setProjectError] = useState<Error | null>(null);
   const [publicWorkForm, setPublicWorkForm] = useState({ isPublicWork: false, contractNumber: "" });
   const [reports, setReports] = useState<CertifiedPayrollReport[] | null>(null);
   const [reportsError, setReportsError] = useState<Error | null>(null);
@@ -53,9 +54,10 @@ export function CertifiedPayrollPanel({ projectId }: { projectId: string }) {
 
   function loadProject() {
     apiFetch<Project>(`/projects/${projectId}`).then((p) => {
+      setProjectError(null);
       setProject(p);
       setPublicWorkForm({ isPublicWork: p.isPublicWork, contractNumber: p.contractNumber ?? "" });
-    }).catch(notifyApiError);
+    }).catch(setProjectError);
   }
 
   function loadReports() {
@@ -159,7 +161,7 @@ export function CertifiedPayrollPanel({ projectId }: { projectId: string }) {
     downloadBlob(blob, `certified-payroll-${reportId}.pdf`);
   }
 
-  if (!project) return null;
+  if (!project) return projectError ? <ErrorState error={projectError} onRetry={loadProject} compact /> : <Skeleton lines={3} />;
 
   return (
     <div className="mt-10">

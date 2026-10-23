@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { SUPPORTED_LOCALES } from "@cantero/shared";
 import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface WageClassification {
   id: string;
@@ -32,6 +34,7 @@ export function WorkerProfilePanel({ workerId, currency, onChanged }: { workerId
   const tc = useTranslations("common");
 
   const [worker, setWorker] = useState<WorkerProfile | null>(null);
+  const [workerError, setWorkerError] = useState<Error | null>(null);
   const [form, setForm] = useState({
     name: "",
     role: "",
@@ -62,7 +65,7 @@ export function WorkerProfilePanel({ workerId, currency, onChanged }: { workerId
         payrollEmployeeId: w.payrollEmployeeId ?? "",
         isApprentice: w.isApprentice,
       });
-    }).catch(notifyApiError);
+    }).catch(setWorkerError);
     apiFetch<WageClassification[]>("/wage-classifications").then(setWageClassifications).catch(notifyApiError);
   }
 
@@ -135,7 +138,7 @@ export function WorkerProfilePanel({ workerId, currency, onChanged }: { workerId
     }
   }
 
-  if (!worker) return null;
+  if (!worker) return workerError ? <ErrorState error={workerError} onRetry={load} compact /> : <Skeleton lines={3} />;
 
   return (
     <>

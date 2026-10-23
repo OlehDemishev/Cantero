@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, notifyApiError } from "@/lib/api-client";
+import { apiFetch } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
 import { resetStateInEffect } from "@/lib/effect-reset";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Status {
   connected: boolean;
@@ -17,15 +19,17 @@ export function IntacctSettingsPanel({ canManage }: { canManage: boolean }) {
   const t = useTranslations("intacct");
   const confirm = useConfirm();
   const [status, setStatus] = useState<Status | null>(null);
+  const [statusError, setStatusError] = useState<Error | null>(null);
   const [itemId, setItemId] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function load() {
     apiFetch<Status>("/company/intacct/status").then((s) => {
+      setStatusError(null);
       setStatus(s);
       setItemId(s.changeOrderItemId ?? "");
-    }).catch(notifyApiError);
+    }).catch(setStatusError);
   }
 
   useEffect(() => {
@@ -68,7 +72,7 @@ export function IntacctSettingsPanel({ canManage }: { canManage: boolean }) {
     }
   }
 
-  if (!status) return null;
+  if (!status) return statusError ? <ErrorState error={statusError} onRetry={load} compact /> : <Skeleton lines={3} />;
 
   return (
     <section className="card lg:col-span-2">

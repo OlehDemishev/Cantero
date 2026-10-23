@@ -6,6 +6,8 @@ import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { formatCurrency } from "@/lib/format-currency";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ProgressDraw {
   id: string;
@@ -30,7 +32,7 @@ export function ProgressBillingPanel({ estimateId, currency }: { estimateId: str
   const t = useTranslations("progressBilling");
   const router = useRouter();
 
-  const { data: summary = null } = useApi<ProgressBillingSummary>(`/invoices/progress-billing/${estimateId}`);
+  const { data: summary = null, error: summaryError, reload: reloadSummary } = useApi<ProgressBillingSummary>(`/invoices/progress-billing/${estimateId}`);
   const [form, setForm] = useState({ percentComplete: "", retainagePercent: "10" });
   const [releaseAmount, setReleaseAmount] = useState("");
   const [releasingPartial, setReleasingPartial] = useState(false);
@@ -74,7 +76,7 @@ export function ProgressBillingPanel({ estimateId, currency }: { estimateId: str
     }
   }
 
-  if (!summary) return null;
+  if (!summary) return summaryError ? <ErrorState error={summaryError} onRetry={reloadSummary} compact /> : <Skeleton lines={3} />;
 
   const hasDraws = summary.invoices.some((i) => !i.isRetainageRelease);
 

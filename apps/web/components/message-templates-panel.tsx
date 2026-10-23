@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, ApiError, notifyApiError } from "@/lib/api-client";
+import { apiFetch, ApiError } from "@/lib/api-client";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface TemplateEntry {
   key: string;
@@ -18,15 +20,17 @@ export function MessageTemplatesPanel() {
   const confirm = useConfirm();
   const td = useTranslations("dialog");
   const [templates, setTemplates] = useState<TemplateEntry[] | null>(null);
+  const [templatesError, setTemplatesError] = useState<Error | null>(null);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [errorKey, setErrorKey] = useState<{ key: string; message: string } | null>(null);
 
   function load() {
     apiFetch<TemplateEntry[]>("/message-templates").then((entries) => {
+      setTemplatesError(null);
       setTemplates(entries);
       setDrafts(Object.fromEntries(entries.map((e) => [e.key, e.customBody ?? ""])));
-    }).catch(notifyApiError);
+    }).catch(setTemplatesError);
   }
 
   useEffect(load, []);
@@ -58,7 +62,7 @@ export function MessageTemplatesPanel() {
     }
   }
 
-  if (!templates) return null;
+  if (!templates) return templatesError ? <ErrorState error={templatesError} onRetry={load} compact /> : <Skeleton lines={3} />;
 
   return (
     <div className="mt-8">

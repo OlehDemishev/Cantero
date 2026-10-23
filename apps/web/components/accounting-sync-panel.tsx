@@ -7,6 +7,8 @@ import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { formatDate, formatDateTime } from "@/lib/format-date";
 import { resetStateInEffect } from "@/lib/effect-reset";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Status {
   connected: boolean;
@@ -45,6 +47,7 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
   const confirm = useConfirm();
 
   const [status, setStatus] = useState<Status | null>(null);
+  const [statusError, setStatusError] = useState<Error | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lexofficeApiKey, setLexofficeApiKey] = useState("");
@@ -56,9 +59,10 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
 
   function load() {
     apiFetch<Status>("/company/accounting/status").then((s) => {
+      setStatusError(null);
       setStatus(s);
       if (s.connected) apiFetch<IntegrityCheck>("/company/accounting/integrity-check").then(setIntegrity).catch(notifyApiError);
-    }).catch(notifyApiError);
+    }).catch(setStatusError);
   }
 
   function toggleHistory() {
@@ -143,7 +147,7 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
     }
   }
 
-  if (!status) return null;
+  if (!status) return statusError ? <ErrorState error={statusError} onRetry={load} compact /> : <Skeleton lines={3} />;
 
   return (
     <section className="card lg:col-span-2">

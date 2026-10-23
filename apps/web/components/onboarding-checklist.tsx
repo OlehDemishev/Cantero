@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useApi } from "@/lib/use-api";
+import { PanelErrorState } from "@/components/ui/error-state";
 
 interface ChecklistStep {
   key: string;
@@ -15,9 +16,10 @@ interface ChecklistStep {
  * step is done. */
 export function OnboardingChecklist() {
   const t = useTranslations("onboardingChecklist");
-  const { data: steps = null } = useApi<ChecklistStep[]>("/me/onboarding-checklist");
+  const { data: steps = null, error: stepsError, reload: reloadSteps } = useApi<ChecklistStep[]>("/me/onboarding-checklist");
   const [dismissed, setDismissed] = useState(false);
 
+  if (stepsError && !steps) return <PanelErrorState title={t("title")} error={stepsError} onRetry={reloadSteps} />;
   if (!steps || dismissed || steps.every((s) => s.done)) return null;
 
   const doneCount = steps.filter((s) => s.done).length;

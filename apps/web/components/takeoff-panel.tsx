@@ -10,6 +10,8 @@ import { useApi } from "@/lib/use-api";
 import { loadPdf, pageVertices, renderPage, VertexIndex } from "@/lib/pdf";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatNumber } from "@/lib/format-currency";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface TakeoffPoint {
   x: number;
@@ -68,7 +70,7 @@ export function TakeoffPanel({ projectId }: { projectId: string }) {
   const tc = useTranslations("common");
   const searchParams = useSearchParams();
 
-  const { data: takeoffs = null, reload: reloadTakeoffs } = useApi<TakeoffSummary[]>(`/takeoffs?projectId=${projectId}`);
+  const { data: takeoffs = null, reload: reloadTakeoffs, error: takeoffsError } = useApi<TakeoffSummary[]>(`/takeoffs?projectId=${projectId}`);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<TakeoffDetail | null>(null);
   const { data: rateItems = [] } = useApi<RateCatalogItem[]>("/estimates/rate-catalog");
@@ -221,7 +223,7 @@ export function TakeoffPanel({ projectId }: { projectId: string }) {
   const unitLabel = (unit: string) => (unit === "ea" ? t("pcs") : unit);
   const formatValue = (m: TakeoffMeasurement) => (m.type === "count" ? `${formatNumber(m.value)} ${unitLabel(m.unit)}` : `${formatNumber(m.value, { fractionDigits: 2 })} ${m.unit}`);
 
-  if (takeoffs === null) return null;
+  if (takeoffs === null) return takeoffsError ? <ErrorState error={takeoffsError} onRetry={reloadTakeoffs} compact /> : <Skeleton lines={3} />;
 
   const minPoints = mode === "area" ? 3 : mode === "count" ? 1 : 2;
   const measuring = mode === "length" || mode === "area" || mode === "count";

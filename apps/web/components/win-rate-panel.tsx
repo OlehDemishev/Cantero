@@ -4,6 +4,8 @@ import { useTranslations } from "next-intl";
 import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface WinRateSlice {
   decidedCount: number;
@@ -26,9 +28,9 @@ export function WinRatePanel() {
   const currency = me?.company.currency ?? "USD";
   const money = (amount: number) => formatCurrency(amount, currency);
 
-  const { data: report = null } = useApi<WinRateReport>("/reports/win-rate");
+  const { data: report = null, error: reportError, reload: reloadReport } = useApi<WinRateReport>("/reports/win-rate");
 
-  if (!report) return null;
+  if (!report) return reportError ? <ErrorState error={reportError} onRetry={reloadReport} compact /> : <Skeleton lines={3} />;
   if (report.overall.decidedCount === 0) return null;
 
   return (

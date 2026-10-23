@@ -6,6 +6,8 @@ import type { LongLeadItemStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { useCan } from "@/lib/permissions";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Supplier {
   id: string;
@@ -42,7 +44,7 @@ export function LongLeadItemsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("longLeadItems");
   const tc = useTranslations("common");
 
-  const { data: items = null, reload: reloadItems } = useApi<LongLeadItem[]>(`/long-lead-items?projectId=${projectId}`);
+  const { data: items = null, reload: reloadItems, error: itemsError } = useApi<LongLeadItem[]>(`/long-lead-items?projectId=${projectId}`);
   const canSeeSuppliers = useCan()("purchasing.view");
   const { data: suppliers = [] } = useApi<Supplier[]>(canSeeSuppliers ? "/materials/suppliers" : null);
   const [creating, setCreating] = useState(false);
@@ -85,7 +87,7 @@ export function LongLeadItemsPanel({ projectId }: { projectId: string }) {
     load();
   }
 
-  if (items === null) return null;
+  if (items === null) return itemsError ? <ErrorState error={itemsError} onRetry={reloadItems} compact /> : <Skeleton lines={3} />;
 
   return (
     <div className="mt-10">

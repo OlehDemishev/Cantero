@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type ComplianceItemType = "subcontractor_document" | "supplier_document" | "worker_certification" | "permit" | "company_document";
 type ComplianceStatus = "expired" | "expiring";
@@ -23,9 +25,9 @@ interface ComplianceCalendar {
 export function ComplianceCalendarPanel() {
   const t = useTranslations("complianceCalendar");
   const [lookaheadDays, setLookaheadDays] = useState(90);
-  const { data = null } = useApi<ComplianceCalendar>(`/reports/compliance-calendar?lookaheadDays=${lookaheadDays}`);
+  const { data = null, error: dataError, reload: reloadData } = useApi<ComplianceCalendar>(`/reports/compliance-calendar?lookaheadDays=${lookaheadDays}`);
 
-  if (data === null) return null;
+  if (data === null) return dataError ? <ErrorState error={dataError} onRetry={reloadData} compact /> : <Skeleton lines={3} />;
 
   return (
     <div className="mt-10">

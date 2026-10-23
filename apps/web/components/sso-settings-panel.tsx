@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, downloadBlob, notifyApiError } from "@/lib/api-client";
+import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface SsoConfig {
   ssoDomain: string | null;
@@ -21,6 +23,7 @@ export function SsoSettingsPanel({ canManage }: { canManage: boolean }) {
   const tc = useTranslations("common");
 
   const [config, setConfig] = useState<SsoConfig | null>(null);
+  const [configError, setConfigError] = useState<Error | null>(null);
   const [form, setForm] = useState({ domain: "", entryPoint: "", issuer: "", cert: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,6 +31,7 @@ export function SsoSettingsPanel({ canManage }: { canManage: boolean }) {
 
   function load() {
     apiFetch<SsoConfig>("/company/sso").then((c) => {
+      setConfigError(null);
       setConfig(c);
       setForm({
         domain: c.ssoDomain ?? "",
@@ -35,7 +39,7 @@ export function SsoSettingsPanel({ canManage }: { canManage: boolean }) {
         issuer: c.ssoIssuer ?? "",
         cert: c.ssoCert ?? "",
       });
-    }).catch(notifyApiError);
+    }).catch(setConfigError);
   }
 
   useEffect(load, []);
@@ -91,7 +95,7 @@ export function SsoSettingsPanel({ canManage }: { canManage: boolean }) {
     downloadBlob(blob, "cantero-sp-metadata.xml");
   }
 
-  if (!config) return null;
+  if (!config) return configError ? <ErrorState error={configError} onRetry={load} compact /> : <Skeleton lines={3} />;
 
   return (
     <section className="card lg:col-span-2">

@@ -7,6 +7,8 @@ import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface GreenCertification {
   id: string;
@@ -25,7 +27,7 @@ export function GreenCertificationsPanel({ projectId }: { projectId: string }) {
   const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
-  const { data: items = null, reload: reloadItems } = useApi<GreenCertification[]>(`/sustainability/certifications?projectId=${projectId}`);
+  const { data: items = null, reload: reloadItems, error: itemsError } = useApi<GreenCertification[]>(`/sustainability/certifications?projectId=${projectId}`);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [busy, setBusy] = useState(false);
@@ -63,7 +65,7 @@ export function GreenCertificationsPanel({ projectId }: { projectId: string }) {
     load();
   }
 
-  if (items === null) return null;
+  if (items === null) return itemsError ? <ErrorState error={itemsError} onRetry={reloadItems} compact /> : <Skeleton lines={3} />;
   if (items.length === 0 && !creating) {
     return (
       <div className="mt-8">

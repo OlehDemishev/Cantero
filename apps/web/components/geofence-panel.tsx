@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, notifyApiError } from "@/lib/api-client";
+import { apiFetch } from "@/lib/api-client";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatNumber } from "@/lib/format-currency";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Project {
   geofenceLat: number | null;
@@ -19,19 +21,21 @@ export function GeofencePanel({ projectId }: { projectId: string }) {
   const tc = useTranslations("common");
 
   const [project, setProject] = useState<Project | null>(null);
+  const [projectError, setProjectError] = useState<Error | null>(null);
   const [form, setForm] = useState({ lat: "", lng: "", radiusMeters: "150" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function load() {
     apiFetch<Project>(`/projects/${projectId}`).then((p) => {
+      setProjectError(null);
       setProject(p);
       setForm({
         lat: p.geofenceLat?.toString() ?? "",
         lng: p.geofenceLng?.toString() ?? "",
         radiusMeters: p.geofenceRadiusMeters?.toString() ?? "150",
       });
-    }).catch(notifyApiError);
+    }).catch(setProjectError);
   }
 
   useEffect(load, [projectId]);
@@ -79,7 +83,7 @@ export function GeofencePanel({ projectId }: { projectId: string }) {
     }
   }
 
-  if (!project) return null;
+  if (!project) return projectError ? <ErrorState error={projectError} onRetry={load} compact /> : <Skeleton lines={3} />;
   const isSet = project.geofenceLat !== null;
 
   return (

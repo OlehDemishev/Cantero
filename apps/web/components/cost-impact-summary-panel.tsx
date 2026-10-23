@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
+import { PanelErrorState } from "@/components/ui/error-state";
 
 interface CostImpactRow {
   type: "rfi" | "punch_list";
@@ -25,8 +26,9 @@ export function CostImpactSummaryPanel({ projectId }: { projectId: string }) {
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const { data: summary = null } = useApi<CostImpactSummary>(`/rfis/cost-impact-summary?projectId=${projectId}`);
+  const { data: summary = null, error: summaryError, reload: reloadSummary } = useApi<CostImpactSummary>(`/rfis/cost-impact-summary?projectId=${projectId}`);
 
+  if (summaryError && !summary) return <PanelErrorState title={t("title")} error={summaryError} onRetry={reloadSummary} />;
   if (!summary || summary.rows.length === 0) return null;
 
   return (

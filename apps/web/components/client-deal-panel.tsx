@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { formatCurrency } from "@/lib/format-currency";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type ClientStage = "lead" | "contacted" | "qualified" | "won" | "lost";
 interface Worker {
@@ -52,6 +54,7 @@ export function ClientDealPanel({
   const tc = useTranslations("common");
 
   const [client, setClient] = useState<Client | null>(null);
+  const [clientError, setClientError] = useState<Error | null>(null);
   const { data: workers = [] } = useApi<Worker[]>("/workers");
   const [allClients, setAllClients] = useState<ReferralClient[]>([]);
   const { data: campaigns = [] } = useApi<MarketingCampaign[]>("/marketing/campaigns");
@@ -69,6 +72,7 @@ export function ClientDealPanel({
 
   function load() {
     apiFetch<Client>(`/clients/${clientId}`).then((c) => {
+      setClientError(null);
       setClient(c);
       setDealForm({
         estimatedValue: c.estimatedValue?.toString() ?? "",
@@ -79,7 +83,7 @@ export function ClientDealPanel({
         source: c.source ?? "",
         campaignId: c.campaignId ?? "",
       });
-    }).catch(notifyApiError);
+    }).catch(setClientError);
   }
 
   useEffect(() => {
@@ -123,7 +127,7 @@ export function ClientDealPanel({
     }
   }
 
-  if (!client) return null;
+  if (!client) return clientError ? <ErrorState error={clientError} onRetry={load} compact /> : <Skeleton lines={3} />;
 
   return (
     <div className="mt-6 card max-w-md">

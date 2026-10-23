@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { resetStateInEffect } from "@/lib/effect-reset";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Worker {
   id: string;
@@ -41,6 +43,7 @@ export function CrewsPanel({ workers, projects }: { workers: Worker[]; projects:
   const tc = useTranslations("common");
 
   const [crews, setCrews] = useState<Crew[] | null>(null);
+  const [crewsError, setCrewsError] = useState<Error | null>(null);
   const [creating, setCreating] = useState(false);
   const [newCrewName, setNewCrewName] = useState("");
   const [newCrewWorkerIds, setNewCrewWorkerIds] = useState<Set<string>>(new Set());
@@ -52,9 +55,10 @@ export function CrewsPanel({ workers, projects }: { workers: Worker[]; projects:
 
   function load() {
     apiFetch<Crew[]>("/resource-planning/crews").then((list) => {
+      setCrewsError(null);
       setCrews(list);
       setAssignForm((f) => ({ ...f, crewId: f.crewId || (list[0]?.id ?? "") }));
-    }).catch(notifyApiError);
+    }).catch(setCrewsError);
   }
 
   useEffect(load, []);
@@ -128,7 +132,7 @@ export function CrewsPanel({ workers, projects }: { workers: Worker[]; projects:
     }
   }
 
-  if (crews === null) return null;
+  if (crews === null) return crewsError ? <ErrorState error={crewsError} onRetry={load} compact /> : <Skeleton lines={3} />;
 
   return (
     <div className="mt-10">

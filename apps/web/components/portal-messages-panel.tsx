@@ -2,8 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, notifyApiError } from "@/lib/api-client";
+import { apiFetch } from "@/lib/api-client";
 import { formatDateTime } from "@/lib/format-date";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface PortalMessage {
   id: string;
@@ -21,15 +23,17 @@ export function PortalMessagesPanel({ projectId }: { projectId: string }) {
   const tc = useTranslations("common");
 
   const [messages, setMessages] = useState<PortalMessage[] | null>(null);
+  const [messagesError, setMessagesError] = useState<Error | null>(null);
   const [content, setContent] = useState("");
   const [busy, setBusy] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   function load() {
     apiFetch<PortalMessage[]>(`/projects/${projectId}/portal-messages`).then((list) => {
+      setMessagesError(null);
       setMessages(list);
       setTimeout(() => bottomRef.current?.scrollIntoView({ block: "end" }), 0);
-    }).catch(notifyApiError);
+    }).catch(setMessagesError);
   }
 
   useEffect(load, [projectId]);
@@ -50,7 +54,7 @@ export function PortalMessagesPanel({ projectId }: { projectId: string }) {
     }
   }
 
-  if (messages === null) return null;
+  if (messages === null) return messagesError ? <ErrorState error={messagesError} onRetry={load} compact /> : <Skeleton lines={3} />;
 
   return (
     <div className="mt-8">

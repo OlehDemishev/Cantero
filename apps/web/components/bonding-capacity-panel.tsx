@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, notifyApiError } from "@/lib/api-client";
+import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface CapacityUtilization {
   limit: number | null;
@@ -20,14 +22,16 @@ export function BondingCapacityPanel() {
   const currency = me?.company.currency ?? "";
 
   const [capacity, setCapacity] = useState<CapacityUtilization | null>(null);
+  const [capacityError, setCapacityError] = useState<Error | null>(null);
   const [limitInput, setLimitInput] = useState("");
   const [busy, setBusy] = useState(false);
 
   function load() {
     apiFetch<CapacityUtilization>("/surety-bonds/capacity").then((c) => {
+      setCapacityError(null);
       setCapacity(c);
       setLimitInput(c.limit !== null ? String(c.limit) : "");
-    }).catch(notifyApiError);
+    }).catch(setCapacityError);
   }
   useEffect(load, []);
 
@@ -45,7 +49,7 @@ export function BondingCapacityPanel() {
     }
   }
 
-  if (!capacity) return null;
+  if (!capacity) return capacityError ? <ErrorState error={capacityError} onRetry={load} compact /> : <Skeleton lines={3} />;
 
   return (
     <div className="mt-10">

@@ -7,6 +7,8 @@ import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatDate } from "@/lib/format-date";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface BudgetRevision {
   id: string;
@@ -51,7 +53,7 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("budget");
   const tc = useTranslations("common");
   const { data: me } = useMe();
-  const { data: budget = null, reload: reloadBudget } = useApi<BudgetVsActual>(`/finance/budget-vs-actual?projectId=${projectId}`);
+  const { data: budget = null, reload: reloadBudget, error: budgetError } = useApi<BudgetVsActual>(`/finance/budget-vs-actual?projectId=${projectId}`);
   const [addingRevision, setAddingRevision] = useState(false);
   const [revisionForm, setRevisionForm] = useState({ amount: "", reason: "" });
   const [addingDraw, setAddingDraw] = useState(false);
@@ -96,7 +98,7 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
     }
   }
 
-  if (!budget) return null;
+  if (!budget) return budgetError ? <ErrorState error={budgetError} onRetry={reloadBudget} compact /> : <Skeleton lines={3} />;
   const currency = me?.company.currency ?? "";
   const money = (amount: number | string | null | undefined) => formatCurrency(amount, currency);
 

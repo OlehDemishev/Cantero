@@ -10,6 +10,7 @@ import { useMe } from "@/lib/use-me";
 import type { CostCode } from "@/components/cost-codes-panel";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
+import { PanelErrorState } from "@/components/ui/error-state";
 
 interface CostHistoryMonth {
   month: string;
@@ -59,7 +60,7 @@ export function JobCostingPanel({ projectId }: { projectId: string }) {
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const { data: report = null, reload: reloadReport } = useApi<JobCostForecast>(`/job-costing/forecast?projectId=${projectId}`);
+  const { data: report = null, reload: reloadReport, error: reportError } = useApi<JobCostForecast>(`/job-costing/forecast?projectId=${projectId}`);
   const { data: history = null, reload: reloadHistory } = useApi<CostHistoryMonth[]>(`/job-costing/history?projectId=${projectId}`);
   const [costCodes, setCostCodes] = useState<CostCode[]>([]);
   const [transferring, setTransferring] = useState(false);
@@ -104,6 +105,7 @@ export function JobCostingPanel({ projectId }: { projectId: string }) {
     }
   }
 
+  if (reportError && !report) return <PanelErrorState title={t("title")} error={reportError} onRetry={reloadReport} className="mt-8" />;
   if (!report || report.rows.length === 0) return null;
 
   return (

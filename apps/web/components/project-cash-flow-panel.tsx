@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, notifyApiError } from "@/lib/api-client";
+import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { useReportAccess } from "@/lib/report-access";
 import { formatCurrency } from "@/lib/format-currency";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface CashFlowWeek {
   weekStart: string;
@@ -25,14 +27,19 @@ export function ProjectCashFlowPanel({ projectId }: { projectId: string }) {
   const currency = me?.company.currency ?? "";
 
   const [cashFlow, setCashFlow] = useState<CashFlowForecast | null>(null);
+  const [cashFlowError, setCashFlowError] = useState<Error | null>(null);
   const allowed = useReportAccess()("cash-flow-forecast");
 
   useEffect(() => {
     if (!allowed) return;
-    apiFetch<CashFlowForecast>(`/reports/cash-flow-forecast?projectId=${projectId}`).then(setCashFlow).catch(notifyApiError);
+    apiFetch<CashFlowForecast>(`/reports/cash-flow-forecast?projectId=${projectId}`).then((result) => {
+      setCashFlowError(null);
+      setCashFlow(result);
+    }).catch(setCashFlowError);
   }, [projectId, allowed]);
 
-  if (!cashFlow) return null;
+  if (!allowed) return null;
+  if (!cashFlow) return cashFlowError ? <ErrorState error={cashFlowError} compact /> : <Skeleton lines={3} />;
   if (cashFlow.totals.inflow === 0 && cashFlow.totals.outflow === 0) return null;
 
   const maxVal = Math.max(...cashFlow.weeks.flatMap((w) => [w.inflow, w.outflow]), 1);

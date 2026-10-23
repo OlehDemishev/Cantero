@@ -6,6 +6,8 @@ import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface TrainingEnrollment {
   id: string;
@@ -16,7 +18,7 @@ interface TrainingEnrollment {
 
 export function WorkerTrainingPanel({ workerId }: { workerId: string }) {
   const t = useTranslations("team");
-  const { data: trainingEnrollments = null, reload: reloadTrainingEnrollments } = useApi<TrainingEnrollment[]>(`/training/workers/${workerId}/enrollments`);
+  const { data: trainingEnrollments = null, reload: reloadTrainingEnrollments, error: trainingEnrollmentsError } = useApi<TrainingEnrollment[]>(`/training/workers/${workerId}/enrollments`);
   const [trainingBusy, setTrainingBusy] = useState(false);
 
   function load() {
@@ -33,7 +35,7 @@ export function WorkerTrainingPanel({ workerId }: { workerId: string }) {
     }
   }
 
-  if (trainingEnrollments === null) return null;
+  if (trainingEnrollments === null) return trainingEnrollmentsError ? <ErrorState error={trainingEnrollmentsError} onRetry={reloadTrainingEnrollments} compact /> : <Skeleton lines={3} />;
 
   return (
     <>

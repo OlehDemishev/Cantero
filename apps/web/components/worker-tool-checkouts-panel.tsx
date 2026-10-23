@@ -4,6 +4,8 @@ import { useTranslations } from "next-intl";
 import { useApi } from "@/lib/use-api";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatCurrency } from "@/lib/format-currency";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ToolCheckout {
   id: string;
@@ -21,10 +23,10 @@ interface ToolLiability {
 export function WorkerToolCheckoutsPanel({ workerId, currency }: { workerId: string; currency: string }) {
   const tt = useTranslations("toolCrib");
   const t = useTranslations("team");
-  const { data: toolCheckouts = null } = useApi<ToolCheckout[]>(`/workers/${workerId}/tool-checkouts`);
+  const { data: toolCheckouts = null, error: toolCheckoutsError, reload: reloadToolCheckouts } = useApi<ToolCheckout[]>(`/workers/${workerId}/tool-checkouts`);
   const { data: toolLiability = null } = useApi<ToolLiability>(`/workers/${workerId}/tool-liability`);
 
-  if (toolCheckouts === null) return null;
+  if (toolCheckouts === null) return toolCheckoutsError ? <ErrorState error={toolCheckoutsError} onRetry={reloadToolCheckouts} compact /> : <Skeleton lines={3} />;
 
   return (
     <>

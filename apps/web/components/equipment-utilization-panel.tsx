@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useApi } from "@/lib/use-api";
+import { PanelErrorState } from "@/components/ui/error-state";
 
 interface UtilizationEntry {
   id: string;
@@ -14,8 +15,9 @@ interface UtilizationEntry {
 
 export function EquipmentUtilizationPanel() {
   const t = useTranslations("equipmentUtilization");
-  const { data: entries = null } = useApi<UtilizationEntry[]>("/reports/equipment-utilization");
+  const { data: entries = null, error: entriesError, reload: reloadEntries } = useApi<UtilizationEntry[]>("/reports/equipment-utilization");
 
+  if (entriesError && !entries) return <PanelErrorState title={t("title")} error={entriesError} onRetry={reloadEntries} />;
   if (!entries || entries.length === 0) return null;
 
   return (

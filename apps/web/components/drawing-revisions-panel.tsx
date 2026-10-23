@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { apiUpload } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface DrawingSheetVersion {
   id: string;
@@ -18,7 +20,7 @@ export function DrawingRevisionsPanel({ sheetId, onSuperseded }: { sheetId: stri
   const t = useTranslations("drawings");
   const tc = useTranslations("common");
 
-  const { data: versions = null } = useApi<DrawingSheetVersion[]>(`/drawing-sheets/${sheetId}/versions`);
+  const { data: versions = null, error: versionsError, reload: reloadVersions } = useApi<DrawingSheetVersion[]>(`/drawing-sheets/${sheetId}/versions`);
   const [revision, setRevision] = useState("");
   const [revisionDate, setRevisionDate] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -47,7 +49,7 @@ export function DrawingRevisionsPanel({ sheetId, onSuperseded }: { sheetId: stri
     }
   }
 
-  if (versions === null) return null;
+  if (versions === null) return versionsError ? <ErrorState error={versionsError} onRetry={reloadVersions} compact /> : <Skeleton lines={3} />;
 
   return (
     <div className="mt-6 border-t border-gray-100 pt-4 dark:border-gray-800">

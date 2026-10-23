@@ -5,6 +5,8 @@ import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const markerIcon = L.icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -29,9 +31,9 @@ const DEFAULT_ZOOM = 4;
 
 export function ProjectMapPanel() {
   const t = useTranslations("portfolio");
-  const { data: projects = null } = useApi<Project[]>("/projects");
+  const { data: projects = null, error: projectsError, reload: reloadProjects } = useApi<Project[]>("/projects");
 
-  if (!projects) return null;
+  if (!projects) return projectsError ? <ErrorState error={projectsError} onRetry={reloadProjects} compact /> : <Skeleton lines={3} />;
 
   const withCoords = projects.filter((p): p is Project & { geofenceLat: number; geofenceLng: number } => p.geofenceLat !== null && p.geofenceLng !== null);
 

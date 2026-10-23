@@ -6,6 +6,8 @@ import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface BenefitEnrollment {
   id: string;
@@ -19,7 +21,7 @@ export function WorkerBenefitsPanel({ workerId }: { workerId: string }) {
   const t = useTranslations("team");
   const confirm = useConfirm();
   const tb = useTranslations("benefits");
-  const { data: benefitEnrollments = null, reload: reloadBenefitEnrollments } = useApi<BenefitEnrollment[]>(`/workers/${workerId}/benefit-enrollments`);
+  const { data: benefitEnrollments = null, reload: reloadBenefitEnrollments, error: benefitEnrollmentsError } = useApi<BenefitEnrollment[]>(`/workers/${workerId}/benefit-enrollments`);
   const [benefitsBusy, setBenefitsBusy] = useState(false);
 
   function load() {
@@ -37,7 +39,7 @@ export function WorkerBenefitsPanel({ workerId }: { workerId: string }) {
     }
   }
 
-  if (benefitEnrollments === null) return null;
+  if (benefitEnrollments === null) return benefitEnrollmentsError ? <ErrorState error={benefitEnrollmentsError} onRetry={reloadBenefitEnrollments} compact /> : <Skeleton lines={3} />;
 
   return (
     <>

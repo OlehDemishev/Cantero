@@ -2,10 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, notifyApiError } from "@/lib/api-client";
+import { apiFetch } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
 import { resetStateInEffect } from "@/lib/effect-reset";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Status {
   connected: boolean;
@@ -17,18 +20,16 @@ export function DocusignSettingsPanel({ canManage }: { canManage: boolean }) {
   const t = useTranslations("docusign");
   const confirm = useConfirm();
 
-  const [status, setStatus] = useState<Status | null>(null);
+  const { data: status = null, error: statusError, reload: reloadStatus } = useApi<Status>("/company/docusign/status");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function load() {
-    apiFetch<Status>("/company/docusign/status").then(setStatus).catch(notifyApiError);
+    void reloadStatus();
   }
 
   useEffect(() => {
-    load();
     const params = new URLSearchParams(window.location.search);
-    if (params.get("docusign_connected")) load();
     const err = params.get("docusign_error");
     if (err) resetStateInEffect(() => setError(err));
     if (params.has("docusign_connected") || params.has("docusign_error")) {
@@ -57,7 +58,7 @@ export function DocusignSettingsPanel({ canManage }: { canManage: boolean }) {
     }
   }
 
-  if (!status) return null;
+  if (!status) return statusError ? <ErrorState error={statusError} onRetry={reloadStatus} compact /> : <Skeleton lines={3} />;
 
   return (
     <section className="card lg:col-span-2">
