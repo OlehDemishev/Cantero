@@ -119,7 +119,7 @@ export function PhotoAttachments({
               // eslint-disable-next-line @next/next/no-img-element
               <img src={previews[d.id]} alt={d.name} className="h-full w-full object-cover" />
             ) : (
-              <span className="flex h-full w-full items-center justify-center text-[10px] text-gray-400 dark:text-gray-500">…</span>
+              <span className="flex h-full w-full items-center justify-center text-[10px] text-fg-subtle">…</span>
             )}
           </button>
         ))}
@@ -134,7 +134,7 @@ export function PhotoAttachments({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
-        <span className="text-xs font-medium text-gray-700 dark:text-gray-200">{t("title")}</span>
+        <span className="text-xs font-medium text-fg-muted">{t("title")}</span>
         {beforeAfter ? (
           <>
             <button type="button" onClick={() => triggerUpload("gallery_before")} disabled={busy} className="btn-secondary px-2 py-0.5 text-xs">
@@ -152,20 +152,20 @@ export function PhotoAttachments({
         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
       </div>
       {docs === null ? null : docs.length === 0 ? (
-        <p className="text-xs text-gray-400 dark:text-gray-500">{t("noPhotos")}</p>
+        <p className="text-xs text-fg-subtle">{t("noPhotos")}</p>
       ) : beforeAfter ? (
         <div className="flex flex-wrap gap-4">
           <div className="flex flex-col gap-1.5">
-            <span className="text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{t("before")}</span>
-            {beforeDocs.length === 0 ? <p className="text-xs text-gray-400 dark:text-gray-500">{t("noPhotos")}</p> : renderGrid(beforeDocs)}
+            <span className="text-[11px] font-medium uppercase tracking-wide text-fg-subtle">{t("before")}</span>
+            {beforeDocs.length === 0 ? <p className="text-xs text-fg-subtle">{t("noPhotos")}</p> : renderGrid(beforeDocs)}
           </div>
           <div className="flex flex-col gap-1.5">
-            <span className="text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{t("after")}</span>
-            {afterDocs.length === 0 ? <p className="text-xs text-gray-400 dark:text-gray-500">{t("noPhotos")}</p> : renderGrid(afterDocs)}
+            <span className="text-[11px] font-medium uppercase tracking-wide text-fg-subtle">{t("after")}</span>
+            {afterDocs.length === 0 ? <p className="text-xs text-fg-subtle">{t("noPhotos")}</p> : renderGrid(afterDocs)}
           </div>
           {otherDocs.length > 0 && (
             <div className="flex flex-col gap-1.5">
-              <span className="text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{t("title")}</span>
+              <span className="text-[11px] font-medium uppercase tracking-wide text-fg-subtle">{t("title")}</span>
               {renderGrid(otherDocs)}
             </div>
           )}

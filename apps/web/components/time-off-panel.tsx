@@ -76,10 +76,10 @@ export function TimeOffPanel() {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("title")}</h2>
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="card lg:col-span-1">
-          <h3 className="mb-3 text-xs font-semibold text-gray-500 dark:text-gray-400">{t("newRequest")}</h3>
+          <h3 className="mb-3 text-xs font-semibold text-fg-subtle">{t("newRequest")}</h3>
           <form onSubmit={submit} className="flex flex-col gap-2">
             <select
               required
@@ -132,14 +132,14 @@ export function TimeOffPanel() {
 
         <div className="lg:col-span-2">
           {!requests ? (
-            <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+            <p className="text-fg-subtle">{tc("loading")}</p>
           ) : requests.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noRequests")}</p>
+            <p className="text-sm text-fg-subtle">{t("noRequests")}</p>
           ) : (
             <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
                   <th className="py-2">{tc("name")}</th>
                   <th>{t("type")}</th>
                   <th>{t("dates")}</th>
@@ -159,10 +159,10 @@ export function TimeOffPanel() {
                       <span
                         className={
                           r.status === "approved"
-                            ? "text-xs text-success-700 dark:text-success-500"
+                            ? "text-xs text-success-fg"
                             : r.status === "denied"
-                              ? "text-xs text-error-700 dark:text-error-500"
-                              : "text-xs text-gray-500 dark:text-gray-400"
+                              ? "text-xs text-danger-fg"
+                              : "text-xs text-fg-subtle"
                         }
                       >
                         {t(r.status)}
@@ -172,10 +172,10 @@ export function TimeOffPanel() {
                       <td className="text-right">
                         {r.status === "pending" && (
                           <div className="flex justify-end gap-2 text-xs">
-                            <button onClick={() => decide(r.id, true)} disabled={busy} className="text-success-700 dark:text-success-500 hover:underline">
+                            <button onClick={() => decide(r.id, true)} disabled={busy} className="text-success-fg hover:underline">
                               {t("approve")}
                             </button>
-                            <button onClick={() => decide(r.id, false)} disabled={busy} className="text-error-700 dark:text-error-500 hover:underline">
+                            <button onClick={() => decide(r.id, false)} disabled={busy} className="text-danger-fg hover:underline">
                               {t("deny")}
                             </button>
                           </div>

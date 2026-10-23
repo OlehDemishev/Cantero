@@ -64,7 +64,7 @@ export function SavedViewsBar<T extends object>({
                 type="button"
                 onClick={() => remove(v.id)}
                 aria-label={t("removeView")}
-                className="text-gray-400 dark:text-gray-500 hover:text-error-600"
+                className="text-fg-subtle hover:text-danger-fg"
               >
                 ×
               </button>

@@ -209,7 +209,7 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
                 <span className="font-medium text-gray-700 dark:text-gray-200">{t("signHere")}</span>
                 <SignaturePad onChange={setSignatureDataUrl} clearLabel={t("clearSignature")} />
               </div>
-              {signatureError && <p className="mt-2 text-xs text-error-600">{signatureError}</p>}
+              {signatureError && <p className="mt-2 text-xs text-danger-fg">{signatureError}</p>}
 
               {counterMode ? (
                 <div className="mt-3 rounded-lg bg-gray-50 dark:bg-gray-700 p-3">

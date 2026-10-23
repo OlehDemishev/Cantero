@@ -80,13 +80,13 @@ export function CompanyCoiPanel({ canManage }: { canManage: boolean }) {
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-4 text-xs text-fg-subtle">{t("hint")}</p>
 
       {documents === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
       ) : documents.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noDocuments")}</p>
+        <p className="text-sm text-fg-subtle">{t("noDocuments")}</p>
       ) : (
         <ul className="mb-4 flex flex-col gap-1.5">
           {documents.map((doc) => {
@@ -94,14 +94,14 @@ export function CompanyCoiPanel({ canManage }: { canManage: boolean }) {
             return (
               <li key={doc.id} className="flex items-center justify-between text-sm">
                 <span>
-                  <span className="text-gray-500 dark:text-gray-400">{t(doc.type)}</span> — {doc.name}
+                  <span className="text-fg-subtle">{t(doc.type)}</span> — {doc.name}
                   {" · "}
-                  <span className={expired ? "text-error-700 dark:text-error-500" : "text-gray-500 dark:text-gray-400"}>{formatDate(new Date(doc.expiresAt))}</span>
+                  <span className={expired ? "text-danger-fg" : "text-fg-subtle"}>{formatDate(new Date(doc.expiresAt))}</span>
                 </span>
                 {canManage && (
                   <span className="flex items-center gap-2">
                     <CertificateAttachment param="companyDocumentId" entityId={doc.id} />
-                    <button onClick={() => removeDocument(doc.id)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
+                    <button onClick={() => removeDocument(doc.id)} className="text-fg-subtle hover:text-danger-fg">
                       ×
                     </button>
                   </span>
@@ -146,7 +146,7 @@ export function CompanyCoiPanel({ canManage }: { canManage: boolean }) {
           </form>
 
           <div className="mt-4 border-t border-gray-100 dark:border-gray-700 pt-4">
-            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+            <label className="flex items-center gap-2 text-sm text-fg-muted">
               <input
                 type="checkbox"
                 checked={company?.coiPubliclyShared ?? false}

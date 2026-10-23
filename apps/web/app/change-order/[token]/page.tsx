@@ -191,7 +191,7 @@ export default function PublicChangeOrderPage({ params }: { params: Promise<{ to
                 <span className="font-medium text-gray-700 dark:text-gray-200">{t("signHere")}</span>
                 <SignaturePad onChange={setSignatureDataUrl} clearLabel={t("clearSignature")} />
               </div>
-              {signatureError && <p className="mt-2 text-xs text-error-600">{signatureError}</p>}
+              {signatureError && <p className="mt-2 text-xs text-danger-fg">{signatureError}</p>}
 
               <div className="mt-3 flex gap-2">
                 <button onClick={() => decide("approved")} disabled={busy} className="btn-primary flex-1">

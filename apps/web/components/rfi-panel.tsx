@@ -45,17 +45,17 @@ interface Rfi {
 
 const STATUS_STYLES: Record<RfiStatus, string> = {
   open: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  answered: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
-  closed: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
+  answered: "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
+  closed: "bg-success-50 dark:bg-success-500/15 text-success-fg",
 };
 const PRIORITY_STYLES: Record<RfiPriority, string> = {
-  low: "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400",
+  low: "bg-gray-100 dark:bg-gray-700 text-fg-subtle",
   medium: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
-  high: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
+  high: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
 };
 const BALL_IN_COURT_STYLES: Record<BallInCourtParty, string> = {
   internal: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
-  client: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
+  client: "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
   subcontractor: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
 };
 const BALL_IN_COURT_PARTIES: BallInCourtParty[] = ["internal", "client", "subcontractor"];
@@ -185,9 +185,9 @@ export function RfiPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("title")}</h2>
         <div className="flex items-center gap-2">
-          <label className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+          <label className="flex items-center gap-1.5 text-xs text-fg-subtle">
             <input type="checkbox" checked={myTurnOnly} onChange={(e) => setMyTurnOnly(e.target.checked)} />
             {t("myTurnOnly")}
           </label>
@@ -203,7 +203,7 @@ export function RfiPanel({ projectId }: { projectId: string }) {
         <form onSubmit={submit} className="card mb-4 flex flex-col gap-3">
           <TemplatePicker type="rfi" onSelect={({ subject, body }) => setForm((f) => ({ ...f, subject, question: body }))} />
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("subject")}</span>
+            <span className="font-medium text-fg-muted">{t("subject")}</span>
             <input
               required
               className="input"
@@ -212,7 +212,7 @@ export function RfiPanel({ projectId }: { projectId: string }) {
             />
           </label>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("question")}</span>
+            <span className="font-medium text-fg-muted">{t("question")}</span>
             <textarea
               required
               rows={3}
@@ -224,7 +224,7 @@ export function RfiPanel({ projectId }: { projectId: string }) {
           <SimilarItemsHint type="rfi" projectId={projectId} text={`${form.subject}\n${form.question}`} />
           <div className="flex flex-wrap gap-3">
             <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("priority")}</span>
+              <span className="font-medium text-fg-muted">{t("priority")}</span>
               <select
                 className="input"
                 value={form.priority}
@@ -236,7 +236,7 @@ export function RfiPanel({ projectId }: { projectId: string }) {
               </select>
             </label>
             <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("dueDate")}</span>
+              <span className="font-medium text-fg-muted">{t("dueDate")}</span>
               <input
                 type="date"
                 className="input"
@@ -245,7 +245,7 @@ export function RfiPanel({ projectId }: { projectId: string }) {
               />
             </label>
             <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("scheduleImpactDays")}</span>
+              <span className="font-medium text-fg-muted">{t("scheduleImpactDays")}</span>
               <input
                 type="number"
                 min="0"
@@ -256,7 +256,7 @@ export function RfiPanel({ projectId }: { projectId: string }) {
             </label>
           </div>
           <div className="flex items-end gap-3">
-            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+            <label className="flex items-center gap-2 text-sm text-fg-muted">
               <input
                 type="checkbox"
                 checked={form.costImpact}
@@ -266,7 +266,7 @@ export function RfiPanel({ projectId }: { projectId: string }) {
             </label>
             {form.costImpact && (
               <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700 dark:text-gray-200">{t("estimatedCostImpact")}</span>
+                <span className="font-medium text-fg-muted">{t("estimatedCostImpact")}</span>
                 <input
                   type="number"
                   min="0"
@@ -292,31 +292,31 @@ export function RfiPanel({ projectId }: { projectId: string }) {
       {analytics && analytics.openCount + analytics.answeredWithDueDateCount > 0 && (
         <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="card py-2">
-            <div className="text-xs text-gray-500 dark:text-gray-400">{t("analyticsOpenCount")}</div>
-            <div className="text-lg font-semibold text-gray-900 dark:text-gray-50">{analytics.openCount}</div>
+            <div className="text-xs text-fg-subtle">{t("analyticsOpenCount")}</div>
+            <div className="text-lg font-semibold text-fg">{analytics.openCount}</div>
           </div>
           <div className="card py-2">
-            <div className="text-xs text-gray-500 dark:text-gray-400">{t("analyticsAvgDaysToAnswer")}</div>
-            <div className="text-lg font-semibold text-gray-900 dark:text-gray-50">
+            <div className="text-xs text-fg-subtle">{t("analyticsAvgDaysToAnswer")}</div>
+            <div className="text-lg font-semibold text-fg">
               {analytics.averageDaysToAnswer !== null ? t("daysValue", { days: analytics.averageDaysToAnswer }) : "—"}
             </div>
           </div>
           <div className="card py-2">
-            <div className="text-xs text-gray-500 dark:text-gray-400">{t("analyticsOldestOpen")}</div>
-            <div className="text-lg font-semibold text-gray-900 dark:text-gray-50">
+            <div className="text-xs text-fg-subtle">{t("analyticsOldestOpen")}</div>
+            <div className="text-lg font-semibold text-fg">
               {analytics.oldestOpenRfi ? t("daysValue", { days: analytics.oldestOpenRfi.daysOpen }) : "—"}
             </div>
-            {analytics.oldestOpenRfi && <div className="text-xs text-gray-400 dark:text-gray-500">{analytics.oldestOpenRfi.number}</div>}
+            {analytics.oldestOpenRfi && <div className="text-xs text-fg-subtle">{analytics.oldestOpenRfi.number}</div>}
           </div>
           <div className="card py-2">
-            <div className="text-xs text-gray-500 dark:text-gray-400">{t("analyticsSlaCompliance")}</div>
-            <div className="text-lg font-semibold text-gray-900 dark:text-gray-50">
+            <div className="text-xs text-fg-subtle">{t("analyticsSlaCompliance")}</div>
+            <div className="text-lg font-semibold text-fg">
               {analytics.slaCompliancePercent !== null ? `${analytics.slaCompliancePercent}%` : "—"}
             </div>
           </div>
           {analytics.ballInCourtBreakdown.length > 0 && (
             <div className="card col-span-2 py-2 sm:col-span-4">
-              <div className="mb-1 text-xs text-gray-500 dark:text-gray-400">{t("analyticsBallInCourtBreakdown")}</div>
+              <div className="mb-1 text-xs text-fg-subtle">{t("analyticsBallInCourtBreakdown")}</div>
               <div className="flex flex-wrap gap-1.5">
                 {analytics.ballInCourtBreakdown.map((b) => (
                   <span key={b.party} className={`rounded-full px-2 py-0.5 text-xs font-medium ${BALL_IN_COURT_STYLES[b.party]}`}>
@@ -332,19 +332,19 @@ export function RfiPanel({ projectId }: { projectId: string }) {
       {bulk.result && (
         <div className="mb-3 flex items-center justify-between rounded-md bg-gray-50 dark:bg-gray-700 px-3 py-2 text-xs text-gray-600 dark:text-gray-300">
           <span>{tb("resultSummary", { succeeded: bulk.result.succeeded, failed: bulk.result.failed.length })}</span>
-          <button onClick={bulk.dismissResult} className="text-gray-400 dark:text-gray-500 hover:text-gray-600">
+          <button onClick={bulk.dismissResult} className="text-fg-subtle hover:text-fg-muted">
             ×
           </button>
         </div>
       )}
 
       {items === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
       ) : items.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noItems")}</p>
+        <p className="text-sm text-fg-subtle">{t("noItems")}</p>
       ) : (
         <>
-          <div className="mb-2 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+          <div className="mb-2 flex items-center gap-3 text-xs text-fg-subtle">
             <label className="flex items-center gap-1.5">
               <input
                 type="checkbox"
@@ -379,8 +379,8 @@ export function RfiPanel({ projectId }: { projectId: string }) {
                   >
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono text-gray-400 dark:text-gray-500">{item.number}</span>
-                        <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{item.subject}</span>
+                        <span className="text-xs font-mono text-fg-subtle">{item.number}</span>
+                        <span className="text-sm font-medium text-fg">{item.subject}</span>
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-1.5">
                         <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[item.status]}`}>
@@ -393,16 +393,16 @@ export function RfiPanel({ projectId }: { projectId: string }) {
                           {t("ballInCourt", { party: t(`ballInCourtParty_${item.ballInCourtParty}`) })}
                         </span>
                         {item.costImpact && (
-                          <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-error-700 dark:text-error-500">
+                          <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-danger-fg">
                             {t("costImpact")}
                           </span>
                         )}
                         {item.escalatedAt && (
-                          <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-error-700 dark:text-error-500">
+                          <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-danger-fg">
                             {t("escalated")}
                           </span>
                         )}
-                        {item.dueDate && <span className="text-xs text-gray-500 dark:text-gray-400">{formatDate(new Date(item.dueDate))}</span>}
+                        {item.dueDate && <span className="text-xs text-fg-subtle">{formatDate(new Date(item.dueDate))}</span>}
                       </div>
                     </div>
                   </button>
@@ -411,11 +411,11 @@ export function RfiPanel({ projectId }: { projectId: string }) {
                 {expanded && (
                   <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 dark:border-gray-700 pt-3 text-sm">
                     <p>
-                      <span className="font-medium text-gray-700 dark:text-gray-200">{t("question")}: </span>
+                      <span className="font-medium text-fg-muted">{t("question")}: </span>
                       {item.question}
                     </p>
                     {item.status !== "closed" && (
-                      <label className="flex w-fit items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                      <label className="flex w-fit items-center gap-1.5 text-xs text-fg-subtle">
                         {t("ballInCourtLabel")}
                         <select
                           className="input w-auto py-1 text-xs"
@@ -432,23 +432,23 @@ export function RfiPanel({ projectId }: { projectId: string }) {
                     )}
                     {item.scheduleImpactDays != null && (
                       <p>
-                        <span className="font-medium text-gray-700 dark:text-gray-200">{t("scheduleImpactDays")}: </span>
+                        <span className="font-medium text-fg-muted">{t("scheduleImpactDays")}: </span>
                         {item.scheduleImpactDays}
                       </p>
                     )}
                     {(item.estimatedCostImpact !== null || item.changeOrderId) && (
                       <div className="rounded-md bg-gray-50 dark:bg-gray-700 p-2 text-xs">
                         {item.changeOrderId ? (
-                          <p className="flex items-center justify-between text-success-700 dark:text-success-500">
+                          <p className="flex items-center justify-between text-success-fg">
                             <span>{t("costImpactConfirmed")}</span>
-                            <button onClick={() => unlinkChangeOrder(item.id)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
+                            <button onClick={() => unlinkChangeOrder(item.id)} className="text-fg-subtle hover:text-danger-fg">
                               {t("unlinkChangeOrder")}
                             </button>
                           </p>
                         ) : (
                           <>
                             {item.estimatedCostImpact !== null && (
-                              <p className="text-gray-500 dark:text-gray-400">{t("estimatedCostImpactLabel", { amount: item.estimatedCostImpact })}</p>
+                              <p className="text-fg-subtle">{t("estimatedCostImpactLabel", { amount: item.estimatedCostImpact })}</p>
                             )}
                             <div className="mt-1 flex items-center gap-1.5">
                               <input
@@ -471,13 +471,13 @@ export function RfiPanel({ projectId }: { projectId: string }) {
                     )}
                     {item.answer && (
                       <p>
-                        <span className="font-medium text-gray-700 dark:text-gray-200">{t("answer")}: </span>
+                        <span className="font-medium text-fg-muted">{t("answer")}: </span>
                         {item.answer}
-                        {item.answeredByName && <span className="text-xs text-gray-400 dark:text-gray-500"> — {item.answeredByName}</span>}
+                        {item.answeredByName && <span className="text-xs text-fg-subtle"> — {item.answeredByName}</span>}
                       </p>
                     )}
                     {item.status === "closed" && item.closedByName && (
-                      <p className="text-xs text-success-700 dark:text-success-500">{t("closedBy", { name: item.closedByName })}</p>
+                      <p className="text-xs text-success-fg">{t("closedBy", { name: item.closedByName })}</p>
                     )}
 
                     {item.status !== "closed" && (

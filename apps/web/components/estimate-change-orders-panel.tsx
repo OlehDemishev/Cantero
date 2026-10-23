@@ -186,8 +186,8 @@ export function EstimateChangeOrdersPanel({
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("changeOrders")}</h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("changeOrdersHint")}</p>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("changeOrders")}</h2>
+      <p className="mb-4 text-xs text-fg-subtle">{t("changeOrdersHint")}</p>
 
       {changeOrders && changeOrders.length > 0 && (
         <div className="mb-6 flex flex-col gap-4">
@@ -196,22 +196,22 @@ export function EstimateChangeOrdersPanel({
             return (
               <div key={co.id} className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
+                  <span className="text-sm font-medium text-fg">
                     CO-{co.number} — {co.title}
                   </span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                  <span className="text-xs text-fg-subtle">
                     {co.status === "approved" ? t("approved") : co.status === "pending_approval" ? t("pendingApproval") : t("draft")}
                     {co.sentAt && ` · ${t(`clientDecision_${co.clientDecision}`)}`}
                   </span>
                 </div>
-                {co.description && <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{co.description}</p>}
+                {co.description && <p className="mt-1 text-xs text-fg-subtle">{co.description}</p>}
 
                 {co.status === "pending_approval" && me?.company.changeOrderRequiredApprovalCount && (
                   <div className="mt-2 rounded-lg border border-warning-200 bg-warning-50 dark:bg-warning-500/15 px-3 py-2">
-                    <p className="text-xs text-warning-700 dark:text-warning-500">
+                    <p className="text-xs text-warning-fg">
                       {t("approvalProgress", { count: co.approvals.length, required: me.company.changeOrderRequiredApprovalCount })}
                     </p>
-                    <p className="mt-0.5 text-xs text-warning-700 dark:text-warning-500">{co.approvals.map((a) => a.actorName).join(", ")}</p>
+                    <p className="mt-0.5 text-xs text-warning-fg">{co.approvals.map((a) => a.actorName).join(", ")}</p>
                   </div>
                 )}
 
@@ -238,7 +238,7 @@ export function EstimateChangeOrdersPanel({
                   {t("grandTotal")}: {co.grandTotal} {currency}
                 </p>
                 {co.scheduleImpactDays !== null && (
-                  <p className="mt-1 text-right text-xs text-gray-500 dark:text-gray-400">
+                  <p className="mt-1 text-right text-xs text-fg-subtle">
                     {t("scheduleImpact")}: {co.scheduleImpactDays >= 0 ? "+" : ""}
                     {co.scheduleImpactDays} {t("days")}
                   </p>
@@ -342,7 +342,7 @@ export function EstimateChangeOrdersPanel({
                       </button>
                     </div>
                     {coEmailSentTo[co.id] !== undefined && (
-                      <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                      <p className="mt-2 text-xs text-fg-subtle">
                         {coEmailSentTo[co.id]
                           ? tc("emailedTo", { email: coEmailSentTo[co.id] as string })
                           : tc("noClientEmail")}

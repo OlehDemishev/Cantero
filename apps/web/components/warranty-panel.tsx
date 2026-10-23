@@ -39,8 +39,8 @@ interface Project {
 const STATUS_STYLES: Record<WarrantyClaimStatus, string> = {
   open: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
   in_progress: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
-  resolved: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
-  denied: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
+  resolved: "bg-success-50 dark:bg-success-500/15 text-success-fg",
+  denied: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
 };
 
 function warrantyExpiresAt(handoverDate: string | null, warrantyMonths: number | null): Date | null {
@@ -174,11 +174,11 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("title")}</h2>
 
       <form onSubmit={saveWarranty} className="card mb-4 flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium text-gray-700 dark:text-gray-200">{t("handoverDate")}</span>
+          <span className="font-medium text-fg-muted">{t("handoverDate")}</span>
           <input
             type="date"
             className="input"
@@ -187,7 +187,7 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
           />
         </label>
         <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium text-gray-700 dark:text-gray-200">{t("warrantyMonths")}</span>
+          <span className="font-medium text-fg-muted">{t("warrantyMonths")}</span>
           <input
             type="number"
             min="1"
@@ -201,14 +201,14 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
           {tc("save")}
         </button>
         {expiresAt && (
-          <span className={`text-xs font-medium ${isUnderWarranty ? "text-success-700 dark:text-success-500" : "text-gray-400 dark:text-gray-500"}`}>
+          <span className={`text-xs font-medium ${isUnderWarranty ? "text-success-fg" : "text-fg-subtle"}`}>
             {isUnderWarranty ? t("underWarrantyUntil", { date: formatDate(expiresAt) }) : t("warrantyExpiredOn", { date: formatDate(expiresAt) })}
           </span>
         )}
       </form>
 
       <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("claims")}</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("claims")}</h3>
         {!creating && (
           <button onClick={() => setCreating(true)} className="btn-secondary px-3 py-1 text-xs">
             {t("newClaim")}
@@ -219,7 +219,7 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
       {creating && (
         <form onSubmit={submitClaim} className="card mb-4 flex flex-col gap-3">
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("claimTitle")}</span>
+            <span className="font-medium text-fg-muted">{t("claimTitle")}</span>
             <input
               required
               className="input"
@@ -229,7 +229,7 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
           </label>
           <div className="flex gap-3">
             <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("location")}</span>
+              <span className="font-medium text-fg-muted">{t("location")}</span>
               <input
                 className="input"
                 value={claimForm.location}
@@ -237,7 +237,7 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
               />
             </label>
             <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("assignee")}</span>
+              <span className="font-medium text-fg-muted">{t("assignee")}</span>
               <select
                 className="input"
                 value={claimForm.assigneeWorkerId}
@@ -253,7 +253,7 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
             </label>
           </div>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("description")}</span>
+            <span className="font-medium text-fg-muted">{t("description")}</span>
             <textarea
               rows={2}
               className="input"
@@ -275,19 +275,19 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
       {bulk.result && (
         <div className="mb-3 flex items-center justify-between rounded-md bg-gray-50 dark:bg-gray-700 px-3 py-2 text-xs text-gray-600 dark:text-gray-300">
           <span>{tb("resultSummary", { succeeded: bulk.result.succeeded, failed: bulk.result.failed.length })}</span>
-          <button onClick={bulk.dismissResult} className="text-gray-400 dark:text-gray-500 hover:text-gray-600">
+          <button onClick={bulk.dismissResult} className="text-fg-subtle hover:text-fg-muted">
             ×
           </button>
         </div>
       )}
 
       {claims === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
       ) : claims.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noClaims")}</p>
+        <p className="text-sm text-fg-subtle">{t("noClaims")}</p>
       ) : (
         <>
-          <div className="mb-2 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+          <div className="mb-2 flex items-center gap-3 text-xs text-fg-subtle">
             <label className="flex items-center gap-1.5">
               <input
                 type="checkbox"
@@ -322,7 +322,7 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
                   >
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{claim.title}</span>
+                        <span className="text-sm font-medium text-fg">{claim.title}</span>
                         <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[claim.status]}`}>
                           {t(claim.status)}
                         </span>
@@ -330,7 +330,7 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
                           <span className="rounded-full bg-brand-50 dark:bg-brand-500/15 px-2 py-0.5 text-xs font-medium text-brand-700 dark:text-brand-400">{t("fromClient")}</span>
                         )}
                       </div>
-                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-fg-subtle">
                         {claim.location && <span>{claim.location}</span>}
                         {claim.assignee && <span>{t("assignedTo", { name: claim.assignee.name })}</span>}
                       </div>
@@ -341,16 +341,16 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
                 {expanded && (
                   <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 dark:border-gray-700 pt-3 text-sm">
                     {claim.description && <p>{claim.description}</p>}
-                    <p className="text-xs text-gray-400 dark:text-gray-500">{t("submittedBy", { name: claim.submittedByName })}</p>
+                    <p className="text-xs text-fg-subtle">{t("submittedBy", { name: claim.submittedByName })}</p>
                     {claim.resolutionNotes && (
                       <p>
-                        <span className="font-medium text-gray-700 dark:text-gray-200">{t("resolutionNotes")}: </span>
+                        <span className="font-medium text-fg-muted">{t("resolutionNotes")}: </span>
                         {claim.resolutionNotes}
                       </p>
                     )}
                     {claim.denialReason && (
                       <p>
-                        <span className="font-medium text-gray-700 dark:text-gray-200">{t("denialReason")}: </span>
+                        <span className="font-medium text-fg-muted">{t("denialReason")}: </span>
                         {claim.denialReason}
                       </p>
                     )}

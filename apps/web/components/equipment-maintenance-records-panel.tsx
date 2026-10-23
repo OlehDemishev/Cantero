@@ -57,9 +57,9 @@ export function EquipmentMaintenanceRecordsPanel({ equipmentId, currency }: { eq
 
   return (
     <section className="card">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("maintenanceRecords")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("maintenanceRecords")}</h2>
       {!maintenanceRecords || maintenanceRecords.length === 0 ? (
-        <p className="mb-3 text-sm text-gray-400 dark:text-gray-500">{t("noMaintenanceRecords")}</p>
+        <p className="mb-3 text-sm text-fg-subtle">{t("noMaintenanceRecords")}</p>
       ) : (
         <ul className="mb-3 flex flex-col gap-2">
           {maintenanceRecords.map((r) => (
@@ -67,12 +67,12 @@ export function EquipmentMaintenanceRecordsPanel({ equipmentId, currency }: { eq
               <div className="flex justify-between">
                 <span>{r.description}</span>
                 {r.cost && (
-                  <span className="text-gray-500 dark:text-gray-400">
+                  <span className="text-fg-subtle">
                     {r.cost} {currency}
                   </span>
                 )}
               </div>
-              <span className="text-xs text-gray-400 dark:text-gray-500">
+              <span className="text-xs text-fg-subtle">
                 {formatDate(new Date(r.performedAt))}
                 {r.supplier && ` · ${r.supplier.name}`}
                 {r.meterHours && ` · ${r.meterHours}${t("hoursAbbr")}`}

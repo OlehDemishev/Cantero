@@ -52,7 +52,7 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
   if (!summary) {
     return (
       <AuthenticatedShell>
-        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        <p className="text-fg-subtle">{tc("loading")}</p>
       </AuthenticatedShell>
     );
   }
@@ -61,54 +61,54 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
 
   return (
     <AuthenticatedShell>
-      <button onClick={() => goBack(router, "/team")} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">
+      <button onClick={() => goBack(router, "/team")} className="text-sm text-fg-subtle hover:underline">
         ← {t("title")}
       </button>
       <div className="mt-2 flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{summary.worker.name}</h1>
         <span
           className={`rounded-full px-3 py-1 text-xs font-medium ${
-            summary.worker.active ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
+            summary.worker.active ? "bg-success-50 dark:bg-success-500/15 text-success-fg" : "bg-gray-100 dark:bg-gray-700 text-fg-subtle"
           }`}
         >
           {summary.worker.active ? t("active") : t("inactive")}
         </span>
       </div>
-      <p className="text-sm text-gray-500 dark:text-gray-400">{summary.worker.role ?? "—"}</p>
+      <p className="text-sm text-fg-subtle">{summary.worker.role ?? "—"}</p>
 
       <div className="mt-4 flex gap-4 text-sm">
         <div className="card flex-1">
-          <div className="text-xs text-gray-500 dark:text-gray-400">{t("totalHours")}</div>
+          <div className="text-xs text-fg-subtle">{t("totalHours")}</div>
           <div className="mt-1 text-lg font-semibold">{summary.totalHours}h</div>
         </div>
         <div className="card flex-1">
-          <div className="text-xs text-gray-500 dark:text-gray-400">{t("totalCost")}</div>
+          <div className="text-xs text-fg-subtle">{t("totalCost")}</div>
           <div className="mt-1 text-lg font-semibold">
             {summary.totalCost} {currency}
           </div>
         </div>
         <div className="card flex-1">
-          <div className="text-xs text-gray-500 dark:text-gray-400">{t("ptoBalance")}</div>
+          <div className="text-xs text-fg-subtle">{t("ptoBalance")}</div>
           <div className="mt-1 text-lg font-semibold">{summary.worker.ptoBalanceHours}h</div>
         </div>
       </div>
 
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="lg:col-span-1">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("profile")}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("profile")}</h2>
           {!isManager && (
             <div className="card flex flex-col gap-1.5 text-sm">
               <div>
-                <span className="text-gray-500 dark:text-gray-400">{tc("name")}: </span>
+                <span className="text-fg-subtle">{tc("name")}: </span>
                 {summary.worker.name}
               </div>
               {summary.worker.role && (
                 <div>
-                  <span className="text-gray-500 dark:text-gray-400">{t("role")}: </span>
+                  <span className="text-fg-subtle">{t("role")}: </span>
                   {summary.worker.role}
                 </div>
               )}
-              <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{t("managerOnlyHint")}</p>
+              <p className="mt-1 text-xs text-fg-subtle">{t("managerOnlyHint")}</p>
             </div>
           )}
           {isManager && <WorkerProfilePanel workerId={workerId} currency={currency} onChanged={loadSummary} />}
@@ -133,14 +133,14 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
         </div>
 
         <div className="lg:col-span-2">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("projectHistory")}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("projectHistory")}</h2>
           {summary.byProject.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noProjectHistory")}</p>
+            <p className="text-sm text-fg-subtle">{t("noProjectHistory")}</p>
           ) : (
             <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
                   <th className="py-2">{t("project")}</th>
                   <th className="text-right">{t("hours")}</th>
                   <th className="text-right">{t("cost")}</th>

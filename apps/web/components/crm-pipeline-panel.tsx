@@ -61,18 +61,18 @@ export function CrmPipelinePanel() {
   return (
     <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-3">
       <div>
-        <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("pipelineForecast")}</h2>
+        <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("pipelineForecast")}</h2>
         {!forecast ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+          <p className="text-sm text-fg-subtle">{tc("loading")}</p>
         ) : (
           <>
             <div className="card">
-              <div className="text-xs text-gray-500 dark:text-gray-400">{t("weightedPipelineValue")}</div>
+              <div className="text-xs text-fg-subtle">{t("weightedPipelineValue")}</div>
               <div className="mt-1 text-lg font-semibold">
                 {forecast.totalWeightedValue.toFixed(2)} {currency}
               </div>
               {forecast.unscheduledWeightedValue > 0 && (
-                <div className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                <div className="mt-1 text-xs text-fg-subtle">
                   {t("unscheduledWeightedValue", { value: forecast.unscheduledWeightedValue.toFixed(2), currency })}
                 </div>
               )}
@@ -94,17 +94,17 @@ export function CrmPipelinePanel() {
       </div>
 
       <div>
-        <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("funnelReport")}</h2>
+        <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("funnelReport")}</h2>
         {!funnel ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+          <p className="text-sm text-fg-subtle">{tc("loading")}</p>
         ) : (
           <>
             <div className="card">
-              <div className="text-xs text-gray-500 dark:text-gray-400">{t("winRate")}</div>
+              <div className="text-xs text-fg-subtle">{t("winRate")}</div>
               <div className="mt-1 text-lg font-semibold">
                 {funnel.winRatePercent !== null ? `${funnel.winRatePercent.toFixed(0)}%` : "—"}
               </div>
-              <div className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+              <div className="mt-1 text-xs text-fg-subtle">
                 {t("winLossCount", { won: funnel.wonCount, lost: funnel.lostCount })}
               </div>
             </div>
@@ -124,20 +124,20 @@ export function CrmPipelinePanel() {
       </div>
 
       <div>
-        <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("ownerLeaderboard")}</h2>
+        <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("ownerLeaderboard")}</h2>
         {!leaderboard ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+          <p className="text-sm text-fg-subtle">{tc("loading")}</p>
         ) : leaderboard.length === 0 ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500">{t("ownerLeaderboardEmpty")}</p>
+          <p className="text-sm text-fg-subtle">{t("ownerLeaderboardEmpty")}</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {leaderboard.map((row) => (
               <li key={row.ownerWorkerId} className="card">
                 <div className="text-sm font-medium">{row.ownerName}</div>
-                <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                <div className="mt-1 text-xs text-fg-subtle">
                   {t("wonSummary", { count: row.wonCount, value: row.wonValue.toFixed(2), currency })}
                 </div>
-                <div className="text-xs text-gray-400 dark:text-gray-500">
+                <div className="text-xs text-fg-subtle">
                   {t("openSummary", { count: row.openCount, value: row.openValue.toFixed(2), currency })}
                 </div>
               </li>

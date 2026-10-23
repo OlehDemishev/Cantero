@@ -121,7 +121,7 @@ export default function PublicSignPage({ params }: { params: Promise<{ token: st
                 <span className="font-medium text-gray-700 dark:text-gray-200">{t("signHere")}</span>
                 <SignaturePad onChange={setSignatureDataUrl} clearLabel={t("clearSignature")} />
               </div>
-              {signatureError && <p className="mt-2 text-xs text-error-600">{signatureError}</p>}
+              {signatureError && <p className="mt-2 text-xs text-danger-fg">{signatureError}</p>}
               <button onClick={sign} disabled={busy} className="btn-primary mt-3 w-full">
                 {t("submitSignature")}
               </button>

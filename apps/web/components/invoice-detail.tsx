@@ -253,7 +253,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   if (!invoice) {
     return (
       <AuthenticatedShell>
-        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        <p className="text-fg-subtle">{tc("loading")}</p>
       </AuthenticatedShell>
     );
   }
@@ -286,31 +286,31 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
 
   return (
     <AuthenticatedShell>
-      <a href={`/projects/${invoice.project.id}`} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">
+      <a href={`/projects/${invoice.project.id}`} className="text-sm text-fg-subtle hover:underline">
         ← {invoice.project.name}
       </a>
       <div className="mt-2 flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{invoice.number}</h1>
         <span className={`rounded-full px-3 py-1 text-xs font-medium ${statusColor}`}>{t(invoice.status)}</span>
       </div>
-      <p className="text-sm text-gray-500 dark:text-gray-400">
+      <p className="text-sm text-fg-subtle">
         <Link href={`/clients/${invoice.client.id}`} className="hover:underline">
           {invoice.client.name}
         </Link>
       </p>
       {invoice.status === "void" && invoice.voidReason && (
-        <p className="mt-1 text-xs text-error-600">
+        <p className="mt-1 text-xs text-danger-fg">
           {t("voidReasonLabel")}: {invoice.voidReason}
         </p>
       )}
-      {invoice.correctsInvoiceId && <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t("isCorrectionNote")}</p>}
+      {invoice.correctsInvoiceId && <p className="mt-1 text-xs text-fg-subtle">{t("isCorrectionNote")}</p>}
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
                 <th className="py-2">{tc("name")}</th>
                 <th>{tc("actions")}</th>
               </tr>
@@ -326,9 +326,9 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
           </table>
           </div>
 
-          <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("paymentPlan")}</h2>
+          <h2 className="mb-3 mt-8 text-sm font-semibold text-fg-muted">{t("paymentPlan")}</h2>
           {installmentRows.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noInstallments")}</p>
+            <p className="text-sm text-fg-subtle">{t("noInstallments")}</p>
           ) : (
             <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
@@ -336,17 +336,17 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
                 {installmentRows.map((inst) => (
                   <tr key={inst.id} className="border-b border-gray-100 dark:border-gray-700">
                     <td className="py-1.5">{inst.label}</td>
-                    <td className="text-gray-500 dark:text-gray-400">
+                    <td className="text-fg-subtle">
                       {inst.dueDate ? formatDate(new Date(inst.dueDate)) : "—"}
                     </td>
                     <td>
                       <span
                         className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                           inst.fulfilled
-                            ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
+                            ? "bg-success-50 dark:bg-success-500/15 text-success-fg"
                             : inst.partial
-                              ? "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500"
-                              : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
+                              ? "bg-warning-50 dark:bg-warning-500/15 text-warning-fg"
+                              : "bg-gray-100 dark:bg-gray-700 text-fg-subtle"
                         }`}
                       >
                         {inst.fulfilled ? t("fulfilled") : inst.partial ? t("partial") : t("pending")}
@@ -389,9 +389,9 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
             </form>
           )}
 
-          <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("payments")}</h2>
+          <h2 className="mb-3 mt-8 text-sm font-semibold text-fg-muted">{t("payments")}</h2>
           {invoice.payments.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noPayments")}</p>
+            <p className="text-sm text-fg-subtle">{t("noPayments")}</p>
           ) : (
             <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
@@ -403,13 +403,13 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
                     <td className="text-right">
                       {money(p.amount)}
                       {p.currency && (
-                        <span className="ml-1.5 text-xs text-gray-400 dark:text-gray-500">
+                        <span className="ml-1.5 text-xs text-fg-subtle">
                           ({p.foreignAmount} {p.currency} @ {p.exchangeRate})
                         </span>
                       )}
                     </td>
                     {p.fxGainLoss !== null && (
-                      <td className={`pl-2 text-right text-xs font-medium ${Number(p.fxGainLoss) < 0 ? "text-error-600" : "text-success-700 dark:text-success-500"}`}>
+                      <td className={`pl-2 text-right text-xs font-medium ${Number(p.fxGainLoss) < 0 ? "text-danger-fg" : "text-success-fg"}`}>
                         {t("fxGainLoss")}: {Number(p.fxGainLoss) > 0 ? "+" : ""}
                         {money(p.fxGainLoss)}
                       </td>
@@ -450,7 +450,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
                   {t("recordPayment")}
                 </button>
               </div>
-              <label className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+              <label className="flex items-center gap-1.5 text-xs text-fg-subtle">
                 <input type="checkbox" checked={foreignPayment} onChange={(e) => setForeignPayment(e.target.checked)} />
                 {t("paidInForeignCurrency")}
               </label>
@@ -507,7 +507,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
 
           {invoice.lateFeeAccrued > 0 && (
             <div className="mt-3 flex items-center justify-between rounded-lg border border-warning-200 bg-warning-50 dark:bg-warning-500/15 px-3 py-2">
-              <span className="text-xs text-warning-700 dark:text-warning-500">
+              <span className="text-xs text-warning-fg">
                 {t("lateFeeAccrued", { amount: invoice.lateFeeAccrued, currency })}
               </span>
               <button onClick={chargeLateFee} disabled={busy} className="btn-secondary px-2 py-1 text-xs">
@@ -517,7 +517,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
           )}
 
           <form onSubmit={saveDueDate} className="mt-4 flex items-end gap-2 border-t border-gray-100 dark:border-gray-700 pt-4">
-            <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+            <label className="flex flex-1 flex-col gap-1 text-xs text-fg-subtle">
               {t("dueDate")}
               <input
                 type="date"
@@ -548,27 +548,27 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
             <button onClick={downloadEInvoice} className="btn-secondary">
               {t("downloadEInvoice")}
             </button>
-            {eInvoiceError && <p className="text-xs text-error-600">{eInvoiceError}</p>}
+            {eInvoiceError && <p className="text-xs text-danger-fg">{eInvoiceError}</p>}
             <button onClick={downloadZugferd} className="btn-secondary">
               {t("downloadZugferd")}
             </button>
-            {zugferdError && <p className="text-xs text-error-600">{zugferdError}</p>}
+            {zugferdError && <p className="text-xs text-danger-fg">{zugferdError}</p>}
             <button onClick={downloadPeppol} className="btn-secondary">
               {t("downloadPeppol")}
             </button>
             <button onClick={sendPeppol} className="btn-secondary">
               {t("sendPeppolNetwork")}
             </button>
-            {peppolError && <p className="text-xs text-error-600">{peppolError}</p>}
-            {peppolSendMessage && <p className="text-xs text-success-700 dark:text-success-500">{peppolSendMessage}</p>}
+            {peppolError && <p className="text-xs text-danger-fg">{peppolError}</p>}
+            {peppolSendMessage && <p className="text-xs text-success-fg">{peppolSendMessage}</p>}
             {(invoice.status === "sent" || invoice.status === "paid") && (
-              <button onClick={voidInvoice} disabled={busy} className="btn-secondary text-error-600">
+              <button onClick={voidInvoice} disabled={busy} className="btn-secondary text-danger-fg">
                 {t("voidInvoice")}
               </button>
             )}
-            {voidError && <p className="text-xs text-error-600">{voidError}</p>}
+            {voidError && <p className="text-xs text-danger-fg">{voidError}</p>}
             {emailSentTo !== undefined && (
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <p className="text-xs text-fg-subtle">
                 {emailSentTo ? tc("emailedTo", { email: emailSentTo }) : tc("noClientEmail")}
               </p>
             )}
@@ -584,7 +584,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
 function Row({ label, value, emphasize }: { label: string; value: string; emphasize?: boolean }) {
   return (
     <div className={`flex justify-between ${emphasize ? "border-t border-gray-200 dark:border-gray-700 pt-2 font-semibold" : ""}`}>
-      <dt className="text-gray-500 dark:text-gray-400">{label}</dt>
+      <dt className="text-fg-subtle">{label}</dt>
       <dd>{value}</dd>
     </div>
   );

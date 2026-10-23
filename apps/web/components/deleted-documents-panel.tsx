@@ -62,18 +62,18 @@ export function DeletedDocumentsPanel() {
 
   return (
     <div className="card">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">
         {t("deletedDocuments")}
       </h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">
+      <p className="mb-4 text-xs text-fg-subtle">
         {t("deletedDocumentsHint")}
       </p>
       {!documents ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">
+        <p className="text-sm text-fg-subtle">
           {tc("loading")}
         </p>
       ) : documents.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">
+        <p className="text-sm text-fg-subtle">
           {t("noDeletedDocuments")}
         </p>
       ) : (
@@ -84,10 +84,10 @@ export function DeletedDocumentsPanel() {
               className="flex items-center justify-between gap-3 border-b border-gray-100 dark:border-gray-700 pb-2 text-sm last:border-0"
             >
               <div className="min-w-0">
-                <p className="truncate font-medium text-gray-800 dark:text-gray-100">
+                <p className="truncate font-medium text-fg">
                   {d.name}
                 </p>
-                <p className="text-xs text-gray-400 dark:text-gray-500">
+                <p className="text-xs text-fg-subtle">
                   {d.project ? `${d.project.name} · ` : ""}
                   {d.uploadedBy
                     ? `${t("uploadedBy", { name: d.uploadedBy.name })} · `

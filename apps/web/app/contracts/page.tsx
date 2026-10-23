@@ -102,7 +102,7 @@ export default function ContractsPage() {
                 {templates.map((tpl) => (
                   <li key={tpl.id} className="flex items-center justify-between text-sm">
                     <span className="text-gray-700 dark:text-gray-300">{tpl.name}</span>
-                    <button onClick={() => deleteTemplate(tpl.id)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
+                    <button onClick={() => deleteTemplate(tpl.id)} className="text-gray-400 dark:text-gray-500 hover:text-danger-fg">
                       ×
                     </button>
                   </li>

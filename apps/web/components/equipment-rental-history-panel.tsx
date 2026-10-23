@@ -28,15 +28,15 @@ export function EquipmentRentalHistoryPanel({ equipmentId, currency }: { equipme
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("rentalHistory")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("rentalHistoryHint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("rentalHistory")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{t("rentalHistoryHint")}</p>
       {!rentals || rentals.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noRentals")}</p>
+        <p className="text-sm text-fg-subtle">{t("noRentals")}</p>
       ) : (
         <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
               <th className="py-2">{t("renter")}</th>
               <th>{t("dailyRate")}</th>
               <th>{t("rentalStart")}</th>

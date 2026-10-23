@@ -91,14 +91,14 @@ export function TransmittalsPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("title")}</h2>
         {!adding && (
           <button onClick={() => setAdding(true)} className="btn-secondary px-2.5 py-1 text-xs">
             {t("newTransmittal")}
           </button>
         )}
       </div>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
 
       {adding && (
         <form onSubmit={create} className="card mb-3 flex flex-col gap-2">
@@ -132,7 +132,7 @@ export function TransmittalsPanel({ projectId }: { projectId: string }) {
           />
 
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{t("items")}</span>
+            <span className="text-xs font-semibold text-fg-subtle">{t("items")}</span>
             <button type="button" onClick={addItemRow} className="btn-secondary px-2 py-1 text-xs">
               + {t("addItem")}
             </button>
@@ -167,23 +167,23 @@ export function TransmittalsPanel({ projectId }: { projectId: string }) {
       )}
 
       {!transmittals ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
       ) : transmittals.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noTransmittals")}</p>
+        <p className="text-sm text-fg-subtle">{t("noTransmittals")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {transmittals.map((tr) => (
             <li key={tr.id} className="card">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
+                <span className="text-sm font-medium text-fg">
                   T-{tr.number} — {tr.recipientName}
-                  {tr.recipientCompany && <span className="text-xs text-gray-400 dark:text-gray-500"> ({tr.recipientCompany})</span>}
+                  {tr.recipientCompany && <span className="text-xs text-fg-subtle"> ({tr.recipientCompany})</span>}
                 </span>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${tr.acknowledgedAt ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"}`}>
+                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${tr.acknowledgedAt ? "bg-success-50 dark:bg-success-500/15 text-success-fg" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"}`}>
                   {tr.acknowledgedAt ? t("acknowledged") : t("pending")}
                 </span>
               </div>
-              <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+              <p className="mt-1 text-xs text-fg-subtle">
                 {t(`method_${tr.method}`)} · {formatDate(new Date(tr.sentAt))}
                 {tr.purpose && ` · ${tr.purpose}`}
               </p>
@@ -195,7 +195,7 @@ export function TransmittalsPanel({ projectId }: { projectId: string }) {
                 ))}
               </ul>
               {tr.acknowledgedAt ? (
-                <p className="mt-2 text-xs text-success-700 dark:text-success-500">{t("acknowledgedBy", { name: tr.acknowledgedByName ?? "" })}</p>
+                <p className="mt-2 text-xs text-success-fg">{t("acknowledgedBy", { name: tr.acknowledgedByName ?? "" })}</p>
               ) : ackingId === tr.id ? (
                 <div className="mt-2 flex items-center gap-2">
                   <input

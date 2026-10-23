@@ -367,7 +367,7 @@ export default function ResourcePlanningPage() {
                             {formatDate(new Date(a.startDate))} – {formatDate(new Date(a.endDate))}
                             {a.note && <span className="text-gray-400 dark:text-gray-500"> · {a.note}</span>}
                           </span>
-                          <button onClick={() => removeAssignment(a.id)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
+                          <button onClick={() => removeAssignment(a.id)} className="text-gray-400 dark:text-gray-500 hover:text-danger-fg">
                             ×
                           </button>
                         </li>

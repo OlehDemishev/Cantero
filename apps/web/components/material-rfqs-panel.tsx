@@ -173,14 +173,14 @@ export function MaterialRfqsPanel() {
   return (
     <div className="mt-10">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("title")}</h2>
         {!creating && (
           <button onClick={() => setCreating(true)} className="btn-secondary px-3 py-1 text-xs">
             {t("newRfq")}
           </button>
         )}
       </div>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
 
       {creating && (
         <form onSubmit={submitRfq} className="card mb-4 flex flex-col gap-3">
@@ -224,7 +224,7 @@ export function MaterialRfqsPanel() {
                   onChange={(e) => updateLine(i, "quantity", e.target.value)}
                 />
                 {lines.length > 1 && (
-                  <button type="button" onClick={() => removeLine(i)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
+                  <button type="button" onClick={() => removeLine(i)} className="text-fg-subtle hover:text-danger-fg">
                     ×
                   </button>
                 )}
@@ -246,9 +246,9 @@ export function MaterialRfqsPanel() {
       )}
 
       {rfqs === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
       ) : rfqs.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noRfqs")}</p>
+        <p className="text-sm text-fg-subtle">{t("noRfqs")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {rfqs.map((rfq) => {
@@ -257,8 +257,8 @@ export function MaterialRfqsPanel() {
               <li key={rfq.id} className="card">
                 <button onClick={() => toggleExpand(rfq.id)} className="flex w-full items-center justify-between text-left">
                   <div>
-                    <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{rfq.title}</span>{" "}
-                    <span className="text-xs text-gray-500 dark:text-gray-400">{rfq.project ? rfq.project.name : t("companyWide")}</span>
+                    <span className="text-sm font-medium text-fg">{rfq.title}</span>{" "}
+                    <span className="text-xs text-fg-subtle">{rfq.project ? rfq.project.name : t("companyWide")}</span>
                   </div>
                   <span
                     className={`rounded-full px-2 py-0.5 text-xs font-medium ${
@@ -269,25 +269,25 @@ export function MaterialRfqsPanel() {
                   </span>
                 </button>
 
-                {expanded && !detail && <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>}
+                {expanded && !detail && <p className="mt-3 text-xs text-fg-subtle">{tc("loading")}</p>}
 
                 {expanded && detail && detail.id === rfq.id && (
                   <div className="mt-3 flex flex-col gap-4 border-t border-gray-100 dark:border-gray-700 pt-3">
                     {detail.lines.map((line) => (
                       <div key={line.id}>
-                        <div className="mb-1 text-xs font-semibold text-gray-700 dark:text-gray-200">
+                        <div className="mb-1 text-xs font-semibold text-fg-muted">
                           {line.materialCatalogItem.name} — {line.quantity} {line.materialCatalogItem.unit}
                         </div>
                         {line.quotes.length === 0 ? (
-                          <p className="text-xs text-gray-400 dark:text-gray-500">{t("noQuotesYet")}</p>
+                          <p className="text-xs text-fg-subtle">{t("noQuotesYet")}</p>
                         ) : (
                           <ul className="flex flex-col gap-1">
                             {line.quotes.map((q, i) => (
                               <li key={q.id} className="flex items-center justify-between text-xs">
-                                <span className={i === 0 ? "font-medium text-success-700 dark:text-success-500" : "text-gray-600 dark:text-gray-300"}>
+                                <span className={i === 0 ? "font-medium text-success-fg" : "text-gray-600 dark:text-gray-300"}>
                                   {q.supplier.name} — {q.unitPrice} {currency}/{line.materialCatalogItem.unit}
                                   {" "}({(Number(q.unitPrice) * Number(line.quantity)).toFixed(2)} {currency})
-                                  {q.isAwarded && <span className="ml-1.5 rounded-full bg-success-50 dark:bg-success-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-success-700 dark:text-success-500">{t("awarded")}</span>}
+                                  {q.isAwarded && <span className="ml-1.5 rounded-full bg-success-50 dark:bg-success-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-success-fg">{t("awarded")}</span>}
                                 </span>
                                 {detail.status === "open" && !q.isAwarded && (
                                   <button onClick={() => award(detail.id, q.id)} className="text-brand-700 dark:text-brand-400 hover:underline">
@@ -329,7 +329,7 @@ export function MaterialRfqsPanel() {
                       </div>
                     ))}
                     {detail.status === "open" && (
-                      <button onClick={() => close(detail.id)} disabled={busy} className="w-fit text-xs text-gray-400 dark:text-gray-500 hover:text-error-600">
+                      <button onClick={() => close(detail.id)} disabled={busy} className="w-fit text-xs text-fg-subtle hover:text-danger-fg">
                         {t("closeRfq")}
                       </button>
                     )}

@@ -153,19 +153,19 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("board")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("board")}</h2>
       <DndContext sensors={dndSensors} onDragEnd={handleDragEnd}>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {STATUSES.map((status) => (
           <DroppableColumn key={status} id={status}>
-            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t(status)}</div>
+            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t(status)}</div>
             <div className="flex flex-col gap-2">
               {(tasks ?? []).filter((task) => task.status === status).map((task) => (
                 <DraggableTaskCard key={task.id} id={task.id}>
                   <div className="flex items-center gap-1.5">
                     <span className="text-sm font-medium">{task.name}</span>
                     {criticalTaskIds.has(task.id) && (
-                      <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-error-700 dark:text-error-500">
+                      <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-danger-fg">
                         {t("critical")}
                       </span>
                     )}
@@ -176,7 +176,7 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
                     )}
                   </div>
                   {(task.startDate || task.dueDate) && (
-                    <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    <div className="mt-1 text-xs text-fg-subtle">
                       {task.startDate ? formatDate(new Date(task.startDate)) : "…"}
                       {" → "}
                       {task.dueDate ? formatDate(new Date(task.dueDate)) : "…"}
@@ -185,10 +185,10 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
                   {task.predecessorLinks.length > 0 && (
                     <ul className="mt-1.5 flex flex-col gap-0.5">
                       {task.predecessorLinks.map((link) => (
-                        <li key={link.id} className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                        <li key={link.id} className="flex items-center gap-1 text-xs text-fg-subtle">
                           {t("dependsOn")}: {link.predecessor.name} ({t(`depType_${link.type}`)}
                           {link.lagDays !== 0 ? `${link.lagDays > 0 ? "+" : ""}${link.lagDays}d` : ""})
-                          <button onClick={() => removeDependency(link.id)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
+                          <button onClick={() => removeDependency(link.id)} className="text-fg-subtle hover:text-danger-fg">
                             ×
                           </button>
                         </li>
@@ -247,7 +247,7 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
                           onChange={(e) => setDepForm((f) => ({ ...f, lagDays: e.target.value }))}
                         />
                       </div>
-                      {depError && <p className="text-xs text-error-600">{depError}</p>}
+                      {depError && <p className="text-xs text-danger-fg">{depError}</p>}
                       <button onClick={() => addDependency(task.id)} className="btn-primary px-2 py-1 text-xs">
                         {tc("save")}
                       </button>
@@ -275,7 +275,7 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
           value={taskForm.name}
           onChange={(e) => setTaskForm((f) => ({ ...f, name: e.target.value }))}
         />
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
           {t("startDate")}
           <input
             type="date"
@@ -284,7 +284,7 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
             onChange={(e) => setTaskForm((f) => ({ ...f, startDate: e.target.value }))}
           />
         </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
           {t("dueDate")}
           <input
             type="date"
@@ -293,7 +293,7 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
             onChange={(e) => setTaskForm((f) => ({ ...f, dueDate: e.target.value }))}
           />
         </label>
-        <label className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex items-center gap-1.5 text-xs text-fg-subtle">
           <input
             type="checkbox"
             checked={taskForm.isOutdoorWork}
@@ -306,8 +306,8 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
         </button>
       </form>
 
-      <h2 className="mb-3 mt-10 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("gantt")}</h2>
-      <p className="mb-2 text-xs text-gray-400 dark:text-gray-500">{t("ganttDragHint")}</p>
+      <h2 className="mb-3 mt-10 text-sm font-semibold text-fg-muted">{t("gantt")}</h2>
+      <p className="mb-2 text-xs text-fg-subtle">{t("ganttDragHint")}</p>
       <GanttChart
         tasks={tasks ?? []}
         milestones={milestones ?? []}
@@ -316,12 +316,12 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
         onTaskDatesChange={changeTaskDates}
       />
 
-      <h2 className="mb-3 mt-10 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("milestones")}</h2>
+      <h2 className="mb-3 mt-10 text-sm font-semibold text-fg-muted">{t("milestones")}</h2>
       <ul className="flex flex-col gap-2">
         {(milestones ?? []).map((m) => (
           <li key={m.id} className="card flex items-center justify-between">
             <span className="text-sm font-medium">{m.name}</span>
-            <span className="text-xs text-gray-500 dark:text-gray-400">{m.dueDate ? formatDate(new Date(m.dueDate)) : "—"}</span>
+            <span className="text-xs text-fg-subtle">{m.dueDate ? formatDate(new Date(m.dueDate)) : "—"}</span>
           </li>
         ))}
       </ul>
@@ -381,7 +381,7 @@ function GanttChart({
   const datedMilestones = milestones.filter((m) => m.dueDate);
 
   if (datedTasks.length === 0 && datedMilestones.length === 0) {
-    return <p className="text-sm text-gray-400 dark:text-gray-500">{emptyLabel}</p>;
+    return <p className="text-sm text-fg-subtle">{emptyLabel}</p>;
   }
 
   const now = new Date();
@@ -464,13 +464,13 @@ function GanttChart({
   return (
     <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
       {criticalTaskIds.size > 0 && (
-        <div className="mb-3 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+        <div className="mb-3 flex items-center gap-1.5 text-xs text-fg-subtle">
           <span className="inline-block h-2.5 w-2.5 rounded-sm bg-error-500" /> {t("criticalPathLegend")}
         </div>
       )}
       <div className="flex items-center gap-3">
         <div className="w-32 flex-none" />
-        <div className="relative h-5 flex-1 text-[10px] text-gray-400 dark:text-gray-500">
+        <div className="relative h-5 flex-1 text-[10px] text-fg-subtle">
           {weekTicks.map((tick) => (
             <div key={tick} className="absolute -translate-x-1/2 border-l border-gray-100 dark:border-gray-700 pl-1" style={{ left: `${pct(tick)}%`, height: "100%" }}>
               {formatDateWithOptions(tick, { month: "short", day: "numeric" })}

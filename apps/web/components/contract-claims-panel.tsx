@@ -31,10 +31,10 @@ interface ClaimDetail extends ContractClaim {
 
 const STATUS_STYLES: Record<ContractClaimStatus, string> = {
   notice_given: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  submitted: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
+  submitted: "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
   negotiating: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
-  resolved: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
-  rejected: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
+  resolved: "bg-success-50 dark:bg-success-500/15 text-success-fg",
+  rejected: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
 };
 const OPEN_STATUSES: ContractClaimStatus[] = ["notice_given", "submitted", "negotiating"];
 
@@ -139,14 +139,14 @@ export function ContractClaimsPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("title")}</h2>
         {!adding && (
           <button onClick={() => setAdding(true)} className="btn-secondary px-2.5 py-1 text-xs">
             {t("fileClaim")}
           </button>
         )}
       </div>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
 
       {adding && (
         <form onSubmit={createClaim} className="card mb-3 flex flex-col gap-2">
@@ -174,7 +174,7 @@ export function ContractClaimsPanel({ projectId }: { projectId: string }) {
             onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
           />
           <div className="flex flex-wrap items-end gap-2">
-            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
               {t("noticeDate")}
               <input
                 required
@@ -214,9 +214,9 @@ export function ContractClaimsPanel({ projectId }: { projectId: string }) {
       )}
 
       {!claims ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
       ) : claims.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noClaims")}</p>
+        <p className="text-sm text-fg-subtle">{t("noClaims")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {claims.map((claim) => {
@@ -224,12 +224,12 @@ export function ContractClaimsPanel({ projectId }: { projectId: string }) {
             return (
               <li key={claim.id} className="card">
                 <button onClick={() => toggleExpand(claim.id)} className="flex w-full items-center justify-between text-left">
-                  <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
+                  <span className="text-sm font-medium text-fg">
                     {t(`type_${claim.type}`)} · {claim.title}
                   </span>
                   <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[claim.status]}`}>{t(`status_${claim.status}`)}</span>
                 </button>
-                <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                <p className="mt-1 text-xs text-fg-subtle">
                   {t("noticeDate")}: {formatDate(new Date(claim.noticeDate))}
                   {claim.requestedAmount && ` · ${claim.requestedAmount} ${currency}`}
                   {claim.requestedDays && ` · ${t("requestedDaysAbbr", { days: claim.requestedDays })}`}
@@ -246,14 +246,14 @@ export function ContractClaimsPanel({ projectId }: { projectId: string }) {
                             {t(`moveTo_${s}`)}
                           </button>
                         ))}
-                        <button onClick={() => updateStatus(claim.id, "rejected")} disabled={busy} className="text-xs text-error-700 dark:text-error-500 hover:underline">
+                        <button onClick={() => updateStatus(claim.id, "rejected")} disabled={busy} className="text-xs text-danger-fg hover:underline">
                           {t("rejectClaim")}
                         </button>
                       </div>
                     )}
 
                     {claim.status === "resolved" ? (
-                      <p className="text-sm text-success-700 dark:text-success-500">
+                      <p className="text-sm text-success-fg">
                         {t("resolution")}: {claim.resolution}
                       </p>
                     ) : (
@@ -281,12 +281,12 @@ export function ContractClaimsPanel({ projectId }: { projectId: string }) {
                     )}
 
                     <div>
-                      <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("timeline")}</h3>
+                      <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("timeline")}</h3>
                       <ul className="mb-2 flex flex-col gap-1.5">
                         {detail.events.map((ev) => (
                           <li key={ev.id} className="text-xs">
-                            <span className="text-gray-400 dark:text-gray-500">{formatDate(new Date(ev.occurredAt))}</span> — {ev.description}
-                            <span className="text-gray-400 dark:text-gray-500"> ({ev.createdByName})</span>
+                            <span className="text-fg-subtle">{formatDate(new Date(ev.occurredAt))}</span> — {ev.description}
+                            <span className="text-fg-subtle"> ({ev.createdByName})</span>
                           </li>
                         ))}
                       </ul>

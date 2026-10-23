@@ -32,11 +32,11 @@ function LocationNode({
   return (
     <>
       <li style={{ paddingLeft: `${depth * 1.25}rem` }} className="flex items-center gap-2 py-1 text-sm">
-        <span className="text-gray-400 dark:text-gray-500">{t(location.kind)}</span>
+        <span className="text-fg-subtle">{t(location.kind)}</span>
         <span className="font-medium">{location.code}</span>
         <button
           onClick={() => onDelete(location.id)}
-          className="ml-auto text-xs text-gray-400 hover:text-error-600"
+          className="ml-auto text-xs text-fg-subtle hover:text-danger-fg"
         >
           {t("deleteLocation")}
         </button>
@@ -93,10 +93,10 @@ export function WarehouseLocations({ warehouseId }: { warehouseId: string }) {
 
   return (
     <div className="mt-8">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("locations")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("locations")}</h2>
 
       <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-2">
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
           {t("parentLocation")}
           <select
             className="input w-auto"
@@ -133,7 +133,7 @@ export function WarehouseLocations({ warehouseId }: { warehouseId: string }) {
           {t("addLocation")}
         </button>
       </form>
-      {error && <p className="mt-2 text-xs text-error-600">{error}</p>}
+      {error && <p className="mt-2 text-xs text-danger-fg">{error}</p>}
 
       {locations && locations.length > 0 && (
         <ul className="mt-4">

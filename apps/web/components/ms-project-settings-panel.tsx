@@ -62,18 +62,18 @@ export function MsProjectSettingsPanel({ canManage }: { canManage: boolean }) {
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("settingsTitle")}</h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("settingsHint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("settingsTitle")}</h2>
+      <p className="mb-4 text-xs text-fg-subtle">{t("settingsHint")}</p>
 
-      {error && <p className="mb-3 text-xs text-error-600">{error}</p>}
+      {error && <p className="mb-3 text-xs text-danger-fg">{error}</p>}
 
       {status.connected ? (
         <div className="flex flex-col gap-3">
-          <p className="text-sm text-success-700 dark:text-success-500">
+          <p className="text-sm text-success-fg">
             {t("connectedSummary", { date: status.connectedAt ? formatDate(new Date(status.connectedAt)) : "" })}
           </p>
           {canManage && (
-            <button onClick={disconnect} disabled={busy} className="btn-secondary text-error-600 w-fit">
+            <button onClick={disconnect} disabled={busy} className="btn-secondary text-danger-fg w-fit">
               {t("disconnect")}
             </button>
           )}
@@ -82,7 +82,7 @@ export function MsProjectSettingsPanel({ canManage }: { canManage: boolean }) {
         canManage && (
           <div className="flex flex-wrap items-end gap-2">
             <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("environmentUrlLabel")}</span>
+              <span className="font-medium text-fg-muted">{t("environmentUrlLabel")}</span>
               <input
                 className="input"
                 placeholder={t("environmentUrlPlaceholder")}

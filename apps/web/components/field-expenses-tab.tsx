@@ -126,14 +126,14 @@ export function ExpensesTab({ projectId }: { projectId: string }) {
     }
   }
 
-  if (error) return <p className="text-sm text-gray-400 dark:text-gray-500">{t("offline")}</p>;
-  if (workers === null) return <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>;
-  if (choices.length === 0) return <p className="text-sm text-gray-500 dark:text-gray-400">{t(crew ? "noWorkers" : "noOwnWorker")}</p>;
+  if (error) return <p className="text-sm text-fg-subtle">{t("offline")}</p>;
+  if (workers === null) return <p className="text-sm text-fg-subtle">{tc("loading")}</p>;
+  if (choices.length === 0) return <p className="text-sm text-fg-subtle">{t(crew ? "noWorkers" : "noOwnWorker")}</p>;
 
   return (
     <form onSubmit={submit} className="card flex flex-col gap-3">
       <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-gray-700 dark:text-gray-200">{tt("worker")}</span>
+        <span className="font-medium text-fg-muted">{tt("worker")}</span>
         <select className="input" value={form.workerId} disabled={!crew} onChange={(e) => setForm((f) => ({ ...f, workerId: e.target.value }))}>
           {choices.map((w) => (
             <option key={w.id} value={w.id}>
@@ -143,7 +143,7 @@ export function ExpensesTab({ projectId }: { projectId: string }) {
         </select>
       </label>
       <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-gray-700 dark:text-gray-200">{te("category")}</span>
+        <span className="font-medium text-fg-muted">{te("category")}</span>
         <select
           className="input"
           value={form.category}
@@ -158,7 +158,7 @@ export function ExpensesTab({ projectId }: { projectId: string }) {
       </label>
       <div className="flex gap-3">
         <label className="flex flex-1 flex-col gap-1.5 text-sm">
-          <span className="font-medium text-gray-700 dark:text-gray-200">{te("amount")}</span>
+          <span className="font-medium text-fg-muted">{te("amount")}</span>
           <input
             required
             type="number"
@@ -170,7 +170,7 @@ export function ExpensesTab({ projectId }: { projectId: string }) {
           />
         </label>
         <label className="flex flex-1 flex-col gap-1.5 text-sm">
-          <span className="font-medium text-gray-700 dark:text-gray-200">{te("date")}</span>
+          <span className="font-medium text-fg-muted">{te("date")}</span>
           <input
             type="date"
             className="input"
@@ -180,7 +180,7 @@ export function ExpensesTab({ projectId }: { projectId: string }) {
         </label>
       </div>
       <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-gray-700 dark:text-gray-200">{te("description")}</span>
+        <span className="font-medium text-fg-muted">{te("description")}</span>
         <input
           className="input"
           value={form.description}
@@ -188,7 +188,7 @@ export function ExpensesTab({ projectId }: { projectId: string }) {
         />
       </label>
       <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-gray-700 dark:text-gray-200">{te("receipt")}</span>
+        <span className="font-medium text-fg-muted">{te("receipt")}</span>
         <input
           ref={receiptInputRef}
           type="file"
@@ -207,7 +207,7 @@ export function ExpensesTab({ projectId }: { projectId: string }) {
           >
             {tc("chooseFile")}
           </button>
-          {receipt && <span className="text-xs text-gray-500 dark:text-gray-400">{receipt.name}</span>}
+          {receipt && <span className="text-xs text-fg-subtle">{receipt.name}</span>}
         </div>
       </label>
       {receipt && (
@@ -215,7 +215,7 @@ export function ExpensesTab({ projectId }: { projectId: string }) {
           <button type="button" onClick={scanReceipt} disabled={scanning} className="btn-secondary px-3 py-1 text-xs">
             {scanning ? t("scanReceiptScanning") : t("scanReceiptButton")}
           </button>
-          {scanMessage && <span className="text-xs text-gray-500 dark:text-gray-400">{scanMessage}</span>}
+          {scanMessage && <span className="text-xs text-fg-subtle">{scanMessage}</span>}
         </div>
       )}
       <button type="submit" disabled={busy} className="btn-primary mt-1">

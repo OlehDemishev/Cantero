@@ -30,12 +30,12 @@ export function MarketingRoiPanel() {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("roiTitle")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("roiHint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("roiTitle")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{t("roiHint")}</p>
       <div className="card overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
               <th className="py-1.5">{t("channel")}</th>
               <th>{t("leads")}</th>
               <th>{t("won")}</th>
@@ -48,7 +48,7 @@ export function MarketingRoiPanel() {
           <tbody>
             {rows.map((r) => (
               <tr key={r.channel} className="border-b border-gray-100 dark:border-gray-700">
-                <td className="py-1.5 font-medium text-gray-900 dark:text-gray-50">{r.channel}</td>
+                <td className="py-1.5 font-medium text-fg">{r.channel}</td>
                 <td>{r.leadCount}</td>
                 <td>{r.wonCount}</td>
                 <td>{r.conversionRatePercent}%</td>

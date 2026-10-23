@@ -64,11 +64,11 @@ export function ClientActivityPanel({ clientId }: { clientId: string }) {
 
   return (
     <div className="lg:col-span-2">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("activity")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("activity")}</h2>
       {!activities ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
       ) : activities.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noActivity")}</p>
+        <p className="text-sm text-fg-subtle">{t("noActivity")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {activities.map((a) => (
@@ -77,11 +77,11 @@ export function ClientActivityPanel({ clientId }: { clientId: string }) {
                 <span className="rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-300">
                   {t(a.type)}
                 </span>
-                <span className="text-xs text-gray-400 dark:text-gray-500">
+                <span className="text-xs text-fg-subtle">
                   {formatDateTime(new Date(a.createdAt))}
                 </span>
               </div>
-              <p className="mt-2 text-sm text-gray-800 dark:text-gray-100">{a.content}</p>
+              <p className="mt-2 text-sm text-fg">{a.content}</p>
             </li>
           ))}
         </ul>
@@ -114,7 +114,7 @@ export function ClientActivityPanel({ clientId }: { clientId: string }) {
         />
       </form>
 
-      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("notes")}</h2>
+      <h2 className="mb-3 mt-8 text-sm font-semibold text-fg-muted">{t("notes")}</h2>
       <form onSubmit={saveNotes} className="flex flex-col gap-2">
         <textarea
           rows={4}
@@ -129,7 +129,7 @@ export function ClientActivityPanel({ clientId }: { clientId: string }) {
           <button type="submit" disabled={busy} className="btn-secondary self-start">
             {tc("save")}
           </button>
-          {notesSaved && <span className="text-xs text-success-700 dark:text-success-500">{tc("saved")}</span>}
+          {notesSaved && <span className="text-xs text-success-fg">{tc("saved")}</span>}
         </div>
       </form>
     </div>

@@ -225,8 +225,8 @@ export function TakeoffPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-8">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
         {takeoffs.map((tk) => (
@@ -245,7 +245,7 @@ export function TakeoffPanel({ projectId }: { projectId: string }) {
             {uploadFile ? uploadFile.name : tc("chooseFile")}
           </button>
           {uploadPages > 1 && (
-            <label className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+            <label className="flex items-center gap-1 text-xs text-fg-subtle">
               {t("page")}
               <select className="input w-auto py-1 text-xs" value={uploadPage} onChange={(e) => setUploadPage(Number(e.target.value))}>
                 {Array.from({ length: uploadPages }, (_, i) => (
@@ -261,12 +261,12 @@ export function TakeoffPanel({ projectId }: { projectId: string }) {
           </button>
         </form>
       </div>
-      {error && <p className="mb-2 text-xs text-error-600">{error}</p>}
+      {error && <p className="mb-2 text-xs text-danger-fg">{error}</p>}
 
       {detail && (
         <div className="card">
           {mode === "calibrate" && (
-            <div className="mb-3 flex flex-col gap-2 rounded-lg border border-warning-200 bg-warning-50 p-3 text-xs text-warning-700 dark:bg-warning-500/15 dark:text-warning-500">
+            <div className="mb-3 flex flex-col gap-2 rounded-lg border border-warning-200 bg-warning-50 p-3 text-xs text-warning-fg dark:bg-warning-500/15">
               {isPdf && (
                 <div className="flex flex-wrap items-end gap-2 border-b border-warning-200 pb-2 dark:border-warning-500/30">
                   <label className="flex flex-col gap-1">
@@ -346,15 +346,15 @@ export function TakeoffPanel({ projectId }: { projectId: string }) {
 
           {measuring && (
             <div className="mb-3 flex flex-wrap items-end gap-2 rounded-lg border border-gray-100 p-3 dark:border-gray-700">
-              <span className="text-xs text-gray-500 dark:text-gray-400">
+              <span className="text-xs text-fg-subtle">
                 {t(mode === "length" ? "lengthHint" : mode === "area" ? "areaHint" : "countHint")}
-                {mode === "count" && currentPoints.length > 0 && <strong className="ml-1 text-gray-700 dark:text-gray-200">{currentPoints.length}</strong>}
+                {mode === "count" && currentPoints.length > 0 && <strong className="ml-1 text-fg-muted">{currentPoints.length}</strong>}
               </span>
-              <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+              <label className="flex flex-col gap-1 text-xs text-fg-subtle">
                 {t("label")}
                 <input className="input w-40" value={measurementForm.label} onChange={(e) => setMeasurementForm((f) => ({ ...f, label: e.target.value }))} />
               </label>
-              <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+              <label className="flex flex-col gap-1 text-xs text-fg-subtle">
                 {t("linkedRateItem")}
                 <select className="input" value={measurementForm.rateCatalogItemId} onChange={(e) => setMeasurementForm((f) => ({ ...f, rateCatalogItemId: e.target.value }))}>
                   <option value="">—</option>
@@ -393,8 +393,8 @@ export function TakeoffPanel({ projectId }: { projectId: string }) {
               <li key={m.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-100 px-3 py-2 text-sm dark:border-gray-700">
                 <span className="flex items-center gap-2">
                   <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: MEASUREMENT_COLORS[m.type] }} />
-                  <span className="font-medium text-gray-800 dark:text-white/90">{m.label}</span>
-                  <span className="text-xs tabular-nums text-gray-500 dark:text-gray-400">{formatValue(m)}</span>
+                  <span className="font-medium text-fg">{m.label}</span>
+                  <span className="text-xs tabular-nums text-fg-subtle">{formatValue(m)}</span>
                 </span>
                 <span className="flex items-center gap-2">
                   {m.rateCatalogItemId && draftEstimates.length > 0 && (
@@ -420,7 +420,7 @@ export function TakeoffPanel({ projectId }: { projectId: string }) {
                       )}
                     </>
                   )}
-                  <button onClick={() => deleteMeasurement(m.id)} className="text-xs text-error-600 hover:underline">
+                  <button onClick={() => deleteMeasurement(m.id)} className="text-xs text-danger-fg hover:underline">
                     {tc("delete")}
                   </button>
                 </span>
@@ -544,11 +544,11 @@ function TakeoffSurface({
 
   const zoomBy = (factor: number) => setZoom((z) => (z === null ? z : Math.min(Math.max(z * factor, 0.05), 20)));
 
-  if (failed) return <p className="text-xs text-error-600">{t("loadFailed")}</p>;
+  if (failed) return <p className="text-xs text-danger-fg">{t("loadFailed")}</p>;
 
   return (
     <div>
-      <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+      <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-fg-subtle">
         <button type="button" onClick={() => zoomBy(1 / ZOOM_STEP)} className="btn-secondary px-2 py-1 text-xs" aria-label={t("zoomOut")}>
           −
         </button>
@@ -563,13 +563,13 @@ function TakeoffSurface({
           <label className="ml-2 flex items-center gap-1">
             <input type="checkbox" checked={snapOn} onChange={(e) => setSnapOn(e.target.checked)} />
             {t("snap")}
-            {snapIndex && <span className="text-gray-400">({t("snapPoints", { n: snapIndex.size })})</span>}
+            {snapIndex && <span className="text-fg-subtle">({t("snapPoints", { n: snapIndex.size })})</span>}
           </label>
         )}
         {isPdf && <span className="ml-auto">{t("pageN", { n: detail.pageNumber })}</span>}
       </div>
       <div ref={containerRef} className="max-h-[70vh] overflow-auto rounded-md border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900">
-        {!source && <p className="p-4 text-xs text-gray-500 dark:text-gray-400">{t("loadingDrawing")}</p>}
+        {!source && <p className="p-4 text-xs text-fg-subtle">{t("loadingDrawing")}</p>}
         <div className="relative inline-block">
           <canvas ref={baseRef} className="block bg-white" />
           <canvas

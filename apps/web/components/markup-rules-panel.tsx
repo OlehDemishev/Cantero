@@ -47,21 +47,21 @@ export function MarkupRulesPanel() {
 
   return (
     <section className="card">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-4 text-xs text-fg-subtle">{t("hint")}</p>
 
       {!rules ? (
-        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        <p className="text-fg-subtle">{tc("loading")}</p>
       ) : rules.length === 0 ? (
-        <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">{t("noRules")}</p>
+        <p className="mb-4 text-sm text-fg-subtle">{t("noRules")}</p>
       ) : (
         <ul className="mb-4 flex flex-col gap-1.5">
           {rules.map((r) => (
             <li key={r.id} className="flex items-center justify-between text-sm">
-              <span className="text-gray-700 dark:text-gray-300">
+              <span className="text-fg-muted">
                 {t(`costType_${r.costType}`)} — {Number(r.markupPercent).toFixed(2)}%
               </span>
-              <button onClick={() => remove(r.id)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
+              <button onClick={() => remove(r.id)} className="text-fg-subtle hover:text-danger-fg">
                 ×
               </button>
             </li>

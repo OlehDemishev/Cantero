@@ -298,7 +298,7 @@ export default function InvoicesPage() {
         </div>
       </div>
       <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{t("datevTestImportNotice")}</p>
-      {datevError && <p className="mt-1 text-xs text-error-600">{datevError}</p>}
+      {datevError && <p className="mt-1 text-xs text-danger-fg">{datevError}</p>}
       {datevWarningCount !== null && datevWarningCount > 0 && (
         <p className="mt-1 text-xs text-warning-700 dark:text-warning-500">{t("datevWarningCount", { count: datevWarningCount })}</p>
       )}

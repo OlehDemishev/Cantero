@@ -55,23 +55,23 @@ export function CompanyHolidaysPanel({ canManage }: { canManage: boolean }) {
 
   return (
     <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
-      <p className="mb-1 text-xs font-medium text-gray-700 dark:text-gray-200">{t("holidays")}</p>
-      <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">{t("holidaysHint")}</p>
+      <p className="mb-1 text-xs font-medium text-fg-muted">{t("holidays")}</p>
+      <p className="mb-2 text-xs text-fg-subtle">{t("holidaysHint")}</p>
 
       {holidays === null ? (
-        <p className="text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        <p className="text-xs text-fg-subtle">{tc("loading")}</p>
       ) : holidays.length === 0 ? (
-        <p className="text-xs text-gray-400 dark:text-gray-500">{t("noHolidays")}</p>
+        <p className="text-xs text-fg-subtle">{t("noHolidays")}</p>
       ) : (
         <ul className="mb-3 flex flex-col gap-1.5">
           {holidays.map((h) => (
             <li key={h.id} className="flex items-center justify-between rounded-md border border-gray-200 dark:border-gray-700 px-2.5 py-1.5 text-xs">
               <span>
-                <span className="font-medium text-gray-800 dark:text-gray-100">{formatDate(new Date(h.date))}</span>
-                <span className="ml-2 text-gray-500 dark:text-gray-400">{h.label}</span>
+                <span className="font-medium text-fg">{formatDate(new Date(h.date))}</span>
+                <span className="ml-2 text-fg-subtle">{h.label}</span>
               </span>
               {canManage && (
-                <button onClick={() => remove(h.id)} disabled={busy} className="text-gray-400 dark:text-gray-500 hover:text-error-700">
+                <button onClick={() => remove(h.id)} disabled={busy} className="text-fg-subtle hover:text-error-700">
                   {tc("delete")}
                 </button>
               )}
@@ -82,7 +82,7 @@ export function CompanyHolidaysPanel({ canManage }: { canManage: boolean }) {
 
       {canManage && (
         <div className="flex items-end gap-2">
-          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
             {t("holidayDate")}
             <input
               type="date"
@@ -91,7 +91,7 @@ export function CompanyHolidaysPanel({ canManage }: { canManage: boolean }) {
               onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
             />
           </label>
-          <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+          <label className="flex flex-1 flex-col gap-1 text-xs text-fg-subtle">
             {t("holidayLabel")}
             <input
               className="input"
@@ -105,7 +105,7 @@ export function CompanyHolidaysPanel({ canManage }: { canManage: boolean }) {
           </button>
         </div>
       )}
-      {error && <p className="mt-1 text-xs text-error-700 dark:text-error-500">{error}</p>}
+      {error && <p className="mt-1 text-xs text-danger-fg">{error}</p>}
     </div>
   );
 }

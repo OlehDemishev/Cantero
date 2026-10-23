@@ -127,7 +127,7 @@ export function ClientDealPanel({
 
   return (
     <div className="mt-6 card max-w-md">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("estimatedValue")} / {t("owner")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("estimatedValue")} / {t("owner")}</h2>
       <form onSubmit={saveDeal} className="flex flex-col gap-2">
         <input
           type="number"
@@ -149,7 +149,7 @@ export function ClientDealPanel({
             </option>
           ))}
         </select>
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
           {t("probability")}
           <input
             type="number"
@@ -161,7 +161,7 @@ export function ClientDealPanel({
             onChange={(e) => setDealForm((f) => ({ ...f, probability: e.target.value }))}
           />
         </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
           {t("expectedCloseDate")}
           <input
             type="date"
@@ -170,7 +170,7 @@ export function ClientDealPanel({
             onChange={(e) => setDealForm((f) => ({ ...f, expectedCloseDate: e.target.value }))}
           />
         </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
           {t("source")}
           <input
             className="input mt-1"
@@ -179,7 +179,7 @@ export function ClientDealPanel({
             onChange={(e) => setDealForm((f) => ({ ...f, source: e.target.value }))}
           />
         </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
           {t("campaign")}
           <select
             className="input mt-1"
@@ -194,7 +194,7 @@ export function ClientDealPanel({
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
           {t("referredBy")}
           <select
             className="input mt-1"
@@ -213,12 +213,12 @@ export function ClientDealPanel({
           <button type="submit" disabled={busy} className="btn-secondary self-start">
             {tc("save")}
           </button>
-          {dealSaved && <span className="text-xs text-success-700 dark:text-success-500">{tc("saved")}</span>}
+          {dealSaved && <span className="text-xs text-success-fg">{tc("saved")}</span>}
         </div>
       </form>
       {client.referrals.length > 0 && (
         <div className="mt-4 border-t border-gray-100 dark:border-gray-700 pt-3">
-          <h3 className="mb-1 text-xs font-semibold text-gray-500 dark:text-gray-400">{t("referrals")}</h3>
+          <h3 className="mb-1 text-xs font-semibold text-fg-subtle">{t("referrals")}</h3>
           <ul className="flex flex-col gap-1">
             {client.referrals.map((r) => (
               <li key={r.id}>
@@ -232,11 +232,11 @@ export function ClientDealPanel({
       )}
       {client.referralRewardStatus !== "none" && (
         <div className="mt-4 border-t border-gray-100 dark:border-gray-700 pt-3">
-          <h3 className="mb-1 text-xs font-semibold text-gray-500 dark:text-gray-400">{t("referralReward")}</h3>
+          <h3 className="mb-1 text-xs font-semibold text-fg-subtle">{t("referralReward")}</h3>
           <div className="flex items-center justify-between">
             <span
               className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                client.referralRewardStatus === "paid" ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-400"
+                client.referralRewardStatus === "paid" ? "bg-success-50 dark:bg-success-500/15 text-success-fg" : "bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-400"
               }`}
             >
               {t(`referralReward_${client.referralRewardStatus}`)}

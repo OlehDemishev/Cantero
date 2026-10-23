@@ -59,19 +59,19 @@ export function DocusignSettingsPanel({ canManage }: { canManage: boolean }) {
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-4 text-xs text-fg-subtle">{t("hint")}</p>
 
-      {error && <p className="mb-3 text-xs text-error-600">{error}</p>}
+      {error && <p className="mb-3 text-xs text-danger-fg">{error}</p>}
 
       {status.connected ? (
         <div className="flex flex-col gap-3">
-          <p className="text-sm text-success-700 dark:text-success-500">
+          <p className="text-sm text-success-fg">
             {t("connectedSummary", { date: status.connectedAt ? formatDate(new Date(status.connectedAt)) : "" })}
           </p>
           {canManage && (
             <div className="flex flex-wrap gap-2">
-              <button onClick={disconnect} disabled={busy} className="btn-secondary text-error-600">
+              <button onClick={disconnect} disabled={busy} className="btn-secondary text-danger-fg">
                 {t("disconnect")}
               </button>
             </div>

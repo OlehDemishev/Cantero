@@ -81,7 +81,7 @@ export function BillingPlanPanel({ isManager }: { isManager: boolean }) {
 
   return (
     <section id="billing" className="card">
-      <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("plan")}</h2>
+      <h2 className="mb-4 text-sm font-semibold text-fg-muted">{t("plan")}</h2>
       {error && <p className="mb-3 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{error}</p>}
       <div className="flex flex-col gap-2">
         {plans.map((plan) => {
@@ -95,7 +95,7 @@ export function BillingPlanPanel({ isManager }: { isManager: boolean }) {
                 <div className="text-sm font-medium">
                   {plan.name} {isCurrent && `· ${t("currentPlan")}`}
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
+                <div className="text-xs text-fg-subtle">
                   {plan.pricePerSeat} {plan.currency} / seat / mo
                 </div>
               </div>
@@ -110,14 +110,14 @@ export function BillingPlanPanel({ isManager }: { isManager: boolean }) {
       </div>
 
       {subscription && memberCount !== null && (
-        <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+        <p className="mt-3 text-xs text-fg-subtle">
           {t("seatsUsed", { used: memberCount, total: subscription.seats })}
         </p>
       )}
 
       {isManager && (
         <form onSubmit={updateSeats} className="mt-4 flex items-end gap-2">
-          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
             {t("seats")}
             <input
               type="number"

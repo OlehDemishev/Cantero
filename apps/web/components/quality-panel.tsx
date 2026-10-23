@@ -52,18 +52,18 @@ interface HeatmapBucket {
 
 const STATUS_STYLES: Record<Checklist["status"], string> = {
   open: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  passed: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
-  failed: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
+  passed: "bg-success-50 dark:bg-success-500/15 text-success-fg",
+  failed: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
 };
 const SEVERITY_STYLES: Record<DeficiencySeverity, string> = {
   minor: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  major: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
-  critical: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
+  major: "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
+  critical: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
 };
 const DEFICIENCY_STATUS_STYLES: Record<Deficiency["status"], string> = {
-  open: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
-  resolved: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
-  verified: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
+  open: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
+  resolved: "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
+  verified: "bg-success-50 dark:bg-success-500/15 text-success-fg",
 };
 
 const EMPTY_CHECKLIST_FORM = { name: "", trade: "", phase: "", templateId: "", inspectorWorkerId: "", adHocItems: "" };
@@ -179,10 +179,10 @@ export function QualityPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("title")}</h2>
 
       <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("inspections")}</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("inspections")}</h3>
         {!creating && (
           <button onClick={() => setCreating(true)} className="btn-secondary px-3 py-1 text-xs">
             {t("newInspection")}
@@ -262,22 +262,22 @@ export function QualityPanel({ projectId }: { projectId: string }) {
       )}
 
       {checklists === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
       ) : checklists.length === 0 ? (
-        <p className="mb-6 text-sm text-gray-400 dark:text-gray-500">{t("noInspections")}</p>
+        <p className="mb-6 text-sm text-fg-subtle">{t("noInspections")}</p>
       ) : (
         <ul className="mb-6 flex flex-col gap-3">
           {checklists.map((cl) => (
             <li key={cl.id} className="card">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{cl.name}</span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">
+                <span className="text-sm font-medium text-fg">{cl.name}</span>
+                <span className="text-xs text-fg-subtle">
                   {cl.trade}
                   {cl.phase ? ` · ${cl.phase}` : ""}
                 </span>
                 <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[cl.status]}`}>{t(`status_${cl.status}`)}</span>
               </div>
-              {cl.inspector && <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{t("inspectorLabel", { name: cl.inspector.name })}</p>}
+              {cl.inspector && <p className="mt-1 text-xs text-fg-subtle">{t("inspectorLabel", { name: cl.inspector.name })}</p>}
 
               <ul className="mt-2 flex flex-col gap-1.5">
                 {cl.items.map((item) => (
@@ -296,10 +296,10 @@ export function QualityPanel({ projectId }: { projectId: string }) {
                         ))}
                       </select>
                     ) : (
-                      <span className="text-xs text-gray-500 dark:text-gray-400">{t(`result_${item.result}`)}</span>
+                      <span className="text-xs text-fg-subtle">{t(`result_${item.result}`)}</span>
                     )}
                     {item.result === "fail" && cl.status === "open" && (
-                      <button onClick={() => startDeficiency(cl.id, item)} className="text-xs text-error-700 dark:text-error-500 hover:underline">
+                      <button onClick={() => startDeficiency(cl.id, item)} className="text-xs text-danger-fg hover:underline">
                         {t("raiseDeficiency")}
                       </button>
                     )}
@@ -373,11 +373,11 @@ export function QualityPanel({ projectId }: { projectId: string }) {
 
       {heatmap && heatmap.length > 0 && (
         <div className="mb-6">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("heatmapTitle")}</h3>
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("heatmapTitle")}</h3>
           <div className="card overflow-x-auto">
             <table className="w-full min-w-[420px] border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-xs text-gray-500 dark:text-gray-400">
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-xs text-fg-subtle">
                   <th className="py-1">{t("location")}</th>
                   <th className="text-right">{t("severity_minor")}</th>
                   <th className="text-right">{t("severity_major")}</th>
@@ -389,10 +389,10 @@ export function QualityPanel({ projectId }: { projectId: string }) {
                 {heatmap.map((row) => (
                   <tr key={row.location} className="border-b border-gray-100 dark:border-gray-700">
                     <td className="py-1.5">{row.location}</td>
-                    <td className="text-right tabular-nums text-gray-500 dark:text-gray-400">{row.minor}</td>
-                    <td className="text-right tabular-nums text-warning-700 dark:text-warning-500">{row.major}</td>
-                    <td className="text-right tabular-nums text-error-600">{row.critical}</td>
-                    <td className="text-right font-semibold tabular-nums text-gray-900 dark:text-gray-50">{row.total}</td>
+                    <td className="text-right tabular-nums text-fg-subtle">{row.minor}</td>
+                    <td className="text-right tabular-nums text-warning-fg">{row.major}</td>
+                    <td className="text-right tabular-nums text-danger-fg">{row.critical}</td>
+                    <td className="text-right font-semibold tabular-nums text-fg">{row.total}</td>
                   </tr>
                 ))}
               </tbody>
@@ -401,11 +401,11 @@ export function QualityPanel({ projectId }: { projectId: string }) {
         </div>
       )}
 
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("deficiencies")}</h3>
+      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("deficiencies")}</h3>
       {deficiencies === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
       ) : deficiencies.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noDeficiencies")}</p>
+        <p className="text-sm text-fg-subtle">{t("noDeficiencies")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {deficiencies.map((d) => (
@@ -413,11 +413,11 @@ export function QualityPanel({ projectId }: { projectId: string }) {
               <div className="flex items-center gap-2">
                 <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${SEVERITY_STYLES[d.severity]}`}>{t(`severity_${d.severity}`)}</span>
                 <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${DEFICIENCY_STATUS_STYLES[d.status]}`}>{t(`deficiencyStatus_${d.status}`)}</span>
-                {d.dueDate && <span className="text-xs text-gray-500 dark:text-gray-400">{formatDate(new Date(d.dueDate))}</span>}
-                {d.location && <span className="text-xs text-gray-500 dark:text-gray-400">{d.location}</span>}
+                {d.dueDate && <span className="text-xs text-fg-subtle">{formatDate(new Date(d.dueDate))}</span>}
+                {d.location && <span className="text-xs text-fg-subtle">{d.location}</span>}
               </div>
-              <p className="mt-1.5 text-sm text-gray-900 dark:text-gray-50">{d.description}</p>
-              {d.assignee && <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{t("assignedTo", { name: d.assignee.name })}</p>}
+              <p className="mt-1.5 text-sm text-fg">{d.description}</p>
+              {d.assignee && <p className="mt-1 text-xs text-fg-subtle">{t("assignedTo", { name: d.assignee.name })}</p>}
               <div className="mt-2">
                 <PhotoAttachments param="deficiencyId" entityId={d.id} />
               </div>
@@ -433,7 +433,7 @@ export function QualityPanel({ projectId }: { projectId: string }) {
                   </button>
                 )}
                 {d.status !== "open" && (
-                  <button onClick={() => transitionDeficiency(d.id, "reopen")} className="text-xs text-gray-400 dark:text-gray-500 hover:text-error-600">
+                  <button onClick={() => transitionDeficiency(d.id, "reopen")} className="text-xs text-fg-subtle hover:text-danger-fg">
                     {t("reopen")}
                   </button>
                 )}

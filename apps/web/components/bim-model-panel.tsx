@@ -67,8 +67,8 @@ export function BimModelPanel({
     <section className="card">
       <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-          <p className="truncate text-xs text-gray-500 dark:text-gray-400">{model ? model.name : t("hint")}</p>
+          <h2 className="text-sm font-semibold text-fg-muted">{t("title")}</h2>
+          <p className="truncate text-xs text-fg-subtle">{model ? model.name : t("hint")}</p>
         </div>
         {canEdit && !picking && (
           <div className="flex gap-2">
@@ -83,7 +83,7 @@ export function BimModelPanel({
           </div>
         )}
       </div>
-      {error && <p className="mb-2 text-xs text-error-600">{error}</p>}
+      {error && <p className="mb-2 text-xs text-danger-fg">{error}</p>}
 
       {picking && (
         <ModelPicker
@@ -99,7 +99,7 @@ export function BimModelPanel({
       )}
 
       {!picking && model && <AutodeskViewer projectId={projectId} urn={model.urn} language={locale} />}
-      {!picking && !model && !canEdit && <p className="text-xs text-gray-500 dark:text-gray-400">{t("noModel")}</p>}
+      {!picking && !model && !canEdit && <p className="text-xs text-fg-subtle">{t("noModel")}</p>}
     </section>
   );
 }
@@ -165,11 +165,11 @@ function ModelPicker({
   if (linking) {
     return (
       <div className="flex flex-col gap-2">
-        <p className="text-xs text-gray-500 dark:text-gray-400">{t("linkHint")}</p>
-        {error && <p className="text-xs text-error-600">{error}</p>}
+        <p className="text-xs text-fg-subtle">{t("linkHint")}</p>
+        {error && <p className="text-xs text-danger-fg">{error}</p>}
         <div className="flex flex-wrap items-end gap-2">
           <label className="flex min-w-[18rem] flex-1 flex-col gap-1 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("accProjectId")}</span>
+            <span className="font-medium text-fg-muted">{t("accProjectId")}</span>
             <input className="input font-mono" placeholder="1a2b3c4d-…" value={draftId} onChange={(e) => setDraftId(e.target.value)} />
           </label>
           <button className="btn-primary" disabled={draftId.trim().length === 0} onClick={link}>
@@ -189,19 +189,19 @@ function ModelPicker({
         <nav aria-label={t("folderPath")} className="flex min-w-0 flex-wrap items-center gap-1 text-xs">
           {path.map((crumb, i) => (
             <span key={crumb.id ?? "root"} className="flex items-center gap-1">
-              {i > 0 && <span className="text-gray-400">/</span>}
+              {i > 0 && <span className="text-fg-subtle">/</span>}
               {i < path.length - 1 ? (
                 <button className="text-brand-700 hover:underline dark:text-brand-400" onClick={() => setPath(path.slice(0, i + 1))}>
                   {crumb.name}
                 </button>
               ) : (
-                <span className="font-medium text-gray-700 dark:text-gray-200">{crumb.name}</span>
+                <span className="font-medium text-fg-muted">{crumb.name}</span>
               )}
             </span>
           ))}
         </nav>
         <div className="flex gap-2">
-          <button className="text-xs text-gray-500 hover:underline dark:text-gray-400" onClick={() => setLinking(true)}>
+          <button className="text-xs text-fg-subtle hover:underline" onClick={() => setLinking(true)}>
             {t("changeAccProject")}
           </button>
           <button className="btn-secondary" onClick={onCancel}>
@@ -210,9 +210,9 @@ function ModelPicker({
         </div>
       </div>
 
-      {error && <p className="text-xs text-error-600">{error}</p>}
-      {!error && entries === null && <p className="text-xs text-gray-500 dark:text-gray-400">{t("loadingFolder")}</p>}
-      {entries && entries.length === 0 && <p className="text-xs text-gray-500 dark:text-gray-400">{t("emptyFolder")}</p>}
+      {error && <p className="text-xs text-danger-fg">{error}</p>}
+      {!error && entries === null && <p className="text-xs text-fg-subtle">{t("loadingFolder")}</p>}
+      {entries && entries.length === 0 && <p className="text-xs text-fg-subtle">{t("emptyFolder")}</p>}
       {entries && entries.length > 0 && (
         <ul className="max-h-80 divide-y divide-gray-100 overflow-y-auto rounded-md border border-gray-200 dark:divide-gray-800 dark:border-gray-700">
           {entries.map((entry) => (
@@ -221,12 +221,12 @@ function ModelPicker({
                 className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
                 onClick={() => (entry.kind === "folder" ? setPath([...path, { id: entry.id, name: entry.name }]) : onChoose(entry))}
               >
-                <span aria-hidden className="w-4 text-center text-gray-400">
+                <span aria-hidden className="w-4 text-center text-fg-subtle">
                   {entry.kind === "folder" ? "▸" : "◇"}
                 </span>
-                <span className="min-w-0 flex-1 truncate text-gray-800 dark:text-gray-100">{entry.name}</span>
+                <span className="min-w-0 flex-1 truncate text-fg">{entry.name}</span>
                 {entry.kind === "file" && (
-                  <span className="shrink-0 text-xs text-gray-500 dark:text-gray-400">
+                  <span className="shrink-0 text-xs text-fg-subtle">
                     {entry.versionNumber ? `v${entry.versionNumber} · ` : ""}
                     {t("show")}
                   </span>
@@ -236,7 +236,7 @@ function ModelPicker({
           ))}
         </ul>
       )}
-      {truncated && <p className="text-xs text-gray-500 dark:text-gray-400">{t("truncated")}</p>}
+      {truncated && <p className="text-xs text-fg-subtle">{t("truncated")}</p>}
     </div>
   );
 }

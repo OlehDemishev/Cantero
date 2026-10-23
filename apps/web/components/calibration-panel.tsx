@@ -59,20 +59,20 @@ export function CalibrationPanel(props: Props) {
 
   return (
     <section className="card">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
 
       {!records ? (
-        <p className="mb-3 text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        <p className="mb-3 text-sm text-fg-subtle">{tc("loading")}</p>
       ) : records.length === 0 ? (
-        <p className="mb-3 text-sm text-gray-400 dark:text-gray-500">{t("noRecords")}</p>
+        <p className="mb-3 text-sm text-fg-subtle">{t("noRecords")}</p>
       ) : (
         <>
-          <p className={`mb-2 text-xs font-medium ${overdue ? "text-error-700 dark:text-error-500" : "text-success-700 dark:text-success-500"}`}>
+          <p className={`mb-2 text-xs font-medium ${overdue ? "text-danger-fg" : "text-success-fg"}`}>
             {t("nextDue")}: {formatDate(new Date(latest!.nextDueAt))}
             {overdue && ` — ${t("overdue")}`}
           </p>
-          <ul className="mb-3 flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+          <ul className="mb-3 flex flex-col gap-1 text-xs text-fg-subtle">
             {records.map((r) => (
               <li key={r.id}>
                 {formatDate(new Date(r.calibratedAt))} → {t("dueOn")} {formatDate(new Date(r.nextDueAt))}
@@ -85,11 +85,11 @@ export function CalibrationPanel(props: Props) {
       )}
 
       <form onSubmit={log} className="flex flex-wrap items-end gap-2">
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
           {t("calibratedAt")}
           <input required type="date" className="input" value={form.calibratedAt} onChange={(e) => setForm((f) => ({ ...f, calibratedAt: e.target.value }))} />
         </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
           {t("nextDueAt")}
           <input required type="date" className="input" value={form.nextDueAt} onChange={(e) => setForm((f) => ({ ...f, nextDueAt: e.target.value }))} />
         </label>

@@ -130,14 +130,14 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("title")}</h2>
         {!adding && (
           <button onClick={() => setAdding(true)} className="btn-secondary px-2.5 py-1 text-xs">
             {t("logPour")}
           </button>
         )}
       </div>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
 
       {adding && (
         <form onSubmit={createPour} className="card mb-3 flex flex-col gap-2">
@@ -149,7 +149,7 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
               value={form.location}
               onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
             />
-            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
               {t("pourDate")}
               <input required type="date" className="input" value={form.pourDate} onChange={(e) => setForm((f) => ({ ...f, pourDate: e.target.value }))} />
             </label>
@@ -206,9 +206,9 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
       )}
 
       {!pours ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
       ) : pours.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noPours")}</p>
+        <p className="text-sm text-fg-subtle">{t("noPours")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {pours.map((pour) => {
@@ -217,13 +217,13 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
             return (
               <li key={pour.id} className="card">
                 <button onClick={() => setExpandedId(expanded ? null : pour.id)} className="flex w-full items-center justify-between text-left">
-                  <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
+                  <span className="text-sm font-medium text-fg">
                     {pour.location} — {formatDate(new Date(pour.pourDate))}
-                    {pour.mixDesign && <span className="ml-1.5 text-xs text-gray-400 dark:text-gray-500">({pour.mixDesign})</span>}
+                    {pour.mixDesign && <span className="ml-1.5 text-xs text-fg-subtle">({pour.mixDesign})</span>}
                   </span>
-                  {anyFail && <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-error-700 dark:text-error-500">{t("hasFailure")}</span>}
+                  {anyFail && <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-danger-fg">{t("hasFailure")}</span>}
                 </button>
-                <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                <p className="mt-1 text-xs text-fg-subtle">
                   {pour.specifiedStrength && `${t("specifiedStrength")}: ${pour.specifiedStrength}`}
                   {pour.specifiedSlump && ` · ${t("specifiedSlump")}: ${pour.specifiedSlump}`}
                   {pour.supplierName && ` · ${pour.supplierName}`}
@@ -232,12 +232,12 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
                 {expanded && (
                   <div className="mt-3 flex flex-col gap-4 border-t border-gray-100 dark:border-gray-700 pt-3">
                     <div>
-                      <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("slumpTests")}</h3>
+                      <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("slumpTests")}</h3>
                       {pour.slumpTests.length > 0 && (
                         <ul className="mb-2 flex flex-col gap-1 text-xs">
                           {pour.slumpTests.map((st) => (
                             <li key={st.id}>
-                              <span className={st.withinSpec ? "text-success-700 dark:text-success-500" : "font-medium text-error-700 dark:text-error-500"}>
+                              <span className={st.withinSpec ? "text-success-fg" : "font-medium text-danger-fg"}>
                                 {st.slumpValue} — {st.withinSpec ? t("withinSpec") : t("outOfSpec")}
                               </span>{" "}
                               ({st.testedByName}, {formatDate(new Date(st.testedAt))})
@@ -271,7 +271,7 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
                     </div>
 
                     <div>
-                      <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("cylinderBreaks")}</h3>
+                      <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("cylinderBreaks")}</h3>
                       {pour.cylinderBreaks.length > 0 && (
                         <ul className="mb-2 flex flex-col gap-1.5 text-xs">
                           {pour.cylinderBreaks.map((cb) => (
@@ -282,7 +282,7 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
                                   {cb.breakStrength !== null && ` — ${cb.breakStrength}`}
                                 </span>
                                 {cb.result ? (
-                                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${cb.result === "pass" ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500"}`}>
+                                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${cb.result === "pass" ? "bg-success-50 dark:bg-success-500/15 text-success-fg" : "bg-error-50 dark:bg-error-500/15 text-danger-fg"}`}>
                                     {t(`result_${cb.result}`)}
                                   </span>
                                 ) : cb.breakStrength === null ? (
@@ -306,7 +306,7 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
                                     </button>
                                   </span>
                                 ) : (
-                                  <span className="text-gray-400 dark:text-gray-500">{t("noSpecToCompare")}</span>
+                                  <span className="text-fg-subtle">{t("noSpecToCompare")}</span>
                                 )}
                               </div>
                             </li>
@@ -327,7 +327,7 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
                           value={cylForm.breakAgeDays}
                           onChange={(e) => setCylForm((f) => ({ ...f, breakAgeDays: e.target.value }))}
                         />
-                        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+                        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
                           {t("breakDate")}
                           <input type="date" className="input" value={cylForm.breakDate} onChange={(e) => setCylForm((f) => ({ ...f, breakDate: e.target.value }))} />
                         </label>

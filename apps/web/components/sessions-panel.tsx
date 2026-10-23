@@ -37,24 +37,24 @@ export function SessionsPanel() {
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-4 text-xs text-fg-subtle">{t("hint")}</p>
 
       {!sessions ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
       ) : sessions.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noSessions")}</p>
+        <p className="text-sm text-fg-subtle">{t("noSessions")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {sessions.map((s) => (
             <li key={s.id} className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-2 text-sm">
               <div>
-                <div className="text-gray-700 dark:text-gray-200">{s.userAgent ?? t("unknownDevice")}</div>
-                <div className="text-xs text-gray-400 dark:text-gray-500">
+                <div className="text-fg-muted">{s.userAgent ?? t("unknownDevice")}</div>
+                <div className="text-xs text-fg-subtle">
                   {s.ipAddress ?? "—"} · {t("lastSeen", { date: formatDateTime(new Date(s.lastSeenAt)) })}
                 </div>
               </div>
-              <button onClick={() => revoke(s.id)} disabled={busy} className="text-xs text-error-700 dark:text-error-500 hover:underline">
+              <button onClick={() => revoke(s.id)} disabled={busy} className="text-xs text-danger-fg hover:underline">
                 {t("revoke")}
               </button>
             </li>

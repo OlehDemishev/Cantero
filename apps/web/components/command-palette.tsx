@@ -107,10 +107,10 @@ export function CommandPalette({ navItems }: { navItems: readonly NavAction[] })
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 border-b border-gray-100 px-4 py-3 dark:border-gray-800">
-          <SearchIcon width={16} height={16} className="shrink-0 text-gray-400 dark:text-gray-500" />
+          <SearchIcon width={16} height={16} className="shrink-0 text-fg-subtle" />
           <input
             ref={inputRef}
-            className="w-full bg-transparent text-sm text-gray-800 outline-none placeholder:text-gray-400 dark:text-white/90"
+            className="w-full bg-transparent text-sm text-fg outline-none placeholder:text-gray-400"
             placeholder={t("placeholder")}
             value={query}
             onChange={(e) => {
@@ -119,13 +119,13 @@ export function CommandPalette({ navItems }: { navItems: readonly NavAction[] })
             }}
             onKeyDown={handleKeyDown}
           />
-          <kbd className="shrink-0 rounded border border-gray-200 px-1.5 py-0.5 text-[10px] text-gray-400 dark:border-gray-700 dark:text-gray-500">
+          <kbd className="shrink-0 rounded border border-gray-200 px-1.5 py-0.5 text-[10px] text-fg-subtle dark:border-gray-700">
             Esc
           </kbd>
         </div>
         <div className="max-h-96 overflow-y-auto p-2">
           {items.length === 0 ? (
-            <p className="px-2 py-6 text-center text-sm text-gray-400 dark:text-gray-500">{t("noResults")}</p>
+            <p className="px-2 py-6 text-center text-sm text-fg-subtle">{t("noResults")}</p>
           ) : (
             <ul className="flex flex-col gap-0.5">
               {items.map((item, i) => (
@@ -137,8 +137,8 @@ export function CommandPalette({ navItems }: { navItems: readonly NavAction[] })
                       i === activeIndex ? "bg-gray-100 dark:bg-white/5" : ""
                     }`}
                   >
-                    <span className="text-sm font-medium text-gray-800 dark:text-white/90">{item.label}</span>
-                    {item.sublabel && <span className="text-xs text-gray-500 dark:text-gray-400">{item.sublabel}</span>}
+                    <span className="text-sm font-medium text-fg">{item.label}</span>
+                    {item.sublabel && <span className="text-xs text-fg-subtle">{item.sublabel}</span>}
                   </button>
                 </li>
               ))}

@@ -234,7 +234,7 @@ export default function BankReconciliationPage() {
                   <span className="text-gray-700 dark:text-gray-200">
                     &ldquo;{r.pattern}&rdquo; → <span className="font-medium">{te(r.category)}</span>
                   </span>
-                  <button onClick={() => deleteRule(r.id)} disabled={busy} className="text-error-600 hover:underline">
+                  <button onClick={() => deleteRule(r.id)} disabled={busy} className="text-danger-fg hover:underline">
                     {tc("delete")}
                   </button>
                 </li>

@@ -48,8 +48,8 @@ interface IncomingEInvoice {
 const STATUS_STYLES: Record<IncomingEInvoice["status"], string> = {
   pending_review: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
   matched: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
-  converted: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
-  rejected: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
+  converted: "bg-success-50 dark:bg-success-500/15 text-success-fg",
+  rejected: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
 };
 
 export function IncomingEInvoicesPanel() {
@@ -130,12 +130,12 @@ export function IncomingEInvoicesPanel() {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
 
       <div className="card mb-4">
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-gray-700 dark:text-gray-200">{t("uploadLabel")}</span>
+          <span className="font-medium text-fg-muted">{t("uploadLabel")}</span>
           <input
             ref={fileInputRef}
             type="file"
@@ -148,13 +148,13 @@ export function IncomingEInvoicesPanel() {
             }}
           />
         </label>
-        {uploadError && <p className="mt-2 text-xs text-error-600">{uploadError}</p>}
+        {uploadError && <p className="mt-2 text-xs text-danger-fg">{uploadError}</p>}
       </div>
 
       {!invoices ? (
-        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        <p className="text-fg-subtle">{tc("loading")}</p>
       ) : invoices.length === 0 ? (
-        <p className="text-gray-500 dark:text-gray-400">{t("noInvoices")}</p>
+        <p className="text-fg-subtle">{t("noInvoices")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {invoices.map((inv) => {
@@ -166,7 +166,7 @@ export function IncomingEInvoicesPanel() {
                     <div className="font-medium">
                       {inv.invoiceNumber ?? inv.rawFileName} · {inv.sellerName ?? t("unknownSeller")}
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                    <div className="text-xs text-fg-subtle">
                       {t(`format_${inv.format}`)} · {formatDate(new Date(inv.createdAt))}
                       {inv.total ? ` · ${inv.total} ${inv.currency ?? me?.company.currency ?? ""}` : ""}
                     </div>
@@ -185,7 +185,7 @@ export function IncomingEInvoicesPanel() {
                   <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-3">
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <div className="text-sm text-gray-600 dark:text-gray-300">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">{t("sellerDetails")}</p>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("sellerDetails")}</p>
                         <p>{inv.sellerName}</p>
                         <p>{inv.sellerStreet}</p>
                         <p>
@@ -194,7 +194,7 @@ export function IncomingEInvoicesPanel() {
                         {inv.sellerVatId && <p>{t("vatId")}: {inv.sellerVatId}</p>}
                       </div>
                       <div className="text-sm text-gray-600 dark:text-gray-300">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">{t("totals")}</p>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("totals")}</p>
                         {inv.dueDate && <p>{t("dueDate")}: {formatDate(new Date(inv.dueDate))}</p>}
                         <p>{t("subtotal")}: {inv.subtotal} {inv.currency}</p>
                         <p>{t("tax")}: {inv.taxAmount} {inv.currency}</p>
@@ -223,7 +223,7 @@ export function IncomingEInvoicesPanel() {
                     )}
 
                     {inv.status === "rejected" && inv.rejectedReason && (
-                      <p className="mt-3 text-xs text-error-600">{t("rejectedReasonLabel")}: {inv.rejectedReason}</p>
+                      <p className="mt-3 text-xs text-danger-fg">{t("rejectedReasonLabel")}: {inv.rejectedReason}</p>
                     )}
 
                     <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -261,7 +261,7 @@ export function IncomingEInvoicesPanel() {
                         </button>
                       )}
                       {inv.status !== "converted" && inv.status !== "rejected" && (
-                        <button onClick={() => reject(inv.id)} disabled={busyId === inv.id} className="btn-secondary px-2 py-1 text-xs text-error-600">
+                        <button onClick={() => reject(inv.id)} disabled={busyId === inv.id} className="btn-secondary px-2 py-1 text-xs text-danger-fg">
                           {t("reject")}
                         </button>
                       )}

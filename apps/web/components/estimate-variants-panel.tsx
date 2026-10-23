@@ -46,12 +46,12 @@ export function EstimateVariantsPanel({ estimateId, currency }: { estimateId: st
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("variants")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("variants")}</h2>
       {variants && variants.length > 1 && (
         <div className="overflow-x-auto">
         <table className="mb-4 w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
               <th className="py-2">{t("variantOption")}</th>
               <th>{tc("status")}</th>
               <th>{t("clientDecision_label")}</th>

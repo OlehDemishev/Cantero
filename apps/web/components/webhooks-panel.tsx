@@ -106,13 +106,13 @@ export function WebhooksPanel() {
 
   return (
     <section id="webhooks" className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("webhooks")}</h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("webhooksHint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("webhooks")}</h2>
+      <p className="mb-4 text-xs text-fg-subtle">{t("webhooksHint")}</p>
       {error && <p className="mb-3 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{error}</p>}
 
       {createdWebhookSecret && (
         <div className="mb-4 rounded-md border border-warning-200 bg-warning-50 dark:bg-warning-500/15 px-3 py-2">
-          <p className="text-xs text-warning-700 dark:text-warning-500">{t("webhookSecretShownOnce")}</p>
+          <p className="text-xs text-warning-fg">{t("webhookSecretShownOnce")}</p>
           <div className="mt-2 flex items-center gap-2">
             <code className="flex-1 truncate rounded bg-white dark:bg-gray-800 px-2 py-1 text-xs">{createdWebhookSecret}</code>
             <button onClick={copyWebhookSecret} className="btn-secondary shrink-0 px-3 py-1 text-xs">
@@ -123,14 +123,14 @@ export function WebhooksPanel() {
       )}
 
       {!webhooks || webhooks.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noWebhooks")}</p>
+        <p className="text-sm text-fg-subtle">{t("noWebhooks")}</p>
       ) : (
         <ul className="mb-4 flex flex-col gap-2">
           {webhooks.map((w) => (
             <li key={w.id} className="rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2">
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-100">{w.url}</p>
+                  <p className="truncate text-sm font-medium text-fg">{w.url}</p>
                   <p className="mt-0.5 flex flex-wrap gap-1">
                     {w.events.map((ev) => (
                       <span key={ev} className="rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs text-gray-600 dark:text-gray-300">
@@ -138,9 +138,9 @@ export function WebhooksPanel() {
                       </span>
                     ))}
                   </p>
-                  <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                  <p className="mt-1 text-xs text-fg-subtle">
                     {w.lastDeliveryAt ? (
-                      <span className={w.lastDeliveryStatus === "success" ? "text-success-600" : "text-error-600"}>
+                      <span className={w.lastDeliveryStatus === "success" ? "text-success-600" : "text-danger-fg"}>
                         {t("lastDelivery")}: {t(w.lastDeliveryStatus === "success" ? "webhookSuccess" : "webhookFailed")} ·{" "}
                         {formatDateTime(new Date(w.lastDeliveryAt))}
                       </span>
@@ -150,7 +150,7 @@ export function WebhooksPanel() {
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1">
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${w.active ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"}`}>
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${w.active ? "bg-success-50 dark:bg-success-500/15 text-success-fg" : "bg-gray-100 dark:bg-gray-700 text-fg-subtle"}`}>
                     {w.active ? t("active") : t("inactive")}
                   </span>
                   <div className="flex gap-1">
@@ -173,17 +173,17 @@ export function WebhooksPanel() {
               {expandedWebhookId === w.id && (
                 <div className="mt-2 border-t border-gray-100 dark:border-gray-700 pt-2">
                   {!webhookDeliveries ? (
-                    <p className="text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+                    <p className="text-xs text-fg-subtle">{tc("loading")}</p>
                   ) : webhookDeliveries.length === 0 ? (
-                    <p className="text-xs text-gray-400 dark:text-gray-500">{t("noDeliveries")}</p>
+                    <p className="text-xs text-fg-subtle">{t("noDeliveries")}</p>
                   ) : (
                     <ul className="flex flex-col gap-1">
                       {webhookDeliveries.map((d) => (
                         <li key={d.id} className="flex items-center justify-between text-xs">
-                          <span className={d.success ? "text-success-600" : "text-error-600"}>
+                          <span className={d.success ? "text-success-600" : "text-danger-fg"}>
                             {d.event} {d.statusCode ? `· HTTP ${d.statusCode}` : d.error ? `· ${d.error}` : ""}
                           </span>
-                          <span className="text-gray-400 dark:text-gray-500">{formatDateTime(new Date(d.createdAt))}</span>
+                          <span className="text-fg-subtle">{formatDateTime(new Date(d.createdAt))}</span>
                         </li>
                       ))}
                     </ul>
@@ -204,7 +204,7 @@ export function WebhooksPanel() {
           value={webhookForm.url}
           onChange={(e) => setWebhookForm((f) => ({ ...f, url: e.target.value }))}
         />
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
           {t("webhookTemplate")}
           <select
             className="input w-auto"

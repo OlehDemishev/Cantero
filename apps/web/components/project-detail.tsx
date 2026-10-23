@@ -248,7 +248,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
 
   return (
     <AuthenticatedShell>
-      <button onClick={() => goBack(router, "/projects")} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">
+      <button onClick={() => goBack(router, "/projects")} className="text-sm text-fg-subtle hover:underline">
         ← {tc("back")}
       </button>
       <div className="mt-2 flex items-center gap-3">
@@ -266,7 +266,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
       {activeTab === "overview" && (
         <>
           {project && can("projects.manage") && (
-            <label className="mt-4 flex w-fit items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+            <label className="mt-4 flex w-fit items-center gap-2 text-xs text-fg-subtle">
               {tp("billingCurrency")}
               <select
                 className="input w-auto py-1"
@@ -284,7 +284,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
             </label>
           )}
           {project && can("projects.manage") && (
-            <label className="mt-2 flex w-fit items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+            <label className="mt-2 flex w-fit items-center gap-2 text-xs text-fg-subtle">
               {tp("budgetAlertThreshold")}
               <input
                 type="number"
@@ -301,7 +301,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
             </label>
           )}
           {project && can("projects.manage") && (
-            <label className="mt-2 flex w-fit items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+            <label className="mt-2 flex w-fit items-center gap-2 text-xs text-fg-subtle">
               {tp("contingencyAmount")}
               <input
                 type="number"
@@ -319,7 +319,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
           )}
 
           <div className="mt-6">
-            <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{tp("projectChannel")}</h2>
+            <h2 className="mb-3 text-sm font-semibold text-fg-muted">{tp("projectChannel")}</h2>
             <div className="card">
               <CommentsThread param="projectId" entityId={projectId} />
             </div>
@@ -331,10 +331,10 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
           {canEstimates && (
           <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
             <div className="card lg:col-span-1">
-              <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("newEstimate")}</h2>
+              <h2 className="mb-4 text-sm font-semibold text-fg-muted">{t("newEstimate")}</h2>
               <form onSubmit={handleSubmit} className="flex flex-col gap-3">
                 {templates.length > 0 && (
-                  <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+                  <label className="flex flex-col gap-1 text-xs text-fg-subtle">
                     {t("startFromTemplate")}
                     <select
                       className="input mt-1"
@@ -357,7 +357,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                 />
-                <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+                <label className="flex flex-col gap-1 text-xs text-fg-subtle">
                   {t("laborRate")} ({me?.company.currency})
                   <input
                     required
@@ -368,7 +368,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
                     onChange={(e) => setForm((f) => ({ ...f, laborRatePerHour: e.target.value }))}
                   />
                 </label>
-                <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+                <label className="flex flex-col gap-1 text-xs text-fg-subtle">
                   {t("markup")}
                   <input
                     required
@@ -379,7 +379,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
                     onChange={(e) => setForm((f) => ({ ...f, markupPercent: e.target.value }))}
                   />
                 </label>
-                <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+                <label className="flex flex-col gap-1 text-xs text-fg-subtle">
                   {t("tax")}
                   <input
                     required
@@ -397,18 +397,18 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
             </div>
 
             <div className="lg:col-span-2">
-              <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{tp("viewEstimates")}</h2>
+              <h2 className="mb-3 text-sm font-semibold text-fg-muted">{tp("viewEstimates")}</h2>
               {!estimates ? (
-                <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+                <p className="text-fg-subtle">{tc("loading")}</p>
               ) : estimates.length === 0 ? (
-                <p className="text-gray-500 dark:text-gray-400">{t("noEstimatesForProject")}</p>
+                <p className="text-fg-subtle">{t("noEstimatesForProject")}</p>
               ) : (
                 <ul className="flex flex-col gap-2">
                   {estimates.map((e) => (
                     <li key={e.id}>
                       <a href={`/estimates/${e.id}`} className="card flex items-center justify-between hover:border-gray-400">
                         <span className="font-medium">{e.name}</span>
-                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                        <span className="text-sm text-fg-subtle">
                           {e.status === "approved" ? t("approved") : t("draft")} · {e.grandTotal} {me?.company.currency}
                         </span>
                       </a>

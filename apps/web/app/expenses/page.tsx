@@ -272,7 +272,7 @@ export default function ExpensesPage() {
                               setRejectingId(rejectingId === e.id ? null : e.id)
                             }
                             disabled={busy}
-                            className="btn-secondary px-2.5 py-1 text-xs text-error-600"
+                            className="btn-secondary px-2.5 py-1 text-xs text-danger-fg"
                           >
                             {t("reject")}
                           </button>

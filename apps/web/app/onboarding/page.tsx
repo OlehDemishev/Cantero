@@ -168,7 +168,7 @@ export default function OnboardingPage() {
           ))}
         </div>
         {step !== "done" && (
-          <button onClick={finish} disabled={finishing} className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700">
+          <button onClick={finish} disabled={finishing} className="text-sm text-gray-500 dark:text-gray-400 hover:text-fg-muted">
             {t("skipSetup")}
           </button>
         )}
@@ -276,7 +276,7 @@ export default function OnboardingPage() {
             </form>
 
             <div className="mt-6 flex justify-between">
-              <button onClick={() => setStepIndex(1)} className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700">
+              <button onClick={() => setStepIndex(1)} className="text-sm text-gray-500 dark:text-gray-400 hover:text-fg-muted">
                 {t("back")}
               </button>
               <button onClick={() => setStepIndex(3)} className="btn-primary">
@@ -314,7 +314,7 @@ export default function OnboardingPage() {
               </div>
 
               <div className="flex justify-between pt-2">
-                <button type="button" onClick={() => setStepIndex(2)} className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700">
+                <button type="button" onClick={() => setStepIndex(2)} className="text-sm text-gray-500 dark:text-gray-400 hover:text-fg-muted">
                   {t("back")}
                 </button>
                 <button type="submit" disabled={projectBusy} className="btn-primary">

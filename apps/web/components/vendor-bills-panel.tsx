@@ -178,19 +178,19 @@ export function VendorBillsPanel() {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("vendorBillsTitle")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("vendorBillsHint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("vendorBillsTitle")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{t("vendorBillsHint")}</p>
 
       <SageApExportPanel />
 
       {aging && aging.grandTotal > 0 && (
         <div className="card mb-4">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("apAgingTitle")}</h3>
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("apAgingTitle")}</h3>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
             {(["current", "days1to30", "days31to60", "days61to90", "over90"] as const).map((bucket) => (
               <div key={bucket}>
-                <div className="text-xs text-gray-500 dark:text-gray-400">{t(`agingBucket_${bucket}`)}</div>
-                <div className="mt-1 text-sm font-semibold text-gray-900 dark:text-gray-50">
+                <div className="text-xs text-fg-subtle">{t(`agingBucket_${bucket}`)}</div>
+                <div className="mt-1 text-sm font-semibold text-fg">
                   {aging.totalsByBucket[bucket] ?? 0} {me?.company.currency}
                 </div>
               </div>
@@ -202,7 +202,7 @@ export function VendorBillsPanel() {
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="card lg:col-span-1">
           <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("newVendorBill")}</h3>
+            <h3 className="text-sm font-semibold text-fg-muted">{t("newVendorBill")}</h3>
             {!addingBill && (
               <button onClick={() => setAddingBill(true)} className="btn-secondary px-2.5 py-1 text-xs">
                 {tc("create")}
@@ -235,13 +235,13 @@ export function VendorBillsPanel() {
                 value={billNumber}
                 onChange={(e) => setBillNumber(e.target.value)}
               />
-              <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+              <label className="flex flex-col gap-1 text-xs text-fg-subtle">
                 {t("dueDate")}
                 <input type="date" className="input mt-1" value={billDueDate} onChange={(e) => setBillDueDate(e.target.value)} />
               </label>
 
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{t("billLines")}</span>
+                <span className="text-xs font-semibold text-fg-subtle">{t("billLines")}</span>
                 <button type="button" onClick={addBillLine} className="btn-secondary px-2 py-1 text-xs">
                   + {t("addLine")}
                 </button>
@@ -290,9 +290,9 @@ export function VendorBillsPanel() {
 
         <div className="lg:col-span-2">
           {!bills ? (
-            <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+            <p className="text-fg-subtle">{tc("loading")}</p>
           ) : bills.length === 0 ? (
-            <p className="text-gray-500 dark:text-gray-400">{t("noVendorBills")}</p>
+            <p className="text-fg-subtle">{t("noVendorBills")}</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {bills.map((bill) => (
@@ -305,7 +305,7 @@ export function VendorBillsPanel() {
                       {bill.match.status !== "no_po" && (
                         <span
                           className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                            bill.match.status === "variance" ? "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500" : "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
+                            bill.match.status === "variance" ? "bg-error-50 dark:bg-error-500/15 text-danger-fg" : "bg-success-50 dark:bg-success-500/15 text-success-fg"
                           }`}
                         >
                           {t(`matchStatus_${bill.match.status}`)}
@@ -314,11 +314,11 @@ export function VendorBillsPanel() {
                       <span
                         className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                           bill.status === "paid"
-                            ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
+                            ? "bg-success-50 dark:bg-success-500/15 text-success-fg"
                             : bill.status === "approved"
                               ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400"
                               : bill.status === "void"
-                                ? "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500"
+                                ? "bg-error-50 dark:bg-error-500/15 text-danger-fg"
                                 : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                         }`}
                       >
@@ -326,18 +326,18 @@ export function VendorBillsPanel() {
                       </span>
                     </div>
                   </div>
-                  <ul className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                  <ul className="mt-2 text-sm text-fg-subtle">
                     {bill.lines.map((l) => (
                       <li key={l.id}>
                         {l.description} × {l.quantity} @ {l.unitPrice} {me?.company.currency}
                       </li>
                     ))}
                   </ul>
-                  {bill.dueDate && <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{t("dueDate")}: {formatDate(new Date(bill.dueDate))}</p>}
+                  {bill.dueDate && <p className="mt-1 text-xs text-fg-subtle">{t("dueDate")}: {formatDate(new Date(bill.dueDate))}</p>}
                   {bill.scheduledPaymentDate && (
-                    <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{t("scheduledPaymentDate")}: {formatDate(new Date(bill.scheduledPaymentDate))}</p>
+                    <p className="mt-1 text-xs text-fg-subtle">{t("scheduledPaymentDate")}: {formatDate(new Date(bill.scheduledPaymentDate))}</p>
                   )}
-                  {bill.status === "void" && bill.voidReason && <p className="mt-1 text-xs text-error-600">{t("voidReasonLabel")}: {bill.voidReason}</p>}
+                  {bill.status === "void" && bill.voidReason && <p className="mt-1 text-xs text-danger-fg">{t("voidReasonLabel")}: {bill.voidReason}</p>}
                   <div className="mt-3 flex flex-wrap items-center gap-2">
                     {bill.status === "draft" && (
                       <button onClick={() => approveBill(bill.id)} className="btn-secondary px-2 py-1 text-xs">
@@ -345,7 +345,7 @@ export function VendorBillsPanel() {
                       </button>
                     )}
                     {(bill.status === "approved" || bill.status === "paid") && (
-                      <button onClick={() => voidBill(bill.id)} className="btn-secondary px-2 py-1 text-xs text-error-600">
+                      <button onClick={() => voidBill(bill.id)} className="btn-secondary px-2 py-1 text-xs text-danger-fg">
                         {t("voidBill")}
                       </button>
                     )}
@@ -378,12 +378,12 @@ export function VendorBillsPanel() {
 
         {disbursementCalendar && disbursementCalendar.buckets.some((b) => b.total > 0) && (
           <div className="card mt-4 lg:col-span-3">
-            <h3 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("disbursementCalendar")}</h3>
-            <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("disbursementCalendarHint")}</p>
+            <h3 className="mb-1 text-sm font-semibold text-fg-muted">{t("disbursementCalendar")}</h3>
+            <p className="mb-3 text-xs text-fg-subtle">{t("disbursementCalendarHint")}</p>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[480px] border-collapse text-sm">
                 <thead>
-                  <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+                  <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
                     <th className="py-1">{t("weekOf")}</th>
                     <th className="text-right">{t("totalDue")}</th>
                   </tr>
@@ -401,7 +401,7 @@ export function VendorBillsPanel() {
               </table>
             </div>
             {disbursementCalendar.unscheduledTotal > 0 && (
-              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              <p className="mt-2 text-xs text-fg-subtle">
                 {t("unscheduledTotal", { amount: disbursementCalendar.unscheduledTotal.toFixed(2), currency: me?.company.currency ?? "" })}
               </p>
             )}

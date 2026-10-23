@@ -473,7 +473,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
           {equipment.nextMaintenanceDueAt && (
             <p
               className={`mb-3 text-sm ${
-                new Date(equipment.nextMaintenanceDueAt) < new Date() ? "font-medium text-error-600" : "text-gray-700 dark:text-gray-200"
+                new Date(equipment.nextMaintenanceDueAt) < new Date() ? "font-medium text-danger-fg" : "text-gray-700 dark:text-gray-200"
               }`}
             >
               {t("nextDue", { date: formatDate(new Date(equipment.nextMaintenanceDueAt)) })}
@@ -509,7 +509,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
                 <span
                   className={
                     Number(equipment.currentMeterHours ?? 0) >= Number(equipment.nextMaintenanceDueHours)
-                      ? "ml-2 font-medium text-error-600"
+                      ? "ml-2 font-medium text-danger-fg"
                       : "ml-2 text-gray-500 dark:text-gray-400"
                   }
                 >

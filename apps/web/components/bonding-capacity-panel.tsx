@@ -48,20 +48,20 @@ export function BondingCapacityPanel() {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("capacityTitle")}</h2>
-      <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">{t("capacityHint")}</p>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("capacityTitle")}</h2>
+      <p className="mb-4 text-sm text-fg-subtle">{t("capacityHint")}</p>
 
       <div className="card max-w-md">
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">{t("used")}</div>
-            <div className="mt-1 font-semibold text-gray-900 dark:text-gray-50">
+            <div className="text-xs text-fg-subtle">{t("used")}</div>
+            <div className="mt-1 font-semibold text-fg">
               {capacity.used} {currency}
             </div>
           </div>
           <div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">{t("available")}</div>
-            <div className="mt-1 font-semibold text-gray-900 dark:text-gray-50">{capacity.available !== null ? `${capacity.available} ${currency}` : "—"}</div>
+            <div className="text-xs text-fg-subtle">{t("available")}</div>
+            <div className="mt-1 font-semibold text-fg">{capacity.available !== null ? `${capacity.available} ${currency}` : "—"}</div>
           </div>
         </div>
         {capacity.utilizationPercent !== null && (
@@ -72,12 +72,12 @@ export function BondingCapacityPanel() {
                 style={{ width: `${Math.min(100, capacity.utilizationPercent)}%` }}
               />
             </div>
-            <span className="text-xs text-gray-500 dark:text-gray-400">{capacity.utilizationPercent}%</span>
+            <span className="text-xs text-fg-subtle">{capacity.utilizationPercent}%</span>
           </div>
         )}
 
         <form onSubmit={saveLimit} className="mt-4 flex items-end gap-2 border-t border-gray-100 dark:border-gray-700 pt-4">
-          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
             {t("capacityLimit")}
             <input
               type="number"

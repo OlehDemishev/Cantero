@@ -28,14 +28,14 @@ export function EquipmentAssignmentHistoryPanel({ equipmentId }: { equipmentId: 
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("assignmentHistory")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("assignmentHistory")}</h2>
       {!assignments || assignments.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noAssignments")}</p>
+        <p className="text-sm text-fg-subtle">{t("noAssignments")}</p>
       ) : (
         <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
               <th className="py-2">{tc("name")}</th>
               <th>{t("checkedOutAt")}</th>
               <th>{t("checkedInAt")}</th>
@@ -60,7 +60,7 @@ export function EquipmentAssignmentHistoryPanel({ equipmentId }: { equipmentId: 
                 <td>
                   {formatDateTime(new Date(a.checkedOutAt))}
                   {a.checkOutWithinGeofence === false && (
-                    <span className="ml-1 rounded-full bg-warning-50 dark:bg-warning-500/15 px-1.5 py-0.5 text-[10px] font-medium text-warning-700 dark:text-warning-500">
+                    <span className="ml-1 rounded-full bg-warning-50 dark:bg-warning-500/15 px-1.5 py-0.5 text-[10px] font-medium text-warning-fg">
                       {t("offSite")}
                     </span>
                   )}
@@ -68,7 +68,7 @@ export function EquipmentAssignmentHistoryPanel({ equipmentId }: { equipmentId: 
                 <td>
                   {a.checkedInAt ? formatDateTime(new Date(a.checkedInAt)) : t("stillOut")}
                   {a.checkInWithinGeofence === false && (
-                    <span className="ml-1 rounded-full bg-warning-50 dark:bg-warning-500/15 px-1.5 py-0.5 text-[10px] font-medium text-warning-700 dark:text-warning-500">
+                    <span className="ml-1 rounded-full bg-warning-50 dark:bg-warning-500/15 px-1.5 py-0.5 text-[10px] font-medium text-warning-fg">
                       {t("offSite")}
                     </span>
                   )}

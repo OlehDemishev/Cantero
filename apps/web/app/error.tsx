@@ -15,8 +15,8 @@ export default function Error({ error, retry }: { error: Error & { digest?: stri
 
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-6 text-center">
-      <h1 className="text-lg font-semibold text-gray-900 dark:text-white/90">Something went wrong</h1>
-      <p className="max-w-sm text-sm text-gray-500 dark:text-gray-400">
+      <h1 className="text-lg font-semibold text-fg">Something went wrong</h1>
+      <p className="max-w-sm text-sm text-fg-subtle">
         The page hit an unexpected error. It&apos;s been reported — try again, or reload the page if it keeps happening.
       </p>
       <button onClick={() => retry()} className="btn-primary">

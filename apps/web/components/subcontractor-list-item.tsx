@@ -316,13 +316,13 @@ export function SubcontractorListItem({
     <li className="card">
       <button onClick={toggleExpand} className="flex w-full items-center justify-between text-left">
         <div>
-          <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{s.name}</span>
-          {s.email && <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">{s.email}</span>}
+          <span className="text-sm font-medium text-fg">{s.name}</span>
+          {s.email && <span className="ml-2 text-xs text-fg-subtle">{s.email}</span>}
         </div>
         {expanded && compliance && (
           <span
             className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-              compliance.compliant ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500"
+              compliance.compliant ? "bg-success-50 dark:bg-success-500/15 text-success-fg" : "bg-error-50 dark:bg-error-500/15 text-danger-fg"
             }`}
           >
             {compliance.compliant ? t("compliant") : t("nonCompliant")}
@@ -340,10 +340,10 @@ export function SubcontractorListItem({
                   <span
                     className={
                       r.status === "valid"
-                        ? "text-success-700 dark:text-success-500"
+                        ? "text-success-fg"
                         : r.status === "expired"
-                          ? "text-error-700 dark:text-error-500"
-                          : "text-gray-400 dark:text-gray-500"
+                          ? "text-danger-fg"
+                          : "text-fg-subtle"
                     }
                   >
                     {r.status === "valid" && r.expiresAt
@@ -358,11 +358,11 @@ export function SubcontractorListItem({
           )}
 
           <div>
-            <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("documents")}</h3>
+            <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("documents")}</h3>
             {documents === null ? (
-              <p className="text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+              <p className="text-xs text-fg-subtle">{tc("loading")}</p>
             ) : documents.length === 0 ? (
-              <p className="text-xs text-gray-400 dark:text-gray-500">{t("noDocuments")}</p>
+              <p className="text-xs text-fg-subtle">{t("noDocuments")}</p>
             ) : (
               <ul className="flex flex-col gap-1.5">
                 {documents.map((doc) => {
@@ -370,15 +370,15 @@ export function SubcontractorListItem({
                   return (
                     <li key={doc.id} className="flex items-center justify-between text-xs">
                       <span>
-                        <span className="text-gray-500 dark:text-gray-400">{t(doc.type)}</span> — {doc.name}
+                        <span className="text-fg-subtle">{t(doc.type)}</span> — {doc.name}
                         {" · "}
-                        <span className={expired ? "text-error-700 dark:text-error-500" : "text-gray-500 dark:text-gray-400"}>
+                        <span className={expired ? "text-danger-fg" : "text-fg-subtle"}>
                           {formatDate(new Date(doc.expiresAt))}
                         </span>
                       </span>
                       <span className="flex items-center gap-2">
                         <CertificateAttachment param="subcontractorDocumentId" entityId={doc.id} />
-                        <button onClick={() => removeDocument(doc.id)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
+                        <button onClick={() => removeDocument(doc.id)} className="text-fg-subtle hover:text-danger-fg">
                           ×
                         </button>
                       </span>
@@ -421,11 +421,11 @@ export function SubcontractorListItem({
           </form>
 
           <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
-            <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("projects")}</h3>
+            <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("projects")}</h3>
             {assignments === null ? (
-              <p className="text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+              <p className="text-xs text-fg-subtle">{tc("loading")}</p>
             ) : assignments.length === 0 ? (
-              <p className="text-xs text-gray-400 dark:text-gray-500">{t("noAssignedProjects")}</p>
+              <p className="text-xs text-fg-subtle">{t("noAssignedProjects")}</p>
             ) : (
               <ul className="flex flex-col gap-1">
                 {assignments.map((a) => (
@@ -434,7 +434,7 @@ export function SubcontractorListItem({
                       {a.project.name}
                     </Link>
                     {a.startDate && (
-                      <span className="text-gray-400 dark:text-gray-500">
+                      <span className="text-fg-subtle">
                         {" "}
                         · {formatDate(new Date(a.startDate))}
                         {a.endDate && ` – ${formatDate(new Date(a.endDate))}`}
@@ -447,11 +447,11 @@ export function SubcontractorListItem({
           </div>
 
           <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
-            <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("costsAcrossProjects")}</h3>
+            <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("costsAcrossProjects")}</h3>
             {costs === null ? (
-              <p className="text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+              <p className="text-xs text-fg-subtle">{tc("loading")}</p>
             ) : costs.length === 0 ? (
-              <p className="text-xs text-gray-400 dark:text-gray-500">{t("noCostsYet")}</p>
+              <p className="text-xs text-fg-subtle">{t("noCostsYet")}</p>
             ) : (
               <ul className="flex flex-col gap-1">
                 {costs.map((c) => (
@@ -460,9 +460,9 @@ export function SubcontractorListItem({
                       <Link href={`/projects/${c.project.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
                         {c.project.name}
                       </Link>
-                      <span className="text-gray-500 dark:text-gray-400"> — {c.description}</span>
+                      <span className="text-fg-subtle"> — {c.description}</span>
                     </span>
-                    <span className={c.paid ? "text-success-700 dark:text-success-500" : "text-gray-500 dark:text-gray-400"}>{c.amount}</span>
+                    <span className={c.paid ? "text-success-fg" : "text-fg-subtle"}>{c.amount}</span>
                   </li>
                 ))}
               </ul>
@@ -470,8 +470,8 @@ export function SubcontractorListItem({
           </div>
 
           <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
-            <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("prequalification")}</h3>
-            <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">{t("prequalificationHint")}</p>
+            <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("prequalification")}</h3>
+            <p className="mb-2 text-xs text-fg-subtle">{t("prequalificationHint")}</p>
             <form onSubmit={saveProfile} className="flex flex-col gap-2">
               <input
                 placeholder={t("specializationPlaceholder")}
@@ -515,7 +515,7 @@ export function SubcontractorListItem({
               </button>
             </form>
             <div className="mt-2 flex items-center gap-2">
-              <label className="flex items-center gap-1.5 text-xs text-gray-700 dark:text-gray-200">
+              <label className="flex items-center gap-1.5 text-xs text-fg-muted">
                 <input
                   type="checkbox"
                   checked={s.publicListed}
@@ -533,11 +533,11 @@ export function SubcontractorListItem({
           </div>
 
           <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
-            <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("diversityCertifications")}</h3>
-            <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">{t("diversityCertificationsHint")}</p>
+            <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("diversityCertifications")}</h3>
+            <p className="mb-2 text-xs text-fg-subtle">{t("diversityCertificationsHint")}</p>
             <div className="mb-2 flex flex-wrap gap-3">
               {SUBCONTRACTOR_DIVERSITY_CATEGORIES.map((category) => (
-                <label key={category} className="flex items-center gap-1.5 text-xs text-gray-700 dark:text-gray-200">
+                <label key={category} className="flex items-center gap-1.5 text-xs text-fg-muted">
                   <input
                     type="checkbox"
                     checked={diversityForm.categories.includes(category)}
@@ -548,7 +548,7 @@ export function SubcontractorListItem({
               ))}
             </div>
             <div className="flex flex-wrap items-end gap-2">
-              <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+              <label className="flex flex-col gap-1 text-xs text-fg-subtle">
                 {t("diversityCertificationExpiresAt")}
                 <input
                   type="date"
@@ -566,23 +566,23 @@ export function SubcontractorListItem({
           <SubcontractorPrequalificationPanel subcontractorId={s.id} />
 
           <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
-            <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("scorecard")}</h3>
+            <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("scorecard")}</h3>
             {scorecard && (
               <div className="mb-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
                 <div>
-                  <div className="text-gray-500 dark:text-gray-400">{t("averageRating")}</div>
+                  <div className="text-fg-subtle">{t("averageRating")}</div>
                   <div className="font-semibold">{scorecard.averageRating ?? "—"}</div>
                 </div>
                 <div>
-                  <div className="text-gray-500 dark:text-gray-400">{t("onTimePercent")}</div>
+                  <div className="text-fg-subtle">{t("onTimePercent")}</div>
                   <div className="font-semibold">{scorecard.onTimePercent !== null ? `${scorecard.onTimePercent}%` : "—"}</div>
                 </div>
                 <div>
-                  <div className="text-gray-500 dark:text-gray-400">{t("wouldHireAgainPercent")}</div>
+                  <div className="text-fg-subtle">{t("wouldHireAgainPercent")}</div>
                   <div className="font-semibold">{scorecard.wouldHireAgainPercent !== null ? `${scorecard.wouldHireAgainPercent}%` : "—"}</div>
                 </div>
                 <div>
-                  <div className="text-gray-500 dark:text-gray-400">{t("reviewCount")}</div>
+                  <div className="text-fg-subtle">{t("reviewCount")}</div>
                   <div className="font-semibold">{scorecard.reviewCount}</div>
                 </div>
               </div>
@@ -594,14 +594,14 @@ export function SubcontractorListItem({
                   <li key={r.id} className="text-xs text-gray-600 dark:text-gray-300">
                     <span className="font-medium">{"★".repeat(r.rating)}</span> — {r.reviewedByName},{" "}
                     {formatDate(new Date(r.createdAt))}
-                    {r.comments && <span className="text-gray-500 dark:text-gray-400"> · {r.comments}</span>}
+                    {r.comments && <span className="text-fg-subtle"> · {r.comments}</span>}
                   </li>
                 ))}
               </ul>
             )}
 
             <form onSubmit={addReview} className="flex flex-wrap items-end gap-2">
-              <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+              <label className="flex flex-col gap-1 text-xs text-fg-subtle">
                 {t("rating")}
                 <select
                   className="input w-auto"
@@ -615,7 +615,7 @@ export function SubcontractorListItem({
                   ))}
                 </select>
               </label>
-              <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+              <label className="flex flex-col gap-1 text-xs text-fg-subtle">
                 {t("onTime")}
                 <select className="input w-auto" value={reviewForm.onTime} onChange={(e) => setReviewForm((f) => ({ ...f, onTime: e.target.value }))}>
                   <option value="">—</option>
@@ -623,7 +623,7 @@ export function SubcontractorListItem({
                   <option value="no">{tc("no")}</option>
                 </select>
               </label>
-              <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+              <label className="flex flex-col gap-1 text-xs text-fg-subtle">
                 {t("wouldHireAgain")}
                 <select
                   className="input w-auto"
@@ -635,7 +635,7 @@ export function SubcontractorListItem({
                   <option value="no">{tc("no")}</option>
                 </select>
               </label>
-              <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+              <label className="flex flex-col gap-1 text-xs text-fg-subtle">
                 {t("safetyIncidents")}
                 <input
                   type="number"
@@ -645,7 +645,7 @@ export function SubcontractorListItem({
                   onChange={(e) => setReviewForm((f) => ({ ...f, safetyIncidents: e.target.value }))}
                 />
               </label>
-              <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+              <label className="flex flex-col gap-1 text-xs text-fg-subtle">
                 {t("reworkCount")}
                 <input
                   type="number"
@@ -668,8 +668,8 @@ export function SubcontractorListItem({
           </div>
 
           <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
-            <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("datevSettings")}</h3>
-            <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">{t("datevKreditorNumberHint")}</p>
+            <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("datevSettings")}</h3>
+            <p className="mb-2 text-xs text-fg-subtle">{t("datevKreditorNumberHint")}</p>
             <form onSubmit={saveTaxProfile} className="flex flex-col gap-2">
               <input
                 placeholder={t("datevKreditorNumber")}
@@ -685,8 +685,8 @@ export function SubcontractorListItem({
 
           {isUsCompany && (
             <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
-              <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("taxProfile")}</h3>
-              <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">{t("taxProfileHint")}</p>
+              <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("taxProfile")}</h3>
+              <p className="mb-2 text-xs text-fg-subtle">{t("taxProfileHint")}</p>
               <form onSubmit={saveTaxProfile} className="flex flex-col gap-2">
                 <input
                   placeholder={t("taxIdPlaceholder")}
@@ -712,16 +712,16 @@ export function SubcontractorListItem({
                 </button>
               </form>
 
-              <h3 className="mb-1.5 mt-4 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("payments")}</h3>
+              <h3 className="mb-1.5 mt-4 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("payments")}</h3>
               {payments === null ? (
-                <p className="text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+                <p className="text-xs text-fg-subtle">{tc("loading")}</p>
               ) : payments.length === 0 ? (
-                <p className="mb-2 text-xs text-gray-400 dark:text-gray-500">{t("noPayments")}</p>
+                <p className="mb-2 text-xs text-fg-subtle">{t("noPayments")}</p>
               ) : (
                 <ul className="mb-2 flex flex-col gap-1">
                   {payments.map((p) => (
                     <li key={p.id} className="flex items-center justify-between text-xs">
-                      <span className="text-gray-500 dark:text-gray-400">
+                      <span className="text-fg-subtle">
                         {formatDate(new Date(p.paidAt))}
                         {p.note && ` · ${p.note}`}
                       </span>

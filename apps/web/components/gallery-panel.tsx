@@ -48,7 +48,7 @@ function GalleryColumn({
 
   return (
     <div>
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{title}</h3>
+      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{title}</h3>
       <div className="grid grid-cols-3 gap-2">
         {docs.map((doc) => (
           <Thumbnail key={doc.id} doc={doc} />
@@ -102,9 +102,9 @@ export function GalleryPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("title")}</h2>
       {!gallery ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
       ) : (
         <div className="card grid grid-cols-1 gap-6 sm:grid-cols-2">
           <GalleryColumn title={t("before")} docs={gallery.before} onUpload={(f) => upload("gallery_before", f)} busy={busy} />

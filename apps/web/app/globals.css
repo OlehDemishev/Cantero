@@ -49,24 +49,79 @@
   --color-success-25: #f6fef9;
   --color-success-50: #ecfdf3;
   --color-success-100: #d1fadf;
+  --color-success-200: #a6f4c5;
+  --color-success-300: #6ce9a6;
+  --color-success-400: #32d583;
   --color-success-500: #12b76a;
   --color-success-600: #039855;
   --color-success-700: #027a48;
+  --color-success-800: #05603a;
+  --color-success-900: #054f31;
 
   --color-error-25: #fffbfa;
   --color-error-50: #fef3f2;
   --color-error-100: #fee4e2;
+  --color-error-200: #fecdca;
+  --color-error-300: #fda29b;
+  --color-error-400: #f97066;
   --color-error-500: #f04438;
   --color-error-600: #d92d20;
   --color-error-700: #b42318;
+  --color-error-800: #912018;
+  --color-error-900: #7a271a;
 
   --color-warning-25: #fffcf5;
   --color-warning-50: #fffaeb;
   --color-warning-100: #fef0c7;
+  --color-warning-200: #fedf89;
+  --color-warning-300: #fec84b;
+  --color-warning-400: #fdb022;
   --color-warning-500: #f79009;
   --color-warning-600: #dc6803;
   --color-warning-700: #b54708;
+  --color-warning-800: #93370d;
+  --color-warning-900: #7a2e0e;
 
+  /*
+    Semantic tokens. These are the light-theme values; `.dark` (below) swaps them, so one class
+    such as `text-fg` or `bg-surface` is right in both themes — no `dark:` twin to forget.
+    Literal values rather than var(--color-gray-*): Tailwind only emits theme variables something
+    uses, and a token must not resolve to nothing because its source shade went unused.
+      fg         primary text (headings, values)              gray-900 / gray-50
+      fg-muted   secondary text (labels, table headers)       gray-700 / gray-200
+      fg-subtle  helper text, captions, icons — the lightest text allowed: >= 4.5:1 on surface,
+                 surface-muted and gray-100 in both themes   gray-500 / gray-400
+      *-fg       status text, >= 4.5:1 on white and on its own -50 tint (and on gray-800/900)
+  */
+  --color-surface: #ffffff;
+  --color-surface-muted: #f9fafb;
+  --color-surface-hover: #f2f4f7;
+  --color-fg: #101828;
+  --color-fg-muted: #344054;
+  --color-fg-subtle: #667085;
+  --color-border: #e4e7ec;
+  --color-border-strong: #d0d5dd;
+  --color-focus: #465fff;
+  --color-brand-fg: #465fff;
+  --color-danger-fg: #b42318;
+  --color-success-fg: #027a48;
+  --color-warning-fg: #b54708;
+
+  /* Chart series and chrome (components/charts/chart-theme.ts). Series 2-4 double as the
+     warning/danger/success colors; each dark value is lifted to stay visible on gray-800. */
+  --color-chart-1: #465fff;
+  --color-chart-2: #f79009;
+  --color-chart-3: #d92d20;
+  --color-chart-4: #12b76a;
+  --color-chart-5: #7a5af8;
+  --color-chart-6: #06aed4;
+  --color-chart-grid: #e4e7ec;
+  --color-chart-axis: #667085;
+  --color-chart-cursor: #f2f4f7;
+
+  --shadow-theme-lg:
+    0px 12px 16px -4px rgba(16, 24, 40, 0.08),
+    0px 4px 6px -2px rgba(16, 24, 40, 0.03);
   --shadow-theme-md:
     0px 4px 8px -2px rgba(16, 24, 40, 0.1),
     0px 2px 4px -2px rgba(16, 24, 40, 0.06);
@@ -92,7 +147,34 @@
   ::before,
   ::backdrop,
   ::file-selector-button {
-    border-color: var(--color-gray-200, currentColor);
+    border-color: var(--color-border, currentColor);
+  }
+  /* Dark values of the semantic tokens. In @layer base, so it beats @theme's :root block. */
+  .dark {
+    color-scheme: dark;
+    --color-surface: #1d2939;
+    --color-surface-muted: #101828;
+    --color-surface-hover: #344054;
+    --color-fg: #f9fafb;
+    --color-fg-muted: #e4e7ec;
+    --color-fg-subtle: #98a2b3;
+    --color-border: #344054;
+    --color-border-strong: #475467;
+    --color-focus: #7592ff;
+    --color-brand-fg: #7592ff;
+    --color-danger-fg: #f97066;
+    --color-success-fg: #32d583;
+    --color-warning-fg: #fdb022;
+
+    --color-chart-1: #7592ff;
+    --color-chart-2: #fdb022;
+    --color-chart-3: #f97066;
+    --color-chart-4: #32d583;
+    --color-chart-5: #9b8afb;
+    --color-chart-6: #22ccee;
+    --color-chart-grid: #344054;
+    --color-chart-axis: #98a2b3;
+    --color-chart-cursor: rgba(255, 255, 255, 0.06);
   }
   button:not(:disabled),
   [role="button"]:not(:disabled) {
@@ -118,7 +200,7 @@
 }
 
 body {
-  @apply relative bg-gray-50 text-gray-900 antialiased dark:bg-gray-900 dark:text-white/90;
+  @apply relative bg-surface-muted text-fg antialiased;
   font-family: var(--font-outfit), Outfit, sans-serif;
 }
 
@@ -126,26 +208,26 @@ body {
   @apply relative flex w-full items-center gap-3 rounded-lg px-3 py-2 text-theme-sm font-medium;
 }
 @utility menu-item-active {
-  @apply bg-brand-50 text-brand-500 dark:bg-brand-500/[0.12] dark:text-brand-400;
+  @apply bg-brand-50 text-brand-fg dark:bg-brand-500/[0.12];
 }
 @utility menu-item-inactive {
-  @apply text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5;
+  @apply text-fg-muted hover:bg-gray-100 dark:hover:bg-white/5;
 }
 @utility menu-item-icon {
-  @apply text-gray-500 dark:text-gray-400;
+  @apply text-fg-subtle;
 }
 @utility menu-item-icon-active {
-  @apply text-brand-500 dark:text-brand-400;
+  @apply text-brand-fg;
 }
 @utility menu-item-icon-inactive {
-  @apply text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-300;
+  @apply text-fg-subtle group-hover:text-fg-muted;
 }
 
 @utility tab-item {
-  @apply whitespace-nowrap border-b-2 border-transparent px-3 py-2 text-theme-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300;
+  @apply whitespace-nowrap border-b-2 border-transparent px-3 py-2 text-theme-sm font-medium text-fg-subtle hover:text-fg-muted;
 }
 @utility tab-item-active {
-  @apply border-brand-500 text-brand-500 dark:text-brand-400;
+  @apply border-brand-500 text-brand-fg;
 }
 
 @utility no-scrollbar {
@@ -164,16 +246,16 @@ body {
     @apply rounded-full;
   }
   &::-webkit-scrollbar-thumb {
-    @apply rounded-full bg-gray-200 dark:bg-gray-700;
+    @apply rounded-full bg-border;
   }
 }
 
 @layer components {
   .card {
-    @apply rounded-2xl border border-gray-200 bg-white p-5 text-gray-900 shadow-theme-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-50;
+    @apply rounded-2xl border border-border bg-surface p-5 text-fg shadow-theme-sm;
   }
   .input {
-    @apply w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 focus:outline-hidden disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-brand-700 dark:disabled:bg-gray-900 dark:disabled:text-gray-500;
+    @apply w-full rounded-lg border border-border-strong bg-surface px-3.5 py-2.5 text-sm text-fg shadow-theme-xs placeholder:text-fg-subtle focus:border-focus focus:ring-3 focus:ring-focus/30 focus:outline-hidden disabled:cursor-not-allowed disabled:bg-surface-muted disabled:text-fg-subtle;
   }
   /* Native <select appearance varies wildly across browsers and looks out of place next to the
      app's own icon set — swap in a matching chevron and drop the browser's own arrow/inset. */
@@ -189,7 +271,7 @@ body {
     @apply inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:bg-brand-300;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-theme-xs transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-border-strong bg-surface px-4 py-2.5 text-sm font-medium text-fg-muted shadow-theme-xs transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50;
   }
 }
 
@@ -207,7 +289,7 @@ label:has(> input:required) > span:first-child::after,
 label:has(> select:required) > span:first-child::after,
 label:has(> textarea:required) > span:first-child::after {
   content: " *";
-  color: var(--color-error-600);
+  color: var(--color-danger-fg);
 }
 
 /* Printing a page (Ctrl/Cmd+P or a panel's own "Print" button): drop shadows/borders that only

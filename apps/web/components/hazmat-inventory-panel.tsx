@@ -66,13 +66,13 @@ export function HazmatInventoryPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("inventoryTitle")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("inventoryHint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("inventoryTitle")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{t("inventoryHint")}</p>
 
       {!items ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
       ) : items.length === 0 ? (
-        <p className="mb-3 text-sm text-gray-400 dark:text-gray-500">{t("noInventory")}</p>
+        <p className="mb-3 text-sm text-fg-subtle">{t("noInventory")}</p>
       ) : (
         <ul className="mb-3 flex flex-col gap-1.5">
           {items.map((item) => (
@@ -81,10 +81,10 @@ export function HazmatInventoryPanel({ projectId }: { projectId: string }) {
                 <Link href={`/hazmat?materialId=${item.hazardousMaterial.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
                   {item.hazardousMaterial.name}
                 </Link>
-                {item.quantity && <span className="ml-1.5 text-xs text-gray-400 dark:text-gray-500">{item.quantity}</span>}
-                {item.location && <span className="ml-1.5 text-xs text-gray-400 dark:text-gray-500">— {item.location}</span>}
+                {item.quantity && <span className="ml-1.5 text-xs text-fg-subtle">{item.quantity}</span>}
+                {item.location && <span className="ml-1.5 text-xs text-fg-subtle">— {item.location}</span>}
               </span>
-              <button onClick={() => removeItem(item.id)} disabled={busy} className="text-xs text-error-700 dark:text-error-500 hover:underline">
+              <button onClick={() => removeItem(item.id)} disabled={busy} className="text-xs text-danger-fg hover:underline">
                 ×
               </button>
             </li>

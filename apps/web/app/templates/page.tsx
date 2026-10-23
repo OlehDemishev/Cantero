@@ -197,7 +197,7 @@ export default function TemplatesPage() {
                     onChange={(e) => updateItem(i, { location: e.target.value })}
                   />
                   {items.length > 1 && (
-                    <button type="button" onClick={() => removeItem(i)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
+                    <button type="button" onClick={() => removeItem(i)} className="text-gray-400 dark:text-gray-500 hover:text-danger-fg">
                       ×
                     </button>
                   )}
@@ -285,7 +285,7 @@ export default function TemplatesPage() {
                             {t("history")}
                           </button>
                         )}
-                        <button onClick={() => remove(tpl.id)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
+                        <button onClick={() => remove(tpl.id)} className="text-gray-400 dark:text-gray-500 hover:text-danger-fg">
                           ×
                         </button>
                       </div>

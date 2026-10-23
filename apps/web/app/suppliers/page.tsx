@@ -289,7 +289,7 @@ export default function SuppliersPage() {
                               <div>
                                 <div className="text-gray-400 dark:text-gray-500">{t("priceVariance")}</div>
                                 <div
-                                  className={`font-medium ${card.averagePriceVariancePercent !== null && card.averagePriceVariancePercent > 0 ? "text-error-600" : card.averagePriceVariancePercent !== null && card.averagePriceVariancePercent < 0 ? "text-success-700 dark:text-success-500" : ""}`}
+                                  className={`font-medium ${card.averagePriceVariancePercent !== null && card.averagePriceVariancePercent > 0 ? "text-danger-fg" : card.averagePriceVariancePercent !== null && card.averagePriceVariancePercent < 0 ? "text-success-700 dark:text-success-500" : ""}`}
                                 >
                                   {card.averagePriceVariancePercent !== null ? `${card.averagePriceVariancePercent > 0 ? "+" : ""}${card.averagePriceVariancePercent}%` : "—"}
                                 </div>
@@ -348,7 +348,7 @@ export default function SuppliersPage() {
                                     </span>
                                     <span className="flex items-center gap-2">
                                       <CertificateAttachment param="supplierDocumentId" entityId={doc.id} />
-                                      <button onClick={() => removeDocument(s.id, doc.id)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
+                                      <button onClick={() => removeDocument(s.id, doc.id)} className="text-gray-400 dark:text-gray-500 hover:text-danger-fg">
                                         ×
                                       </button>
                                     </span>

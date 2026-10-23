@@ -38,25 +38,25 @@ export function WinRatePanel() {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="card">
-          <div className="text-xs text-gray-500 dark:text-gray-400">{t("winRate")}</div>
-          <div className="mt-1 text-lg font-semibold tabular-nums text-gray-900 dark:text-gray-50">{report.overall.winRatePercent}%</div>
+          <div className="text-xs text-fg-subtle">{t("winRate")}</div>
+          <div className="mt-1 text-lg font-semibold tabular-nums text-fg">{report.overall.winRatePercent}%</div>
         </div>
         <div className="card">
-          <div className="text-xs text-gray-500 dark:text-gray-400">{t("decidedCount")}</div>
-          <div className="mt-1 text-lg font-semibold tabular-nums text-gray-900 dark:text-gray-50">{report.overall.decidedCount}</div>
+          <div className="text-xs text-fg-subtle">{t("decidedCount")}</div>
+          <div className="mt-1 text-lg font-semibold tabular-nums text-fg">{report.overall.decidedCount}</div>
         </div>
         <div className="card">
-          <div className="text-xs text-gray-500 dark:text-gray-400">{t("wonValue")}</div>
-          <div className="mt-1 text-lg font-semibold tabular-nums text-gray-900 dark:text-gray-50">{money(report.overall.wonValue)}</div>
+          <div className="text-xs text-fg-subtle">{t("wonValue")}</div>
+          <div className="mt-1 text-lg font-semibold tabular-nums text-fg">{money(report.overall.wonValue)}</div>
         </div>
         <div className="card">
-          <div className="text-xs text-gray-500 dark:text-gray-400">{t("averageDaysToDecision")}</div>
-          <div className="mt-1 text-lg font-semibold tabular-nums text-gray-900 dark:text-gray-50">
+          <div className="text-xs text-fg-subtle">{t("averageDaysToDecision")}</div>
+          <div className="mt-1 text-lg font-semibold tabular-nums text-fg">
             {report.overall.averageDaysToDecision !== null ? t("daysValue", { days: report.overall.averageDaysToDecision }) : "—"}
           </div>
         </div>
@@ -64,10 +64,10 @@ export function WinRatePanel() {
 
       {report.byMonth.length > 0 && (
         <div className="card mt-3 overflow-x-auto">
-          <div className="mb-2 text-xs font-semibold text-gray-700 dark:text-gray-200">{t("byMonth")}</div>
+          <div className="mb-2 text-xs font-semibold text-fg-muted">{t("byMonth")}</div>
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
                 <th className="py-1.5">{t("month")}</th>
                 <th className="text-right">{t("winRate")}</th>
                 <th className="text-right">{t("wonCount")}</th>
@@ -77,7 +77,7 @@ export function WinRatePanel() {
             <tbody>
               {report.byMonth.map((row) => (
                 <tr key={row.month} className="border-b border-gray-100 dark:border-gray-700">
-                  <td className="py-1.5 font-medium text-gray-900 dark:text-gray-50">{row.month}</td>
+                  <td className="py-1.5 font-medium text-fg">{row.month}</td>
                   <td className="text-right tabular-nums">{row.winRatePercent}%</td>
                   <td className="text-right tabular-nums">{row.wonCount}</td>
                   <td className="text-right tabular-nums">{row.lostCount}</td>
@@ -90,10 +90,10 @@ export function WinRatePanel() {
 
       {report.byMarginBand.length > 0 && (
         <div className="card mt-3 overflow-x-auto">
-          <div className="mb-2 text-xs font-semibold text-gray-700 dark:text-gray-200">{t("byMarginBand")}</div>
+          <div className="mb-2 text-xs font-semibold text-fg-muted">{t("byMarginBand")}</div>
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
                 <th className="py-1.5">{t("marginBand")}</th>
                 <th className="text-right">{t("winRate")}</th>
                 <th className="text-right">{t("wonCount")}</th>
@@ -103,7 +103,7 @@ export function WinRatePanel() {
             <tbody>
               {report.byMarginBand.map((row) => (
                 <tr key={row.band} className="border-b border-gray-100 dark:border-gray-700">
-                  <td className="py-1.5 font-medium text-gray-900 dark:text-gray-50">{row.band}</td>
+                  <td className="py-1.5 font-medium text-fg">{row.band}</td>
                   <td className="text-right tabular-nums">{row.winRatePercent}%</td>
                   <td className="text-right tabular-nums">{row.wonCount}</td>
                   <td className="text-right tabular-nums">{row.lostCount}</td>

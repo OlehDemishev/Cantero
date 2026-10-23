@@ -32,14 +32,14 @@ export function SageApExportPanel() {
 
   return (
     <div className="card mb-4">
-      <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("title")}</h3>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("title")}</h3>
+      <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
       <div className="flex flex-wrap items-end gap-2">
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
           {t("expenseAccount")}
           <input className="input" value={expenseAccount} onChange={(e) => setExpenseAccount(e.target.value)} placeholder="50-1000" />
         </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
           {t("apAccount")}
           <input className="input" value={apAccount} onChange={(e) => setApAccount(e.target.value)} placeholder="20-1000" />
         </label>
@@ -47,7 +47,7 @@ export function SageApExportPanel() {
           {t("export")}
         </button>
       </div>
-      {error && <p className="mt-2 whitespace-pre-line text-xs text-error-600">{error}</p>}
+      {error && <p className="mt-2 whitespace-pre-line text-xs text-danger-fg">{error}</p>}
     </div>
   );
 }

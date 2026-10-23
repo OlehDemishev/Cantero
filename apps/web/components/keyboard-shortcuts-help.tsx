@@ -26,7 +26,7 @@ export function KeyboardShortcutsHelp() {
         className="w-full max-w-sm rounded-xl border border-gray-200 bg-white p-5 shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-sm font-semibold text-gray-800 dark:text-white/90">{t("shortcutsTitle")}</h2>
+        <h2 className="text-sm font-semibold text-fg">{t("shortcutsTitle")}</h2>
         <ul className="mt-3 flex flex-col gap-2">
           {SHORTCUTS.map((s) => (
             <li key={s.combo} className="flex items-center justify-between text-sm">

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { chartColors, chartAxisProps, chartGridProps, chartTooltipProps } from "@/components/charts/chart-theme";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import type { CostCode } from "@/components/cost-codes-panel";
@@ -106,8 +107,8 @@ export function JobCostingPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-8">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint", { percent: report.percentComplete })}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{t("hint", { percent: report.percentComplete })}</p>
       <div className="card overflow-x-auto">
         <table className="w-full min-w-[720px] border-collapse text-sm">
           <thead>
@@ -125,7 +126,7 @@ export function JobCostingPanel({ projectId }: { projectId: string }) {
             {report.rows.map((row) => (
               <tr key={row.code} className="border-b border-gray-100 dark:border-gray-800/60">
                 <td className="py-1.5">
-                  <span className="font-mono text-xs text-gray-400 dark:text-gray-500">{row.code}</span> {row.name}
+                  <span className="font-mono text-xs text-fg-subtle">{row.code}</span> {row.name}
                 </td>
                 <td className="text-right">
                   {row.estimated.toFixed(2)} {currency}
@@ -136,13 +137,13 @@ export function JobCostingPanel({ projectId }: { projectId: string }) {
                 <td className="text-right">
                   {row.actual.toFixed(2)} {currency}
                 </td>
-                <td className={`text-right font-medium ${row.variance < 0 ? "text-error-600" : "text-success-700 dark:text-success-500"}`}>
+                <td className={`text-right font-medium ${row.variance < 0 ? "text-danger-fg" : "text-success-fg"}`}>
                   {row.variance.toFixed(2)} {currency}
                 </td>
                 <td className="text-right">
                   {row.estimateAtCompletion.toFixed(2)} {currency}
                 </td>
-                <td className={`text-right font-medium ${row.varianceAtCompletion < 0 ? "text-error-600" : "text-success-700 dark:text-success-500"}`}>
+                <td className={`text-right font-medium ${row.varianceAtCompletion < 0 ? "text-danger-fg" : "text-success-fg"}`}>
                   {row.varianceAtCompletion.toFixed(2)} {currency}
                 </td>
               </tr>
@@ -160,13 +161,13 @@ export function JobCostingPanel({ projectId }: { projectId: string }) {
               <td className="pt-2 text-right">
                 {report.totals.actual.toFixed(2)} {currency}
               </td>
-              <td className={`pt-2 text-right ${report.totals.variance < 0 ? "text-error-600" : "text-success-700 dark:text-success-500"}`}>
+              <td className={`pt-2 text-right ${report.totals.variance < 0 ? "text-danger-fg" : "text-success-fg"}`}>
                 {report.totals.variance.toFixed(2)} {currency}
               </td>
               <td className="pt-2 text-right">
                 {report.totals.estimateAtCompletion.toFixed(2)} {currency}
               </td>
-              <td className={`pt-2 text-right ${report.totals.varianceAtCompletion < 0 ? "text-error-600" : "text-success-700 dark:text-success-500"}`}>
+              <td className={`pt-2 text-right ${report.totals.varianceAtCompletion < 0 ? "text-danger-fg" : "text-success-fg"}`}>
                 {report.totals.varianceAtCompletion.toFixed(2)} {currency}
               </td>
             </tr>
@@ -176,15 +177,15 @@ export function JobCostingPanel({ projectId }: { projectId: string }) {
 
       {history && history.some((m) => m.actual > 0 || m.committed > 0) && (
         <div className="mt-4">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("burnDown")}</h3>
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("burnDown")}</h3>
           <div className="card h-56 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={history}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-gray-200, #e5e7eb)" />
-                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(value) => `${Number(value).toFixed(2)} ${currency}`} />
-                <Line type="monotone" dataKey="cumulativeActual" name={t("actual")} stroke="#465fff" strokeWidth={2} dot={false} />
+                <CartesianGrid {...chartGridProps} />
+                <XAxis dataKey="month" {...chartAxisProps} />
+                <YAxis {...chartAxisProps} />
+                <Tooltip {...chartTooltipProps} formatter={(value) => `${Number(value).toFixed(2)} ${currency}`} />
+                <Line type="monotone" dataKey="cumulativeActual" name={t("actual")} stroke={chartColors.primary} strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -194,7 +195,7 @@ export function JobCostingPanel({ projectId }: { projectId: string }) {
       {costCodes.length >= 2 && (
         <div className="mt-4">
           <div className="mb-2 flex items-center justify-between">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("budgetTransfers")}</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("budgetTransfers")}</h3>
             {!transferring && (
               <button onClick={() => setTransferring(true)} className="btn-secondary px-2.5 py-1 text-xs">
                 {t("transferBudget")}
@@ -251,7 +252,7 @@ export function JobCostingPanel({ projectId }: { projectId: string }) {
                   onChange={(e) => setTransferForm((f) => ({ ...f, reason: e.target.value }))}
                 />
               </div>
-              {transferError && <p className="text-xs text-error-600">{transferError}</p>}
+              {transferError && <p className="text-xs text-danger-fg">{transferError}</p>}
               <div className="flex gap-2">
                 <button type="submit" disabled={busy} className="btn-primary px-3 py-1 text-xs">
                   {tc("save")}
@@ -271,19 +272,19 @@ export function JobCostingPanel({ projectId }: { projectId: string }) {
           )}
 
           {report.transfers.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noTransfers")}</p>
+            <p className="text-sm text-fg-subtle">{t("noTransfers")}</p>
           ) : (
             <ul className="flex flex-col gap-1.5">
               {report.transfers.map((tr) => (
                 <li key={tr.id} className="rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm">
                   <div className="flex items-center justify-between">
-                    <span className="font-medium text-gray-900 dark:text-gray-50">
+                    <span className="font-medium text-fg">
                       {t("transferLogEntry", { amount: `${tr.amount.toFixed(2)} ${currency}`, from: tr.fromCode, to: tr.toCode })}
                     </span>
-                    <span className="text-xs text-gray-400 dark:text-gray-500">{formatDate(new Date(tr.createdAt))}</span>
+                    <span className="text-xs text-fg-subtle">{formatDate(new Date(tr.createdAt))}</span>
                   </div>
-                  <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{tr.reason}</p>
-                  <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{tr.createdByName}</p>
+                  <p className="mt-0.5 text-xs text-fg-subtle">{tr.reason}</p>
+                  <p className="mt-0.5 text-xs text-fg-subtle">{tr.createdByName}</p>
                 </li>
               ))}
             </ul>

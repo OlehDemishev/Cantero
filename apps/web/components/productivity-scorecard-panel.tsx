@@ -32,24 +32,24 @@ export function ProductivityScorecardPanel() {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
 
       {rows === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {rows.map((row) => (
             <li key={row.crewName ?? "unassigned"} className="card">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{row.crewName ?? t("unassignedCrew")}</span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">{t("projectCount", { count: row.projectCount })}</span>
+                <span className="text-sm font-medium text-fg">{row.crewName ?? t("unassignedCrew")}</span>
+                <span className="text-xs text-fg-subtle">{t("projectCount", { count: row.projectCount })}</span>
               </div>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t("totalHours", { hours: row.totalLaborHours })}</p>
+              <p className="mt-1 text-xs text-fg-subtle">{t("totalHours", { hours: row.totalLaborHours })}</p>
               <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 border-t border-gray-100 dark:border-gray-700 pt-2">
                 {row.byUnit.map((u) => (
                   <span key={u.unit} className="text-xs text-gray-600 dark:text-gray-300">
-                    <span className="font-medium text-gray-800 dark:text-gray-100">{u.unit}</span>:{" "}
+                    <span className="font-medium text-fg">{u.unit}</span>:{" "}
                     {u.hoursPerUnit !== null ? t("hoursPerUnit", { rate: u.hoursPerUnit.toFixed(3), unit: u.unit }) : "—"}
                   </span>
                 ))}

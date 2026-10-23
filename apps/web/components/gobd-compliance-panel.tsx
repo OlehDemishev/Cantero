@@ -121,8 +121,8 @@ export function GobdCompliancePanel() {
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-4 text-xs text-fg-subtle">{t("hint")}</p>
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <button onClick={downloadDoc} disabled={docBusy} className="btn-secondary px-2.5 py-1.5 text-xs">
@@ -133,12 +133,12 @@ export function GobdCompliancePanel() {
         </button>
         {verification &&
           (verification.valid ? (
-            <span className="rounded-full bg-success-50 dark:bg-success-500/15 px-2.5 py-1 text-xs font-medium text-success-700 dark:text-success-500">
+            <span className="rounded-full bg-success-50 dark:bg-success-500/15 px-2.5 py-1 text-xs font-medium text-success-fg">
               {t("chainValid", { count: verification.entryCount })}
               {verification.anchoring.anchorCount > 0 && ` · ${t("anchorsConfirm", { count: verification.anchoring.anchorCount })}`}
             </span>
           ) : (
-            <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2.5 py-1 text-xs font-medium text-error-700 dark:text-error-500">
+            <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2.5 py-1 text-xs font-medium text-danger-fg">
               {verification.chainValid
                 ? t("anchorBroken", { sequence: verification.anchoring.brokenAtSequence ?? 0 })
                 : t("chainBroken", { sequence: verification.brokenAtSequence ?? 0 })}
@@ -149,23 +149,23 @@ export function GobdCompliancePanel() {
       {anchoring && (
         <div className="mb-4 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
           <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-            <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-200">{t("anchorsTitle")}</h3>
+            <h3 className="text-xs font-semibold text-fg-muted">{t("anchorsTitle")}</h3>
             {anchoring.enabled && canManage && (
               <button onClick={anchorNow} disabled={anchorBusy} className="btn-secondary px-2.5 py-1 text-xs">
                 {t("anchorNow")}
               </button>
             )}
           </div>
-          <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">{anchoring.enabled ? t("anchorsHint") : t("anchorsOff")}</p>
+          <p className="mb-2 text-xs text-fg-subtle">{anchoring.enabled ? t("anchorsHint") : t("anchorsOff")}</p>
           {anchorMessage && <p className="mb-2 text-xs text-gray-600 dark:text-gray-300">{anchorMessage}</p>}
           {anchoring.anchors.length === 0 ? (
-            anchoring.enabled && <p className="text-xs text-gray-400 dark:text-gray-500">{t("anchorsNone")}</p>
+            anchoring.enabled && <p className="text-xs text-fg-subtle">{t("anchorsNone")}</p>
           ) : (
             <ul className="flex flex-col gap-1">
               {anchoring.anchors.slice(0, ANCHORS_SHOWN).map((anchor) => (
                 <li key={anchor.id} className="flex items-center justify-between gap-3 text-xs">
                   <span className="text-gray-600 dark:text-gray-300">
-                    <span className="font-mono text-gray-400 dark:text-gray-500">#{anchor.sequence}</span>{" "}
+                    <span className="font-mono text-fg-subtle">#{anchor.sequence}</span>{" "}
                     {formatDateTime(new Date(anchor.timestampedAt))} · {new URL(anchor.tsaUrl).hostname}
                   </span>
                   <button onClick={() => downloadToken(anchor)} className="shrink-0 text-brand-700 dark:text-brand-400 hover:underline">
@@ -179,20 +179,20 @@ export function GobdCompliancePanel() {
       )}
 
       {!ledger ? (
-        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        <p className="text-fg-subtle">{tc("loading")}</p>
       ) : ledger.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noEntries")}</p>
+        <p className="text-sm text-fg-subtle">{t("noEntries")}</p>
       ) : (
         <>
           <ul className="flex max-h-96 flex-col gap-2 overflow-y-auto">
             {ledger.map((entry) => (
               <li key={entry.id} className="flex items-start justify-between border-b border-gray-100 dark:border-gray-700 pb-2 text-sm">
                 <div>
-                  <span className="font-mono text-xs text-gray-400 dark:text-gray-500">#{entry.sequence}</span>{" "}
-                  <span className="font-medium text-gray-800 dark:text-gray-100">{entry.actorName}</span>{" "}
+                  <span className="font-mono text-xs text-fg-subtle">#{entry.sequence}</span>{" "}
+                  <span className="font-medium text-fg">{entry.actorName}</span>{" "}
                   <span className="text-gray-600 dark:text-gray-300">{entry.summary}</span>
                 </div>
-                <span className="shrink-0 pl-3 text-xs text-gray-400 dark:text-gray-500">{formatDateTime(new Date(entry.createdAt))}</span>
+                <span className="shrink-0 pl-3 text-xs text-fg-subtle">{formatDateTime(new Date(entry.createdAt))}</span>
               </li>
             ))}
           </ul>

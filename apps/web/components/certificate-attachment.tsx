@@ -54,7 +54,7 @@ export function CertificateAttachment({ param, entityId }: { param: CertificateA
   ) : (
     <>
       <input ref={inputRef} type="file" accept="application/pdf,image/*" className="hidden" onChange={handleFile} />
-      <button type="button" onClick={() => inputRef.current?.click()} disabled={busy} className="text-gray-400 dark:text-gray-500 hover:text-brand-700">
+      <button type="button" onClick={() => inputRef.current?.click()} disabled={busy} className="text-fg-subtle hover:text-brand-700">
         {busy ? t("uploading") : t("uploadCertificate")}
       </button>
     </>

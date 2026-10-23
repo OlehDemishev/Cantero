@@ -71,15 +71,15 @@ export function ProjectCloseoutPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("title")}</h2>
 
       {readiness && (
         <div className="card mb-3">
           <div className="flex items-center justify-between gap-3">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{t("readinessTitle")}</span>
+            <span className="text-sm font-medium text-fg-muted">{t("readinessTitle")}</span>
             <span
               className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                readiness.ready ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500"
+                readiness.ready ? "bg-success-50 dark:bg-success-500/15 text-success-fg" : "bg-warning-50 dark:bg-warning-500/15 text-warning-fg"
               }`}
             >
               {readiness.ready ? t("readinessReady") : t("readinessNotReady")}
@@ -94,35 +94,35 @@ export function ProjectCloseoutPanel({ projectId }: { projectId: string }) {
               ))}
             </ul>
           )}
-          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+          <p className="mt-2 text-xs text-fg-subtle">
             {t("readinessCounts", { asBuilt: readiness.asBuiltCount, omManual: readiness.omManualCount })}
           </p>
         </div>
       )}
 
       <div className="card flex items-center justify-between gap-4">
-        <p className="text-sm text-gray-500 dark:text-gray-400">{t("description")}</p>
+        <p className="text-sm text-fg-subtle">{t("description")}</p>
         <button onClick={download} disabled={busy} className="btn-secondary shrink-0">
           {busy ? t("preparing") : t("download")}
         </button>
       </div>
-      {error && <p className="mt-2 text-xs text-error-700 dark:text-error-500">{t("error")}</p>}
+      {error && <p className="mt-2 text-xs text-danger-fg">{t("error")}</p>}
 
       <div className="card mt-3 flex items-center justify-between gap-4">
-        <p className="text-sm text-gray-500 dark:text-gray-400">{t("reviewDescription")}</p>
+        <p className="text-sm text-fg-subtle">{t("reviewDescription")}</p>
         <button onClick={requestReview} disabled={reviewBusy || reviewSent} className="btn-secondary shrink-0">
           {reviewSent ? t("reviewSent") : t("requestReview")}
         </button>
       </div>
-      {reviewError && <p className="mt-2 text-xs text-error-700 dark:text-error-500">{reviewError}</p>}
+      {reviewError && <p className="mt-2 text-xs text-danger-fg">{reviewError}</p>}
 
       <div className="card mt-3 flex items-center justify-between gap-4">
-        <p className="text-sm text-gray-500 dark:text-gray-400">{t("npsDescription")}</p>
+        <p className="text-sm text-fg-subtle">{t("npsDescription")}</p>
         <button onClick={sendNpsSurvey} disabled={npsBusy || npsSent} className="btn-secondary shrink-0">
           {npsSent ? t("npsSent") : t("sendNps")}
         </button>
       </div>
-      {npsError && <p className="mt-2 text-xs text-error-700 dark:text-error-500">{npsError}</p>}
+      {npsError && <p className="mt-2 text-xs text-danger-fg">{npsError}</p>}
     </div>
   );
 }

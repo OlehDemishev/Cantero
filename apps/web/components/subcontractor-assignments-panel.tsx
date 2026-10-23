@@ -103,14 +103,14 @@ export function SubcontractorAssignmentsPanel({ projectId }: { projectId: string
 
   return (
     <div className="mt-10">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("assignmentsTitle")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("assignmentsHint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("assignmentsTitle")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{t("assignmentsHint")}</p>
       {error && <p className="mb-3 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{error}</p>}
 
       {!assignmentsBySubcontractor ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
       ) : onThisProject.length === 0 ? (
-        <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">{t("noAssignedSubcontractors")}</p>
+        <p className="mb-4 text-sm text-fg-subtle">{t("noAssignedSubcontractors")}</p>
       ) : (
         <ul className="mb-4 flex flex-col gap-2">
           {onThisProject.map(({ subcontractor, assignment }) => (
@@ -120,9 +120,9 @@ export function SubcontractorAssignmentsPanel({ projectId }: { projectId: string
             >
               <span>
                 {subcontractor.name}
-                {subcontractor.email && <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">{subcontractor.email}</span>}
+                {subcontractor.email && <span className="ml-2 text-xs text-fg-subtle">{subcontractor.email}</span>}
                 {assignment.startDate && assignment.endDate && (
-                  <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
+                  <span className="ml-2 text-xs text-fg-subtle">
                     {formatDate(new Date(assignment.startDate))} – {formatDate(new Date(assignment.endDate))}
                   </span>
                 )}
@@ -162,11 +162,11 @@ export function SubcontractorAssignmentsPanel({ projectId }: { projectId: string
             />
           </>
         )}
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
           {t("startDate")}
           <input type="date" className="input w-auto" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
         </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
           {t("endDate")}
           <input
             type="date"

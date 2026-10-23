@@ -744,7 +744,7 @@ export function WarehouseDetail({
 
   return (
     <div>
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">
         {t("scanBarcode")}
       </h2>
       <form onSubmit={lookupBarcode} className="flex items-end gap-2">
@@ -759,19 +759,19 @@ export function WarehouseDetail({
         </button>
       </form>
       {barcodeError && (
-        <p className="mt-1 text-xs text-error-600">{barcodeError}</p>
+        <p className="mt-1 text-xs text-danger-fg">{barcodeError}</p>
       )}
       {barcodeResult && (
         <div className="mt-2 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 text-sm">
-          <p className="font-medium text-gray-900 dark:text-gray-50">
+          <p className="font-medium text-fg">
             {barcodeResult.name} ({barcodeResult.code})
           </p>
           {barcodeResult.stockLevels.length === 0 ? (
-            <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+            <p className="mt-1 text-xs text-fg-subtle">
               {t("noStockAnywhere")}
             </p>
           ) : (
-            <ul className="mt-1 flex flex-col gap-0.5 text-xs text-gray-500 dark:text-gray-400">
+            <ul className="mt-1 flex flex-col gap-0.5 text-xs text-fg-subtle">
               {barcodeResult.stockLevels.map((sl) => (
                 <li key={sl.warehouse.id}>
                   {sl.warehouse.name}: {sl.quantityOnHand} {barcodeResult.unit}
@@ -783,16 +783,16 @@ export function WarehouseDetail({
         </div>
       )}
 
-      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">
+      <h2 className="mb-3 mt-8 text-sm font-semibold text-fg-muted">
         {t("stockLevels")}
       </h2>
       {!levels ? (
-        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        <p className="text-fg-subtle">{tc("loading")}</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
                 <th className="py-2">{t("material")}</th>
                 <th>{t("quantity")}</th>
                 <th>{t("reserved")}</th>
@@ -816,7 +816,7 @@ export function WarehouseDetail({
                   >
                     {l.quantityOnHand} {l.materialCatalogItem.unit}
                   </td>
-                  <td className="text-gray-500 dark:text-gray-400">
+                  <td className="text-fg-subtle">
                     {l.reserved > 0 ? `${l.reserved} ${l.materialCatalogItem.unit}` : "—"}
                   </td>
                   <td className={l.available < 0 ? "text-red-600" : ""}>
@@ -862,7 +862,7 @@ export function WarehouseDetail({
                           setEditingBinFor(l.materialCatalogItem.id);
                           setBinDraft(l.binLocation ?? "");
                         }}
-                        className="text-xs text-gray-500 dark:text-gray-400 hover:underline"
+                        className="text-xs text-fg-subtle hover:underline"
                       >
                         {l.binLocation ?? t("setBin")}
                       </button>
@@ -875,7 +875,7 @@ export function WarehouseDetail({
         </div>
       )}
 
-      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">
+      <h2 className="mb-3 mt-8 text-sm font-semibold text-fg-muted">
         {t("reservations")}
       </h2>
       <form onSubmit={createReservation} className="flex flex-wrap items-end gap-2">
@@ -913,7 +913,7 @@ export function WarehouseDetail({
         <div className="mt-4 overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
                 <th className="py-2">{t("material")}</th>
                 <th>{t("quantity")}</th>
                 <th>{t("movementProject")}</th>
@@ -942,12 +942,12 @@ export function WarehouseDetail({
                         "—"
                       )}
                     </td>
-                    <td className="text-xs text-gray-500 dark:text-gray-400">{r.note ?? "—"}</td>
+                    <td className="text-xs text-fg-subtle">{r.note ?? "—"}</td>
                     <td className="text-right">
                       <button
                         onClick={() => releaseReservation(r.id)}
                         disabled={busy}
-                        className="text-xs text-gray-400 dark:text-gray-500 hover:text-error-600"
+                        className="text-xs text-fg-subtle hover:text-danger-fg"
                       >
                         {t("releaseReservation")}
                       </button>
@@ -961,10 +961,10 @@ export function WarehouseDetail({
 
       {valuation && valuation.rows.length > 0 && (
         <div className="mt-8">
-          <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">
+          <h2 className="mb-1 text-sm font-semibold text-fg-muted">
             {t("inventoryValuation")}
           </h2>
-          <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">
+          <p className="mb-3 text-xs text-fg-subtle">
             {t("inventoryValuationHint", {
               method: t(`costingMethod_${valuation.method}`),
             })}
@@ -972,7 +972,7 @@ export function WarehouseDetail({
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
                   <th className="py-2">{t("material")}</th>
                   <th>{t("quantity")}</th>
                   <th className="text-right">{t("unitValue")}</th>
@@ -1017,13 +1017,13 @@ export function WarehouseDetail({
 
       {standardCostVariance && standardCostVariance.length > 0 && (
         <div className="mt-8">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">
+          <h2 className="mb-3 text-sm font-semibold text-fg-muted">
             {t("standardCostVariance")}
           </h2>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
                   <th className="py-2">{t("material")}</th>
                   <th className="text-right">{t("standardCost")}</th>
                   <th className="text-right">{t("unitValue")}</th>
@@ -1043,9 +1043,9 @@ export function WarehouseDetail({
                     <td
                       className={`text-right font-medium ${
                         row.varianceAmount > 0
-                          ? "text-error-600"
+                          ? "text-danger-fg"
                           : row.varianceAmount < 0
-                            ? "text-success-700 dark:text-success-500"
+                            ? "text-success-fg"
                             : ""
                       }`}
                     >
@@ -1066,7 +1066,7 @@ export function WarehouseDetail({
         </div>
       )}
 
-      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">
+      <h2 className="mb-3 mt-8 text-sm font-semibold text-fg-muted">
         {t("recordMovement")}
       </h2>
       <form
@@ -1125,10 +1125,10 @@ export function WarehouseDetail({
 
         {movementMaterial?.serialTracked && movement.type === "receipt" && (
           <div className="mt-2 flex w-full flex-col gap-1.5">
-            <span className="text-xs text-gray-500 dark:text-gray-400">
+            <span className="text-xs text-fg-subtle">
               {t("serialNumbers")}
               {Number(movement.quantity) !== serialNumberDrafts.filter((s) => s.trim()).length && (
-                <span className="ml-2 text-error-600">{t("unitCountMismatch")}</span>
+                <span className="ml-2 text-danger-fg">{t("unitCountMismatch")}</span>
               )}
             </span>
             {serialNumberDrafts.map((sn, i) => (
@@ -1148,7 +1148,7 @@ export function WarehouseDetail({
                   onClick={() =>
                     setSerialNumberDrafts((d) => d.filter((_, idx) => idx !== i))
                   }
-                  className="text-xs text-gray-400 hover:text-error-600"
+                  className="text-xs text-fg-subtle hover:text-danger-fg"
                 >
                   {tc("delete")}
                 </button>
@@ -1166,15 +1166,15 @@ export function WarehouseDetail({
 
         {movementMaterial?.serialTracked && movement.type !== "receipt" && (
           <div className="mt-2 flex w-full flex-col gap-1.5">
-            <span className="text-xs text-gray-500 dark:text-gray-400">
+            <span className="text-xs text-fg-subtle">
               {t("selectUnits")}
               {selectedUnitIds.length > 0 &&
                 Number(movement.quantity) !== selectedUnitIds.length && (
-                  <span className="ml-2 text-error-600">{t("unitCountMismatch")}</span>
+                  <span className="ml-2 text-danger-fg">{t("unitCountMismatch")}</span>
                 )}
             </span>
             {availableSerialUnits.length === 0 ? (
-              <span className="text-xs text-gray-400 dark:text-gray-500">{t("noAvailableUnits")}</span>
+              <span className="text-xs text-fg-subtle">{t("noAvailableUnits")}</span>
             ) : (
               <div className="flex flex-wrap gap-2">
                 {availableSerialUnits.map((u) => (
@@ -1204,13 +1204,13 @@ export function WarehouseDetail({
 
       {movements && movements.length > 0 && (
         <div className="mt-8">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">
+          <h2 className="mb-3 text-sm font-semibold text-fg-muted">
             {t("movementHistory")}
           </h2>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
                   <th className="py-2">{t("material")}</th>
                   <th>{t("movementType")}</th>
                   <th>{t("movementQuantity")}</th>
@@ -1264,7 +1264,7 @@ export function WarehouseDetail({
 
       {otherWarehouses.length > 0 && (
         <>
-          <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">
+          <h2 className="mb-3 mt-8 text-sm font-semibold text-fg-muted">
             {t("transferStock")}
           </h2>
           <form
@@ -1279,7 +1279,7 @@ export function WarehouseDetail({
                 setTransfer((tr) => ({ ...tr, materialCatalogItemId: id }))
               }
             />
-            <span className="pb-2.5 text-sm text-gray-400 dark:text-gray-500">
+            <span className="pb-2.5 text-sm text-fg-subtle">
               →
             </span>
             <select
@@ -1309,10 +1309,10 @@ export function WarehouseDetail({
             </button>
           </form>
 
-          <h2 className="mb-1 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">
+          <h2 className="mb-1 mt-8 text-sm font-semibold text-fg-muted">
             {t("inTransitTransfer")}
           </h2>
-          <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">
+          <p className="mb-3 text-xs text-fg-subtle">
             {t("inTransitTransferHint")}
           </p>
           <form
@@ -1327,7 +1327,7 @@ export function WarehouseDetail({
                 setInTransitForm((f) => ({ ...f, materialCatalogItemId: id }))
               }
             />
-            <span className="pb-2.5 text-sm text-gray-400 dark:text-gray-500">
+            <span className="pb-2.5 text-sm text-fg-subtle">
               →
             </span>
             <select
@@ -1367,7 +1367,7 @@ export function WarehouseDetail({
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
                   <th className="py-2">{t("material")}</th>
                   <th>{t("route")}</th>
                   <th>{t("quantity")}</th>
@@ -1382,7 +1382,7 @@ export function WarehouseDetail({
                     className="border-b border-gray-100 dark:border-gray-700"
                   >
                     <td className="py-2">{tr.materialCatalogItem.name}</td>
-                    <td className="text-xs text-gray-500 dark:text-gray-400">
+                    <td className="text-xs text-fg-subtle">
                       {tr.fromWarehouse.name} → {tr.toWarehouse.name}
                     </td>
                     <td>
@@ -1394,8 +1394,8 @@ export function WarehouseDetail({
                           tr.status === "in_transit"
                             ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400"
                             : tr.status === "received"
-                              ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
-                              : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
+                              ? "bg-success-50 dark:bg-success-500/15 text-success-fg"
+                              : "bg-gray-100 dark:bg-gray-700 text-fg-subtle"
                         }`}
                       >
                         {t(`transferStatus_${tr.status}`)}
@@ -1417,7 +1417,7 @@ export function WarehouseDetail({
                           <button
                             onClick={() => cancelStockTransfer(tr.id)}
                             disabled={busy}
-                            className="ml-1.5 text-xs text-gray-400 dark:text-gray-500 hover:text-error-600"
+                            className="ml-1.5 text-xs text-fg-subtle hover:text-danger-fg"
                           >
                             {tc("cancel")}
                           </button>
@@ -1441,7 +1441,7 @@ export function WarehouseDetail({
       )}
 
       <div className="mb-3 mt-8 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+        <h2 className="text-sm font-semibold text-fg-muted">
           {t("stockCounts")}
         </h2>
         <button
@@ -1470,7 +1470,7 @@ export function WarehouseDetail({
                   </span>
                   <span className="flex items-center gap-2 text-xs">
                     {varianceCount > 0 && (
-                      <span className="text-warning-700 dark:text-warning-500">
+                      <span className="text-warning-fg">
                         {t("variances", { count: varianceCount })}
                       </span>
                     )}
@@ -1495,14 +1495,14 @@ export function WarehouseDetail({
         <div>
           <button
             onClick={() => setActiveCount(null)}
-            className="mb-2 text-xs text-gray-500 dark:text-gray-400 hover:underline"
+            className="mb-2 text-xs text-fg-subtle hover:underline"
           >
             ← {tc("back")}
           </button>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
                   <th className="py-2">{t("material")}</th>
                   <th>{t("systemQuantity")}</th>
                   <th>{t("countedQuantity")}</th>
@@ -1523,7 +1523,7 @@ export function WarehouseDetail({
                         {line.materialCatalogItem.name} (
                         {line.materialCatalogItem.code})
                       </td>
-                      <td className="text-gray-500 dark:text-gray-400">
+                      <td className="text-fg-subtle">
                         {line.systemQuantity} {line.materialCatalogItem.unit}
                       </td>
                       <td>
@@ -1551,10 +1551,10 @@ export function WarehouseDetail({
                       <td
                         className={
                           variance === 0
-                            ? "text-gray-400 dark:text-gray-500"
+                            ? "text-fg-subtle"
                             : variance > 0
-                              ? "text-success-700 dark:text-success-500"
-                              : "text-error-600"
+                              ? "text-success-fg"
+                              : "text-danger-fg"
                         }
                       >
                         {variance > 0 ? "+" : ""}
@@ -1578,7 +1578,7 @@ export function WarehouseDetail({
         </div>
       )}
 
-      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">
+      <h2 className="mb-3 mt-8 text-sm font-semibold text-fg-muted">
         {t("supplierReturns")}
       </h2>
       <form onSubmit={createSupplierReturn} className="flex flex-col gap-2">
@@ -1662,7 +1662,7 @@ export function WarehouseDetail({
             <button
               type="button"
               onClick={() => setSupplierReturnLines((ls) => ls.filter((_, idx) => idx !== i))}
-              className="text-xs text-gray-400 hover:text-error-600"
+              className="text-xs text-fg-subtle hover:text-danger-fg"
             >
               {tc("delete")}
             </button>
@@ -1682,7 +1682,7 @@ export function WarehouseDetail({
         <div className="mt-4 overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
                 <th className="py-2">{t("material")}</th>
                 <th>{tc("status")}</th>
                 <th>{t("returnReasonLabel")}</th>
@@ -1700,16 +1700,16 @@ export function WarehouseDetail({
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                         sr.status === "draft"
-                          ? "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
+                          ? "bg-gray-100 dark:bg-gray-700 text-fg-subtle"
                           : sr.status === "sent"
                             ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400"
-                            : "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
+                            : "bg-success-50 dark:bg-success-500/15 text-success-fg"
                       }`}
                     >
                       {t(`returnStatus_${sr.status}`)}
                     </span>
                   </td>
-                  <td className="text-xs text-gray-500 dark:text-gray-400">{t(`returnReason_${sr.reason}`)}</td>
+                  <td className="text-xs text-fg-subtle">{t(`returnReason_${sr.reason}`)}</td>
                   <td className="text-right">
                     {sr.status === "draft" && (
                       <button onClick={() => sendSupplierReturn(sr.id)} disabled={busy} className="btn-secondary px-2 py-1 text-xs">
@@ -1731,7 +1731,7 @@ export function WarehouseDetail({
 
       {stockKits.length > 0 && (
         <>
-          <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">
+          <h2 className="mb-3 mt-8 text-sm font-semibold text-fg-muted">
             {t("kit")}
           </h2>
           <div className="flex flex-wrap items-end gap-2">

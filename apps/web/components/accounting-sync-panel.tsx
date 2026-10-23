@@ -145,14 +145,14 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-4 text-xs text-fg-subtle">{t("hint")}</p>
 
-      {error && <p className="mb-3 text-xs text-error-600">{error}</p>}
+      {error && <p className="mb-3 text-xs text-danger-fg">{error}</p>}
 
       {status.connected ? (
         <div className="flex flex-col gap-3">
-          <p className="text-sm text-success-700 dark:text-success-500">
+          <p className="text-sm text-success-fg">
             {t("connectedSummary", {
               provider: PROVIDER_LABELS[status.provider!],
               date: status.connectedAt ? formatDate(new Date(status.connectedAt)) : "",
@@ -168,7 +168,7 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
                   {t("syncBillsNow")}
                 </button>
               )}
-              <button onClick={disconnect} disabled={busy} className="btn-secondary text-error-600">
+              <button onClick={disconnect} disabled={busy} className="btn-secondary text-danger-fg">
                 {t("disconnect")}
               </button>
             </div>
@@ -177,23 +177,23 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
             <p className="text-xs text-gray-600 dark:text-gray-300">
               {t("syncResult", { synced: syncResult.synced, failed: syncResult.failed })}
               {syncResult.errors.length > 0 && (
-                <span className="mt-1 block text-error-600">{syncResult.errors.slice(0, 3).join("; ")}</span>
+                <span className="mt-1 block text-danger-fg">{syncResult.errors.slice(0, 3).join("; ")}</span>
               )}
             </p>
           )}
 
           {integrity && (
             <div className="rounded-lg border border-gray-100 dark:border-gray-700 p-3 text-xs">
-              <p className="font-medium text-gray-700 dark:text-gray-200">
+              <p className="font-medium text-fg-muted">
                 {t("integrityCheck", { count: integrity.unsyncedInvoices.length })}
               </p>
-              <p className="mt-1 font-medium text-gray-700 dark:text-gray-200">
+              <p className="mt-1 font-medium text-fg-muted">
                 {t("integrityCheckBills", { count: integrity.unsyncedBills.length })}
               </p>
               {integrity.recentFailures.length > 0 && (
                 <ul className="mt-2 flex flex-col gap-1">
                   {integrity.recentFailures.slice(0, 5).map((f) => (
-                    <li key={f.id} className="text-error-600">
+                    <li key={f.id} className="text-danger-fg">
                       {f.invoiceNumber ?? f.subcontractorCostReference} — {f.errorMessage} ({formatDate(new Date(f.attemptedAt))})
                     </li>
                   ))}
@@ -205,12 +205,12 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
               {showHistory && (
                 <ul className="mt-2 flex flex-col gap-1">
                   {!history ? (
-                    <li className="text-gray-400 dark:text-gray-500">…</li>
+                    <li className="text-fg-subtle">…</li>
                   ) : history.length === 0 ? (
-                    <li className="text-gray-400 dark:text-gray-500">{t("noHistory")}</li>
+                    <li className="text-fg-subtle">{t("noHistory")}</li>
                   ) : (
                     history.map((h) => (
-                      <li key={h.id} className={h.status === "failed" ? "text-error-600" : "text-success-700 dark:text-success-500"}>
+                      <li key={h.id} className={h.status === "failed" ? "text-danger-fg" : "text-success-fg"}>
                         {formatDateTime(new Date(h.attemptedAt))} — {h.invoiceNumber ?? h.subcontractorCostReference} — {h.status}
                         {h.errorMessage ? `: ${h.errorMessage}` : ""}
                       </li>
@@ -234,7 +234,7 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
             </div>
             <div className="flex flex-wrap items-end gap-2">
               <label className="flex flex-col gap-1 text-sm">
-                <span className="font-medium text-gray-700 dark:text-gray-200">{t("lexofficeApiKeyLabel")}</span>
+                <span className="font-medium text-fg-muted">{t("lexofficeApiKeyLabel")}</span>
                 <input
                   type="password"
                   className="input"
@@ -251,7 +251,7 @@ export function AccountingSyncPanel({ canManage }: { canManage: boolean }) {
                 {t("connect", { provider: "lexoffice" })}
               </button>
             </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">{t("lexofficeHint")}</p>
+            <p className="text-xs text-fg-subtle">{t("lexofficeHint")}</p>
           </div>
         )
       )}

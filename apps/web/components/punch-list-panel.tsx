@@ -44,8 +44,8 @@ interface PunchListItem {
 
 const STATUS_STYLES: Record<PunchListItemStatus, string> = {
   open: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  resolved: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
-  verified: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
+  resolved: "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
+  verified: "bg-success-50 dark:bg-success-500/15 text-success-fg",
 };
 
 export function PunchListPanel({ projectId }: { projectId: string }) {
@@ -165,7 +165,7 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("title")}</h2>
         <div className="flex items-center gap-1.5">
           {templates.length > 0 && (
             <>
@@ -200,7 +200,7 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
       {creating && (
         <form onSubmit={submit} className="card mb-4 flex flex-col gap-3">
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("itemTitle")}</span>
+            <span className="font-medium text-fg-muted">{t("itemTitle")}</span>
             <input
               required
               className="input"
@@ -210,7 +210,7 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
           </label>
           <div className="flex gap-3">
             <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("location")}</span>
+              <span className="font-medium text-fg-muted">{t("location")}</span>
               <input
                 className="input"
                 placeholder={t("locationPlaceholder")}
@@ -219,7 +219,7 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
               />
             </label>
             <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("assignee")}</span>
+              <span className="font-medium text-fg-muted">{t("assignee")}</span>
               <select className="input" value={form.assignee} onChange={(e) => setForm((f) => ({ ...f, assignee: e.target.value }))}>
                 <option value="">{tc("none")}</option>
                 <optgroup label={t("assigneeWorkers")}>
@@ -241,7 +241,7 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
           </div>
           <SimilarItemsHint type="punch_list_item" projectId={projectId} text={[form.title, form.location, form.description].filter((v) => v.trim()).join("\n")} />
           <label className="flex w-40 flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("dueDate")}</span>
+            <span className="font-medium text-fg-muted">{t("dueDate")}</span>
             <input
               type="date"
               className="input"
@@ -250,7 +250,7 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
             />
           </label>
           <label className="flex w-40 flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("estimatedCostImpact")}</span>
+            <span className="font-medium text-fg-muted">{t("estimatedCostImpact")}</span>
             <input
               type="number"
               min="0"
@@ -261,7 +261,7 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
             />
           </label>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("description")}</span>
+            <span className="font-medium text-fg-muted">{t("description")}</span>
             <textarea
               rows={2}
               className="input"
@@ -283,19 +283,19 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
       {bulk.result && (
         <div className="mb-3 flex items-center justify-between rounded-md bg-gray-50 dark:bg-gray-700 px-3 py-2 text-xs text-gray-600 dark:text-gray-300">
           <span>{tb("resultSummary", { succeeded: bulk.result.succeeded, failed: bulk.result.failed.length })}</span>
-          <button onClick={bulk.dismissResult} className="text-gray-400 dark:text-gray-500 hover:text-gray-600">
+          <button onClick={bulk.dismissResult} className="text-fg-subtle hover:text-fg-muted">
             ×
           </button>
         </div>
       )}
 
       {items === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
       ) : items.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noItems")}</p>
+        <p className="text-sm text-fg-subtle">{t("noItems")}</p>
       ) : (
         <>
-          <div className="mb-2 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+          <div className="mb-2 flex items-center gap-3 text-xs text-fg-subtle">
             <label className="flex items-center gap-1.5">
               <input
                 type="checkbox"
@@ -325,36 +325,36 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
                   <span className="no-print"><CopyLinkButton url={buildItemDeepLink(projectId, "quality", "punch_list", item.id)} /></span>
                   <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{item.title}</span>
+                    <span className="text-sm font-medium text-fg">{item.title}</span>
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[item.status]}`}>
                       {t(item.status)}
                     </span>
                     {item.escalatedAt && (
-                      <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-error-700 dark:text-error-500">
+                      <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-danger-fg">
                         {t("escalated")}
                       </span>
                     )}
                   </div>
-                  <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-gray-500 dark:text-gray-400">
+                  <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-fg-subtle">
                     {item.location && <span>{item.location}</span>}
                     {item.assignee && <span>{t("assignedTo", { name: item.assignee.name })}</span>}
                     {item.assigneeSubcontractor && <span>{t("assignedTo", { name: item.assigneeSubcontractor.name })}</span>}
                     {item.dueDate && <span>{formatDate(new Date(item.dueDate))}</span>}
                   </div>
-                  {item.description && <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">{item.description}</p>}
+                  {item.description && <p className="mt-1.5 text-xs text-fg-subtle">{item.description}</p>}
                   {(item.estimatedCostImpact !== null || item.changeOrderId) && (
                     <div className="mt-1.5 rounded-md bg-gray-50 dark:bg-gray-700 p-2 text-xs">
                       {item.changeOrderId ? (
-                        <p className="flex items-center justify-between text-success-700 dark:text-success-500">
+                        <p className="flex items-center justify-between text-success-fg">
                           <span>{t("costImpactConfirmed")}</span>
-                          <button onClick={() => unlinkChangeOrder(item.id)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
+                          <button onClick={() => unlinkChangeOrder(item.id)} className="text-fg-subtle hover:text-danger-fg">
                             {t("unlinkChangeOrder")}
                           </button>
                         </p>
                       ) : (
                         <>
                           {item.estimatedCostImpact !== null && (
-                            <p className="text-gray-500 dark:text-gray-400">{t("estimatedCostImpactLabel", { amount: item.estimatedCostImpact })}</p>
+                            <p className="text-fg-subtle">{t("estimatedCostImpactLabel", { amount: item.estimatedCostImpact })}</p>
                           )}
                           <div className="mt-1 flex items-center gap-1.5">
                             <input
@@ -376,10 +376,10 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
                     </div>
                   )}
                   {item.status === "verified" && item.verifiedByName && (
-                    <p className="mt-1.5 text-xs text-success-700 dark:text-success-500">{t("verifiedBy", { name: item.verifiedByName })}</p>
+                    <p className="mt-1.5 text-xs text-success-fg">{t("verifiedBy", { name: item.verifiedByName })}</p>
                   )}
                   {item.status === "resolved" && item.resolvedByName && (
-                    <p className="mt-1.5 text-xs text-warning-700 dark:text-warning-500">{t("resolvedBy", { name: item.resolvedByName })}</p>
+                    <p className="mt-1.5 text-xs text-warning-fg">{t("resolvedBy", { name: item.resolvedByName })}</p>
                   )}
                   <div className="mt-2">
                     <PhotoAttachments param="punchListItemId" entityId={item.id} beforeAfter />

@@ -91,23 +91,23 @@ export function SsoSettingsPanel({ canManage }: { canManage: boolean }) {
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-4 text-xs text-fg-subtle">{t("hint")}</p>
 
       {isConfigured && config.ssoDomainVerified && (
-        <p className="mb-3 text-sm text-success-700 dark:text-success-500">{t("activeSummary", { domain: config.ssoDomain! })}</p>
+        <p className="mb-3 text-sm text-success-fg">{t("activeSummary", { domain: config.ssoDomain! })}</p>
       )}
       {isConfigured && !config.ssoDomainVerified && (
         <div className="mb-4 rounded-md border border-warning-200 dark:border-warning-500/30 bg-warning-50 dark:bg-warning-500/10 p-3">
-          <p className="text-sm text-warning-700 dark:text-warning-500">{t("pendingSummary", { domain: config.ssoDomain! })}</p>
+          <p className="text-sm text-warning-fg">{t("pendingSummary", { domain: config.ssoDomain! })}</p>
           {config.verificationRecord && (
             <>
               <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">{t("dnsInstructions", { domain: config.ssoDomain! })}</p>
               <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
-                <dt className="text-gray-500 dark:text-gray-400">{t("recordName")}</dt>
-                <dd className="break-all font-mono text-gray-800 dark:text-gray-100">{config.verificationRecord.name}</dd>
-                <dt className="text-gray-500 dark:text-gray-400">{t("recordValue")} (TXT)</dt>
-                <dd className="break-all font-mono text-gray-800 dark:text-gray-100">{config.verificationRecord.value}</dd>
+                <dt className="text-fg-subtle">{t("recordName")}</dt>
+                <dd className="break-all font-mono text-fg">{config.verificationRecord.name}</dd>
+                <dt className="text-fg-subtle">{t("recordValue")} (TXT)</dt>
+                <dd className="break-all font-mono text-fg">{config.verificationRecord.value}</dd>
               </dl>
             </>
           )}
@@ -116,7 +116,7 @@ export function SsoSettingsPanel({ canManage }: { canManage: boolean }) {
               <button type="button" onClick={verify} disabled={busy} className="btn-secondary px-3 py-1 text-xs">
                 {t("verifyNow")}
               </button>
-              {verifyFailed && <span className="text-xs text-warning-700 dark:text-warning-500">{t("verifyFailedHint")}</span>}
+              {verifyFailed && <span className="text-xs text-warning-fg">{t("verifyFailedHint")}</span>}
             </div>
           )}
         </div>
@@ -129,7 +129,7 @@ export function SsoSettingsPanel({ canManage }: { canManage: boolean }) {
       {canManage && (
         <form onSubmit={save} className="flex flex-col gap-3">
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("domain")}</span>
+            <span className="font-medium text-fg-muted">{t("domain")}</span>
             <input
               required
               placeholder="acme.com"
@@ -139,7 +139,7 @@ export function SsoSettingsPanel({ canManage }: { canManage: boolean }) {
             />
           </label>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("entryPoint")}</span>
+            <span className="font-medium text-fg-muted">{t("entryPoint")}</span>
             <input
               required
               placeholder="https://idp.example.com/sso/saml"
@@ -149,7 +149,7 @@ export function SsoSettingsPanel({ canManage }: { canManage: boolean }) {
             />
           </label>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("issuer")}</span>
+            <span className="font-medium text-fg-muted">{t("issuer")}</span>
             <input
               required
               placeholder={t("issuerPlaceholder")}
@@ -159,7 +159,7 @@ export function SsoSettingsPanel({ canManage }: { canManage: boolean }) {
             />
           </label>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("cert")}</span>
+            <span className="font-medium text-fg-muted">{t("cert")}</span>
             <textarea
               required
               rows={5}
@@ -169,13 +169,13 @@ export function SsoSettingsPanel({ canManage }: { canManage: boolean }) {
               onChange={(e) => setForm((f) => ({ ...f, cert: e.target.value }))}
             />
           </label>
-          {error && <p className="text-xs text-error-600">{error}</p>}
+          {error && <p className="text-xs text-danger-fg">{error}</p>}
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className="btn-primary self-start">
               {tc("save")}
             </button>
             {isConfigured && (
-              <button type="button" onClick={disable} disabled={busy} className="btn-secondary self-start text-error-600">
+              <button type="button" onClick={disable} disabled={busy} className="btn-secondary self-start text-danger-fg">
                 {t("disable")}
               </button>
             )}

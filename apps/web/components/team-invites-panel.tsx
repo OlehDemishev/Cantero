@@ -49,11 +49,11 @@ export function TeamInvitesPanel() {
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("invites")}</h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("inviteEmailHint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("invites")}</h2>
+      <p className="mb-4 text-xs text-fg-subtle">{t("inviteEmailHint")}</p>
       {error && <p className="mb-3 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{error}</p>}
       {!invites || invites.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noInvites")}</p>
+        <p className="text-sm text-fg-subtle">{t("noInvites")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {invites.map((inv) => (

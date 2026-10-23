@@ -114,7 +114,7 @@ export default function SubcontractorsPage() {
       </div>
       <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("complianceSubtitle")}</p>
       <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{t("datevTestImportNotice")}</p>
-      {datevError && <p className="mt-1 text-xs text-error-600">{datevError}</p>}
+      {datevError && <p className="mt-1 text-xs text-danger-fg">{datevError}</p>}
       {datevWarningCount !== null && datevWarningCount > 0 && (
         <p className="mt-1 text-xs text-warning-700 dark:text-warning-500">{t("datevWarningCount", { count: datevWarningCount })}</p>
       )}

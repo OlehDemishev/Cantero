@@ -74,12 +74,12 @@ export function IntegrationsPanel({ canManage }: { canManage: boolean }) {
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
-      {!canManage && <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("managerOnlyHint")}</p>}
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-4 text-xs text-fg-subtle">{t("hint")}</p>
+      {!canManage && <p className="mb-4 text-xs text-fg-subtle">{t("managerOnlyHint")}</p>}
 
       <form onSubmit={save} className="flex flex-col gap-3">
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
           {t("slackWebhookUrl")}
           <input
             type="url"
@@ -90,7 +90,7 @@ export function IntegrationsPanel({ canManage }: { canManage: boolean }) {
             disabled={!canManage}
           />
         </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
           {t("teamsWebhookUrl")}
           <input
             type="url"
@@ -101,9 +101,9 @@ export function IntegrationsPanel({ canManage }: { canManage: boolean }) {
             disabled={!canManage}
           />
         </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
           {t("ipAllowlist")}
-          <span className="mt-0.5 block text-gray-400 dark:text-gray-500">{t("ipAllowlistHint")}</span>
+          <span className="mt-0.5 block text-fg-subtle">{t("ipAllowlistHint")}</span>
           <textarea
             className="input mt-1 h-20 font-mono"
             placeholder={"203.0.113.4\n203.0.113.0/24"}
@@ -117,16 +117,16 @@ export function IntegrationsPanel({ canManage }: { canManage: boolean }) {
             <button type="submit" disabled={busy} className="btn-primary self-start">
               {tc("save")}
             </button>
-            {saved && <span className="text-xs text-success-700 dark:text-success-500">{tc("saved")}</span>}
+            {saved && <span className="text-xs text-success-fg">{tc("saved")}</span>}
           </div>
         )}
       </form>
 
       <div className="mt-4 border-t border-gray-100 dark:border-gray-700 pt-4">
-        <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("calendarFeed")}</h3>
-        <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">{t("calendarFeedHint")}</p>
+        <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("calendarFeed")}</h3>
+        <p className="mb-2 text-xs text-fg-subtle">{t("calendarFeedHint")}</p>
         {feedUrl && <p className="mb-2 break-all rounded bg-gray-50 dark:bg-gray-700 p-2 font-mono text-xs">{feedUrl}</p>}
-        {!canManage && hasCalendarFeed && <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">{t("calendarFeedAskManager")}</p>}
+        {!canManage && hasCalendarFeed && <p className="mb-2 text-xs text-fg-subtle">{t("calendarFeedAskManager")}</p>}
         {canManage && (
           <button onClick={generateCalendarFeed} disabled={busy} className="btn-secondary px-3 py-1 text-xs">
             {calendarFeedToken ? t("regenerateCalendarFeed") : t("generateCalendarFeed")}

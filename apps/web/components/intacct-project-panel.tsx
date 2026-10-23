@@ -69,20 +69,20 @@ export function IntacctProjectPanel({ projectId }: { projectId: string }) {
 
   return (
     <section className="card">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("projectTitle")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("projectHint")}</p>
-      {error && <p className="mb-2 whitespace-pre-line text-xs text-error-600">{error}</p>}
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("projectTitle")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{t("projectHint")}</p>
+      {error && <p className="mb-2 whitespace-pre-line text-xs text-danger-fg">{error}</p>}
       {message && <p className="mb-2 text-xs text-gray-600 dark:text-gray-300">{message}</p>}
 
       {project.intacctContractId ? (
-        <p className="mb-3 text-xs text-success-700 dark:text-success-500">{t("contractExists", { id: project.intacctContractId })}</p>
+        <p className="mb-3 text-xs text-success-fg">{t("contractExists", { id: project.intacctContractId })}</p>
       ) : (
         <div className="mb-3 flex flex-wrap items-end gap-2">
-          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
             {t("intacctProjectId")}
             <input className="input" value={project.intacctProjectId} onChange={(e) => setProject((p) => ({ ...p, intacctProjectId: e.target.value }))} />
           </label>
-          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
             {t("intacctCustomerId")}
             <input className="input" value={customerId} onChange={(e) => setCustomerId(e.target.value)} />
           </label>

@@ -180,7 +180,7 @@ export function DocumentsPanel({
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("title")}</h2>
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <input
@@ -198,9 +198,9 @@ export function DocumentsPanel({
       </div>
 
       {!documents ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
       ) : documents.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noDocuments")}</p>
+        <p className="text-sm text-fg-subtle">{t("noDocuments")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {documents.map((doc) => (
@@ -235,13 +235,13 @@ export function DocumentsPanel({
                   <button onClick={() => startReplace(doc.id)} disabled={busy} className="text-brand-700 dark:text-brand-400 hover:underline">
                     {t("replace")}
                   </button>
-                  <button onClick={() => remove(doc)} disabled={busy} className="text-error-700 dark:text-error-500 hover:underline">
+                  <button onClick={() => remove(doc)} disabled={busy} className="text-danger-fg hover:underline">
                     {tc("delete")}
                   </button>
                 </div>
               </div>
               {doc.uploadedBy && (
-                <div className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                <div className="mt-1 text-xs text-fg-subtle">
                   {t("uploadedBy", { name: doc.uploadedBy.name })}
                 </div>
               )}
@@ -256,7 +256,7 @@ export function DocumentsPanel({
                   <button onClick={() => saveTags(doc)} disabled={busy} className="btn-secondary px-2 py-1 text-xs">
                     {tc("save")}
                   </button>
-                  <button onClick={() => setEditingTagsId(null)} className="text-xs text-gray-400 dark:text-gray-500">
+                  <button onClick={() => setEditingTagsId(null)} className="text-xs text-fg-subtle">
                     {tc("cancel")}
                   </button>
                 </div>
@@ -265,7 +265,7 @@ export function DocumentsPanel({
                 <div className="mt-2 border-t border-gray-100 dark:border-gray-700 pt-2">
                   <ul className="flex flex-col gap-1">
                     {versions.map((v) => (
-                      <li key={v.id} className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                      <li key={v.id} className="flex items-center gap-2 text-xs text-fg-subtle">
                         <input
                           type="checkbox"
                           checked={compareIds.includes(v.id)}
@@ -324,8 +324,8 @@ export function DocumentsPanel({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={closeCompare}>
           <div className="max-h-full max-w-4xl overflow-auto rounded-lg bg-white dark:bg-gray-800 p-4" onClick={(e) => e.stopPropagation()}>
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("compareVersions")}</h3>
-              <button onClick={closeCompare} className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-700">
+              <h3 className="text-sm font-semibold text-fg-muted">{t("compareVersions")}</h3>
+              <button onClick={closeCompare} className="text-xs text-fg-subtle hover:text-fg-muted">
                 {tc("close")}
               </button>
             </div>
@@ -339,7 +339,7 @@ export function DocumentsPanel({
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={comparePreviews[v.id]} alt="" className="max-h-[60vh] w-full rounded border border-gray-200 dark:border-gray-700 object-contain" />
                   ) : (
-                    <div className="rounded border border-gray-200 dark:border-gray-700 p-6 text-center text-xs text-gray-400 dark:text-gray-500">
+                    <div className="rounded border border-gray-200 dark:border-gray-700 p-6 text-center text-xs text-fg-subtle">
                       {t("noPreview")}
                       <div className="mt-2">
                         <button onClick={() => download(v)} className="btn-secondary px-2 py-1 text-xs">

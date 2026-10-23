@@ -37,19 +37,19 @@ export function ChangeOrderProfitabilityPanel({ estimateId, currency }: { estima
   if (!report || report.changeOrders.length === 0) return null;
 
   const marginClass = (marginPercent: number | null, baselinePercent: number | null) => {
-    if (marginPercent === null) return "text-gray-400 dark:text-gray-500";
+    if (marginPercent === null) return "text-fg-subtle";
     if (baselinePercent === null) return "";
-    return marginPercent < baselinePercent ? "text-error-600" : "text-success-700 dark:text-success-500";
+    return marginPercent < baselinePercent ? "text-danger-fg" : "text-success-fg";
   };
 
   return (
     <div className="mt-6 border-t border-gray-100 dark:border-gray-700 pt-4">
-      <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("changeOrderProfitability")}</h3>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("changeOrderProfitabilityHint")}</p>
+      <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("changeOrderProfitability")}</h3>
+      <p className="mb-3 text-xs text-fg-subtle">{t("changeOrderProfitabilityHint")}</p>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[520px] border-collapse text-xs">
           <thead>
-            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
               <th className="py-1">{tc("name")}</th>
               <th className="text-right">{t("cost")}</th>
               <th className="text-right">{t("revenue")}</th>

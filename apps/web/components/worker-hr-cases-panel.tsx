@@ -103,7 +103,7 @@ export function WorkerHrCasesPanel({ workerId }: { workerId: string }) {
   return (
     <>
       <div className="mb-3 mt-8 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{th("title")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{th("title")}</h2>
         {!addingHrCase && (
           <button onClick={() => setAddingHrCase(true)} className="btn-secondary px-2 py-1 text-xs">
             {th("openCase")}
@@ -140,9 +140,9 @@ export function WorkerHrCasesPanel({ workerId }: { workerId: string }) {
       )}
 
       {hrCases === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
       ) : hrCases.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{th("noCases")}</p>
+        <p className="text-sm text-fg-subtle">{th("noCases")}</p>
       ) : (
         <ul className="flex flex-col gap-1.5">
           {hrCases.map((c) => {
@@ -153,13 +153,13 @@ export function WorkerHrCasesPanel({ workerId }: { workerId: string }) {
                   <span>{th(`category_${c.category}`)}</span>
                   <span
                     className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                      c.status === "closed" || c.status === "resolved" ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500"
+                      c.status === "closed" || c.status === "resolved" ? "bg-success-50 dark:bg-success-500/15 text-success-fg" : "bg-warning-50 dark:bg-warning-500/15 text-warning-fg"
                     }`}
                   >
                     {th(`caseStatus_${c.status}`)}
                   </span>
                 </button>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{c.description}</p>
+                <p className="mt-1 text-xs text-fg-subtle">{c.description}</p>
 
                 {expanded && hrCaseDetail && hrCaseDetail.id === c.id && (
                   <div className="mt-2 flex flex-col gap-2 border-t border-gray-100 dark:border-gray-700 pt-2">
@@ -177,8 +177,8 @@ export function WorkerHrCasesPanel({ workerId }: { workerId: string }) {
                     <ul className="flex flex-col gap-1">
                       {hrCaseDetail.actions.map((a) => (
                         <li key={a.id} className="text-xs">
-                          <span className="font-medium text-gray-700 dark:text-gray-200">{th(`actionType_${a.type}`)}</span> — {a.description}
-                          <span className="text-gray-400 dark:text-gray-500"> ({a.createdByName}, {formatDate(new Date(a.actionDate))})</span>
+                          <span className="font-medium text-fg-muted">{th(`actionType_${a.type}`)}</span> — {a.description}
+                          <span className="text-fg-subtle"> ({a.createdByName}, {formatDate(new Date(a.actionDate))})</span>
                         </li>
                       ))}
                     </ul>

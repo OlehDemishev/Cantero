@@ -123,8 +123,8 @@ export function TrainingCatalogPanel() {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("catalogTitle")}</h2>
-      <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">{t("catalogHint")}</p>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("catalogTitle")}</h2>
+      <p className="mb-4 text-sm text-fg-subtle">{t("catalogHint")}</p>
 
       <form onSubmit={createCourse} className="mb-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
         <input
@@ -140,7 +140,7 @@ export function TrainingCatalogPanel() {
           value={form.category}
           onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
         />
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
           {t("validityMonths")}
           <input
             type="number"
@@ -157,9 +157,9 @@ export function TrainingCatalogPanel() {
       </form>
 
       {courses === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
       ) : courses.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noCourses")}</p>
+        <p className="text-sm text-fg-subtle">{t("noCourses")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {courses.map((course) => {
@@ -167,21 +167,21 @@ export function TrainingCatalogPanel() {
             return (
               <li key={course.id} className="card">
                 <div className="flex items-center justify-between">
-                  <button onClick={() => toggleExpand(course.id)} className="text-left text-sm font-medium text-gray-900 dark:text-gray-50 hover:underline">
+                  <button onClick={() => toggleExpand(course.id)} className="text-left text-sm font-medium text-fg hover:underline">
                     {course.title}
                   </button>
                   <div className="flex items-center gap-2">
                     {course.validityMonths && (
-                      <span className="text-xs text-gray-400 dark:text-gray-500">{t("validForMonths", { months: course.validityMonths })}</span>
+                      <span className="text-xs text-fg-subtle">{t("validForMonths", { months: course.validityMonths })}</span>
                     )}
-                    <button onClick={() => deleteCourse(course.id)} disabled={busy} className="text-xs text-error-700 dark:text-error-500 hover:underline">
+                    <button onClick={() => deleteCourse(course.id)} disabled={busy} className="text-xs text-danger-fg hover:underline">
                       {tc("delete")}
                     </button>
                   </div>
                 </div>
-                {course.category && <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{course.category}</p>}
+                {course.category && <p className="mt-0.5 text-xs text-fg-subtle">{course.category}</p>}
                 {gap && gap.missingWorkers.length > 0 && (
-                  <p className="mt-1 text-xs text-warning-700 dark:text-warning-500">
+                  <p className="mt-1 text-xs text-warning-fg">
                     {t("missingCount", { count: gap.missingWorkers.length, total: gap.totalActiveWorkers })}
                   </p>
                 )}
@@ -201,16 +201,16 @@ export function TrainingCatalogPanel() {
                       </button>
                     </div>
                     {!enrollments ? (
-                      <p className="text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+                      <p className="text-xs text-fg-subtle">{tc("loading")}</p>
                     ) : enrollments.length === 0 ? (
-                      <p className="text-xs text-gray-400 dark:text-gray-500">{t("noEnrollments")}</p>
+                      <p className="text-xs text-fg-subtle">{t("noEnrollments")}</p>
                     ) : (
                       <ul className="flex flex-col gap-1">
                         {enrollments.map((en) => (
                           <li key={en.id} className="flex items-center justify-between text-xs">
                             <span>{en.worker.name}</span>
                             {en.status === "completed" ? (
-                              <span className="rounded-full bg-success-50 dark:bg-success-500/15 px-2 py-0.5 font-medium text-success-700 dark:text-success-500">
+                              <span className="rounded-full bg-success-50 dark:bg-success-500/15 px-2 py-0.5 font-medium text-success-fg">
                                 {t("completedOn", { date: en.completedAt ? formatDate(new Date(en.completedAt)) : "" })}
                               </span>
                             ) : (

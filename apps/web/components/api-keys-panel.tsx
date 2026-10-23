@@ -73,12 +73,12 @@ export function ApiKeysPanel() {
 
   return (
     <section id="api-keys" className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("apiKeys")}</h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("apiKeysHint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("apiKeys")}</h2>
+      <p className="mb-4 text-xs text-fg-subtle">{t("apiKeysHint")}</p>
 
       {createdKey && (
         <div className="mb-4 rounded-md border border-warning-200 bg-warning-50 dark:bg-warning-500/15 px-3 py-2">
-          <p className="text-xs text-warning-700 dark:text-warning-500">{t("apiKeyShownOnce")}</p>
+          <p className="text-xs text-warning-fg">{t("apiKeyShownOnce")}</p>
           <div className="mt-2 flex items-center gap-2">
             <code className="flex-1 truncate rounded bg-white dark:bg-gray-800 px-2 py-1 text-xs">{createdKey}</code>
             <button onClick={copyApiKey} className="btn-secondary shrink-0 px-3 py-1 text-xs">
@@ -89,12 +89,12 @@ export function ApiKeysPanel() {
       )}
 
       {!apiKeys || apiKeys.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noApiKeys")}</p>
+        <p className="text-sm text-fg-subtle">{t("noApiKeys")}</p>
       ) : (
         <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
               <th className="py-2">{tc("name")}</th>
               <th>{t("apiKeyPrefix")}</th>
               <th>{t("apiKeyScopes")}</th>
@@ -107,10 +107,10 @@ export function ApiKeysPanel() {
             {apiKeys.map((k) => (
               <tr key={k.id} className="border-b border-gray-100 dark:border-gray-700">
                 <td className="py-2">{k.name}</td>
-                <td className="font-mono text-xs text-gray-500 dark:text-gray-400">{k.keyPrefix}…</td>
-                <td className="text-xs text-gray-500 dark:text-gray-400">{k.scopes.length > 0 ? k.scopes.map(scopeLabel).join(", ") : t("apiKeyUnrestricted")}</td>
-                <td className="text-xs text-gray-500 dark:text-gray-400">{k.expiresAt ? formatDate(new Date(k.expiresAt)) : "—"}</td>
-                <td className="text-xs text-gray-500 dark:text-gray-400">
+                <td className="font-mono text-xs text-fg-subtle">{k.keyPrefix}…</td>
+                <td className="text-xs text-fg-subtle">{k.scopes.length > 0 ? k.scopes.map(scopeLabel).join(", ") : t("apiKeyUnrestricted")}</td>
+                <td className="text-xs text-fg-subtle">{k.expiresAt ? formatDate(new Date(k.expiresAt)) : "—"}</td>
+                <td className="text-xs text-fg-subtle">
                   {k.revokedAt
                     ? t("apiKeyRevoked")
                     : k.lastUsedAt
@@ -140,7 +140,7 @@ export function ApiKeysPanel() {
             value={newKeyName}
             onChange={(e) => setNewKeyName(e.target.value)}
           />
-          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
             {t("apiKeyExpires")}
             <input
               type="date"
@@ -154,7 +154,7 @@ export function ApiKeysPanel() {
           </button>
         </div>
         <div className="flex flex-wrap gap-2">
-          <span className="text-xs text-gray-500 dark:text-gray-400">{t("apiKeyScopesHint")}</span>
+          <span className="text-xs text-fg-subtle">{t("apiKeyScopesHint")}</span>
           {API_KEY_SCOPES.map((scope) => (
             <label
               key={scope}

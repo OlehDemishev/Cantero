@@ -156,7 +156,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </label>
-              <a href="/forgot-password" className="self-end text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700">
+              <a href="/forgot-password" className="self-end text-xs text-gray-500 dark:text-gray-400 hover:text-fg-muted">
                 {t("forgotPassword")}
               </a>
               <button type="submit" disabled={submitting} className="btn-primary mt-2">
@@ -172,7 +172,7 @@ export default function LoginPage() {
                 setSsoMode((v) => !v);
                 setError(null);
               }}
-              className="mt-4 w-full text-center text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700"
+              className="mt-4 w-full text-center text-xs text-gray-500 dark:text-gray-400 hover:text-fg-muted"
             >
               {ssoMode ? t("useSsoPasswordInstead") : t("useSsoInstead")}
             </button>

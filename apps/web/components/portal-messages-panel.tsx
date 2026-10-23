@@ -54,24 +54,24 @@ export function PortalMessagesPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-8">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
 
       <div className="card flex flex-col">
         <div className="flex max-h-96 min-h-[120px] flex-col gap-3 overflow-y-auto">
           {messages.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noMessages")}</p>
+            <p className="text-sm text-fg-subtle">{t("noMessages")}</p>
           ) : (
             messages.map((m) => (
               <div key={m.id} className={`max-w-[80%] ${m.authorUserId ? "self-end text-right" : "self-start"}`}>
                 <div
                   className={`inline-block rounded-lg px-3 py-2 text-sm ${
-                    m.authorUserId ? "bg-brand-500 text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100"
+                    m.authorUserId ? "bg-brand-500 text-white" : "bg-gray-100 dark:bg-gray-700 text-fg"
                   }`}
                 >
                   {m.content}
                 </div>
-                <div className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
+                <div className="mt-1 text-[11px] text-fg-subtle">
                   {m.authorName} · {formatDateTime(new Date(m.createdAt))}
                 </div>
               </div>

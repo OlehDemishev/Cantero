@@ -135,15 +135,15 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">
         {t("timeEntries")}
       </h2>
       {!entries ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">
+        <p className="text-sm text-fg-subtle">
           {tc("loading")}
         </p>
       ) : entries.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">
+        <p className="text-sm text-fg-subtle">
           {t("noTimeEntries")}
         </p>
       ) : (
@@ -160,7 +160,7 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
                   <td>{entry.task?.name ?? "—"}</td>
                   <td>
                     {entry.withinGeofence === false && (
-                      <span className="rounded-full bg-warning-50 dark:bg-warning-500/15 px-2 py-0.5 text-xs font-medium text-warning-700 dark:text-warning-500">
+                      <span className="rounded-full bg-warning-50 dark:bg-warning-500/15 px-2 py-0.5 text-xs font-medium text-warning-fg">
                         {t("outsideGeofence")}
                       </span>
                     )}
@@ -201,7 +201,7 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
                     <button
                       onClick={() => deleteEntry(entry.id)}
                       disabled={busy}
-                      className="ml-2 text-error-700 dark:text-error-500 hover:underline"
+                      className="ml-2 text-danger-fg hover:underline"
                     >
                       {tc("delete")}
                     </button>

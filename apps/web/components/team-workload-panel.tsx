@@ -69,8 +69,8 @@ export function TeamWorkloadPanel({ currency }: { currency: string }) {
   return (
     <>
       <div className="mb-3 mt-10 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("teamWorkload")}</h2>
-        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+        <h2 className="text-sm font-semibold text-fg-muted">{t("teamWorkload")}</h2>
+        <div className="flex items-center gap-2 text-xs text-fg-subtle">
           <input type="date" className="input w-auto" value={workloadFrom} onChange={(e) => setWorkloadFrom(e.target.value)} />
           <span>–</span>
           <input type="date" className="input w-auto" value={workloadTo} onChange={(e) => setWorkloadTo(e.target.value)} />
@@ -93,13 +93,13 @@ export function TeamWorkloadPanel({ currency }: { currency: string }) {
         </div>
       </div>
       {!workload ? (
-        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        <p className="text-fg-subtle">{tc("loading")}</p>
       ) : workload.byWorker.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noWorkload")}</p>
+        <p className="text-sm text-fg-subtle">{t("noWorkload")}</p>
       ) : (
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
               <th className="py-2">{tc("name")}</th>
               <th>{tt("role")}</th>
               <th className="text-right">{tt("hours")}</th>

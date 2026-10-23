@@ -52,19 +52,19 @@ export function NavItemsSettingsPanel({ canManage }: { canManage: boolean }) {
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-4 text-xs text-fg-subtle">{t("hint")}</p>
 
       <form onSubmit={save} className="flex flex-col gap-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {NAV_GROUPS.map((group) => (
             <div key={group.key}>
-              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-fg-subtle">
                 {tn(`group_${group.key}`)}
               </p>
               <div className="flex flex-col gap-1.5">
                 {group.items.map((item) => (
-                  <label key={item.key} className="flex items-center gap-1.5 text-xs text-gray-700 dark:text-gray-200">
+                  <label key={item.key} className="flex items-center gap-1.5 text-xs text-fg-muted">
                     <input type="checkbox" checked={!hidden.has(item.key)} onChange={() => toggleItem(item.key)} />
                     {tn(item.key)}
                   </label>
@@ -78,7 +78,7 @@ export function NavItemsSettingsPanel({ canManage }: { canManage: boolean }) {
           <button type="submit" disabled={busy} className="btn-secondary self-start">
             {tc("save")}
           </button>
-          {saved && <span className="text-xs text-success-700 dark:text-success-500">{tc("saved")}</span>}
+          {saved && <span className="text-xs text-success-fg">{tc("saved")}</span>}
         </div>
       </form>
     </section>

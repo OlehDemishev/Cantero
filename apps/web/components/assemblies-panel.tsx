@@ -92,12 +92,12 @@ export function AssembliesPanel() {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-4 text-sm text-fg-subtle">{t("hint")}</p>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="card lg:col-span-1">
-          <h3 className="mb-3 text-xs font-semibold text-gray-500 dark:text-gray-400">{t("newAssembly")}</h3>
+          <h3 className="mb-3 text-xs font-semibold text-fg-subtle">{t("newAssembly")}</h3>
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             <input
               required
@@ -120,7 +120,7 @@ export function AssembliesPanel() {
               value={form.unit}
               onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}
             />
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("items")}</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("items")}</p>
             {draftLines.map((line, i) => (
               <div key={i} className="flex items-center gap-2">
                 <select
@@ -145,7 +145,7 @@ export function AssembliesPanel() {
                     setDraftLines((lines) => lines.map((l, idx) => (idx === i ? { ...l, quantityPerUnit: e.target.value } : l)))
                   }
                 />
-                <button type="button" onClick={() => removeDraftLine(i)} className="text-xs text-error-700 dark:text-error-500">
+                <button type="button" onClick={() => removeDraftLine(i)} className="text-xs text-danger-fg">
                   {tc("delete")}
                 </button>
               </div>
@@ -161,9 +161,9 @@ export function AssembliesPanel() {
 
         <div className="lg:col-span-2">
           {!assemblies ? (
-            <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+            <p className="text-fg-subtle">{tc("loading")}</p>
           ) : assemblies.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noAssemblies")}</p>
+            <p className="text-sm text-fg-subtle">{t("noAssemblies")}</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {assemblies.map((a) => (
@@ -171,15 +171,15 @@ export function AssembliesPanel() {
                   <div className="flex items-center justify-between">
                     <div>
                       <span className="font-medium">{a.name}</span>
-                      <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
+                      <span className="ml-2 text-xs text-fg-subtle">
                         {a.code} · {a.unit}
                       </span>
                     </div>
-                    <button onClick={() => remove(a.id)} disabled={busy} className="text-xs text-error-700 dark:text-error-500 hover:underline">
+                    <button onClick={() => remove(a.id)} disabled={busy} className="text-xs text-danger-fg hover:underline">
                       {tc("delete")}
                     </button>
                   </div>
-                  <ul className="mt-2 flex flex-col gap-0.5 text-xs text-gray-500 dark:text-gray-400">
+                  <ul className="mt-2 flex flex-col gap-0.5 text-xs text-fg-subtle">
                     {a.items.map((item, i) => (
                       <li key={i}>
                         {item.quantityPerUnit} × {item.rateCatalogItem.name}

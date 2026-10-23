@@ -69,12 +69,12 @@ export function WarehouseSustainabilitySettings() {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{ts("materialSettings")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{ts("materialSettingsHint")}</p>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{ts("materialSettings")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{ts("materialSettingsHint")}</p>
       <div className="overflow-x-auto">
       <table className="w-full border-collapse text-sm">
         <thead>
-          <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+          <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
             <th className="py-2">{t("material")}</th>
             <th>{ts("carbonFootprint")}</th>
             <th>{ts("greenCertified")}</th>
@@ -119,7 +119,7 @@ export function WarehouseSustainabilitySettings() {
                   <button onClick={() => save(m.id)} disabled={savingId === m.id} className="btn-secondary px-2 py-1 text-xs">
                     {tc("save")}
                   </button>
-                  {savedId === m.id && <span className="ml-2 text-xs text-success-700 dark:text-success-500">{tc("saved")}</span>}
+                  {savedId === m.id && <span className="ml-2 text-xs text-success-fg">{tc("saved")}</span>}
                 </td>
               </tr>
             );

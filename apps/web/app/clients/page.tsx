@@ -199,7 +199,7 @@ export default function ClientsPage() {
                     <span className="font-medium">{r.title}</span>
                     <span className="text-gray-500 dark:text-gray-400"> · {r.client.name}</span>
                   </a>
-                  <span className={`text-xs font-medium ${overdue ? "text-error-600" : "text-gray-500 dark:text-gray-400"}`}>
+                  <span className={`text-xs font-medium ${overdue ? "text-danger-fg" : "text-gray-500 dark:text-gray-400"}`}>
                     {formatDate(new Date(r.dueDate))}
                   </span>
                 </li>

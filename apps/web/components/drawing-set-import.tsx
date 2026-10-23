@@ -192,16 +192,16 @@ export function DrawingSetImport({ projectId, onImported }: { projectId: string;
           <button type="button" onClick={() => fileRef.current?.click()} disabled={busy !== null} className="btn-primary">
             {busy === "upload" ? t("uploading") : t("uploadSet")}
           </button>
-          <span className="text-xs text-gray-500 dark:text-gray-400">{t("uploadHint")}</span>
+          <span className="text-xs text-fg-subtle">{t("uploadHint")}</span>
           {result && <p className="basis-full text-xs text-success-600">{t("imported", result)}</p>}
-          {error && <p className="basis-full text-xs text-error-600">{error}</p>}
+          {error && <p className="basis-full text-xs text-danger-fg">{error}</p>}
         </div>
         {openSets.length > 0 && (
           <ul className="mt-3 flex flex-col gap-1.5" aria-label={t("openSets")}>
             {openSets.map((s) => (
               <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm dark:border-gray-700">
-                <span className="font-medium text-gray-800 dark:text-gray-100">{s.fileName}</span>
-                <span className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                <span className="font-medium text-fg">{s.fileName}</span>
+                <span className="flex items-center gap-3 text-xs text-fg-subtle">
                   <SetStatusLine set={s} />
                   <button type="button" onClick={() => open(s.id)} className="btn-secondary px-2 py-1 text-xs">
                     {s.status === "ready" ? t("review") : t("show")}
@@ -219,7 +219,7 @@ export function DrawingSetImport({ projectId, onImported }: { projectId: string;
     return (
       <section className="mb-5 rounded-lg border border-gray-200 p-3 dark:border-gray-700" aria-live="polite">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{set.fileName}</h3>
+          <h3 className="text-sm font-semibold text-fg-muted">{set.fileName}</h3>
           {set.status === "failed" && (
             <button type="button" onClick={discard} className="btn-secondary">
               {t("discard")}
@@ -234,7 +234,7 @@ export function DrawingSetImport({ projectId, onImported }: { projectId: string;
             <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800" role="progressbar" aria-valuemin={0} aria-valuemax={set.pageCount || 1} aria-valuenow={set.pagesRead}>
               <div className="h-full rounded-full bg-brand-500 transition-[width] duration-500" style={{ width: `${set.pageCount ? Math.round((set.pagesRead / set.pageCount) * 100) : 0}%` }} />
             </div>
-            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t("leaveHint")}</p>
+            <p className="mt-2 text-xs text-fg-subtle">{t("leaveHint")}</p>
           </>
         )}
       </section>
@@ -247,8 +247,8 @@ export function DrawingSetImport({ projectId, onImported }: { projectId: string;
     <section className="mb-5 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
       <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("reviewTitle", { file: set.fileName })}</h3>
-          <p className="text-xs text-gray-500 dark:text-gray-400">{t("reviewSummary", { pages: set.pageCount, recognized })}</p>
+          <h3 className="text-sm font-semibold text-fg-muted">{t("reviewTitle", { file: set.fileName })}</h3>
+          <p className="text-xs text-fg-subtle">{t("reviewSummary", { pages: set.pageCount, recognized })}</p>
         </div>
         <div className="flex gap-2">
           <button type="button" onClick={discard} className="btn-secondary">
@@ -259,15 +259,15 @@ export function DrawingSetImport({ projectId, onImported }: { projectId: string;
           </button>
         </div>
       </div>
-      {error && <p className="mb-2 text-xs text-error-600">{error}</p>}
-      {set.error === "import-failed" && <p className="mb-2 text-xs text-error-600">{t("error_import_failed")}</p>}
+      {error && <p className="mb-2 text-xs text-danger-fg">{error}</p>}
+      {set.error === "import-failed" && <p className="mb-2 text-xs text-danger-fg">{t("error_import_failed")}</p>}
 
       {preview !== null && <PagePreview setId={set.id} page={preview} onClose={() => setPreview(null)} />}
 
       <div className="overflow-x-auto">
         <table className="w-full min-w-[760px] text-sm">
           <thead>
-            <tr className="text-left text-xs text-gray-500 dark:text-gray-400">
+            <tr className="text-left text-xs text-fg-subtle">
               <th className="w-8 py-1" />
               <th className="w-14 py-1 font-medium">{t("page")}</th>
               <th className="py-1 font-medium">{t("sheetNumber")}</th>
@@ -307,11 +307,11 @@ export function DrawingSetImport({ projectId, onImported }: { projectId: string;
                   </td>
                   <td className="py-1.5 text-xs">
                     {issue ? (
-                      <span className="text-error-600">{issue}</span>
+                      <span className="text-danger-fg">{issue}</span>
                     ) : !r.include ? (
-                      <span className="text-gray-400">{p.sheetNumber ? t("skipped") : t("notRecognized")}</span>
+                      <span className="text-fg-subtle">{p.sheetNumber ? t("skipped") : t("notRecognized")}</span>
                     ) : revises ? (
-                      <span className="rounded bg-warning-50 px-1.5 py-0.5 text-warning-700 dark:bg-warning-500/15 dark:text-warning-500">{t("revises", { sheet: revises.sheetNumber, version: revises.version + 1 })}</span>
+                      <span className="rounded bg-warning-50 px-1.5 py-0.5 text-warning-fg dark:bg-warning-500/15">{t("revises", { sheet: revises.sheetNumber, version: revises.version + 1 })}</span>
                     ) : p.fromScan && key(p.sheetNumber ?? "") === key(r.sheetNumber) ? (
                       <span className="rounded bg-gray-100 px-1.5 py-0.5 text-gray-600 dark:bg-gray-800 dark:text-gray-300">{t("fromScan")}</span>
                     ) : p.confidence === "medium" && key(p.sheetNumber ?? "") === key(r.sheetNumber) ? (
@@ -335,7 +335,7 @@ function SetStatusLine({ set }: { set: DrawingSet }) {
   const t = useTranslations("drawingSets");
   if (set.status === "analyzing") return <>{set.pageCount ? t("readingProgress", { done: set.pagesRead, total: set.pageCount }) : t("queued")}</>;
   if (set.status === "importing") return <>{t("importing")}</>;
-  if (set.status === "failed") return <span className="text-error-600">{t(`error_${(set.error ?? "failed").replace(/-/g, "_")}`)}</span>;
+  if (set.status === "failed") return <span className="text-danger-fg">{t(`error_${(set.error ?? "failed").replace(/-/g, "_")}`)}</span>;
   return <>{t("readyForReview", { pages: set.pageCount })}</>;
 }
 
@@ -379,13 +379,13 @@ function PagePreview({ setId, page, onClose }: { setId: string; page: number; on
 
   return (
     <div ref={boxRef} className="mb-3 rounded-md border border-gray-200 bg-gray-50 p-2 dark:border-gray-700 dark:bg-gray-900">
-      <div className="mb-1 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+      <div className="mb-1 flex items-center justify-between text-xs text-fg-subtle">
         <span>{t("previewPage", { n: page })}</span>
         <button type="button" onClick={onClose} className="hover:underline">
           {t("closePreview")}
         </button>
       </div>
-      {!doc && <p className="p-4 text-xs text-gray-500 dark:text-gray-400">{t("loadingPreview")}</p>}
+      {!doc && <p className="p-4 text-xs text-fg-subtle">{t("loadingPreview")}</p>}
       <canvas ref={canvasRef} className="block max-w-full bg-white" />
     </div>
   );

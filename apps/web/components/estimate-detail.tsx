@@ -333,14 +333,14 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
   if (!estimate) {
     return (
       <AuthenticatedShell>
-        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        <p className="text-fg-subtle">{tc("loading")}</p>
       </AuthenticatedShell>
     );
   }
 
   return (
     <AuthenticatedShell>
-      <a href={`/projects/${estimate.project.id}`} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">
+      <a href={`/projects/${estimate.project.id}`} className="text-sm text-fg-subtle hover:underline">
         ← {estimate.project.name}
       </a>
       <div className="mt-2 flex items-center justify-between">
@@ -357,12 +357,12 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
             <span
               className={`rounded-full px-3 py-1 text-xs font-medium ${
                 estimate.clientDecision === "approved"
-                  ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
+                  ? "bg-success-50 dark:bg-success-500/15 text-success-fg"
                   : estimate.clientDecision === "rejected"
-                    ? "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500"
+                    ? "bg-error-50 dark:bg-error-500/15 text-danger-fg"
                     : estimate.clientDecision === "countered"
                       ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400"
-                      : "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500"
+                      : "bg-warning-50 dark:bg-warning-500/15 text-warning-fg"
               }`}
             >
               {t(`clientDecision_${estimate.clientDecision}`)}
@@ -373,7 +373,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
               estimate.status === "approved"
                 ? "bg-green-100 dark:bg-green-500/15 text-green-800 dark:text-green-400"
                 : estimate.status === "pending_approval"
-                  ? "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500"
+                  ? "bg-warning-50 dark:bg-warning-500/15 text-warning-fg"
                   : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
             }`}
           >
@@ -388,16 +388,16 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
       </div>
       {estimate.status === "pending_approval" && me?.company.requiredApprovalCount && (
         <div className="mt-2 rounded-lg border border-warning-200 bg-warning-50 dark:bg-warning-500/15 px-4 py-3">
-          <p className="text-sm text-warning-700 dark:text-warning-500">
+          <p className="text-sm text-warning-fg">
             {t("approvalProgress", { count: estimate.approvals.length, required: me.company.requiredApprovalCount })}
           </p>
-          <p className="mt-1 text-xs text-warning-700 dark:text-warning-500">
+          <p className="mt-1 text-xs text-warning-fg">
             {estimate.approvals.map((a) => a.actorName).join(", ")}
           </p>
         </div>
       )}
       {estimate.clientDecision === "rejected" && estimate.clientDecisionNote && (
-        <p className="mt-2 text-sm text-error-700 dark:text-error-500">
+        <p className="mt-2 text-sm text-danger-fg">
           {t("clientNote")}: {estimate.clientDecisionNote}
         </p>
       )}
@@ -426,7 +426,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
 
       {estimate.status === "draft" && estimate.isStale && (
         <div className="mt-4 flex items-center justify-between rounded-lg border border-warning-200 bg-warning-50 dark:bg-warning-500/15 px-4 py-3">
-          <p className="text-sm text-warning-700 dark:text-warning-500">{t("pricesChanged")}</p>
+          <p className="text-sm text-warning-fg">{t("pricesChanged")}</p>
           <button onClick={recalculate} disabled={busy} className="btn-secondary shrink-0">
             {t("recalculate")}
           </button>
@@ -438,7 +438,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
           <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
                 <th className="py-2">{t("rateItem")}</th>
                 <th>{t("quantity")}</th>
                 <th>{t("materialsCost")}</th>
@@ -473,8 +473,8 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
                           })}
                           className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
                             benchmarks[line.id].deviationPercent > 0
-                              ? "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500"
-                              : "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
+                              ? "bg-warning-50 dark:bg-warning-500/15 text-warning-fg"
+                              : "bg-success-50 dark:bg-success-500/15 text-success-fg"
                           }`}
                         >
                           {benchmarks[line.id].deviationPercent > 0 ? "+" : ""}
@@ -539,9 +539,9 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
 
               {selectedRateItem?.formula && (
                 <div className="flex flex-wrap items-end gap-2 rounded-lg border border-gray-100 dark:border-gray-700 p-3">
-                  <span className="font-mono text-xs text-gray-400 dark:text-gray-500">{selectedRateItem.formula}</span>
+                  <span className="font-mono text-xs text-fg-subtle">{selectedRateItem.formula}</span>
                   {selectedRateItem.formulaParams.map((param) => (
-                    <label key={param} className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+                    <label key={param} className="flex flex-col gap-1 text-xs text-fg-subtle">
                       {param}
                       <input
                         type="number"
@@ -556,11 +556,11 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
                     {t("computeFormula")}
                   </button>
                   {formulaResult.value !== null && (
-                    <span className="text-xs font-medium text-success-700 dark:text-success-500">
+                    <span className="text-xs font-medium text-success-fg">
                       {t("computedQuantity", { value: formulaResult.value, unit: selectedRateItem.unit })}
                     </span>
                   )}
-                  {formulaResult.error && <span className="text-xs text-error-600">{formulaResult.error}</span>}
+                  {formulaResult.error && <span className="text-xs text-danger-fg">{formulaResult.error}</span>}
                 </div>
               )}
             </form>
@@ -572,7 +572,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
 
           {estimate.status === "approved" && (
             <div className="mt-8">
-              <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("materialRequirements")}</h2>
+              <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("materialRequirements")}</h2>
               <div className="overflow-x-auto">
               <table className="w-full border-collapse text-sm">
                 <tbody>
@@ -605,11 +605,11 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
 
               {issueReport && (
                 <div className="mt-4">
-                  <h3 className="mb-2 text-xs font-semibold text-gray-500 dark:text-gray-400">{t("issueReport")}</h3>
+                  <h3 className="mb-2 text-xs font-semibold text-fg-subtle">{t("issueReport")}</h3>
                   <div className="overflow-x-auto">
                   <table className="w-full border-collapse text-sm">
                     <thead>
-                      <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+                      <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
                         <th className="py-1"></th>
                         <th>{t("required")}</th>
                         <th>{t("remainingStock")}</th>
@@ -666,7 +666,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
             )}
             {estimate.status === "pending_approval" &&
               (estimate.approvals.some((a) => a.userId === me?.user.id) ? (
-                <p className="text-xs text-gray-400 dark:text-gray-500">{t("alreadyApprovedByYou")}</p>
+                <p className="text-xs text-fg-subtle">{t("alreadyApprovedByYou")}</p>
               ) : (
                 <button onClick={approve} disabled={busy} className="btn-primary">
                   {t("approveStep")}
@@ -685,12 +685,12 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
             <button onClick={downloadPdf} className="btn-secondary">
               {t("downloadPdf")}
             </button>
-            {estimate.status === "draft" && <p className="text-xs text-gray-400 dark:text-gray-500">{t("approveFirst")}</p>}
+            {estimate.status === "draft" && <p className="text-xs text-fg-subtle">{t("approveFirst")}</p>}
           </div>
 
           {estimate.status === "draft" && (
             <div className="mt-4 border-t border-gray-100 dark:border-gray-700 pt-4">
-              <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{t("coverLetter")}</label>
+              <label className="text-xs font-medium text-fg-subtle">{t("coverLetter")}</label>
               <textarea
                 className="input mt-2 w-full"
                 rows={4}
@@ -712,7 +712,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
 
           {estimate.sentAt && can("estimates.manage") && (
             <div className="mt-4 border-t border-gray-100 dark:border-gray-700 pt-4">
-              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{t("clientLink")}</span>
+              <span className="text-xs font-medium text-fg-subtle">{t("clientLink")}</span>
               <div className="mt-2 flex items-center gap-2">
                 {clientLink && <input readOnly className="input flex-1 text-xs" value={clientLink} />}
                 <button onClick={copyLink} className="btn-secondary shrink-0 px-3 py-1 text-xs">
@@ -720,7 +720,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
                 </button>
               </div>
               {emailSentTo !== undefined && (
-                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                <p className="mt-2 text-xs text-fg-subtle">
                   {emailSentTo ? tc("emailedTo", { email: emailSentTo }) : tc("noClientEmail")}
                 </p>
               )}
@@ -728,7 +728,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
           )}
 
           <form onSubmit={saveAsTemplate} className="mt-6 flex flex-col gap-2 border-t border-gray-100 dark:border-gray-700 pt-4">
-            <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{t("saveAsTemplate")}</span>
+            <span className="text-xs font-medium text-fg-subtle">{t("saveAsTemplate")}</span>
             <input
               required
               placeholder={t("templateName")}
@@ -742,7 +742,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
             <button type="submit" disabled={busy} className="btn-secondary">
               {t("saveAsTemplate")}
             </button>
-            {templateSaved && <p className="text-xs text-success-700 dark:text-success-500">{tc("saved")}</p>}
+            {templateSaved && <p className="text-xs text-success-fg">{tc("saved")}</p>}
           </form>
         </div>
       </div>
@@ -753,7 +753,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
 function Row({ label, value, emphasize }: { label: string; value: string; emphasize?: boolean }) {
   return (
     <div className={`flex justify-between ${emphasize ? "border-t border-gray-200 dark:border-gray-700 pt-2 font-semibold" : ""}`}>
-      <dt className="text-gray-500 dark:text-gray-400">{label}</dt>
+      <dt className="text-fg-subtle">{label}</dt>
       <dd>{value}</dd>
     </div>
   );

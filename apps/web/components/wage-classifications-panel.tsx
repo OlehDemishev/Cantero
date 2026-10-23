@@ -86,24 +86,24 @@ export function WageClassificationsPanel() {
 
   return (
     <section className="card">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-4 text-xs text-fg-subtle">{t("hint")}</p>
 
       {!classifications ? (
-        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        <p className="text-fg-subtle">{tc("loading")}</p>
       ) : classifications.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noClassifications")}</p>
+        <p className="text-sm text-fg-subtle">{t("noClassifications")}</p>
       ) : (
         <ul className="mb-4 flex flex-col gap-1.5">
           {classifications.map((wc) => (
             <li key={wc.id} className="border-b border-gray-50 pb-1.5 text-sm last:border-0 dark:border-gray-800">
               <div className="flex items-center justify-between">
-                <button onClick={() => setExpandedId(expandedId === wc.id ? null : wc.id)} className="text-left text-gray-700 hover:underline dark:text-gray-300">
+                <button onClick={() => setExpandedId(expandedId === wc.id ? null : wc.id)} className="text-left text-fg-muted hover:underline">
                   {wc.trade} — {Number(wc.hourlyRate).toFixed(2)}/{tc("hour")}
-                  {Number(wc.fringeRate) > 0 && <span className="text-gray-400 dark:text-gray-500"> + {Number(wc.fringeRate).toFixed(2)} {t("fringeAbbr")}</span>}
+                  {Number(wc.fringeRate) > 0 && <span className="text-fg-subtle"> + {Number(wc.fringeRate).toFixed(2)} {t("fringeAbbr")}</span>}
                   {wc.apprenticeRatio && <span className="ml-1.5 rounded-full bg-brand-50 dark:bg-brand-500/15 px-1.5 py-0.5 text-xs text-brand-700 dark:text-brand-400">{t("ratioAbbr", { ratio: wc.apprenticeRatio })}</span>}
                 </button>
-                <button onClick={() => remove(wc.id)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
+                <button onClick={() => remove(wc.id)} className="text-fg-subtle hover:text-danger-fg">
                   ×
                 </button>
               </div>
@@ -113,11 +113,11 @@ export function WageClassificationsPanel() {
                   {wc.fringeBenefitFunds.length > 0 && (
                     <ul className="flex flex-col gap-1">
                       {wc.fringeBenefitFunds.map((fund) => (
-                        <li key={fund.id} className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                        <li key={fund.id} className="flex items-center justify-between text-xs text-fg-subtle">
                           <span>
                             {t(`fundType_${fund.fundType}`)}: {fund.name} — {Number(fund.ratePerHour).toFixed(2)}/{tc("hour")}
                           </span>
-                          <button onClick={() => removeFund(fund.id)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
+                          <button onClick={() => removeFund(fund.id)} className="text-fg-subtle hover:text-danger-fg">
                             ×
                           </button>
                         </li>
@@ -195,7 +195,7 @@ export function WageClassificationsPanel() {
           {tc("create")}
         </button>
       </form>
-      {error && <p className="mt-2 text-xs text-error-600">{error}</p>}
+      {error && <p className="mt-2 text-xs text-danger-fg">{error}</p>}
     </section>
   );
 }

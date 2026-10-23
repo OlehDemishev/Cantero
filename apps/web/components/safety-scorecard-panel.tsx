@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { chartColors, chartAxisProps, chartGridProps, chartTooltipProps } from "@/components/charts/chart-theme";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
 import { resetStateInEffect } from "@/lib/effect-reset";
@@ -90,7 +91,7 @@ export function SafetyScorecardPanel() {
   return (
     <div className="mt-10">
       <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("safetyScorecard")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("safetyScorecard")}</h2>
         <div className="flex items-center gap-2">
           <select className="input w-auto py-1 text-xs" value={year} onChange={(e) => setYear(Number(e.target.value))}>
             {Array.from({ length: 5 }, (_, i) => CURRENT_YEAR - i).map((y) => (
@@ -104,40 +105,40 @@ export function SafetyScorecardPanel() {
           </button>
         </div>
       </div>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("safetyScorecardHint")}</p>
+      <p className="mb-3 text-xs text-fg-subtle">{t("safetyScorecardHint")}</p>
 
       {!scorecard ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">…</p>
+        <p className="text-sm text-fg-subtle">…</p>
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div className="card">
-              <div className="text-xs text-gray-500 dark:text-gray-400">{t("companyTrir")}</div>
-              <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-50">{scorecard.companyTrir ?? "—"}</div>
+              <div className="text-xs text-fg-subtle">{t("companyTrir")}</div>
+              <div className="mt-1 text-lg font-semibold text-fg">{scorecard.companyTrir ?? "—"}</div>
             </div>
             <div className="card">
-              <div className="text-xs text-gray-500 dark:text-gray-400">{t("totalIncidents")}</div>
-              <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-50">{scorecard.totalIncidents}</div>
+              <div className="text-xs text-fg-subtle">{t("totalIncidents")}</div>
+              <div className="mt-1 text-lg font-semibold text-fg">{scorecard.totalIncidents}</div>
             </div>
             <div className="card">
-              <div className="text-xs text-gray-500 dark:text-gray-400">{t("recordableCases")}</div>
-              <div className="mt-1 text-lg font-semibold text-warning-700 dark:text-warning-500">{scorecard.recordableCount}</div>
+              <div className="text-xs text-fg-subtle">{t("recordableCases")}</div>
+              <div className="mt-1 text-lg font-semibold text-warning-fg">{scorecard.recordableCount}</div>
             </div>
             <div className="card">
-              <div className="text-xs text-gray-500 dark:text-gray-400">{t("totalHoursWorked")}</div>
-              <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-50">{scorecard.totalHours}</div>
+              <div className="text-xs text-fg-subtle">{t("totalHoursWorked")}</div>
+              <div className="mt-1 text-lg font-semibold text-fg">{scorecard.totalHours}</div>
             </div>
           </div>
 
           <div className="card mt-4 h-56 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={scorecard.monthlyTrend}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-gray-200, #e5e7eb)" />
-                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Bar dataKey="totalIncidents" name={t("totalIncidents")} fill="#f59e0b" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="recordableCount" name={t("recordableCases")} fill="#e7000b" radius={[4, 4, 0, 0]} />
+                <CartesianGrid {...chartGridProps} />
+                <XAxis dataKey="month" {...chartAxisProps} />
+                <YAxis allowDecimals={false} {...chartAxisProps} />
+                <Tooltip {...chartTooltipProps} />
+                <Bar dataKey="totalIncidents" name={t("totalIncidents")} fill={chartColors.warning} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="recordableCount" name={t("recordableCases")} fill={chartColors.danger} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -146,7 +147,7 @@ export function SafetyScorecardPanel() {
             <div className="overflow-x-auto">
             <table className="mt-4 w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
                   <th className="py-2">{t("project")}</th>
                   <th className="text-right">{t("totalIncidents")}</th>
                   <th className="text-right">{t("recordableCases")}</th>
@@ -173,20 +174,20 @@ export function SafetyScorecardPanel() {
 
       {nearMiss && (
         <div className="mt-8">
-          <h3 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("nearMissAnalytics")}</h3>
-          <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("nearMissAnalyticsHint")}</p>
+          <h3 className="mb-1 text-sm font-semibold text-fg-muted">{t("nearMissAnalytics")}</h3>
+          <p className="mb-3 text-xs text-fg-subtle">{t("nearMissAnalyticsHint")}</p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <div className="card">
-              <div className="text-xs text-gray-500 dark:text-gray-400">{t("totalNearMiss")}</div>
-              <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-50">{nearMiss.totalNearMiss}</div>
+              <div className="text-xs text-fg-subtle">{t("totalNearMiss")}</div>
+              <div className="mt-1 text-lg font-semibold text-fg">{nearMiss.totalNearMiss}</div>
             </div>
             <div className="card">
-              <div className="text-xs text-gray-500 dark:text-gray-400">{t("recordableCases")}</div>
-              <div className="mt-1 text-lg font-semibold text-warning-700 dark:text-warning-500">{nearMiss.totalRecordable}</div>
+              <div className="text-xs text-fg-subtle">{t("recordableCases")}</div>
+              <div className="mt-1 text-lg font-semibold text-warning-fg">{nearMiss.totalRecordable}</div>
             </div>
             <div className="card">
-              <div className="text-xs text-gray-500 dark:text-gray-400">{t("nearMissRatio")}</div>
-              <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-50">{nearMiss.ratio ?? "—"}</div>
+              <div className="text-xs text-fg-subtle">{t("nearMissRatio")}</div>
+              <div className="mt-1 text-lg font-semibold text-fg">{nearMiss.ratio ?? "—"}</div>
             </div>
           </div>
 
@@ -194,7 +195,7 @@ export function SafetyScorecardPanel() {
             <div className="overflow-x-auto">
             <table className="mt-4 w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
                   <th className="py-2">{t("project")}</th>
                   <th className="text-right">{t("totalNearMiss")}</th>
                   <th className="text-right">{t("recordableCases")}</th>
@@ -219,24 +220,24 @@ export function SafetyScorecardPanel() {
 
       {training && (
         <div className="mt-8">
-          <h3 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("trainingCompliance")}</h3>
-          <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("trainingComplianceHint", { days: training.lookbackDays })}</p>
+          <h3 className="mb-1 text-sm font-semibold text-fg-muted">{t("trainingCompliance")}</h3>
+          <p className="mb-3 text-xs text-fg-subtle">{t("trainingComplianceHint", { days: training.lookbackDays })}</p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <div className="card">
-              <div className="text-xs text-gray-500 dark:text-gray-400">{t("completionRate")}</div>
-              <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-50">
+              <div className="text-xs text-fg-subtle">{t("completionRate")}</div>
+              <div className="mt-1 text-lg font-semibold text-fg">
                 {training.completionRate !== null ? `${training.completionRate}%` : "—"}
               </div>
             </div>
             <div className="card">
-              <div className="text-xs text-gray-500 dark:text-gray-400">{t("compliantWorkers")}</div>
-              <div className="mt-1 text-lg font-semibold text-success-700 dark:text-success-500">
+              <div className="text-xs text-fg-subtle">{t("compliantWorkers")}</div>
+              <div className="mt-1 text-lg font-semibold text-success-fg">
                 {training.compliantCount} / {training.totalActiveWorkers}
               </div>
             </div>
             <div className="card">
-              <div className="text-xs text-gray-500 dark:text-gray-400">{t("overdueWorkers")}</div>
-              <div className="mt-1 text-lg font-semibold text-warning-700 dark:text-warning-500">{training.overdueWorkers.length}</div>
+              <div className="text-xs text-fg-subtle">{t("overdueWorkers")}</div>
+              <div className="mt-1 text-lg font-semibold text-warning-fg">{training.overdueWorkers.length}</div>
             </div>
           </div>
 
@@ -244,7 +245,7 @@ export function SafetyScorecardPanel() {
             <div className="overflow-x-auto">
             <table className="mt-4 w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
                   <th className="py-2">{t("worker")}</th>
                   <th className="text-right">{t("lastTrainingAt")}</th>
                 </tr>
@@ -253,7 +254,7 @@ export function SafetyScorecardPanel() {
                 {training.overdueWorkers.map((w) => (
                   <tr key={w.workerId} className="border-b border-gray-100 dark:border-gray-700">
                     <td className="py-2">{w.workerName}</td>
-                    <td className="text-right text-warning-700 dark:text-warning-500">
+                    <td className="text-right text-warning-fg">
                       {w.lastTrainingAt ? formatDate(new Date(w.lastTrainingAt)) : t("neverTrained")}
                     </td>
                   </tr>

@@ -47,7 +47,7 @@ export function LeadForm({ token }: { token: string }) {
   if (info === undefined) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
-        <p className="text-sm text-gray-500 dark:text-gray-400">{t("loading")}</p>
+        <p className="text-sm text-fg-subtle">{t("loading")}</p>
       </main>
     );
   }
@@ -55,7 +55,7 @@ export function LeadForm({ token }: { token: string }) {
   if (info === null) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
-        <p className="max-w-sm text-center text-sm text-gray-500 dark:text-gray-400">{t("formNotFound")}</p>
+        <p className="max-w-sm text-center text-sm text-fg-subtle">{t("formNotFound")}</p>
       </main>
     );
   }
@@ -67,7 +67,7 @@ export function LeadForm({ token }: { token: string }) {
           // eslint-disable-next-line @next/next/no-img-element
           <img src={`${API_URL}/public/leads/${token}/logo`} alt={info.companyName} className="mb-4 h-14 w-auto" />
         )}
-        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-50" style={info.brandColor ? { color: info.brandColor } : undefined}>
+        <h1 className="text-2xl font-semibold text-fg" style={info.brandColor ? { color: info.brandColor } : undefined}>
           {info.companyName}
         </h1>
 
@@ -94,11 +94,11 @@ export function LeadForm({ token }: { token: string }) {
 
       <div className="mx-auto mt-8 w-full max-w-sm">
         <div className="card">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-50">{t("formTitle", { company: info.companyName })}</h2>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("formHint")}</p>
+          <h2 className="text-xl font-semibold text-fg">{t("formTitle", { company: info.companyName })}</h2>
+          <p className="mt-1 text-sm text-fg-subtle">{t("formHint")}</p>
 
           {submitted ? (
-            <p className="mt-4 rounded-lg border border-success-200 bg-success-50 dark:bg-success-500/15 px-4 py-3 text-sm text-success-700 dark:text-success-500">
+            <p className="mt-4 rounded-lg border border-success-200 bg-success-50 dark:bg-success-500/15 px-4 py-3 text-sm text-success-fg">
               {t("thankYou")}
             </p>
           ) : (
@@ -139,7 +139,7 @@ export function LeadForm({ token }: { token: string }) {
                 value={form.honeypot}
                 onChange={(e) => setForm((f) => ({ ...f, honeypot: e.target.value }))}
               />
-              {error && <p className="text-xs text-error-600">{error}</p>}
+              {error && <p className="text-xs text-danger-fg">{error}</p>}
               <button type="submit" disabled={busy} className="btn-primary">
                 {t("submit")}
               </button>

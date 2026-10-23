@@ -61,14 +61,14 @@ export function SlaPoliciesPanel() {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("slaPoliciesTitle")}</h2>
-      <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">{t("slaPoliciesHint")}</p>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("slaPoliciesTitle")}</h2>
+      <p className="mb-4 text-sm text-fg-subtle">{t("slaPoliciesHint")}</p>
 
       <div className="flex flex-col gap-2 max-w-lg">
         {TICKET_PRIORITIES.map((priority) => (
           <div key={priority} className="card flex flex-wrap items-end gap-2">
-            <span className="w-20 text-sm font-medium text-gray-700 dark:text-gray-200">{t(`priority_${priority}`)}</span>
-            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+            <span className="w-20 text-sm font-medium text-fg-muted">{t(`priority_${priority}`)}</span>
+            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
               {t("responseMinutes")}
               <input
                 type="number"
@@ -78,7 +78,7 @@ export function SlaPoliciesPanel() {
                 onChange={(e) => setForms((f) => ({ ...f, [priority]: { ...f[priority], responseMinutes: e.target.value } }))}
               />
             </label>
-            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
               {t("resolutionMinutes")}
               <input
                 type="number"

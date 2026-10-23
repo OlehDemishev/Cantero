@@ -95,9 +95,9 @@ export function StockKits() {
 
   return (
     <div>
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("newKit")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("newKit")}</h2>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3 max-w-lg">
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
           {t("kitItem")}
           <select
             className="input"
@@ -119,7 +119,7 @@ export function StockKits() {
           onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
         />
 
-        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("components")}</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("components")}</p>
         {components.map((c, i) => (
           <div key={i} className="flex items-center gap-2">
             <select
@@ -147,7 +147,7 @@ export function StockKits() {
             <button
               type="button"
               onClick={() => setComponents((cs) => cs.filter((_, idx) => idx !== i))}
-              className="text-xs text-error-700 dark:text-error-500"
+              className="text-xs text-danger-fg"
             >
               {tc("delete")}
             </button>
@@ -160,13 +160,13 @@ export function StockKits() {
           {tc("create")}
         </button>
       </form>
-      {error && <p className="mt-2 text-xs text-error-600">{error}</p>}
+      {error && <p className="mt-2 text-xs text-danger-fg">{error}</p>}
 
       <div className="mt-8">
         {!kits ? (
-          <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+          <p className="text-fg-subtle">{tc("loading")}</p>
         ) : kits.length === 0 ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500">{t("noKits")}</p>
+          <p className="text-sm text-fg-subtle">{t("noKits")}</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {kits.map((k) => (
@@ -174,15 +174,15 @@ export function StockKits() {
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="font-medium">{k.name}</span>
-                    <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
+                    <span className="ml-2 text-xs text-fg-subtle">
                       → {k.kitMaterialCatalogItem.name} ({k.kitMaterialCatalogItem.code})
                     </span>
                   </div>
-                  <button onClick={() => remove(k.id)} disabled={busy} className="text-xs text-error-700 dark:text-error-500 hover:underline">
+                  <button onClick={() => remove(k.id)} disabled={busy} className="text-xs text-danger-fg hover:underline">
                     {tc("delete")}
                   </button>
                 </div>
-                <ul className="mt-2 flex flex-col gap-0.5 text-xs text-gray-500 dark:text-gray-400">
+                <ul className="mt-2 flex flex-col gap-0.5 text-xs text-fg-subtle">
                   {k.components.map((c, i) => (
                     <li key={i}>
                       {c.quantityPerKit} × {c.materialCatalogItem.name}

@@ -105,19 +105,19 @@ export function MaterialPricesPanel() {
 
   return (
     <div className="mt-8">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("title")}</h2>
 
       {changes && changes.length > 0 && (
         <div className="card mb-4">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("recentChanges")}</h3>
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("recentChanges")}</h3>
           <ul className="flex flex-col gap-2">
             {changes.map((c) => {
               const pct = Number(c.changePercent);
               return (
                 <li key={c.id} className="text-sm">
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-900 dark:text-gray-50">{c.materialCatalogItem.name}</span>
-                    <span className={`text-xs font-medium ${pct > 0 ? "text-error-700 dark:text-error-500" : "text-success-700 dark:text-success-500"}`}>
+                    <span className="text-fg">{c.materialCatalogItem.name}</span>
+                    <span className={`text-xs font-medium ${pct > 0 ? "text-danger-fg" : "text-success-fg"}`}>
                       {pct > 0 ? "+" : ""}
                       {pct}% ({c.oldPrice} → {c.newPrice} {currency})
                     </span>
@@ -128,9 +128,9 @@ export function MaterialPricesPanel() {
                   {affectedFor === c.materialCatalogItem.id && (
                     <div className="mt-1 rounded-lg bg-gray-50 dark:bg-gray-700 p-2">
                       {!affected ? (
-                        <p className="text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+                        <p className="text-xs text-fg-subtle">{tc("loading")}</p>
                       ) : affected.length === 0 ? (
-                        <p className="text-xs text-gray-400 dark:text-gray-500">{t("noAffectedEstimates")}</p>
+                        <p className="text-xs text-fg-subtle">{t("noAffectedEstimates")}</p>
                       ) : (
                         <ul className="flex flex-col gap-1">
                           {affected.map((e) => (
@@ -138,7 +138,7 @@ export function MaterialPricesPanel() {
                               <a href={`/estimates/${e.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
                                 {e.name}
                               </a>
-                              {e.project && <span className="text-gray-400 dark:text-gray-500"> — {e.project.name}</span>}
+                              {e.project && <span className="text-fg-subtle"> — {e.project.name}</span>}
                             </li>
                           ))}
                         </ul>
@@ -156,7 +156,7 @@ export function MaterialPricesPanel() {
         <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
               <th className="py-1.5">{t("code")}</th>
               <th>{tc("name")}</th>
               <th>{t("unit")}</th>
@@ -169,9 +169,9 @@ export function MaterialPricesPanel() {
           <tbody>
             {materials.map((m) => (
               <tr key={m.id} className="border-b border-gray-100 dark:border-gray-700">
-                <td className="py-1.5 text-xs text-gray-500 dark:text-gray-400">{m.code}</td>
+                <td className="py-1.5 text-xs text-fg-subtle">{m.code}</td>
                 <td>{m.name}</td>
-                <td className="text-xs text-gray-500 dark:text-gray-400">{m.unit}</td>
+                <td className="text-xs text-fg-subtle">{m.unit}</td>
                 <td>
                   {editingId === m.id ? (
                     <form onSubmit={(e) => savePrice(m.id, e)} className="flex items-center gap-1">
@@ -187,7 +187,7 @@ export function MaterialPricesPanel() {
                       <button type="submit" disabled={busy} className="btn-secondary px-2 py-0.5 text-xs">
                         {tc("save")}
                       </button>
-                      <button type="button" onClick={() => setEditingId(null)} className="text-xs text-gray-400 dark:text-gray-500">
+                      <button type="button" onClick={() => setEditingId(null)} className="text-xs text-fg-subtle">
                         {tc("cancel")}
                       </button>
                     </form>
@@ -220,12 +220,12 @@ export function MaterialPricesPanel() {
                       <button type="submit" disabled={busy} className="btn-secondary px-2 py-0.5 text-xs">
                         {tc("save")}
                       </button>
-                      <button type="button" onClick={() => setEditingStandardCostId(null)} className="text-xs text-gray-400 dark:text-gray-500">
+                      <button type="button" onClick={() => setEditingStandardCostId(null)} className="text-xs text-fg-subtle">
                         {tc("cancel")}
                       </button>
                     </form>
                   ) : (
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                    <span className="text-xs text-fg-subtle">
                       {m.standardCost != null ? `${m.standardCost} ${currency}` : t("noStandardCostSet")}
                     </span>
                   )}

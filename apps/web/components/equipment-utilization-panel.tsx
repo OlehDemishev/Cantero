@@ -25,13 +25,13 @@ export function EquipmentUtilizationPanel() {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("description")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{t("description")}</p>
       <div className="card">
         <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
               <th className="py-1.5">{t("equipment")}</th>
               <th>{t("category")}</th>
               <th>{t("hoursInUse")}</th>
@@ -42,7 +42,7 @@ export function EquipmentUtilizationPanel() {
             {entries.map((e) => (
               <tr key={e.id} className="border-b border-gray-100 dark:border-gray-700">
                 <td className="py-1.5">{e.name}</td>
-                <td className="text-xs text-gray-500 dark:text-gray-400">{e.category}</td>
+                <td className="text-xs text-fg-subtle">{e.category}</td>
                 <td>{e.hoursInUse}</td>
                 <td>
                   <div className="flex items-center gap-2">
@@ -54,7 +54,7 @@ export function EquipmentUtilizationPanel() {
                         style={{ width: `${Math.min(100, e.utilizationPercent)}%` }}
                       />
                     </div>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">{e.utilizationPercent}%</span>
+                    <span className="text-xs text-fg-subtle">{e.utilizationPercent}%</span>
                   </div>
                 </td>
               </tr>

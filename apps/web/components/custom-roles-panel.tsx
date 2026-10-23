@@ -68,28 +68,28 @@ export function CustomRolesPanel({ isManager }: { isManager: boolean }) {
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("customRoles")}</h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("customRolesHint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("customRoles")}</h2>
+      <p className="mb-4 text-xs text-fg-subtle">{t("customRolesHint")}</p>
 
       {!customRoles || customRoles.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noCustomRoles")}</p>
+        <p className="text-sm text-fg-subtle">{t("noCustomRoles")}</p>
       ) : (
         <ul className="mb-3 flex flex-col gap-2">
           {customRoles.map((cr) => (
             <li key={cr.id} className="flex items-center justify-between rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2">
               <span className="text-sm">
-                <span className="font-medium text-gray-800 dark:text-gray-100">{cr.name}</span>{" "}
-                <span className="text-xs text-gray-500 dark:text-gray-400">
+                <span className="font-medium text-fg">{cr.name}</span>{" "}
+                <span className="text-xs text-fg-subtle">
                   ({[...cr.basePermissions.map((p) => t(p)), ...(cr.extraPermissions ?? []).map((p) => tp(`p_${p.replace(/\./g, "_")}`))].join(" + ")})
                 </span>
                 {cr._count.memberships > 0 && (
-                  <span className="ml-1.5 text-xs text-gray-400 dark:text-gray-500">
+                  <span className="ml-1.5 text-xs text-fg-subtle">
                     {t("assignedToCount", { count: cr._count.memberships })}
                   </span>
                 )}
               </span>
               {isManager && (mayTouchAdmin || !cr.basePermissions.includes("admin")) && (
-                <button onClick={() => deleteCustomRole(cr.id)} className="text-xs text-gray-400 dark:text-gray-500 hover:text-error-600">
+                <button onClick={() => deleteCustomRole(cr.id)} className="text-xs text-fg-subtle hover:text-danger-fg">
                   {tc("delete")}
                 </button>
               )}

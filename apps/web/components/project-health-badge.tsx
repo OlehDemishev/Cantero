@@ -12,9 +12,9 @@ interface Health {
 }
 
 const bandClass: Record<Band, string> = {
-  good: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
+  good: "bg-success-50 dark:bg-success-500/15 text-success-fg",
   watch: "bg-amber-50 text-amber-700",
-  at_risk: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
+  at_risk: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
 };
 
 export function ProjectHealthBadge({ projectId }: { projectId: string }) {

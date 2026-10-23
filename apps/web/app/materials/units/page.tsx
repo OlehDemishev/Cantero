@@ -124,7 +124,7 @@ export default function UnitsOfMeasurePage() {
           {t("newUnit")}
         </button>
       </form>
-      {error && <p className="mt-2 text-xs text-error-600">{error}</p>}
+      {error && <p className="mt-2 text-xs text-danger-fg">{error}</p>}
 
       <div className="mt-6 overflow-x-auto">
         {!units ? (
@@ -152,7 +152,7 @@ export default function UnitsOfMeasurePage() {
                   <td className="text-right">
                     <button
                       onClick={() => handleDelete(u.id)}
-                      className="text-xs text-gray-400 dark:text-gray-500 hover:text-error-600"
+                      className="text-xs text-gray-400 dark:text-gray-500 hover:text-danger-fg"
                     >
                       {tc("delete")}
                     </button>
