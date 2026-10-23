@@ -86,3 +86,13 @@ calendar feeds; portal magic-link verify fires twice in dev StrictMode (L5); foc
 areas have no own name; canvas/Gantt dragging is mouse-only; existing buttons still use .btn-*
 classes rather than <Button>; ~25 label patterns not moved to Field; "pcs" unit in starter data.
 Local-only: apps/api/.env has EXPO_ACCESS_TOKEN="" which fails one push.service spec locally.
+
+## 2026-10-23 — E2E fixes for PR #4 (drawing-set upload hang, SSO one-time-code test)
+
+`TimeTrackingPanel` defaulted the not-yet-loaded workers to a new `[]` each render, so the effect
+keeping the worker pick re-ran and re-set the form forever until /workers answered; a file chosen
+in that window (Documents tab) made the loop synchronous and froze the page. Now a stable
+`NO_WORKERS` plus a guard against re-setting the same pick. The sso-saml "one-time code" test now
+reads the code from the ACS redirect (`route.fetch({ maxRedirects: 0 })`): Playwright never routes
+redirect hops, so its route on /sso/callback never matched. Local e2e: both specs pass; full suite
+29 passed, 1 skipped (gobd-anchor), semantic-search fails only locally (model download blocked).

@@ -76,7 +76,7 @@ function spIssuer() {
 }
 
 /** Starts SSO from the real login page and answers the IdP redirect with `respond`'s SAMLResponse. */
-async function signInViaIdp(page: Page, email: string, respond: (email: string) => string) {
+async function signInViaIdp(page: Page, email: string, respond: (email: string) => string, until: RegExp = /\/sso\/callback|\/dashboard/) {
   let samlRequestSeen = false;
   await page.route(`${idp.entryPoint}**`, async (route) => {
     const params = new URL(route.request().url()).searchParams;
@@ -87,7 +87,7 @@ async function signInViaIdp(page: Page, email: string, respond: (email: string) 
   await page.getByRole("button", { name: "Sign in with company SSO instead" }).click();
   await page.locator('input[type="email"]').fill(email);
   await page.getByRole("button", { name: "Continue", exact: true }).click();
-  await page.waitForURL(/\/sso\/callback|\/dashboard/);
+  await page.waitForURL(until);
   expect(samlRequestSeen).toBe(true);
 }
 
@@ -106,13 +106,21 @@ test("a new employee signs in through the company IdP and is provisioned as a wo
 
 test("the one-time code from the callback is useless outside the tab that started the sign-in", async ({ page, browser }) => {
   const email = `link.${Date.now()}@${SSO_DOMAIN}`;
-  // Stop at the callback before the page redeems the code, as if the URL had been copied out.
+  // Stop before the browser follows the ACS redirect to the callback, so the page never redeems the
+  // code — as if the URL had been copied out. Held at the ACS answer itself: Playwright doesn't
+  // route the hops of a redirect, so a route on /sso/callback would never see this navigation.
   let code: string | null = null;
-  await page.route((url) => url.pathname === "/sso/callback" && url.searchParams.has("code"), async (route) => {
-    code = new URL(route.request().url()).searchParams.get("code");
+  await page.route(acsUrl(), async (route) => {
+    const res = await route.fetch({ maxRedirects: 0 });
+    code = new URL(res.headers()["location"] ?? "", "http://x").searchParams.get("code");
     await route.fulfill({ contentType: "text/html", body: "<!doctype html><title>held</title>" });
   });
-  await signInViaIdp(page, email, (e) => signedSamlResponse(idp, { email: e, displayName: "Link", spIssuer: spIssuer(), acsUrl: acsUrl() }));
+  await signInViaIdp(
+    page,
+    email,
+    (e) => signedSamlResponse(idp, { email: e, displayName: "Link", spIssuer: spIssuer(), acsUrl: acsUrl() }),
+    /\/auth\/sso\/acs\//,
+  );
   expect(code).toBeTruthy();
 
   // The same callback link opened in another browser (another person's, say) has no nonce to match.

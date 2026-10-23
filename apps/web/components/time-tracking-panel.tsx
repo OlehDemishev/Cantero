@@ -30,6 +30,10 @@ interface TimeEntry {
   withinGeofence: boolean | null;
 }
 
+/** Stands in for the workers list until it loads — one array, not a new `[]` each render, so the
+ * crew choices derived from it (and the effect that keeps the pick on one of them) stay put. */
+const NO_WORKERS: Worker[] = [];
+
 export function TimeTrackingPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("team");
   const confirm = useConfirm();
@@ -39,7 +43,7 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
   const TIME_ENTRIES_PAGE_SIZE = 100;
   const [entries, setEntries] = useState<TimeEntry[] | null>(null);
   const [entriesError, setEntriesError] = useState<Error | null>(null);
-  const { data: workers = [] } = useApi<Worker[]>("/workers");
+  const { data: workers = NO_WORKERS } = useApi<Worker[]>("/workers");
   const { data: tasks = [] } = useApi<Task[]>(`/tasks?projectId=${projectId}`);
   const [form, setForm] = useState({
     workerId: "",
@@ -85,7 +89,9 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
   const { crew, choices, initialId } = useCrewChoices(workers, "time");
   // Keep the pick on a worker this member may record for (their own record unless they run the crew).
   useEffect(() => {
-    if (choices.some((w) => w.id === form.workerId)) return;
+    // Already on the pick (or on "" while there is nothing to pick): setting it again would only
+    // re-render, and with a fresh `choices` re-run this effect — a loop that never yields.
+    if (form.workerId === initialId || choices.some((w) => w.id === form.workerId)) return;
     resetStateInEffect(() => setForm((f) => ({ ...f, workerId: initialId })));
   }, [choices, initialId, form.workerId]);
 
