@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface CostSummary {
   activeEnrollmentCount: number;
@@ -35,13 +36,13 @@ export function BenefitsCostSummaryPanel() {
         <div>
           <div className="text-xs text-fg-subtle">{t("totalEmployerCost")}</div>
           <div className="mt-1 text-lg font-semibold text-fg">
-            {summary.totalMonthlyEmployerCost} {currency}
+            {formatCurrency(summary.totalMonthlyEmployerCost, currency)}
           </div>
         </div>
         <div>
           <div className="text-xs text-fg-subtle">{t("totalEmployeeCost")}</div>
           <div className="mt-1 text-lg font-semibold text-fg">
-            {summary.totalMonthlyEmployeeCost} {currency}
+            {formatCurrency(summary.totalMonthlyEmployeeCost, currency)}
           </div>
         </div>
       </div>

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface CostImpactRow {
   type: "rfi" | "punch_list";
@@ -53,7 +54,7 @@ export function CostImpactSummaryPanel({ projectId }: { projectId: string }) {
                 <td className="py-1.5 text-xs uppercase tracking-wide text-fg-subtle">{t(row.type)}</td>
                 <td>{row.label}</td>
                 <td className="text-right tabular-nums">
-                  {row.bestAmount} {currency}
+                  {formatCurrency(row.bestAmount, currency)}
                 </td>
                 <td className="text-right">
                   {row.confirmedAmount !== null ? (
@@ -71,10 +72,10 @@ export function CostImpactSummaryPanel({ projectId }: { projectId: string }) {
                 {t("total")}
               </td>
               <td className="pt-2 text-right">
-                {t("estimated")}: {summary.totalEstimated} {currency}
+                {t("estimated")}: {formatCurrency(summary.totalEstimated, currency)}
               </td>
               <td className="pt-2 text-right">
-                {t("confirmed")}: {summary.totalConfirmed} {currency}
+                {t("confirmed")}: {formatCurrency(summary.totalConfirmed, currency)}
               </td>
             </tr>
           </tfoot>

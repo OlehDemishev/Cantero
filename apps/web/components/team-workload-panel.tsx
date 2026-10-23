@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useCan } from "@/lib/permissions";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface WorkloadRow {
   workerId: string;
@@ -117,7 +118,7 @@ export function TeamWorkloadPanel({ currency }: { currency: string }) {
                 <td>{w.role ?? "—"}</td>
                 <td className="text-right">{w.hours}h</td>
                 <td className="text-right">
-                  {w.cost} {currency}
+                  {formatCurrency(w.cost, currency)}
                 </td>
               </tr>
             ))}

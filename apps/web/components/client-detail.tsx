@@ -13,6 +13,7 @@ import { apiFetch, ApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { goBack } from "@/lib/back-navigation";
 import { useCan } from "@/lib/permissions";
+import { formatCurrency } from "@/lib/format-currency";
 
 type ClientStage = "lead" | "contacted" | "qualified" | "won" | "lost";
 const STAGES: ClientStage[] = ["lead", "contacted", "qualified", "won", "lost"];
@@ -122,7 +123,7 @@ export function ClientDetail({ clientId }: { clientId: string }) {
       <p className="text-sm text-fg-subtle">{client.email ?? client.phone ?? "—"}</p>
       {client.estimatedValue != null && (
         <p className="mt-1 text-sm font-medium text-fg-muted">
-          {t("estimatedValue")}: {client.estimatedValue} {currency}
+          {t("estimatedValue")}: {formatCurrency(client.estimatedValue, currency)}
         </p>
       )}
       {client.owner && <p className="text-xs text-fg-subtle">{t("ownedBy", { name: client.owner.name })}</p>}

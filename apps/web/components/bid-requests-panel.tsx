@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, apiUpload, downloadBlob, ApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface Subcontractor {
   id: string;
@@ -452,7 +453,7 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                             <tr key={inv.subcontractor.id} className="border-b border-gray-100 dark:border-gray-700">
                               <td className="py-1">{inv.subcontractor.name}</td>
                               <td className="text-right font-medium tabular-nums">
-                                {bid ? `${bid.amount} ${currency}` : <span className="text-fg-subtle">{t("noBidYet")}</span>}
+                                {bid ? `${formatCurrency(bid.amount, currency)}` : <span className="text-fg-subtle">{t("noBidYet")}</span>}
                               </td>
                               {d.criteria.map((c) => (
                                 <td key={c.id} className="px-1 text-center">
@@ -565,7 +566,7 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                                             <span className="text-gray-300">{t("notMentioned")}</span>
                                           ) : (
                                             <span className={cell.included ? "text-fg" : "text-danger-fg line-through"}>
-                                              {cell.amount} {currency}
+                                              {formatCurrency(cell.amount, currency)}
                                             </span>
                                           )}
                                         </td>
@@ -579,7 +580,7 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                                   <td className="pt-1">{t("totalBid")}</td>
                                   {leveling.bids.map((b) => (
                                     <td key={b.id} className="pt-1 text-right">
-                                      {b.amount} {currency}
+                                      {formatCurrency(b.amount, currency)}
                                     </td>
                                   ))}
                                 </tr>

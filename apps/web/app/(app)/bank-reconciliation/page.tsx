@@ -8,6 +8,7 @@ import { CsvImportButton } from "@/components/csv-import-button";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface BankTransaction {
   id: string;
@@ -274,7 +275,7 @@ export default function BankReconciliationPage() {
                     <div className="text-xs text-fg-subtle">{formatDate(new Date(tx.date))}</div>
                   </div>
                   <div className={`text-sm font-semibold ${Number(tx.amount) < 0 ? "text-danger-fg" : "text-success-fg"}`}>
-                    {tx.amount} {currency}
+                    {formatCurrency(tx.amount, currency)}
                   </div>
                 </div>
 

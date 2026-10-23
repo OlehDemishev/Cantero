@@ -10,6 +10,7 @@ import { useRedirectIfSignedIn } from "@/lib/use-redirect-if-signed-in";
 export default function SignupPage() {
   const t = useTranslations("auth");
   const tc = useTranslations("common");
+  const tl = useTranslations("labels");
   const searchParams = useSearchParams();
   const referralCode = searchParams.get("ref") ?? undefined;
   useRedirectIfSignedIn();
@@ -153,7 +154,7 @@ export default function SignupPage() {
           <select className="input" value={form.planCode} onChange={(e) => update("planCode", e.target.value)}>
             {PLAN_IDS.map((p) => (
               <option key={p} value={p}>
-                {p}
+                {tl(`plan_${p}`)}
               </option>
             ))}
           </select>

@@ -12,10 +12,13 @@ import {
 } from "@/lib/subcontractor-portal-api-client";
 import { SignaturePad } from "@/components/signature-pad";
 import { formatDate } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
+import { useCompanyLocale } from "@/components/public-locale";
 
 interface Me {
   name: string;
   companyName: string;
+  locale: string;
   currency: string;
 }
 interface Assignment {
@@ -71,6 +74,7 @@ export default function SubcontractorPortalDashboardPage() {
   const router = useRouter();
 
   const [me, setMe] = useState<Me | null>(null);
+  useCompanyLocale(me?.locale);
   const [assignments, setAssignments] = useState<Assignment[] | null>(null);
   const [costs, setCosts] = useState<Cost[] | null>(null);
   const [waivers, setWaivers] = useState<LienWaiver[] | null>(null);
@@ -316,7 +320,7 @@ export default function SubcontractorPortalDashboardPage() {
                       </span>
                     </td>
                     <td className="text-right font-medium">
-                      {c.amount} {me.currency}
+                      {formatCurrency(c.amount, me.currency)}
                     </td>
                   </tr>
                 ))}
@@ -434,7 +438,7 @@ export default function SubcontractorPortalDashboardPage() {
                     ) : (
                       myBid && (
                         <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">
-                          {t("yourBidWas", { amount: myBid.amount, currency: me.currency })}
+                          {t("yourBidWas", { amount: formatCurrency(myBid.amount, me.currency) })}
                         </p>
                       )
                     )}
@@ -457,7 +461,7 @@ export default function SubcontractorPortalDashboardPage() {
                     <div>
                       <p className="font-medium text-fg">{t(`lienWaiverType_${w.type}`)}</p>
                       <p className="text-xs text-fg-subtle">
-                        {w.project.name} · {w.amount} {me.currency}
+                        {w.project.name} · {formatCurrency(w.amount, me.currency)}
                       </p>
                     </div>
                     <span

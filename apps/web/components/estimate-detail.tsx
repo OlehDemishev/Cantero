@@ -16,6 +16,7 @@ import { fetchClientLink } from "@/lib/client-link";
 import { useCan } from "@/lib/permissions";
 import { useMe } from "@/lib/use-me";
 import { formatDateTime } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface RateCatalogItem {
   id: string;
@@ -403,7 +404,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
       {estimate.clientDecision === "countered" && (
         <div className="mt-2 rounded-lg border border-brand-200 bg-brand-50 dark:bg-brand-500/15 px-4 py-3">
           <p className="text-sm font-medium text-brand-700 dark:text-brand-400">
-            {t("counterOfferReceived", { amount: estimate.counterOfferAmount ?? "", currency: estimate.currency })}
+            {t("counterOfferReceived", { amount: formatCurrency(estimate.counterOfferAmount, estimate.currency) })}
           </p>
           {estimate.clientDecisionNote && <p className="mt-1 text-sm text-brand-700 dark:text-brand-400">{estimate.clientDecisionNote}</p>}
           <button onClick={createRevisedVariant} disabled={busy} className="btn-secondary mt-2 px-3 py-1 text-xs">
@@ -453,21 +454,20 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
                     {line.quantity} {rateItemsById[line.rateCatalogItemId]?.unit}
                   </td>
                   <td>
-                    {line.materialsCost} {currency}
+                    {formatCurrency(line.materialsCost, currency)}
                   </td>
                   <td>
-                    {line.laborCost} {currency}
+                    {formatCurrency(line.laborCost, currency)}
                   </td>
                   <td className="font-medium">
                     <div className="flex items-center gap-2">
                       <span>
-                        {line.lineTotal} {currency}
+                        {formatCurrency(line.lineTotal, currency)}
                       </span>
                       {benchmarks[line.id] && Math.abs(benchmarks[line.id].deviationPercent) >= BENCHMARK_FLAG_THRESHOLD && (
                         <span
                           title={t("benchmarkHint", {
-                            median: benchmarks[line.id].benchmarkMedian,
-                            currency,
+                            median: formatCurrency(benchmarks[line.id].benchmarkMedian, currency),
                             count: benchmarks[line.id].benchmarkSampleSize,
                           })}
                           className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
@@ -649,12 +649,12 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
 
         <div className="card lg:col-span-1 h-fit">
           <dl className="flex flex-col gap-2 text-sm">
-            <Row label={t("materialsCost")} value={`${estimate.materialsCostTotal} ${currency}`} />
-            <Row label={t("laborCost")} value={`${estimate.laborCostTotal} ${currency}`} />
-            <Row label={t("subtotal")} value={`${estimate.subtotal} ${currency}`} />
-            <Row label={`${t("markupAmount")} (${estimate.markupPercent}%)`} value={`${estimate.markupAmount} ${currency}`} />
-            <Row label={`${t("taxAmount")} (${estimate.taxPercent}%)`} value={`${estimate.taxAmount} ${currency}`} />
-            <Row label={t("grandTotal")} value={`${estimate.grandTotal} ${currency}`} emphasize />
+            <Row label={t("materialsCost")} value={`${formatCurrency(estimate.materialsCostTotal, currency)}`} />
+            <Row label={t("laborCost")} value={`${formatCurrency(estimate.laborCostTotal, currency)}`} />
+            <Row label={t("subtotal")} value={`${formatCurrency(estimate.subtotal, currency)}`} />
+            <Row label={`${t("markupAmount")} (${estimate.markupPercent}%)`} value={`${formatCurrency(estimate.markupAmount, currency)}`} />
+            <Row label={`${t("taxAmount")} (${estimate.taxPercent}%)`} value={`${formatCurrency(estimate.taxAmount, currency)}`} />
+            <Row label={t("grandTotal")} value={`${formatCurrency(estimate.grandTotal, currency)}`} emphasize />
           </dl>
 
           <div className="mt-6 flex flex-col gap-2">

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { apiFetch, apiUpload, downloadBlob } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface Supplier {
   id: string;
@@ -168,7 +169,7 @@ export function IncomingEInvoicesPanel() {
                     </div>
                     <div className="text-xs text-fg-subtle">
                       {t(`format_${inv.format}`)} · {formatDate(new Date(inv.createdAt))}
-                      {inv.total ? ` · ${inv.total} ${inv.currency ?? me?.company.currency ?? ""}` : ""}
+                      {inv.total ? ` · ${formatCurrency(inv.total, inv.currency ?? me?.company.currency)}` : ""}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -196,16 +197,16 @@ export function IncomingEInvoicesPanel() {
                       <div className="text-sm text-gray-600 dark:text-gray-300">
                         <p className="text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("totals")}</p>
                         {inv.dueDate && <p>{t("dueDate")}: {formatDate(new Date(inv.dueDate))}</p>}
-                        <p>{t("subtotal")}: {inv.subtotal} {inv.currency}</p>
-                        <p>{t("tax")}: {inv.taxAmount} {inv.currency}</p>
-                        <p className="font-medium">{t("total")}: {inv.total} {inv.currency}</p>
+                        <p>{t("subtotal")}: {formatCurrency(inv.subtotal, inv.currency)}</p>
+                        <p>{t("tax")}: {formatCurrency(inv.taxAmount, inv.currency)}</p>
+                        <p className="font-medium">{t("total")}: {formatCurrency(inv.total, inv.currency)}</p>
                       </div>
                     </div>
 
                     <ul className="mt-3 flex flex-col gap-1 text-sm text-gray-600 dark:text-gray-300">
                       {inv.lines.map((l) => (
                         <li key={l.id}>
-                          {l.description} × {l.quantity} @ {l.unitPrice} {inv.currency}
+                          {l.description} × {l.quantity} @ {formatCurrency(l.unitPrice, inv.currency, { maximumFractionDigits: 4 })}
                           {l.taxRatePercent ? ` (${l.taxRatePercent}% ${t("tax")})` : ""}
                         </li>
                       ))}

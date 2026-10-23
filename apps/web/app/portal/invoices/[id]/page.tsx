@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { getPortalToken, portalApiFetch } from "@/lib/portal-api-client";
 import { ApiError, downloadBlob } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
+import { PublicLinkError } from "@/components/public-link-error";
 
 interface PortalInvoiceLine {
   id: string;
@@ -44,11 +45,13 @@ interface PortalInvoice {
 export default function PortalInvoicePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const t = useTranslations("portal");
+  const tp = useTranslations("publicLink");
   const ti = useTranslations("invoices");
   const router = useRouter();
 
   const [invoice, setInvoice] = useState<PortalInvoice | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [payBusy, setPayBusy] = useState(false);
 
   useEffect(() => {
@@ -58,7 +61,7 @@ export default function PortalInvoicePage({ params }: { params: Promise<{ id: st
     }
     portalApiFetch<PortalInvoice>(`/portal/invoices/${id}`)
       .then(setInvoice)
-      .catch((err) => setError(err instanceof ApiError ? err.message : t("verifyError")));
+      .catch(setLoadError);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -82,6 +85,18 @@ export default function PortalInvoicePage({ params }: { params: Promise<{ id: st
     }
   }
 
+  if (loadError) {
+    return (
+      <PublicLinkError
+        error={loadError}
+        action={
+          <a href="/portal" className="btn-primary inline-block">
+            {tp("backToPortal")}
+          </a>
+        }
+      />
+    );
+  }
   if (error) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface Plan {
   id: string;
@@ -22,6 +23,7 @@ interface Member {
 
 export function BillingPlanPanel({ isManager }: { isManager: boolean }) {
   const t = useTranslations("settings");
+  const tl = useTranslations("labels");
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [memberCount, setMemberCount] = useState<number | null>(null);
@@ -96,7 +98,7 @@ export function BillingPlanPanel({ isManager }: { isManager: boolean }) {
                   {plan.name} {isCurrent && `· ${t("currentPlan")}`}
                 </div>
                 <div className="text-xs text-fg-subtle">
-                  {plan.pricePerSeat} {plan.currency} / seat / mo
+                  {tl("perSeatPerMonth", { amount: formatCurrency(plan.pricePerSeat, plan.currency) })}
                 </div>
               </div>
               {isManager && !isCurrent && (

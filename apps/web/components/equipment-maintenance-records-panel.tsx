@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface Supplier {
   id: string;
@@ -68,7 +69,7 @@ export function EquipmentMaintenanceRecordsPanel({ equipmentId, currency }: { eq
                 <span>{r.description}</span>
                 {r.cost && (
                   <span className="text-fg-subtle">
-                    {r.cost} {currency}
+                    {formatCurrency(r.cost, currency)}
                   </span>
                 )}
               </div>

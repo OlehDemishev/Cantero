@@ -8,6 +8,7 @@ import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { resetStateInEffect } from "@/lib/effect-reset";
 import { WarehouseLocations } from "@/components/warehouse-locations";
+import { formatCurrency, formatNumber } from "@/lib/format-currency";
 
 interface Warehouse {
   id: string;
@@ -991,11 +992,11 @@ export function WarehouseDetail({
                     </td>
                     <td className="text-right">
                       {row.unitValue !== null
-                        ? `${row.unitValue.toFixed(4)} ${currency}`
+                        ? `${formatCurrency(row.unitValue, currency, { fractionDigits: 4 })}`
                         : "—"}
                     </td>
                     <td className="text-right font-medium">
-                      {row.totalValue.toFixed(2)} {currency}
+                      {formatCurrency(row.totalValue, currency)}
                     </td>
                   </tr>
                 ))}
@@ -1006,7 +1007,7 @@ export function WarehouseDetail({
                     {t("total")}
                   </td>
                   <td className="pt-2 text-right">
-                    {valuation.totalValue.toFixed(2)} {currency}
+                    {formatCurrency(valuation.totalValue, currency)}
                   </td>
                 </tr>
               </tfoot>
@@ -1035,10 +1036,10 @@ export function WarehouseDetail({
                   <tr key={row.materialCatalogItemId} className="border-b border-gray-100 dark:border-gray-700">
                     <td className="py-2">{row.materialName}</td>
                     <td className="text-right">
-                      {row.standardCost.toFixed(4)} {currency}
+                      {formatCurrency(row.standardCost, currency, { fractionDigits: 4 })}
                     </td>
                     <td className="text-right">
-                      {row.unitValue !== null ? `${row.unitValue.toFixed(4)} ${currency}` : "—"}
+                      {row.unitValue !== null ? `${formatCurrency(row.unitValue, currency, { fractionDigits: 4 })}` : "—"}
                     </td>
                     <td
                       className={`text-right font-medium ${
@@ -1050,11 +1051,11 @@ export function WarehouseDetail({
                       }`}
                     >
                       {row.varianceAmount > 0 ? "+" : ""}
-                      {row.varianceAmount.toFixed(4)} {currency}
+                      {formatCurrency(row.varianceAmount, currency, { fractionDigits: 4 })}
                       {row.variancePercent !== null && (
                         <span className="ml-1 text-xs">
                           ({row.variancePercent > 0 ? "+" : ""}
-                          {row.variancePercent.toFixed(1)}%)
+                          {formatNumber(row.variancePercent, { fractionDigits: 1 })}%)
                         </span>
                       )}
                     </td>

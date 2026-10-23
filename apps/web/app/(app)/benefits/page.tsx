@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { useCan } from "@/lib/permissions";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface Worker {
   id: string;
@@ -31,6 +32,7 @@ interface CostSummary {
 export default function BenefitsPage() {
   const t = useTranslations("benefits");
   const tc = useTranslations("common");
+  const tl = useTranslations("labels");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
   const isManager = useCan()("hr.payroll");
@@ -91,13 +93,13 @@ export default function BenefitsPage() {
           <div>
             <div className="text-xs text-fg-subtle">{t("totalEmployerCost")}</div>
             <div className="mt-1 text-lg font-semibold text-fg">
-              {summary.totalMonthlyEmployerCost} {currency}
+              {formatCurrency(summary.totalMonthlyEmployerCost, currency)}
             </div>
           </div>
           <div>
             <div className="text-xs text-fg-subtle">{t("totalEmployeeCost")}</div>
             <div className="mt-1 text-lg font-semibold text-fg">
-              {summary.totalMonthlyEmployeeCost} {currency}
+              {formatCurrency(summary.totalMonthlyEmployeeCost, currency)}
             </div>
           </div>
         </div>
@@ -136,7 +138,7 @@ export default function BenefitsPage() {
             <select className="input" value={form.tierId} onChange={(e) => setForm((f) => ({ ...f, tierId: e.target.value }))}>
               {selectedPlan?.tiers.map((tier) => (
                 <option key={tier.id} value={tier.id}>
-                  {tier.name} ({tier.monthlyEmployeeCost} {currency}/mo)
+                  {tier.name} ({tl("perMonth", { amount: formatCurrency(tier.monthlyEmployeeCost, currency) })})
                 </option>
               ))}
             </select>

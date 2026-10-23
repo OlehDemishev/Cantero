@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { CloseIcon, SuppliersIcon } from "@/components/nav-icons";
 import { apiFetch, apiUpload } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
+import { formatNumber } from "@/lib/format-currency";
 
 interface Supplier {
   id: string;
@@ -271,7 +272,7 @@ export default function SuppliersPage() {
                               </div>
                               <div>
                                 <div className="text-fg-subtle">{t("averageDelay")}</div>
-                                <div className="font-medium">{card.averageDelayDays !== null ? `${card.averageDelayDays.toFixed(1)}d` : "—"}</div>
+                                <div className="font-medium">{card.averageDelayDays !== null ? `${formatNumber(card.averageDelayDays, { fractionDigits: 1 })}d` : "—"}</div>
                               </div>
                               <div>
                                 <div className="text-fg-subtle">{t("totalSpend")}</div>
@@ -318,7 +319,7 @@ export default function SuppliersPage() {
                                   <li key={po.id} className="flex items-center justify-between text-xs">
                                     <span className="text-fg-subtle">{formatDate(new Date(po.createdAt))}</span>
                                     <span>{t(po.status)}</span>
-                                    <span className="font-medium">{total.toFixed(2)}</span>
+                                    <span className="font-medium">{formatNumber(total, { fractionDigits: 2 })}</span>
                                   </li>
                                 );
                               })}

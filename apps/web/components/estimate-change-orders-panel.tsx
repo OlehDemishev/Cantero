@@ -8,6 +8,7 @@ import { useCan } from "@/lib/permissions";
 import { useMe } from "@/lib/use-me";
 import { formatDateTime } from "@/lib/format-date";
 import { ChangeOrderProfitabilityPanel } from "@/components/change-order-profitability-panel";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface RateCatalogItem {
   id: string;
@@ -226,7 +227,7 @@ export function EstimateChangeOrdersPanel({
                             {l.quantity} {l.rateCatalogItem.unit}
                           </td>
                           <td className="text-right">
-                            {l.lineTotal} {currency}
+                            {formatCurrency(l.lineTotal, currency)}
                           </td>
                         </tr>
                       ))}
@@ -235,7 +236,7 @@ export function EstimateChangeOrdersPanel({
                   </div>
                 )}
                 <p className="mt-2 text-right text-xs font-medium">
-                  {t("grandTotal")}: {co.grandTotal} {currency}
+                  {t("grandTotal")}: {formatCurrency(co.grandTotal, currency)}
                 </p>
                 {co.scheduleImpactDays !== null && (
                   <p className="mt-1 text-right text-xs text-fg-subtle">

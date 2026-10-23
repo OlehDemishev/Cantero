@@ -48,7 +48,7 @@ export function WorkerTrainingPanel({ workerId }: { workerId: string }) {
             <span>{en.course.title}</span>
             {en.status === "completed" ? (
               <span className="rounded-full bg-success-50 dark:bg-success-500/15 px-2 py-0.5 text-xs font-medium text-success-fg">
-                {en.completedAt ? formatDate(new Date(en.completedAt)) : t("markComplete")}
+                {en.completedAt ? formatDate(new Date(en.completedAt)) : t("trainingCompleted")}
               </span>
             ) : (
               <button

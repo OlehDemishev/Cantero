@@ -18,6 +18,7 @@ import { WorkerToolCheckoutsPanel } from "@/components/worker-tool-checkouts-pan
 import { WorkerPerformancePanel } from "@/components/worker-performance-panel";
 import { WorkerHrCasesPanel } from "@/components/worker-hr-cases-panel";
 import { useCan } from "@/lib/permissions";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface ProjectBreakdown {
   projectId: string;
@@ -83,7 +84,7 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
         <div className="card flex-1">
           <div className="text-xs text-fg-subtle">{t("totalCost")}</div>
           <div className="mt-1 text-lg font-semibold">
-            {summary.totalCost} {currency}
+            {formatCurrency(summary.totalCost, currency)}
           </div>
         </div>
         <div className="card flex-1">
@@ -155,7 +156,7 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
                     </td>
                     <td className="text-right">{p.hours}h</td>
                     <td className="text-right">
-                      {p.cost} {currency}
+                      {formatCurrency(p.cost, currency)}
                     </td>
                   </tr>
                 ))}

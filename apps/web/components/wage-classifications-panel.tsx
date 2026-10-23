@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { FRINGE_FUND_TYPES, type FringeFundType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useMe } from "@/lib/use-me";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface FringeBenefitFund {
   id: string;
@@ -25,6 +27,8 @@ export interface WageClassification {
 export function WageClassificationsPanel() {
   const t = useTranslations("wageClassifications");
   const tc = useTranslations("common");
+  const { data: me } = useMe();
+  const currency = me?.company.currency ?? "";
 
   const [classifications, setClassifications] = useState<WageClassification[] | null>(null);
   const [form, setForm] = useState({ trade: "", hourlyRate: "", fringeRate: "", apprenticeRatio: "" });
@@ -99,8 +103,8 @@ export function WageClassificationsPanel() {
             <li key={wc.id} className="border-b border-gray-50 pb-1.5 text-sm last:border-0 dark:border-gray-800">
               <div className="flex items-center justify-between">
                 <button onClick={() => setExpandedId(expandedId === wc.id ? null : wc.id)} className="text-left text-fg-muted hover:underline">
-                  {wc.trade} — {Number(wc.hourlyRate).toFixed(2)}/{tc("hour")}
-                  {Number(wc.fringeRate) > 0 && <span className="text-fg-subtle"> + {Number(wc.fringeRate).toFixed(2)} {t("fringeAbbr")}</span>}
+                  {wc.trade} — {formatCurrency(wc.hourlyRate, currency)}/{tc("hour")}
+                  {Number(wc.fringeRate) > 0 && <span className="text-fg-subtle"> + {formatCurrency(wc.fringeRate, currency)} {t("fringeAbbr")}</span>}
                   {wc.apprenticeRatio && <span className="ml-1.5 rounded-full bg-brand-50 dark:bg-brand-500/15 px-1.5 py-0.5 text-xs text-brand-700 dark:text-brand-400">{t("ratioAbbr", { ratio: wc.apprenticeRatio })}</span>}
                 </button>
                 <button onClick={() => remove(wc.id)} className="text-fg-subtle hover:text-danger-fg">
@@ -115,7 +119,7 @@ export function WageClassificationsPanel() {
                       {wc.fringeBenefitFunds.map((fund) => (
                         <li key={fund.id} className="flex items-center justify-between text-xs text-fg-subtle">
                           <span>
-                            {t(`fundType_${fund.fundType}`)}: {fund.name} — {Number(fund.ratePerHour).toFixed(2)}/{tc("hour")}
+                            {t(`fundType_${fund.fundType}`)}: {fund.name} — {formatCurrency(fund.ratePerHour, currency)}/{tc("hour")}
                           </span>
                           <button onClick={() => removeFund(fund.id)} className="text-fg-subtle hover:text-danger-fg">
                             ×

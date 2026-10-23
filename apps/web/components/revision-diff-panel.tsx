@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface RevisionSummary {
   id: string;
@@ -81,7 +82,7 @@ export function RevisionDiffPanel({ estimateId, revisions, currency }: { estimat
         <div className="mt-3">
           <p className="mb-2 text-xs text-fg-subtle">
             {t("grandTotalDelta")}: {diff.grandTotalDelta >= 0 ? "+" : ""}
-            {diff.grandTotalDelta.toFixed(2)} {currency}
+            {formatCurrency(diff.grandTotalDelta, currency)}
           </p>
           {diff.added.length === 0 && diff.removed.length === 0 && diff.changed.length === 0 ? (
             <p className="text-sm text-fg-subtle">{t("noDifferences")}</p>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { formatCurrency } from "@/lib/format-currency";
 
 type ClientStage = "lead" | "contacted" | "qualified" | "won" | "lost";
 interface Worker {
@@ -240,7 +241,7 @@ export function ClientDealPanel({
               }`}
             >
               {t(`referralReward_${client.referralRewardStatus}`)}
-              {client.referralRewardAmount != null && ` · ${client.referralRewardAmount} ${currency}`}
+              {client.referralRewardAmount != null && ` · ${formatCurrency(client.referralRewardAmount, currency)}`}
             </span>
             {isManager && client.referralRewardStatus === "pending" && (
               <button onClick={markReferralRewardPaid} disabled={busy} className="btn-secondary px-2 py-1 text-xs">

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface Rental {
   id: string;
@@ -56,12 +57,12 @@ export function EquipmentRentalHistoryPanel({ equipmentId, currency }: { equipme
                   )}
                 </td>
                 <td>
-                  {r.dailyRate} {currency}
+                  {formatCurrency(r.dailyRate, currency)}
                 </td>
                 <td>{formatDate(new Date(r.startDate))}</td>
                 <td>{r.actualReturnDate ? formatDate(new Date(r.actualReturnDate)) : t("stillOut")}</td>
                 <td className="text-right font-medium">
-                  {r.revenue} {currency}
+                  {formatCurrency(r.revenue, currency)}
                 </td>
               </tr>
             ))}

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { useReportAccess } from "@/lib/report-access";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface CashFlowWeek {
   weekStart: string;
@@ -43,19 +44,19 @@ export function ProjectCashFlowPanel({ projectId }: { projectId: string }) {
         <div className="card">
           <div className="text-xs text-fg-subtle">{t("projectedInflow")}</div>
           <div className="mt-1 text-lg font-semibold text-success-fg">
-            {cashFlow.totals.inflow} {currency}
+            {formatCurrency(cashFlow.totals.inflow, currency)}
           </div>
         </div>
         <div className="card">
           <div className="text-xs text-fg-subtle">{t("projectedOutflow")}</div>
           <div className="mt-1 text-lg font-semibold text-danger-fg">
-            {cashFlow.totals.outflow} {currency}
+            {formatCurrency(cashFlow.totals.outflow, currency)}
           </div>
         </div>
         <div className="card">
           <div className="text-xs text-fg-subtle">{t("projectedNet")}</div>
           <div className={`mt-1 text-lg font-semibold ${cashFlow.totals.net < 0 ? "text-danger-fg" : "text-success-fg"}`}>
-            {cashFlow.totals.net} {currency}
+            {formatCurrency(cashFlow.totals.net, currency)}
           </div>
         </div>
       </div>
@@ -65,8 +66,8 @@ export function ProjectCashFlowPanel({ projectId }: { projectId: string }) {
           {cashFlow.weeks.map((w, i) => (
             <div key={w.weekStart} className="flex flex-1 flex-col items-center gap-1">
               <div className="flex h-16 items-end gap-0.5">
-                <div className="w-2.5 rounded-t bg-success-500" style={{ height: `${(w.inflow / maxVal) * 100}%` }} title={`${t("inflow")}: ${w.inflow} ${currency}`} />
-                <div className="w-2.5 rounded-t bg-error-500" style={{ height: `${(w.outflow / maxVal) * 100}%` }} title={`${t("outflow")}: ${w.outflow} ${currency}`} />
+                <div className="w-2.5 rounded-t bg-success-500" style={{ height: `${(w.inflow / maxVal) * 100}%` }} title={`${t("inflow")}: ${formatCurrency(w.inflow, currency)}`} />
+                <div className="w-2.5 rounded-t bg-error-500" style={{ height: `${(w.outflow / maxVal) * 100}%` }} title={`${t("outflow")}: ${formatCurrency(w.outflow, currency)}`} />
               </div>
               <span className="text-[10px] text-fg-subtle">{t("weekLabel", { n: i + 1 })}</span>
             </div>

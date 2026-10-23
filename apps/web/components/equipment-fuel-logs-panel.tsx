@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface Supplier {
   id: string;
@@ -77,16 +78,16 @@ export function EquipmentFuelLogsPanel({ equipmentId, currency }: { equipmentId:
       <p className="mb-3 text-xs text-fg-subtle">{t("fuelLogsHint")}</p>
       {costPerHour && (
         <p className="mb-3 text-sm text-fg-muted">
-          {t("costPerHour")}: {costPerHour.costPerHour !== null ? `${costPerHour.costPerHour} ${currency}/${t("hoursAbbr")}` : "—"}
+          {t("costPerHour")}: {costPerHour.costPerHour !== null ? `${formatCurrency(costPerHour.costPerHour, currency)}/${t("hoursAbbr")}` : "—"}
           <span className="ml-2 text-xs text-fg-subtle">
-            ({t("totalCost")}: {costPerHour.totalCost} {currency})
+            ({t("totalCost")}: {formatCurrency(costPerHour.totalCost, currency)})
           </span>
         </p>
       )}
       {tco && (
         <div className="mb-3 rounded-md bg-gray-50 px-3 py-2 text-sm text-fg-muted dark:bg-gray-800">
           <span className="font-medium">
-            {t("tco")}: {tco.totalCost} {currency}
+            {t("tco")}: {formatCurrency(tco.totalCost, currency)}
           </span>
           {tco.totalCost > 0 && (
             <span className="ml-2 text-xs text-fg-subtle">
@@ -109,7 +110,7 @@ export function EquipmentFuelLogsPanel({ equipmentId, currency }: { equipmentId:
                 <span>{f.quantity}</span>
                 {f.cost && (
                   <span className="text-fg-subtle">
-                    {f.cost} {currency}
+                    {formatCurrency(f.cost, currency)}
                   </span>
                 )}
               </div>

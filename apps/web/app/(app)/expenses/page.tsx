@@ -12,6 +12,7 @@ import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { useCan } from "@/lib/permissions";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface Expense {
   id: string;
@@ -142,7 +143,7 @@ export default function ExpensesPage() {
 
       {totalPending > 0 && (
         <p className="mt-3 text-sm text-warning-fg">
-          {t("pendingTotal", { amount: totalPending.toFixed(2), currency })}
+          {t("pendingTotal", { amount: formatCurrency(totalPending, currency) })}
         </p>
       )}
 
@@ -195,7 +196,7 @@ export default function ExpensesPage() {
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-fg">
-                          {e.amount} {currency}
+                          {formatCurrency(e.amount, currency)}
                         </span>
                         <span
                           className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[e.status]}`}
@@ -211,8 +212,7 @@ export default function ExpensesPage() {
                           <span
                             className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-danger-fg"
                             title={t("anomalyHint", {
-                              average: e.anomaly.historicalAverage ?? 0,
-                              currency,
+                              average: formatCurrency(e.anomaly.historicalAverage ?? 0, currency),
                             })}
                           >
                             {t("anomaly", {

@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, API_URL } from "@/lib/api-client";
+import { PublicLinkError } from "@/components/public-link-error";
+import { useCompanyLocale } from "@/components/public-locale";
 
 interface ShowcasePhoto {
   id: string;
@@ -10,6 +12,8 @@ interface ShowcasePhoto {
 }
 interface FormInfo {
   companyName: string;
+  /** The company's language — see useCompanyLocale. */
+  locale: string;
   brandColor: string | null;
   hasLogo: boolean;
   photos: ShowcasePhoto[];
@@ -23,11 +27,16 @@ export function LeadForm({ token }: { token: string }) {
   const [busy, setBusy] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  useCompanyLocale(info?.locale);
 
   useEffect(() => {
     apiFetch<FormInfo>(`/public/leads/${token}`)
       .then(setInfo)
-      .catch(() => setInfo(null));
+      .catch((err) => {
+        setLoadError(err);
+        setInfo(null);
+      });
   }, [token]);
 
   async function submit(e: React.FormEvent) {
@@ -52,13 +61,7 @@ export function LeadForm({ token }: { token: string }) {
     );
   }
 
-  if (info === null) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
-        <p className="max-w-sm text-center text-sm text-fg-subtle">{t("formNotFound")}</p>
-      </main>
-    );
-  }
+  if (info === null) return <PublicLinkError error={loadError} />;
 
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-700 px-6 py-12">

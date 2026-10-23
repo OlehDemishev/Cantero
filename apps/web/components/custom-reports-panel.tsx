@@ -8,10 +8,12 @@ import { AGGREGATE_REPORT_DATASETS, REPORT_DATASETS, type ReportDataset } from "
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
 import { resetStateInEffect } from "@/lib/effect-reset";
+import { useReportFieldLabel } from "@/lib/report-field-label";
 
 interface ReportField {
   key: string;
   label: string;
+  labelKey?: string;
 }
 
 const NO_STATUS_DATASETS = new Set<ReportDataset>(["projects", "time_entries"]);
@@ -47,6 +49,7 @@ function formatCell(value: unknown): string {
 export function CustomReportsPanel() {
   const t = useTranslations("customReports");
   const tc = useTranslations("common");
+  const fieldLabel = useReportFieldLabel();
 
   const [saved, setSaved] = useState<SavedReport[] | null>(null);
   const [dataset, setDataset] = useState<ReportDataset>("projects");
@@ -191,7 +194,7 @@ export function CustomReportsPanel() {
             {fields.map((f) => (
               <label key={f.key} className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300">
                 <input type="checkbox" checked={columns.includes(f.key)} onChange={() => toggleColumn(f.key)} />
-                {f.label}
+                {fieldLabel(f)}
               </label>
             ))}
           </div>
@@ -296,6 +299,7 @@ function ReportChart({ dataset, rows }: { dataset: ReportDataset; rows: Record<s
 }
 
 function ReportTable({ result, emptyLabel }: { result: RunResult; emptyLabel: string }) {
+  const fieldLabel = useReportFieldLabel();
   if (result.rows.length === 0) return <p className="text-sm text-fg-subtle">{emptyLabel}</p>;
   return (
     <div className="overflow-x-auto">
@@ -304,7 +308,7 @@ function ReportTable({ result, emptyLabel }: { result: RunResult; emptyLabel: st
           <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
             {result.columns.map((c) => (
               <th key={c.key} className="py-2 pr-4">
-                {c.label}
+                {fieldLabel(c)}
               </th>
             ))}
           </tr>

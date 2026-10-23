@@ -7,6 +7,7 @@ import type { PDFPageProxy } from "pdfjs-dist";
 import { TAKEOFF_RATIO_UNITS, type TakeoffRatioUnit } from "@cantero/shared";
 import { apiFetch, apiUpload } from "@/lib/api-client";
 import { loadPdf, pageVertices, renderPage, VertexIndex } from "@/lib/pdf";
+import { formatNumber } from "@/lib/format-currency";
 
 interface TakeoffPoint {
   x: number;
@@ -216,7 +217,7 @@ export function TakeoffPanel({ projectId }: { projectId: string }) {
   }
 
   const unitLabel = (unit: string) => (unit === "ea" ? t("pcs") : unit);
-  const formatValue = (m: TakeoffMeasurement) => (m.type === "count" ? `${Number(m.value)} ${unitLabel(m.unit)}` : `${Number(m.value).toFixed(2)} ${m.unit}`);
+  const formatValue = (m: TakeoffMeasurement) => (m.type === "count" ? `${formatNumber(m.value)} ${unitLabel(m.unit)}` : `${formatNumber(m.value, { fractionDigits: 2 })} ${m.unit}`);
 
   if (takeoffs === null) return null;
 

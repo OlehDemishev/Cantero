@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface ChannelRoi {
   channel: string;
@@ -18,6 +19,7 @@ interface ChannelRoi {
 
 export function MarketingRoiPanel() {
   const t = useTranslations("marketing");
+  const tl = useTranslations("labels");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
   const [rows, setRows] = useState<ChannelRoi[] | null>(null);
@@ -48,14 +50,14 @@ export function MarketingRoiPanel() {
           <tbody>
             {rows.map((r) => (
               <tr key={r.channel} className="border-b border-gray-100 dark:border-gray-700">
-                <td className="py-1.5 font-medium text-fg">{r.channel}</td>
+                <td className="py-1.5 font-medium text-fg">{r.channel === "unattributed" ? tl("channelUnattributed") : r.channel}</td>
                 <td>{r.leadCount}</td>
                 <td>{r.wonCount}</td>
                 <td>{r.conversionRatePercent}%</td>
-                <td>{r.costPerLead !== null ? `${r.costPerLead} ${currency}` : "—"}</td>
-                <td>{r.costPerWonDeal !== null ? `${r.costPerWonDeal} ${currency}` : "—"}</td>
+                <td>{r.costPerLead !== null ? `${formatCurrency(r.costPerLead, currency)}` : "—"}</td>
+                <td>{r.costPerWonDeal !== null ? `${formatCurrency(r.costPerWonDeal, currency)}` : "—"}</td>
                 <td className="text-right font-medium">
-                  {r.wonValue} {currency}
+                  {formatCurrency(r.wonValue, currency)}
                 </td>
               </tr>
             ))}

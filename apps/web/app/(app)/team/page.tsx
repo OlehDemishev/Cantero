@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { CloseIcon, TeamIcon } from "@/components/nav-icons";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface Worker {
   id: string;
@@ -171,10 +172,10 @@ export default function TeamPage() {
                       </a>
                     </td>
                     <td>{w.role ?? "—"}</td>
-                    <td>{w.hourlyCost ? `${w.hourlyCost} ${me?.company.currency}` : "—"}</td>
+                    <td>{w.hourlyCost ? `${formatCurrency(w.hourlyCost, me?.company.currency)}` : "—"}</td>
                     {burdenPercent > 0 && (
                       <td>
-                        {w.hourlyCost ? `${(Number(w.hourlyCost) * (1 + burdenPercent / 100)).toFixed(2)} ${me?.company.currency}` : "—"}
+                        {w.hourlyCost ? `${formatCurrency((Number(w.hourlyCost) * (1 + burdenPercent / 100)), me?.company.currency)}` : "—"}
                       </td>
                     )}
                     <td>
@@ -218,7 +219,7 @@ export default function TeamPage() {
                     <td>{r.role ?? "—"}</td>
                     <td className="text-right">{r.hours}h</td>
                     <td className="text-right">
-                      {r.cost} {me?.company.currency}
+                      {formatCurrency(r.cost, me?.company.currency)}
                     </td>
                   </tr>
                 ))}
@@ -230,7 +231,7 @@ export default function TeamPage() {
                   </td>
                   <td className="text-right">{report.totalHours}h</td>
                   <td className="text-right">
-                    {report.totalCost} {me?.company.currency}
+                    {formatCurrency(report.totalCost, me?.company.currency)}
                   </td>
                 </tr>
               </tfoot>

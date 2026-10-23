@@ -87,9 +87,105 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
+    /** What the server actually said, when `message` is our translated stand-in for it. */
+    public serverMessage: string = message,
   ) {
     super(message);
     this.name = "ApiError";
+  }
+}
+
+export type ApiErrorKey = "network" | "server" | "forbidden" | "unauthorized" | "tooManyRequests" | "notFound" | "badRequest";
+
+const ENGLISH_ERRORS: Record<ApiErrorKey, string> = {
+  network: "Can't reach the server. Check your connection and try again.",
+  server: "Something went wrong on our side. Please try again in a moment.",
+  forbidden: "You don't have access to this.",
+  unauthorized: "Your session has expired. Please sign in again.",
+  tooManyRequests: "Too many attempts. Please wait a moment and try again.",
+  notFound: "This item doesn't exist or is no longer available.",
+  badRequest: "This request couldn't be processed.",
+};
+
+/** The generic error texts in the viewer's language (messages: apiErrors.*). Registered from
+ * inside the i18n provider by components/api-error-messages.tsx — English until then. */
+let translateError: ((key: ApiErrorKey) => string) | null = null;
+export function setApiErrorTranslator(translator: ((key: ApiErrorKey) => string) | null): ((key: ApiErrorKey) => string) | null {
+  const previous = translateError;
+  translateError = translator;
+  return previous;
+}
+
+function genericMessage(key: ApiErrorKey): string {
+  try {
+    return translateError?.(key) ?? ENGLISH_ERRORS[key];
+  } catch {
+    return ENGLISH_ERRORS[key];
+  }
+}
+
+/** fetch() failed before any response (offline, DNS, CORS). Still a TypeError — the offline
+ * queue (lib/offline-queue.ts) tells "queue it" from "the server said no" by exactly that — but
+ * with a message a person can read, in their language. */
+export class NetworkError extends TypeError {
+  constructor() {
+    super(genericMessage("network"));
+    this.name = "NetworkError";
+  }
+}
+
+/** Framework default texts that say nothing a person can act on (Nest's exception defaults,
+ * the throttler, the auth guard). Anything else the API wrote on purpose is shown as is. */
+const GENERIC_SERVER_MESSAGES = new Set([
+  "",
+  "Unauthorized",
+  "Forbidden",
+  "Forbidden resource",
+  "Not Found",
+  "Bad Request",
+  "Internal Server Error",
+  "Internal server error",
+  "Too Many Requests",
+  "ThrottlerException: Too Many Requests",
+  "Missing bearer token",
+]);
+
+/** The text to show for a failed response: 5xx, 429 and the framework's generic 4xx texts become
+ * translated messages, a role/permission refusal becomes "no access", and a specific message the
+ * API wrote (validation, business rules) is kept. */
+export function userFacingErrorMessage(status: number, serverMessage: string, statusText = ""): string {
+  if (status >= 500) return genericMessage("server");
+  if (status === 429) return genericMessage("tooManyRequests");
+  const generic =
+    GENERIC_SERVER_MESSAGES.has(serverMessage) || serverMessage === statusText || /^Cannot (GET|POST|PUT|PATCH|DELETE) \//.test(serverMessage);
+  if (status === 403 && (generic || /^Requires (the "|one of these roles)/.test(serverMessage))) return genericMessage("forbidden");
+  if (status === 401 && generic) return genericMessage("unauthorized");
+  if (!generic) return serverMessage;
+  return genericMessage(status === 404 ? "notFound" : "badRequest");
+}
+
+/** Builds the ApiError for a non-2xx response (reads the JSON body's `message` when there is one). */
+export async function readApiError(res: Response): Promise<ApiError> {
+  let serverMessage = res.statusText;
+  try {
+    const body = await res.json();
+    serverMessage = Array.isArray(body?.message) ? body.message.join(", ") : (body?.message ?? serverMessage);
+  } catch {
+    // response wasn't JSON; keep statusText
+  }
+  return new ApiError(res.status, userFacingErrorMessage(res.status, serverMessage, res.statusText), serverMessage);
+}
+
+/** fetch() for API calls: tells the API the viewer's language (Accept-Language, from <html lang>)
+ * and turns a network failure into a NetworkError. */
+export async function sendApiRequest(url: string, init: RequestInit & { headers?: Record<string, string> }): Promise<Response> {
+  const lang = typeof document !== "undefined" ? document.documentElement.lang : "";
+  const headers = lang && !init.headers?.["Accept-Language"] ? { ...init.headers, "Accept-Language": lang } : init.headers;
+  try {
+    return await fetch(url, { ...init, headers });
+  } catch (err) {
+    if (err instanceof TypeError) throw new NetworkError();
+    throw err;
   }
 }
 
@@ -101,22 +197,16 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
   };
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(`${API_URL}${path}`, { ...options, headers });
+  const res = await sendApiRequest(`${API_URL}${path}`, { ...options, headers });
 
   if (!res.ok) {
-    let message = res.statusText;
-    try {
-      const body = await res.json();
-      message = Array.isArray(body?.message) ? body.message.join(", ") : (body?.message ?? message);
-    } catch {
-      // response wasn't JSON; keep statusText
-    }
+    const error = await readApiError(res);
     // Only user-initiated writes get an automatic toast — several GET call sites deliberately
     // treat a 404 as a normal "not found yet" outcome (e.g. no company logo uploaded) via their
     // own .catch(), and toasting those would turn an expected empty state into a false alarm.
     const method = (options.method ?? "GET").toUpperCase();
-    if (method !== "GET") notifyError?.(message);
-    throw new ApiError(res.status, message);
+    if (method !== "GET") notifyError?.(error.message);
+    throw error;
   }
 
   if (res.status === 204) return undefined as T;
@@ -145,17 +235,11 @@ export async function apiUpload<T>(path: string, file: File, idempotencyKey?: st
   const formData = new FormData();
   formData.append("file", file);
 
-  const res = await fetch(`${API_URL}${path}`, { method: "POST", headers, body: formData });
+  const res = await sendApiRequest(`${API_URL}${path}`, { method: "POST", headers, body: formData });
   if (!res.ok) {
-    let message = res.statusText;
-    try {
-      const body = await res.json();
-      message = Array.isArray(body?.message) ? body.message.join(", ") : (body?.message ?? message);
-    } catch {
-      // ignore
-    }
-    notifyError?.(message);
-    throw new ApiError(res.status, message);
+    const error = await readApiError(res);
+    notifyError?.(error.message);
+    throw error;
   }
   return res.json() as Promise<T>;
 }

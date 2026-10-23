@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { formatDate, formatDateTime } from "@/lib/format-date";
+import { formatNumber } from "@/lib/format-currency";
 
 interface ProgressEstimate {
   id: string;
@@ -58,7 +59,7 @@ export function ProgressTrackingPanel({ projectId }: { projectId: string }) {
           <div className="flex items-center justify-between">
             <span className="text-2xl font-semibold text-fg">{latest.estimatedPercentComplete}%</span>
             {latest.billedPercentComplete !== null && (
-              <span className="text-sm text-fg-subtle">{t("billedPercent", { percent: Number(latest.billedPercentComplete).toFixed(0) })}</span>
+              <span className="text-sm text-fg-subtle">{t("billedPercent", { percent: formatNumber(latest.billedPercentComplete, { fractionDigits: 0 }) })}</span>
             )}
           </div>
           {latest.varianceFlagged && <p className="mt-2 text-xs font-medium text-danger-fg">{t("varianceFlag")}</p>}
@@ -75,7 +76,7 @@ export function ProgressTrackingPanel({ projectId }: { projectId: string }) {
                 {history.slice(1).map((h) => (
                   <li key={h.id}>
                     {formatDate(new Date(h.computedAt))} — {h.estimatedPercentComplete}%
-                    {h.billedPercentComplete !== null && ` (${t("billedPercent", { percent: Number(h.billedPercentComplete).toFixed(0) })})`}
+                    {h.billedPercentComplete !== null && ` (${t("billedPercent", { percent: formatNumber(h.billedPercentComplete, { fractionDigits: 0 }) })})`}
                   </li>
                 ))}
               </ul>

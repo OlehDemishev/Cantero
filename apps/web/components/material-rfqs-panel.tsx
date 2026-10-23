@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import type { MaterialRfqStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface MaterialCatalogItem {
   id: string;
@@ -285,8 +286,8 @@ export function MaterialRfqsPanel() {
                             {line.quotes.map((q, i) => (
                               <li key={q.id} className="flex items-center justify-between text-xs">
                                 <span className={i === 0 ? "font-medium text-success-fg" : "text-gray-600 dark:text-gray-300"}>
-                                  {q.supplier.name} — {q.unitPrice} {currency}/{line.materialCatalogItem.unit}
-                                  {" "}({(Number(q.unitPrice) * Number(line.quantity)).toFixed(2)} {currency})
+                                  {q.supplier.name} — {formatCurrency(q.unitPrice, currency, { maximumFractionDigits: 4 })}/{line.materialCatalogItem.unit}
+                                  {" "}({formatCurrency((Number(q.unitPrice) * Number(line.quantity)), currency)})
                                   {q.isAwarded && <span className="ml-1.5 rounded-full bg-success-50 dark:bg-success-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-success-fg">{t("awarded")}</span>}
                                 </span>
                                 {detail.status === "open" && !q.isAwarded && (

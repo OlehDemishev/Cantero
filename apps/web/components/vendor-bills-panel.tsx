@@ -6,6 +6,7 @@ import { apiFetch } from "@/lib/api-client";
 import { SageApExportPanel } from "@/components/sage-ap-export-panel";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface Supplier {
   id: string;
@@ -191,7 +192,7 @@ export function VendorBillsPanel() {
               <div key={bucket}>
                 <div className="text-xs text-fg-subtle">{t(`agingBucket_${bucket}`)}</div>
                 <div className="mt-1 text-sm font-semibold text-fg">
-                  {aging.totalsByBucket[bucket] ?? 0} {me?.company.currency}
+                  {formatCurrency(aging.totalsByBucket[bucket] ?? 0, me?.company.currency)}
                 </div>
               </div>
             ))}
@@ -329,7 +330,7 @@ export function VendorBillsPanel() {
                   <ul className="mt-2 text-sm text-fg-subtle">
                     {bill.lines.map((l) => (
                       <li key={l.id}>
-                        {l.description} × {l.quantity} @ {l.unitPrice} {me?.company.currency}
+                        {l.description} × {l.quantity} @ {formatCurrency(l.unitPrice, me?.company.currency, { maximumFractionDigits: 4 })}
                       </li>
                     ))}
                   </ul>
@@ -393,7 +394,7 @@ export function VendorBillsPanel() {
                     <tr key={b.weekStart} className="border-b border-gray-100 dark:border-gray-700">
                       <td className="py-1">{formatDate(new Date(b.weekStart))}</td>
                       <td className="text-right tabular-nums">
-                        {b.total.toFixed(2)} {me?.company.currency}
+                        {formatCurrency(b.total, me?.company.currency)}
                       </td>
                     </tr>
                   ))}
@@ -402,7 +403,7 @@ export function VendorBillsPanel() {
             </div>
             {disbursementCalendar.unscheduledTotal > 0 && (
               <p className="mt-2 text-xs text-fg-subtle">
-                {t("unscheduledTotal", { amount: disbursementCalendar.unscheduledTotal.toFixed(2), currency: me?.company.currency ?? "" })}
+                {t("unscheduledTotal", { amount: formatCurrency(disbursementCalendar.unscheduledTotal, me?.company.currency) })}
               </p>
             )}
           </div>

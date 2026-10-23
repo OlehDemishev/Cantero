@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
 import { RevisionDiffPanel } from "@/components/revision-diff-panel";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface RateCatalogItem {
   code: string;
@@ -141,7 +142,7 @@ export function EstimateRevisionHistoryPanel({
                 {t("version")} {rev.versionNumber}
               </span>
               <span className="text-xs text-fg-subtle">
-                {formatDate(new Date(rev.createdAt))} · {rev.grandTotal} {currency}
+                {formatDate(new Date(rev.createdAt))} · {formatCurrency(rev.grandTotal, currency)}
               </span>
             </button>
           </li>
@@ -170,7 +171,7 @@ export function EstimateRevisionHistoryPanel({
                 <tr key={row.code} className="border-b border-gray-100 dark:border-gray-700">
                   <td className="py-1">{row.name}</td>
                   <td className={row.kind === "removed" ? "text-danger-fg" : ""}>
-                    {row.revQuantity !== null ? `${row.revQuantity} ${row.unit} · ${row.revTotal} ${currency}` : "—"}
+                    {row.revQuantity !== null ? `${row.revQuantity} ${row.unit} · ${formatCurrency(row.revTotal, currency)}` : "—"}
                   </td>
                   <td>
                     <span
@@ -188,7 +189,7 @@ export function EstimateRevisionHistoryPanel({
                     </span>
                   </td>
                   <td className={row.kind === "added" ? "text-success-fg" : ""}>
-                    {row.curQuantity !== null ? `${row.curQuantity} ${row.unit} · ${row.curTotal} ${currency}` : "—"}
+                    {row.curQuantity !== null ? `${row.curQuantity} ${row.unit} · ${formatCurrency(row.curTotal, currency)}` : "—"}
                   </td>
                 </tr>
               ))}

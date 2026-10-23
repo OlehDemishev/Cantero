@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { ApprenticeRatioViolation, CertifiedPayrollLine } from "@cantero/shared";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { useMe } from "@/lib/use-me";
+import { formatCurrency, formatNumber } from "@/lib/format-currency";
 
 interface Project {
   isPublicWork: boolean;
@@ -33,6 +35,8 @@ function todayIso() {
 export function CertifiedPayrollPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("certifiedPayroll");
   const tc = useTranslations("common");
+  const { data: me } = useMe();
+  const currency = me?.company.currency ?? "";
 
   const [project, setProject] = useState<Project | null>(null);
   const [publicWorkForm, setPublicWorkForm] = useState({ isPublicWork: false, contractNumber: "" });
@@ -234,19 +238,19 @@ export function CertifiedPayrollPanel({ projectId }: { projectId: string }) {
                           {line.trade ?? t("unclassified")}
                           {line.isApprentice && <span className="ml-1 rounded-full bg-brand-50 dark:bg-brand-500/15 px-1.5 py-0.5 text-xs text-brand-700 dark:text-brand-400">{t("apprentice")}</span>}
                         </td>
-                        <td className="py-1 pr-3">{line.regularHours.toFixed(2)}</td>
-                        <td className="py-1 pr-3">{line.overtimeHours.toFixed(2)}</td>
-                        <td className="py-1 pr-3">{line.ratePerHour !== null ? line.ratePerHour.toFixed(2) : "—"}</td>
+                        <td className="py-1 pr-3">{formatNumber(line.regularHours, { fractionDigits: 2 })}</td>
+                        <td className="py-1 pr-3">{formatNumber(line.overtimeHours, { fractionDigits: 2 })}</td>
+                        <td className="py-1 pr-3">{line.ratePerHour !== null ? formatCurrency(line.ratePerHour, currency) : "—"}</td>
                         <td className="py-1 pr-3 text-fg-subtle">
-                          {line.fringeRate.toFixed(2)}
+                          {formatCurrency(line.fringeRate, currency)}
                           {line.fringeBreakdown.length > 0 && (
-                            <span className="ml-1 text-xs text-fg-subtle" title={line.fringeBreakdown.map((f) => `${f.name}: ${f.amount.toFixed(2)}`).join(", ")}>
+                            <span className="ml-1 text-xs text-fg-subtle" title={line.fringeBreakdown.map((f) => `${f.name}: ${formatCurrency(f.amount, currency)}`).join(", ")}>
                               ({line.fringeBreakdown.length})
                             </span>
                           )}
                         </td>
                         <td className="py-1 pr-3">
-                          {line.grossPay !== null ? line.grossPay.toFixed(2) : "—"}
+                          {line.grossPay !== null ? formatCurrency(line.grossPay, currency) : "—"}
                           {line.belowPrevailingRate && <span className="ml-1 text-danger-fg" title={t("belowPrevailingRate")}>⚠</span>}
                         </td>
                       </tr>
@@ -255,7 +259,7 @@ export function CertifiedPayrollPanel({ projectId }: { projectId: string }) {
                 </table>
               )}
               <p className="mt-2 text-sm font-medium text-fg-muted">
-                {t("totalGrossPay")}: {preview.totalGrossPay.toFixed(2)}
+                {t("totalGrossPay")}: {formatCurrency(preview.totalGrossPay, currency)}
               </p>
             </div>
           )}
@@ -270,7 +274,7 @@ export function CertifiedPayrollPanel({ projectId }: { projectId: string }) {
                 <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
                   <span className="text-fg-muted">
                     #{r.payrollNumber} — {r.weekEndingDate.slice(0, 10)}
-                    {r.noWorkPerformed ? ` (${t("noWorkPerformed")})` : ` — ${Number(r.totalGrossPay ?? 0).toFixed(2)}`}
+                    {r.noWorkPerformed ? ` (${t("noWorkPerformed")})` : ` — ${formatCurrency(r.totalGrossPay ?? 0, currency)}`}
                   </span>
                   <span className="flex items-center gap-2">
                     {r.statementSignedAt ? (

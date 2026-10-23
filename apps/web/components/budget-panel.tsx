@@ -99,7 +99,7 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
 
   if (!budget) return null;
   const currency = me?.company.currency ?? "";
-  const money = (amount: number | string | null | undefined) => formatCurrency(amount, currency, me?.company.locale);
+  const money = (amount: number | string | null | undefined) => formatCurrency(amount, currency);
 
   if (budget.estimatesCount === 0) {
     return (

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { formatCurrency } from "@/lib/format-currency";
 
 type ClientDecision = "pending" | "approved" | "rejected" | "countered";
 type EstimateStatus = "draft" | "pending_approval" | "approved";
@@ -73,7 +74,7 @@ export function EstimateVariantsPanel({ estimateId, currency }: { estimateId: st
                 <td>{v.status === "approved" ? t("approved") : t("draft")}</td>
                 <td>{t(`clientDecision_${v.clientDecision}`)}</td>
                 <td className="text-right">
-                  {v.grandTotal} {currency}
+                  {formatCurrency(v.grandTotal, currency)}
                 </td>
               </tr>
             ))}

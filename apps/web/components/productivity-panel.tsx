@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
+import { formatNumber } from "@/lib/format-currency";
 
 interface CostCode {
   id: string;
@@ -188,7 +189,7 @@ export function ProductivityPanel({ projectId }: { projectId: string }) {
                   </div>
                   {hoursPerUnit !== null && (
                     <span className="shrink-0 text-xs font-medium tabular-nums text-fg-subtle">
-                      {t("hoursPerUnit", { rate: hoursPerUnit.toFixed(3), unit: log.unit })}
+                      {t("hoursPerUnit", { rate: formatNumber(hoursPerUnit, { fractionDigits: 3 }), unit: log.unit })}
                     </span>
                   )}
                 </div>

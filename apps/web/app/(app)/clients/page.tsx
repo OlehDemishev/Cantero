@@ -11,6 +11,7 @@ import { ClientsIcon, CloseIcon } from "@/components/nav-icons";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
 
 type ClientStage = "lead" | "contacted" | "qualified" | "won" | "lost";
 const STAGES: ClientStage[] = ["lead", "contacted", "qualified", "won", "lost"];
@@ -178,7 +179,7 @@ export default function ClientsPage() {
                 <div className="text-xs font-medium uppercase tracking-wide text-fg-subtle">{t(s.stage)}</div>
                 <div className="mt-1 text-xl font-semibold text-fg">{s.count}</div>
                 <div className="mt-0.5 text-xs text-fg-subtle">
-                  {s.totalValue} {currency}
+                  {formatCurrency(s.totalValue, currency)}
                 </div>
               </div>
             ))}
@@ -343,7 +344,7 @@ export default function ClientsPage() {
                         <div className="text-xs text-fg-subtle">{c.email ?? c.phone ?? "—"}</div>
                         {c.estimatedValue != null && (
                           <div className="mt-1 text-xs font-medium text-fg-muted">
-                            {c.estimatedValue} {currency}
+                            {formatCurrency(c.estimatedValue, currency)}
                           </div>
                         )}
                         {c.owner && <div className="text-xs text-fg-subtle">{t("ownedBy", { name: c.owner.name })}</div>}

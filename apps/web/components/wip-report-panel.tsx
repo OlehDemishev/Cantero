@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface WipRow {
   projectId: string;
@@ -85,17 +86,17 @@ export function WipReportPanel({ currency }: { currency: string }) {
                     </a>
                   </td>
                   <td className="text-right tabular-nums">
-                    {row.contractValue} {currency}
+                    {formatCurrency(row.contractValue, currency)}
                   </td>
                   <td className="text-right tabular-nums">
-                    {row.costsIncurredToDate} {currency}
+                    {formatCurrency(row.costsIncurredToDate, currency)}
                   </td>
                   <td className="text-right tabular-nums">{row.percentComplete}%</td>
                   <td className="text-right tabular-nums">
-                    {row.earnedRevenue} {currency}
+                    {formatCurrency(row.earnedRevenue, currency)}
                   </td>
                   <td className="text-right tabular-nums">
-                    {row.billedToDate} {currency}
+                    {formatCurrency(row.billedToDate, currency)}
                   </td>
                   <td className="text-right tabular-nums">
                     <span
@@ -107,7 +108,7 @@ export function WipReportPanel({ currency }: { currency: string }) {
                             : "bg-gray-100 dark:bg-gray-700 text-fg-subtle"
                       }`}
                     >
-                      {row.overUnderBilling} {currency}
+                      {formatCurrency(row.overUnderBilling, currency)}
                     </span>
                   </td>
                 </tr>
@@ -117,20 +118,20 @@ export function WipReportPanel({ currency }: { currency: string }) {
               <tr className="font-semibold">
                 <td className="pt-2">{t("total")}</td>
                 <td className="pt-2 text-right tabular-nums">
-                  {wip.totals.contractValue} {currency}
+                  {formatCurrency(wip.totals.contractValue, currency)}
                 </td>
                 <td className="pt-2 text-right tabular-nums">
-                  {wip.totals.costsIncurredToDate} {currency}
+                  {formatCurrency(wip.totals.costsIncurredToDate, currency)}
                 </td>
                 <td className="pt-2 text-right"></td>
                 <td className="pt-2 text-right tabular-nums">
-                  {wip.totals.earnedRevenue} {currency}
+                  {formatCurrency(wip.totals.earnedRevenue, currency)}
                 </td>
                 <td className="pt-2 text-right tabular-nums">
-                  {wip.totals.billedToDate} {currency}
+                  {formatCurrency(wip.totals.billedToDate, currency)}
                 </td>
                 <td className="pt-2 text-right tabular-nums">
-                  {wip.totals.overUnderBilling} {currency}
+                  {formatCurrency(wip.totals.overUnderBilling, currency)}
                 </td>
               </tr>
             </tfoot>

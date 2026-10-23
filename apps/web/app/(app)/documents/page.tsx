@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { DOCUMENT_CATEGORIES, type DocumentCategory } from "@cantero/shared";
 import { apiFetch, apiUpload, downloadBlob } from "@/lib/api-client";
 import { SignatureRequestsPanel } from "@/components/signature-requests-panel";
+import { formatNumber } from "@/lib/format-currency";
 
 interface Project {
   id: string;
@@ -26,8 +27,8 @@ interface Document {
 
 function formatSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  if (bytes < 1024 * 1024) return `${formatNumber(bytes / 1024, { fractionDigits: 1 })} KB`;
+  return `${formatNumber(bytes / 1024 / 1024, { fractionDigits: 1 })} MB`;
 }
 
 export default function DocumentsPage() {

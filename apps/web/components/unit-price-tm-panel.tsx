@@ -51,7 +51,7 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
   const tc = useTranslations("common");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "USD";
-  const money = (amount: number | string) => formatCurrency(amount, currency, me?.company.locale);
+  const money = (amount: number | string) => formatCurrency(amount, currency);
 
   const [items, setItems] = useState<UnitPriceItem[] | null>(null);
   const [tickets, setTickets] = useState<TMTicket[] | null>(null);

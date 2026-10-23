@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { BENEFIT_PLAN_TYPES, type BenefitPlanType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface Tier {
   id: string;
@@ -119,7 +120,7 @@ export function BenefitPlansPanel() {
                 <ul className="mt-2 flex flex-col gap-0.5 text-xs text-fg-subtle">
                   {plan.tiers.map((tier) => (
                     <li key={tier.id}>
-                      {tier.name}: {t("employerCost")} {tier.monthlyEmployerCost} {currency} / {t("employeeCost")} {tier.monthlyEmployeeCost} {currency}
+                      {tier.name}: {t("employerCost")} {formatCurrency(tier.monthlyEmployerCost, currency)} / {t("employeeCost")} {formatCurrency(tier.monthlyEmployeeCost, currency)}
                     </li>
                   ))}
                 </ul>

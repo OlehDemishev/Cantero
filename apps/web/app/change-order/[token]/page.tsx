@@ -2,9 +2,12 @@
 
 import { use, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, ApiError } from "@/lib/api-client";
+import { apiFetch } from "@/lib/api-client";
+import { PublicLinkError } from "@/components/public-link-error";
+import { useCompanyLocale } from "@/components/public-locale";
 import { SignaturePad } from "@/components/signature-pad";
 import { formatDateTime } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface PublicLine {
   id: string;
@@ -15,6 +18,8 @@ interface PublicLine {
 }
 type ClientDecision = "pending" | "approved" | "rejected";
 interface PublicChangeOrder {
+  /** The client's or company's language — see useCompanyLocale. */
+  locale: string;
   id: string;
   number: number;
   title: string;
@@ -39,7 +44,8 @@ export default function PublicChangeOrderPage({ params }: { params: Promise<{ to
   const tc = useTranslations("common");
 
   const [changeOrder, setChangeOrder] = useState<PublicChangeOrder | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
+  useCompanyLocale(changeOrder?.locale);
   const [note, setNote] = useState("");
   const [signerName, setSignerName] = useState("");
   const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
@@ -49,7 +55,7 @@ export default function PublicChangeOrderPage({ params }: { params: Promise<{ to
   function load() {
     apiFetch<PublicChangeOrder>(`/public/change-orders/${token}`)
       .then(setChangeOrder)
-      .catch((err) => setError(err instanceof ApiError ? err.message : t("linkNotFound")));
+      .catch(setError);
   }
 
   useEffect(load, [token]);
@@ -77,13 +83,7 @@ export default function PublicChangeOrderPage({ params }: { params: Promise<{ to
     }
   }
 
-  if (error) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
-        <p className="text-sm text-fg-subtle">{error}</p>
-      </main>
-    );
-  }
+  if (error) return <PublicLinkError error={error} />;
 
   if (!changeOrder) {
     return (
@@ -129,7 +129,7 @@ export default function PublicChangeOrderPage({ params }: { params: Promise<{ to
                     {l.quantity} {l.unit}
                   </td>
                   <td className="text-right">
-                    {l.lineTotal} {changeOrder.currency}
+                    {formatCurrency(l.lineTotal, changeOrder.currency)}
                   </td>
                 </tr>
               ))}
@@ -141,25 +141,25 @@ export default function PublicChangeOrderPage({ params }: { params: Promise<{ to
             <div className="flex justify-between">
               <dt className="text-fg-subtle">{t("subtotal")}</dt>
               <dd>
-                {changeOrder.subtotal} {changeOrder.currency}
+                {formatCurrency(changeOrder.subtotal, changeOrder.currency)}
               </dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-fg-subtle">{t("markupAmount")}</dt>
               <dd>
-                {changeOrder.markupAmount} {changeOrder.currency}
+                {formatCurrency(changeOrder.markupAmount, changeOrder.currency)}
               </dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-fg-subtle">{t("taxAmount")}</dt>
               <dd>
-                {changeOrder.taxAmount} {changeOrder.currency}
+                {formatCurrency(changeOrder.taxAmount, changeOrder.currency)}
               </dd>
             </div>
             <div className="flex justify-between border-t border-gray-200 dark:border-gray-700 pt-2 font-semibold">
               <dt>{t("grandTotal")}</dt>
               <dd>
-                {changeOrder.grandTotal} {changeOrder.currency}
+                {formatCurrency(changeOrder.grandTotal, changeOrder.currency)}
               </dd>
             </div>
           </dl>

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface Supplier {
   id: string;
@@ -329,7 +330,7 @@ export function PurchaseOrdersPanel() {
                   {po.lines.map((l) => (
                     <li key={l.id}>
                       {l.materialCatalogItem.code} × {l.quantity} @{" "}
-                      {l.unitPrice} {me?.company.currency}
+                      {formatCurrency(l.unitPrice, me?.company.currency, { maximumFractionDigits: 4 })}
                       {Number(l.quantityReceived) > 0 && (
                         <span className="ml-1.5 text-xs text-fg-subtle">
                           (

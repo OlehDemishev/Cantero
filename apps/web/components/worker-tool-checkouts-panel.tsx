@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { EmptyState } from "@/components/ui/empty-state";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface ToolCheckout {
   id: string;
@@ -37,7 +38,7 @@ export function WorkerToolCheckoutsPanel({ workerId, currency }: { workerId: str
         <h2 className="text-sm font-semibold text-fg-muted">{tt("checkedOutTools")}</h2>
         {toolLiability && toolLiability.totalCharged > 0 && (
           <span className="text-xs font-medium text-danger-fg">
-            {tt("totalCharged", { amount: toolLiability.totalCharged, currency })}
+            {tt("totalCharged", { amount: formatCurrency(toolLiability.totalCharged, currency) })}
           </span>
         )}
       </div>
@@ -61,7 +62,7 @@ export function WorkerToolCheckoutsPanel({ workerId, currency }: { workerId: str
             </div>
             {co.chargeAmount && (
               <p className="mt-1 text-xs text-danger-fg">
-                {tt("chargeAmountLabel", { amount: co.chargeAmount, currency })}
+                {tt("chargeAmountLabel", { amount: formatCurrency(co.chargeAmount, currency) })}
               </p>
             )}
           </li>

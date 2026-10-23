@@ -6,6 +6,7 @@ import { CONTRACT_CLAIM_TYPES, type ContractClaimStatus, type ContractClaimType 
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface ContractClaim {
   id: string;
@@ -231,7 +232,7 @@ export function ContractClaimsPanel({ projectId }: { projectId: string }) {
                 </button>
                 <p className="mt-1 text-xs text-fg-subtle">
                   {t("noticeDate")}: {formatDate(new Date(claim.noticeDate))}
-                  {claim.requestedAmount && ` · ${claim.requestedAmount} ${currency}`}
+                  {claim.requestedAmount && ` · ${formatCurrency(claim.requestedAmount, currency)}`}
                   {claim.requestedDays && ` · ${t("requestedDaysAbbr", { days: claim.requestedDays })}`}
                 </p>
 

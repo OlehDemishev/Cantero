@@ -35,7 +35,10 @@
     "all": "Усі",
     "copyLink": "Копіювати посилання",
     "linkCopied": "Скопійовано",
-    "print": "Друк"
+    "print": "Друк",
+    "confirmDelete": "Видалити цей запис?",
+    "description": "Опис",
+    "notes": "Нотатки"
   },
   "nav": {
     "menu": "Меню",
@@ -174,7 +177,7 @@
     "widgetOpenRfis": "Відкриті запити",
     "widgetExpired": "Прострочено",
     "widgetExpiringSoon": "Скоро закінчується",
-    "widgetBacklogDetail": "{contractValue} {currency} за контрактами, {billedToDate} {currency} виставлено"
+    "widgetBacklogDetail": "{contractValue} за контрактами, {billedToDate} виставлено"
   },
   "settings": {
     "onlinePayments": "Онлайн-оплати від клієнтів",
@@ -460,7 +463,7 @@
     "rateCatalogApprovalThresholdPercentHint": "Зміна трудогодин більш ніж на цей відсоток затримується для погодження замість негайного застосування. Залиште порожнім, щоб кожна зміна застосовувалась одразу.",
     "noThresholdPlaceholder": "Без порогу",
     "npsDetractorFollowUpEnabled": "Автозадача за низьким NPS",
-    "npsDetractorFollowUpEnabledHint": "Відповідь клієнта на рівні 6/10 або нижче додає задачу-нагадування до проєкту і надсилає лист власнику(ам) компанії.",
+    "npsDetractorFollowUpEnabledHint": "Відповідь клієнта на рівні 6/10 або нижче додає задачу-нагадування до проєкту і надсилає лист власникам компанії.",
     "tab_account": "Обліковий запис і сповіщення",
     "tab_company": "Компанія і бренд",
     "tab_billing": "Оплата і франшиза",
@@ -476,7 +479,8 @@
     "confirmDeleteCustomRole": "Видалити цю користувацьку роль? Усі, кому вона ще призначена, втратять ці права.",
     "confirmDeleteWebhook": "Видалити цей webhook? Він одразу перестане отримувати події.",
     "auditLoadMore": "Завантажити ще",
-    "companySettingsManagerOnlyHint": "Редагувати налаштування компанії можуть лише власники та адміністратори."
+    "companySettingsManagerOnlyHint": "Редагувати налаштування компанії можуть лише власники та адміністратори.",
+    "error": "Щось пішло не так"
   },
   "projects": {
     "title": "Проєкти",
@@ -551,15 +555,15 @@
     "expectedCloseDate": "Очікувана дата закриття",
     "pipelineForecast": "Прогноз воронки продажів",
     "weightedPipelineValue": "Зважена вартість воронки",
-    "unscheduledWeightedValue": "{value} {currency} без очікуваної дати закриття",
+    "unscheduledWeightedValue": "{value} без очікуваної дати закриття",
     "funnelReport": "Звіт по воронці",
     "winRate": "Відсоток виграшів",
     "winLossCount": "{won} виграно · {lost} програно",
     "avgDays": "у сер. {days}дн",
     "ownerLeaderboard": "Рейтинг менеджерів",
     "ownerLeaderboardEmpty": "Ще немає виграних угод — заповниться, коли відповідальні почнуть закривати клієнтів.",
-    "wonSummary": "Виграно: {count} · {value} {currency}",
-    "openSummary": "Відкрито: {count} · {value} {currency}",
+    "wonSummary": "Виграно: {count} · {value}",
+    "openSummary": "Відкрито: {count} · {value}",
     "referralReward": "Винагорода за рекомендацію",
     "referralReward_pending": "Винагорода очікує виплати",
     "referralReward_paid": "Винагорода виплачена",
@@ -670,7 +674,9 @@
     "enrollInTraining": "Керувати записами на навчання",
     "noToolCheckouts": "Інструмент ще не видавався.",
     "checkOutTool": "Видати інструмент",
-    "confirmDeleteCertification": "Видалити цей запис сертифікації?"
+    "confirmDeleteCertification": "Видалити цей запис сертифікації?",
+    "markComplete": "Позначити завершеним",
+    "trainingCompleted": "Завершено"
   },
   "documents": {
     "title": "Документи",
@@ -826,15 +832,15 @@
     "grandTotalDelta": "Зміна загальної суми",
     "noDifferences": "Немає відмінностей між цими версіями",
     "costCodeUnassigned": "Без коду витрат",
-    "benchmarkHint": "Типова ціна для цього коду витрат за {count} попередніми кошторисами: {median} {currency}/од.",
+    "benchmarkHint": "Типова ціна для цього коду витрат за {count, plural, one {# попереднім кошторисом} few {# попередніми кошторисами} many {# попередніми кошторисами} other {# попередніми кошторисами}}: {median}/од.",
     "computeFormula": "Обчислити",
     "computedQuantity": "= {value} {unit}",
     "clientDecision_countered": "Клієнт запропонував іншу ціну",
-    "clientDecisionThanksCountered": "Дякуємо — ми передали вашу пропозицію ціни {amount} {currency} команді.",
+    "clientDecisionThanksCountered": "Дякуємо — ми передали вашу пропозицію ціни {amount} команді.",
     "counterOfferAmountLabel": "Ваша пропонована ціна",
     "proposeDifferentPrice": "Запропонувати іншу ціну",
     "sendCounterOffer": "Надіслати пропозицію",
-    "counterOfferReceived": "Клієнт запропонував замість цього {amount} {currency}.",
+    "counterOfferReceived": "Клієнт запропонував замість цього {amount}.",
     "createRevisedVariant": "Створити переглянуту версію",
     "revisedVariantLabel": "Переглянуто",
     "scheduleImpact": "Вплив на графік",
@@ -927,7 +933,7 @@
     "sendPeppolNetwork": "Надіслати через мережу Peppol",
     "peppolSent": "Надіслано через мережу Peppol.",
     "autopay": "Автосписання",
-    "lateFeeAccrued": "Нарахована пеня: {amount} {currency}",
+    "lateFeeAccrued": "Нарахована пеня: {amount}",
     "chargeLateFee": "Нарахувати пеню",
     "taxAmount": "Податок",
     "recalculateTax": "Перерахувати податок",
@@ -1150,7 +1156,7 @@
     "notes": "Примітки",
     "submitBid": "Подати пропозицію",
     "updateBid": "Оновити пропозицію",
-    "yourBidWas": "Ваша пропозиція: {amount} {currency}",
+    "yourBidWas": "Ваша пропозиція: {amount}",
     "punchListItems": "Ваші пункти переліку недоробок",
     "noPunchListItems": "Вам ще не призначено жодного пункту переліку недоробок.",
     "punchListStatus_open": "Відкрито",
@@ -1472,7 +1478,7 @@
     "disbursementCalendarHint": "Затверджені неоплачені рахунки, згруповані за тижнем очікуваної оплати.",
     "weekOf": "Тиждень від",
     "totalDue": "Разом до сплати",
-    "unscheduledTotal": "{amount} {currency} затверджених рахунків не мають терміну сплати чи запланованої дати оплати."
+    "unscheduledTotal": "{amount} затверджених рахунків не мають терміну сплати чи запланованої дати оплати."
   },
   "incomingEInvoices": {
     "title": "Вхідні е-рахунки",
@@ -1559,7 +1565,7 @@
     "queuedOfflineNoReceipt": "Збережено офлайн — фото чека потрібно буде додати після відновлення з'єднання",
     "receiptQueuedOffline": "Збережено — фото чека завантажиться після відновлення з'єднання",
     "receiptUploadFailed": "Витрату збережено, але фото чека не вдалося завантажити. Спробуйте додати його пізніше.",
-    "syncConflicts": "{count} елемент(и) не вдалося синхронізувати — щось змінилося тим часом",
+    "syncConflicts": "Не вдалося синхронізувати {count, plural, one {# елемент} few {# елементи} many {# елементів} other {# елемента}} — щось змінилося тим часом",
     "retrySync": "Повторити",
     "discardSync": "Відхилити",
     "voiceInputStart": "Почати голосове введення",
@@ -1694,7 +1700,7 @@
     "projectedInflow": "Очікувані надходження",
     "projectedOutflow": "Очікувані витрати",
     "projectedNet": "Очікуваний баланс",
-    "unscheduledNote": "Додатково {inflow} {currency} надходжень і {outflow} {currency} витрат без терміну — не показано в тижнях нижче.",
+    "unscheduledNote": "Додатково {inflow} надходжень і {outflow} витрат без терміну — не показано в тижнях нижче.",
     "inflow": "Надходження",
     "outflow": "Витрати",
     "net": "Баланс",
@@ -1877,11 +1883,11 @@
     "weatherDelayHours": "Затримка через погоду (год.)",
     "weatherDelayBadge": "{hours} год. затримки через погоду",
     "weatherDelayReport": "Звіт про погодні затримки",
-    "weatherDelayTotal": "Втрачено {hours} год. через погоду — пропонується перенести графік на {days} дн.",
+    "weatherDelayTotal": "Втрачено {hours} год. через погоду — пропонується перенести графік на {days, plural, one {# день} few {# дні} many {# днів} other {# дня}}.",
     "exportWeatherDelayReport": "Експорт CSV",
     "shiftScheduleDays": "Перенести на (днів)",
     "shiftSchedule": "Перенести графік",
-    "shiftScheduleResult": "Перенесено {tasks} завдання(нь) та {milestones} віху(віх).",
+    "shiftScheduleResult": "Перенесено {tasks, plural, one {# завдання} few {# завдання} many {# завдань} other {# завдання}} та {milestones, plural, one {# віху} few {# віхи} many {# віх} other {# віхи}}.",
     "shiftScheduleHint": "Переносить термін кожного незавершеного завдання та віхи на вказану кількість днів — скасуйте вручну, якщо перенесли помилково."
   },
   "punchList": {
@@ -2149,8 +2155,8 @@
     "endDate": "Дата завершення",
     "note": "Примітка",
     "assign": "Призначити",
-    "newAssignmentConflict": "Перетинається з {count} іншим(и) призначенням(и) того самого ресурсу:",
-    "conflictsDetected": "Виявлено {count} конфлікт(и) розкладу",
+    "newAssignmentConflict": "Перетинається з {count, plural, one {# іншим призначенням} few {# іншими призначеннями} many {# іншими призначеннями} other {# іншими призначеннями}} того самого ресурсу:",
+    "conflictsDetected": "Виявлено {count, plural, one {# конфлікт розкладу} few {# конфлікти розкладу} many {# конфліктів розкладу} other {# конфлікту розкладу}}",
     "calendar": "Календар",
     "noAssignments": "Поки немає призначень.",
     "allAssignments": "Усі призначення",
@@ -2166,7 +2172,7 @@
     "assignCrew": "Призначити бригаду",
     "levelSchedule": "Вирівняти графік",
     "levelNoChanges": "Уже вирівняно — переносити нічого.",
-    "leveledMoves": "Перенесено {count} призначення(ь) для усунення перетину.",
+    "leveledMoves": "Перенесено {count, plural, one {# призначення} few {# призначення} many {# призначень} other {# призначення}} для усунення перетину.",
     "confirmDeleteCrew": "Видалити цю бригаду? Вже зроблені призначення це не торкнеться.",
     "confirmRemoveAssignment": "Видалити це призначення?"
   },
@@ -2185,7 +2191,7 @@
     "topic": "Тема",
     "notes": "Примітки",
     "noTemplates": "Поки немає шаблонів.",
-    "itemCount": "{count} пункт(и/ів)",
+    "itemCount": "{count, plural, one {# пункт} few {# пункти} many {# пунктів} other {# пункту}}",
     "useTemplate": "Використати шаблон…",
     "punch_list": "Список дефектів",
     "rfi": "RFI",
@@ -2295,15 +2301,15 @@
     "title": "Поетапне виставлення рахунків",
     "hint": "Виставляйте клієнту рахунки за етапами відповідно до прогресу робіт, утримуючи відсоток гарантійного утримання до завершення.",
     "percentBilled": "Виставлено {percent}%",
-    "billedOfContract": "{billed} з {total} {currency} контракту",
+    "billedOfContract": "{billed} з {total} контракту",
     "retainageHeld": "Утримано гарантійних коштів",
     "drawLabel": "Етап до {percent}%",
     "retainageReleaseLabel": "Повернення утримання",
     "percentComplete": "% завершення",
     "retainagePercent": "% утримання",
     "generateDraw": "Виставити рахунок за етап",
-    "releaseRetainage": "Повернути утримання ({amount} {currency})",
-    "retainageReleasedSoFar": "Вивільнено дотепер: {amount} {currency}",
+    "releaseRetainage": "Повернути утримання ({amount})",
+    "retainageReleasedSoFar": "Вивільнено дотепер: {amount}",
     "releasePartialInstead": "Вивільнити частину суми натомість",
     "partialAmount": "Сума",
     "releasePartial": "Вивільнити",
@@ -2329,7 +2335,7 @@
     "noSubcontractors": "Спочатку додайте субпідрядника, щоб запросити його на тендер.",
     "sendBidRequest": "Надіслати тендер",
     "noBidRequests": "Поки що немає тендерів.",
-    "bidCount": "{count} з {total} отриманих пропозицій",
+    "bidCount": "Отримано пропозицій: {count} з {total}",
     "noBidYet": "Ще немає пропозиції",
     "award": "Присудити",
     "awarded": "Присуджено",
@@ -2621,7 +2627,7 @@
   "expenses": {
     "title": "Витрати",
     "subtitle": "Витрати, подані з об'єкта, що очікують на затвердження та відшкодування.",
-    "pendingTotal": "{amount} {currency} очікує затвердження",
+    "pendingTotal": "{amount} очікує затвердження",
     "allProjects": "Усі проєкти",
     "allStatuses": "Усі статуси",
     "empty": "Витрат ще не подано.",
@@ -2648,7 +2654,7 @@
     "confirmReject": "Підтвердити відхилення",
     "rejectedReasonLabel": "Відхилено",
     "anomaly": "+{percent}% від звичайного",
-    "anomalyHint": "Незвично висока сума для цієї категорії — середнє по компанії становить {average} {currency}."
+    "anomalyHint": "Незвично висока сума для цієї категорії — середнє по компанії становить {average}."
   },
   "materialRfqs": {
     "title": "Запити цін на матеріали",
@@ -2925,7 +2931,7 @@
     "codePlaceholder": "Код, напр. 03 00 00",
     "namePlaceholder": "Назва, напр. Бетон",
     "importStandardLibrary": "Імпортувати CSI MasterFormat",
-    "importResult": "Імпортовано {created} розділ(и), {skipped} вже було.",
+    "importResult": "Імпортовано {created, plural, one {# розділ} few {# розділи} many {# розділів} other {# розділу}}, {skipped} вже було.",
     "confirmDelete": "Видалити цей код витрат? Рядки кошторису, замовлення на зміну та витрат, що його використовували, стануть «Без категорії» замість видалення."
   },
   "wageClassifications": {
@@ -2975,7 +2981,7 @@
     "downloadPdf": "Завантажити PDF",
     "fringe": "Пільга",
     "apprentice": "Учень",
-    "apprenticeRatioViolation": "{trade}: {apprenticeCount} учнів перевищує допустимі {maxAllowed} за співвідношенням {ratio}"
+    "apprenticeRatioViolation": "{trade}: {apprenticeCount, plural, one {# учень перевищує} few {# учні перевищують} many {# учнів перевищують} other {# учня перевищують}} допустимі {maxAllowed} за співвідношенням {ratio}"
   },
   "jobCosting": {
     "title": "Облік витрат за об'єктом",
@@ -3383,7 +3389,7 @@
     "subtitle": "Претензії, подані до страховика — від першого звернення до виплати.",
     "newClaim": "Подати претензію",
     "exportCsv": "Експорт CSV",
-    "openTotal": "{amount} {currency} у відкритих претензіях",
+    "openTotal": "{amount} у відкритих претензіях",
     "noProject": "Без проєкту",
     "allProjects": "Усі проєкти",
     "allStatuses": "Усі статуси",
@@ -4035,9 +4041,9 @@
     "condition_damaged": "Пошкоджений",
     "condition_lost": "Втрачений",
     "checkedOutTools": "Виданий інструмент",
-    "totalCharged": "Стягнуто {amount} {currency}",
+    "totalCharged": "Стягнуто {amount}",
     "stillOut": "Досі на руках",
-    "chargeAmountLabel": "Стягнуто {amount} {currency}",
+    "chargeAmountLabel": "Стягнуто {amount}",
     "calibration": "Калібрування"
   },
   "lienCompliance": {
@@ -4104,7 +4110,7 @@
     "newScenario": "Новий сценарій",
     "namePlaceholder": "Назва сценарію",
     "noScenarios": "Сценаріїв поки немає.",
-    "overridesCount": "{count} перевизначення(нь) завдань",
+    "overridesCount": "{count, plural, one {# перевизначення завдання} few {# перевизначення завдань} many {# перевизначень завдань} other {# перевизначення завдань}}",
     "selectTask": "Оберіть завдання",
     "startDate": "Дата початку",
     "dueDate": "Термін",
@@ -4112,7 +4118,7 @@
     "compare": "Порівняти з базовим планом",
     "noComparableTasks": "Ще немає завдань із датами для порівняння.",
     "noFinishChange": "Дата завершення проєкту не зміниться.",
-    "finishDelta": "Завершення проєкту зміститься на {days} дн. {direction}.",
+    "finishDelta": "Завершення проєкту зміститься на {days, plural, one {# день} few {# дні} many {# днів} other {# дня}} {direction}.",
     "later": "пізніше",
     "earlier": "раніше",
     "confirmDeleteScenario": "Видалити цей сценарій графіка?"
@@ -4302,7 +4308,7 @@
     "disputeReasonPlaceholder": "Причина оскарження",
     "submitDispute": "Надіслати оскарження",
     "disputeReasonLabel": "Причина оскарження: {reason}",
-    "revisionCount": "Переглянуто {count} раз(ів)",
+    "revisionCount": "Переглянуто {count, plural, one {# раз} few {# рази} many {# разів} other {# разу}}",
     "reviseAndResubmit": "Переглянути й подати повторно",
     "resubmit": "Подати повторно"
   },
@@ -4401,13 +4407,13 @@
     "rejected": "Відхилено",
     "accept": "Прийняти",
     "reject": "Відхилити",
-    "acceptedTotal": "Чисто прийнято: {amount} {currency}"
+    "acceptedTotal": "Чисто прийнято: {amount}"
   },
   "productivityScorecard": {
     "title": "Показники продуктивності бригад",
     "hint": "У межах усієї компанії, по всіх проєктах — згруповано за одиницею в межах кожної бригади, оскільки год./од. порівнянні лише коли одиниці збігаються.",
     "unassignedCrew": "Без бригади",
-    "projectCount": "{count} проєкт(ів)",
+    "projectCount": "{count, plural, one {# проєкт} few {# проєкти} many {# проєктів} other {# проєкту}}",
     "totalHours": "{hours} год. загалом",
     "hoursPerUnit": "{rate} год./{unit}"
   },
@@ -4438,7 +4444,7 @@
     "slippage": "Відставання",
     "taskRemoved": "видалено",
     "onSchedule": "За графіком",
-    "slippageDays": "{days} дн. {direction}",
+    "slippageDays": "{days, plural, one {# день} few {# дні} many {# днів} other {# дня}} {direction}",
     "late": "відставання",
     "early": "випередження"
   },
@@ -4642,5 +4648,87 @@
     "signDocument": "Підписання документа",
     "survey": "Опитування",
     "feedback": "Відгук"
+  },
+  "apiErrors": {
+    "network": "Немає з'єднання із сервером. Перевірте підключення і спробуйте ще раз.",
+    "server": "Сталася помилка на нашому боці. Спробуйте ще раз за хвилину.",
+    "forbidden": "У вас немає доступу до цього.",
+    "unauthorized": "Сеанс завершився. Увійдіть знову.",
+    "tooManyRequests": "Забагато спроб. Зачекайте хвилину і спробуйте ще раз.",
+    "notFound": "Цей запис не існує або більше не доступний.",
+    "badRequest": "Не вдалося обробити запит."
+  },
+  "publicLink": {
+    "invalidTitle": "Посилання недійсне або застаріло",
+    "invalidBody": "Можливо, його введено з помилкою, уже використано або відкликано. Попросіть відправника надіслати нове посилання.",
+    "loadFailedTitle": "Не вдалося завантажити сторінку",
+    "loadFailedBody": "Перевірте підключення і спробуйте ще раз.",
+    "retry": "Спробувати ще раз",
+    "loading": "Завантаження…",
+    "alreadySubmittedTitle": "Уже надіслано",
+    "alreadySubmittedBody": "Ми вже отримали вашу відповідь за цим посиланням. Дякуємо!",
+    "visitNotCompletedBody": "Цей візит ще не завершено. Залишити відгук можна буде після його завершення.",
+    "backToPortal": "Повернутися до порталу"
+  },
+  "appErrors": {
+    "title": "Щось пішло не так",
+    "pageBody": "На сторінці сталася неочікувана помилка. Про неї вже повідомлено — спробуйте ще раз або перезавантажте сторінку, якщо це повторюється.",
+    "retry": "Спробувати ще раз",
+    "notFoundTitle": "Сторінку не знайдено",
+    "notFoundBody": "За цією адресою нічого немає. Можливо, сторінку перенесено або посилання введено з помилкою.",
+    "notFoundHome": "На головну"
+  },
+  "labels": {
+    "toggleSidebar": "Показати або сховати бічну панель",
+    "toggleTheme": "Перемкнути світлу й темну тему",
+    "dismissNotification": "Закрити сповіщення",
+    "perMonth": "{amount}/міс.",
+    "perSeatPerMonth": "{amount} за місце / міс.",
+    "miles": "{value} миль",
+    "termMonths": "{count, plural, one {# місяць} few {# місяці} many {# місяців} other {# місяця}}",
+    "unitNamePlaceholder": "Кілограм",
+    "metaDescription": "Кошторис → матеріали → рахунок, в одному місці.",
+    "plan_starter": "Starter",
+    "plan_growth": "Growth",
+    "plan_pro": "Pro",
+    "channelUnattributed": "Без джерела"
+  },
+  "projectHealth": {
+    "factor_over_budget": "Бюджет перевищено",
+    "factor_near_budget": "Бюджет майже вичерпано",
+    "factor_open_rfis": "{count, plural, one {# відкритий RFI} few {# відкриті RFI} many {# відкритих RFI} other {# відкритого RFI}}",
+    "factor_open_punch_items": "{count, plural, one {# відкритий недолік} few {# відкриті недоліки} many {# відкритих недоліків} other {# відкритого недоліку}}"
+  },
+  "reportFields": {
+    "actualCost": "Фактичні витрати",
+    "address": "Адреса",
+    "client": "Клієнт",
+    "cost": "Вартість",
+    "createdAt": "Створено",
+    "date": "Дата",
+    "dueDate": "Термін",
+    "grandTotal": "Загальна сума",
+    "handoverDate": "Дата передачі",
+    "hours": "Години",
+    "invoicedTotal": "Виставлено",
+    "margin": "Маржа",
+    "marginPercent": "Маржа %",
+    "month": "Місяць",
+    "name": "Назва",
+    "number": "Номер",
+    "project": "Проєкт",
+    "projectName": "Проєкт",
+    "revenue": "Дохід",
+    "role": "Роль",
+    "status": "Статус",
+    "subject": "Тема",
+    "subtotal": "Проміжний підсумок",
+    "task": "Завдання",
+    "taxAmount": "Податок",
+    "title": "Назва",
+    "total": "Разом",
+    "warrantyMonths": "Гарантія (місяці)",
+    "worker": "Працівник",
+    "workerName": "Працівник"
   }
 }

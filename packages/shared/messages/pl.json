@@ -35,7 +35,10 @@
     "all": "Wszystkie",
     "copyLink": "Kopiuj link",
     "linkCopied": "Skopiowano",
-    "print": "Drukuj"
+    "print": "Drukuj",
+    "confirmDelete": "Usunąć ten element?",
+    "description": "Opis",
+    "notes": "Notatki"
   },
   "nav": {
     "menu": "Menu",
@@ -174,7 +177,7 @@
     "widgetOpenRfis": "Otwarte zapytania",
     "widgetExpired": "Wygasłe",
     "widgetExpiringSoon": "Wkrótce wygasa",
-    "widgetBacklogDetail": "{contractValue} {currency} w kontraktach, {billedToDate} {currency} zafakturowano"
+    "widgetBacklogDetail": "{contractValue} w kontraktach, {billedToDate} zafakturowano"
   },
   "settings": {
     "onlinePayments": "Płatności online od klientów",
@@ -460,7 +463,7 @@
     "rateCatalogApprovalThresholdPercentHint": "Zmiana godzin roboczych o więcej niż ten procent jest wstrzymywana do zatwierdzenia zamiast zastosowana od razu. Pozostaw puste, aby każda zmiana obowiązywała natychmiast.",
     "noThresholdPlaceholder": "Brak progu",
     "npsDetractorFollowUpEnabled": "Działania następcze przy niskim NPS",
-    "npsDetractorFollowUpEnabledHint": "Odpowiedź klienta na poziomie 6/10 lub niższym dodaje zadanie następcze do projektu i wysyła e-mail do właściciela(i) firmy.",
+    "npsDetractorFollowUpEnabledHint": "Odpowiedź klienta na poziomie 6/10 lub niższym dodaje zadanie następcze do projektu i wysyła e-mail do właścicieli firmy.",
     "tab_account": "Konto i powiadomienia",
     "tab_company": "Firma i marka",
     "tab_billing": "Rozliczenia i franczyza",
@@ -476,7 +479,8 @@
     "confirmDeleteCustomRole": "Usunąć tę niestandardową rolę? Osoby, którym jest jeszcze przypisana, stracą te uprawnienia.",
     "confirmDeleteWebhook": "Usunąć ten webhook? Natychmiast przestanie otrzymywać zdarzenia.",
     "auditLoadMore": "Wczytaj więcej",
-    "companySettingsManagerOnlyHint": "Tylko właściciele i administratorzy mogą edytować ustawienia firmy."
+    "companySettingsManagerOnlyHint": "Tylko właściciele i administratorzy mogą edytować ustawienia firmy.",
+    "error": "Coś poszło nie tak"
   },
   "projects": {
     "title": "Projekty",
@@ -551,15 +555,15 @@
     "expectedCloseDate": "Przewidywana data zamknięcia",
     "pipelineForecast": "Prognoza lejka sprzedaży",
     "weightedPipelineValue": "Ważona wartość lejka",
-    "unscheduledWeightedValue": "{value} {currency} bez przewidywanej daty zamknięcia",
+    "unscheduledWeightedValue": "{value} bez przewidywanej daty zamknięcia",
     "funnelReport": "Raport lejka",
     "winRate": "Wskaźnik wygranych",
     "winLossCount": "{won} wygranych · {lost} przegranych",
     "avgDays": "śr. {days}d",
     "ownerLeaderboard": "Ranking opiekunów",
     "ownerLeaderboardEmpty": "Brak wygranych transakcji — wypełni się, gdy opiekunowie zaczną pozyskiwać klientów.",
-    "wonSummary": "Wygrane: {count} · {value} {currency}",
-    "openSummary": "Otwarte: {count} · {value} {currency}",
+    "wonSummary": "Wygrane: {count} · {value}",
+    "openSummary": "Otwarte: {count} · {value}",
     "referralReward": "Nagroda za polecenie",
     "referralReward_pending": "Nagroda do wypłaty",
     "referralReward_paid": "Nagroda wypłacona",
@@ -670,7 +674,9 @@
     "enrollInTraining": "Zarządzaj zapisami na szkolenia",
     "noToolCheckouts": "Brak wydanych narzędzi.",
     "checkOutTool": "Wydaj narzędzie",
-    "confirmDeleteCertification": "Usunąć ten wpis certyfikacji?"
+    "confirmDeleteCertification": "Usunąć ten wpis certyfikacji?",
+    "markComplete": "Oznacz jako ukończone",
+    "trainingCompleted": "Ukończono"
   },
   "documents": {
     "title": "Dokumenty",
@@ -826,15 +832,15 @@
     "grandTotalDelta": "Zmiana sumy całkowitej",
     "noDifferences": "Brak różnic między tymi wersjami",
     "costCodeUnassigned": "Bez kodu kosztowego",
-    "benchmarkHint": "Typowa cena dla tego kodu kosztowego w {count} poprzednich kosztorysach: {median} {currency}/jednostkę",
+    "benchmarkHint": "Typowa cena dla tego kodu kosztowego w {count, plural, one {# poprzednim kosztorysie} few {# poprzednich kosztorysach} many {# poprzednich kosztorysach} other {# poprzednich kosztorysach}}: {median}/jednostkę",
     "computeFormula": "Oblicz",
     "computedQuantity": "= {value} {unit}",
     "clientDecision_countered": "Klient zaproponował inną cenę",
-    "clientDecisionThanksCountered": "Dziękujemy — przekazaliśmy zespołowi Twoją propozycję ceny {amount} {currency}.",
+    "clientDecisionThanksCountered": "Dziękujemy — przekazaliśmy zespołowi Twoją propozycję ceny {amount}.",
     "counterOfferAmountLabel": "Twoja proponowana cena",
     "proposeDifferentPrice": "Zaproponuj inną cenę",
     "sendCounterOffer": "Wyślij propozycję",
-    "counterOfferReceived": "Klient zaproponował zamiast tego {amount} {currency}.",
+    "counterOfferReceived": "Klient zaproponował zamiast tego {amount}.",
     "createRevisedVariant": "Utwórz poprawioną wersję",
     "revisedVariantLabel": "Poprawiona",
     "scheduleImpact": "Wpływ na harmonogram",
@@ -927,7 +933,7 @@
     "sendPeppolNetwork": "Wyślij przez sieć Peppol",
     "peppolSent": "Wysłano przez sieć Peppol.",
     "autopay": "Autopłatność",
-    "lateFeeAccrued": "Naliczona opłata za zwłokę: {amount} {currency}",
+    "lateFeeAccrued": "Naliczona opłata za zwłokę: {amount}",
     "chargeLateFee": "Naliczyć opłatę za zwłokę",
     "taxAmount": "Podatek",
     "recalculateTax": "Przelicz podatek",
@@ -1150,7 +1156,7 @@
     "notes": "Uwagi",
     "submitBid": "Złóż ofertę",
     "updateBid": "Zaktualizuj ofertę",
-    "yourBidWas": "Twoja oferta: {amount} {currency}",
+    "yourBidWas": "Twoja oferta: {amount}",
     "punchListItems": "Twoje pozycje listy usterek",
     "noPunchListItems": "Nie przypisano Ci jeszcze żadnych pozycji listy usterek.",
     "punchListStatus_open": "Otwarte",
@@ -1335,7 +1341,7 @@
     "catalogSync": "Synchronizacja cen katalogu",
     "catalogSyncHint": "Prześlij cennik tego dostawcy (CSV: code, unitPrice), aby zbiorczo zaktualizować ceny materiałów, dla których ten dostawca jest preferowany.",
     "uploadCatalogCsv": "Prześlij CSV",
-    "catalogSyncResult": "Zaktualizowano {updated} cen(y), pominięto {skipped}",
+    "catalogSyncResult": "Zaktualizowano {updated, plural, one {# cenę} few {# ceny} many {# cen} other {# ceny}}, pominięto {skipped}",
     "averageRating": "Śr. ocena",
     "wouldReorderPercent": "Ponowne zamówienie",
     "purchaseOrders": "Zamówienia zakupu",
@@ -1472,7 +1478,7 @@
     "disbursementCalendarHint": "Zatwierdzone, nieopłacone faktury pogrupowane według tygodnia, w którym spodziewana jest płatność.",
     "weekOf": "Tydzień od",
     "totalDue": "Razem do zapłaty",
-    "unscheduledTotal": "{amount} {currency} zatwierdzonych faktur nie ma terminu płatności ani zaplanowanej daty płatności."
+    "unscheduledTotal": "{amount} zatwierdzonych faktur nie ma terminu płatności ani zaplanowanej daty płatności."
   },
   "incomingEInvoices": {
     "title": "Przychodzące e-faktury",
@@ -1559,7 +1565,7 @@
     "queuedOfflineNoReceipt": "Zapisano offline — zdjęcie paragonu trzeba będzie dodać po powrocie do sieci",
     "receiptQueuedOffline": "Zapisano — zdjęcie paragonu zostanie przesłane po powrocie do sieci",
     "receiptUploadFailed": "Wydatek zapisany, ale nie udało się przesłać zdjęcia paragonu. Spróbuj ponownie później.",
-    "syncConflicts": "{count} element(ów) nie udało się zsynchronizować — coś zmieniło się w międzyczasie",
+    "syncConflicts": "Nie udało się zsynchronizować {count, plural, one {# elementu} few {# elementów} many {# elementów} other {# elementu}} — coś zmieniło się w międzyczasie",
     "retrySync": "Ponów",
     "discardSync": "Odrzuć",
     "voiceInputStart": "Rozpocznij wprowadzanie głosowe",
@@ -1694,7 +1700,7 @@
     "projectedInflow": "Przewidywane wpływy",
     "projectedOutflow": "Przewidywane wydatki",
     "projectedNet": "Przewidywane saldo",
-    "unscheduledNote": "Dodatkowo {inflow} {currency} wpływów i {outflow} {currency} wydatków bez terminu płatności, nieuwzględnionych w poniższych tygodniach.",
+    "unscheduledNote": "Dodatkowo {inflow} wpływów i {outflow} wydatków bez terminu płatności, nieuwzględnionych w poniższych tygodniach.",
     "inflow": "Wpływy",
     "outflow": "Wydatki",
     "net": "Saldo",
@@ -1877,11 +1883,11 @@
     "weatherDelayHours": "Opóźnienie pogodowe (godz.)",
     "weatherDelayBadge": "{hours} godz. opóźnienia pogodowego",
     "weatherDelayReport": "Raport opóźnień pogodowych",
-    "weatherDelayTotal": "{hours} godzin utraconych przez pogodę — sugeruje przesunięcie harmonogramu o {days} dni.",
+    "weatherDelayTotal": "{hours} godzin utraconych przez pogodę — sugeruje przesunięcie harmonogramu o {days, plural, one {# dzień} few {# dni} many {# dni} other {# dnia}}.",
     "exportWeatherDelayReport": "Eksportuj CSV",
     "shiftScheduleDays": "Przesuń o (dni)",
     "shiftSchedule": "Przesuń harmonogram",
-    "shiftScheduleResult": "Przesunięto {tasks} zadanie(a) i {milestones} kamień/kamienie milowe.",
+    "shiftScheduleResult": "Przesunięto {tasks, plural, one {# zadanie} few {# zadania} many {# zadań} other {# zadania}} i {milestones, plural, one {# kamień milowy} few {# kamienie milowe} many {# kamieni milowych} other {# kamienia milowego}}.",
     "shiftScheduleHint": "Przesuwa termin każdego nieukończonego zadania i kamienia milowego o tyle dni — cofnij ręcznie w razie pomyłki."
   },
   "punchList": {
@@ -2149,8 +2155,8 @@
     "endDate": "Data zakończenia",
     "note": "Notatka",
     "assign": "Przypisz",
-    "newAssignmentConflict": "Nakłada się na {count} inne przypisanie(a) tego samego zasobu:",
-    "conflictsDetected": "Wykryto {count} konflikt(y) harmonogramu",
+    "newAssignmentConflict": "Nakłada się na {count, plural, one {# inne przypisanie} few {# inne przypisania} many {# innych przypisań} other {# innego przypisania}} tego samego zasobu:",
+    "conflictsDetected": "Wykryto {count, plural, one {# konflikt harmonogramu} few {# konflikty harmonogramu} many {# konfliktów harmonogramu} other {# konfliktu harmonogramu}}",
     "calendar": "Kalendarz",
     "noAssignments": "Brak przypisań.",
     "allAssignments": "Wszystkie przypisania",
@@ -2166,7 +2172,7 @@
     "assignCrew": "Przypisz brygadę",
     "levelSchedule": "Wyrównaj harmonogram",
     "levelNoChanges": "Już wyrównany — nic do przesunięcia.",
-    "leveledMoves": "Przesunięto {count} przydział(y), aby rozwiązać nakładanie się.",
+    "leveledMoves": "Przesunięto {count, plural, one {# przydział} few {# przydziały} many {# przydziałów} other {# przydziału}}, aby rozwiązać nakładanie się.",
     "confirmDeleteCrew": "Usunąć tę brygadę? Już przypisane zadania nie zostaną naruszone.",
     "confirmRemoveAssignment": "Usunąć to przypisanie?"
   },
@@ -2185,7 +2191,7 @@
     "topic": "Temat",
     "notes": "Notatki",
     "noTemplates": "Brak szablonów.",
-    "itemCount": "{count} pozycja/e",
+    "itemCount": "{count, plural, one {# pozycja} few {# pozycje} many {# pozycji} other {# pozycji}}",
     "useTemplate": "Użyj szablonu…",
     "punch_list": "Lista usterek",
     "rfi": "RFI",
@@ -2295,15 +2301,15 @@
     "title": "Fakturowanie etapowe",
     "hint": "Wystawiaj klientowi faktury etapowe według postępu prac, zatrzymując procent kaucji gwarancyjnej do zakończenia.",
     "percentBilled": "Zafakturowano {percent}%",
-    "billedOfContract": "{billed} z {total} {currency} kontraktu",
+    "billedOfContract": "{billed} z {total} kontraktu",
     "retainageHeld": "Zatrzymana kaucja",
     "drawLabel": "Etap do {percent}%",
     "retainageReleaseLabel": "Zwrot kaucji",
     "percentComplete": "% ukończenia",
     "retainagePercent": "% kaucji",
     "generateDraw": "Wystaw fakturę etapową",
-    "releaseRetainage": "Zwróć kaucję ({amount} {currency})",
-    "retainageReleasedSoFar": "Zwolniono dotychczas: {amount} {currency}",
+    "releaseRetainage": "Zwróć kaucję ({amount})",
+    "retainageReleasedSoFar": "Zwolniono dotychczas: {amount}",
     "releasePartialInstead": "Zwolnij zamiast tego część kwoty",
     "partialAmount": "Kwota",
     "releasePartial": "Zwolnij",
@@ -2329,7 +2335,7 @@
     "noSubcontractors": "Najpierw dodaj podwykonawcę, aby zaprosić go do złożenia oferty.",
     "sendBidRequest": "Wyślij zapytanie ofertowe",
     "noBidRequests": "Brak zapytań ofertowych.",
-    "bidCount": "{count} z {total} otrzymanych ofert",
+    "bidCount": "Otrzymano ofert: {count} z {total}",
     "noBidYet": "Brak oferty",
     "award": "Przyznaj",
     "awarded": "Przyznano",
@@ -2437,7 +2443,7 @@
     "readinessTitle": "Gotowość do przekazania",
     "readinessReady": "Gotowy do przekazania",
     "readinessNotReady": "Jeszcze niegotowy",
-    "readinessCounts": "{asBuilt} dok. powykonawczych, {omManual} instrukcji eksploatacji (O&M) w aktach",
+    "readinessCounts": "Dokumentów powykonawczych: {asBuilt}, instrukcji eksploatacji (O&M): {omManual}",
     "missing_as_built": "Brak dokumentacji powykonawczej",
     "missing_om_manual": "Brak instrukcji eksploatacji (O&M)",
     "missing_punch_list": "Otwarte usterki",
@@ -2621,7 +2627,7 @@
   "expenses": {
     "title": "Wydatki",
     "subtitle": "Wydatki zgłoszone z terenu, oczekujące na zatwierdzenie i zwrot.",
-    "pendingTotal": "{amount} {currency} oczekuje na zatwierdzenie",
+    "pendingTotal": "{amount} oczekuje na zatwierdzenie",
     "allProjects": "Wszystkie projekty",
     "allStatuses": "Wszystkie statusy",
     "empty": "Nie zgłoszono jeszcze żadnych wydatków.",
@@ -2648,7 +2654,7 @@
     "confirmReject": "Potwierdź odrzucenie",
     "rejectedReasonLabel": "Odrzucono",
     "anomaly": "+{percent}% od typowej",
-    "anomalyHint": "Nietypowo wysoka kwota dla tej kategorii — średnia firmowa to {average} {currency}."
+    "anomalyHint": "Nietypowo wysoka kwota dla tej kategorii — średnia firmowa to {average}."
   },
   "materialRfqs": {
     "title": "Zapytania ofertowe na materiały",
@@ -2806,7 +2812,7 @@
     "categorizationRules": "Reguły kategoryzacji",
     "categorizationRulesHint": "Transakcja, której opis zawiera ten tekst, zostaje automatycznie oznaczona kategorią — stosowane automatycznie po każdym imporcie CSV oraz na żądanie poniżej.",
     "applyRulesNow": "Zastosuj reguły teraz",
-    "applyRulesResult": "Skategoryzowano {count} transakcji.",
+    "applyRulesResult": "Skategoryzowano {count, plural, one {# transakcję} few {# transakcje} many {# transakcji} other {# transakcji}}.",
     "rulePatternPlaceholder": "np. Home Depot",
     "addRule": "Dodaj regułę",
     "category": "Kategoria",
@@ -2925,7 +2931,7 @@
     "codePlaceholder": "Kod, np. 03 00 00",
     "namePlaceholder": "Nazwa, np. Beton",
     "importStandardLibrary": "Importuj CSI MasterFormat",
-    "importResult": "Zaimportowano {created} dział(y), {skipped} już istniało.",
+    "importResult": "Zaimportowano {created, plural, one {# dział} few {# działy} many {# działów} other {# działu}}, {skipped} już istniało.",
     "confirmDelete": "Usunąć ten kod kosztowy? Pozycje kosztorysu, zlecenia zmiany i kosztów, które go używały, zostaną oznaczone jako „Nieskategoryzowane” zamiast zostać usunięte."
   },
   "wageClassifications": {
@@ -2975,7 +2981,7 @@
     "downloadPdf": "Pobierz PDF",
     "fringe": "Świadczenie",
     "apprentice": "Praktykant",
-    "apprenticeRatioViolation": "{trade}: {apprenticeCount} praktykant(ów) przekracza limit {maxAllowed} przy proporcji {ratio}"
+    "apprenticeRatioViolation": "{trade}: {apprenticeCount, plural, one {# praktykant przekracza} few {# praktykantów przekracza} many {# praktykantów przekracza} other {# praktykanta przekracza}} limit {maxAllowed} przy proporcji {ratio}"
   },
   "jobCosting": {
     "title": "Kosztorysowanie robót",
@@ -3383,7 +3389,7 @@
     "subtitle": "Roszczenia zgłoszone do ubezpieczyciela — od pierwszego zgłoszenia po wypłatę odszkodowania.",
     "newClaim": "Zgłoś roszczenie",
     "exportCsv": "Eksportuj CSV",
-    "openTotal": "{amount} {currency} w otwartych roszczeniach",
+    "openTotal": "{amount} w otwartych roszczeniach",
     "noProject": "Brak projektu",
     "allProjects": "Wszystkie projekty",
     "allStatuses": "Wszystkie statusy",
@@ -4035,9 +4041,9 @@
     "condition_damaged": "Uszkodzony",
     "condition_lost": "Zgubiony",
     "checkedOutTools": "Wydane narzędzia",
-    "totalCharged": "Obciążono {amount} {currency}",
+    "totalCharged": "Obciążono {amount}",
     "stillOut": "Nadal wydane",
-    "chargeAmountLabel": "Obciążono {amount} {currency}",
+    "chargeAmountLabel": "Obciążono {amount}",
     "calibration": "Kalibracja"
   },
   "lienCompliance": {
@@ -4104,7 +4110,7 @@
     "newScenario": "Nowy scenariusz",
     "namePlaceholder": "Nazwa scenariusza",
     "noScenarios": "Brak scenariuszy.",
-    "overridesCount": "{count} nadpisanie(a) zadań",
+    "overridesCount": "{count, plural, one {# nadpisanie zadania} few {# nadpisania zadań} many {# nadpisań zadań} other {# nadpisania zadań}}",
     "selectTask": "Wybierz zadanie",
     "startDate": "Data rozpoczęcia",
     "dueDate": "Termin",
@@ -4112,7 +4118,7 @@
     "compare": "Porównaj z planem bazowym",
     "noComparableTasks": "Brak zadań z datami do porównania.",
     "noFinishChange": "Brak zmiany daty zakończenia projektu.",
-    "finishDelta": "Zakończenie projektu przesunęłoby się o {days} dni {direction}.",
+    "finishDelta": "Zakończenie projektu przesunęłoby się o {days, plural, one {# dzień} few {# dni} many {# dni} other {# dnia}} {direction}.",
     "later": "później",
     "earlier": "wcześniej",
     "confirmDeleteScenario": "Usunąć ten scenariusz harmonogramu?"
@@ -4151,7 +4157,7 @@
     "noEstimates": "Brak jeszcze ocen — prześlij zdjęcia projektu z tagami etapów i przelicz ponownie.",
     "billedPercent": "zafakturowano na {percent}%",
     "varianceFlag": "Ta ocena różni się od ostatnio zafakturowanego procentu bardziej niż zwykle — warto to sprawdzić przed kolejną fakturą.",
-    "basedOnPhotos": "Na podstawie {count} zdjęć",
+    "basedOnPhotos": "Na podstawie {count, plural, one {# zdjęcia} few {# zdjęć} many {# zdjęć} other {# zdjęcia}}",
     "history": "Historia"
   },
   "markupRules": {
@@ -4302,7 +4308,7 @@
     "disputeReasonPlaceholder": "Powód zakwestionowania",
     "submitDispute": "Wyślij zastrzeżenie",
     "disputeReasonLabel": "Powód zastrzeżenia: {reason}",
-    "revisionCount": "Poprawiono {count} raz(y)",
+    "revisionCount": "Poprawiono {count, plural, one {# raz} few {# razy} many {# razy} other {# raza}}",
     "reviseAndResubmit": "Popraw i wyślij ponownie",
     "resubmit": "Wyślij ponownie"
   },
@@ -4401,13 +4407,13 @@
     "rejected": "Odrzucony",
     "accept": "Zaakceptuj",
     "reject": "Odrzuć",
-    "acceptedTotal": "Zaakceptowano netto: {amount} {currency}"
+    "acceptedTotal": "Zaakceptowano netto: {amount}"
   },
   "productivityScorecard": {
     "title": "Zestawienie wydajności brygad",
     "hint": "W skali całej firmy, we wszystkich projektach — pogrupowane wg jednostki w ramach każdej brygady, ponieważ godz./jednostkę ma sens porównawczy tylko przy tych samych jednostkach.",
     "unassignedCrew": "Nieprzypisana",
-    "projectCount": "{count} projekt(ów)",
+    "projectCount": "{count, plural, one {# projekt} few {# projekty} many {# projektów} other {# projektu}}",
     "totalHours": "{hours} godz. łącznie",
     "hoursPerUnit": "{rate} godz./{unit}"
   },
@@ -4438,7 +4444,7 @@
     "slippage": "Opóźnienie",
     "taskRemoved": "usunięte",
     "onSchedule": "Zgodnie z harmonogramem",
-    "slippageDays": "{days} dni {direction}",
+    "slippageDays": "{days, plural, one {# dzień} few {# dni} many {# dni} other {# dnia}} {direction}",
     "late": "opóźnienia",
     "early": "wyprzedzenia"
   },
@@ -4642,5 +4648,87 @@
     "signDocument": "Podpisanie dokumentu",
     "survey": "Ankieta",
     "feedback": "Opinia"
+  },
+  "apiErrors": {
+    "network": "Brak połączenia z serwerem. Sprawdź połączenie i spróbuj ponownie.",
+    "server": "Wystąpił błąd po naszej stronie. Spróbuj ponownie za chwilę.",
+    "forbidden": "Nie masz do tego dostępu.",
+    "unauthorized": "Sesja wygasła. Zaloguj się ponownie.",
+    "tooManyRequests": "Zbyt wiele prób. Odczekaj chwilę i spróbuj ponownie.",
+    "notFound": "Ten element nie istnieje lub nie jest już dostępny.",
+    "badRequest": "Nie udało się przetworzyć żądania."
+  },
+  "publicLink": {
+    "invalidTitle": "Ten link jest nieprawidłowy lub wygasł",
+    "invalidBody": "Mógł zostać błędnie wpisany, już wykorzystany lub wycofany. Poproś nadawcę o nowy link.",
+    "loadFailedTitle": "Nie udało się wczytać tej strony",
+    "loadFailedBody": "Sprawdź połączenie i spróbuj ponownie.",
+    "retry": "Spróbuj ponownie",
+    "loading": "Wczytywanie…",
+    "alreadySubmittedTitle": "Już wysłano",
+    "alreadySubmittedBody": "Otrzymaliśmy już Twoją odpowiedź dla tego linku. Dziękujemy!",
+    "visitNotCompletedBody": "Ta wizyta nie została jeszcze zakończona. Opinię możesz zostawić po jej zakończeniu.",
+    "backToPortal": "Wróć do portalu"
+  },
+  "appErrors": {
+    "title": "Coś poszło nie tak",
+    "pageBody": "Na stronie wystąpił nieoczekiwany błąd. Został zgłoszony — spróbuj ponownie lub odśwież stronę, jeśli to się powtarza.",
+    "retry": "Spróbuj ponownie",
+    "notFoundTitle": "Nie znaleziono strony",
+    "notFoundBody": "Pod tym adresem nic nie ma. Strona mogła zostać przeniesiona albo link zawiera błąd.",
+    "notFoundHome": "Przejdź do strony głównej"
+  },
+  "labels": {
+    "toggleSidebar": "Pokaż lub ukryj pasek boczny",
+    "toggleTheme": "Przełącz jasny i ciemny motyw",
+    "dismissNotification": "Zamknij powiadomienie",
+    "perMonth": "{amount}/mies.",
+    "perSeatPerMonth": "{amount} za miejsce / mies.",
+    "miles": "{value} mil",
+    "termMonths": "{count, plural, one {# miesiąc} few {# miesiące} many {# miesięcy} other {# miesiąca}}",
+    "unitNamePlaceholder": "Kilogram",
+    "metaDescription": "Kosztorys → materiały → faktura, w jednym miejscu.",
+    "plan_starter": "Starter",
+    "plan_growth": "Growth",
+    "plan_pro": "Pro",
+    "channelUnattributed": "Bez źródła"
+  },
+  "projectHealth": {
+    "factor_over_budget": "Budżet przekroczony",
+    "factor_near_budget": "Budżet prawie wyczerpany",
+    "factor_open_rfis": "{count, plural, one {# otwarte RFI} few {# otwarte RFI} many {# otwartych RFI} other {# otwartego RFI}}",
+    "factor_open_punch_items": "{count, plural, one {# otwarta usterka} few {# otwarte usterki} many {# otwartych usterek} other {# otwartej usterki}}"
+  },
+  "reportFields": {
+    "actualCost": "Koszt rzeczywisty",
+    "address": "Adres",
+    "client": "Klient",
+    "cost": "Koszt",
+    "createdAt": "Utworzono",
+    "date": "Data",
+    "dueDate": "Termin",
+    "grandTotal": "Suma końcowa",
+    "handoverDate": "Data przekazania",
+    "hours": "Godziny",
+    "invoicedTotal": "Zafakturowano",
+    "margin": "Marża",
+    "marginPercent": "Marża %",
+    "month": "Miesiąc",
+    "name": "Nazwa",
+    "number": "Numer",
+    "project": "Projekt",
+    "projectName": "Projekt",
+    "revenue": "Przychód",
+    "role": "Rola",
+    "status": "Status",
+    "subject": "Temat",
+    "subtotal": "Suma częściowa",
+    "task": "Zadanie",
+    "taxAmount": "Podatek",
+    "title": "Tytuł",
+    "total": "Razem",
+    "warrantyMonths": "Gwarancja (miesiące)",
+    "worker": "Pracownik",
+    "workerName": "Pracownik"
   }
 }

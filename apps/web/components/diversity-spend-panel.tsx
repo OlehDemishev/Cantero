@@ -21,7 +21,7 @@ export function DiversitySpendPanel() {
   const t = useTranslations("diversitySpend");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "USD";
-  const money = (amount: number) => formatCurrency(amount, currency, me?.company.locale);
+  const money = (amount: number) => formatCurrency(amount, currency);
 
   const [report, setReport] = useState<DiversitySpendReport | null>(null);
 

@@ -25,7 +25,7 @@ export function WinRatePanel() {
   const t = useTranslations("winRate");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "USD";
-  const money = (amount: number) => formatCurrency(amount, currency, me?.company.locale);
+  const money = (amount: number) => formatCurrency(amount, currency);
 
   const [report, setReport] = useState<WinRateReport | null>(null);
 

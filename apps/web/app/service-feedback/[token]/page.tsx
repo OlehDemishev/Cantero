@@ -1,8 +1,18 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, ApiError } from "@/lib/api-client";
+import { PublicLinkError, PublicNotice } from "@/components/public-link-error";
+import { useCompanyLocale } from "@/components/public-locale";
+
+/** GET of the same token: whose form it is, in which language, and whether it is still open. */
+interface FormLink {
+  companyName: string;
+  locale: string;
+  submitted: boolean;
+  completed: boolean;
+}
 
 export default function ServiceFeedbackPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = use(params);
@@ -13,6 +23,16 @@ export default function ServiceFeedbackPage({ params }: { params: Promise<{ toke
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const tp = useTranslations("publicLink");
+  const [link, setLink] = useState<FormLink | null>(null);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  useCompanyLocale(link?.locale);
+
+  // Check the link before showing the form, so a wrong or used one says so up front rather
+  // than after the person has filled it in.
+  useEffect(() => {
+    apiFetch<FormLink>(`/service-visits/feedback/${token}`).then(setLink).catch(setLoadError);
+  }, [token]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -31,6 +51,17 @@ export default function ServiceFeedbackPage({ params }: { params: Promise<{ toke
       setSubmitting(false);
     }
   }
+
+  if (loadError) return <PublicLinkError error={loadError} />;
+  if (!link) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-surface-muted px-6 py-12">
+        <p className="text-sm text-fg-subtle">{tp("loading")}</p>
+      </main>
+    );
+  }
+  if (link.submitted && !done) return <PublicNotice title={tp("alreadySubmittedTitle")} body={tp("alreadySubmittedBody")} />;
+  if (!link.completed) return <PublicNotice title={t("title")} body={tp("visitNotCompletedBody")} />;
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">

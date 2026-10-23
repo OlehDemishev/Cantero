@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { MARKUP_COST_TYPES, type MarkupCostType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { formatNumber } from "@/lib/format-currency";
 
 interface MarkupRule {
   id: string;
@@ -59,7 +60,7 @@ export function MarkupRulesPanel() {
           {rules.map((r) => (
             <li key={r.id} className="flex items-center justify-between text-sm">
               <span className="text-fg-muted">
-                {t(`costType_${r.costType}`)} — {Number(r.markupPercent).toFixed(2)}%
+                {t(`costType_${r.costType}`)} — {formatNumber(r.markupPercent)}%
               </span>
               <button onClick={() => remove(r.id)} className="text-fg-subtle hover:text-danger-fg">
                 ×

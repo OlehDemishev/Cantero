@@ -2,9 +2,12 @@
 
 import { use, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, ApiError } from "@/lib/api-client";
+import { apiFetch } from "@/lib/api-client";
+import { PublicLinkError } from "@/components/public-link-error";
+import { useCompanyLocale } from "@/components/public-locale";
 import { SignaturePad } from "@/components/signature-pad";
 import { formatDateTime } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface PublicLine {
   id: string;
@@ -15,6 +18,8 @@ interface PublicLine {
 }
 type ClientDecision = "pending" | "approved" | "rejected" | "countered";
 interface PublicEstimate {
+  /** The client's or company's language — see useCompanyLocale. */
+  locale: string;
   id: string;
   name: string;
   variantLabel: string | null;
@@ -38,7 +43,8 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
   const tc = useTranslations("common");
 
   const [estimate, setEstimate] = useState<PublicEstimate | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
+  useCompanyLocale(estimate?.locale);
   const [note, setNote] = useState("");
   const [signerName, setSignerName] = useState("");
   const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
@@ -50,7 +56,7 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
   function load() {
     apiFetch<PublicEstimate>(`/public/estimates/${token}`)
       .then(setEstimate)
-      .catch((err) => setError(err instanceof ApiError ? err.message : t("linkNotFound")));
+      .catch(setError);
   }
 
   useEffect(load, [token]);
@@ -93,13 +99,7 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
     }
   }
 
-  if (error) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
-        <p className="text-sm text-fg-subtle">{error}</p>
-      </main>
-    );
-  }
+  if (error) return <PublicLinkError error={error} />;
 
   if (!estimate) {
     return (
@@ -149,7 +149,7 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
                     {l.quantity} {l.unit}
                   </td>
                   <td className="text-right">
-                    {l.lineTotal} {estimate.currency}
+                    {formatCurrency(l.lineTotal, estimate.currency)}
                   </td>
                 </tr>
               ))}
@@ -161,25 +161,25 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
             <div className="flex justify-between">
               <dt className="text-fg-subtle">{t("subtotal")}</dt>
               <dd>
-                {estimate.subtotal} {estimate.currency}
+                {formatCurrency(estimate.subtotal, estimate.currency)}
               </dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-fg-subtle">{t("markupAmount")}</dt>
               <dd>
-                {estimate.markupAmount} {estimate.currency}
+                {formatCurrency(estimate.markupAmount, estimate.currency)}
               </dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-fg-subtle">{t("taxAmount")}</dt>
               <dd>
-                {estimate.taxAmount} {estimate.currency}
+                {formatCurrency(estimate.taxAmount, estimate.currency)}
               </dd>
             </div>
             <div className="flex justify-between border-t border-gray-200 dark:border-gray-700 pt-2 font-semibold">
               <dt>{t("grandTotal")}</dt>
               <dd>
-                {estimate.grandTotal} {estimate.currency}
+                {formatCurrency(estimate.grandTotal, estimate.currency)}
               </dd>
             </div>
           </dl>
@@ -264,7 +264,7 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
               {estimate.clientDecision === "approved"
                 ? t("clientDecisionThanksApproved")
                 : estimate.clientDecision === "countered"
-                  ? t("clientDecisionThanksCountered", { amount: estimate.counterOfferAmount ?? "", currency: estimate.currency })
+                  ? t("clientDecisionThanksCountered", { amount: formatCurrency(estimate.counterOfferAmount, estimate.currency) })
                   : t("clientDecisionThanksRejected")}
               {estimate.decisionAt && (
                 <span className="block text-xs opacity-75">{formatDateTime(new Date(estimate.decisionAt))}</span>
