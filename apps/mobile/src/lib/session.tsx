@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { clearToken, restoreToken, setToken } from "./api-client";
+import { apiFetch, clearToken, restoreToken, setToken } from "./api-client";
 import { unregisterPush } from "./push";
 
 interface SessionValue {
@@ -28,8 +28,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
-    // While the token still authorizes the call.
+    // While the token still authorizes the calls. Ending the session on the server means a copy of
+    // the token stops working too; offline, signing out locally still goes ahead.
     await unregisterPush();
+    await apiFetch("/auth/logout", { method: "POST" }).catch(() => {});
     await clearToken();
     setTokenState(null);
   }, []);

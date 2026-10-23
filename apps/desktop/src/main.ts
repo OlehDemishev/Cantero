@@ -60,11 +60,28 @@ function createWindow(): void {
     shell.openExternal(url);
     return { action: "deny" };
   });
+  // SSO is the exception: the sign-in page sends this window to the company's IdP, which posts
+  // back to the API and lands on /sso/callback. That round trip has to stay in this window: the
+  // callback only signs in the window holding the nonce the sign-in page stored (sessionStorage),
+  // and finishing it in the OS browser would sign in the browser, not the app.
+  let ssoInFlight = false;
   mainWindow.webContents.on("will-navigate", (event, url) => {
-    if (!isSameOrigin(url)) {
-      event.preventDefault();
-      shell.openExternal(url);
+    if (isSameOrigin(url)) {
+      ssoInFlight = false;
+      return;
     }
+    const current = mainWindow?.webContents.getURL() ?? "";
+    if (ssoInFlight || (isSameOrigin(current) && new URL(current).pathname === "/login")) {
+      ssoInFlight = true;
+      return;
+    }
+    event.preventDefault();
+    shell.openExternal(url);
+  });
+  // The IdP and the API's SAML endpoint answer with redirects, which will-navigate doesn't see;
+  // landing back on the app's origin ends the SSO round trip.
+  mainWindow.webContents.on("did-navigate", (_event, url) => {
+    if (isSameOrigin(url)) ssoInFlight = false;
   });
 
   mainWindow.loadURL(APP_URL);
