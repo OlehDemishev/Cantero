@@ -8,6 +8,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
+import { Field } from "@/components/ui/field";
 
 interface Campaign {
   id: string;
@@ -74,8 +75,7 @@ export function MarketingCampaignsPanel() {
           value={form.channel}
           onChange={(e) => setForm((f) => ({ ...f, channel: e.target.value }))}
         />
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("spend")}
+        <Field label={t("spend")} size="sm">
           <input
             type="number"
             step="0.01"
@@ -84,7 +84,7 @@ export function MarketingCampaignsPanel() {
             value={form.spend}
             onChange={(e) => setForm((f) => ({ ...f, spend: e.target.value }))}
           />
-        </label>
+        </Field>
         <button type="submit" disabled={busy} className="btn-primary shrink-0">
           {t("addCampaign")}
         </button>

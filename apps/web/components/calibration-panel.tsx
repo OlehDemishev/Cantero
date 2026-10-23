@@ -7,6 +7,7 @@ import { useApi } from "@/lib/use-api";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
+import { Field } from "@/components/ui/field";
 
 interface CalibrationRecord {
   id: string;
@@ -85,14 +86,12 @@ export function CalibrationPanel(props: Props) {
       )}
 
       <form onSubmit={log} className="flex flex-wrap items-end gap-2">
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("calibratedAt")}
+        <Field label={t("calibratedAt")} size="sm">
           <input required type="date" className="input" value={form.calibratedAt} onChange={(e) => setForm((f) => ({ ...f, calibratedAt: e.target.value }))} />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("nextDueAt")}
+        </Field>
+        <Field label={t("nextDueAt")} size="sm">
           <input required type="date" className="input" value={form.nextDueAt} onChange={(e) => setForm((f) => ({ ...f, nextDueAt: e.target.value }))} />
-        </label>
+        </Field>
         <input
           placeholder={t("certificateNumberPlaceholder")}
           className="input w-32"

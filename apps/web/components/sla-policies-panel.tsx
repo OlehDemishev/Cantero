@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { TICKET_PRIORITIES, type TicketPriority } from "@cantero/shared";
 import { apiFetch, notifyApiError } from "@/lib/api-client";
+import { Field } from "@/components/ui/field";
 
 interface SlaPolicy {
   id: string;
@@ -68,8 +69,7 @@ export function SlaPoliciesPanel() {
         {TICKET_PRIORITIES.map((priority) => (
           <div key={priority} className="card flex flex-wrap items-end gap-2">
             <span className="w-20 text-sm font-medium text-fg-muted">{t(`priority_${priority}`)}</span>
-            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-              {t("responseMinutes")}
+            <Field label={t("responseMinutes")} size="sm">
               <input
                 type="number"
                 min="1"
@@ -77,9 +77,8 @@ export function SlaPoliciesPanel() {
                 value={forms[priority]?.responseMinutes ?? ""}
                 onChange={(e) => setForms((f) => ({ ...f, [priority]: { ...f[priority], responseMinutes: e.target.value } }))}
               />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-              {t("resolutionMinutes")}
+            </Field>
+            <Field label={t("resolutionMinutes")} size="sm">
               <input
                 type="number"
                 min="1"
@@ -87,7 +86,7 @@ export function SlaPoliciesPanel() {
                 value={forms[priority]?.resolutionMinutes ?? ""}
                 onChange={(e) => setForms((f) => ({ ...f, [priority]: { ...f[priority], resolutionMinutes: e.target.value } }))}
               />
-            </label>
+            </Field>
             <button onClick={() => save(priority)} disabled={busy} className="btn-secondary px-3 py-1.5 text-xs">
               {tc("save")}
             </button>

@@ -7,7 +7,7 @@ import { useApi } from "@/lib/use-api";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useConfirm } from "@/components/ui/confirm-dialog";
-import { FormError } from "@/components/ui/field";
+import { Field, FormError } from "@/components/ui/field";
 import { PageHeader } from "@/components/ui/page-header";
 
 interface UnitOfMeasure {
@@ -78,8 +78,7 @@ export default function UnitsOfMeasurePage() {
       <PageHeader title={t("title")} description={t("hint")} />
 
       <form onSubmit={handleSubmit} className="mt-6 flex flex-wrap items-end gap-2">
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("code")}
+        <Field label={t("code")} size="sm">
           <input
             required
             className="input w-28"
@@ -87,9 +86,8 @@ export default function UnitsOfMeasurePage() {
             value={form.code}
             onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("name")}
+        </Field>
+        <Field label={t("name")} size="sm">
           <input
             required
             className="input w-48"
@@ -97,9 +95,8 @@ export default function UnitsOfMeasurePage() {
             value={form.name}
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("baseUnit")}
+        </Field>
+        <Field label={t("baseUnit")} size="sm">
           <select
             className="input w-auto"
             value={form.baseUnitId}
@@ -112,10 +109,9 @@ export default function UnitsOfMeasurePage() {
               </option>
             ))}
           </select>
-        </label>
+        </Field>
         {form.baseUnitId && (
-          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-            {t("factor")}
+          <Field label={t("factor")} size="sm">
             <input
               type="number"
               step="0.000001"
@@ -124,7 +120,7 @@ export default function UnitsOfMeasurePage() {
               value={form.factorToBase}
               onChange={(e) => setForm((f) => ({ ...f, factorToBase: e.target.value }))}
             />
-          </label>
+          </Field>
         )}
         <button type="submit" disabled={submitting} className="btn-primary">
           {t("newUnit")}

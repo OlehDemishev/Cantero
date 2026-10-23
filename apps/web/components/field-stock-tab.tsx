@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { submitOrQueue } from "@/lib/offline-queue";
 import { fetchCached } from "@/lib/offline-cache";
 import { FieldMessage, type FieldMessageType } from "@/components/field-message";
+import { Field } from "@/components/ui/field";
 
 interface Warehouse {
   id: string;
@@ -70,8 +71,7 @@ export function StockTab({ projectId }: { projectId: string }) {
 
   return (
     <form onSubmit={submit} className="card flex flex-col gap-3">
-      <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-fg-muted">{tw("title")}</span>
+      <Field label={tw("title")}>
         <select
           className="input"
           value={form.warehouseId}
@@ -83,9 +83,8 @@ export function StockTab({ projectId }: { projectId: string }) {
             </option>
           ))}
         </select>
-      </label>
-      <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-fg-muted">{tw("material")}</span>
+      </Field>
+      <Field label={tw("material")}>
         <select
           className="input"
           value={form.materialCatalogItemId}
@@ -97,10 +96,9 @@ export function StockTab({ projectId }: { projectId: string }) {
             </option>
           ))}
         </select>
-      </label>
+      </Field>
       <div className="flex gap-3">
-        <label className="flex flex-1 flex-col gap-1.5 text-sm">
-          <span className="font-medium text-fg-muted">{tw("type")}</span>
+        <Field label={tw("type")} className="flex-1">
           <select
             className="input"
             value={form.type}
@@ -109,9 +107,8 @@ export function StockTab({ projectId }: { projectId: string }) {
             <option value="issue">{tw("issue")}</option>
             <option value="receipt">{tw("receipt")}</option>
           </select>
-        </label>
-        <label className="flex flex-1 flex-col gap-1.5 text-sm">
-          <span className="font-medium text-fg-muted">{t("quantity")}</span>
+        </Field>
+        <Field label={t("quantity")} className="flex-1">
           <input
             type="number"
             step="0.01"
@@ -120,7 +117,7 @@ export function StockTab({ projectId }: { projectId: string }) {
             value={form.quantity}
             onChange={(e) => setForm((f) => ({ ...f, quantity: e.target.value }))}
           />
-        </label>
+        </Field>
       </div>
       <button type="submit" disabled={busy} className="btn-primary mt-1">
         {t("issueStockButton")}

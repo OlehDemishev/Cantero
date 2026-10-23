@@ -12,6 +12,7 @@ import { formatCurrency } from "@/lib/format-currency";
 import { formatDate } from "@/lib/format-date";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
+import { Field } from "@/components/ui/field";
 
 interface UnitPriceMeasurement {
   id: string;
@@ -183,22 +184,19 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
 
       {creatingItem && (
         <form onSubmit={submitItem} className="card mb-4 flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("description")}</span>
+          <Field label={t("description")}>
             <input
               required
               className="input"
               value={itemForm.description}
               onChange={(e) => setItemForm((f) => ({ ...f, description: e.target.value }))}
             />
-          </label>
+          </Field>
           <div className="flex gap-3">
-            <label className="flex w-28 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("unit")}</span>
+            <Field label={t("unit")} className="w-28">
               <input required className="input" value={itemForm.unit} onChange={(e) => setItemForm((f) => ({ ...f, unit: e.target.value }))} />
-            </label>
-            <label className="flex w-40 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("contractUnitPrice")}</span>
+            </Field>
+            <Field label={t("contractUnitPrice")} className="w-40">
               <input
                 required
                 type="number"
@@ -208,9 +206,8 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
                 value={itemForm.contractUnitPrice}
                 onChange={(e) => setItemForm((f) => ({ ...f, contractUnitPrice: e.target.value }))}
               />
-            </label>
-            <label className="flex w-40 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("estimatedQuantity")}</span>
+            </Field>
+            <Field label={t("estimatedQuantity")} className="w-40">
               <input
                 type="number"
                 min="0"
@@ -219,7 +216,7 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
                 value={itemForm.estimatedQuantity}
                 onChange={(e) => setItemForm((f) => ({ ...f, estimatedQuantity: e.target.value }))}
               />
-            </label>
+            </Field>
           </div>
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className="btn-primary">
@@ -325,8 +322,7 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
 
       {creatingTicket && (
         <form onSubmit={submitTicket} className="card mb-4 flex flex-col gap-3">
-          <label className="flex w-40 flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("workDate")}</span>
+          <Field label={t("workDate")} className="w-40">
             <input
               required
               type="date"
@@ -334,9 +330,8 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
               value={ticketForm.workDate}
               onChange={(e) => setTicketForm((f) => ({ ...f, workDate: e.target.value }))}
             />
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("description")}</span>
+          </Field>
+          <Field label={t("description")}>
             <textarea
               required
               rows={2}
@@ -344,10 +339,9 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
               value={ticketForm.description}
               onChange={(e) => setTicketForm((f) => ({ ...f, description: e.target.value }))}
             />
-          </label>
+          </Field>
           <div className="flex gap-3">
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("laborCost")}</span>
+            <Field label={t("laborCost")} className="flex-1">
               <input
                 type="number"
                 min="0"
@@ -356,9 +350,8 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
                 value={ticketForm.laborCost}
                 onChange={(e) => setTicketForm((f) => ({ ...f, laborCost: e.target.value }))}
               />
-            </label>
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("equipmentCost")}</span>
+            </Field>
+            <Field label={t("equipmentCost")} className="flex-1">
               <input
                 type="number"
                 min="0"
@@ -367,9 +360,8 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
                 value={ticketForm.equipmentCost}
                 onChange={(e) => setTicketForm((f) => ({ ...f, equipmentCost: e.target.value }))}
               />
-            </label>
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("materialCost")}</span>
+            </Field>
+            <Field label={t("materialCost")} className="flex-1">
               <input
                 type="number"
                 min="0"
@@ -378,7 +370,7 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
                 value={ticketForm.materialCost}
                 onChange={(e) => setTicketForm((f) => ({ ...f, materialCost: e.target.value }))}
               />
-            </label>
+            </Field>
           </div>
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className="btn-primary">

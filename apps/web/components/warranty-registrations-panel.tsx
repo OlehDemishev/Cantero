@@ -9,6 +9,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 import { Badge } from "@/components/ui/badge";
+import { Field } from "@/components/ui/field";
 
 interface WarrantyRegistration {
   id: string;
@@ -102,10 +103,9 @@ export function WarrantyRegistrationsPanel({ projectId }: { projectId: string })
             value={form.termMonths}
             onChange={(e) => setForm((f) => ({ ...f, termMonths: e.target.value }))}
           />
-          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-            {t("startDate")}
+          <Field label={t("startDate")} size="sm">
             <input required type="date" className="input" value={form.startDate} onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))} />
-          </label>
+          </Field>
           <button type="submit" disabled={busy} className="btn-primary">
             {tc("save")}
           </button>

@@ -8,7 +8,7 @@ import { resetStateInEffect } from "@/lib/effect-reset";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FormError } from "@/components/ui/field";
+import { Field, FormError } from "@/components/ui/field";
 
 interface Status {
   connected: boolean;
@@ -87,10 +87,9 @@ export function IntacctSettingsPanel({ canManage }: { canManage: boolean }) {
           {canManage && (
             <>
               <form onSubmit={saveItem} className="flex flex-wrap items-end gap-2">
-                <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-                  {t("itemId")}
+                <Field label={t("itemId")} size="sm">
                   <input className="input" maxLength={100} value={itemId} onChange={(e) => setItemId(e.target.value)} />
-                </label>
+                </Field>
                 <button type="submit" disabled={busy || itemId.trim() === (status.changeOrderItemId ?? "")} className="btn-secondary px-2.5 py-1.5 text-xs">
                   {t("saveItem")}
                 </button>

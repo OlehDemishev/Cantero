@@ -8,6 +8,7 @@ import { formatCurrency } from "@/lib/format-currency";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Field } from "@/components/ui/field";
 
 type ClientStage = "lead" | "contacted" | "qualified" | "won" | "lost";
 interface Worker {
@@ -154,40 +155,36 @@ export function ClientDealPanel({
             </option>
           ))}
         </select>
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("probability")}
+        <Field label={t("probability")} size="sm">
           <input
             type="number"
             min="0"
             max="100"
-            className="input mt-1"
+            className="input"
             placeholder={t("probabilityPlaceholder")}
             value={dealForm.probability}
             onChange={(e) => setDealForm((f) => ({ ...f, probability: e.target.value }))}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("expectedCloseDate")}
+        </Field>
+        <Field label={t("expectedCloseDate")} size="sm">
           <input
             type="date"
-            className="input mt-1"
+            className="input"
             value={dealForm.expectedCloseDate}
             onChange={(e) => setDealForm((f) => ({ ...f, expectedCloseDate: e.target.value }))}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("source")}
+        </Field>
+        <Field label={t("source")} size="sm">
           <input
-            className="input mt-1"
+            className="input"
             placeholder={t("sourcePlaceholder")}
             value={dealForm.source}
             onChange={(e) => setDealForm((f) => ({ ...f, source: e.target.value }))}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("campaign")}
+        </Field>
+        <Field label={t("campaign")} size="sm">
           <select
-            className="input mt-1"
+            className="input"
             value={dealForm.campaignId}
             onChange={(e) => setDealForm((f) => ({ ...f, campaignId: e.target.value }))}
           >
@@ -198,11 +195,10 @@ export function ClientDealPanel({
               </option>
             ))}
           </select>
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("referredBy")}
+        </Field>
+        <Field label={t("referredBy")} size="sm">
           <select
-            className="input mt-1"
+            className="input"
             value={dealForm.referredByClientId}
             onChange={(e) => setDealForm((f) => ({ ...f, referredByClientId: e.target.value }))}
           >
@@ -213,7 +209,7 @@ export function ClientDealPanel({
               </option>
             ))}
           </select>
-        </label>
+        </Field>
         <div className="flex items-center gap-2">
           <button type="submit" disabled={busy} className="btn-secondary self-start">
             {tc("save")}

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import type { WeatherCondition } from "@cantero/shared";
 import { apiFetch, downloadBlob, notifyApiError } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
+import { Field } from "@/components/ui/field";
 
 interface WeatherDelayEntry {
   id: string;
@@ -96,8 +97,7 @@ export function WeatherDelayReportPanel({ projectId }: { projectId: string }) {
         </div>
 
         <form onSubmit={shiftSchedule} className="mt-4 flex flex-wrap items-end gap-2 border-t border-gray-100 dark:border-gray-700 pt-3">
-          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-            {t("shiftScheduleDays")}
+          <Field label={t("shiftScheduleDays")} size="sm">
             <input
               type="number"
               min="1"
@@ -106,7 +106,7 @@ export function WeatherDelayReportPanel({ projectId }: { projectId: string }) {
               value={shiftDays}
               onChange={(e) => setShiftDays(e.target.value)}
             />
-          </label>
+          </Field>
           <button type="submit" disabled={busy || !shiftDays} className="btn-primary px-3 py-1 text-xs">
             {t("shiftSchedule")}
           </button>

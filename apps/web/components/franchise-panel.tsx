@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { formatCurrency } from "@/lib/format-currency";
-import { FormError } from "@/components/ui/field";
+import { Field, FormError } from "@/components/ui/field";
 
 interface FranchiseBranch {
   companyId: string;
@@ -141,15 +141,14 @@ export function FranchisePanel() {
             )}
           </div>
           <form onSubmit={linkToParentCompany} className="flex items-end gap-2">
-            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-              {t("linkToParentCode")}
+            <Field label={t("linkToParentCode")} size="sm">
               <input
                 type="text"
-                className="input mt-1"
+                className="input"
                 value={linkCodeInput}
                 onChange={(e) => setLinkCodeInput(e.target.value)}
               />
-            </label>
+            </Field>
             <button type="submit" disabled={franchiseBusy || !linkCodeInput} className="btn-secondary">
               {t("linkToParent")}
             </button>

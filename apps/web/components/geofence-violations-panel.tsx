@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Field } from "@/components/ui/field";
 
 interface Violation {
   id: string;
@@ -55,14 +56,12 @@ export function GeofenceViolationsPanel() {
       <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("title")}</h2>
       <div className="card">
         <div className="mb-3 flex flex-wrap items-end gap-2">
-          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-            {t("from")}
+          <Field label={t("from")} size="sm">
             <input type="date" className="input py-1 text-xs" value={from} onChange={(e) => setFrom(e.target.value)} />
-          </label>
-          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-            {t("to")}
+          </Field>
+          <Field label={t("to")} size="sm">
             <input type="date" className="input py-1 text-xs" value={to} onChange={(e) => setTo(e.target.value)} />
-          </label>
+          </Field>
           <button onClick={load} className="btn-secondary px-2 py-1 text-xs">
             {t("filter")}
           </button>

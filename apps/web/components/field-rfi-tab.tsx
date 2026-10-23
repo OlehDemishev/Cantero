@@ -10,6 +10,7 @@ import { CachedNote } from "@/components/field-cached-note";
 import { FieldMessage, type FieldMessageType } from "@/components/field-message";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
+import { Field } from "@/components/ui/field";
 
 interface FieldRfi {
   id: string;
@@ -73,10 +74,9 @@ export function RfiTab({ projectId }: { projectId: string }) {
     <div className="flex flex-col gap-4">
       <CachedNote cachedAt={cachedAt} />
       <form onSubmit={submit} className="card flex flex-col gap-3">
-        <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium text-fg-muted">{tr("subject")}</span>
+        <Field label={tr("subject")}>
           <input required className="input" value={form.subject} onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value }))} />
-        </label>
+        </Field>
         <label className="flex flex-col gap-1.5 text-sm">
           <span className="flex items-center gap-2 font-medium text-fg-muted">
             {tr("question")}
@@ -84,8 +84,7 @@ export function RfiTab({ projectId }: { projectId: string }) {
           </span>
           <textarea required rows={3} className="input" value={form.question} onChange={(e) => setForm((f) => ({ ...f, question: e.target.value }))} />
         </label>
-        <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium text-fg-muted">{tr("priority")}</span>
+        <Field label={tr("priority")}>
           <select className="input" value={form.priority} onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value as RfiPriority }))}>
             {RFI_PRIORITIES.map((p) => (
               <option key={p} value={p}>
@@ -93,7 +92,7 @@ export function RfiTab({ projectId }: { projectId: string }) {
               </option>
             ))}
           </select>
-        </label>
+        </Field>
         <button type="submit" disabled={busy} className="btn-primary">
           {tr("newRfi")}
         </button>

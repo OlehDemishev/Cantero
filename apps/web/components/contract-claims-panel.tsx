@@ -12,6 +12,7 @@ import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
+import { Field } from "@/components/ui/field";
 
 interface ContractClaim {
   id: string;
@@ -172,8 +173,7 @@ export function ContractClaimsPanel({ projectId }: { projectId: string }) {
             onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
           />
           <div className="flex flex-wrap items-end gap-2">
-            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-              {t("noticeDate")}
+            <Field label={t("noticeDate")} size="sm">
               <input
                 required
                 type="date"
@@ -181,7 +181,7 @@ export function ContractClaimsPanel({ projectId }: { projectId: string }) {
                 value={form.noticeDate}
                 onChange={(e) => setForm((f) => ({ ...f, noticeDate: e.target.value }))}
               />
-            </label>
+            </Field>
             <input
               type="number"
               step="0.01"

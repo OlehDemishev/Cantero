@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
+import { Field } from "@/components/ui/field";
 
 interface TrainingCourse {
   id: string;
@@ -143,8 +144,7 @@ export function TrainingCatalogPanel() {
           value={form.category}
           onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
         />
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("validityMonths")}
+        <Field label={t("validityMonths")} size="sm">
           <input
             type="number"
             min="1"
@@ -153,7 +153,7 @@ export function TrainingCatalogPanel() {
             value={form.validityMonths}
             onChange={(e) => setForm((f) => ({ ...f, validityMonths: e.target.value }))}
           />
-        </label>
+        </Field>
         <button type="submit" disabled={busy} className="btn-primary shrink-0">
           {t("addCourse")}
         </button>

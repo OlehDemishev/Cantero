@@ -7,6 +7,7 @@ import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Field } from "@/components/ui/field";
 
 interface CapacityUtilization {
   limit: number | null;
@@ -82,8 +83,7 @@ export function BondingCapacityPanel() {
         )}
 
         <form onSubmit={saveLimit} className="mt-4 flex items-end gap-2 border-t border-gray-100 dark:border-gray-700 pt-4">
-          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-            {t("capacityLimit")}
+          <Field label={t("capacityLimit")} size="sm">
             <input
               type="number"
               step="0.01"
@@ -92,7 +92,7 @@ export function BondingCapacityPanel() {
               value={limitInput}
               onChange={(e) => setLimitInput(e.target.value)}
             />
-          </label>
+          </Field>
           <button type="submit" disabled={busy} className="btn-secondary">
             {tc("save")}
           </button>

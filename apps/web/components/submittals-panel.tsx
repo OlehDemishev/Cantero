@@ -13,6 +13,7 @@ import { CopyLinkButton } from "@/components/ui/copy-link-button";
 import { formatDate } from "@/lib/format-date";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
+import { Field } from "@/components/ui/field";
 
 interface SubmittalHistoryEntry {
   id: string;
@@ -129,8 +130,7 @@ export function SubmittalsPanel({ projectId }: { projectId: string }) {
 
       {creating && (
         <form onSubmit={submit} className="card mb-4 flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("submittalTitle")}</span>
+          <Field label={t("submittalTitle")}>
             <input
               required
               className="input"
@@ -138,26 +138,24 @@ export function SubmittalsPanel({ projectId }: { projectId: string }) {
               value={form.title}
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
             />
-          </label>
+          </Field>
           <div className="flex gap-3">
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("specSection")}</span>
+            <Field label={t("specSection")} className="flex-1">
               <input
                 className="input"
                 placeholder="09 30 00"
                 value={form.specSection}
                 onChange={(e) => setForm((f) => ({ ...f, specSection: e.target.value }))}
               />
-            </label>
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("dueDate")}</span>
+            </Field>
+            <Field label={t("dueDate")} className="flex-1">
               <input
                 type="date"
                 className="input"
                 value={form.dueDate}
                 onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
               />
-            </label>
+            </Field>
           </div>
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className="btn-primary">

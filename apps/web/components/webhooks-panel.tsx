@@ -9,6 +9,7 @@ import { formatDateTime } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Alert } from "@/components/ui/alert";
+import { Field } from "@/components/ui/field";
 
 interface WebhookEndpoint {
   id: string;
@@ -207,8 +208,7 @@ export function WebhooksPanel() {
           value={webhookForm.url}
           onChange={(e) => setWebhookForm((f) => ({ ...f, url: e.target.value }))}
         />
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("webhookTemplate")}
+        <Field label={t("webhookTemplate")} size="sm">
           <select
             className="input w-auto"
             value=""
@@ -224,7 +224,7 @@ export function WebhooksPanel() {
               </option>
             ))}
           </select>
-        </label>
+        </Field>
         <div className="flex flex-wrap gap-2">
           {WEBHOOK_EVENTS.map((ev) => (
             <label key={ev} className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300">

@@ -11,6 +11,7 @@ import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
+import { Field } from "@/components/ui/field";
 
 const TYPES: ChecklistTemplateType[] = ["punch_list", "rfi", "safety_briefing", "jha"];
 
@@ -162,8 +163,7 @@ export default function TemplatesPage() {
       <div className="mt-6 card max-w-xl">
         <h2 className="mb-4 text-sm font-semibold text-fg-muted">{editingId ? t("editTemplate") : t("newTemplate")}</h2>
         <form onSubmit={submit} className="flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("templateType")}</span>
+          <Field label={t("templateType")}>
             <select
               className="input"
               disabled={!!editingId}
@@ -176,11 +176,10 @@ export default function TemplatesPage() {
                 </option>
               ))}
             </select>
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("templateName")}</span>
+          </Field>
+          <Field label={t("templateName")}>
             <input required className="input" value={name} onChange={(e) => setName(e.target.value)} />
-          </label>
+          </Field>
 
           {type === "punch_list" ? (
             <div className="flex flex-col gap-2">
@@ -212,33 +211,27 @@ export default function TemplatesPage() {
             </div>
           ) : type === "jha" ? (
             <>
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-fg-muted">{t("jhaTaskDescription")}</span>
+              <Field label={t("jhaTaskDescription")}>
                 <input required className="input" value={defaultSubject} onChange={(e) => setDefaultSubject(e.target.value)} />
-              </label>
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-fg-muted">{t("jhaHazards")}</span>
+              </Field>
+              <Field label={t("jhaHazards")}>
                 <textarea rows={2} className="input" value={defaultHazards} onChange={(e) => setDefaultHazards(e.target.value)} />
-              </label>
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-fg-muted">{t("jhaControlMeasures")}</span>
+              </Field>
+              <Field label={t("jhaControlMeasures")}>
                 <textarea rows={2} className="input" value={defaultControlMeasures} onChange={(e) => setDefaultControlMeasures(e.target.value)} />
-              </label>
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-fg-muted">{t("jhaPpe")}</span>
+              </Field>
+              <Field label={t("jhaPpe")}>
                 <input className="input" value={defaultPpe} onChange={(e) => setDefaultPpe(e.target.value)} />
-              </label>
+              </Field>
             </>
           ) : (
             <>
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-fg-muted">{type === "rfi" ? t("subject") : t("topic")}</span>
+              <Field label={type === "rfi" ? t("subject") : t("topic")}>
                 <input required className="input" value={defaultSubject} onChange={(e) => setDefaultSubject(e.target.value)} />
-              </label>
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-fg-muted">{type === "rfi" ? t("question") : t("notes")}</span>
+              </Field>
+              <Field label={type === "rfi" ? t("question") : t("notes")}>
                 <textarea rows={3} className="input" value={defaultBody} onChange={(e) => setDefaultBody(e.target.value)} />
-              </label>
+              </Field>
             </>
           )}
 

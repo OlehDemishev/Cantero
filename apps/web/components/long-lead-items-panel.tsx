@@ -10,6 +10,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
+import { Field } from "@/components/ui/field";
 
 interface Supplier {
   id: string;
@@ -97,13 +98,11 @@ export function LongLeadItemsPanel({ projectId }: { projectId: string }) {
 
       {creating && (
         <form onSubmit={submit} className="card mb-4 flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("description")}</span>
+          <Field label={t("description")}>
             <input required className="input" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
-          </label>
+          </Field>
           <div className="flex flex-wrap gap-3">
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("supplier")}</span>
+            <Field label={t("supplier")}>
               <select className="input" value={form.supplierId} onChange={(e) => setForm((f) => ({ ...f, supplierId: e.target.value }))}>
                 <option value="">—</option>
                 {suppliers.map((s) => (
@@ -112,25 +111,23 @@ export function LongLeadItemsPanel({ projectId }: { projectId: string }) {
                   </option>
                 ))}
               </select>
-            </label>
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("requiredOnSiteDate")}</span>
+            </Field>
+            <Field label={t("requiredOnSiteDate")}>
               <input
                 type="date"
                 className="input"
                 value={form.requiredOnSiteDate}
                 onChange={(e) => setForm((f) => ({ ...f, requiredOnSiteDate: e.target.value }))}
               />
-            </label>
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("expectedDeliveryDate")}</span>
+            </Field>
+            <Field label={t("expectedDeliveryDate")}>
               <input
                 type="date"
                 className="input"
                 value={form.expectedDeliveryDate}
                 onChange={(e) => setForm((f) => ({ ...f, expectedDeliveryDate: e.target.value }))}
               />
-            </label>
+            </Field>
           </div>
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className="btn-primary">

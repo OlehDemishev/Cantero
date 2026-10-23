@@ -7,6 +7,7 @@ import { apiFetch, apiUpload, notifyApiError } from "@/lib/api-client";
 import { HelpTooltip } from "@/components/help-tooltip";
 import { CompanyHolidaysPanel } from "@/components/company-holidays-panel";
 import { Alert } from "@/components/ui/alert";
+import { Field } from "@/components/ui/field";
 
 interface Company {
   name: string;
@@ -373,20 +374,18 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
       {!isManager && <p className="mb-3 text-xs text-fg-subtle">{t("companySettingsManagerOnlyHint")}</p>}
       {error && <Alert tone="danger" className="mb-3">{error}</Alert>}
       <form onSubmit={saveCompany} className="flex flex-col gap-3">
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("companyName")}
+        <Field label={t("companyName")} size="sm">
           <input
             required
-            className="input mt-1"
+            className="input"
             value={companyForm.name}
             onChange={(e) => setCompanyForm((f) => ({ ...f, name: e.target.value }))}
             disabled={!isManager}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("language")}
+        </Field>
+        <Field label={t("language")} size="sm">
           <select
-            className="input mt-1"
+            className="input"
             value={companyForm.locale}
             onChange={(e) => setCompanyForm((f) => ({ ...f, locale: e.target.value }))}
             disabled={!isManager}
@@ -397,7 +396,7 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
               </option>
             ))}
           </select>
-        </label>
+        </Field>
         <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
           <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-fg-muted">
             {t("eInvoicing")}
@@ -494,8 +493,7 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
                 />
               </div>
             </label>
-            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-              {t("chartOfAccounts")}
+            <Field label={t("chartOfAccounts")} size="sm">
               <select
                 className="input"
                 value={companyForm.datevChartOfAccounts}
@@ -506,7 +504,7 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
                 <option value="skr03">SKR03</option>
                 <option value="skr04">SKR04</option>
               </select>
-            </label>
+            </Field>
             <input
               type="number"
               className="input w-28"
@@ -592,8 +590,7 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
           </p>
           <p className="mb-2 text-xs text-fg-subtle">{t("approvalChainsHint")}</p>
           <div className="flex gap-2">
-            <label className="flex flex-1 flex-col gap-1 text-xs text-fg-subtle">
-              {t("approvalThreshold")}
+            <Field label={t("approvalThreshold")} size="sm" className="flex-1">
               <input
                 type="number"
                 min="0"
@@ -604,9 +601,8 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
                 onChange={(e) => setCompanyForm((f) => ({ ...f, approvalThresholdAmount: e.target.value }))}
                 disabled={!isManager}
               />
-            </label>
-            <label className="flex w-28 flex-col gap-1 text-xs text-fg-subtle">
-              {t("requiredApprovals")}
+            </Field>
+            <Field label={t("requiredApprovals")} size="sm" className="w-28">
               <input
                 type="number"
                 min="1"
@@ -616,15 +612,14 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
                 onChange={(e) => setCompanyForm((f) => ({ ...f, requiredApprovalCount: e.target.value }))}
                 disabled={!isManager || !companyForm.approvalThresholdAmount}
               />
-            </label>
+            </Field>
           </div>
         </div>
         <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
           <p className="mb-2 text-xs font-medium text-fg-muted">{t("changeOrderApprovalChains")}</p>
           <p className="mb-2 text-xs text-fg-subtle">{t("changeOrderApprovalChainsHint")}</p>
           <div className="flex gap-2">
-            <label className="flex flex-1 flex-col gap-1 text-xs text-fg-subtle">
-              {t("approvalThreshold")}
+            <Field label={t("approvalThreshold")} size="sm" className="flex-1">
               <input
                 type="number"
                 min="0"
@@ -635,9 +630,8 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
                 onChange={(e) => setCompanyForm((f) => ({ ...f, changeOrderApprovalThresholdAmount: e.target.value }))}
                 disabled={!isManager}
               />
-            </label>
-            <label className="flex w-28 flex-col gap-1 text-xs text-fg-subtle">
-              {t("requiredApprovals")}
+            </Field>
+            <Field label={t("requiredApprovals")} size="sm" className="w-28">
               <input
                 type="number"
                 min="1"
@@ -647,12 +641,11 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
                 onChange={(e) => setCompanyForm((f) => ({ ...f, changeOrderRequiredApprovalCount: e.target.value }))}
                 disabled={!isManager || !companyForm.changeOrderApprovalThresholdAmount}
               />
-            </label>
+            </Field>
           </div>
         </div>
         <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
-          <label className="flex w-40 flex-col gap-1 text-xs text-fg-subtle">
-            {t("budgetAlertThreshold")}
+          <Field label={t("budgetAlertThreshold")} size="sm" className="w-40">
             <input
               type="number"
               min="1"
@@ -662,13 +655,12 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
               onChange={(e) => setCompanyForm((f) => ({ ...f, budgetAlertThresholdPercent: e.target.value }))}
               disabled={!isManager}
             />
-          </label>
+          </Field>
           <p className="mt-1 text-xs text-fg-subtle">{t("budgetAlertThresholdHint")}</p>
         </div>
         <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
           <div className="flex gap-2">
-            <label className="flex flex-1 flex-col gap-1 text-xs text-fg-subtle">
-              {t("defaultPaymentTermsDays")}
+            <Field label={t("defaultPaymentTermsDays")} size="sm" className="flex-1">
               <input
                 type="number"
                 min="0"
@@ -678,9 +670,8 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
                 onChange={(e) => setCompanyForm((f) => ({ ...f, defaultPaymentTermsDays: e.target.value }))}
                 disabled={!isManager}
               />
-            </label>
-            <label className="flex flex-1 flex-col gap-1 text-xs text-fg-subtle">
-              {t("lateFeePercentPerMonth")}
+            </Field>
+            <Field label={t("lateFeePercentPerMonth")} size="sm" className="flex-1">
               <input
                 type="number"
                 min="0"
@@ -692,7 +683,7 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
                 onChange={(e) => setCompanyForm((f) => ({ ...f, lateFeePercentPerMonth: e.target.value }))}
                 disabled={!isManager}
               />
-            </label>
+            </Field>
           </div>
           <p className="mt-1 text-xs text-fg-subtle">{t("lateFeeHint")}</p>
         </div>
@@ -700,8 +691,7 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
           <p className="mb-2 text-xs font-medium text-fg-muted">{t("laborBurden")}</p>
           <p className="mb-2 text-xs text-fg-subtle">{t("laborBurdenHint")}</p>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-              {t("payrollTaxBurdenPercent")}
+            <Field label={t("payrollTaxBurdenPercent")} size="sm">
               <input
                 type="number"
                 min="0"
@@ -712,9 +702,8 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
                 onChange={(e) => setCompanyForm((f) => ({ ...f, payrollTaxBurdenPercent: e.target.value }))}
                 disabled={!isManager}
               />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-              {t("workersCompBurdenPercent")}
+            </Field>
+            <Field label={t("workersCompBurdenPercent")} size="sm">
               <input
                 type="number"
                 min="0"
@@ -725,9 +714,8 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
                 onChange={(e) => setCompanyForm((f) => ({ ...f, workersCompBurdenPercent: e.target.value }))}
                 disabled={!isManager}
               />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-              {t("benefitsBurdenPercent")}
+            </Field>
+            <Field label={t("benefitsBurdenPercent")} size="sm">
               <input
                 type="number"
                 min="0"
@@ -738,9 +726,8 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
                 onChange={(e) => setCompanyForm((f) => ({ ...f, benefitsBurdenPercent: e.target.value }))}
                 disabled={!isManager}
               />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-              {t("otherBurdenPercent")}
+            </Field>
+            <Field label={t("otherBurdenPercent")} size="sm">
               <input
                 type="number"
                 min="0"
@@ -751,7 +738,7 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
                 onChange={(e) => setCompanyForm((f) => ({ ...f, otherBurdenPercent: e.target.value }))}
                 disabled={!isManager}
               />
-            </label>
+            </Field>
           </div>
         </div>
         <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
@@ -766,8 +753,7 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
             />
             {t("requireSubcontractorPrequalification")}
           </label>
-          <label className="flex w-48 flex-col gap-1 text-xs text-fg-subtle">
-            {t("subcontractorEmrThreshold")}
+          <Field label={t("subcontractorEmrThreshold")} size="sm" className="w-48">
             <input
               type="number"
               min="0"
@@ -779,15 +765,14 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
               onChange={(e) => setCompanyForm((f) => ({ ...f, subcontractorEmrThreshold: e.target.value }))}
               disabled={!isManager}
             />
-          </label>
+          </Field>
         </div>
         <CompanyHolidaysPanel canManage={isManager} />
         <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
           <p className="mb-2 text-xs font-medium text-fg-muted">{t("slaEscalation")}</p>
           <p className="mb-2 text-xs text-fg-subtle">{t("slaEscalationHint")}</p>
           <div className="flex gap-2">
-            <label className="flex flex-1 flex-col gap-1 text-xs text-fg-subtle">
-              {t("rfiSlaDays")}
+            <Field label={t("rfiSlaDays")} size="sm" className="flex-1">
               <input
                 type="number"
                 min="1"
@@ -798,9 +783,8 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
                 onChange={(e) => setCompanyForm((f) => ({ ...f, rfiSlaDays: e.target.value }))}
                 disabled={!isManager}
               />
-            </label>
-            <label className="flex flex-1 flex-col gap-1 text-xs text-fg-subtle">
-              {t("punchListSlaDays")}
+            </Field>
+            <Field label={t("punchListSlaDays")} size="sm" className="flex-1">
               <input
                 type="number"
                 min="1"
@@ -811,7 +795,7 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
                 onChange={(e) => setCompanyForm((f) => ({ ...f, punchListSlaDays: e.target.value }))}
                 disabled={!isManager}
               />
-            </label>
+            </Field>
           </div>
           <label className="mt-3 flex items-start gap-2 text-xs text-fg-muted">
             <input
@@ -828,8 +812,7 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
           </label>
         </div>
         <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
-          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-            {t("inventoryCostingMethod")}
+          <Field label={t("inventoryCostingMethod")} size="sm">
             <select
               className="input w-auto"
               value={companyForm.inventoryCostingMethod}
@@ -839,12 +822,11 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
               <option value="weighted_average">{t("costingMethod_weighted_average")}</option>
               <option value="fifo">{t("costingMethod_fifo")}</option>
             </select>
-          </label>
+          </Field>
           <p className="mt-1 text-xs text-fg-subtle">{t("inventoryCostingMethodHint")}</p>
         </div>
         <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
-          <label className="flex w-48 flex-col gap-1 text-xs text-fg-subtle">
-            {t("rateCatalogApprovalThresholdPercent")}
+          <Field label={t("rateCatalogApprovalThresholdPercent")} size="sm" className="w-48">
             <input
               type="number"
               min="0"
@@ -855,7 +837,7 @@ export function CompanySettingsPanel({ isManager }: { isManager: boolean }) {
               onChange={(e) => setCompanyForm((f) => ({ ...f, rateCatalogApprovalThresholdPercent: e.target.value }))}
               disabled={!isManager}
             />
-          </label>
+          </Field>
           <p className="mt-1 text-xs text-fg-subtle">{t("rateCatalogApprovalThresholdPercentHint")}</p>
         </div>
         <div className="border-t border-gray-100 dark:border-gray-700 pt-3">

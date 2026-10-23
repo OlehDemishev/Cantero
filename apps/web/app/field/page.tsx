@@ -18,6 +18,7 @@ import { PunchTab } from "@/components/field-punch-tab";
 import { RfiTab } from "@/components/field-rfi-tab";
 import { OfflineOthersNotice } from "@/components/offline-others-notice";
 import { Badge } from "@/components/ui/badge";
+import { Field } from "@/components/ui/field";
 
 interface Project {
   id: string;
@@ -137,8 +138,7 @@ export default function FieldPage() {
           <p className="text-sm text-fg-subtle">{t("noProjects")}</p>
         ) : (
           <>
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("project")}</span>
+            <Field label={t("project")}>
               <select className="input" value={projectId} onChange={(e) => selectProject(e.target.value)}>
                 {projects.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -146,7 +146,7 @@ export default function FieldPage() {
                   </option>
                 ))}
               </select>
-            </label>
+            </Field>
 
             <div className="mt-4 grid grid-cols-4 gap-1 rounded-lg bg-gray-100 dark:bg-gray-700 p-1">
               {(["tasks", "time", "stock", "logs", "punch", "rfi", "expenses"] as const).map((key) => (

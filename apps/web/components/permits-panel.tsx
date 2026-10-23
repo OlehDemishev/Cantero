@@ -11,6 +11,7 @@ import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
 import { statusTone, TONE_TEXT_CLASSES } from "@/lib/status-tone";
+import { Field } from "@/components/ui/field";
 
 interface Permit {
   id: string;
@@ -266,15 +267,14 @@ export function PermitsPanel({ projectId }: { projectId: string }) {
           value={permitForm.authorityName}
           onChange={(e) => setPermitForm((f) => ({ ...f, authorityName: e.target.value }))}
         />
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("expires")}
+        <Field label={t("expires")} size="sm">
           <input
             type="date"
             className="input"
             value={permitForm.expiresAt}
             onChange={(e) => setPermitForm((f) => ({ ...f, expiresAt: e.target.value }))}
           />
-        </label>
+        </Field>
         <button type="submit" disabled={busy} className="btn-secondary shrink-0">
           {t("addPermit")}
         </button>

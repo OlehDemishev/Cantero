@@ -8,6 +8,7 @@ import { useCan } from "@/lib/permissions";
 import { formatDate } from "@/lib/format-date";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Field } from "@/components/ui/field";
 
 interface MaterialCatalogItem {
   id: string;
@@ -206,10 +207,9 @@ export function WarehouseReorderSettings() {
                 <tr className="border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
                   <td colSpan={5} className="py-3">
                     <div className="mb-4 flex items-end gap-2">
-                      <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-                        {t("barcode")}
+                      <Field label={t("barcode")} size="sm">
                         <input className="input w-40" value={barcodeDraft} onChange={(e) => setBarcodeDraft(e.target.value)} />
-                      </label>
+                      </Field>
                       <button onClick={() => saveBarcode(m.id)} disabled={barcodeSaving} className="btn-secondary px-2.5 py-1 text-xs">
                         {tc("save")}
                       </button>

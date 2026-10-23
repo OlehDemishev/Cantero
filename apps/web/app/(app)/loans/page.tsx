@@ -14,6 +14,7 @@ import { formatCurrency, formatNumber } from "@/lib/format-currency";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
 import { PageHeader } from "@/components/ui/page-header";
+import { Field } from "@/components/ui/field";
 
 interface Equipment {
   id: string;
@@ -198,10 +199,9 @@ export default function LoansPage() {
               onChange={(e) => setForm((f) => ({ ...f, termMonths: e.target.value }))}
             />
           </div>
-          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-            {t("startDate")}
-            <input required type="date" className="input mt-1" value={form.startDate} onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))} />
-          </label>
+          <Field label={t("startDate")} size="sm">
+            <input required type="date" className="input" value={form.startDate} onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))} />
+          </Field>
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className="btn-primary">
               {tc("save")}

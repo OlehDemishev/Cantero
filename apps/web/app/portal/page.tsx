@@ -10,6 +10,7 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatCurrency } from "@/lib/format-currency";
 import { useCompanyLocale } from "@/components/public-locale";
 import { Badge } from "@/components/ui/badge";
+import { Field } from "@/components/ui/field";
 
 interface Me {
   name: string;
@@ -472,10 +473,9 @@ export default function PortalDashboardPage() {
             <p className="text-sm text-fg-subtle">{t("noProjectsUnderWarranty")}</p>
           ) : (
             <form onSubmit={submitClaim} className="flex flex-col gap-2">
-              <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-                {t("project")}
+              <Field label={t("project")} size="sm">
                 <select
-                  className="input mt-1"
+                  className="input"
                   value={claimForm.projectId}
                   onChange={(e) => setClaimForm((f) => ({ ...f, projectId: e.target.value }))}
                 >
@@ -487,7 +487,7 @@ export default function PortalDashboardPage() {
                       </option>
                     ))}
                 </select>
-              </label>
+              </Field>
               <input
                 required
                 placeholder={t("claimTitlePlaceholder")}
@@ -545,10 +545,9 @@ export default function PortalDashboardPage() {
             <p className="text-sm text-fg-subtle">{t("noProjects")}</p>
           ) : (
             <form onSubmit={submitChangeRequest} className="flex flex-col gap-2">
-              <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-                {t("project")}
+              <Field label={t("project")} size="sm">
                 <select
-                  className="input mt-1"
+                  className="input"
                   value={changeRequestForm.projectId}
                   onChange={(e) => setChangeRequestForm((f) => ({ ...f, projectId: e.target.value }))}
                 >
@@ -558,7 +557,7 @@ export default function PortalDashboardPage() {
                     </option>
                   ))}
                 </select>
-              </label>
+              </Field>
               <input
                 required
                 placeholder={t("changeRequestTitlePlaceholder")}

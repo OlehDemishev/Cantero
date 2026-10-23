@@ -9,6 +9,7 @@ import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
+import { Field } from "@/components/ui/field";
 
 interface Invoice {
   id: string;
@@ -106,8 +107,7 @@ export function DrawRequestsPanel({ projectId }: { projectId: string }) {
 
       {creating && (
         <form onSubmit={submitCreate} className="card mb-4 flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("invoice")}</span>
+          <Field label={t("invoice")}>
             <select
               required
               className="input"
@@ -121,10 +121,9 @@ export function DrawRequestsPanel({ projectId }: { projectId: string }) {
                 </option>
               ))}
             </select>
-          </label>
+          </Field>
           <div className="flex flex-wrap gap-3">
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("periodStart")}</span>
+            <Field label={t("periodStart")}>
               <input
                 type="date"
                 required
@@ -132,9 +131,8 @@ export function DrawRequestsPanel({ projectId }: { projectId: string }) {
                 value={form.periodStart}
                 onChange={(e) => setForm((f) => ({ ...f, periodStart: e.target.value }))}
               />
-            </label>
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("periodEnd")}</span>
+            </Field>
+            <Field label={t("periodEnd")}>
               <input
                 type="date"
                 required
@@ -142,34 +140,31 @@ export function DrawRequestsPanel({ projectId }: { projectId: string }) {
                 value={form.periodEnd}
                 onChange={(e) => setForm((f) => ({ ...f, periodEnd: e.target.value }))}
               />
-            </label>
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("lenderName")}</span>
+            </Field>
+            <Field label={t("lenderName")}>
               <input
                 className="input"
                 value={form.lenderName}
                 onChange={(e) => setForm((f) => ({ ...f, lenderName: e.target.value }))}
               />
-            </label>
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("lenderContactEmail")}</span>
+            </Field>
+            <Field label={t("lenderContactEmail")}>
               <input
                 type="email"
                 className="input"
                 value={form.lenderContactEmail}
                 onChange={(e) => setForm((f) => ({ ...f, lenderContactEmail: e.target.value }))}
               />
-            </label>
+            </Field>
           </div>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("notes")}</span>
+          <Field label={t("notes")}>
             <textarea
               rows={2}
               className="input"
               value={form.notes}
               onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
             />
-          </label>
+          </Field>
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className="btn-primary">
               {tc("save")}

@@ -13,6 +13,7 @@ import { PrintButton } from "@/components/ui/print-button";
 import { formatDate } from "@/lib/format-date";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
+import { Field } from "@/components/ui/field";
 
 interface Worker {
   id: string;
@@ -232,8 +233,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
         <form onSubmit={submitIncident} className="card mb-4 flex flex-col gap-3">
           {quickNearMiss && <p className="text-xs text-fg-subtle">{t("quickNearMissHint")}</p>}
           <div className="flex flex-wrap gap-3">
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("occurredAt")}</span>
+            <Field label={t("occurredAt")}>
               <input
                 type="date"
                 required
@@ -241,10 +241,9 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
                 value={incidentForm.occurredAt}
                 onChange={(e) => setIncidentForm((f) => ({ ...f, occurredAt: e.target.value }))}
               />
-            </label>
+            </Field>
             {!quickNearMiss && (
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-fg-muted">{t("severity")}</span>
+              <Field label={t("severity")}>
                 <select
                   className="input"
                   value={incidentForm.severity}
@@ -256,19 +255,17 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
                     </option>
                   ))}
                 </select>
-              </label>
+              </Field>
             )}
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("location")}</span>
+            <Field label={t("location")}>
               <input
                 className="input"
                 value={incidentForm.location}
                 onChange={(e) => setIncidentForm((f) => ({ ...f, location: e.target.value }))}
               />
-            </label>
+            </Field>
           </div>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("description")}</span>
+          <Field label={t("description")}>
             <textarea
               required
               rows={2}
@@ -276,27 +273,25 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
               value={incidentForm.description}
               onChange={(e) => setIncidentForm((f) => ({ ...f, description: e.target.value }))}
             />
-          </label>
+          </Field>
           {!quickNearMiss && (
             <>
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-fg-muted">{t("involvedPersons")}</span>
+              <Field label={t("involvedPersons")}>
                 <input
                   className="input"
                   placeholder={t("involvedPersonsPlaceholder")}
                   value={incidentForm.involvedPersons}
                   onChange={(e) => setIncidentForm((f) => ({ ...f, involvedPersons: e.target.value }))}
                 />
-              </label>
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-fg-muted">{t("correctiveActions")}</span>
+              </Field>
+              <Field label={t("correctiveActions")}>
                 <textarea
                   rows={2}
                   className="input"
                   value={incidentForm.correctiveActions}
                   onChange={(e) => setIncidentForm((f) => ({ ...f, correctiveActions: e.target.value }))}
                 />
-              </label>
+              </Field>
               <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
@@ -307,8 +302,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
               </label>
               {incidentForm.oshaRecordable && (
                 <div className="flex flex-wrap gap-3 rounded-lg border border-gray-100 dark:border-gray-700 p-3">
-                  <label className="flex flex-col gap-1.5 text-sm">
-                    <span className="font-medium text-fg-muted">{t("oshaCaseType")}</span>
+                  <Field label={t("oshaCaseType")}>
                     <select
                       className="input"
                       value={incidentForm.oshaCaseType}
@@ -320,9 +314,8 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
                         </option>
                       ))}
                     </select>
-                  </label>
-                  <label className="flex flex-col gap-1.5 text-sm">
-                    <span className="font-medium text-fg-muted">{t("daysAwayFromWork")}</span>
+                  </Field>
+                  <Field label={t("daysAwayFromWork")}>
                     <input
                       type="number"
                       min="0"
@@ -330,9 +323,8 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
                       value={incidentForm.daysAwayFromWork}
                       onChange={(e) => setIncidentForm((f) => ({ ...f, daysAwayFromWork: e.target.value }))}
                     />
-                  </label>
-                  <label className="flex flex-col gap-1.5 text-sm">
-                    <span className="font-medium text-fg-muted">{t("daysJobTransferOrRestriction")}</span>
+                  </Field>
+                  <Field label={t("daysJobTransferOrRestriction")}>
                     <input
                       type="number"
                       min="0"
@@ -340,7 +332,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
                       value={incidentForm.daysJobTransferOrRestriction}
                       onChange={(e) => setIncidentForm((f) => ({ ...f, daysJobTransferOrRestriction: e.target.value }))}
                     />
-                  </label>
+                  </Field>
                 </div>
               )}
             </>
@@ -437,8 +429,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
             onSelect={({ subject, body }) => setBriefingForm((f) => ({ ...f, topic: subject, notes: body }))}
           />
           <div className="flex gap-3">
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("topic")}</span>
+            <Field label={t("topic")} className="flex-1">
               <input
                 required
                 className="input"
@@ -446,9 +437,8 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
                 value={briefingForm.topic}
                 onChange={(e) => setBriefingForm((f) => ({ ...f, topic: e.target.value }))}
               />
-            </label>
-            <label className="flex w-40 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("date")}</span>
+            </Field>
+            <Field label={t("date")} className="w-40">
               <input
                 type="date"
                 required
@@ -456,17 +446,16 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
                 value={briefingForm.date}
                 onChange={(e) => setBriefingForm((f) => ({ ...f, date: e.target.value }))}
               />
-            </label>
+            </Field>
           </div>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("notes")}</span>
+          <Field label={t("notes")}>
             <textarea
               rows={2}
               className="input"
               value={briefingForm.notes}
               onChange={(e) => setBriefingForm((f) => ({ ...f, notes: e.target.value }))}
             />
-          </label>
+          </Field>
           <div className="flex flex-col gap-1.5 text-sm">
             <span className="font-medium text-fg-muted">{t("attendees")}</span>
             <div className="flex flex-wrap gap-2">
@@ -537,8 +526,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
             }
           />
           <div className="flex gap-3">
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("taskDescription")}</span>
+            <Field label={t("taskDescription")} className="flex-1">
               <input
                 required
                 className="input"
@@ -546,9 +534,8 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
                 value={jhaForm.taskDescription}
                 onChange={(e) => setJhaForm((f) => ({ ...f, taskDescription: e.target.value }))}
               />
-            </label>
-            <label className="flex w-40 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("date")}</span>
+            </Field>
+            <Field label={t("date")} className="w-40">
               <input
                 type="date"
                 required
@@ -556,10 +543,9 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
                 value={jhaForm.date}
                 onChange={(e) => setJhaForm((f) => ({ ...f, date: e.target.value }))}
               />
-            </label>
+            </Field>
           </div>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("hazards")}</span>
+          <Field label={t("hazards")}>
             <textarea
               required
               rows={2}
@@ -568,9 +554,8 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
               value={jhaForm.hazards}
               onChange={(e) => setJhaForm((f) => ({ ...f, hazards: e.target.value }))}
             />
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("controlMeasures")}</span>
+          </Field>
+          <Field label={t("controlMeasures")}>
             <textarea
               required
               rows={2}
@@ -579,16 +564,15 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
               value={jhaForm.controlMeasures}
               onChange={(e) => setJhaForm((f) => ({ ...f, controlMeasures: e.target.value }))}
             />
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("requiredPpe")}</span>
+          </Field>
+          <Field label={t("requiredPpe")}>
             <input
               className="input"
               placeholder={t("requiredPpePlaceholder")}
               value={jhaForm.requiredPpe}
               onChange={(e) => setJhaForm((f) => ({ ...f, requiredPpe: e.target.value }))}
             />
-          </label>
+          </Field>
           <div className="flex flex-col gap-1.5 text-sm">
             <span className="font-medium text-fg-muted">{t("acknowledgedBy")}</span>
             <div className="flex flex-wrap gap-2">

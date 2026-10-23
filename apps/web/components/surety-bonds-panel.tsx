@@ -12,6 +12,7 @@ import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
+import { Field } from "@/components/ui/field";
 
 interface SuretyBond {
   id: string;
@@ -118,8 +119,7 @@ export function SuretyBondsPanel({ projectId }: { projectId: string }) {
             value={form.penalSum}
             onChange={(e) => setForm((f) => ({ ...f, penalSum: e.target.value }))}
           />
-          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-            {t("issueDate")}
+          <Field label={t("issueDate")} size="sm">
             <input
               required
               type="date"
@@ -127,16 +127,15 @@ export function SuretyBondsPanel({ projectId }: { projectId: string }) {
               value={form.issueDate}
               onChange={(e) => setForm((f) => ({ ...f, issueDate: e.target.value }))}
             />
-          </label>
-          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-            {t("expiryDate")}
+          </Field>
+          <Field label={t("expiryDate")} size="sm">
             <input
               type="date"
               className="input"
               value={form.expiryDate}
               onChange={(e) => setForm((f) => ({ ...f, expiryDate: e.target.value }))}
             />
-          </label>
+          </Field>
           <button type="submit" disabled={busy} className="btn-primary">
             {tc("save")}
           </button>

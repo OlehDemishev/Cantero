@@ -17,6 +17,7 @@ import { formatCurrency } from "@/lib/format-currency";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
 import { PageHeader } from "@/components/ui/page-header";
+import { Field } from "@/components/ui/field";
 
 interface Claim {
   id: string;
@@ -365,8 +366,7 @@ export default function InsuranceClaimsPage() {
 
                   {claim.status !== "settled" && claim.status !== "closed" && claim.status !== "denied" && (
                     <form onSubmit={(e) => submitSettle(claim, e)} className="mt-2 flex flex-wrap items-end gap-2">
-                      <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-                        {t("settledAmount")}
+                      <Field label={t("settledAmount")} size="sm">
                         <input
                           type="number"
                           min="0"
@@ -375,16 +375,15 @@ export default function InsuranceClaimsPage() {
                           value={settleForm.settledAmount}
                           onChange={(e) => setSettleForm((f) => ({ ...f, settledAmount: e.target.value }))}
                         />
-                      </label>
-                      <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-                        {t("settledAt")}
+                      </Field>
+                      <Field label={t("settledAt")} size="sm">
                         <input
                           type="date"
                           className="input"
                           value={settleForm.settledAt}
                           onChange={(e) => setSettleForm((f) => ({ ...f, settledAt: e.target.value }))}
                         />
-                      </label>
+                      </Field>
                       <button type="submit" disabled={busy} className="btn-primary">
                         {t("recordSettlement")}
                       </button>

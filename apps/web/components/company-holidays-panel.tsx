@@ -6,7 +6,7 @@ import { apiFetch, ApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
-import { FormError } from "@/components/ui/field";
+import { Field, FormError } from "@/components/ui/field";
 
 interface CompanyHoliday {
   id: string;
@@ -86,24 +86,22 @@ export function CompanyHolidaysPanel({ canManage }: { canManage: boolean }) {
 
       {canManage && (
         <div className="flex items-end gap-2">
-          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-            {t("holidayDate")}
+          <Field label={t("holidayDate")} size="sm">
             <input
               type="date"
               className="input"
               value={form.date}
               onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
             />
-          </label>
-          <label className="flex flex-1 flex-col gap-1 text-xs text-fg-subtle">
-            {t("holidayLabel")}
+          </Field>
+          <Field label={t("holidayLabel")} size="sm" className="flex-1">
             <input
               className="input"
               placeholder={t("holidayLabelPlaceholder")}
               value={form.label}
               onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
             />
-          </label>
+          </Field>
           <button type="button" onClick={submit} disabled={busy} className="btn-secondary px-3 py-1.5 text-xs">
             {t("addHoliday")}
           </button>

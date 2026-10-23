@@ -11,6 +11,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 import { PageHeader } from "@/components/ui/page-header";
+import { Field } from "@/components/ui/field";
 
 interface Project {
   id: string;
@@ -126,27 +127,25 @@ export default function ServiceContractsPage() {
                 </option>
               ))}
             </select>
-            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-              {t("frequencyMonths")}
+            <Field label={t("frequencyMonths")} size="sm">
               <input
                 required
                 type="number"
                 min="1"
-                className="input mt-1"
+                className="input"
                 value={form.frequencyMonths}
                 onChange={(e) => setForm((f) => ({ ...f, frequencyMonths: e.target.value }))}
               />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-              {t("startDate")}
+            </Field>
+            <Field label={t("startDate")} size="sm">
               <input
                 required
                 type="date"
-                className="input mt-1"
+                className="input"
                 value={form.startDate}
                 onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))}
               />
-            </label>
+            </Field>
             <button type="submit" disabled={submitting} className="btn-primary">
               {tc("create")}
             </button>

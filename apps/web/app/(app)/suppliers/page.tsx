@@ -17,6 +17,7 @@ import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatNumber } from "@/lib/format-currency";
 import { PageHeader } from "@/components/ui/page-header";
+import { Field } from "@/components/ui/field";
 
 interface Supplier {
   id: string;
@@ -414,8 +415,7 @@ export default function SuppliersPage() {
                             </ul>
                           )}
                           <form onSubmit={(e) => addReview(e, s.id)} className="flex flex-wrap items-end gap-2">
-                            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-                              {t("rating")}
+                            <Field label={t("rating")} size="sm">
                               <select
                                 className="input w-auto"
                                 value={reviewForm.rating}
@@ -427,9 +427,8 @@ export default function SuppliersPage() {
                                   </option>
                                 ))}
                               </select>
-                            </label>
-                            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-                              {t("wouldReorder")}
+                            </Field>
+                            <Field label={t("wouldReorder")} size="sm">
                               <select
                                 className="input w-auto"
                                 value={reviewForm.wouldReorder}
@@ -439,7 +438,7 @@ export default function SuppliersPage() {
                                 <option value="yes">{tc("yes")}</option>
                                 <option value="no">{tc("no")}</option>
                               </select>
-                            </label>
+                            </Field>
                             <input
                               placeholder={t("reviewCommentsPlaceholder")}
                               className="input"

@@ -9,6 +9,7 @@ import { fetchCached } from "@/lib/offline-cache";
 import { FieldMessage, type FieldMessageType } from "@/components/field-message";
 import { useCrewChoices } from "@/lib/permissions";
 import { resetStateInEffect } from "@/lib/effect-reset";
+import { Field } from "@/components/ui/field";
 
 interface Worker {
   id: string;
@@ -132,8 +133,7 @@ export function ExpensesTab({ projectId }: { projectId: string }) {
 
   return (
     <form onSubmit={submit} className="card flex flex-col gap-3">
-      <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-fg-muted">{tt("worker")}</span>
+      <Field label={tt("worker")}>
         <select className="input" value={form.workerId} disabled={!crew} onChange={(e) => setForm((f) => ({ ...f, workerId: e.target.value }))}>
           {choices.map((w) => (
             <option key={w.id} value={w.id}>
@@ -141,9 +141,8 @@ export function ExpensesTab({ projectId }: { projectId: string }) {
             </option>
           ))}
         </select>
-      </label>
-      <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-fg-muted">{te("category")}</span>
+      </Field>
+      <Field label={te("category")}>
         <select
           className="input"
           value={form.category}
@@ -155,10 +154,9 @@ export function ExpensesTab({ projectId }: { projectId: string }) {
             </option>
           ))}
         </select>
-      </label>
+      </Field>
       <div className="flex gap-3">
-        <label className="flex flex-1 flex-col gap-1.5 text-sm">
-          <span className="font-medium text-fg-muted">{te("amount")}</span>
+        <Field label={te("amount")} className="flex-1">
           <input
             required
             type="number"
@@ -168,25 +166,23 @@ export function ExpensesTab({ projectId }: { projectId: string }) {
             value={form.amount}
             onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
           />
-        </label>
-        <label className="flex flex-1 flex-col gap-1.5 text-sm">
-          <span className="font-medium text-fg-muted">{te("date")}</span>
+        </Field>
+        <Field label={te("date")} className="flex-1">
           <input
             type="date"
             className="input"
             value={form.incurredAt}
             onChange={(e) => setForm((f) => ({ ...f, incurredAt: e.target.value }))}
           />
-        </label>
+        </Field>
       </div>
-      <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-fg-muted">{te("description")}</span>
+      <Field label={te("description")}>
         <input
           className="input"
           value={form.description}
           onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
         />
-      </label>
+      </Field>
       <label className="flex flex-col gap-1.5 text-sm">
         <span className="font-medium text-fg-muted">{te("receipt")}</span>
         <input

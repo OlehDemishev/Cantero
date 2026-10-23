@@ -11,7 +11,7 @@ import { PhotoAttachments } from "@/components/photo-attachments";
 import { VoiceInputButton } from "@/components/voice-input-button";
 import { formatDate } from "@/lib/format-date";
 import { Badge } from "@/components/ui/badge";
-import { FormError } from "@/components/ui/field";
+import { Field, FormError } from "@/components/ui/field";
 
 interface DailyLog {
   id: string;
@@ -134,8 +134,7 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
       {showForm && (
         <form onSubmit={submit} className="card mb-4 flex flex-col gap-3">
           {!editingId && (
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("date")}</span>
+            <Field label={t("date")}>
               <input
                 type="date"
                 required
@@ -143,11 +142,10 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
                 value={form.date}
                 onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
               />
-            </label>
+            </Field>
           )}
           <div className="flex gap-3">
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("weather")}</span>
+            <Field label={t("weather")} className="flex-1">
               <select
                 className="input"
                 value={form.weatherCondition}
@@ -160,18 +158,16 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
                   </option>
                 ))}
               </select>
-            </label>
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("weatherNotes")}</span>
+            </Field>
+            <Field label={t("weatherNotes")} className="flex-1">
               <input
                 className="input"
                 placeholder={t("weatherNotesPlaceholder")}
                 value={form.weatherNotes}
                 onChange={(e) => setForm((f) => ({ ...f, weatherNotes: e.target.value }))}
               />
-            </label>
-            <label className="flex w-40 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("weatherDelayHours")}</span>
+            </Field>
+            <Field label={t("weatherDelayHours")} className="w-40">
               <input
                 type="number"
                 min="0"
@@ -181,11 +177,10 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
                 value={form.weatherDelayHours}
                 onChange={(e) => setForm((f) => ({ ...f, weatherDelayHours: e.target.value }))}
               />
-            </label>
+            </Field>
           </div>
           <div className="flex gap-3">
-            <label className="flex w-32 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("crewCount")}</span>
+            <Field label={t("crewCount")} className="w-32">
               <input
                 type="number"
                 min="0"
@@ -193,16 +188,15 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
                 value={form.crewCount}
                 onChange={(e) => setForm((f) => ({ ...f, crewCount: e.target.value }))}
               />
-            </label>
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("crewNotes")}</span>
+            </Field>
+            <Field label={t("crewNotes")} className="flex-1">
               <input
                 className="input"
                 placeholder={t("crewNotesPlaceholder")}
                 value={form.crewNotes}
                 onChange={(e) => setForm((f) => ({ ...f, crewNotes: e.target.value }))}
               />
-            </label>
+            </Field>
           </div>
           <label className="flex flex-col gap-1.5 text-sm">
             <span className="flex items-center gap-2 font-medium text-fg-muted">
@@ -219,8 +213,7 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
               onChange={(e) => setForm((f) => ({ ...f, workPerformed: e.target.value }))}
             />
           </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("delays")}</span>
+          <Field label={t("delays")}>
             <textarea
               rows={2}
               className="input"
@@ -228,16 +221,15 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
               value={form.delays}
               onChange={(e) => setForm((f) => ({ ...f, delays: e.target.value }))}
             />
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("notes")}</span>
+          </Field>
+          <Field label={t("notes")}>
             <textarea
               rows={2}
               className="input"
               value={form.notes}
               onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
             />
-          </label>
+          </Field>
           {error && <FormError>{error}</FormError>}
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className="btn-primary">

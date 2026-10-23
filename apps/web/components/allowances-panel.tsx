@@ -11,6 +11,7 @@ import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
+import { Field } from "@/components/ui/field";
 
 interface AllowanceCharge {
   id: string;
@@ -102,12 +103,10 @@ export function AllowancesPanel({ projectId }: { projectId: string }) {
 
       {creating && (
         <form onSubmit={submit} className="card mb-4 flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("name")}</span>
+          <Field label={t("name")}>
             <input required className="input" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
-          </label>
-          <label className="flex w-48 flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("budgetedAmount")}</span>
+          </Field>
+          <Field label={t("budgetedAmount")} className="w-48">
             <input
               required
               type="number"
@@ -117,11 +116,10 @@ export function AllowancesPanel({ projectId }: { projectId: string }) {
               value={form.budgetedAmount}
               onChange={(e) => setForm((f) => ({ ...f, budgetedAmount: e.target.value }))}
             />
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("notes")}</span>
+          </Field>
+          <Field label={t("notes")}>
             <textarea rows={2} className="input" value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
-          </label>
+          </Field>
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className="btn-primary">
               {tc("save")}

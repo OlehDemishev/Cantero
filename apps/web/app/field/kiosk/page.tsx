@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { ApiError, apiFetch, clearToken, getToken } from "@/lib/api-client";
 import { Alert } from "@/components/ui/alert";
-import { FormError } from "@/components/ui/field";
+import { Field, FormError } from "@/components/ui/field";
 
 interface KioskWorker {
   id: string;
@@ -160,8 +160,7 @@ export default function KioskPage() {
               </Alert>
             ) : !kioskToken ? (
               <>
-                <label className="flex flex-col gap-1.5 text-sm">
-                  <span className="font-medium text-fg-muted">{t("enterPin")}</span>
+                <Field label={t("enterPin")}>
                   <input
                     type="password"
                     inputMode="numeric"
@@ -171,7 +170,7 @@ export default function KioskPage() {
                     value={pin}
                     onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
                   />
-                </label>
+                </Field>
                 {pinError && <FormError className="mt-2">{pinError}</FormError>}
                 <button onClick={submitPin} disabled={busy || pin.length < 4} className="btn-primary mt-4 w-full">
                   {t("submitPin")}
@@ -179,8 +178,7 @@ export default function KioskPage() {
               </>
             ) : (
               <form onSubmit={submitEntry} className="flex flex-col gap-3">
-                <label className="flex flex-col gap-1.5 text-sm">
-                  <span className="font-medium text-fg-muted">{t("project")}</span>
+                <Field label={t("project")}>
                   <select
                     required
                     className="input"
@@ -194,9 +192,8 @@ export default function KioskPage() {
                       </option>
                     ))}
                   </select>
-                </label>
-                <label className="flex flex-col gap-1.5 text-sm">
-                  <span className="font-medium text-fg-muted">{t("hours")}</span>
+                </Field>
+                <Field label={t("hours")}>
                   <input
                     type="number"
                     min="0.25"
@@ -206,7 +203,7 @@ export default function KioskPage() {
                     value={entryForm.hours}
                     onChange={(e) => setEntryForm((f) => ({ ...f, hours: e.target.value }))}
                   />
-                </label>
+                </Field>
                 <button type="submit" disabled={busy || !entryForm.projectId} className="btn-primary mt-2">
                   {t("logHours")}
                 </button>

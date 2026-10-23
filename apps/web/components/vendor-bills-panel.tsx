@@ -12,6 +12,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApi } from "@/lib/use-api";
 import { Badge } from "@/components/ui/badge";
+import { Field } from "@/components/ui/field";
 
 interface Supplier {
   id: string;
@@ -249,10 +250,9 @@ export function VendorBillsPanel() {
                 value={billNumber}
                 onChange={(e) => setBillNumber(e.target.value)}
               />
-              <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-                {t("dueDate")}
-                <input type="date" className="input mt-1" value={billDueDate} onChange={(e) => setBillDueDate(e.target.value)} />
-              </label>
+              <Field label={t("dueDate")} size="sm">
+                <input type="date" className="input" value={billDueDate} onChange={(e) => setBillDueDate(e.target.value)} />
+              </Field>
 
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-fg-subtle">{t("billLines")}</span>

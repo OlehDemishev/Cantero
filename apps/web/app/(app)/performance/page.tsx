@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
 import { PageHeader } from "@/components/ui/page-header";
+import { Field } from "@/components/ui/field";
 
 interface Cycle {
   id: string;
@@ -174,8 +175,7 @@ export default function PerformancePage() {
                 value={cycleForm.name}
                 onChange={(e) => setCycleForm((f) => ({ ...f, name: e.target.value }))}
               />
-              <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-                {t("periodStart")}
+              <Field label={t("periodStart")} size="sm">
                 <input
                   required
                   type="date"
@@ -183,9 +183,8 @@ export default function PerformancePage() {
                   value={cycleForm.periodStart}
                   onChange={(e) => setCycleForm((f) => ({ ...f, periodStart: e.target.value }))}
                 />
-              </label>
-              <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-                {t("periodEnd")}
+              </Field>
+              <Field label={t("periodEnd")} size="sm">
                 <input
                   required
                   type="date"
@@ -193,7 +192,7 @@ export default function PerformancePage() {
                   value={cycleForm.periodEnd}
                   onChange={(e) => setCycleForm((f) => ({ ...f, periodEnd: e.target.value }))}
                 />
-              </label>
+              </Field>
               <button type="submit" disabled={busy} className="btn-primary">
                 {t("launchCycle")}
               </button>

@@ -16,6 +16,7 @@ import { formatCurrency } from "@/lib/format-currency";
 import { useCompanyLocale } from "@/components/public-locale";
 import { Badge } from "@/components/ui/badge";
 import { Alert } from "@/components/ui/alert";
+import { Field } from "@/components/ui/field";
 
 interface Me {
   name: string;
@@ -380,8 +381,7 @@ export default function SubcontractorPortalDashboardPage() {
                     {r.status === "open" ? (
                       <div className="mt-2 flex flex-col gap-2">
                         <div className="flex flex-wrap items-end gap-2">
-                          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-                            {t("yourBidAmount")}
+                          <Field label={t("yourBidAmount")} size="sm">
                             <input
                               type="number"
                               step="0.01"
@@ -389,15 +389,14 @@ export default function SubcontractorPortalDashboardPage() {
                               value={form.amount}
                               onChange={(e) => setBidForms((f) => ({ ...f, [r.id]: { ...form, amount: e.target.value } }))}
                             />
-                          </label>
-                          <label className="flex flex-1 flex-col gap-1 text-xs text-fg-subtle">
-                            {t("notes")}
+                          </Field>
+                          <Field label={t("notes")} size="sm" className="flex-1">
                             <input
                               className="input"
                               value={form.notes}
                               onChange={(e) => setBidForms((f) => ({ ...f, [r.id]: { ...form, notes: e.target.value } }))}
                             />
-                          </label>
+                          </Field>
                           <button
                             onClick={() => submitBid(r.id)}
                             disabled={bidBusyId === r.id || !form.amount}
@@ -406,8 +405,7 @@ export default function SubcontractorPortalDashboardPage() {
                             {myBid ? t("updateBid") : t("submitBid")}
                           </button>
                         </div>
-                        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-                          {t("scopeLinesLabel")}
+                        <Field label={t("scopeLinesLabel")} size="sm">
                           <textarea
                             rows={2}
                             className="input text-xs"
@@ -415,7 +413,7 @@ export default function SubcontractorPortalDashboardPage() {
                             value={bidLinesText[r.id] ?? ""}
                             onChange={(e) => setBidLinesText((f) => ({ ...f, [r.id]: e.target.value }))}
                           />
-                        </label>
+                        </Field>
                       </div>
                     ) : (
                       myBid && (
@@ -466,15 +464,14 @@ export default function SubcontractorPortalDashboardPage() {
 
                   {signingId === w.id && (
                     <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 dark:border-gray-700 pt-3">
-                      <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-                        {t("signerNameLabel")}
+                      <Field label={t("signerNameLabel")} size="sm">
                         <input
                           className="input"
                           placeholder={t("signerNamePlaceholder")}
                           value={signerName}
                           onChange={(e) => setSignerName(e.target.value)}
                         />
-                      </label>
+                      </Field>
                       <SignaturePad onChange={setSignatureDataUrl} clearLabel={t("clearSignature")} />
                       <div className="flex gap-2">
                         <button

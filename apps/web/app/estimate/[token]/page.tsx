@@ -10,7 +10,7 @@ import { formatDateTime } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
 import { Badge } from "@/components/ui/badge";
 import { Alert } from "@/components/ui/alert";
-import { FormError } from "@/components/ui/field";
+import { Field, FormError } from "@/components/ui/field";
 
 interface PublicLine {
   id: string;
@@ -189,15 +189,14 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
 
           {estimate.clientDecision === "pending" ? (
             <div className="mt-6 border-t border-gray-100 dark:border-gray-700 pt-4">
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-fg-muted">{t("clientNoteOptional")}</span>
+              <Field label={t("clientNoteOptional")}>
                 <textarea
                   rows={2}
                   className="input"
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                 />
-              </label>
+              </Field>
 
               <div className="mt-4 flex flex-col gap-1.5 text-sm">
                 <span className="font-medium text-fg-muted">{t("signerNameLabel")}</span>
@@ -216,10 +215,7 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
 
               {counterMode ? (
                 <div className="mt-3 rounded-lg bg-gray-50 dark:bg-gray-700 p-3">
-                  <label className="flex flex-col gap-1.5 text-sm">
-                    <span className="font-medium text-fg-muted">
-                      {t("counterOfferAmountLabel")} ({estimate.currency})
-                    </span>
+                  <Field label={`${t("counterOfferAmountLabel")} (${estimate.currency})`}>
                     <input
                       type="number"
                       min="0.01"
@@ -228,7 +224,7 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
                       value={counterAmount}
                       onChange={(e) => setCounterAmount(e.target.value)}
                     />
-                  </label>
+                  </Field>
                   <div className="mt-3 flex gap-2">
                     <button onClick={decideCounter} disabled={busy || !counterAmount} className="btn-primary flex-1">
                       {t("sendCounterOffer")}

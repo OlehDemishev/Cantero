@@ -12,6 +12,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
+import { Field } from "@/components/ui/field";
 
 interface Worker {
   id: string;
@@ -219,24 +220,22 @@ export default function FleetPage() {
             ))}
           </select>
           <div className="flex flex-wrap gap-2">
-            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-              {t("registrationExpiresAt")}
+            <Field label={t("registrationExpiresAt")} size="sm">
               <input
                 type="date"
                 className="input"
                 value={form.registrationExpiresAt}
                 onChange={(e) => setForm((f) => ({ ...f, registrationExpiresAt: e.target.value }))}
               />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-              {t("insuranceExpiresAt")}
+            </Field>
+            <Field label={t("insuranceExpiresAt")} size="sm">
               <input
                 type="date"
                 className="input"
                 value={form.insuranceExpiresAt}
                 onChange={(e) => setForm((f) => ({ ...f, insuranceExpiresAt: e.target.value }))}
               />
-            </label>
+            </Field>
           </div>
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className="btn-primary">

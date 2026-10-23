@@ -6,7 +6,7 @@ import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { resetStateInEffect } from "@/lib/effect-reset";
 import { Alert } from "@/components/ui/alert";
-import { FormError } from "@/components/ui/field";
+import { Field, FormError } from "@/components/ui/field";
 
 export function TwoFactorSettingsPanel() {
   const t = useTranslations("twoFactor");
@@ -106,16 +106,15 @@ export function TwoFactorSettingsPanel() {
         <form onSubmit={confirmEnable} className="flex flex-col gap-2">
           <p className="text-xs text-gray-600 dark:text-gray-300">{t("scanHint")}</p>
           <p className="break-all rounded bg-gray-50 dark:bg-gray-700 p-2 font-mono text-xs">{setupData.secret}</p>
-          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-            {t("codeLabel")}
+          <Field label={t("codeLabel")} size="sm">
             <input
               required
-              className="input mt-1"
+              className="input"
               value={enableCode}
               onChange={(e) => setEnableCode(e.target.value)}
               maxLength={6}
             />
-          </label>
+          </Field>
           <button type="submit" disabled={busy} className="btn-primary self-start">
             {t("confirm")}
           </button>
@@ -124,16 +123,15 @@ export function TwoFactorSettingsPanel() {
 
       {isEnabled && (
         <form onSubmit={disable} className="flex items-end gap-2">
-          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-            {t("passwordToDisable")}
+          <Field label={t("passwordToDisable")} size="sm">
             <input
               required
               type="password"
-              className="input mt-1"
+              className="input"
               value={disablePassword}
               onChange={(e) => setDisablePassword(e.target.value)}
             />
-          </label>
+          </Field>
           <button type="submit" disabled={busy} className="btn-secondary px-3 py-1 text-xs text-danger-fg">
             {t("disable")}
           </button>

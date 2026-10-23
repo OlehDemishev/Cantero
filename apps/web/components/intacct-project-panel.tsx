@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
-import { FormError } from "@/components/ui/field";
+import { Field, FormError } from "@/components/ui/field";
 
 interface Summary {
   pushed: number;
@@ -79,14 +79,12 @@ export function IntacctProjectPanel({ projectId }: { projectId: string }) {
         <p className="mb-3 text-xs text-success-fg">{t("contractExists", { id: project.intacctContractId })}</p>
       ) : (
         <div className="mb-3 flex flex-wrap items-end gap-2">
-          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-            {t("intacctProjectId")}
+          <Field label={t("intacctProjectId")} size="sm">
             <input className="input" value={project.intacctProjectId} onChange={(e) => setProject((p) => ({ ...p, intacctProjectId: e.target.value }))} />
-          </label>
-          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-            {t("intacctCustomerId")}
+          </Field>
+          <Field label={t("intacctCustomerId")} size="sm">
             <input className="input" value={customerId} onChange={(e) => setCustomerId(e.target.value)} />
-          </label>
+          </Field>
           <button onClick={pushContract} disabled={busy || !project.intacctProjectId.trim() || !customerId.trim()} className="btn-secondary px-2.5 py-1.5 text-xs">
             {t("pushContract")}
           </button>

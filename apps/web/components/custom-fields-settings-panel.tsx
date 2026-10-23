@@ -8,7 +8,7 @@ import { useApi } from "@/lib/use-api";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useConfirm } from "@/components/ui/confirm-dialog";
-import { FormError } from "@/components/ui/field";
+import { Field, FormError } from "@/components/ui/field";
 
 interface FieldDefinition {
   id: string;
@@ -102,8 +102,7 @@ export function CustomFieldsSettingsPanel({ canManage }: { canManage: boolean })
 
       {canManage && (
         <form onSubmit={submit} className="flex flex-wrap items-end gap-2 border-t border-gray-100 dark:border-gray-700 pt-4">
-          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-            {t("entityType")}
+          <Field label={t("entityType")} size="sm">
             <select
               className="input w-auto"
               value={form.entityType}
@@ -115,18 +114,16 @@ export function CustomFieldsSettingsPanel({ canManage }: { canManage: boolean })
                 </option>
               ))}
             </select>
-          </label>
-          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-            {tc("name")}
+          </Field>
+          <Field label={tc("name")} size="sm">
             <input
               required
               className="input w-auto"
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
             />
-          </label>
-          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-            {t("fieldType")}
+          </Field>
+          <Field label={t("fieldType")} size="sm">
             <select
               className="input w-auto"
               value={form.type}
@@ -138,10 +135,9 @@ export function CustomFieldsSettingsPanel({ canManage }: { canManage: boolean })
                 </option>
               ))}
             </select>
-          </label>
+          </Field>
           {form.type === "select" && (
-            <label className="flex flex-1 flex-col gap-1 text-xs text-fg-subtle">
-              {t("optionsCommaSeparated")}
+            <Field label={t("optionsCommaSeparated")} size="sm" className="flex-1">
               <input
                 required
                 className="input"
@@ -149,7 +145,7 @@ export function CustomFieldsSettingsPanel({ canManage }: { canManage: boolean })
                 value={form.options}
                 onChange={(e) => setForm((f) => ({ ...f, options: e.target.value }))}
               />
-            </label>
+            </Field>
           )}
           <button type="submit" disabled={busy} className="btn-secondary">
             {t("addField")}

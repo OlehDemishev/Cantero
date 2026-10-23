@@ -9,7 +9,7 @@ import { formatCurrency, formatNumber } from "@/lib/format-currency";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { FormError } from "@/components/ui/field";
+import { Field, FormError } from "@/components/ui/field";
 
 interface Project {
   isPublicWork: boolean;
@@ -180,14 +180,13 @@ export function CertifiedPayrollPanel({ projectId }: { projectId: string }) {
           {t("isPublicWork")}
         </label>
         {publicWorkForm.isPublicWork && (
-          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-            {t("contractNumber")}
+          <Field label={t("contractNumber")} size="sm">
             <input
               className="input w-48"
               value={publicWorkForm.contractNumber}
               onChange={(e) => setPublicWorkForm((f) => ({ ...f, contractNumber: e.target.value }))}
             />
-          </label>
+          </Field>
         )}
         <button type="submit" disabled={busy} className="btn-secondary">
           {tc("save")}
@@ -199,10 +198,9 @@ export function CertifiedPayrollPanel({ projectId }: { projectId: string }) {
       {project.isPublicWork && (
         <>
           <div className="mb-4 flex flex-wrap items-end gap-2 border-t border-gray-100 pt-3 dark:border-gray-800">
-            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-              {t("weekEndingDate")}
+            <Field label={t("weekEndingDate")} size="sm">
               <input type="date" className="input w-40" value={weekEndingDate} onChange={(e) => setWeekEndingDate(e.target.value)} />
-            </label>
+            </Field>
             <button type="button" onClick={loadPreview} disabled={busy} className="btn-secondary">
               {t("preview")}
             </button>

@@ -11,7 +11,7 @@ import { formatCurrency } from "@/lib/format-currency";
 import { PublicLinkError } from "@/components/public-link-error";
 import { Badge } from "@/components/ui/badge";
 import { Alert } from "@/components/ui/alert";
-import { FormError } from "@/components/ui/field";
+import { Field, FormError } from "@/components/ui/field";
 
 interface PortalLine {
   id: string;
@@ -197,10 +197,9 @@ export default function PortalEstimatePage({ params }: { params: Promise<{ id: s
 
           {estimate.clientDecision === "pending" ? (
             <div className="mt-6 border-t border-gray-100 dark:border-gray-700 pt-4">
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-fg-muted">{te("clientNoteOptional")}</span>
+              <Field label={te("clientNoteOptional")}>
                 <textarea rows={2} className="input" value={note} onChange={(e) => setNote(e.target.value)} />
-              </label>
+              </Field>
 
               <div className="mt-4 flex flex-col gap-1.5 text-sm">
                 <span className="font-medium text-fg-muted">{te("signerNameLabel")}</span>

@@ -6,6 +6,7 @@ import { apiFetch, ApiError, setToken } from "@/lib/api-client";
 import { beginSsoNonce } from "@/lib/sso-nonce";
 import { useRedirectIfSignedIn } from "@/lib/use-redirect-if-signed-in";
 import { Alert } from "@/components/ui/alert";
+import { Field } from "@/components/ui/field";
 
 type LoginResult = { accessToken: string; companyId: string } | { requires2fa: true; challengeToken: string };
 
@@ -106,8 +107,7 @@ export default function LoginPage() {
 
           {challengeToken ? (
             <form onSubmit={handleVerify2fa} className="mt-6 flex flex-col gap-4">
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-fg-muted">{t("twoFactorCode")}</span>
+              <Field label={t("twoFactorCode")}>
                 <input
                   required
                   autoFocus
@@ -116,15 +116,14 @@ export default function LoginPage() {
                   value={twoFactorCode}
                   onChange={(e) => setTwoFactorCode(e.target.value)}
                 />
-              </label>
+              </Field>
               <button type="submit" disabled={submitting} className="btn-primary mt-2">
                 {submitting ? tc("loading") : t("verify")}
               </button>
             </form>
           ) : ssoMode ? (
             <form onSubmit={handleSsoStart} className="mt-6 flex flex-col gap-4">
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-fg-muted">{tc("email")}</span>
+              <Field label={tc("email")}>
                 <input
                   required
                   type="email"
@@ -132,15 +131,14 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
-              </label>
+              </Field>
               <button type="submit" disabled={submitting} className="btn-primary mt-2">
                 {submitting ? tc("loading") : t("continueWithSso")}
               </button>
             </form>
           ) : (
             <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-fg-muted">{tc("email")}</span>
+              <Field label={tc("email")}>
                 <input
                   required
                   type="email"
@@ -148,9 +146,8 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
-              </label>
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-fg-muted">{t("password")}</span>
+              </Field>
+              <Field label={t("password")}>
                 <input
                   required
                   type="password"
@@ -158,7 +155,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
-              </label>
+              </Field>
               <a href="/forgot-password" className="self-end text-xs text-fg-subtle hover:text-fg-muted">
                 {t("forgotPassword")}
               </a>

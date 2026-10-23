@@ -14,6 +14,7 @@ import { formatDate } from "@/lib/format-date";
 import { resetStateInEffect } from "@/lib/effect-reset";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useReportFieldLabel } from "@/lib/report-field-label";
+import { Field } from "@/components/ui/field";
 
 interface ReportField {
   key: string;
@@ -169,8 +170,7 @@ export function CustomReportsPanel() {
 
       <div className="card flex flex-col gap-4">
         <div className="flex flex-wrap gap-3">
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("dataset")}</span>
+          <Field label={t("dataset")}>
             <select className="input" value={dataset} onChange={(e) => setDataset(e.target.value as ReportDataset)}>
               {REPORT_DATASETS.map((d) => (
                 <option key={d} value={d}>
@@ -178,27 +178,24 @@ export function CustomReportsPanel() {
                 </option>
               ))}
             </select>
-          </label>
+          </Field>
           {!isAggregate && (
             <>
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-fg-muted">{t("dateFrom")}</span>
+              <Field label={t("dateFrom")}>
                 <input type="date" className="input" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
-              </label>
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-fg-muted">{t("dateTo")}</span>
+              </Field>
+              <Field label={t("dateTo")}>
                 <input type="date" className="input" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
-              </label>
+              </Field>
               {!NO_STATUS_DATASETS.has(dataset) && (
-                <label className="flex flex-col gap-1.5 text-sm">
-                  <span className="font-medium text-fg-muted">{t("statusEquals")}</span>
+                <Field label={t("statusEquals")}>
                   <input
                     className="input"
                     placeholder={t("statusPlaceholder")}
                     value={statusEquals}
                     onChange={(e) => setStatusEquals(e.target.value)}
                   />
-                </label>
+                </Field>
               )}
             </>
           )}

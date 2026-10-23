@@ -8,7 +8,7 @@ import { useApi } from "@/lib/use-api";
 import { formatCurrency } from "@/lib/format-currency";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FormError } from "@/components/ui/field";
+import { Field, FormError } from "@/components/ui/field";
 
 interface ProgressDraw {
   id: string;
@@ -129,8 +129,7 @@ export function ProgressBillingPanel({ estimateId, currency }: { estimateId: str
 
       {summary.percentBilled < 100 && (
         <form onSubmit={generateDraw} className="flex items-end gap-2">
-          <label className="flex flex-1 flex-col gap-1 text-xs text-fg-subtle">
-            {t("percentComplete")}
+          <Field label={t("percentComplete")} size="sm" className="flex-1">
             <input
               type="number"
               min={summary.percentBilled + 0.01}
@@ -141,9 +140,8 @@ export function ProgressBillingPanel({ estimateId, currency }: { estimateId: str
               value={form.percentComplete}
               onChange={(e) => setForm((f) => ({ ...f, percentComplete: e.target.value }))}
             />
-          </label>
-          <label className="flex w-24 flex-col gap-1 text-xs text-fg-subtle">
-            {t("retainagePercent")}
+          </Field>
+          <Field label={t("retainagePercent")} size="sm" className="w-24">
             <input
               type="number"
               min="0"
@@ -153,7 +151,7 @@ export function ProgressBillingPanel({ estimateId, currency }: { estimateId: str
               value={form.retainagePercent}
               onChange={(e) => setForm((f) => ({ ...f, retainagePercent: e.target.value }))}
             />
-          </label>
+          </Field>
           <button type="submit" disabled={busy} className="btn-secondary">
             {t("generateDraw")}
           </button>
@@ -177,8 +175,7 @@ export function ProgressBillingPanel({ estimateId, currency }: { estimateId: str
             </button>
           ) : (
             <div className="flex items-end gap-2">
-              <label className="flex w-32 flex-col gap-1 text-xs text-fg-subtle">
-                {t("partialAmount")}
+              <Field label={t("partialAmount")} size="sm" className="w-32">
                 <input
                   type="number"
                   min="0.01"
@@ -188,7 +185,7 @@ export function ProgressBillingPanel({ estimateId, currency }: { estimateId: str
                   value={releaseAmount}
                   onChange={(e) => setReleaseAmount(e.target.value)}
                 />
-              </label>
+              </Field>
               <button
                 onClick={() => releaseRetainage(Number(releaseAmount))}
                 disabled={busy || !releaseAmount}

@@ -12,6 +12,7 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatNumber } from "@/lib/format-currency";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
+import { Field } from "@/components/ui/field";
 
 interface Project {
   id: string;
@@ -95,10 +96,9 @@ export default function DocumentsPage() {
       <PageHeader title={t("title")} />
 
       <div className="mt-6 flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("category")}
+        <Field label={t("category")} size="sm">
           <select
-            className="input mt-1 w-auto"
+            className="input w-auto"
             value={category}
             onChange={(e) => setCategory(e.target.value as DocumentCategory | "")}
           >
@@ -109,11 +109,10 @@ export default function DocumentsPage() {
               </option>
             ))}
           </select>
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {tc("name")}
-          <input className="input mt-1" placeholder={t("searchPlaceholder")} value={search} onChange={(e) => setSearch(e.target.value)} />
-        </label>
+        </Field>
+        <Field label={tc("name")} size="sm">
+          <input className="input" placeholder={t("searchPlaceholder")} value={search} onChange={(e) => setSearch(e.target.value)} />
+        </Field>
       </div>
 
       <div className="mt-8 overflow-x-auto">
@@ -180,10 +179,9 @@ export default function DocumentsPage() {
       <div className="card mt-8">
         <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("uploadNew")}</h2>
         <div className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-            {t("category")}
+          <Field label={t("category")} size="sm">
             <select
-              className="input mt-1 w-auto"
+              className="input w-auto"
               value={uploadCategory}
               onChange={(e) => setUploadCategory(e.target.value as DocumentCategory)}
             >
@@ -193,10 +191,9 @@ export default function DocumentsPage() {
                 </option>
               ))}
             </select>
-          </label>
-          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-            {t("project")}
-            <select className="input mt-1 w-auto" value={uploadProjectId} onChange={(e) => setUploadProjectId(e.target.value)}>
+          </Field>
+          <Field label={t("project")} size="sm">
+            <select className="input w-auto" value={uploadProjectId} onChange={(e) => setUploadProjectId(e.target.value)}>
               <option value="">{t("noProject")}</option>
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -204,7 +201,7 @@ export default function DocumentsPage() {
                 </option>
               ))}
             </select>
-          </label>
+          </Field>
           <input ref={fileInputRef} type="file" onChange={handleFileChange} className="hidden" />
           <button type="button" onClick={() => fileInputRef.current?.click()} disabled={busy} className="btn-secondary">
             {t("chooseFile")}

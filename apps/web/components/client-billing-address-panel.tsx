@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { SUPPORTED_LOCALES } from "@cantero/shared";
 import { apiFetch, notifyApiError } from "@/lib/api-client";
+import { Field } from "@/components/ui/field";
 
 interface Client {
   street: string | null;
@@ -138,8 +139,7 @@ export function ClientBillingAddressPanel({ clientId }: { clientId: string }) {
             onChange={(e) => setBillingForm((f) => ({ ...f, peppolParticipantId: e.target.value }))}
           />
         </div>
-        <label className="flex w-40 flex-col gap-1 text-xs text-fg-subtle">
-          {t("paymentTermsDays")}
+        <Field label={t("paymentTermsDays")} size="sm" className="w-40">
           <input
             type="number"
             min="0"
@@ -149,9 +149,8 @@ export function ClientBillingAddressPanel({ clientId }: { clientId: string }) {
             value={billingForm.paymentTermsDays}
             onChange={(e) => setBillingForm((f) => ({ ...f, paymentTermsDays: e.target.value }))}
           />
-        </label>
-        <label className="flex w-40 flex-col gap-1 text-xs text-fg-subtle">
-          {t("preferredLocale")}
+        </Field>
+        <Field label={t("preferredLocale")} size="sm" className="w-40">
           <select
             className="input"
             value={billingForm.preferredLocale}
@@ -164,7 +163,7 @@ export function ClientBillingAddressPanel({ clientId }: { clientId: string }) {
               </option>
             ))}
           </select>
-        </label>
+        </Field>
         <div className="flex items-center gap-2">
           <button type="submit" disabled={busy} className="btn-secondary self-start">
             {tc("save")}

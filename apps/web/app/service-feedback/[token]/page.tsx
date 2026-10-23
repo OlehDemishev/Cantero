@@ -6,6 +6,7 @@ import { apiFetch, ApiError } from "@/lib/api-client";
 import { PublicLinkError, PublicNotice } from "@/components/public-link-error";
 import { useCompanyLocale } from "@/components/public-locale";
 import { Alert } from "@/components/ui/alert";
+import { Field } from "@/components/ui/field";
 
 /** GET of the same token: whose form it is, in which language, and whether it is still open. */
 interface FormLink {
@@ -96,10 +97,9 @@ export default function ServiceFeedbackPage({ params }: { params: Promise<{ toke
                     </button>
                   ))}
                 </div>
-                <label className="flex flex-col gap-1.5 text-sm">
-                  <span className="font-medium text-fg-muted">{t("comment")}</span>
+                <Field label={t("comment")}>
                   <textarea className="input h-24" value={comment} onChange={(e) => setComment(e.target.value)} />
-                </label>
+                </Field>
                 <button type="submit" disabled={submitting || rating === 0} className="btn-primary mt-2">
                   {t("submit")}
                 </button>

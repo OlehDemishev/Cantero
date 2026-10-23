@@ -7,7 +7,7 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert } from "@/components/ui/alert";
-import { FormError } from "@/components/ui/field";
+import { Field, FormError } from "@/components/ui/field";
 
 interface SsoConfig {
   ssoDomain: string | null;
@@ -138,8 +138,7 @@ export function SsoSettingsPanel({ canManage }: { canManage: boolean }) {
 
       {canManage && (
         <form onSubmit={save} className="flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("domain")}</span>
+          <Field label={t("domain")}>
             <input
               required
               placeholder="acme.com"
@@ -147,9 +146,8 @@ export function SsoSettingsPanel({ canManage }: { canManage: boolean }) {
               value={form.domain}
               onChange={(e) => setForm((f) => ({ ...f, domain: e.target.value }))}
             />
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("entryPoint")}</span>
+          </Field>
+          <Field label={t("entryPoint")}>
             <input
               required
               placeholder="https://idp.example.com/sso/saml"
@@ -157,9 +155,8 @@ export function SsoSettingsPanel({ canManage }: { canManage: boolean }) {
               value={form.entryPoint}
               onChange={(e) => setForm((f) => ({ ...f, entryPoint: e.target.value }))}
             />
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("issuer")}</span>
+          </Field>
+          <Field label={t("issuer")}>
             <input
               required
               placeholder={t("issuerPlaceholder")}
@@ -167,9 +164,8 @@ export function SsoSettingsPanel({ canManage }: { canManage: boolean }) {
               value={form.issuer}
               onChange={(e) => setForm((f) => ({ ...f, issuer: e.target.value }))}
             />
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("cert")}</span>
+          </Field>
+          <Field label={t("cert")}>
             <textarea
               required
               rows={5}
@@ -178,7 +174,7 @@ export function SsoSettingsPanel({ canManage }: { canManage: boolean }) {
               value={form.cert}
               onChange={(e) => setForm((f) => ({ ...f, cert: e.target.value }))}
             />
-          </label>
+          </Field>
           {error && <FormError>{error}</FormError>}
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className="btn-primary self-start">

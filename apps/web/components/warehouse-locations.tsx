@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { useConfirm } from "@/components/ui/confirm-dialog";
-import { FormError } from "@/components/ui/field";
+import { Field, FormError } from "@/components/ui/field";
 
 interface WarehouseLocation {
   id: string;
@@ -100,8 +100,7 @@ export function WarehouseLocations({ warehouseId }: { warehouseId: string }) {
       <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("locations")}</h2>
 
       <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-2">
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("parentLocation")}
+        <Field label={t("parentLocation")} size="sm">
           <select
             className="input w-auto"
             value={form.parentId}
@@ -114,7 +113,7 @@ export function WarehouseLocations({ warehouseId }: { warehouseId: string }) {
               </option>
             ))}
           </select>
-        </label>
+        </Field>
         <select
           className="input w-auto"
           value={form.kind}

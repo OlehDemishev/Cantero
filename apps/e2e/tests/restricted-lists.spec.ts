@@ -398,7 +398,7 @@ test("a worker sees and logs only their own hours and not colleagues' pay, while
   // The field forms offer the worker only themselves, where the site lead picks from the crew.
   const workerChoices = async (tab: "Time" | "Expenses") => {
     await page.getByRole("button", { name: tab, exact: true }).click();
-    const select = page.locator("label").filter({ has: page.locator("span", { hasText: /^Worker$/ }) }).locator("select");
+    const select = page.getByLabel("Worker", { exact: true });
     await expect(select).toBeVisible();
     return { options: await select.locator("option").allTextContents(), disabled: await select.isDisabled() };
   };

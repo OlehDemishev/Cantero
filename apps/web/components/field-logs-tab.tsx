@@ -10,6 +10,7 @@ import { resetStateInEffect } from "@/lib/effect-reset";
 import { VoiceInputButton } from "@/components/voice-input-button";
 import { CachedNote } from "@/components/field-cached-note";
 import { FieldMessage, type FieldMessageType } from "@/components/field-message";
+import { Field } from "@/components/ui/field";
 
 interface DailyLog {
   id: string;
@@ -86,8 +87,7 @@ export function LogsTab({ projectId }: { projectId: string }) {
     <form onSubmit={submit} className="card flex flex-col gap-3">
       <CachedNote cachedAt={cachedAt} />
       <p className="text-xs text-fg-subtle">{formatDate(new Date())}</p>
-      <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-fg-muted">{td("weather")}</span>
+      <Field label={td("weather")}>
         <select
           className="input"
           value={form.weatherCondition}
@@ -100,9 +100,8 @@ export function LogsTab({ projectId }: { projectId: string }) {
             </option>
           ))}
         </select>
-      </label>
-      <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-fg-muted">{td("crewCount")}</span>
+      </Field>
+      <Field label={td("crewCount")}>
         <input
           type="number"
           min="0"
@@ -110,7 +109,7 @@ export function LogsTab({ projectId }: { projectId: string }) {
           value={form.crewCount}
           onChange={(e) => setForm((f) => ({ ...f, crewCount: e.target.value }))}
         />
-      </label>
+      </Field>
       <label className="flex flex-col gap-1.5 text-sm">
         <span className="flex items-center gap-2 font-medium text-fg-muted">
           {td("workPerformed")}
@@ -126,15 +125,14 @@ export function LogsTab({ projectId }: { projectId: string }) {
           onChange={(e) => setForm((f) => ({ ...f, workPerformed: e.target.value }))}
         />
       </label>
-      <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-fg-muted">{td("delays")}</span>
+      <Field label={td("delays")}>
         <textarea
           rows={2}
           className="input"
           value={form.delays}
           onChange={(e) => setForm((f) => ({ ...f, delays: e.target.value }))}
         />
-      </label>
+      </Field>
       <button type="submit" disabled={busy} className="btn-primary mt-1">
         {existingId ? tc("save") : td("newLog")}
       </button>

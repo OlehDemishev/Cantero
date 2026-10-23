@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/format-currency";
+import { Field } from "@/components/ui/field";
 
 interface RevisionSummary {
   id: string;
@@ -53,26 +54,24 @@ export function RevisionDiffPanel({ estimateId, revisions, currency }: { estimat
     <div className="mt-6 border-t border-gray-100 dark:border-gray-700 pt-4">
       <h3 className="mb-2 text-xs font-semibold text-fg-subtle">{t("compareRevisions")}</h3>
       <div className="flex flex-wrap items-end gap-2">
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("from")}
-          <select className="input mt-1" value={fromId} onChange={(e) => setFromId(e.target.value)}>
+        <Field label={t("from")} size="sm">
+          <select className="input" value={fromId} onChange={(e) => setFromId(e.target.value)}>
             {revisions.map((r) => (
               <option key={r.id} value={r.id}>
                 {t("version")} {r.versionNumber}
               </option>
             ))}
           </select>
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("to")}
-          <select className="input mt-1" value={toId} onChange={(e) => setToId(e.target.value)}>
+        </Field>
+        <Field label={t("to")} size="sm">
+          <select className="input" value={toId} onChange={(e) => setToId(e.target.value)}>
             {revisions.map((r) => (
               <option key={r.id} value={r.id}>
                 {t("version")} {r.versionNumber}
               </option>
             ))}
           </select>
-        </label>
+        </Field>
         <button onClick={compare} disabled={busy || fromId === toId} className="btn-secondary px-3 py-1 text-xs">
           {t("compare")}
         </button>

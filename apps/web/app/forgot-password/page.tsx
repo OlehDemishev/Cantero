@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { Alert } from "@/components/ui/alert";
+import { Field } from "@/components/ui/field";
 
 export default function ForgotPasswordPage() {
   const t = useTranslations("auth");
@@ -48,10 +49,9 @@ export default function ForgotPasswordPage() {
               <p className="mt-2 text-sm text-fg-subtle">{t("forgotPasswordHint")}</p>
               {error && <Alert tone="danger" className="mt-4">{error}</Alert>}
               <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
-                <label className="flex flex-col gap-1.5 text-sm">
-                  <span className="font-medium text-fg-muted">{tc("email")}</span>
+                <Field label={tc("email")}>
                   <input required type="email" className="input" value={email} onChange={(e) => setEmail(e.target.value)} />
-                </label>
+                </Field>
                 <button type="submit" disabled={submitting} className="btn-primary mt-2">
                   {submitting ? tc("loading") : t("sendResetLink")}
                 </button>

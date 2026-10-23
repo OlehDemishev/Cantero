@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 import { goBack } from "@/lib/back-navigation";
 import { PageHeader } from "@/components/ui/page-header";
+import { Field } from "@/components/ui/field";
 
 interface Worker {
   id: string;
@@ -108,16 +109,15 @@ export default function ServiceContractDetailPage({ params }: { params: Promise<
         <div className="card lg:col-span-1">
           <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("scheduleVisit")}</h2>
           <form onSubmit={scheduleVisit} className="flex flex-col gap-3">
-            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-              {t("visitDate")}
+            <Field label={t("visitDate")} size="sm">
               <input
                 required
                 type="date"
-                className="input mt-1"
+                className="input"
                 value={visitForm.scheduledDate}
                 onChange={(e) => setVisitForm((f) => ({ ...f, scheduledDate: e.target.value }))}
               />
-            </label>
+            </Field>
             <select
               className="input"
               value={visitForm.technicianWorkerId}

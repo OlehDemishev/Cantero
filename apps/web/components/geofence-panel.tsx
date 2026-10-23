@@ -7,7 +7,7 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatNumber } from "@/lib/format-currency";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FormError } from "@/components/ui/field";
+import { Field, FormError } from "@/components/ui/field";
 
 interface Project {
   geofenceLat: number | null;
@@ -101,8 +101,7 @@ export function GeofencePanel({ projectId }: { projectId: string }) {
       {error && <FormError className="mb-2">{error}</FormError>}
 
       <form onSubmit={save} className="flex flex-wrap items-end gap-2">
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("lat")}
+        <Field label={t("lat")} size="sm">
           <input
             type="number"
             step="any"
@@ -111,9 +110,8 @@ export function GeofencePanel({ projectId }: { projectId: string }) {
             value={form.lat}
             onChange={(e) => setForm((f) => ({ ...f, lat: e.target.value }))}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("lng")}
+        </Field>
+        <Field label={t("lng")} size="sm">
           <input
             type="number"
             step="any"
@@ -122,9 +120,8 @@ export function GeofencePanel({ projectId }: { projectId: string }) {
             value={form.lng}
             onChange={(e) => setForm((f) => ({ ...f, lng: e.target.value }))}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("radiusMeters")}
+        </Field>
+        <Field label={t("radiusMeters")} size="sm">
           <input
             type="number"
             min="10"
@@ -134,7 +131,7 @@ export function GeofencePanel({ projectId }: { projectId: string }) {
             value={form.radiusMeters}
             onChange={(e) => setForm((f) => ({ ...f, radiusMeters: e.target.value }))}
           />
-        </label>
+        </Field>
         <button type="button" onClick={detectFromAddress} disabled={busy} className="btn-secondary">
           {t("detectFromAddress")}
         </button>

@@ -14,6 +14,7 @@ import { formatDate, formatDateTime } from "@/lib/format-date";
 import { Badge } from "@/components/ui/badge";
 import { Alert } from "@/components/ui/alert";
 import { PageHeader } from "@/components/ui/page-header";
+import { Field } from "@/components/ui/field";
 
 interface MaterialCatalogItem {
   id: string;
@@ -345,21 +346,19 @@ export default function RateCatalogPage() {
               value={form.unit}
               onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}
             />
-            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-              {t("laborHours")}
+            <Field label={t("laborHours")} size="sm">
               <input
                 required
                 type="number"
                 step="0.01"
-                className="input mt-1"
+                className="input"
                 value={form.laborHoursPerUnit}
                 onChange={(e) => setForm((f) => ({ ...f, laborHoursPerUnit: e.target.value }))}
               />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-              {t("catalog")}
+            </Field>
+            <Field label={t("catalog")} size="sm">
               <select
-                className="input mt-1"
+                className="input"
                 value={form.catalogId}
                 onChange={(e) => setForm((f) => ({ ...f, catalogId: e.target.value }))}
               >
@@ -370,27 +369,25 @@ export default function RateCatalogPage() {
                   </option>
                 ))}
               </select>
-            </label>
+            </Field>
 
-            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-              {t("formula")}
+            <Field label={t("formula")} size="sm">
               <input
                 placeholder={t("formulaPlaceholder")}
-                className="input mt-1"
+                className="input"
                 value={form.formula}
                 onChange={(e) => setForm((f) => ({ ...f, formula: e.target.value }))}
               />
-            </label>
+            </Field>
             {form.formula && (
-              <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-                {t("formulaParams")}
+              <Field label={t("formulaParams")} size="sm">
                 <input
                   placeholder={t("formulaParamsPlaceholder")}
-                  className="input mt-1"
+                  className="input"
                   value={form.formulaParams}
                   onChange={(e) => setForm((f) => ({ ...f, formulaParams: e.target.value }))}
                 />
-              </label>
+              </Field>
             )}
 
             <div className="mt-2 flex items-center justify-between">

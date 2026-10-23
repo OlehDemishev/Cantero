@@ -74,7 +74,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loadError, setLoadError] = useState<Error | null>(null);
   const [paymentForm, setPaymentForm] = useState({ amount: "", method: "bank_transfer" as (typeof PAYMENT_METHODS)[number] });
-  const paymentValidation = useFormValidation(recordPaymentSchema);
+  const { errors: paymentErrors, validate: validatePayment, clearError: clearPaymentError, formRef: paymentFormRef } = useFormValidation(recordPaymentSchema);
   const [foreignPayment, setForeignPayment] = useState(false);
   const [foreignPaymentForm, setForeignPaymentForm] = useState<{
     currency: (typeof SUPPORTED_CURRENCIES)[number];
@@ -229,7 +229,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
 
   async function recordPayment(e: React.FormEvent) {
     e.preventDefault();
-    const body = paymentValidation.validate(
+    const body = validatePayment(
       foreignPayment
         ? {
             method: paymentForm.method,
@@ -412,10 +412,10 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
           )}
 
           {(invoice.status === "sent" || invoice.status === "paid") && balanceDue > 0 && (
-            <form ref={paymentValidation.formRef} onSubmit={recordPayment} noValidate className="mt-4 flex flex-col gap-2">
+            <form ref={paymentFormRef} onSubmit={recordPayment} noValidate className="mt-4 flex flex-col gap-2">
               <div className="flex flex-wrap items-start gap-2">
                 {!foreignPayment && (
-                  <Field label={t("amount")} size="sm" error={paymentValidation.errors.amount}>
+                  <Field label={t("amount")} size="sm" error={paymentErrors.amount}>
                     <input
                       required
                       type="number"
@@ -425,7 +425,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
                       value={paymentForm.amount}
                       onChange={(e) => {
                         setPaymentForm((f) => ({ ...f, amount: e.target.value }));
-                        paymentValidation.clearError("amount");
+                        clearPaymentError("amount");
                       }}
                     />
                   </Field>
@@ -466,7 +466,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
                       ))}
                     </select>
                   </Field>
-                  <Field label={t("foreignAmount")} size="sm" error={paymentValidation.errors["foreignPayment.foreignAmount"]}>
+                  <Field label={t("foreignAmount")} size="sm" error={paymentErrors["foreignPayment.foreignAmount"]}>
                     <input
                       required
                       type="number"
@@ -476,11 +476,11 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
                       value={foreignPaymentForm.foreignAmount}
                       onChange={(e) => {
                         setForeignPaymentForm((f) => ({ ...f, foreignAmount: e.target.value }));
-                        paymentValidation.clearError("foreignPayment.foreignAmount");
+                        clearPaymentError("foreignPayment.foreignAmount");
                       }}
                     />
                   </Field>
-                  <Field label={t("exchangeRateUsed")} size="sm" error={paymentValidation.errors["foreignPayment.exchangeRate"]}>
+                  <Field label={t("exchangeRateUsed")} size="sm" error={paymentErrors["foreignPayment.exchangeRate"]}>
                     <input
                       required
                       type="number"
@@ -490,7 +490,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
                       value={foreignPaymentForm.exchangeRate}
                       onChange={(e) => {
                         setForeignPaymentForm((f) => ({ ...f, exchangeRate: e.target.value }));
-                        paymentValidation.clearError("foreignPayment.exchangeRate");
+                        clearPaymentError("foreignPayment.exchangeRate");
                       }}
                     />
                   </Field>
@@ -530,15 +530,14 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
           )}
 
           <form onSubmit={saveDueDate} className="mt-4 flex items-end gap-2 border-t border-gray-100 dark:border-gray-700 pt-4">
-            <label className="flex flex-1 flex-col gap-1 text-xs text-fg-subtle">
-              {t("dueDate")}
+            <Field label={t("dueDate")} size="sm" className="flex-1">
               <input
                 type="date"
                 className="input"
                 value={dueDateInput}
                 onChange={(e) => setDueDateInput(e.target.value)}
               />
-            </label>
+            </Field>
             <button type="submit" disabled={busy} className="btn-secondary shrink-0">
               {tc("save")}
             </button>

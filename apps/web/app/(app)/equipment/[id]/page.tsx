@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
 import { Alert } from "@/components/ui/alert";
 import { PageHeader } from "@/components/ui/page-header";
+import { Field } from "@/components/ui/field";
 
 function getCurrentPositionSafe(): Promise<{ lat: number; lng: number } | null> {
   return new Promise((resolve) => {
@@ -478,8 +479,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
             </p>
           )}
           <form onSubmit={saveSchedule} className="flex flex-wrap items-end gap-2">
-            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-              {t("intervalDays")}
+            <Field label={t("intervalDays")} size="sm">
               <input
                 type="number"
                 min="1"
@@ -489,7 +489,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
                 value={scheduleIntervalDays}
                 onChange={(e) => setScheduleIntervalDays(e.target.value)}
               />
-            </label>
+            </Field>
             <button type="submit" disabled={busy} className="btn-secondary">
               {tc("save")}
             </button>
@@ -516,8 +516,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
               )}
             </p>
             <form onSubmit={saveMeterReading} className="mb-3 flex flex-wrap items-end gap-2">
-              <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-                {t("updateMeterReading")}
+              <Field label={t("updateMeterReading")} size="sm">
                 <input
                   type="number"
                   min="0"
@@ -526,14 +525,13 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
                   value={meterReading}
                   onChange={(e) => setMeterReading(e.target.value)}
                 />
-              </label>
+              </Field>
               <button type="submit" disabled={busy} className="btn-secondary">
                 {tc("save")}
               </button>
             </form>
             <form onSubmit={saveHoursSchedule} className="flex flex-wrap items-end gap-2">
-              <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-                {t("intervalHours")}
+              <Field label={t("intervalHours")} size="sm">
                 <input
                   type="number"
                   min="1"
@@ -543,7 +541,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
                   value={scheduleIntervalHours}
                   onChange={(e) => setScheduleIntervalHours(e.target.value)}
                 />
-              </label>
+              </Field>
               <button type="submit" disabled={busy} className="btn-secondary">
                 {tc("save")}
               </button>
@@ -592,8 +590,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
                     </option>
                   ))}
                 </select>
-                <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-                  {t("usefulLifeMonths")}
+                <Field label={t("usefulLifeMonths")} size="sm">
                   <input
                     type="number"
                     min="1"
@@ -602,9 +599,8 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
                     value={depreciationForm.usefulLifeMonths}
                     onChange={(e) => setDepreciationForm((f) => ({ ...f, usefulLifeMonths: e.target.value }))}
                   />
-                </label>
-                <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-                  {t("salvageValue")}
+                </Field>
+                <Field label={t("salvageValue")} size="sm">
                   <input
                     type="number"
                     step="0.01"
@@ -613,7 +609,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
                     value={depreciationForm.salvageValue}
                     onChange={(e) => setDepreciationForm((f) => ({ ...f, salvageValue: e.target.value }))}
                   />
-                </label>
+                </Field>
                 <button type="submit" disabled={busy} className="btn-secondary">
                   {tc("save")}
                 </button>
@@ -627,8 +623,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
                     </button>
                   ) : (
                     <form onSubmit={dispose} className="flex flex-wrap items-end gap-2">
-                      <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-                        {t("saleAmount")}
+                      <Field label={t("saleAmount")} size="sm">
                         <input
                           type="number"
                           step="0.01"
@@ -637,7 +632,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
                           value={disposeForm.saleAmount}
                           onChange={(e) => setDisposeForm((f) => ({ ...f, saleAmount: e.target.value }))}
                         />
-                      </label>
+                      </Field>
                       <input
                         placeholder={t("disposalNotesPlaceholder")}
                         className="input"

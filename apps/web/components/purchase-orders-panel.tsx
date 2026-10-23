@@ -9,6 +9,7 @@ import { formatCurrency } from "@/lib/format-currency";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Field } from "@/components/ui/field";
 
 interface Supplier {
   id: string;
@@ -217,15 +218,14 @@ export function PurchaseOrdersPanel() {
               </option>
             ))}
           </select>
-          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-            {t("expectedDate")}
+          <Field label={t("expectedDate")} size="sm">
             <input
               type="date"
-              className="input mt-1"
+              className="input"
               value={expectedDate}
               onChange={(e) => setExpectedDate(e.target.value)}
             />
-          </label>
+          </Field>
 
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-fg-subtle">

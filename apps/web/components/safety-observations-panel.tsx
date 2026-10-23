@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PrintButton } from "@/components/ui/print-button";
 import { formatDate } from "@/lib/format-date";
 import { Badge } from "@/components/ui/badge";
+import { Field } from "@/components/ui/field";
 
 interface Observation {
   id: string;
@@ -70,8 +71,7 @@ export function SafetyObservationsPanel({ projectId }: { projectId: string }) {
 
       {creating && (
         <form onSubmit={submit} className="card mb-4 flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("category")}</span>
+          <Field label={t("category")}>
             <select
               className="input"
               value={form.category}
@@ -80,9 +80,8 @@ export function SafetyObservationsPanel({ projectId }: { projectId: string }) {
               <option value="safe">{t("safe")}</option>
               <option value="at_risk">{t("at_risk")}</option>
             </select>
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("behaviorObserved")}</span>
+          </Field>
+          <Field label={t("behaviorObserved")}>
             <textarea
               required
               rows={2}
@@ -90,10 +89,9 @@ export function SafetyObservationsPanel({ projectId }: { projectId: string }) {
               value={form.behaviorObserved}
               onChange={(e) => setForm((f) => ({ ...f, behaviorObserved: e.target.value }))}
             />
-          </label>
+          </Field>
           {form.category === "at_risk" && (
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("correctiveAction")}</span>
+            <Field label={t("correctiveAction")}>
               <textarea
                 required
                 rows={2}
@@ -101,7 +99,7 @@ export function SafetyObservationsPanel({ projectId }: { projectId: string }) {
                 value={form.correctiveAction}
                 onChange={(e) => setForm((f) => ({ ...f, correctiveAction: e.target.value }))}
               />
-            </label>
+            </Field>
           )}
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className="btn-primary">

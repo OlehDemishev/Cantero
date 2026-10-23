@@ -8,6 +8,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 import { Badge } from "@/components/ui/badge";
+import { Field } from "@/components/ui/field";
 
 interface SlumpTest {
   id: string;
@@ -152,10 +153,9 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
               value={form.location}
               onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
             />
-            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-              {t("pourDate")}
+            <Field label={t("pourDate")} size="sm">
               <input required type="date" className="input" value={form.pourDate} onChange={(e) => setForm((f) => ({ ...f, pourDate: e.target.value }))} />
-            </label>
+            </Field>
           </div>
           <div className="flex flex-wrap gap-2">
             <input
@@ -330,10 +330,9 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
                           value={cylForm.breakAgeDays}
                           onChange={(e) => setCylForm((f) => ({ ...f, breakAgeDays: e.target.value }))}
                         />
-                        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-                          {t("breakDate")}
+                        <Field label={t("breakDate")} size="sm">
                           <input type="date" className="input" value={cylForm.breakDate} onChange={(e) => setCylForm((f) => ({ ...f, breakDate: e.target.value }))} />
-                        </label>
+                        </Field>
                         <button onClick={() => addCylinderBreak(pour.id)} disabled={busy} className="btn-secondary shrink-0 px-2.5 py-1 text-xs">
                           {t("scheduleBreak")}
                         </button>

@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
+import { Field } from "@/components/ui/field";
 
 interface DocumentOption {
   id: string;
@@ -115,12 +116,10 @@ export function SignatureRequestsPanel({ documents }: { documents: DocumentOptio
 
       {creating && (
         <form onSubmit={submit} className="card mb-4 flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("requestTitle")}</span>
+          <Field label={t("requestTitle")}>
             <input required className="input" value={title} onChange={(e) => setTitle(e.target.value)} />
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("document")}</span>
+          </Field>
+          <Field label={t("document")}>
             <select required className="input" value={documentId} onChange={(e) => setDocumentId(e.target.value)}>
               <option value="">{t("selectDocument")}</option>
               {documents.map((d) => (
@@ -129,7 +128,7 @@ export function SignatureRequestsPanel({ documents }: { documents: DocumentOptio
                 </option>
               ))}
             </select>
-          </label>
+          </Field>
           <div className="flex flex-col gap-2">
             <span className="text-sm font-medium text-fg-muted">{t("signersInOrder")}</span>
             {signers.map((s, i) => (

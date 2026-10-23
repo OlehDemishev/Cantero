@@ -17,6 +17,7 @@ import { PrintButton } from "@/components/ui/print-button";
 import { formatDate } from "@/lib/format-date";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
+import { Field } from "@/components/ui/field";
 
 interface Worker {
   id: string;
@@ -189,27 +190,24 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
 
       {creating && (
         <form onSubmit={submit} className="card mb-4 flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("itemTitle")}</span>
+          <Field label={t("itemTitle")}>
             <input
               required
               className="input"
               value={form.title}
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
             />
-          </label>
+          </Field>
           <div className="flex gap-3">
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("location")}</span>
+            <Field label={t("location")} className="flex-1">
               <input
                 className="input"
                 placeholder={t("locationPlaceholder")}
                 value={form.location}
                 onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
               />
-            </label>
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("assignee")}</span>
+            </Field>
+            <Field label={t("assignee")} className="flex-1">
               <select className="input" value={form.assignee} onChange={(e) => setForm((f) => ({ ...f, assignee: e.target.value }))}>
                 <option value="">{tc("none")}</option>
                 <optgroup label={t("assigneeWorkers")}>
@@ -227,20 +225,18 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
                   ))}
                 </optgroup>
               </select>
-            </label>
+            </Field>
           </div>
           <SimilarItemsHint type="punch_list_item" projectId={projectId} text={[form.title, form.location, form.description].filter((v) => v.trim()).join("\n")} />
-          <label className="flex w-40 flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("dueDate")}</span>
+          <Field label={t("dueDate")} className="w-40">
             <input
               type="date"
               className="input"
               value={form.dueDate}
               onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
             />
-          </label>
-          <label className="flex w-40 flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("estimatedCostImpact")}</span>
+          </Field>
+          <Field label={t("estimatedCostImpact")} className="w-40">
             <input
               type="number"
               min="0"
@@ -249,16 +245,15 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
               value={form.estimatedCostImpact}
               onChange={(e) => setForm((f) => ({ ...f, estimatedCostImpact: e.target.value }))}
             />
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("description")}</span>
+          </Field>
+          <Field label={t("description")}>
             <textarea
               rows={2}
               className="input"
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
             />
-          </label>
+          </Field>
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className="btn-primary">
               {tc("save")}

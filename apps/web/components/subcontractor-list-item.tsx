@@ -14,6 +14,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApi } from "@/lib/use-api";
 import { Badge } from "@/components/ui/badge";
+import { Field } from "@/components/ui/field";
 
 const DOCUMENT_TYPES: SubcontractorDocumentType[] = ["general_liability_insurance", "workers_comp_insurance", "license", "bonding", "other"];
 
@@ -571,15 +572,14 @@ export function SubcontractorListItem({
               ))}
             </div>
             <div className="flex flex-wrap items-end gap-2">
-              <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-                {t("diversityCertificationExpiresAt")}
+              <Field label={t("diversityCertificationExpiresAt")} size="sm">
                 <input
                   type="date"
                   className="input"
                   value={diversityForm.expiresAt}
                   onChange={(e) => setDiversityForm((f) => ({ ...f, expiresAt: e.target.value }))}
                 />
-              </label>
+              </Field>
               <button onClick={saveDiversityCertifications} disabled={busy} className="btn-secondary px-2.5 py-1 text-xs">
                 {tc("save")}
               </button>
@@ -624,8 +624,7 @@ export function SubcontractorListItem({
             )}
 
             <form onSubmit={addReview} className="flex flex-wrap items-end gap-2">
-              <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-                {t("rating")}
+              <Field label={t("rating")} size="sm">
                 <select
                   className="input w-auto"
                   value={reviewForm.rating}
@@ -637,17 +636,15 @@ export function SubcontractorListItem({
                     </option>
                   ))}
                 </select>
-              </label>
-              <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-                {t("onTime")}
+              </Field>
+              <Field label={t("onTime")} size="sm">
                 <select className="input w-auto" value={reviewForm.onTime} onChange={(e) => setReviewForm((f) => ({ ...f, onTime: e.target.value }))}>
                   <option value="">—</option>
                   <option value="yes">{tc("yes")}</option>
                   <option value="no">{tc("no")}</option>
                 </select>
-              </label>
-              <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-                {t("wouldHireAgain")}
+              </Field>
+              <Field label={t("wouldHireAgain")} size="sm">
                 <select
                   className="input w-auto"
                   value={reviewForm.wouldHireAgain}
@@ -657,9 +654,8 @@ export function SubcontractorListItem({
                   <option value="yes">{tc("yes")}</option>
                   <option value="no">{tc("no")}</option>
                 </select>
-              </label>
-              <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-                {t("safetyIncidents")}
+              </Field>
+              <Field label={t("safetyIncidents")} size="sm">
                 <input
                   type="number"
                   min="0"
@@ -667,9 +663,8 @@ export function SubcontractorListItem({
                   value={reviewForm.safetyIncidents}
                   onChange={(e) => setReviewForm((f) => ({ ...f, safetyIncidents: e.target.value }))}
                 />
-              </label>
-              <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-                {t("reworkCount")}
+              </Field>
+              <Field label={t("reworkCount")} size="sm">
                 <input
                   type="number"
                   min="0"
@@ -677,7 +672,7 @@ export function SubcontractorListItem({
                   value={reviewForm.reworkCount}
                   onChange={(e) => setReviewForm((f) => ({ ...f, reworkCount: e.target.value }))}
                 />
-              </label>
+              </Field>
               <input
                 placeholder={t("reviewCommentsPlaceholder")}
                 className="input"

@@ -7,7 +7,7 @@ import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FormError } from "@/components/ui/field";
+import { Field, FormError } from "@/components/ui/field";
 
 interface WageClassification {
   id: string;
@@ -157,29 +157,26 @@ export function WorkerProfilePanel({ workerId, currency, onChanged }: { workerId
           value={form.role}
           onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
         />
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("hourlyCost")} ({currency})
+        <Field label={`${t("hourlyCost")} (${currency})`} size="sm">
           <input
             type="number"
             step="0.01"
-            className="input mt-1"
+            className="input"
             value={form.hourlyCost}
             onChange={(e) => setForm((f) => ({ ...f, hourlyCost: e.target.value }))}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("payrollEmployeeId")}
+        </Field>
+        <Field label={t("payrollEmployeeId")} size="sm">
           <input
             placeholder={t("payrollEmployeeIdPlaceholder")}
-            className="input mt-1"
+            className="input"
             value={form.payrollEmployeeId}
             onChange={(e) => setForm((f) => ({ ...f, payrollEmployeeId: e.target.value }))}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("wageClassification")}
+        </Field>
+        <Field label={t("wageClassification")} size="sm">
           <select
-            className="input mt-1"
+            className="input"
             value={form.wageClassificationId}
             onChange={(e) => setForm((f) => ({ ...f, wageClassificationId: e.target.value }))}
           >
@@ -190,25 +187,23 @@ export function WorkerProfilePanel({ workerId, currency, onChanged }: { workerId
               </option>
             ))}
           </select>
-        </label>
+        </Field>
         <label className="flex items-center gap-2 text-xs text-fg-subtle">
           <input type="checkbox" checked={form.isApprentice} onChange={(e) => setForm((f) => ({ ...f, isApprentice: e.target.checked }))} />
           {t("isApprentice")}
         </label>
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("phone")}
+        <Field label={t("phone")} size="sm">
           <input
             type="tel"
             placeholder={t("phonePlaceholder")}
-            className="input mt-1"
+            className="input"
             value={form.phone}
             onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("preferredLocale")}
+        </Field>
+        <Field label={t("preferredLocale")} size="sm">
           <select
-            className="input mt-1"
+            className="input"
             value={form.preferredLocale}
             onChange={(e) => setForm((f) => ({ ...f, preferredLocale: e.target.value }))}
           >
@@ -219,7 +214,7 @@ export function WorkerProfilePanel({ workerId, currency, onChanged }: { workerId
               </option>
             ))}
           </select>
-        </label>
+        </Field>
         <div className="flex items-center gap-2">
           <button type="submit" disabled={busy} className="btn-primary">
             {tc("save")}

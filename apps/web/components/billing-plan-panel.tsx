@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/format-currency";
 import { Alert } from "@/components/ui/alert";
+import { Field } from "@/components/ui/field";
 
 interface Plan {
   id: string;
@@ -120,16 +121,15 @@ export function BillingPlanPanel({ isManager }: { isManager: boolean }) {
 
       {isManager && (
         <form onSubmit={updateSeats} className="mt-4 flex items-end gap-2">
-          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-            {t("seats")}
+          <Field label={t("seats")} size="sm">
             <input
               type="number"
               min="1"
-              className="input mt-1 w-24"
+              className="input w-24"
               value={seatsInput}
               onChange={(e) => setSeatsInput(e.target.value)}
             />
-          </label>
+          </Field>
           <button type="submit" disabled={busy} className="btn-secondary">
             {t("updateSeats")}
           </button>

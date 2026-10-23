@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/format-currency";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
+import { Field } from "@/components/ui/field";
 
 interface Alternate {
   id: string;
@@ -74,12 +75,10 @@ export function EstimateAlternatesPanel({ estimateId, currency }: { estimateId: 
 
       {creating && (
         <form onSubmit={submit} className="card mb-4 flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("alternateTitle")}</span>
+          <Field label={t("alternateTitle")}>
             <input required className="input" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
-          </label>
-          <label className="flex w-48 flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("amount")}</span>
+          </Field>
+          <Field label={t("amount")} className="w-48">
             <input
               required
               type="number"
@@ -89,11 +88,10 @@ export function EstimateAlternatesPanel({ estimateId, currency }: { estimateId: 
               value={form.amount}
               onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
             />
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{tc("notes")}</span>
+          </Field>
+          <Field label={tc("notes")}>
             <textarea rows={2} className="input" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
-          </label>
+          </Field>
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className="btn-primary">
               {tc("save")}

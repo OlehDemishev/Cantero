@@ -19,7 +19,7 @@ import { formatCurrency } from "@/lib/format-currency";
 import { formatDate } from "@/lib/format-date";
 import { Badge } from "@/components/ui/badge";
 import { Alert } from "@/components/ui/alert";
-import { FormError } from "@/components/ui/field";
+import { Field, FormError } from "@/components/ui/field";
 import { PageHeader } from "@/components/ui/page-header";
 
 interface Invoice {
@@ -549,8 +549,7 @@ export default function InvoicesPage() {
                 </option>
               ))}
             </select>
-            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-              {t("startDate")}
+            <Field label={t("startDate")} size="sm">
               <input
                 required
                 type="date"
@@ -560,9 +559,8 @@ export default function InvoicesPage() {
                   setRecurringForm((f) => ({ ...f, startDate: e.target.value }))
                 }
               />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-              {t("endDateOptional")}
+            </Field>
+            <Field label={t("endDateOptional")} size="sm">
               <input
                 type="date"
                 className="input"
@@ -571,9 +569,8 @@ export default function InvoicesPage() {
                   setRecurringForm((f) => ({ ...f, endDate: e.target.value }))
                 }
               />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-              {t("taxPercent")}
+            </Field>
+            <Field label={t("taxPercent")} size="sm">
               <input
                 type="number"
                 step="0.01"
@@ -588,7 +585,7 @@ export default function InvoicesPage() {
                   }))
                 }
               />
-            </label>
+            </Field>
           </div>
 
           <div className="mt-4 flex flex-col gap-2">

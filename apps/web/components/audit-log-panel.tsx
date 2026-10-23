@@ -6,6 +6,7 @@ import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { formatDateTime } from "@/lib/format-date";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Field } from "@/components/ui/field";
 
 interface AuditLogEntry {
   id: string;
@@ -80,42 +81,38 @@ export function AuditLogPanel() {
       <p className="mb-4 text-xs text-fg-subtle">{t("auditLogHint")}</p>
 
       <div className="mb-4 flex flex-wrap items-end gap-2">
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("auditFilterDateFrom")}
+        <Field label={t("auditFilterDateFrom")} size="sm">
           <input
             type="date"
             className="input"
             value={auditFilter.dateFrom}
             onChange={(e) => setAuditFilter((f) => ({ ...f, dateFrom: e.target.value }))}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("auditFilterDateTo")}
+        </Field>
+        <Field label={t("auditFilterDateTo")} size="sm">
           <input
             type="date"
             className="input"
             value={auditFilter.dateTo}
             onChange={(e) => setAuditFilter((f) => ({ ...f, dateTo: e.target.value }))}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("auditFilterEntityType")}
+        </Field>
+        <Field label={t("auditFilterEntityType")} size="sm">
           <input
             className="input"
             placeholder="Project"
             value={auditFilter.entityType}
             onChange={(e) => setAuditFilter((f) => ({ ...f, entityType: e.target.value }))}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("auditFilterAction")}
+        </Field>
+        <Field label={t("auditFilterAction")} size="sm">
           <input
             className="input"
             placeholder="project.created"
             value={auditFilter.action}
             onChange={(e) => setAuditFilter((f) => ({ ...f, action: e.target.value }))}
           />
-        </label>
+        </Field>
         <button onClick={() => loadAuditLog()} className="btn-secondary px-2.5 py-1.5 text-xs">
           {t("auditFilterApply")}
         </button>

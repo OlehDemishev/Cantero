@@ -7,6 +7,7 @@ import { resetStateInEffect } from "@/lib/effect-reset";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Field } from "@/components/ui/field";
 
 interface Worker {
   id: string;
@@ -147,10 +148,9 @@ export function CrewsPanel({ workers, projects }: { workers: Worker[]; projects:
 
       {creating && (
         <form onSubmit={createCrew} className="card mb-4 flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{tc("name")}</span>
+          <Field label={tc("name")}>
             <input required className="input" value={newCrewName} onChange={(e) => setNewCrewName(e.target.value)} />
-          </label>
+          </Field>
           <div>
             <span className="text-sm font-medium text-fg-muted">{t("members")}</span>
             <div className="mt-1.5 flex flex-wrap gap-2">
@@ -194,8 +194,7 @@ export function CrewsPanel({ workers, projects }: { workers: Worker[]; projects:
           <form onSubmit={assignCrew} className="card flex flex-col gap-3">
             <h3 className="text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("assignCrew")}</h3>
             <div className="flex flex-wrap gap-3">
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-fg-muted">{t("crews")}</span>
+              <Field label={t("crews")}>
                 <select className="input" value={assignForm.crewId} onChange={(e) => setAssignForm((f) => ({ ...f, crewId: e.target.value }))}>
                   {crews.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -203,9 +202,8 @@ export function CrewsPanel({ workers, projects }: { workers: Worker[]; projects:
                     </option>
                   ))}
                 </select>
-              </label>
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-fg-muted">{t("project")}</span>
+              </Field>
+              <Field label={t("project")}>
                 <select className="input" value={assignForm.projectId} onChange={(e) => setAssignForm((f) => ({ ...f, projectId: e.target.value, taskId: "" }))}>
                   {projects.map((p) => (
                     <option key={p.id} value={p.id}>
@@ -213,10 +211,9 @@ export function CrewsPanel({ workers, projects }: { workers: Worker[]; projects:
                     </option>
                   ))}
                 </select>
-              </label>
+              </Field>
               {assignTasks.length > 0 && (
-                <label className="flex flex-col gap-1.5 text-sm">
-                  <span className="font-medium text-fg-muted">{t("task")}</span>
+                <Field label={t("task")}>
                   <select className="input" value={assignForm.taskId} onChange={(e) => setAssignForm((f) => ({ ...f, taskId: e.target.value }))}>
                     <option value="">—</option>
                     {assignTasks.map((task) => (
@@ -225,18 +222,16 @@ export function CrewsPanel({ workers, projects }: { workers: Worker[]; projects:
                       </option>
                     ))}
                   </select>
-                </label>
+                </Field>
               )}
             </div>
             <div className="flex gap-3">
-              <label className="flex flex-1 flex-col gap-1.5 text-sm">
-                <span className="font-medium text-fg-muted">{t("startDate")}</span>
+              <Field label={t("startDate")} className="flex-1">
                 <input required type="date" className="input" value={assignForm.startDate} onChange={(e) => setAssignForm((f) => ({ ...f, startDate: e.target.value }))} />
-              </label>
-              <label className="flex flex-1 flex-col gap-1.5 text-sm">
-                <span className="font-medium text-fg-muted">{t("endDate")}</span>
+              </Field>
+              <Field label={t("endDate")} className="flex-1">
                 <input required type="date" className="input" value={assignForm.endDate} onChange={(e) => setAssignForm((f) => ({ ...f, endDate: e.target.value }))} />
-              </label>
+              </Field>
             </div>
             <button type="submit" disabled={busy} className="btn-primary">
               {t("assignCrew")}

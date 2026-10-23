@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useApi } from "@/lib/use-api";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
+import { Field } from "@/components/ui/field";
 
 interface RfiAnalytics {
   openCount: number;
@@ -194,17 +195,15 @@ export function RfiPanel({ projectId }: { projectId: string }) {
       {creating && (
         <form onSubmit={submit} className="card mb-4 flex flex-col gap-3">
           <TemplatePicker type="rfi" onSelect={({ subject, body }) => setForm((f) => ({ ...f, subject, question: body }))} />
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("subject")}</span>
+          <Field label={t("subject")}>
             <input
               required
               className="input"
               value={form.subject}
               onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value }))}
             />
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("question")}</span>
+          </Field>
+          <Field label={t("question")}>
             <textarea
               required
               rows={3}
@@ -212,11 +211,10 @@ export function RfiPanel({ projectId }: { projectId: string }) {
               value={form.question}
               onChange={(e) => setForm((f) => ({ ...f, question: e.target.value }))}
             />
-          </label>
+          </Field>
           <SimilarItemsHint type="rfi" projectId={projectId} text={`${form.subject}\n${form.question}`} />
           <div className="flex flex-wrap gap-3">
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("priority")}</span>
+            <Field label={t("priority")}>
               <select
                 className="input"
                 value={form.priority}
@@ -226,18 +224,16 @@ export function RfiPanel({ projectId }: { projectId: string }) {
                 <option value="medium">{t("medium")}</option>
                 <option value="high">{t("high")}</option>
               </select>
-            </label>
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("dueDate")}</span>
+            </Field>
+            <Field label={t("dueDate")}>
               <input
                 type="date"
                 className="input"
                 value={form.dueDate}
                 onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
               />
-            </label>
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("scheduleImpactDays")}</span>
+            </Field>
+            <Field label={t("scheduleImpactDays")}>
               <input
                 type="number"
                 min="0"
@@ -245,7 +241,7 @@ export function RfiPanel({ projectId }: { projectId: string }) {
                 value={form.scheduleImpactDays}
                 onChange={(e) => setForm((f) => ({ ...f, scheduleImpactDays: e.target.value }))}
               />
-            </label>
+            </Field>
           </div>
           <div className="flex items-end gap-3">
             <label className="flex items-center gap-2 text-sm text-fg-muted">
@@ -257,8 +253,7 @@ export function RfiPanel({ projectId }: { projectId: string }) {
               {t("costImpact")}
             </label>
             {form.costImpact && (
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-fg-muted">{t("estimatedCostImpact")}</span>
+              <Field label={t("estimatedCostImpact")}>
                 <input
                   type="number"
                   min="0"
@@ -267,7 +262,7 @@ export function RfiPanel({ projectId }: { projectId: string }) {
                   value={form.estimatedCostImpact}
                   onChange={(e) => setForm((f) => ({ ...f, estimatedCostImpact: e.target.value }))}
                 />
-              </label>
+              </Field>
             )}
           </div>
           <div className="flex gap-2">

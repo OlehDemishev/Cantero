@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useApi } from "@/lib/use-api";
 import { Alert } from "@/components/ui/alert";
 import { PageHeader } from "@/components/ui/page-header";
+import { Field } from "@/components/ui/field";
 
 type ResourceType = "worker" | "equipment";
 
@@ -208,8 +209,7 @@ export default function ResourcePlanningPage() {
         <h2 className="mb-4 text-sm font-semibold text-fg-muted">{t("newAssignment")}</h2>
         <form onSubmit={submit} className="flex flex-col gap-3">
           <div className="flex gap-3">
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("resourceType")}</span>
+            <Field label={t("resourceType")} className="flex-1">
               <select
                 className="input"
                 value={form.resourceType}
@@ -218,9 +218,8 @@ export default function ResourcePlanningPage() {
                 <option value="worker">{t("worker")}</option>
                 <option value="equipment">{t("equipment")}</option>
               </select>
-            </label>
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{form.resourceType === "worker" ? t("worker") : t("equipment")}</span>
+            </Field>
+            <Field label={form.resourceType === "worker" ? t("worker") : t("equipment")} className="flex-1">
               <select
                 className="input"
                 value={form.resourceId}
@@ -236,10 +235,9 @@ export default function ResourcePlanningPage() {
                   </option>
                 ))}
               </select>
-            </label>
+            </Field>
           </div>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("project")}</span>
+          <Field label={t("project")}>
             <select
               className="input"
               value={form.projectId}
@@ -251,10 +249,9 @@ export default function ResourcePlanningPage() {
                 </option>
               ))}
             </select>
-          </label>
+          </Field>
           {projectTasks.length > 0 && (
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("task")}</span>
+            <Field label={t("task")}>
               <select className="input" value={form.taskId} onChange={(e) => setForm((f) => ({ ...f, taskId: e.target.value }))}>
                 <option value="">{t("wholeProject")}</option>
                 {projectTasks.map((task) => (
@@ -263,11 +260,10 @@ export default function ResourcePlanningPage() {
                   </option>
                 ))}
               </select>
-            </label>
+            </Field>
           )}
           <div className="flex gap-3">
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("startDate")}</span>
+            <Field label={t("startDate")} className="flex-1">
               <input
                 required
                 type="date"
@@ -275,9 +271,8 @@ export default function ResourcePlanningPage() {
                 value={form.startDate}
                 onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))}
               />
-            </label>
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("endDate")}</span>
+            </Field>
+            <Field label={t("endDate")} className="flex-1">
               <input
                 required
                 type="date"
@@ -285,12 +280,11 @@ export default function ResourcePlanningPage() {
                 value={form.endDate}
                 onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))}
               />
-            </label>
+            </Field>
           </div>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("note")}</span>
+          <Field label={t("note")}>
             <input className="input" value={form.note} onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))} />
-          </label>
+          </Field>
           <button type="submit" disabled={busy || resourceOptions.length === 0} className="btn-primary self-start">
             {t("assign")}
           </button>

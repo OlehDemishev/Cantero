@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { formatDateTime } from "@/lib/format-date";
+import { Field } from "@/components/ui/field";
 
 interface SignIn {
   id: string;
@@ -58,22 +59,19 @@ export function SiteSignInsPanel({ projectId }: { projectId: string }) {
       <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("title")}</h2>
       <div className="card">
         <form onSubmit={signIn} className="flex flex-wrap items-end gap-2">
-          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-            {t("name")}
+          <Field label={t("name")} size="sm">
             <input className="input py-1 text-xs" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
-          </label>
-          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-            {t("visitorCompany")}
+          </Field>
+          <Field label={t("visitorCompany")} size="sm">
             <input
               className="input py-1 text-xs"
               value={form.visitorCompany}
               onChange={(e) => setForm((f) => ({ ...f, visitorCompany: e.target.value }))}
             />
-          </label>
-          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-            {t("purpose")}
+          </Field>
+          <Field label={t("purpose")} size="sm">
             <input className="input py-1 text-xs" value={form.purpose} onChange={(e) => setForm((f) => ({ ...f, purpose: e.target.value }))} />
-          </label>
+          </Field>
           <button type="submit" disabled={busy || !form.name.trim()} className="btn-primary px-3 py-1.5 text-xs">
             {t("signIn")}
           </button>

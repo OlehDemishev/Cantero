@@ -6,6 +6,7 @@ import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Alert } from "@/components/ui/alert";
+import { Field } from "@/components/ui/field";
 
 const NEW_SUBCONTRACTOR = "__new__";
 
@@ -167,12 +168,10 @@ export function SubcontractorAssignmentsPanel({ projectId }: { projectId: string
             />
           </>
         )}
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("startDate")}
+        <Field label={t("startDate")} size="sm">
           <input type="date" className="input w-auto" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("endDate")}
+        </Field>
+        <Field label={t("endDate")} size="sm">
           <input
             type="date"
             min={startDate || undefined}
@@ -180,7 +179,7 @@ export function SubcontractorAssignmentsPanel({ projectId }: { projectId: string
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
           />
-        </label>
+        </Field>
         <button type="submit" disabled={busy} className="btn-secondary">
           {t("assignToProject")}
         </button>

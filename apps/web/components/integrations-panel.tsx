@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, API_URL, notifyApiError } from "@/lib/api-client";
+import { Field } from "@/components/ui/field";
 
 /** The credentials are only in GET /company for members with settings.company — everyone else
  * gets the has* flags instead. */
@@ -79,28 +80,26 @@ export function IntegrationsPanel({ canManage }: { canManage: boolean }) {
       {!canManage && <p className="mb-4 text-xs text-fg-subtle">{t("managerOnlyHint")}</p>}
 
       <form onSubmit={save} className="flex flex-col gap-3">
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("slackWebhookUrl")}
+        <Field label={t("slackWebhookUrl")} size="sm">
           <input
             type="url"
-            className="input mt-1"
+            className="input"
             placeholder="https://hooks.slack.com/services/..."
             value={form.slackWebhookUrl}
             onChange={(e) => setForm((f) => ({ ...f, slackWebhookUrl: e.target.value }))}
             disabled={!canManage}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("teamsWebhookUrl")}
+        </Field>
+        <Field label={t("teamsWebhookUrl")} size="sm">
           <input
             type="url"
-            className="input mt-1"
+            className="input"
             placeholder="https://outlook.office.com/webhook/..."
             value={form.teamsWebhookUrl}
             onChange={(e) => setForm((f) => ({ ...f, teamsWebhookUrl: e.target.value }))}
             disabled={!canManage}
           />
-        </label>
+        </Field>
         <label className="flex flex-col gap-1 text-xs text-fg-subtle">
           {t("ipAllowlist")}
           <span className="mt-0.5 block text-fg-subtle">{t("ipAllowlistHint")}</span>

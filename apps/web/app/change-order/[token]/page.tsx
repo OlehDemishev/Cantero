@@ -9,7 +9,7 @@ import { SignaturePad } from "@/components/signature-pad";
 import { formatDateTime } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
 import { Alert } from "@/components/ui/alert";
-import { FormError } from "@/components/ui/field";
+import { Field, FormError } from "@/components/ui/field";
 
 interface PublicLine {
   id: string;
@@ -175,10 +175,9 @@ export default function PublicChangeOrderPage({ params }: { params: Promise<{ to
 
           {changeOrder.clientDecision === "pending" ? (
             <div className="mt-6 border-t border-gray-100 dark:border-gray-700 pt-4">
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-fg-muted">{t("clientNoteOptional")}</span>
+              <Field label={t("clientNoteOptional")}>
                 <textarea rows={2} className="input" value={note} onChange={(e) => setNote(e.target.value)} />
-              </label>
+              </Field>
 
               <div className="mt-4 flex flex-col gap-1.5 text-sm">
                 <span className="font-medium text-fg-muted">{t("signerNameLabel")}</span>

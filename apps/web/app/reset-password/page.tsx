@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { Alert } from "@/components/ui/alert";
+import { Field } from "@/components/ui/field";
 
 export default function ResetPasswordPage() {
   const t = useTranslations("auth");
@@ -57,8 +58,7 @@ export default function ResetPasswordPage() {
             <>
               {error && <Alert tone="danger" className="mt-4">{error}</Alert>}
               <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
-                <label className="flex flex-col gap-1.5 text-sm">
-                  <span className="font-medium text-fg-muted">{t("newPassword")}</span>
+                <Field label={t("newPassword")}>
                   <input
                     required
                     minLength={8}
@@ -67,7 +67,7 @@ export default function ResetPasswordPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
-                </label>
+                </Field>
                 <button type="submit" disabled={submitting} className="btn-primary mt-2">
                   {submitting ? tc("loading") : t("resetPassword")}
                 </button>

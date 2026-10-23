@@ -12,6 +12,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
+import { Field } from "@/components/ui/field";
 
 interface Worker {
   id: string;
@@ -179,17 +180,15 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
       <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("title")}</h2>
 
       <form onSubmit={saveWarranty} className="card mb-4 flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium text-fg-muted">{t("handoverDate")}</span>
+        <Field label={t("handoverDate")}>
           <input
             type="date"
             className="input"
             value={warrantyForm.handoverDate}
             onChange={(e) => setWarrantyForm((f) => ({ ...f, handoverDate: e.target.value }))}
           />
-        </label>
-        <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium text-fg-muted">{t("warrantyMonths")}</span>
+        </Field>
+        <Field label={t("warrantyMonths")}>
           <input
             type="number"
             min="1"
@@ -198,7 +197,7 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
             value={warrantyForm.warrantyMonths}
             onChange={(e) => setWarrantyForm((f) => ({ ...f, warrantyMonths: e.target.value }))}
           />
-        </label>
+        </Field>
         <button type="submit" disabled={busy} className="btn-secondary">
           {tc("save")}
         </button>
@@ -220,26 +219,23 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
 
       {creating && (
         <form onSubmit={submitClaim} className="card mb-4 flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("claimTitle")}</span>
+          <Field label={t("claimTitle")}>
             <input
               required
               className="input"
               value={claimForm.title}
               onChange={(e) => setClaimForm((f) => ({ ...f, title: e.target.value }))}
             />
-          </label>
+          </Field>
           <div className="flex gap-3">
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("location")}</span>
+            <Field label={t("location")} className="flex-1">
               <input
                 className="input"
                 value={claimForm.location}
                 onChange={(e) => setClaimForm((f) => ({ ...f, location: e.target.value }))}
               />
-            </label>
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("assignee")}</span>
+            </Field>
+            <Field label={t("assignee")} className="flex-1">
               <select
                 className="input"
                 value={claimForm.assigneeWorkerId}
@@ -252,17 +248,16 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
                   </option>
                 ))}
               </select>
-            </label>
+            </Field>
           </div>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("description")}</span>
+          <Field label={t("description")}>
             <textarea
               rows={2}
               className="input"
               value={claimForm.description}
               onChange={(e) => setClaimForm((f) => ({ ...f, description: e.target.value }))}
             />
-          </label>
+          </Field>
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className="btn-primary">
               {tc("save")}

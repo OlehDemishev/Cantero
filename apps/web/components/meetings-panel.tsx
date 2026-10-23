@@ -11,6 +11,7 @@ import { CopyLinkButton } from "@/components/ui/copy-link-button";
 import { PrintButton } from "@/components/ui/print-button";
 import { formatDate } from "@/lib/format-date";
 import { Badge } from "@/components/ui/badge";
+import { Field } from "@/components/ui/field";
 
 interface MeetingActionItem {
   id: string;
@@ -133,13 +134,11 @@ export function MeetingsPanel({ projectId }: { projectId: string }) {
 
       {creating && (
         <form onSubmit={submit} className="card mb-4 flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("meetingTitle")}</span>
+          <Field label={t("meetingTitle")}>
             <input required className="input" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
-          </label>
+          </Field>
           <div className="flex flex-wrap gap-3">
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("meetingDate")}</span>
+            <Field label={t("meetingDate")}>
               <input
                 required
                 type="date"
@@ -147,25 +146,22 @@ export function MeetingsPanel({ projectId }: { projectId: string }) {
                 value={form.meetingDate}
                 onChange={(e) => setForm((f) => ({ ...f, meetingDate: e.target.value }))}
               />
-            </label>
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("location")}</span>
+            </Field>
+            <Field label={t("location")}>
               <input className="input" value={form.location} onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))} />
-            </label>
+            </Field>
           </div>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("attendees")}</span>
+          <Field label={t("attendees")}>
             <input
               placeholder={t("attendeesPlaceholder")}
               className="input"
               value={form.attendeesText}
               onChange={(e) => setForm((f) => ({ ...f, attendeesText: e.target.value }))}
             />
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("notes")}</span>
+          </Field>
+          <Field label={t("notes")}>
             <textarea rows={3} className="input" value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
-          </label>
+          </Field>
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className="btn-primary">
               {tc("save")}

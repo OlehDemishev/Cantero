@@ -18,6 +18,7 @@ import { formatDate } from "@/lib/format-date";
 import { useReportAccess } from "@/lib/report-access";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
+import { Field } from "@/components/ui/field";
 
 interface ScheduledReport {
   id: string;
@@ -111,8 +112,7 @@ export function ScheduledReportsPanel() {
             onChange={(e) => setScheduleForm((f) => ({ ...f, name: e.target.value }))}
           />
           <div className="flex gap-3">
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("reportType")}</span>
+            <Field label={t("reportType")} className="flex-1">
               <select
                 className="input"
                 value={selectedType ?? ""}
@@ -124,9 +124,8 @@ export function ScheduledReportsPanel() {
                   </option>
                 ))}
               </select>
-            </label>
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("frequency")}</span>
+            </Field>
+            <Field label={t("frequency")} className="flex-1">
               <select
                 className="input"
                 value={scheduleForm.frequency}
@@ -138,10 +137,9 @@ export function ScheduledReportsPanel() {
                   </option>
                 ))}
               </select>
-            </label>
+            </Field>
           </div>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("recipientEmails")}</span>
+          <Field label={t("recipientEmails")}>
             <input
               required
               placeholder={t("recipientEmailsPlaceholder")}
@@ -149,7 +147,7 @@ export function ScheduledReportsPanel() {
               value={scheduleForm.recipientEmails}
               onChange={(e) => setScheduleForm((f) => ({ ...f, recipientEmails: e.target.value }))}
             />
-          </label>
+          </Field>
           <button type="submit" disabled={scheduleBusy || !selectedType} className="btn-primary self-start">
             {t("createSchedule")}
           </button>

@@ -7,7 +7,7 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApi } from "@/lib/use-api";
-import { FormError } from "@/components/ui/field";
+import { Field, FormError } from "@/components/ui/field";
 
 interface MaterialCatalogItem {
   id: string;
@@ -104,8 +104,7 @@ export function StockKits() {
     <div>
       <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("newKit")}</h2>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3 max-w-lg">
-        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-          {t("kitItem")}
+        <Field label={t("kitItem")} size="sm">
           <select
             className="input"
             value={form.kitMaterialCatalogItemId}
@@ -117,7 +116,7 @@ export function StockKits() {
               </option>
             ))}
           </select>
-        </label>
+        </Field>
         <input
           required
           placeholder={tc("name")}

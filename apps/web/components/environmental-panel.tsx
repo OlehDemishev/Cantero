@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
+import { Field } from "@/components/ui/field";
 
 interface BmpInspection {
   id: string;
@@ -166,10 +167,9 @@ export function EnvironmentalPanel({ projectId }: { projectId: string }) {
             value={permitForm.permitNumber}
             onChange={(e) => setPermitForm((f) => ({ ...f, permitNumber: e.target.value }))}
           />
-          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-            {t("noiFiledAt")}
+          <Field label={t("noiFiledAt")} size="sm">
             <input type="date" className="input" value={permitForm.noiFiledAt} onChange={(e) => setPermitForm((f) => ({ ...f, noiFiledAt: e.target.value }))} />
-          </label>
+          </Field>
           <button type="submit" disabled={busy} className="btn-primary">
             {tc("save")}
           </button>

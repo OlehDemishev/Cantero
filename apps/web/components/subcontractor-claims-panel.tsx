@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useApi } from "@/lib/use-api";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
+import { Field } from "@/components/ui/field";
 
 interface Subcontractor {
   id: string;
@@ -149,8 +150,7 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
 
       {creatingBackcharge && (
         <form onSubmit={submitBackcharge} className="card mb-4 flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("subcontractor")}</span>
+          <Field label={t("subcontractor")}>
             <select
               className="input"
               value={backchargeForm.subcontractorId}
@@ -162,9 +162,8 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
                 </option>
               ))}
             </select>
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("description")}</span>
+          </Field>
+          <Field label={t("description")}>
             <textarea
               required
               rows={2}
@@ -172,9 +171,8 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
               value={backchargeForm.description}
               onChange={(e) => setBackchargeForm((f) => ({ ...f, description: e.target.value }))}
             />
-          </label>
-          <label className="flex w-40 flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("amount")}</span>
+          </Field>
+          <Field label={t("amount")} className="w-40">
             <input
               required
               type="number"
@@ -184,10 +182,9 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
               value={backchargeForm.amount}
               onChange={(e) => setBackchargeForm((f) => ({ ...f, amount: e.target.value }))}
             />
-          </label>
+          </Field>
           {warrantyClaims.length > 0 && (
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("linkedWarrantyClaim")}</span>
+            <Field label={t("linkedWarrantyClaim")}>
               <select
                 className="input"
                 value={backchargeForm.warrantyClaimId}
@@ -200,7 +197,7 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
                   </option>
                 ))}
               </select>
-            </label>
+            </Field>
           )}
           <div className="flex gap-2">
             <button type="submit" disabled={busy || !subcontractors.length} className="btn-primary">
@@ -262,8 +259,7 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
 
       {creatingNotice && (
         <form onSubmit={submitNotice} className="card mb-4 flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("subcontractor")}</span>
+          <Field label={t("subcontractor")}>
             <select
               className="input"
               value={noticeForm.subcontractorId}
@@ -275,13 +271,11 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
                 </option>
               ))}
             </select>
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("noticeTitleField")}</span>
+          </Field>
+          <Field label={t("noticeTitleField")}>
             <input required className="input" value={noticeForm.title} onChange={(e) => setNoticeForm((f) => ({ ...f, title: e.target.value }))} />
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("description")}</span>
+          </Field>
+          <Field label={t("description")}>
             <textarea
               required
               rows={3}
@@ -289,9 +283,8 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
               value={noticeForm.description}
               onChange={(e) => setNoticeForm((f) => ({ ...f, description: e.target.value }))}
             />
-          </label>
-          <label className="flex w-40 flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("curePeriodDays")}</span>
+          </Field>
+          <Field label={t("curePeriodDays")} className="w-40">
             <input
               type="number"
               min="1"
@@ -299,7 +292,7 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
               value={noticeForm.curePeriodDays}
               onChange={(e) => setNoticeForm((f) => ({ ...f, curePeriodDays: e.target.value }))}
             />
-          </label>
+          </Field>
           <div className="flex gap-2">
             <button type="submit" disabled={busy || !subcontractors.length} className="btn-primary">
               {tc("save")}

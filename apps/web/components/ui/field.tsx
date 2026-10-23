@@ -53,7 +53,7 @@ export function Field({ label, hint, error, id, size = "md", hideLabel = false, 
       {/* The "*" sits outside the <label> so the control's accessible name is just the label text;
           `required` itself tells assistive tech the field is required. */}
       <span className={hideLabel ? "sr-only" : undefined}>
-        <label htmlFor={controlId} className={compact ? "text-fg-subtle" : "text-fg-muted"}>
+        <label htmlFor={controlId} className={compact ? "text-fg-subtle" : "font-medium text-fg-muted"}>
           {label}
         </label>
         {only?.props.required && (

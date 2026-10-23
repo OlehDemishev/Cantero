@@ -8,6 +8,7 @@ import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Alert } from "@/components/ui/alert";
+import { Field } from "@/components/ui/field";
 
 interface ApiKey {
   id: string;
@@ -142,15 +143,14 @@ export function ApiKeysPanel() {
             value={newKeyName}
             onChange={(e) => setNewKeyName(e.target.value)}
           />
-          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-            {t("apiKeyExpires")}
+          <Field label={t("apiKeyExpires")} size="sm">
             <input
               type="date"
-              className="input mt-1"
+              className="input"
               value={newKeyExpiresAt}
               onChange={(e) => setNewKeyExpiresAt(e.target.value)}
             />
-          </label>
+          </Field>
           <button type="submit" disabled={busy} className="btn-primary shrink-0">
             {t("createApiKey")}
           </button>

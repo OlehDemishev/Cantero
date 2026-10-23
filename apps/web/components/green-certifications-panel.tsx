@@ -10,6 +10,7 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Field } from "@/components/ui/field";
 
 interface GreenCertification {
   id: string;
@@ -95,8 +96,7 @@ export function GreenCertificationsPanel({ projectId }: { projectId: string }) {
       {creating && (
         <form onSubmit={submit} className="card mb-4 flex flex-col gap-3">
           <div className="flex flex-wrap gap-3">
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("certificationType")}</span>
+            <Field label={t("certificationType")}>
               <select className="input" value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as GreenCertificationType }))}>
                 {GREEN_CERTIFICATION_TYPES.map((type) => (
                   <option key={type} value={type}>
@@ -104,19 +104,16 @@ export function GreenCertificationsPanel({ projectId }: { projectId: string }) {
                   </option>
                 ))}
               </select>
-            </label>
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{tc("name")}</span>
+            </Field>
+            <Field label={tc("name")}>
               <input required className="input" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
-            </label>
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("issuedAt")}</span>
+            </Field>
+            <Field label={t("issuedAt")}>
               <input type="date" className="input" value={form.issuedAt} onChange={(e) => setForm((f) => ({ ...f, issuedAt: e.target.value }))} />
-            </label>
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("expiresAt")}</span>
+            </Field>
+            <Field label={t("expiresAt")}>
               <input type="date" className="input" value={form.expiresAt} onChange={(e) => setForm((f) => ({ ...f, expiresAt: e.target.value }))} />
-            </label>
+            </Field>
           </div>
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className="btn-primary">

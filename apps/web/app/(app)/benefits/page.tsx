@@ -9,6 +9,7 @@ import { useMe } from "@/lib/use-me";
 import { useCan } from "@/lib/permissions";
 import { formatCurrency } from "@/lib/format-currency";
 import { PageHeader } from "@/components/ui/page-header";
+import { Field } from "@/components/ui/field";
 
 interface Worker {
   id: string;
@@ -143,16 +144,15 @@ export default function BenefitsPage() {
                 </option>
               ))}
             </select>
-            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-              {t("effectiveDate")}
+            <Field label={t("effectiveDate")} size="sm">
               <input
                 required
                 type="date"
-                className="input mt-1"
+                className="input"
                 value={form.effectiveDate}
                 onChange={(e) => setForm((f) => ({ ...f, effectiveDate: e.target.value }))}
               />
-            </label>
+            </Field>
             <button type="submit" disabled={busy || !selectedPlan?.tiers.length} className="btn-primary self-start">
               {t("enroll")}
             </button>

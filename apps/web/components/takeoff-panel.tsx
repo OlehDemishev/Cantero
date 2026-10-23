@@ -12,7 +12,7 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatNumber } from "@/lib/format-currency";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FormError } from "@/components/ui/field";
+import { Field, FormError } from "@/components/ui/field";
 
 interface TakeoffPoint {
   x: number;
@@ -356,12 +356,10 @@ export function TakeoffPanel({ projectId }: { projectId: string }) {
                 {t(mode === "length" ? "lengthHint" : mode === "area" ? "areaHint" : "countHint")}
                 {mode === "count" && currentPoints.length > 0 && <strong className="ml-1 text-fg-muted">{currentPoints.length}</strong>}
               </span>
-              <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-                {t("label")}
+              <Field label={t("label")} size="sm">
                 <input className="input w-40" value={measurementForm.label} onChange={(e) => setMeasurementForm((f) => ({ ...f, label: e.target.value }))} />
-              </label>
-              <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-                {t("linkedRateItem")}
+              </Field>
+              <Field label={t("linkedRateItem")} size="sm">
                 <select className="input" value={measurementForm.rateCatalogItemId} onChange={(e) => setMeasurementForm((f) => ({ ...f, rateCatalogItemId: e.target.value }))}>
                   <option value="">—</option>
                   {rateItems.map((r) => (
@@ -370,7 +368,7 @@ export function TakeoffPanel({ projectId }: { projectId: string }) {
                     </option>
                   ))}
                 </select>
-              </label>
+              </Field>
               {currentPoints.length > 0 && (
                 <button type="button" onClick={() => setCurrentPoints((pts) => pts.slice(0, -1))} className="btn-secondary px-3 py-1 text-xs">
                   {t("undoPoint")}

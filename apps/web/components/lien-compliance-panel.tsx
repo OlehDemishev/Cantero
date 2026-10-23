@@ -18,6 +18,7 @@ import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
+import { Field } from "@/components/ui/field";
 
 interface LienNotice {
   id: string;
@@ -164,10 +165,9 @@ export function LienCompliancePanel({ projectId }: { projectId: string }) {
             value={noticeForm.relatedPartyName}
             onChange={(e) => setNoticeForm((f) => ({ ...f, relatedPartyName: e.target.value }))}
           />
-          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-            {t("deadlineDate")}
+          <Field label={t("deadlineDate")} size="sm">
             <input type="date" className="input" value={noticeForm.deadlineDate} onChange={(e) => setNoticeForm((f) => ({ ...f, deadlineDate: e.target.value }))} />
-          </label>
+          </Field>
           <input
             placeholder={t("methodOfServicePlaceholder")}
             className="input w-40"
@@ -241,10 +241,9 @@ export function LienCompliancePanel({ projectId }: { projectId: string }) {
             value={filingForm.amount}
             onChange={(e) => setFilingForm((f) => ({ ...f, amount: e.target.value }))}
           />
-          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-            {t("filedAt")}
+          <Field label={t("filedAt")} size="sm">
             <input required type="date" className="input" value={filingForm.filedAt} onChange={(e) => setFilingForm((f) => ({ ...f, filedAt: e.target.value }))} />
-          </label>
+          </Field>
           <button type="submit" disabled={busy} className="btn-primary">
             {tc("save")}
           </button>

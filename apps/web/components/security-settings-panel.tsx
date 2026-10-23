@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { MEMBERSHIP_ROLES_MANAGEABLE, type MembershipRole } from "@cantero/shared";
 import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { HelpTooltip } from "@/components/help-tooltip";
+import { Field } from "@/components/ui/field";
 
 interface Company {
   sessionTimeoutMinutes: number | null;
@@ -98,8 +99,7 @@ export function SecuritySettingsPanel({ canManage }: { canManage: boolean }) {
         <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
           <p className="mb-2 text-xs font-medium text-fg-muted">{t("passwordPolicy")}</p>
           <div className="flex flex-wrap items-end gap-3">
-            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-              {t("passwordMinLength")}
+            <Field label={t("passwordMinLength")} size="sm">
               <input
                 type="number"
                 min="8"
@@ -108,7 +108,7 @@ export function SecuritySettingsPanel({ canManage }: { canManage: boolean }) {
                 value={form.passwordMinLength}
                 onChange={(e) => setForm((f) => ({ ...f, passwordMinLength: e.target.value }))}
               />
-            </label>
+            </Field>
             <label className="flex items-center gap-2 pb-2 text-xs text-fg-muted">
               <input
                 type="checkbox"

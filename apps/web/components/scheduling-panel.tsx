@@ -57,7 +57,7 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
   const [milestoneForm, setMilestoneForm] = useState({ name: "", dueDate: "" });
   const [busy, setBusy] = useState(false);
   const [taskError, setTaskError] = useState<string | null>(null);
-  const taskValidation = useFormValidation(createTaskSchema);
+  const { errors: taskErrors, validate: validateTask, clearError: clearTaskError, formRef: taskFormRef } = useFormValidation(createTaskSchema);
   const [depEditorTaskId, setDepEditorTaskId] = useState<string | null>(null);
   const [depForm, setDepForm] = useState({ predecessorId: "", type: "finish_to_start" as TaskDependencyType, lagDays: "0" });
   const [depError, setDepError] = useState<string | null>(null);
@@ -73,7 +73,7 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
 
   async function createTask(e: React.FormEvent) {
     e.preventDefault();
-    const body = taskValidation.validate({
+    const body = validateTask({
       projectId,
       name: taskForm.name.trim(),
       startDate: taskForm.startDate ? new Date(taskForm.startDate).toISOString() : undefined,
@@ -279,22 +279,22 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
       </div>
       </DndContext>
 
-      <form ref={taskValidation.formRef} onSubmit={createTask} noValidate className="mt-4 flex flex-wrap items-start gap-2">
-        <Field label={t("taskName")} size="sm" error={taskValidation.errors.name}>
+      <form ref={taskFormRef} onSubmit={createTask} noValidate className="mt-4 flex flex-wrap items-start gap-2">
+        <Field label={t("taskName")} size="sm" error={taskErrors.name}>
           <input
             required
             className="input w-auto"
             value={taskForm.name}
             onChange={(e) => {
               setTaskForm((f) => ({ ...f, name: e.target.value }));
-              taskValidation.clearError("name");
+              clearTaskError("name");
             }}
           />
         </Field>
-        <Field label={t("startDate")} size="sm" error={taskValidation.errors.startDate}>
+        <Field label={t("startDate")} size="sm" error={taskErrors.startDate}>
           <input type="date" className="input" value={taskForm.startDate} onChange={(e) => setTaskForm((f) => ({ ...f, startDate: e.target.value }))} />
         </Field>
-        <Field label={t("dueDate")} size="sm" error={taskValidation.errors.dueDate}>
+        <Field label={t("dueDate")} size="sm" error={taskErrors.dueDate}>
           <input type="date" className="input" value={taskForm.dueDate} onChange={(e) => setTaskForm((f) => ({ ...f, dueDate: e.target.value }))} />
         </Field>
         <label className="flex items-center gap-1.5 self-end pb-3 text-xs text-fg-subtle">

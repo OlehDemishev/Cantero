@@ -8,6 +8,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 import { formatNumber } from "@/lib/format-currency";
+import { Field } from "@/components/ui/field";
 
 interface CostCode {
   id: string;
@@ -85,8 +86,7 @@ export function ProductivityPanel({ projectId }: { projectId: string }) {
       {creating && (
         <form onSubmit={submit} className="card mb-4 flex flex-col gap-3">
           <div className="flex gap-3">
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("costCode")}</span>
+            <Field label={t("costCode")} className="flex-1">
               <select
                 className="input"
                 value={form.costCodeId}
@@ -99,9 +99,8 @@ export function ProductivityPanel({ projectId }: { projectId: string }) {
                   </option>
                 ))}
               </select>
-            </label>
-            <label className="flex w-40 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("workDate")}</span>
+            </Field>
+            <Field label={t("workDate")} className="w-40">
               <input
                 required
                 type="date"
@@ -109,11 +108,10 @@ export function ProductivityPanel({ projectId }: { projectId: string }) {
                 value={form.workDate}
                 onChange={(e) => setForm((f) => ({ ...f, workDate: e.target.value }))}
               />
-            </label>
+            </Field>
           </div>
           <div className="flex gap-3">
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("quantityCompleted")}</span>
+            <Field label={t("quantityCompleted")} className="flex-1">
               <input
                 required
                 type="number"
@@ -123,13 +121,11 @@ export function ProductivityPanel({ projectId }: { projectId: string }) {
                 value={form.quantityCompleted}
                 onChange={(e) => setForm((f) => ({ ...f, quantityCompleted: e.target.value }))}
               />
-            </label>
-            <label className="flex w-28 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("unit")}</span>
+            </Field>
+            <Field label={t("unit")} className="w-28">
               <input required className="input" value={form.unit} onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))} />
-            </label>
-            <label className="flex w-32 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-fg-muted">{t("laborHours")}</span>
+            </Field>
+            <Field label={t("laborHours")} className="w-32">
               <input
                 required
                 type="number"
@@ -139,16 +135,14 @@ export function ProductivityPanel({ projectId }: { projectId: string }) {
                 value={form.laborHours}
                 onChange={(e) => setForm((f) => ({ ...f, laborHours: e.target.value }))}
               />
-            </label>
+            </Field>
           </div>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("crewName")}</span>
+          <Field label={t("crewName")}>
             <input className="input" value={form.crewName} onChange={(e) => setForm((f) => ({ ...f, crewName: e.target.value }))} />
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("notes")}</span>
+          </Field>
+          <Field label={t("notes")}>
             <textarea rows={2} className="input" value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
-          </label>
+          </Field>
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className="btn-primary">
               {tc("save")}

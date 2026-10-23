@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Alert } from "@/components/ui/alert";
+import { Field } from "@/components/ui/field";
 
 interface Task {
   id: string;
@@ -159,14 +160,12 @@ export function ScheduleScenariosPanel({ projectId }: { projectId: string }) {
                           </option>
                         ))}
                       </select>
-                      <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-                        {t("startDate")}
+                      <Field label={t("startDate")} size="sm">
                         <input type="date" className="input" value={overrideForm.startDate} onChange={(e) => setOverrideForm((f) => ({ ...f, startDate: e.target.value }))} />
-                      </label>
-                      <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-                        {t("dueDate")}
+                      </Field>
+                      <Field label={t("dueDate")} size="sm">
                         <input type="date" className="input" value={overrideForm.dueDate} onChange={(e) => setOverrideForm((f) => ({ ...f, dueDate: e.target.value }))} />
-                      </label>
+                      </Field>
                       <button onClick={() => setOverride(s.id)} disabled={busy} className="btn-secondary px-2.5 py-1 text-xs">
                         {t("setOverride")}
                       </button>

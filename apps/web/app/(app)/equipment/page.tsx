@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
 import { Alert } from "@/components/ui/alert";
 import { PageHeader } from "@/components/ui/page-header";
+import { Field } from "@/components/ui/field";
 
 interface AssignmentSummary {
   project: { id: string; name: string } | null;
@@ -190,8 +191,7 @@ export default function EquipmentPage() {
             value={form.serialNumber}
             onChange={(e) => setForm((f) => ({ ...f, serialNumber: e.target.value }))}
           />
-          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
-            {t("purchaseCost")}
+          <Field label={t("purchaseCost")} size="sm">
             <input
               type="number"
               step="0.01"
@@ -200,7 +200,7 @@ export default function EquipmentPage() {
               value={form.purchaseCost}
               onChange={(e) => setForm((f) => ({ ...f, purchaseCost: e.target.value }))}
             />
-          </label>
+          </Field>
           <button type="submit" disabled={busy} className="btn-primary shrink-0">
             {t("addEquipment")}
           </button>

@@ -11,7 +11,7 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatCurrency } from "@/lib/format-currency";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
-import { FormError } from "@/components/ui/field";
+import { Field, FormError } from "@/components/ui/field";
 
 interface Subcontractor {
   id: string;
@@ -284,19 +284,17 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
 
       {creating && (
         <form onSubmit={submit} className="card mb-4 flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{t("scopeTitle")}</span>
+          <Field label={t("scopeTitle")}>
             <input required className="input" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-fg-muted">{tc("description")}</span>
+          </Field>
+          <Field label={tc("description")}>
             <textarea
               rows={2}
               className="input"
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
             />
-          </label>
+          </Field>
           <label className="flex w-auto flex-col gap-1.5 text-sm">
             <span className="font-medium text-fg-muted">{t("dueDate")}</span>
             <input

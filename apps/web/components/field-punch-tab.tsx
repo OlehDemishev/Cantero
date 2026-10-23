@@ -7,6 +7,7 @@ import { fetchCached, updateCache } from "@/lib/offline-cache";
 import { CachedNote } from "@/components/field-cached-note";
 import { FieldMessage, type FieldMessageType } from "@/components/field-message";
 import { Badge } from "@/components/ui/badge";
+import { Field } from "@/components/ui/field";
 
 interface PunchListItem {
   id: string;
@@ -86,24 +87,22 @@ export function PunchTab({ projectId }: { projectId: string }) {
     <div className="flex flex-col gap-4">
       <CachedNote cachedAt={cachedAt} />
       <form onSubmit={submit} className="card flex flex-col gap-3">
-        <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium text-fg-muted">{tp("itemTitle")}</span>
+        <Field label={tp("itemTitle")}>
           <input
             required
             className="input"
             value={form.title}
             onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
           />
-        </label>
-        <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium text-fg-muted">{tp("location")}</span>
+        </Field>
+        <Field label={tp("location")}>
           <input
             className="input"
             placeholder={tp("locationPlaceholder")}
             value={form.location}
             onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
           />
-        </label>
+        </Field>
         <button type="submit" disabled={busy} className="btn-primary">
           {tp("newItem")}
         </button>
