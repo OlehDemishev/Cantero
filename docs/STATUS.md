@@ -61,5 +61,28 @@ widgets the member can no longer see; project-scoped reports get the viewer like
 into NaN, so every optional `OptionalIntPipe` param (e.g. `GET /job-costing/history` without
 `months`, default 12) answered 400.
 
-Left: the web's add-widget menu (`apps/web/components/dashboard-widgets-panel.tsx`) still offers
-every type; it should use `visibleDashboardWidgetTypes(user.permissions)`.
+The web's add-widget menu now uses `visibleDashboardWidgetTypes` (merge commit 41fed3f).
+
+## 2026-10-23 — audit fixes, all 12 plan items (branch claude/kind-allen-sjrtoq, not merged)
+
+Every item of section 8 in `docs/audit/2026-10-23-ui-audit.md` is done; section 9 there maps
+findings to commits. Security S1–S11 + low items, L1/L2, logout/SSO code exchange, kiosk token,
+report/company scoping, SSO domain DNS proof, SSRF; web: (app) route-group layout + MeProvider,
+semantic tokens + system theme, Dialog/useConfirm, useApi + ErrorState/Skeleton, Badge/Alert/
+Field/PageHeader + Zod on 6 forms, a11y (axe 0 serious/critical on 324 views, scanner 0
+unlabeled), i18n (Accept-Language, company locale on public pages, formatCurrency everywhere),
+lazy project/settings tabs, split oversized components. Migrations (hand-written, never run
+against a real DB except the local one): session companyId, SSO login codes + portal token
+version, scheduled report creator, SSO domain verification.
+
+Not run: the e2e suite (CI runs only on PRs to main / pushes to main — open a PR to get it).
+Behaviour changes to know: IdP-initiated SSO refused; scheduled reports without a recorded author
+skip restricted projects until re-saved; stored-file URLs download instead of opening inline;
+SSO domains need a TXT record (existing ones grandfathered); portal sign-out signs the holder out
+on every device; portal tokens last 7 days.
+
+Left (not in the plan): magic-byte checks on uploads; a device account for the kiosk; per-user
+calendar feeds; portal magic-link verify fires twice in dev StrictMode (L5); focusable scroll
+areas have no own name; canvas/Gantt dragging is mouse-only; existing buttons still use .btn-*
+classes rather than <Button>; ~25 label patterns not moved to Field; "pcs" unit in starter data.
+Local-only: apps/api/.env has EXPO_ACCESS_TOKEN="" which fails one push.service spec locally.
