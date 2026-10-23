@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 
 type ChangeRequestStatus = "submitted" | "under_review" | "converted" | "declined";
 interface ChangeRequest {
@@ -26,7 +27,7 @@ export function ClientChangeRequestsPanel({ projectId }: { projectId: string }) 
   const t = useTranslations("clientChangeRequests");
   const tc = useTranslations("common");
 
-  const [requests, setRequests] = useState<ChangeRequest[] | null>(null);
+  const { data: requests = null, reload: reloadRequests } = useApi<ChangeRequest[]>(`/client-change-requests?projectId=${projectId}`);
   const [convertingId, setConvertingId] = useState<string | null>(null);
   const [changeOrderId, setChangeOrderId] = useState("");
   const [decliningId, setDecliningId] = useState<string | null>(null);
@@ -34,13 +35,8 @@ export function ClientChangeRequestsPanel({ projectId }: { projectId: string }) 
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<ChangeRequest[]>(`/client-change-requests?projectId=${projectId}`).then(setRequests);
+    void reloadRequests();
   }
-
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
 
   if (requests !== null && requests.length === 0) return null;
 

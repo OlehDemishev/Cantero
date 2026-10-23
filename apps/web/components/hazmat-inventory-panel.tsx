@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface HazardousMaterial {
@@ -23,15 +24,14 @@ export function HazmatInventoryPanel({ projectId }: { projectId: string }) {
   const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
-  const [items, setItems] = useState<InventoryItem[] | null>(null);
+  const { data: items = null, reload: reloadItems } = useApi<InventoryItem[]>(`/projects/${projectId}/hazmat-inventory`);
   const [materials, setMaterials] = useState<HazardousMaterial[]>([]);
   const [form, setForm] = useState({ hazardousMaterialId: "", quantity: "", location: "" });
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<InventoryItem[]>(`/projects/${projectId}/hazmat-inventory`).then(setItems);
+    void reloadItems();
   }
-  useEffect(load, [projectId]);
   useEffect(() => {
     apiFetch<HazardousMaterial[]>("/hazmat/materials").then((list) => {
       setMaterials(list);

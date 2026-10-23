@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { TICKET_PRIORITIES, TICKET_STATUSES, type TicketPriority, type TicketStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDateTime } from "@/lib/format-date";
 import { useCan } from "@/lib/permissions";
 
@@ -66,7 +67,7 @@ export default function SupportTicketsPage() {
   const [tickets, setTickets] = useState<Ticket[] | null>(null);
   const [statusFilter, setStatusFilter] = useState<TicketStatus | "">("");
   const [members, setMembers] = useState<Member[]>([]);
-  const [clients, setClients] = useState<Client[]>([]);
+  const { data: clients = [] } = useApi<Client[]>("/clients");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<TicketDetail | null>(null);
   const [replyText, setReplyText] = useState("");
@@ -82,7 +83,6 @@ export default function SupportTicketsPage() {
 
   useEffect(() => {
     apiFetch<{ user: Member }[]>("/company/members").then((list) => setMembers(list.map((m) => m.user)));
-    apiFetch<Client[]>("/clients").then(setClients);
   }, []);
 
   async function createTicket(e: React.FormEvent) {

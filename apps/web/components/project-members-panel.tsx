@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { HelpTooltip } from "@/components/help-tooltip";
 import { useCan } from "@/lib/permissions";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -26,18 +27,17 @@ export function ProjectMembersPanel({ projectId }: { projectId: string }) {
   const tc = useTranslations("common");
   const canManage = useCan()("projects.manage");
 
-  const [project, setProject] = useState<Project | null>(null);
-  const [members, setMembers] = useState<ProjectMember[] | null>(null);
+  const { data: project = null, reload: reloadProject } = useApi<Project>(`/projects/${projectId}`);
+  const { data: members = null, reload: reloadMembers } = useApi<ProjectMember[]>(`/projects/${projectId}/members`);
   const [companyMembers, setCompanyMembers] = useState<CompanyMember[]>([]);
   const [selectedUserId, setSelectedUserId] = useState("");
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<Project>(`/projects/${projectId}`).then(setProject);
-    apiFetch<ProjectMember[]>(`/projects/${projectId}/members`).then(setMembers);
+    void reloadProject();
+    void reloadMembers();
   }
 
-  useEffect(load, [projectId]);
   useEffect(() => {
     if (canManage) apiFetch<CompanyMember[]>("/company/members").then(setCompanyMembers);
   }, [canManage]);

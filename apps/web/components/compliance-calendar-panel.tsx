@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 
 type ComplianceItemType = "subcontractor_document" | "supplier_document" | "worker_certification" | "permit" | "company_document";
@@ -22,14 +22,8 @@ interface ComplianceCalendar {
 
 export function ComplianceCalendarPanel() {
   const t = useTranslations("complianceCalendar");
-  const [data, setData] = useState<ComplianceCalendar | null>(null);
   const [lookaheadDays, setLookaheadDays] = useState(90);
-
-  function load() {
-    apiFetch<ComplianceCalendar>(`/reports/compliance-calendar?lookaheadDays=${lookaheadDays}`).then(setData);
-  }
-
-  useEffect(load, [lookaheadDays]);
+  const { data = null } = useApi<ComplianceCalendar>(`/reports/compliance-calendar?lookaheadDays=${lookaheadDays}`);
 
   if (data === null) return null;
 

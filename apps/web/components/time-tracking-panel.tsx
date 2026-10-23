@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { useCrewChoices } from "@/lib/permissions";
 import { resetStateInEffect } from "@/lib/effect-reset";
@@ -33,8 +34,8 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
 
   const TIME_ENTRIES_PAGE_SIZE = 100;
   const [entries, setEntries] = useState<TimeEntry[] | null>(null);
-  const [workers, setWorkers] = useState<Worker[]>([]);
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const { data: workers = [] } = useApi<Worker[]>("/workers");
+  const { data: tasks = [] } = useApi<Task[]>(`/tasks?projectId=${projectId}`);
   const [form, setForm] = useState({
     workerId: "",
     taskId: "",
@@ -72,8 +73,6 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
 
   useEffect(() => {
     load();
-    apiFetch<Worker[]>("/workers").then(setWorkers);
-    apiFetch<Task[]>(`/tasks?projectId=${projectId}`).then(setTasks);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 

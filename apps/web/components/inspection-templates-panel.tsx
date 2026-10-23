@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface InspectionTemplateItem {
@@ -22,16 +23,14 @@ export function InspectionTemplatesPanel() {
   const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
-  const [templates, setTemplates] = useState<InspectionTemplate[] | null>(null);
+  const { data: templates = null, reload: reloadTemplates } = useApi<InspectionTemplate[]>("/inspection-templates");
   const [form, setForm] = useState({ name: "", trade: "" });
   const [items, setItems] = useState<string[]>([""]);
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<InspectionTemplate[]>("/inspection-templates").then(setTemplates);
+    void reloadTemplates();
   }
-
-  useEffect(load, []);
 
   function updateItem(index: number, value: string) {
     setItems((prev) => prev.map((v, i) => (i === index ? value : v)));

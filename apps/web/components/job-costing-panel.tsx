@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { chartColors, chartAxisProps, chartGridProps, chartTooltipProps } from "@/components/charts/chart-theme";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import type { CostCode } from "@/components/cost-codes-panel";
 import { formatDate } from "@/lib/format-date";
@@ -58,8 +59,8 @@ export function JobCostingPanel({ projectId }: { projectId: string }) {
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const [report, setReport] = useState<JobCostForecast | null>(null);
-  const [history, setHistory] = useState<CostHistoryMonth[] | null>(null);
+  const { data: report = null, reload: reloadReport } = useApi<JobCostForecast>(`/job-costing/forecast?projectId=${projectId}`);
+  const { data: history = null, reload: reloadHistory } = useApi<CostHistoryMonth[]>(`/job-costing/history?projectId=${projectId}`);
   const [costCodes, setCostCodes] = useState<CostCode[]>([]);
   const [transferring, setTransferring] = useState(false);
   const [transferForm, setTransferForm] = useState({ fromCostCodeId: "", toCostCodeId: "", amount: "", reason: "" });
@@ -67,11 +68,10 @@ export function JobCostingPanel({ projectId }: { projectId: string }) {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<JobCostForecast>(`/job-costing/forecast?projectId=${projectId}`).then(setReport);
-    apiFetch<CostHistoryMonth[]>(`/job-costing/history?projectId=${projectId}`).then(setHistory);
+    void reloadReport();
+    void reloadHistory();
   }
 
-  useEffect(load, [projectId]);
   useEffect(() => {
     apiFetch<CostCode[]>("/cost-codes").then((codes) => {
       setCostCodes(codes);

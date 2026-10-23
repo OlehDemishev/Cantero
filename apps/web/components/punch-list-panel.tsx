@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import type { BulkActionResult, PunchListItemStatus } from "@cantero/shared";
 import { SimilarItemsHint } from "@/components/similar-items-hint";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { PhotoAttachments } from "@/components/photo-attachments";
 import { CommentsThread } from "@/components/comments-thread";
 import { useBulkSelection } from "@/components/bulk-select";
@@ -53,10 +54,10 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
   const tc = useTranslations("common");
   const tb = useTranslations("bulk");
 
-  const [items, setItems] = useState<PunchListItem[] | null>(null);
-  const [workers, setWorkers] = useState<Worker[]>([]);
-  const [subcontractors, setSubcontractors] = useState<Subcontractor[]>([]);
-  const [templates, setTemplates] = useState<Template[]>([]);
+  const { data: items = null, reload: reloadItems } = useApi<PunchListItem[]>(`/punch-list?projectId=${projectId}`);
+  const { data: workers = [] } = useApi<Worker[]>("/workers");
+  const { data: subcontractors = [] } = useApi<Subcontractor[]>("/finance/subcontractors");
+  const { data: templates = [] } = useApi<Template[]>("/checklist-templates?type=punch_list");
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", location: "", assignee: "", dueDate: "", estimatedCostImpact: "" });
@@ -67,22 +68,13 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
   const rowRefs = useRef<Record<string, HTMLLIElement | null>>({});
 
   function load() {
-    apiFetch<PunchListItem[]>(`/punch-list?projectId=${projectId}`).then(setItems);
+    void reloadItems();
   }
 
   useEffect(() => {
     if (!deepLinkedId || !items) return;
     rowRefs.current[deepLinkedId]?.scrollIntoView({ behavior: "smooth", block: "center" });
-     
   }, [items, deepLinkedId]);
-
-  useEffect(() => {
-    load();
-    apiFetch<Worker[]>("/workers").then(setWorkers);
-    apiFetch<Subcontractor[]>("/finance/subcontractors").then(setSubcontractors);
-    apiFetch<Template[]>("/checklist-templates?type=punch_list").then(setTemplates);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
 
   async function applyTemplate() {
     if (!selectedTemplateId) return;

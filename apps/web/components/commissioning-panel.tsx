@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import type { CommissioningSystemStatus, FunctionalTestResult } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 
 interface ChecklistItem {
@@ -47,7 +48,7 @@ export function CommissioningPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("commissioning");
   const tc = useTranslations("common");
 
-  const [systems, setSystems] = useState<CommissioningSystem[] | null>(null);
+  const { data: systems = null, reload: reloadSystems } = useApi<CommissioningSystem[]>(`/projects/${projectId}/commissioning-systems`);
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ name: "", category: "" });
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -59,9 +60,8 @@ export function CommissioningPanel({ projectId }: { projectId: string }) {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<CommissioningSystem[]>(`/projects/${projectId}/commissioning-systems`).then(setSystems);
+    void reloadSystems();
   }
-  useEffect(load, [projectId]);
 
   async function createSystem(e: React.FormEvent) {
     e.preventDefault();

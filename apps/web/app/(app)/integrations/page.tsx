@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { AccountingProviderType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 
 interface Company {
   // Whether each is set up — the webhook URLs and feed token themselves only reach settings.company holders.
@@ -35,16 +36,13 @@ interface IntegrationCard {
 export default function IntegrationsPage() {
   const t = useTranslations("integrationsMarketplace");
 
-  const [company, setCompany] = useState<Company | null>(null);
-  const [accounting, setAccounting] = useState<AccountingStatus | null>(null);
-  const [sso, setSso] = useState<SsoConfig | null>(null);
+  const { data: company = null } = useApi<Company>("/company");
+  const { data: accounting = null } = useApi<AccountingStatus>("/company/accounting/status");
+  const { data: sso = null } = useApi<SsoConfig>("/company/sso");
   const [apiKeyCount, setApiKeyCount] = useState<number | null>(null);
   const [webhookCount, setWebhookCount] = useState<number | null>(null);
 
   useEffect(() => {
-    apiFetch<Company>("/company").then(setCompany);
-    apiFetch<AccountingStatus>("/company/accounting/status").then(setAccounting);
-    apiFetch<SsoConfig>("/company/sso").then(setSso);
     apiFetch<unknown[]>("/company/api-keys").then((list) => setApiKeyCount(list.length));
     apiFetch<unknown[]>("/company/webhooks").then((list) => setWebhookCount(list.length));
   }, []);

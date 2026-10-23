@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 
 interface CloseoutReadiness {
   asBuiltCount: number;
@@ -24,11 +25,7 @@ export function ProjectCloseoutPanel({ projectId }: { projectId: string }) {
   const [npsBusy, setNpsBusy] = useState(false);
   const [npsError, setNpsError] = useState<string | null>(null);
   const [npsSent, setNpsSent] = useState(false);
-  const [readiness, setReadiness] = useState<CloseoutReadiness | null>(null);
-
-  useEffect(() => {
-    apiFetch<CloseoutReadiness>(`/projects/${projectId}/closeout-readiness`).then(setReadiness);
-  }, [projectId]);
+  const { data: readiness = null } = useApi<CloseoutReadiness>(`/projects/${projectId}/closeout-readiness`);
 
   async function download() {
     setBusy(true);

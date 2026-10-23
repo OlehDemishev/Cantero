@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate, formatDateTime } from "@/lib/format-date";
 import { formatNumber } from "@/lib/format-currency";
 
@@ -20,13 +21,12 @@ export function ProgressTrackingPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("progressTracking");
   const tc = useTranslations("common");
 
-  const [history, setHistory] = useState<ProgressEstimate[] | null>(null);
+  const { data: history = null, reload: reloadHistory } = useApi<ProgressEstimate[]>(`/projects/${projectId}/progress-estimates`);
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<ProgressEstimate[]>(`/projects/${projectId}/progress-estimates`).then(setHistory);
+    void reloadHistory();
   }
-  useEffect(load, [projectId]);
 
   async function recompute() {
     setBusy(true);

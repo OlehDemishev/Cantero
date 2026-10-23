@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 
 interface Company {
   referralCode: string | null;
@@ -13,14 +13,9 @@ interface ReferralStats {
 
 export function ReferralProgramPanel() {
   const t = useTranslations("referrals");
-  const [company, setCompany] = useState<Company | null>(null);
-  const [stats, setStats] = useState<ReferralStats | null>(null);
+  const { data: company = null } = useApi<Company>("/company");
+  const { data: stats = null } = useApi<ReferralStats>("/company/referral");
   const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    apiFetch<Company>("/company").then(setCompany);
-    apiFetch<ReferralStats>("/company/referral").then(setStats);
-  }, []);
 
   if (!company?.referralCode) return null;
 

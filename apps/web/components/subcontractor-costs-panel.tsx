@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import type { CostCode } from "@/components/cost-codes-panel";
 import { formatDate } from "@/lib/format-date";
@@ -35,7 +36,7 @@ export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const [costs, setCosts] = useState<SubcontractorCost[] | null>(null);
+  const { data: costs = null, reload: reloadCosts } = useApi<SubcontractorCost[]>(`/finance/subcontractor-costs?projectId=${projectId}`);
   const [subcontractors, setSubcontractors] = useState<Subcontractor[]>([]);
   const [form, setForm] = useState({
     subcontractorId: "",
@@ -47,10 +48,10 @@ export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
   });
   const [busy, setBusy] = useState(false);
   const [finalFlags, setFinalFlags] = useState<Record<string, boolean>>({});
-  const [costCodes, setCostCodes] = useState<CostCode[]>([]);
+  const { data: costCodes = [] } = useApi<CostCode[]>("/cost-codes");
 
   function load() {
-    apiFetch<SubcontractorCost[]>(`/finance/subcontractor-costs?projectId=${projectId}`).then(setCosts);
+    void reloadCosts();
   }
 
   function loadSubcontractors() {
@@ -61,10 +62,7 @@ export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
   }
 
   useEffect(() => {
-    load();
     loadSubcontractors();
-    apiFetch<CostCode[]>("/cost-codes").then(setCostCodes);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
   async function handleSubmit(e: React.FormEvent) {

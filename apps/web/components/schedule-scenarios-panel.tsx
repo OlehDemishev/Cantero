@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -34,8 +35,8 @@ export function ScheduleScenariosPanel({ projectId }: { projectId: string }) {
   const confirm = useConfirm();
   const tc = useTranslations("common");
 
-  const [scenarios, setScenarios] = useState<Scenario[] | null>(null);
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const { data: scenarios = null, reload: reloadScenarios } = useApi<Scenario[]>(`/projects/${projectId}/schedule-scenarios`);
+  const { data: tasks = [] } = useApi<Task[]>(`/tasks?projectId=${projectId}`);
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -44,13 +45,8 @@ export function ScheduleScenariosPanel({ projectId }: { projectId: string }) {
   const [compareResults, setCompareResults] = useState<Record<string, CompareResult>>({});
 
   function load() {
-    apiFetch<Scenario[]>(`/projects/${projectId}/schedule-scenarios`).then(setScenarios);
+    void reloadScenarios();
   }
-  useEffect(() => {
-    load();
-    apiFetch<Task[]>(`/tasks?projectId=${projectId}`).then(setTasks);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
 
   async function create(e: React.FormEvent) {
     e.preventDefault();

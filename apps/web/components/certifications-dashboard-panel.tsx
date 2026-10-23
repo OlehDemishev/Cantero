@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 
 type CertStatus = "expired" | "expiring_soon" | "valid";
@@ -28,11 +27,7 @@ const badgeClass: Record<CertStatus, string> = {
 export function CertificationsDashboardPanel() {
   const t = useTranslations("team");
   const tc = useTranslations("common");
-  const [dashboard, setDashboard] = useState<CertDashboard | null>(null);
-
-  useEffect(() => {
-    apiFetch<CertDashboard>("/workers/certifications/dashboard").then(setDashboard);
-  }, []);
+  const { data: dashboard = null } = useApi<CertDashboard>("/workers/certifications/dashboard");
 
   return (
     <div className="mt-10">

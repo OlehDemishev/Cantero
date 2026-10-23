@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CloseIcon, ServiceContractsIcon } from "@/components/nav-icons";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 
 interface Project {
@@ -30,22 +31,16 @@ export default function ServiceContractsPage() {
   const t = useTranslations("serviceContracts");
   const tc = useTranslations("common");
 
-  const [contracts, setContracts] = useState<ServiceContract[] | null>(null);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [clients, setClients] = useState<Client[]>([]);
+  const { data: contracts = null, reload: reloadContracts } = useApi<ServiceContract[]>("/service-contracts");
+  const { data: projects = [] } = useApi<Project[]>("/projects");
+  const { data: clients = [] } = useApi<Client[]>("/clients");
   const [form, setForm] = useState({ projectId: "", clientId: "", title: "", frequencyMonths: "3", startDate: "" });
   const [submitting, setSubmitting] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
 
   function load() {
-    apiFetch<ServiceContract[]>("/service-contracts").then(setContracts);
+    void reloadContracts();
   }
-
-  useEffect(() => {
-    load();
-    apiFetch<Project[]>("/projects").then(setProjects);
-    apiFetch<Client[]>("/clients").then(setClients);
-  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

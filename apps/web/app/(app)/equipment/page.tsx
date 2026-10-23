@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import type { EquipmentStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 
@@ -37,16 +38,14 @@ export default function EquipmentPage() {
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const [items, setItems] = useState<Equipment[] | null>(null);
+  const { data: items = null, reload: reloadItems } = useApi<Equipment[]>("/equipment");
   const [form, setForm] = useState({ name: "", category: "", serialNumber: "", purchaseCost: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function load() {
-    apiFetch<Equipment[]>("/equipment").then(setItems);
+    void reloadItems();
   }
-
-  useEffect(load, []);
 
   async function createEquipment(e: React.FormEvent) {
     e.preventDefault();

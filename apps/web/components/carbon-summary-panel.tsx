@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 
 interface CarbonRow {
   materialCatalogItemId: string;
@@ -24,11 +23,7 @@ interface CarbonSummary {
 export function CarbonSummaryPanel() {
   const t = useTranslations("sustainability");
 
-  const [summary, setSummary] = useState<CarbonSummary | null>(null);
-
-  useEffect(() => {
-    apiFetch<CarbonSummary>("/sustainability/carbon-summary").then(setSummary);
-  }, []);
+  const { data: summary = null } = useApi<CarbonSummary>("/sustainability/carbon-summary");
 
   if (!summary || summary.rows.length === 0) return null;
 

@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import type { AllowanceStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 
@@ -36,7 +37,7 @@ export function AllowancesPanel({ projectId }: { projectId: string }) {
   const currency = me?.company.currency ?? "USD";
   const money = (amount: number | string) => formatCurrency(amount, currency);
 
-  const [allowances, setAllowances] = useState<Allowance[] | null>(null);
+  const { data: allowances = null, reload: reloadAllowances } = useApi<Allowance[]>(`/projects/${projectId}/allowances`);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ name: "", budgetedAmount: "", notes: "" });
   const [chargeForms, setChargeForms] = useState<Record<string, { description: string; amount: string }>>({});
@@ -44,13 +45,8 @@ export function AllowancesPanel({ projectId }: { projectId: string }) {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<Allowance[]>(`/projects/${projectId}/allowances`).then(setAllowances);
+    void reloadAllowances();
   }
-
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();

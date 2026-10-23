@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { CONTRACT_CLAIM_TYPES, type ContractClaimStatus, type ContractClaimType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
@@ -45,7 +46,7 @@ export function ContractClaimsPanel({ projectId }: { projectId: string }) {
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const [claims, setClaims] = useState<ContractClaim[] | null>(null);
+  const { data: claims = null, reload: reloadClaims } = useApi<ContractClaim[]>(`/projects/${projectId}/contract-claims`);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<ClaimDetail | null>(null);
   const [adding, setAdding] = useState(false);
@@ -56,9 +57,8 @@ export function ContractClaimsPanel({ projectId }: { projectId: string }) {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<ContractClaim[]>(`/projects/${projectId}/contract-claims`).then(setClaims);
+    void reloadClaims();
   }
-  useEffect(load, [projectId]);
 
   async function toggleExpand(id: string) {
     if (expandedId === id) {

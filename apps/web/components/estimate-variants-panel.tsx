@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatCurrency } from "@/lib/format-currency";
 
 type ClientDecision = "pending" | "approved" | "rejected" | "countered";
@@ -22,13 +23,9 @@ export function EstimateVariantsPanel({ estimateId, currency }: { estimateId: st
   const tc = useTranslations("common");
   const router = useRouter();
 
-  const [variants, setVariants] = useState<VariantSummary[] | null>(null);
+  const { data: variants = null } = useApi<VariantSummary[]>(`/estimates/${estimateId}/variants`);
   const [variantLabel, setVariantLabel] = useState("");
   const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    apiFetch<VariantSummary[]>(`/estimates/${estimateId}/variants`).then(setVariants);
-  }, [estimateId]);
 
   async function createVariant(e: React.FormEvent) {
     e.preventDefault();

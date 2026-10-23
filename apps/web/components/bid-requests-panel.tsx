@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, apiUpload, downloadBlob, ApiError } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatCurrency } from "@/lib/format-currency";
@@ -82,8 +83,8 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const [requests, setRequests] = useState<BidRequest[] | null>(null);
-  const [subcontractors, setSubcontractors] = useState<Subcontractor[]>([]);
+  const { data: requests = null, reload: reloadRequests } = useApi<BidRequest[]>(`/bid-requests?projectId=${projectId}`);
+  const { data: subcontractors = [] } = useApi<Subcontractor[]>("/finance/subcontractors");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<BidRequestDetail | null>(null);
   const [leveling, setLeveling] = useState<Leveling | null>(null);
@@ -97,7 +98,7 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
   const [gaebError, setGaebError] = useState<string | null>(null);
 
   function load() {
-    apiFetch<BidRequest[]>(`/bid-requests?projectId=${projectId}`).then(setRequests);
+    void reloadRequests();
   }
 
   function loadDetail(id: string) {
@@ -126,12 +127,6 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
     setShowLeveling(true);
     if (!leveling) apiFetch<Leveling>(`/bid-requests/${bidRequestId}/leveling`).then(setLeveling);
   }
-
-  useEffect(() => {
-    load();
-    apiFetch<Subcontractor[]>("/finance/subcontractors").then(setSubcontractors);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
 
   function toggleSub(id: string) {
     setForm((f) => {

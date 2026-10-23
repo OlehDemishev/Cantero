@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, ApiError } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 
 interface Broadcast {
   id: string;
@@ -17,13 +18,11 @@ export function CrewSmsBroadcastPanel({ projectId }: { projectId: string }) {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [log, setLog] = useState<Broadcast[] | null>(null);
+  const { data: log = null, reload: reloadLog } = useApi<Broadcast[]>(`/crew-sms-broadcasts?projectId=${projectId}`);
 
   function load() {
-    apiFetch<Broadcast[]>(`/crew-sms-broadcasts?projectId=${projectId}`).then(setLog);
+    void reloadLog();
   }
-
-  useEffect(load, [projectId]);
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface OnboardingTemplateItem {
@@ -17,15 +18,13 @@ export function OnboardingTemplatePanel() {
   const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
-  const [items, setItems] = useState<OnboardingTemplateItem[] | null>(null);
+  const { data: items = null, reload: reloadItems } = useApi<OnboardingTemplateItem[]>("/company/onboarding-template");
   const [title, setTitle] = useState("");
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<OnboardingTemplateItem[]>("/company/onboarding-template").then(setItems);
+    void reloadItems();
   }
-
-  useEffect(load, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import type { EstimateAlternateStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatCurrency } from "@/lib/format-currency";
 
 interface Alternate {
@@ -31,19 +32,14 @@ export function EstimateAlternatesPanel({ estimateId, currency }: { estimateId: 
   const t = useTranslations("estimateAlternates");
   const tc = useTranslations("common");
 
-  const [data, setData] = useState<AlternatesResponse | null>(null);
+  const { data = null, reload: reloadData } = useApi<AlternatesResponse>(`/estimates/${estimateId}/alternates`);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", amount: "" });
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<AlternatesResponse>(`/estimates/${estimateId}/alternates`).then(setData);
+    void reloadData();
   }
-
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [estimateId]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();

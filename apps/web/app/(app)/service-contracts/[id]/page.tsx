@@ -1,10 +1,11 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { goBack } from "@/lib/back-navigation";
 
@@ -38,20 +39,14 @@ export default function ServiceContractDetailPage({ params }: { params: Promise<
   const tc = useTranslations("common");
   const router = useRouter();
 
-  const [contract, setContract] = useState<ServiceContract | null>(null);
-  const [workers, setWorkers] = useState<Worker[]>([]);
+  const { data: contract = null, reload: reloadContract } = useApi<ServiceContract>(`/service-contracts/${id}`);
+  const { data: workers = [] } = useApi<Worker[]>("/workers");
   const [visitForm, setVisitForm] = useState({ scheduledDate: "", technicianWorkerId: "" });
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<ServiceContract>(`/service-contracts/${id}`).then(setContract);
+    void reloadContract();
   }
-
-  useEffect(() => {
-    load();
-    apiFetch<Worker[]>("/workers").then(setWorkers);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
 
   async function scheduleVisit(e: React.FormEvent) {
     e.preventDefault();

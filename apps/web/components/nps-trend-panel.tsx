@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { chartColors, chartAxisProps, chartGridProps, chartTooltipProps } from "@/components/charts/chart-theme";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 
 interface NpsResponse {
@@ -26,11 +25,7 @@ interface NpsTrend {
 
 export function NpsTrendPanel() {
   const t = useTranslations("npsTrend");
-  const [data, setData] = useState<NpsTrend | null>(null);
-
-  useEffect(() => {
-    apiFetch<NpsTrend>("/nps-surveys/trend").then(setData);
-  }, []);
+  const { data = null } = useApi<NpsTrend>("/nps-surveys/trend");
 
   if (!data || data.totalResponses === 0) return null;
 

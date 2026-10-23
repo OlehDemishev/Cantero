@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -15,16 +16,14 @@ export function DataPrivacyPanel({ canExport, canDelete }: { canExport: boolean;
   const t = useTranslations("dataPrivacy");
   const confirm = useConfirm();
 
-  const [company, setCompany] = useState<Company | null>(null);
+  const { data: company = null, reload: reloadCompany } = useApi<Company>("/company");
   const [exporting, setExporting] = useState(false);
   const [exportingOperational, setExportingOperational] = useState(false);
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<Company>("/company").then(setCompany);
+    void reloadCompany();
   }
-
-  useEffect(load, []);
 
   async function exportData() {
     setExporting(true);

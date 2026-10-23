@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 
 interface GpsPing {
   id: string;
@@ -19,17 +20,15 @@ const PADDING = 20;
  * external map/tiles provider behind it, just a normalized polyline over the day's points. */
 export function EquipmentGpsPanel({ equipmentId }: { equipmentId: string }) {
   const t = useTranslations("equipment");
-  const [pings, setPings] = useState<GpsPing[] | null>(null);
+  const { data: pings = null, reload: reloadPings } = useApi<GpsPing[]>(`/equipment/${equipmentId}/gps-pings`);
   const [tracking, setTracking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const watchIdRef = useRef<number | null>(null);
   const lastSentAtRef = useRef(0);
 
   function load() {
-    apiFetch<GpsPing[]>(`/equipment/${equipmentId}/gps-pings`).then(setPings);
+    void reloadPings();
   }
-
-  useEffect(load, [equipmentId]);
 
   useEffect(() => {
     return () => {

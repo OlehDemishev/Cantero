@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { HR_CASE_ACTION_TYPES, HR_CASE_CATEGORIES, type HrCaseActionType, type HrCaseCategory, type HrCaseStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 
 interface HrCaseAction {
@@ -30,7 +31,7 @@ export function WorkerHrCasesPanel({ workerId }: { workerId: string }) {
   const tc = useTranslations("common");
   const th = useTranslations("hrCases");
 
-  const [hrCases, setHrCases] = useState<HrCase[] | null>(null);
+  const { data: hrCases = null, reload: reloadHrCases } = useApi<HrCase[]>(`/workers/${workerId}/hr-cases`);
   const [hrCaseExpandedId, setHrCaseExpandedId] = useState<string | null>(null);
   const [hrCaseDetail, setHrCaseDetail] = useState<HrCaseDetail | null>(null);
   const [hrCaseForm, setHrCaseForm] = useState({ category: "attendance" as HrCaseCategory, description: "" });
@@ -39,10 +40,8 @@ export function WorkerHrCasesPanel({ workerId }: { workerId: string }) {
   const [hrCaseBusy, setHrCaseBusy] = useState(false);
 
   function load() {
-    apiFetch<HrCase[]>(`/workers/${workerId}/hr-cases`).then(setHrCases);
+    void reloadHrCases();
   }
-
-  useEffect(load, [workerId]);
 
   async function openHrCase(e: React.FormEvent) {
     e.preventDefault();

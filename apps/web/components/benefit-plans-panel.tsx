@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { BENEFIT_PLAN_TYPES, type BenefitPlanType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 
@@ -29,15 +30,14 @@ export function BenefitPlansPanel() {
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const [plans, setPlans] = useState<Plan[] | null>(null);
+  const { data: plans = null, reload: reloadPlans } = useApi<Plan[]>("/benefits/plans");
   const [form, setForm] = useState({ name: "", type: "medical" as BenefitPlanType, carrier: "" });
   const [tierForms, setTierForms] = useState<Record<string, { name: string; monthlyEmployerCost: string; monthlyEmployeeCost: string }>>({});
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<Plan[]>("/benefits/plans").then(setPlans);
+    void reloadPlans();
   }
-  useEffect(load, []);
 
   async function createPlan(e: React.FormEvent) {
     e.preventDefault();

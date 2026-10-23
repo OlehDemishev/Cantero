@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 
 interface TriageItem {
   kind: "rfi" | "punch_list_item";
@@ -16,11 +15,7 @@ interface TriageItem {
 
 export function TriagePanel() {
   const t = useTranslations("dashboard");
-  const [items, setItems] = useState<TriageItem[] | null>(null);
-
-  useEffect(() => {
-    apiFetch<TriageItem[]>("/insights/triage").then(setItems);
-  }, []);
+  const { data: items = null } = useApi<TriageItem[]>("/insights/triage");
 
   if (!items || items.length === 0) return null;
 

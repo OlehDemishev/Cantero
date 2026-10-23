@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { useCan } from "@/lib/permissions";
 
@@ -28,19 +29,14 @@ export function TimeOffPanel() {
   const tc = useTranslations("common");
   const canDecide = useCan()("site.crewTime");
 
-  const [requests, setRequests] = useState<TimeOffRequest[] | null>(null);
-  const [workers, setWorkers] = useState<Worker[]>([]);
+  const { data: requests = null, reload: reloadRequests } = useApi<TimeOffRequest[]>("/time-off");
+  const { data: workers = [] } = useApi<Worker[]>("/workers");
   const [form, setForm] = useState({ workerId: "", type: "vacation" as TimeOffType, startDate: "", endDate: "", reason: "" });
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<TimeOffRequest[]>("/time-off").then(setRequests);
+    void reloadRequests();
   }
-
-  useEffect(() => {
-    load();
-    apiFetch<Worker[]>("/workers").then(setWorkers);
-  }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();

@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 
 interface ExpiringRegistration {
@@ -15,11 +14,7 @@ interface ExpiringRegistration {
 
 export function WarrantyExpiringPanel() {
   const t = useTranslations("warrantyRegistry");
-  const [items, setItems] = useState<ExpiringRegistration[] | null>(null);
-
-  useEffect(() => {
-    apiFetch<ExpiringRegistration[]>("/warranty-registrations/expiring?days=90").then(setItems);
-  }, []);
+  const { data: items = null } = useApi<ExpiringRegistration[]>("/warranty-registrations/expiring?days=90");
 
   if (!items || items.length === 0) return null;
 

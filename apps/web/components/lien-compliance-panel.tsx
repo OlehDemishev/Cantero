@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   LIEN_NOTICE_DIRECTIONS,
@@ -10,6 +10,7 @@ import {
   type LienNoticeType,
 } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
@@ -47,8 +48,8 @@ export function LienCompliancePanel({ projectId }: { projectId: string }) {
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const [notices, setNotices] = useState<LienNotice[] | null>(null);
-  const [filings, setFilings] = useState<MechanicsLienFiling[] | null>(null);
+  const { data: notices = null, reload: reloadNotices } = useApi<LienNotice[]>(`/projects/${projectId}/lien-notices`);
+  const { data: filings = null, reload: reloadFilings } = useApi<MechanicsLienFiling[]>(`/projects/${projectId}/lien-filings`);
   const [addingNotice, setAddingNotice] = useState(false);
   const [noticeForm, setNoticeForm] = useState({
     direction: "sent" as LienNoticeDirection,
@@ -62,10 +63,9 @@ export function LienCompliancePanel({ projectId }: { projectId: string }) {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<LienNotice[]>(`/projects/${projectId}/lien-notices`).then(setNotices);
-    apiFetch<MechanicsLienFiling[]>(`/projects/${projectId}/lien-filings`).then(setFilings);
+    void reloadNotices();
+    void reloadFilings();
   }
-  useEffect(load, [projectId]);
 
   async function createNotice(e: React.FormEvent) {
     e.preventDefault();

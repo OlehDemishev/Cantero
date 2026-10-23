@@ -6,6 +6,7 @@ import Link from "next/link";
 import { EXPENSE_CATEGORIES, type ExpenseCategory } from "@cantero/shared";
 import { CsvImportButton } from "@/components/csv-import-button";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -60,9 +61,9 @@ export default function BankReconciliationPage() {
   const currency = me?.company.currency ?? "";
 
   const [transactions, setTransactions] = useState<BankTransaction[] | null>(null);
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [rules, setRules] = useState<BankTransactionRule[] | null>(null);
+  const { data: invoices = [] } = useApi<Invoice[]>("/invoices");
+  const { data: expenses = [] } = useApi<Expense[]>("/expenses");
+  const { data: rules = null, reload: reloadRules } = useApi<BankTransactionRule[]>("/bank-transactions/rules");
   const [ruleForm, setRuleForm] = useState<{ pattern: string; category: ExpenseCategory }>({ pattern: "", category: "other" });
   const [showRules, setShowRules] = useState(false);
   const [filter, setFilter] = useState<"all" | "unreconciled">("unreconciled");
@@ -80,15 +81,10 @@ export default function BankReconciliationPage() {
   }
 
   function loadRules() {
-    apiFetch<BankTransactionRule[]>("/bank-transactions/rules").then(setRules);
+    void reloadRules();
   }
 
   useEffect(load, [filter]);
-  useEffect(() => {
-    apiFetch<Invoice[]>("/invoices").then(setInvoices);
-    apiFetch<Expense[]>("/expenses").then(setExpenses);
-    loadRules();
-  }, []);
 
   async function createRule(e: React.FormEvent) {
     e.preventDefault();

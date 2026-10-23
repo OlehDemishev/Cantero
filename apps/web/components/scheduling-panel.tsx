@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { DndContext, KeyboardSensor, PointerSensor, useDraggable, useDroppable, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { TASK_DEPENDENCY_TYPES, type TaskDependencyType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { CommentsThread } from "@/components/comments-thread";
 import { formatDate, formatDateWithOptions } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -44,9 +45,9 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
   const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
-  const [tasks, setTasks] = useState<Task[] | null>(null);
-  const [milestones, setMilestones] = useState<Milestone[] | null>(null);
-  const [criticalPath, setCriticalPath] = useState<CpmResult[]>([]);
+  const { data: tasks = null, reload: reloadTasks } = useApi<Task[]>(`/tasks?projectId=${projectId}`);
+  const { data: milestones = null, reload: reloadMilestones } = useApi<Milestone[]>(`/milestones?projectId=${projectId}`);
+  const { data: criticalPath = [], reload: reloadCriticalPath } = useApi<CpmResult[]>(`/tasks/critical-path?projectId=${projectId}`);
   const [taskForm, setTaskForm] = useState({ name: "", startDate: "", dueDate: "", isOutdoorWork: false });
   const [milestoneForm, setMilestoneForm] = useState({ name: "", dueDate: "" });
   const [busy, setBusy] = useState(false);
@@ -56,12 +57,10 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
   const [commentsTaskId, setCommentsTaskId] = useState<string | null>(null);
 
   function load() {
-    apiFetch<Task[]>(`/tasks?projectId=${projectId}`).then(setTasks);
-    apiFetch<Milestone[]>(`/milestones?projectId=${projectId}`).then(setMilestones);
-    apiFetch<CpmResult[]>(`/tasks/critical-path?projectId=${projectId}`).then(setCriticalPath);
+    void reloadTasks();
+    void reloadMilestones();
+    void reloadCriticalPath();
   }
-
-  useEffect(load, [projectId]);
 
   const criticalTaskIds = new Set(criticalPath.filter((r) => r.critical).map((r) => r.id));
 

@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { SURETY_BOND_TYPES, type SuretyBondStatus, type SuretyBondType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
@@ -31,15 +32,14 @@ export function SuretyBondsPanel({ projectId }: { projectId: string }) {
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const [bonds, setBonds] = useState<SuretyBond[] | null>(null);
+  const { data: bonds = null, reload: reloadBonds } = useApi<SuretyBond[]>(`/surety-bonds?projectId=${projectId}`);
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ type: "performance" as SuretyBondType, suretyName: "", bondNumber: "", penalSum: "", issueDate: "", expiryDate: "" });
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<SuretyBond[]>(`/surety-bonds?projectId=${projectId}`).then(setBonds);
+    void reloadBonds();
   }
-  useEffect(load, [projectId]);
 
   async function createBond(e: React.FormEvent) {
     e.preventDefault();

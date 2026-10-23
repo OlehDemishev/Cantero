@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { WEATHER_CONDITIONS, type WeatherCondition } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { PhotoAttachments } from "@/components/photo-attachments";
 import { VoiceInputButton } from "@/components/voice-input-button";
 import { formatDate } from "@/lib/format-date";
@@ -38,7 +39,7 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("dailyLogs");
   const tc = useTranslations("common");
 
-  const [logs, setLogs] = useState<DailyLog[] | null>(null);
+  const { data: logs = null, reload: reloadLogs } = useApi<DailyLog[]>(`/daily-logs?projectId=${projectId}`);
   const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -47,10 +48,8 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
   const [error, setError] = useState<string | null>(null);
 
   function load() {
-    apiFetch<DailyLog[]>(`/daily-logs?projectId=${projectId}`).then(setLogs);
+    void reloadLogs();
   }
-
-  useEffect(load, [projectId]);
 
   function startEdit(log: DailyLog) {
     setEditingId(log.id);

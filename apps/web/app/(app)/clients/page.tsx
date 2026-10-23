@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { CsvImportButton } from "@/components/csv-import-button";
@@ -9,6 +9,7 @@ import { CrmPipelinePanel } from "@/components/crm-pipeline-panel";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ClientsIcon, CloseIcon } from "@/components/nav-icons";
 import { apiFetch, ApiError } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
@@ -55,10 +56,10 @@ export default function ClientsPage() {
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const [clients, setClients] = useState<Client[] | null>(null);
-  const [upcoming, setUpcoming] = useState<UpcomingReminder[] | null>(null);
-  const [summary, setSummary] = useState<PipelineSummaryRow[] | null>(null);
-  const [workers, setWorkers] = useState<Worker[]>([]);
+  const { data: clients = null, reload: reloadClients } = useApi<Client[]>("/clients");
+  const { data: upcoming = null, reload: reloadUpcoming } = useApi<UpcomingReminder[]>("/clients/reminders/upcoming");
+  const { data: summary = null, reload: reloadSummary } = useApi<PipelineSummaryRow[]>("/clients/pipeline-summary");
+  const { data: workers = [] } = useApi<Worker[]>("/workers");
   const [form, setForm] = useState({ name: "", email: "", phone: "", estimatedValue: "", ownerWorkerId: "" });
   const [submitting, setSubmitting] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -74,15 +75,10 @@ export default function ClientsPage() {
   const [dragOverStage, setDragOverStage] = useState<ClientStage | null>(null);
 
   function load() {
-    apiFetch<Client[]>("/clients").then(setClients);
-    apiFetch<UpcomingReminder[]>("/clients/reminders/upcoming").then(setUpcoming);
-    apiFetch<PipelineSummaryRow[]>("/clients/pipeline-summary").then(setSummary);
+    void reloadClients();
+    void reloadUpcoming();
+    void reloadSummary();
   }
-
-  useEffect(() => {
-    load();
-    apiFetch<Worker[]>("/workers").then(setWorkers);
-  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

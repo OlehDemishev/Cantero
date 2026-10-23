@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -37,9 +38,9 @@ export function TrainingCatalogPanel() {
   const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
-  const [courses, setCourses] = useState<TrainingCourse[] | null>(null);
-  const [workers, setWorkers] = useState<Worker[]>([]);
-  const [gaps, setGaps] = useState<ComplianceGap[] | null>(null);
+  const { data: courses = null, reload: reloadCourses } = useApi<TrainingCourse[]>("/training/courses");
+  const { data: workers = [] } = useApi<Worker[]>("/workers");
+  const { data: gaps = null, reload: reloadGaps } = useApi<ComplianceGap[]>("/training/compliance-gaps");
   const [form, setForm] = useState({ title: "", category: "", validityMonths: "" });
   const [busy, setBusy] = useState(false);
   const [expandedCourseId, setExpandedCourseId] = useState<string | null>(null);
@@ -47,14 +48,9 @@ export function TrainingCatalogPanel() {
   const [enrollWorkerId, setEnrollWorkerId] = useState("");
 
   function load() {
-    apiFetch<TrainingCourse[]>("/training/courses").then(setCourses);
-    apiFetch<ComplianceGap[]>("/training/compliance-gaps").then(setGaps);
+    void reloadCourses();
+    void reloadGaps();
   }
-
-  useEffect(() => {
-    load();
-    apiFetch<Worker[]>("/workers").then(setWorkers);
-  }, []);
 
   async function createCourse(e: React.FormEvent) {
     e.preventDefault();

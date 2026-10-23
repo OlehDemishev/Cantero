@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
 
@@ -21,11 +20,7 @@ interface Rental {
 
 export function EquipmentRentalHistoryPanel({ equipmentId, currency }: { equipmentId: string; currency: string }) {
   const t = useTranslations("equipment");
-  const [rentals, setRentals] = useState<Rental[] | null>(null);
-
-  useEffect(() => {
-    apiFetch<Rental[]>(`/equipment/${equipmentId}/rentals`).then(setRentals);
-  }, [equipmentId]);
+  const { data: rentals = null } = useApi<Rental[]>(`/equipment/${equipmentId}/rentals`);
 
   return (
     <section className="card lg:col-span-2">

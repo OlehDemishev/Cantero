@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatCurrency } from "@/lib/format-currency";
 
@@ -22,13 +21,8 @@ interface ToolLiability {
 export function WorkerToolCheckoutsPanel({ workerId, currency }: { workerId: string; currency: string }) {
   const tt = useTranslations("toolCrib");
   const t = useTranslations("team");
-  const [toolCheckouts, setToolCheckouts] = useState<ToolCheckout[] | null>(null);
-  const [toolLiability, setToolLiability] = useState<ToolLiability | null>(null);
-
-  useEffect(() => {
-    apiFetch<ToolCheckout[]>(`/workers/${workerId}/tool-checkouts`).then(setToolCheckouts);
-    apiFetch<ToolLiability>(`/workers/${workerId}/tool-liability`).then(setToolLiability);
-  }, [workerId]);
+  const { data: toolCheckouts = null } = useApi<ToolCheckout[]>(`/workers/${workerId}/tool-checkouts`);
+  const { data: toolLiability = null } = useApi<ToolLiability>(`/workers/${workerId}/tool-liability`);
 
   if (toolCheckouts === null) return null;
 

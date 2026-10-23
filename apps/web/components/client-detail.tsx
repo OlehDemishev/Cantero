@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { CustomFieldsValuesPanel } from "@/components/custom-fields-values-panel";
@@ -10,6 +10,7 @@ import { ClientTaxPanel } from "@/components/client-tax-panel";
 import { ClientActivityPanel } from "@/components/client-activity-panel";
 import { ClientRemindersPanel } from "@/components/client-reminders-panel";
 import { apiFetch, ApiError } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { goBack } from "@/lib/back-navigation";
 import { useCan } from "@/lib/permissions";
@@ -37,7 +38,7 @@ export function ClientDetail({ clientId }: { clientId: string }) {
   const currency = me?.company.currency ?? "";
   const isManager = useCan()("clients.manage");
 
-  const [client, setClient] = useState<Client | null>(null);
+  const { data: client = null, reload: reloadClient } = useApi<Client>(`/clients/${clientId}`);
   const [busy, setBusy] = useState(false);
   const [losingStage, setLosingStage] = useState(false);
   const [lostReasonDraft, setLostReasonDraft] = useState("");
@@ -46,10 +47,8 @@ export function ClientDetail({ clientId }: { clientId: string }) {
   const [convertForm, setConvertForm] = useState({ name: "", address: "" });
 
   function load() {
-    apiFetch<Client>(`/clients/${clientId}`).then(setClient);
+    void reloadClient();
   }
-
-  useEffect(load, [clientId]);
 
   async function moveStage(stage: ClientStage) {
     if (stage === "lost") {

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -16,15 +17,13 @@ export function WorkerCertificationsPanel({ workerId }: { workerId: string }) {
   const t = useTranslations("team");
   const confirm = useConfirm();
   const tc = useTranslations("common");
-  const [certifications, setCertifications] = useState<Certification[] | null>(null);
+  const { data: certifications = null, reload: reloadCertifications } = useApi<Certification[]>(`/workers/${workerId}/certifications`);
   const [certForm, setCertForm] = useState({ name: "", expiresAt: "" });
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<Certification[]>(`/workers/${workerId}/certifications`).then(setCertifications);
+    void reloadCertifications();
   }
-
-  useEffect(load, [workerId]);
 
   async function addCertification(e: React.FormEvent) {
     e.preventDefault();

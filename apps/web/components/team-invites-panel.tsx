@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useAssignableRoles } from "@/lib/permissions";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -16,17 +17,15 @@ interface Invite {
 export function TeamInvitesPanel() {
   const t = useTranslations("settings");
   const confirm = useConfirm();
-  const [invites, setInvites] = useState<Invite[] | null>(null);
+  const { data: invites = null, reload: reloadInvites } = useApi<Invite[]>("/company/invites");
   const { roles: assignableRoles } = useAssignableRoles();
   const [inviteForm, setInviteForm] = useState({ email: "", role: "worker" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function load() {
-    apiFetch<Invite[]>("/company/invites").then(setInvites);
+    void reloadInvites();
   }
-
-  useEffect(load, []);
 
   async function sendInvite(e: React.FormEvent) {
     e.preventDefault();

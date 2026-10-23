@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import type { PrequalificationStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 
 interface Prequalification {
@@ -30,7 +31,7 @@ export function SubcontractorPrequalificationPanel({ subcontractorId }: { subcon
   const t = useTranslations("subcontractorPrequalification");
   const tc = useTranslations("common");
 
-  const [cycles, setCycles] = useState<Prequalification[] | null>(null);
+  const { data: cycles = null, reload: reloadCycles } = useApi<Prequalification[]>(`/subcontractors/${subcontractorId}/prequalifications`);
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ licenseNumber: "", bondingCapacity: "", yearsInBusiness: "", safetyEmrRating: "", referencesNotes: "" });
   const [decidingId, setDecidingId] = useState<string | null>(null);
@@ -38,9 +39,8 @@ export function SubcontractorPrequalificationPanel({ subcontractorId }: { subcon
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<Prequalification[]>(`/subcontractors/${subcontractorId}/prequalifications`).then(setCycles);
+    void reloadCycles();
   }
-  useEffect(load, [subcontractorId]);
 
   async function create(e: React.FormEvent) {
     e.preventDefault();

@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 
@@ -23,11 +22,7 @@ export function DiversitySpendPanel() {
   const currency = me?.company.currency ?? "USD";
   const money = (amount: number) => formatCurrency(amount, currency);
 
-  const [report, setReport] = useState<DiversitySpendReport | null>(null);
-
-  useEffect(() => {
-    apiFetch<DiversitySpendReport>("/finance/subcontractors/diversity-spend-report").then(setReport);
-  }, []);
+  const { data: report = null } = useApi<DiversitySpendReport>("/finance/subcontractors/diversity-spend-report");
 
   if (!report || report.totalSpend === 0) return null;
 

@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDateTime } from "@/lib/format-date";
 
 interface Assignment {
@@ -20,11 +19,7 @@ interface Assignment {
 export function EquipmentAssignmentHistoryPanel({ equipmentId }: { equipmentId: string }) {
   const t = useTranslations("equipment");
   const tc = useTranslations("common");
-  const [assignments, setAssignments] = useState<Assignment[] | null>(null);
-
-  useEffect(() => {
-    apiFetch<Assignment[]>(`/equipment/${equipmentId}/assignments`).then(setAssignments);
-  }, [equipmentId]);
+  const { data: assignments = null } = useApi<Assignment[]>(`/equipment/${equipmentId}/assignments`);
 
   return (
     <section className="card lg:col-span-2">

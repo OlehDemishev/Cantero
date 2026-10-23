@@ -6,6 +6,7 @@ import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Too
 import { chartColors, chartAxisProps, chartGridProps, chartTooltipProps } from "@/components/charts/chart-theme";
 import { AGGREGATE_REPORT_DATASETS, REPORT_DATASETS, type ReportDataset } from "@cantero/shared";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { resetStateInEffect } from "@/lib/effect-reset";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -53,7 +54,7 @@ export function CustomReportsPanel() {
   const tc = useTranslations("common");
   const fieldLabel = useReportFieldLabel();
 
-  const [saved, setSaved] = useState<SavedReport[] | null>(null);
+  const { data: saved = null, reload: reloadSaved } = useApi<SavedReport[]>("/custom-reports");
   const [dataset, setDataset] = useState<ReportDataset>("projects");
   const [fields, setFields] = useState<ReportField[]>([]);
   const [columns, setColumns] = useState<string[]>([]);
@@ -66,10 +67,8 @@ export function CustomReportsPanel() {
   const [savedResult, setSavedResult] = useState<{ id: string; result: RunResult } | null>(null);
 
   function load() {
-    apiFetch<SavedReport[]>("/custom-reports").then(setSaved);
+    void reloadSaved();
   }
-
-  useEffect(load, []);
 
   useEffect(() => {
     apiFetch<ReportField[]>(`/custom-reports/fields?dataset=${dataset}`).then((f) => {

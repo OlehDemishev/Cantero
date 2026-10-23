@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import type { LoanStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency, formatNumber } from "@/lib/format-currency";
@@ -54,9 +55,9 @@ export default function LoansPage() {
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const [loans, setLoans] = useState<Loan[] | null>(null);
-  const [summary, setSummary] = useState<DebtServiceSummary | null>(null);
-  const [equipment, setEquipment] = useState<Equipment[]>([]);
+  const { data: loans = null, reload: reloadLoans } = useApi<Loan[]>("/loans");
+  const { data: summary = null, reload: reloadSummary } = useApi<DebtServiceSummary>("/loans/debt-service-summary");
+  const { data: equipment = [] } = useApi<Equipment[]>("/equipment");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<LoanDetail | null>(null);
   const [adding, setAdding] = useState(false);
@@ -64,13 +65,9 @@ export default function LoansPage() {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<Loan[]>("/loans").then(setLoans);
-    apiFetch<DebtServiceSummary>("/loans/debt-service-summary").then(setSummary);
+    void reloadLoans();
+    void reloadSummary();
   }
-  useEffect(load, []);
-  useEffect(() => {
-    apiFetch<Equipment[]>("/equipment").then(setEquipment);
-  }, []);
 
   async function createLoan(e: React.FormEvent) {
     e.preventDefault();

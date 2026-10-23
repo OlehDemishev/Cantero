@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, ApiError } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface OffboardingTemplateItem {
@@ -17,16 +18,14 @@ export function OffboardingTemplatePanel() {
   const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
-  const [items, setItems] = useState<OffboardingTemplateItem[] | null>(null);
+  const { data: items = null, reload: reloadItems } = useApi<OffboardingTemplateItem[]>("/company/offboarding-template");
   const [title, setTitle] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function load() {
-    apiFetch<OffboardingTemplateItem[]>("/company/offboarding-template").then(setItems);
+    void reloadItems();
   }
-
-  useEffect(load, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

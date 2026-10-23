@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface UnitOfMeasure {
@@ -22,16 +23,14 @@ export default function UnitsOfMeasurePage() {
   const tc = useTranslations("common");
   const tl = useTranslations("labels");
 
-  const [units, setUnits] = useState<UnitOfMeasure[] | null>(null);
+  const { data: units = null, reload: reloadUnits } = useApi<UnitOfMeasure[]>("/materials/units-of-measure");
   const [form, setForm] = useState(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function load() {
-    apiFetch<UnitOfMeasure[]>("/materials/units-of-measure").then(setUnits);
+    void reloadUnits();
   }
-
-  useEffect(load, []);
 
   const baseUnits = (units ?? []).filter((u) => u.baseUnitId === null);
   const unitById = new Map((units ?? []).map((u) => [u.id, u]));

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDateTime } from "@/lib/format-date";
 
 type ActivityType = "note" | "call" | "meeting" | "email";
@@ -22,20 +23,18 @@ export function ClientActivityPanel({ clientId }: { clientId: string }) {
   const t = useTranslations("clients");
   const tc = useTranslations("common");
 
-  const [activities, setActivities] = useState<Activity[] | null>(null);
+  const { data: activities = null, reload: reloadActivities } = useApi<Activity[]>(`/clients/${clientId}/activities`);
   const [activityForm, setActivityForm] = useState({ type: "note" as ActivityType, content: "" });
   const [notesInput, setNotesInput] = useState("");
   const [notesSaved, setNotesSaved] = useState(false);
   const [busy, setBusy] = useState(false);
 
   function loadActivities() {
-    apiFetch<Activity[]>(`/clients/${clientId}/activities`).then(setActivities);
+    void reloadActivities();
   }
 
   useEffect(() => {
-    loadActivities();
     apiFetch<Client>(`/clients/${clientId}`).then((c) => setNotesInput(c.notes ?? ""));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientId]);
 
   async function addActivity(e: React.FormEvent) {

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { VEHICLE_TYPES, type VehicleInspectionResult, type VehicleType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { formatNumber } from "@/lib/format-currency";
 
@@ -66,7 +67,7 @@ export default function FleetPage() {
   const tl = useTranslations("labels");
 
   const [vehicles, setVehicles] = useState<Vehicle[] | null>(null);
-  const [workers, setWorkers] = useState<Worker[]>([]);
+  const { data: workers = [] } = useApi<Worker[]>("/workers");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<VehicleDetail | null>(null);
   const [adding, setAdding] = useState(false);
@@ -90,9 +91,6 @@ export default function FleetPage() {
     apiFetch<FuelEfficiencyRow[]>("/vehicles/fuel-efficiency-report").then(setFuelEfficiency);
   }
   useEffect(load, []);
-  useEffect(() => {
-    apiFetch<Worker[]>("/workers").then(setWorkers);
-  }, []);
 
   async function createVehicle(e: React.FormEvent) {
     e.preventDefault();

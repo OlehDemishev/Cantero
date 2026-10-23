@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 
 const markerIcon = L.icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -30,11 +29,7 @@ const DEFAULT_ZOOM = 4;
 
 export function ProjectMapPanel() {
   const t = useTranslations("portfolio");
-  const [projects, setProjects] = useState<Project[] | null>(null);
-
-  useEffect(() => {
-    apiFetch<Project[]>("/projects").then(setProjects);
-  }, []);
+  const { data: projects = null } = useApi<Project[]>("/projects");
 
   if (!projects) return null;
 

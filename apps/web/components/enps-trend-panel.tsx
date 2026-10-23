@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { chartColors, chartAxisProps, chartGridProps, chartTooltipProps } from "@/components/charts/chart-theme";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 
 interface EnpsComment {
   comment: string | null;
@@ -28,13 +27,8 @@ interface EnpsMonthBucket {
 
 export function EnpsTrendPanel() {
   const t = useTranslations("enpsTrend");
-  const [data, setData] = useState<EnpsTrend | null>(null);
-  const [history, setHistory] = useState<EnpsMonthBucket[] | null>(null);
-
-  useEffect(() => {
-    apiFetch<EnpsTrend>("/enps-surveys/trend").then(setData);
-    apiFetch<EnpsMonthBucket[]>("/enps-surveys/trend-by-period").then(setHistory);
-  }, []);
+  const { data = null } = useApi<EnpsTrend>("/enps-surveys/trend");
+  const { data: history = null } = useApi<EnpsMonthBucket[]>("/enps-surveys/trend-by-period");
 
   if (!data || data.totalResponses === 0) return null;
 

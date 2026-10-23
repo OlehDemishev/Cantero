@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatCurrency } from "@/lib/format-currency";
 
 interface AgingInvoice {
@@ -27,11 +26,7 @@ function round2(n: number) {
 export function InvoiceAgingReportPanel({ currency }: { currency: string }) {
   const t = useTranslations("reports");
   const tc = useTranslations("common");
-  const [aging, setAging] = useState<InvoiceAging | null>(null);
-
-  useEffect(() => {
-    apiFetch<InvoiceAging>("/reports/invoice-aging").then(setAging);
-  }, []);
+  const { data: aging = null } = useApi<InvoiceAging>("/reports/invoice-aging");
 
   return (
     <>

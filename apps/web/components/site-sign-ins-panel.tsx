@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDateTime } from "@/lib/format-date";
 
 interface SignIn {
@@ -16,15 +17,13 @@ interface SignIn {
 
 export function SiteSignInsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("siteSignIns");
-  const [signIns, setSignIns] = useState<SignIn[] | null>(null);
+  const { data: signIns = null, reload: reloadSignIns } = useApi<SignIn[]>(`/projects/${projectId}/site-sign-ins`);
   const [form, setForm] = useState({ name: "", visitorCompany: "", purpose: "" });
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<SignIn[]>(`/projects/${projectId}/site-sign-ins`).then(setSignIns);
+    void reloadSignIns();
   }
-
-  useEffect(load, [projectId]);
 
   async function signIn(e: React.FormEvent) {
     e.preventDefault();

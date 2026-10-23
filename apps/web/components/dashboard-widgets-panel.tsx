@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { DASHBOARD_WIDGET_TYPES, type DashboardWidgetType } from "@cantero/shared";
 import { apiFetch, downloadBlob, ApiError } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -30,21 +31,16 @@ export function DashboardWidgetsPanel() {
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const [widgets, setWidgets] = useState<Widget[] | null>(null);
-  const [customReports, setCustomReports] = useState<CustomReportOption[]>([]);
+  const { data: widgets = null, setData: setWidgets, reload: reloadWidgets } = useApi<Widget[]>("/dashboard-widgets");
+  const { data: customReports = [] } = useApi<CustomReportOption[]>("/custom-reports");
   const [newType, setNewType] = useState<DashboardWidgetType>("revenue_trend");
   const [newCustomReportId, setNewCustomReportId] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function load() {
-    apiFetch<Widget[]>("/dashboard-widgets").then(setWidgets);
+    void reloadWidgets();
   }
-
-  useEffect(() => {
-    load();
-    apiFetch<CustomReportOption[]>("/custom-reports").then(setCustomReports);
-  }, []);
 
   async function addWidget(e: React.FormEvent) {
     e.preventDefault();

@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { API_KEY_SCOPES, type ApiKeyScope } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -24,7 +25,7 @@ export function ApiKeysPanel() {
   const tc = useTranslations("common");
   // Dataset scopes read as their /v1 path; SCIM is a different kind of access, so it gets a name.
   const scopeLabel = (scope: string) => (scope === "scim" ? t("apiKeyScopeScim") : scope);
-  const [apiKeys, setApiKeys] = useState<ApiKey[] | null>(null);
+  const { data: apiKeys = null, reload: reloadApiKeys } = useApi<ApiKey[]>("/company/api-keys");
   const [newKeyName, setNewKeyName] = useState("");
   const [newKeyScopes, setNewKeyScopes] = useState<ApiKeyScope[]>([]);
   const [newKeyExpiresAt, setNewKeyExpiresAt] = useState("");
@@ -33,10 +34,8 @@ export function ApiKeysPanel() {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<ApiKey[]>("/company/api-keys").then(setApiKeys);
+    void reloadApiKeys();
   }
-
-  useEffect(load, []);
 
   async function createApiKey(e: React.FormEvent) {
     e.preventDefault();

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 
 interface RevenueTrendRow {
   month: string;
@@ -12,11 +12,7 @@ interface RevenueTrendRow {
 export function RevenueTrendPanel() {
   const t = useTranslations("reports");
   const tc = useTranslations("common");
-  const [revenueTrend, setRevenueTrend] = useState<RevenueTrendRow[] | null>(null);
-
-  useEffect(() => {
-    apiFetch<RevenueTrendRow[]>("/reports/revenue-trend").then(setRevenueTrend);
-  }, []);
+  const { data: revenueTrend = null } = useApi<RevenueTrendRow[]>("/reports/revenue-trend");
 
   async function downloadTaxSummary() {
     const blob = await apiFetch<Blob>("/reports/tax-summary");

@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { COMPANY_DOCUMENT_TYPES, type CompanyDocumentType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { CertificateAttachment } from "@/components/certificate-attachment";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -24,18 +25,16 @@ export function CompanyCoiPanel({ canManage }: { canManage: boolean }) {
   const confirm = useConfirm();
   const tc = useTranslations("common");
 
-  const [company, setCompany] = useState<Company | null>(null);
-  const [documents, setDocuments] = useState<CompanyDocument[] | null>(null);
+  const { data: company = null, reload: reloadCompany } = useApi<Company>("/company");
+  const { data: documents = null, reload: reloadDocuments } = useApi<CompanyDocument[]>("/company/coi-documents");
   const [docForm, setDocForm] = useState({ type: "general_liability_insurance" as CompanyDocumentType, name: "", expiresAt: "" });
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
 
   function load() {
-    apiFetch<Company>("/company").then(setCompany);
-    apiFetch<CompanyDocument[]>("/company/coi-documents").then(setDocuments);
+    void reloadCompany();
+    void reloadDocuments();
   }
-
-  useEffect(load, []);
 
   async function addDocument(e: React.FormEvent) {
     e.preventDefault();

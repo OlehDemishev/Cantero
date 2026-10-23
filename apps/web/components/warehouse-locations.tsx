@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface WarehouseLocation {
@@ -53,16 +54,14 @@ export function WarehouseLocations({ warehouseId }: { warehouseId: string }) {
   const t = useTranslations("warehouses");
   const confirm = useConfirm();
   const td = useTranslations("dialog");
-  const [locations, setLocations] = useState<WarehouseLocation[] | null>(null);
+  const { data: locations = null, reload: reloadLocations } = useApi<WarehouseLocation[]>(`/materials/warehouse-locations?warehouseId=${warehouseId}`);
   const [form, setForm] = useState({ parentId: "", kind: "zone" as (typeof KINDS)[number], code: "" });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<WarehouseLocation[]>(`/materials/warehouse-locations?warehouseId=${warehouseId}`).then(setLocations);
+    void reloadLocations();
   }
-
-  useEffect(load, [warehouseId]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

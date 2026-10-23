@@ -11,6 +11,7 @@ import { EquipmentFuelLogsPanel } from "@/components/equipment-fuel-logs-panel";
 import { EquipmentRentalHistoryPanel } from "@/components/equipment-rental-history-panel";
 import { EquipmentAssignmentHistoryPanel } from "@/components/equipment-assignment-history-panel";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
@@ -101,8 +102,8 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
   const currency = me?.company.currency ?? "";
 
   const [equipment, setEquipment] = useState<Equipment | null>(null);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [workers, setWorkers] = useState<Worker[]>([]);
+  const { data: projects = [] } = useApi<Project[]>("/projects");
+  const { data: workers = [] } = useApi<Worker[]>("/workers");
   const [rentals, setRentals] = useState<Rental[] | null>(null);
   const [checkOutForm, setCheckOutForm] = useState({ projectId: "", workerId: "" });
   const [rentalForm, setRentalForm] = useState({ renterName: "", renterContact: "", dailyRate: "", expectedReturnDate: "", notes: "" });
@@ -132,8 +133,6 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
 
   useEffect(() => {
     load();
-    apiFetch<Project[]>("/projects").then(setProjects);
-    apiFetch<Worker[]>("/workers").then(setWorkers);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 

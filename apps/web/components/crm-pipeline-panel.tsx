@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency, formatNumber } from "@/lib/format-currency";
 
@@ -49,15 +48,9 @@ export function CrmPipelinePanel() {
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const [forecast, setForecast] = useState<Forecast | null>(null);
-  const [funnel, setFunnel] = useState<Funnel | null>(null);
-  const [leaderboard, setLeaderboard] = useState<LeaderboardRow[] | null>(null);
-
-  useEffect(() => {
-    apiFetch<Forecast>("/clients/pipeline-forecast").then(setForecast);
-    apiFetch<Funnel>("/clients/funnel-report").then(setFunnel);
-    apiFetch<LeaderboardRow[]>("/clients/owner-leaderboard").then(setLeaderboard);
-  }, []);
+  const { data: forecast = null } = useApi<Forecast>("/clients/pipeline-forecast");
+  const { data: funnel = null } = useApi<Funnel>("/clients/funnel-report");
+  const { data: leaderboard = null } = useApi<LeaderboardRow[]>("/clients/owner-leaderboard");
 
   return (
     <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-3">

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useAssignableRoles } from "@/lib/permissions";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -22,19 +22,17 @@ export function TeamMembersPanel({ isManager }: { isManager: boolean }) {
   const t = useTranslations("settings");
   const confirm = useConfirm();
   const tc = useTranslations("common");
-  const [members, setMembers] = useState<Member[] | null>(null);
-  const [customRoles, setCustomRoles] = useState<CustomRole[]>([]);
+  const { data: members = null, reload: reloadMembers } = useApi<Member[]>("/company/members");
+  const { data: customRoles = [], reload: reloadCustomRoles } = useApi<CustomRole[]>("/company/custom-roles");
   const { roles: assignableRoles, mayTouchAdmin } = useAssignableRoles();
   const isAdminLevel = (customRoleId: string | undefined) => !!customRoles.find((cr) => cr.id === customRoleId)?.basePermissions.includes("admin");
   // Owner rows are never editable; admin rows (or an admin-based custom role) only by the owner.
   const editable = (m: Member) => isManager && m.role !== "owner" && (mayTouchAdmin || (m.role !== "admin" && !isAdminLevel(m.customRole?.id)));
 
   function load() {
-    apiFetch<Member[]>("/company/members").then(setMembers);
-    apiFetch<CustomRole[]>("/company/custom-roles").then(setCustomRoles);
+    void reloadMembers();
+    void reloadCustomRoles();
   }
-
-  useEffect(load, []);
 
   async function updateMemberRole(userId: string, role: string) {
     await apiFetch(`/company/members/${userId}`, { method: "PATCH", body: JSON.stringify({ role }) });

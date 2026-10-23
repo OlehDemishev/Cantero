@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 
 interface RateItemAccuracy {
   rateCatalogItemId: string;
@@ -38,11 +37,7 @@ function DeviationBadge({ percent }: { percent: number | null }) {
  * recorded actuals (TimeEntry, StockMovement) — purely historical, no external AI involved. */
 export function EstimateAccuracyPanel() {
   const t = useTranslations("estimateAccuracy");
-  const [rows, setRows] = useState<RateItemAccuracy[] | null>(null);
-
-  useEffect(() => {
-    apiFetch<RateItemAccuracy[]>("/estimate-accuracy/rate-items").then(setRows);
-  }, []);
+  const { data: rows = null } = useApi<RateItemAccuracy[]>("/estimate-accuracy/rate-items");
 
   if (rows && rows.length === 0) return null;
 

@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { INCIDENT_SEVERITIES, OSHA_CASE_TYPES, type IncidentSeverity, type OshaCaseType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { PhotoAttachments } from "@/components/photo-attachments";
 import { TemplatePicker } from "@/components/template-picker";
 import { PrintButton } from "@/components/ui/print-button";
@@ -80,10 +81,10 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("safety");
   const tc = useTranslations("common");
 
-  const [incidents, setIncidents] = useState<IncidentReport[] | null>(null);
-  const [briefings, setBriefings] = useState<SafetyBriefing[] | null>(null);
-  const [jhas, setJhas] = useState<Jha[] | null>(null);
-  const [workers, setWorkers] = useState<Worker[]>([]);
+  const { data: incidents = null, reload: reloadIncidents } = useApi<IncidentReport[]>(`/safety/incidents?projectId=${projectId}`);
+  const { data: briefings = null, reload: reloadBriefings } = useApi<SafetyBriefing[]>(`/safety/briefings?projectId=${projectId}`);
+  const { data: jhas = null, reload: reloadJhas } = useApi<Jha[]>(`/safety/jha?projectId=${projectId}`);
+  const { data: workers = [] } = useApi<Worker[]>("/workers");
   const [creatingIncident, setCreatingIncident] = useState(false);
   const [quickNearMiss, setQuickNearMiss] = useState(false);
   const [creatingBriefing, setCreatingBriefing] = useState(false);
@@ -94,16 +95,10 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<IncidentReport[]>(`/safety/incidents?projectId=${projectId}`).then(setIncidents);
-    apiFetch<SafetyBriefing[]>(`/safety/briefings?projectId=${projectId}`).then(setBriefings);
-    apiFetch<Jha[]>(`/safety/jha?projectId=${projectId}`).then(setJhas);
+    void reloadIncidents();
+    void reloadBriefings();
+    void reloadJhas();
   }
-
-  useEffect(() => {
-    load();
-    apiFetch<Worker[]>("/workers").then(setWorkers);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
 
   async function submitIncident(e: React.FormEvent) {
     e.preventDefault();

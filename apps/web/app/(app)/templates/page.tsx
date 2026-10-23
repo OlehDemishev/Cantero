@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import type { ChecklistTemplateType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -42,7 +43,7 @@ export default function TemplatesPage() {
   const confirm = useConfirm();
   const tc = useTranslations("common");
 
-  const [templates, setTemplates] = useState<Template[] | null>(null);
+  const { data: templates = null, reload: reloadTemplates } = useApi<Template[]>("/checklist-templates");
   const [type, setType] = useState<ChecklistTemplateType>("punch_list");
   const [name, setName] = useState("");
   const [defaultSubject, setDefaultSubject] = useState("");
@@ -57,10 +58,8 @@ export default function TemplatesPage() {
   const [history, setHistory] = useState<Template[] | null>(null);
 
   function load() {
-    apiFetch<Template[]>("/checklist-templates").then(setTemplates);
+    void reloadTemplates();
   }
-
-  useEffect(load, []);
 
   function resetForm() {
     setName("");

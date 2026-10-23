@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { TimeOffPanel } from "@/components/time-off-panel";
 import { CertificationsDashboardPanel } from "@/components/certifications-dashboard-panel";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CloseIcon, TeamIcon } from "@/components/nav-icons";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 
@@ -35,24 +36,22 @@ export default function TeamPage() {
   const tc = useTranslations("common");
   const { data: me } = useMe();
 
-  const [workers, setWorkers] = useState<Worker[] | null>(null);
+  const { data: workers = null, reload: reloadWorkers } = useApi<Worker[]>("/workers");
   const burdenPercent =
     Number(me?.company.payrollTaxBurdenPercent ?? 0) +
     Number(me?.company.workersCompBurdenPercent ?? 0) +
     Number(me?.company.benefitsBurdenPercent ?? 0) +
     Number(me?.company.otherBurdenPercent ?? 0);
-  const [report, setReport] = useState<LaborCostReport | null>(null);
+  const { data: report = null, reload: reloadReport } = useApi<LaborCostReport>("/team/labor-cost-report");
   const [showInactive, setShowInactive] = useState(false);
   const [form, setForm] = useState({ name: "", role: "", hourlyCost: "" });
   const [submitting, setSubmitting] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
 
   function load() {
-    apiFetch<Worker[]>("/workers").then(setWorkers);
-    apiFetch<LaborCostReport>("/team/labor-cost-report").then(setReport);
+    void reloadWorkers();
+    void reloadReport();
   }
-
-  useEffect(load, []);
 
   const visibleWorkers = workers?.filter((w) => showInactive || w.active) ?? null;
 

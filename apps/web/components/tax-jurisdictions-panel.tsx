@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 
 interface TaxRate {
   id: string;
@@ -23,15 +24,14 @@ export function TaxJurisdictionsPanel() {
   const t = useTranslations("tax");
   const tc = useTranslations("common");
 
-  const [jurisdictions, setJurisdictions] = useState<TaxJurisdiction[] | null>(null);
+  const { data: jurisdictions = null, reload: reloadJurisdictions } = useApi<TaxJurisdiction[]>("/tax/jurisdictions");
   const [form, setForm] = useState({ name: "", country: "", region: "" });
   const [rateForms, setRateForms] = useState<Record<string, { ratePercent: string; effectiveFrom: string }>>({});
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<TaxJurisdiction[]>("/tax/jurisdictions").then(setJurisdictions);
+    void reloadJurisdictions();
   }
-  useEffect(load, []);
 
   async function createJurisdiction(e: React.FormEvent) {
     e.preventDefault();

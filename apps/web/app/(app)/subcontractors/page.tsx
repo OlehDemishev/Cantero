@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import type { SubcontractorDiversityCategory } from "@cantero/shared";
 import { SubcontractorListItem } from "@/components/subcontractor-list-item";
 import { apiFetch, downloadBlob, getToken, API_URL, ApiError } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 
 interface Subcontractor {
@@ -39,7 +40,7 @@ export default function SubcontractorsPage() {
   const { data: me } = useMe();
   const isUsCompany = me?.company.country === "US";
 
-  const [subcontractors, setSubcontractors] = useState<Subcontractor[] | null>(null);
+  const { data: subcontractors = null, reload: reloadSubcontractors } = useApi<Subcontractor[]>("/finance/subcontractors");
   const [newForm, setNewForm] = useState({ name: "", email: "", phone: "" });
   const [busy, setBusy] = useState(false);
   const [taxSummaryYear, setTaxSummaryYear] = useState(String(CURRENT_YEAR));
@@ -69,10 +70,8 @@ export default function SubcontractorsPage() {
   }
 
   function load() {
-    apiFetch<Subcontractor[]>("/finance/subcontractors").then(setSubcontractors);
+    void reloadSubcontractors();
   }
-
-  useEffect(load, []);
 
   function loadTaxSummary(year: string) {
     apiFetch<TaxSummaryRow[]>(`/finance/subcontractors/tax-summary?year=${year}`).then(setTaxSummary);

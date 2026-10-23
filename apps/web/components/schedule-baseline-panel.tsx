@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 
 interface Baseline {
@@ -34,7 +35,7 @@ export function ScheduleBaselinePanel({ projectId }: { projectId: string }) {
   const t = useTranslations("scheduleBaseline");
   const tc = useTranslations("common");
 
-  const [baselines, setBaselines] = useState<Baseline[] | null>(null);
+  const { data: baselines = null, reload: reloadBaselines } = useApi<Baseline[]>(`/schedule-baselines?projectId=${projectId}`);
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -42,12 +43,8 @@ export function ScheduleBaselinePanel({ projectId }: { projectId: string }) {
   const [compareResults, setCompareResults] = useState<Record<string, CompareResult>>({});
 
   function load() {
-    apiFetch<Baseline[]>(`/schedule-baselines?projectId=${projectId}`).then(setBaselines);
+    void reloadBaselines();
   }
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
 
   async function create(e: React.FormEvent) {
     e.preventDefault();

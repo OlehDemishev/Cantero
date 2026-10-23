@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 
@@ -27,11 +26,7 @@ export function WinRatePanel() {
   const currency = me?.company.currency ?? "USD";
   const money = (amount: number) => formatCurrency(amount, currency);
 
-  const [report, setReport] = useState<WinRateReport | null>(null);
-
-  useEffect(() => {
-    apiFetch<WinRateReport>("/reports/win-rate").then(setReport);
-  }, []);
+  const { data: report = null } = useApi<WinRateReport>("/reports/win-rate");
 
   if (!report) return null;
   if (report.overall.decidedCount === 0) return null;

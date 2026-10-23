@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 
 interface CalibrationRecord {
@@ -19,17 +20,15 @@ export function CalibrationPanel(props: Props) {
   const t = useTranslations("calibration");
   const tc = useTranslations("common");
 
-  const [records, setRecords] = useState<CalibrationRecord[] | null>(null);
   const [form, setForm] = useState({ calibratedAt: "", nextDueAt: "", certificateNumber: "", performedBy: "" });
   const [busy, setBusy] = useState(false);
 
   const query = props.toolCribItemId ? `toolCribItemId=${props.toolCribItemId}` : `equipmentId=${props.equipmentId}`;
+  const { data: records = null, reload: reloadRecords } = useApi<CalibrationRecord[]>(`/calibration-records?${query}`);
 
   function load() {
-    apiFetch<CalibrationRecord[]>(`/calibration-records?${query}`).then(setRecords);
+    void reloadRecords();
   }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(load, [props.toolCribItemId, props.equipmentId]);
 
   async function log(e: React.FormEvent) {
     e.preventDefault();

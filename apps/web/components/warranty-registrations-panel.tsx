@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { WARRANTY_COVERAGE_TYPES, type WarrantyCoverageType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 
 interface WarrantyRegistration {
@@ -21,15 +22,14 @@ export function WarrantyRegistrationsPanel({ projectId }: { projectId: string })
   const t = useTranslations("warrantyRegistry");
   const tc = useTranslations("common");
 
-  const [registrations, setRegistrations] = useState<WarrantyRegistration[] | null>(null);
+  const { data: registrations = null, reload: reloadRegistrations } = useApi<WarrantyRegistration[]>(`/projects/${projectId}/warranty-registrations`);
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ scope: "", manufacturer: "", coverageType: "both" as WarrantyCoverageType, termMonths: "", startDate: "" });
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<WarrantyRegistration[]>(`/projects/${projectId}/warranty-registrations`).then(setRegistrations);
+    void reloadRegistrations();
   }
-  useEffect(load, [projectId]);
 
   async function create(e: React.FormEvent) {
     e.preventDefault();

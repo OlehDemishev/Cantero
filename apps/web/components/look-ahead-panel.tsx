@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 
 type TaskStatus = "planned" | "in_progress" | "done";
@@ -50,23 +51,18 @@ function mondayOf(dateStr: string): string {
 export function LookAheadPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("scheduling");
   const tc = useTranslations("common");
-  const [tasks, setTasks] = useState<LookAheadTask[] | null>(null);
-  const [commitments, setCommitments] = useState<Commitment[]>([]);
-  const [ppc, setPpc] = useState<PpcReport | null>(null);
+  const { data: tasks = null, reload: reloadTasks } = useApi<LookAheadTask[]>(`/tasks/look-ahead?projectId=${projectId}`);
+  const { data: commitments = [], reload: reloadCommitments } = useApi<Commitment[]>(`/tasks/commitments?projectId=${projectId}`);
+  const { data: ppc = null, reload: reloadPpc } = useApi<PpcReport>(`/tasks/ppc-report?projectId=${projectId}`);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
   const [varianceReason, setVarianceReason] = useState("");
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<LookAheadTask[]>(`/tasks/look-ahead?projectId=${projectId}`).then(setTasks);
-    apiFetch<Commitment[]>(`/tasks/commitments?projectId=${projectId}`).then(setCommitments);
-    apiFetch<PpcReport>(`/tasks/ppc-report?projectId=${projectId}`).then(setPpc);
+    void reloadTasks();
+    void reloadCommitments();
+    void reloadPpc();
   }
-
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
 
   if (tasks && tasks.length === 0) return null;
 

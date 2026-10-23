@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -32,17 +33,15 @@ export default function ContractsPage() {
   const confirm = useConfirm();
   const tc = useTranslations("common");
 
-  const [contracts, setContracts] = useState<Contract[] | null>(null);
-  const [templates, setTemplates] = useState<ContractTemplate[] | null>(null);
+  const { data: contracts = null, reload: reloadContracts } = useApi<Contract[]>("/contracts");
+  const { data: templates = null, reload: reloadTemplates } = useApi<ContractTemplate[]>("/contract-templates");
   const [templateForm, setTemplateForm] = useState({ name: "", body: "" });
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<Contract[]>("/contracts").then(setContracts);
-    apiFetch<ContractTemplate[]>("/contract-templates").then(setTemplates);
+    void reloadContracts();
+    void reloadTemplates();
   }
-
-  useEffect(load, []);
 
   async function createTemplate(e: React.FormEvent) {
     e.preventDefault();

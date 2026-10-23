@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 
 interface Reminder {
@@ -16,15 +17,13 @@ export function ClientRemindersPanel({ clientId }: { clientId: string }) {
   const t = useTranslations("clients");
   const tc = useTranslations("common");
 
-  const [reminders, setReminders] = useState<Reminder[] | null>(null);
+  const { data: reminders = null, reload: reloadReminders } = useApi<Reminder[]>(`/clients/${clientId}/reminders`);
   const [reminderForm, setReminderForm] = useState({ title: "", dueDate: "" });
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<Reminder[]>(`/clients/${clientId}/reminders`).then(setReminders);
+    void reloadReminders();
   }
-
-  useEffect(load, [clientId]);
 
   async function addReminder(e: React.FormEvent) {
     e.preventDefault();

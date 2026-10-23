@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { EmptyState } from "@/components/ui/empty-state";
 
@@ -15,14 +16,12 @@ interface TrainingEnrollment {
 
 export function WorkerTrainingPanel({ workerId }: { workerId: string }) {
   const t = useTranslations("team");
-  const [trainingEnrollments, setTrainingEnrollments] = useState<TrainingEnrollment[] | null>(null);
+  const { data: trainingEnrollments = null, reload: reloadTrainingEnrollments } = useApi<TrainingEnrollment[]>(`/training/workers/${workerId}/enrollments`);
   const [trainingBusy, setTrainingBusy] = useState(false);
 
   function load() {
-    apiFetch<TrainingEnrollment[]>(`/training/workers/${workerId}/enrollments`).then(setTrainingEnrollments);
+    void reloadTrainingEnrollments();
   }
-
-  useEffect(load, [workerId]);
 
   async function completeTraining(enrollmentId: string) {
     setTrainingBusy(true);

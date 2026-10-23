@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import type { LongLeadItemStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 
 interface Supplier {
   id: string;
@@ -40,20 +41,15 @@ export function LongLeadItemsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("longLeadItems");
   const tc = useTranslations("common");
 
-  const [items, setItems] = useState<LongLeadItem[] | null>(null);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const { data: items = null, reload: reloadItems } = useApi<LongLeadItem[]>(`/long-lead-items?projectId=${projectId}`);
+  const { data: suppliers = [] } = useApi<Supplier[]>("/materials/suppliers");
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<LongLeadItem[]>(`/long-lead-items?projectId=${projectId}`).then(setItems);
+    void reloadItems();
   }
-
-  useEffect(load, [projectId]);
-  useEffect(() => {
-    apiFetch<Supplier[]>("/materials/suppliers").then(setSuppliers);
-  }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();

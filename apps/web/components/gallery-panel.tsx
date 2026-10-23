@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, apiUpload } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 
 interface GalleryDocument {
   id: string;
@@ -81,14 +82,12 @@ function GalleryColumn({
 export function GalleryPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("gallery");
   const tc = useTranslations("common");
-  const [gallery, setGallery] = useState<Gallery | null>(null);
+  const { data: gallery = null, reload: reloadGallery } = useApi<Gallery>(`/projects/${projectId}/gallery`);
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<Gallery>(`/projects/${projectId}/gallery`).then(setGallery);
+    void reloadGallery();
   }
-
-  useEffect(load, [projectId]);
 
   async function upload(category: "gallery_before" | "gallery_after", file: File) {
     setBusy(true);

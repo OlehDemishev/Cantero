@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 
 interface UtilizationEntry {
   id: string;
@@ -15,11 +14,7 @@ interface UtilizationEntry {
 
 export function EquipmentUtilizationPanel() {
   const t = useTranslations("equipmentUtilization");
-  const [entries, setEntries] = useState<UtilizationEntry[] | null>(null);
-
-  useEffect(() => {
-    apiFetch<UtilizationEntry[]>("/reports/equipment-utilization").then(setEntries);
-  }, []);
+  const { data: entries = null } = useApi<UtilizationEntry[]>("/reports/equipment-utilization");
 
   if (!entries || entries.length === 0) return null;
 

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -18,14 +19,12 @@ export function WorkerBenefitsPanel({ workerId }: { workerId: string }) {
   const t = useTranslations("team");
   const confirm = useConfirm();
   const tb = useTranslations("benefits");
-  const [benefitEnrollments, setBenefitEnrollments] = useState<BenefitEnrollment[] | null>(null);
+  const { data: benefitEnrollments = null, reload: reloadBenefitEnrollments } = useApi<BenefitEnrollment[]>(`/workers/${workerId}/benefit-enrollments`);
   const [benefitsBusy, setBenefitsBusy] = useState(false);
 
   function load() {
-    apiFetch<BenefitEnrollment[]>(`/workers/${workerId}/benefit-enrollments`).then(setBenefitEnrollments);
+    void reloadBenefitEnrollments();
   }
-
-  useEffect(load, [workerId]);
 
   async function updateEnrollmentStatus(enrollmentId: string, status: "waived" | "terminated") {
     if (status === "terminated" && !(await confirm({ message: t("confirmTerminateEnrollment"), tone: "danger", verb: "terminate" }))) return;

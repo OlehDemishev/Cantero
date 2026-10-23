@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
@@ -30,11 +29,7 @@ export function FixedAssetRegisterPanel() {
   const t = useTranslations("fixedAssetRegister");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
-  const [entries, setEntries] = useState<RegisterEntry[] | null>(null);
-
-  useEffect(() => {
-    apiFetch<RegisterEntry[]>("/equipment/fixed-asset-register").then(setEntries);
-  }, []);
+  const { data: entries = null } = useApi<RegisterEntry[]>("/equipment/fixed-asset-register");
 
   if (!entries || entries.length === 0) return null;
 

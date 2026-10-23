@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 
@@ -22,11 +21,7 @@ export function MarketingRoiPanel() {
   const tl = useTranslations("labels");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
-  const [rows, setRows] = useState<ChannelRoi[] | null>(null);
-
-  useEffect(() => {
-    apiFetch<ChannelRoi[]>("/marketing/roi-by-channel").then(setRows);
-  }, []);
+  const { data: rows = null } = useApi<ChannelRoi[]>("/marketing/roi-by-channel");
 
   if (!rows || rows.length === 0) return null;
 

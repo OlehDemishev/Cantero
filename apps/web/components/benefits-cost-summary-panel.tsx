@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 
@@ -16,11 +15,7 @@ export function BenefitsCostSummaryPanel() {
   const t = useTranslations("benefits");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
-  const [summary, setSummary] = useState<CostSummary | null>(null);
-
-  useEffect(() => {
-    apiFetch<CostSummary>("/benefits/cost-summary").then(setSummary);
-  }, []);
+  const { data: summary = null } = useApi<CostSummary>("/benefits/cost-summary");
 
   if (!summary || summary.activeEnrollmentCount === 0) return null;
 

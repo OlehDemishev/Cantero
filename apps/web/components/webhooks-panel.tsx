@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { WEBHOOK_EVENTS, WEBHOOK_TEMPLATES, type WebhookEvent } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDateTime } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -29,7 +30,7 @@ export function WebhooksPanel() {
   const t = useTranslations("settings");
   const confirm = useConfirm();
   const tc = useTranslations("common");
-  const [webhooks, setWebhooks] = useState<WebhookEndpoint[] | null>(null);
+  const { data: webhooks = null, reload: reloadWebhooks } = useApi<WebhookEndpoint[]>("/company/webhooks");
   const [webhookForm, setWebhookForm] = useState<{ url: string; events: WebhookEvent[] }>({ url: "", events: [] });
   const [createdWebhookSecret, setCreatedWebhookSecret] = useState<string | null>(null);
   const [webhookSecretCopied, setWebhookSecretCopied] = useState(false);
@@ -39,10 +40,8 @@ export function WebhooksPanel() {
   const [error, setError] = useState<string | null>(null);
 
   function load() {
-    apiFetch<WebhookEndpoint[]>("/company/webhooks").then(setWebhooks);
+    void reloadWebhooks();
   }
-
-  useEffect(load, []);
 
   function toggleWebhookEvent(event: WebhookEvent) {
     setWebhookForm((f) => ({

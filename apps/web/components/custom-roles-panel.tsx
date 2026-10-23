@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { PERMISSION_KEYS } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useAssignableRoles } from "@/lib/permissions";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -20,17 +21,15 @@ export function CustomRolesPanel({ isManager }: { isManager: boolean }) {
   const confirm = useConfirm();
   const tc = useTranslations("common");
   const tp = useTranslations("permissions");
-  const [customRoles, setCustomRoles] = useState<CustomRole[] | null>(null);
+  const { data: customRoles = null, reload: reloadCustomRoles } = useApi<CustomRole[]>("/company/custom-roles");
   const { roles: assignableRoles, mayTouchAdmin } = useAssignableRoles();
   const [customRoleForm, setCustomRoleForm] = useState({ name: "", basePermissions: [] as string[], extraPermissions: [] as string[] });
   const [creatingCustomRole, setCreatingCustomRole] = useState(false);
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<CustomRole[]>("/company/custom-roles").then(setCustomRoles);
+    void reloadCustomRoles();
   }
-
-  useEffect(load, []);
 
   function toggleCustomRolePermission(role: string) {
     setCustomRoleForm((f) => ({

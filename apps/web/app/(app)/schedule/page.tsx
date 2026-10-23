@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 
 interface Project {
@@ -40,14 +41,10 @@ export default function SchedulePage() {
   const t = useTranslations("schedule");
   const tc = useTranslations("common");
 
-  const [projects, setProjects] = useState<Project[]>([]);
+  const { data: projects = [] } = useApi<Project[]>("/projects");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [schedules, setSchedules] = useState<ProjectSchedule[] | null>(null);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    apiFetch<Project[]>("/projects").then(setProjects);
-  }, []);
 
   function toggle(projectId: string) {
     setSelected((prev) => {

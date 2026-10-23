@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, apiUpload } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { DrawingSetImport } from "@/components/drawing-set-import";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -20,17 +21,15 @@ export function DrawingSheetsPanel({ projectId }: { projectId: string }) {
   const confirm = useConfirm();
   const tc = useTranslations("common");
 
-  const [sheets, setSheets] = useState<DrawingSheet[] | null>(null);
+  const { data: sheets = null, reload: reloadSheets } = useApi<DrawingSheet[]>(`/projects/${projectId}/drawing-sheets`);
   const [form, setForm] = useState({ sheetNumber: "", discipline: "", title: "", revision: "" });
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const sheetFileInputRef = useRef<HTMLInputElement>(null);
 
   function load() {
-    apiFetch<DrawingSheet[]>(`/projects/${projectId}/drawing-sheets`).then(setSheets);
+    void reloadSheets();
   }
-
-  useEffect(load, [projectId]);
 
   async function upload(e: React.FormEvent) {
     e.preventDefault();

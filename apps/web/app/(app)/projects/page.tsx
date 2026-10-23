@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { SavedViewsBar } from "@/components/saved-views-bar";
 import { CsvImportButton } from "@/components/csv-import-button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CloseIcon, ProjectsIcon } from "@/components/nav-icons";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 
 interface Client {
   id: string;
@@ -29,21 +30,16 @@ export default function ProjectsPage() {
   const t = useTranslations("projects");
   const tc = useTranslations("common");
   const ti = useTranslations("import");
-  const [projects, setProjects] = useState<Project[] | null>(null);
-  const [clients, setClients] = useState<Client[]>([]);
+  const { data: projects = null, reload: reloadProjects } = useApi<Project[]>("/projects");
+  const { data: clients = [] } = useApi<Client[]>("/clients");
   const [form, setForm] = useState({ name: "", address: "", clientId: "" });
   const [submitting, setSubmitting] = useState(false);
   const [filters, setFilters] = useState<ProjectFilters>(EMPTY_FILTERS);
   const [showCreateForm, setShowCreateForm] = useState(false);
 
   function load() {
-    apiFetch<Project[]>("/projects").then(setProjects);
+    void reloadProjects();
   }
-
-  useEffect(() => {
-    load();
-    apiFetch<Client[]>("/clients").then(setClients);
-  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

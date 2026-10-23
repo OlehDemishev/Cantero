@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, apiUpload } from "@/lib/api-client";
+import { apiUpload } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 
 interface DrawingSheetVersion {
@@ -17,18 +18,12 @@ export function DrawingRevisionsPanel({ sheetId, onSuperseded }: { sheetId: stri
   const t = useTranslations("drawings");
   const tc = useTranslations("common");
 
-  const [versions, setVersions] = useState<DrawingSheetVersion[] | null>(null);
+  const { data: versions = null } = useApi<DrawingSheetVersion[]>(`/drawing-sheets/${sheetId}/versions`);
   const [revision, setRevision] = useState("");
   const [revisionDate, setRevisionDate] = useState("");
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  function load() {
-    apiFetch<DrawingSheetVersion[]>(`/drawing-sheets/${sheetId}/versions`).then(setVersions);
-  }
-
-  useEffect(load, [sheetId]);
 
   async function uploadRevision(e: React.FormEvent) {
     e.preventDefault();

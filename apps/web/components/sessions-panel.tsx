@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDateTime } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -19,14 +20,12 @@ export function SessionsPanel() {
   const confirm = useConfirm();
   const td = useTranslations("dialog");
   const tc = useTranslations("common");
-  const [sessions, setSessions] = useState<Session[] | null>(null);
+  const { data: sessions = null, reload: reloadSessions } = useApi<Session[]>("/auth/sessions");
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<Session[]>("/auth/sessions").then(setSessions);
+    void reloadSessions();
   }
-
-  useEffect(load, []);
 
   async function revoke(id: string) {
     if (!(await confirm({ message: td("revokeSession"), tone: "danger", verb: "revoke" }))) return;

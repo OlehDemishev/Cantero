@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import type { ObservationCategory } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { PrintButton } from "@/components/ui/print-button";
 import { formatDate } from "@/lib/format-date";
 
@@ -20,19 +21,14 @@ export function SafetyObservationsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("safetyObservations");
   const tc = useTranslations("common");
 
-  const [observations, setObservations] = useState<Observation[] | null>(null);
+  const { data: observations = null, reload: reloadObservations } = useApi<Observation[]>(`/safety/observations?projectId=${projectId}`);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ category: "safe" as ObservationCategory, behaviorObserved: "", correctiveAction: "" });
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<Observation[]>(`/safety/observations?projectId=${projectId}`).then(setObservations);
+    void reloadObservations();
   }
-
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();

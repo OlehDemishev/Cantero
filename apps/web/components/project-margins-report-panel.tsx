@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatCurrency } from "@/lib/format-currency";
 
 interface ProjectMargin {
@@ -19,11 +18,7 @@ interface ProjectMargin {
 export function ProjectMarginsReportPanel({ currency }: { currency: string }) {
   const t = useTranslations("reports");
   const tc = useTranslations("common");
-  const [margins, setMargins] = useState<ProjectMargin[] | null>(null);
-
-  useEffect(() => {
-    apiFetch<ProjectMargin[]>("/reports/project-margins").then(setMargins);
-  }, []);
+  const { data: margins = null } = useApi<ProjectMargin[]>("/reports/project-margins");
 
   return (
     <>

@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { goBack } from "@/lib/back-navigation";
 import { WorkerProfilePanel } from "@/components/worker-profile-panel";
@@ -41,13 +40,11 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
   const can = useCan();
   const isManager = can("people.manage");
 
-  const [summary, setSummary] = useState<Summary | null>(null);
+  const { data: summary = null, reload: reloadSummary } = useApi<Summary>(`/workers/${workerId}/summary`);
 
   function loadSummary() {
-    apiFetch<Summary>(`/workers/${workerId}/summary`).then(setSummary);
+    void reloadSummary();
   }
-
-  useEffect(loadSummary, [workerId]);
 
   if (!summary) {
     return (

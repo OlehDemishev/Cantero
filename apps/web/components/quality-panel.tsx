@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { DEFICIENCY_SEVERITIES, INSPECTION_ITEM_RESULTS, type DeficiencySeverity, type InspectionItemResult } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { PhotoAttachments } from "@/components/photo-attachments";
 import { formatDate } from "@/lib/format-date";
 
@@ -72,11 +73,11 @@ export function QualityPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("quality");
   const tc = useTranslations("common");
 
-  const [checklists, setChecklists] = useState<Checklist[] | null>(null);
-  const [deficiencies, setDeficiencies] = useState<Deficiency[] | null>(null);
-  const [heatmap, setHeatmap] = useState<HeatmapBucket[] | null>(null);
-  const [templates, setTemplates] = useState<InspectionTemplate[]>([]);
-  const [workers, setWorkers] = useState<Worker[]>([]);
+  const { data: checklists = null, reload: reloadChecklists } = useApi<Checklist[]>(`/inspection-checklists?projectId=${projectId}`);
+  const { data: deficiencies = null, reload: reloadDeficiencies } = useApi<Deficiency[]>(`/deficiencies?projectId=${projectId}`);
+  const { data: heatmap = null, reload: reloadHeatmap } = useApi<HeatmapBucket[]>(`/deficiencies/heat-map?projectId=${projectId}`);
+  const { data: templates = [] } = useApi<InspectionTemplate[]>("/inspection-templates");
+  const { data: workers = [] } = useApi<Worker[]>("/workers");
   const [creating, setCreating] = useState(false);
   const [checklistForm, setChecklistForm] = useState(EMPTY_CHECKLIST_FORM);
   const [deficiencyDraft, setDeficiencyDraft] = useState<{ checklistId: string; itemId: string } | null>(null);
@@ -90,17 +91,10 @@ export function QualityPanel({ projectId }: { projectId: string }) {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<Checklist[]>(`/inspection-checklists?projectId=${projectId}`).then(setChecklists);
-    apiFetch<Deficiency[]>(`/deficiencies?projectId=${projectId}`).then(setDeficiencies);
-    apiFetch<HeatmapBucket[]>(`/deficiencies/heat-map?projectId=${projectId}`).then(setHeatmap);
+    void reloadChecklists();
+    void reloadDeficiencies();
+    void reloadHeatmap();
   }
-
-  useEffect(() => {
-    load();
-    apiFetch<InspectionTemplate[]>("/inspection-templates").then(setTemplates);
-    apiFetch<Worker[]>("/workers").then(setWorkers);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
 
   async function createChecklist(e: React.FormEvent) {
     e.preventDefault();

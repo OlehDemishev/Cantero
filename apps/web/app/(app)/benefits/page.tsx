@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { EmptyState } from "@/components/ui/empty-state";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { useCan } from "@/lib/permissions";
 import { formatCurrency } from "@/lib/format-currency";
@@ -37,7 +38,7 @@ export default function BenefitsPage() {
   const currency = me?.company.currency ?? "";
   const isManager = useCan()("hr.payroll");
 
-  const [summary, setSummary] = useState<CostSummary | null>(null);
+  const { data: summary = null, reload: reloadSummary } = useApi<CostSummary>("/benefits/cost-summary");
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [form, setForm] = useState({ workerId: "", planId: "", tierId: "", effectiveDate: "" });
@@ -45,9 +46,8 @@ export default function BenefitsPage() {
   const [message, setMessage] = useState<string | null>(null);
 
   function load() {
-    apiFetch<CostSummary>("/benefits/cost-summary").then(setSummary);
+    void reloadSummary();
   }
-  useEffect(load, []);
   useEffect(() => {
     apiFetch<Worker[]>("/workers").then((list) => {
       setWorkers(list);

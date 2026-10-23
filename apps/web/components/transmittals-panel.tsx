@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { TRANSMITTAL_METHODS, type TransmittalMethod } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 
 interface TransmittalItem {
@@ -33,7 +34,7 @@ export function TransmittalsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("transmittals");
   const tc = useTranslations("common");
 
-  const [transmittals, setTransmittals] = useState<Transmittal[] | null>(null);
+  const { data: transmittals = null, reload: reloadTransmittals } = useApi<Transmittal[]>(`/projects/${projectId}/transmittals`);
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ recipientName: "", recipientCompany: "", method: "email" as TransmittalMethod, purpose: "" });
   const [items, setItems] = useState<DraftItem[]>([{ description: "", quantity: "1" }]);
@@ -42,9 +43,8 @@ export function TransmittalsPanel({ projectId }: { projectId: string }) {
   const [ackName, setAckName] = useState("");
 
   function load() {
-    apiFetch<Transmittal[]>(`/projects/${projectId}/transmittals`).then(setTransmittals);
+    void reloadTransmittals();
   }
-  useEffect(load, [projectId]);
 
   function addItemRow() {
     setItems((i) => [...i, { description: "", quantity: "1" }]);

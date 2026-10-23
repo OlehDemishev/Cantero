@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 
 interface ContractTemplate {
   id: string;
@@ -26,19 +27,14 @@ export function ContractsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("contracts");
   const tc = useTranslations("common");
 
-  const [contracts, setContracts] = useState<Contract[] | null>(null);
-  const [templates, setTemplates] = useState<ContractTemplate[]>([]);
+  const { data: contracts = null, reload: reloadContracts } = useApi<Contract[]>(`/contracts?projectId=${projectId}`);
+  const { data: templates = [] } = useApi<ContractTemplate[]>("/contract-templates");
   const [form, setForm] = useState({ title: "", templateId: "", body: "" });
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<Contract[]>(`/contracts?projectId=${projectId}`).then(setContracts);
+    void reloadContracts();
   }
-
-  useEffect(load, [projectId]);
-  useEffect(() => {
-    apiFetch<ContractTemplate[]>("/contract-templates").then(setTemplates);
-  }, []);
 
   async function create(e: React.FormEvent) {
     e.preventDefault();

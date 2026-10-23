@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { RECEIVING_DISCREPANCY_RESOLUTIONS, type ReceivingDiscrepancyResolution, type ReceivingDiscrepancyType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 
 interface ReceivingDiscrepancy {
   id: string;
@@ -18,15 +19,13 @@ interface ReceivingDiscrepancy {
 export function ReceivingDiscrepanciesPanel() {
   const t = useTranslations("purchaseOrders");
   const tc = useTranslations("common");
-  const [discrepancies, setDiscrepancies] = useState<ReceivingDiscrepancy[] | null>(null);
+  const { data: discrepancies = null, reload: reloadDiscrepancies } = useApi<ReceivingDiscrepancy[]>("/materials/purchase-orders/receiving-discrepancies");
   const [resolvingId, setResolvingId] = useState<string | null>(null);
   const [resolutionForm, setResolutionForm] = useState({ resolution: "credit_issued" as ReceivingDiscrepancyResolution, resolutionNotes: "" });
 
   function load() {
-    apiFetch<ReceivingDiscrepancy[]>("/materials/purchase-orders/receiving-discrepancies").then(setDiscrepancies);
+    void reloadDiscrepancies();
   }
-
-  useEffect(load, []);
 
   async function resolveDiscrepancy(id: string) {
     await apiFetch(`/materials/purchase-orders/receiving-discrepancies/${id}/resolve`, {

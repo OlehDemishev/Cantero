@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { BulkActionResult, WarrantyClaimStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { PhotoAttachments } from "@/components/photo-attachments";
 import { useBulkSelection } from "@/components/bulk-select";
 import { formatDate } from "@/lib/format-date";
@@ -58,7 +59,7 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
 
   const [project, setProject] = useState<Project | null>(null);
   const [claims, setClaims] = useState<WarrantyClaim[] | null>(null);
-  const [workers, setWorkers] = useState<Worker[]>([]);
+  const { data: workers = [] } = useApi<Worker[]>("/workers");
   const [warrantyForm, setWarrantyForm] = useState({ handoverDate: "", warrantyMonths: "" });
   const [creating, setCreating] = useState(false);
   const [claimForm, setClaimForm] = useState({ title: "", description: "", location: "", assigneeWorkerId: "" });
@@ -81,7 +82,6 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
 
   useEffect(() => {
     load();
-    apiFetch<Worker[]>("/workers").then(setWorkers);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 

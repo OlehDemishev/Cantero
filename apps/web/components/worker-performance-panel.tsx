@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 
 interface PerformanceGoal {
   id: string;
@@ -23,17 +24,15 @@ interface PerformanceReview {
 export function WorkerPerformancePanel({ workerId }: { workerId: string }) {
   const tc = useTranslations("common");
   const tp = useTranslations("performance");
-  const [performanceGoals, setPerformanceGoals] = useState<PerformanceGoal[] | null>(null);
-  const [performanceReviews, setPerformanceReviews] = useState<PerformanceReview[] | null>(null);
+  const { data: performanceGoals = null, reload: reloadPerformanceGoals } = useApi<PerformanceGoal[]>(`/performance/workers/${workerId}/goals`);
+  const { data: performanceReviews = null, reload: reloadPerformanceReviews } = useApi<PerformanceReview[]>(`/performance/workers/${workerId}/reviews`);
   const [goalForm, setGoalForm] = useState({ title: "", targetDate: "" });
   const [goalBusy, setGoalBusy] = useState(false);
 
   function load() {
-    apiFetch<PerformanceGoal[]>(`/performance/workers/${workerId}/goals`).then(setPerformanceGoals);
-    apiFetch<PerformanceReview[]>(`/performance/workers/${workerId}/reviews`).then(setPerformanceReviews);
+    void reloadPerformanceGoals();
+    void reloadPerformanceReviews();
   }
-
-  useEffect(load, [workerId]);
 
   async function addGoal(e: React.FormEvent) {
     e.preventDefault();

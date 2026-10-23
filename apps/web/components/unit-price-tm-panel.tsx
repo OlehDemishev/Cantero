@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import type { TMTicketStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatDate } from "@/lib/format-date";
@@ -53,8 +54,8 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
   const currency = me?.company.currency ?? "USD";
   const money = (amount: number | string) => formatCurrency(amount, currency);
 
-  const [items, setItems] = useState<UnitPriceItem[] | null>(null);
-  const [tickets, setTickets] = useState<TMTicket[] | null>(null);
+  const { data: items = null, reload: reloadItems } = useApi<UnitPriceItem[]>(`/projects/${projectId}/unit-price-items`);
+  const { data: tickets = null, reload: reloadTickets } = useApi<TMTicket[]>(`/projects/${projectId}/tm-tickets`);
   const [creatingItem, setCreatingItem] = useState(false);
   const [itemForm, setItemForm] = useState({ description: "", unit: "", contractUnitPrice: "", estimatedQuantity: "" });
   const [measureForms, setMeasureForms] = useState<Record<string, { measuredQuantity: string; measuredByName: string }>>({});
@@ -70,14 +71,9 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<UnitPriceItem[]>(`/projects/${projectId}/unit-price-items`).then(setItems);
-    apiFetch<TMTicket[]>(`/projects/${projectId}/tm-tickets`).then(setTickets);
+    void reloadItems();
+    void reloadTickets();
   }
-
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
 
   async function submitItem(e: React.FormEvent) {
     e.preventDefault();

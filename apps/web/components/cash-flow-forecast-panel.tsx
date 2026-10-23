@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
 
@@ -25,11 +24,7 @@ interface CashFlowForecast {
 export function CashFlowForecastPanel({ currency }: { currency: string }) {
   const t = useTranslations("reports");
   const tc = useTranslations("common");
-  const [cashFlow, setCashFlow] = useState<CashFlowForecast | null>(null);
-
-  useEffect(() => {
-    apiFetch<CashFlowForecast>("/reports/cash-flow-forecast").then(setCashFlow);
-  }, []);
+  const { data: cashFlow = null } = useApi<CashFlowForecast>("/reports/cash-flow-forecast");
 
   return (
     <>

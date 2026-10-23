@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ApiError, apiFetch, downloadBlob } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDateTime } from "@/lib/format-date";
 import { useCan } from "@/lib/permissions";
 
@@ -48,7 +49,7 @@ export function GobdCompliancePanel() {
   const [verifyBusy, setVerifyBusy] = useState(false);
   const [docBusy, setDocBusy] = useState(false);
   const canManage = useCan()("finance.manage");
-  const [anchoring, setAnchoring] = useState<{ enabled: boolean; anchors: GobdAnchor[] } | null>(null);
+  const { data: anchoring = null, reload: reloadAnchoring } = useApi<{ enabled: boolean; anchors: GobdAnchor[] }>("/company/gobd/anchors");
   const [anchorBusy, setAnchorBusy] = useState(false);
   const [anchorMessage, setAnchorMessage] = useState<string | null>(null);
 
@@ -60,12 +61,11 @@ export function GobdCompliancePanel() {
   }
 
   function loadAnchors() {
-    apiFetch<{ enabled: boolean; anchors: GobdAnchor[] }>("/company/gobd/anchors").then(setAnchoring);
+    void reloadAnchoring();
   }
 
   useEffect(() => {
     load();
-    loadAnchors();
   }, []);
 
   async function anchorNow() {

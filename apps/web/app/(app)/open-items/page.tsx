@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { TabNav, type TabNavItem } from "@/components/ui/tab-nav";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { buildItemDeepLink } from "@/lib/use-deep-linked-row";
 import { formatDate } from "@/lib/format-date";
 
@@ -46,15 +45,9 @@ export default function OpenItemsPage() {
     return fromParam && (TAB_KEYS as readonly string[]).includes(fromParam) ? (fromParam as TabKey) : "rfis";
   })();
 
-  const [rfisAll, setRfisAll] = useState<RfiRow[] | null>(null);
-  const [punchListAll, setPunchListAll] = useState<PunchListRow[] | null>(null);
-  const [submittalsAll, setSubmittalsAll] = useState<SubmittalRow[] | null>(null);
-
-  useEffect(() => {
-    apiFetch<RfiRow[]>("/rfis/company-open").then(setRfisAll);
-    apiFetch<PunchListRow[]>("/punch-list/company-open").then(setPunchListAll);
-    apiFetch<SubmittalRow[]>("/submittals/company-pending").then(setSubmittalsAll);
-  }, []);
+  const { data: rfisAll = null } = useApi<RfiRow[]>("/rfis/company-open");
+  const { data: punchListAll = null } = useApi<PunchListRow[]>("/punch-list/company-open");
+  const { data: submittalsAll = null } = useApi<SubmittalRow[]>("/submittals/company-pending");
 
   // Portfolio links here with ?projectId= so its per-project RFI/punch-list/submittal counts
   // aren't just a dead-end number — clicking one drills into the matching open items.

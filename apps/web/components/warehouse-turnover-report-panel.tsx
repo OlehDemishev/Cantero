@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 
 interface TurnoverRow {
   materialId: string;
@@ -18,11 +17,7 @@ interface TurnoverRow {
 export function WarehouseTurnoverReportPanel() {
   const t = useTranslations("reports");
   const tc = useTranslations("common");
-  const [turnover, setTurnover] = useState<TurnoverRow[] | null>(null);
-
-  useEffect(() => {
-    apiFetch<TurnoverRow[]>("/reports/warehouse-turnover").then(setTurnover);
-  }, []);
+  const { data: turnover = null } = useApi<TurnoverRow[]>("/reports/warehouse-turnover");
 
   return (
     <>

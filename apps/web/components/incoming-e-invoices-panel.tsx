@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, apiUpload, downloadBlob } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -60,8 +61,8 @@ export function IncomingEInvoicesPanel() {
   const tc = useTranslations("common");
   const { data: me } = useMe();
 
-  const [invoices, setInvoices] = useState<IncomingEInvoice[] | null>(null);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const { data: invoices = null, reload: reloadInvoices } = useApi<IncomingEInvoice[]>("/finance/incoming-invoices");
+  const { data: suppliers = [] } = useApi<Supplier[]>("/materials/suppliers");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -70,13 +71,8 @@ export function IncomingEInvoicesPanel() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function load() {
-    apiFetch<IncomingEInvoice[]>("/finance/incoming-invoices").then(setInvoices);
+    void reloadInvoices();
   }
-
-  useEffect(() => {
-    load();
-    apiFetch<Supplier[]>("/materials/suppliers").then(setSuppliers);
-  }, []);
 
   async function upload(file: File) {
     setUploading(true);

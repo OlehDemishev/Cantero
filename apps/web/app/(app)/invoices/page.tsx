@@ -10,6 +10,7 @@ import {
 import { EmptyState } from "@/components/ui/empty-state";
 import { InvoicesIcon } from "@/components/nav-icons";
 import { apiFetch, downloadBlob, getToken, API_URL, ApiError } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatCurrency } from "@/lib/format-currency";
@@ -72,8 +73,8 @@ export default function InvoicesPage() {
   const [recurring, setRecurring] = useState<RecurringInvoice[] | null>(null);
   const [recurringHasMore, setRecurringHasMore] = useState(false);
   const [recurringLoadMoreBusy, setRecurringLoadMoreBusy] = useState(false);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [clients, setClients] = useState<Client[]>([]);
+  const { data: projects = [] } = useApi<Project[]>("/projects");
+  const { data: clients = [] } = useApi<Client[]>("/clients");
   const [recurringForm, setRecurringForm] = useState({
     projectId: "",
     clientId: "",
@@ -135,8 +136,6 @@ export default function InvoicesPage() {
 
   useEffect(() => {
     loadInvoices();
-    apiFetch<Project[]>("/projects").then(setProjects);
-    apiFetch<Client[]>("/clients").then(setClients);
     loadRecurring();
   }, []);
 

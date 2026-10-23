@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { GREEN_CERTIFICATION_TYPES, type GreenCertificationType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -24,16 +25,14 @@ export function GreenCertificationsPanel({ projectId }: { projectId: string }) {
   const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
-  const [items, setItems] = useState<GreenCertification[] | null>(null);
+  const { data: items = null, reload: reloadItems } = useApi<GreenCertification[]>(`/sustainability/certifications?projectId=${projectId}`);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<GreenCertification[]>(`/sustainability/certifications?projectId=${projectId}`).then(setItems);
+    void reloadItems();
   }
-
-  useEffect(load, [projectId]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();

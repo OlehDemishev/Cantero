@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { formatNumber } from "@/lib/format-currency";
 
@@ -26,8 +27,8 @@ export function ProductivityPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("productivity");
   const tc = useTranslations("common");
 
-  const [logs, setLogs] = useState<ProductivityLog[] | null>(null);
-  const [costCodes, setCostCodes] = useState<CostCode[]>([]);
+  const { data: logs = null, reload: reloadLogs } = useApi<ProductivityLog[]>(`/projects/${projectId}/productivity-logs`);
+  const { data: costCodes = [] } = useApi<CostCode[]>("/cost-codes");
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({
     costCodeId: "",
@@ -41,14 +42,8 @@ export function ProductivityPanel({ projectId }: { projectId: string }) {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<ProductivityLog[]>(`/projects/${projectId}/productivity-logs`).then(setLogs);
+    void reloadLogs();
   }
-
-  useEffect(() => {
-    load();
-    apiFetch<CostCode[]>("/cost-codes").then(setCostCodes);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();

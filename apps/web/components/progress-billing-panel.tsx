@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatCurrency } from "@/lib/format-currency";
 
 interface ProgressDraw {
@@ -29,18 +30,12 @@ export function ProgressBillingPanel({ estimateId, currency }: { estimateId: str
   const t = useTranslations("progressBilling");
   const router = useRouter();
 
-  const [summary, setSummary] = useState<ProgressBillingSummary | null>(null);
+  const { data: summary = null } = useApi<ProgressBillingSummary>(`/invoices/progress-billing/${estimateId}`);
   const [form, setForm] = useState({ percentComplete: "", retainagePercent: "10" });
   const [releaseAmount, setReleaseAmount] = useState("");
   const [releasingPartial, setReleasingPartial] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  function load() {
-    apiFetch<ProgressBillingSummary>(`/invoices/progress-billing/${estimateId}`).then(setSummary);
-  }
-
-  useEffect(load, [estimateId]);
 
   async function generateDraw(e: React.FormEvent) {
     e.preventDefault();

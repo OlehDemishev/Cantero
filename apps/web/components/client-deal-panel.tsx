@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatCurrency } from "@/lib/format-currency";
 
 type ClientStage = "lead" | "contacted" | "qualified" | "won" | "lost";
@@ -51,9 +52,9 @@ export function ClientDealPanel({
   const tc = useTranslations("common");
 
   const [client, setClient] = useState<Client | null>(null);
-  const [workers, setWorkers] = useState<Worker[]>([]);
+  const { data: workers = [] } = useApi<Worker[]>("/workers");
   const [allClients, setAllClients] = useState<ReferralClient[]>([]);
-  const [campaigns, setCampaigns] = useState<MarketingCampaign[]>([]);
+  const { data: campaigns = [] } = useApi<MarketingCampaign[]>("/marketing/campaigns");
   const [dealForm, setDealForm] = useState({
     estimatedValue: "",
     ownerWorkerId: "",
@@ -83,9 +84,7 @@ export function ClientDealPanel({
 
   useEffect(() => {
     load();
-    apiFetch<Worker[]>("/workers").then(setWorkers);
     apiFetch<ReferralClient[]>("/clients").then((cs) => setAllClients(cs.filter((c) => c.id !== clientId)));
-    apiFetch<MarketingCampaign[]>("/marketing/campaigns").then(setCampaigns);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientId]);
 

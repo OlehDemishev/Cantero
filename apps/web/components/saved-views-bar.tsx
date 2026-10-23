@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface SavedViewRecord<T> {
@@ -24,15 +25,13 @@ export function SavedViewsBar<T extends object>({
   const confirm = useConfirm();
   const td = useTranslations("dialog");
 
-  const [views, setViews] = useState<SavedViewRecord<T>[] | null>(null);
+  const { data: views = null, reload: reloadViews } = useApi<SavedViewRecord<T>[]>(`/saved-views?viewType=${viewType}`);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<SavedViewRecord<T>[]>(`/saved-views?viewType=${viewType}`).then(setViews);
+    void reloadViews();
   }
-
-  useEffect(load, [viewType]);
 
   async function save() {
     if (!name.trim()) return;

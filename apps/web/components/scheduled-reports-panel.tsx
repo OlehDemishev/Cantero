@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   SCHEDULED_REPORT_FREQUENCIES,
@@ -10,6 +10,7 @@ import {
   type ScheduledReportType,
 } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { useReportAccess } from "@/lib/report-access";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -30,7 +31,7 @@ export function ScheduledReportsPanel() {
   const confirm = useConfirm();
   const td = useTranslations("dialog");
   const tc = useTranslations("common");
-  const [scheduledReports, setScheduledReports] = useState<ScheduledReport[] | null>(null);
+  const { data: scheduledReports = null, reload: reloadScheduledReports } = useApi<ScheduledReport[]>("/scheduled-reports");
   const [scheduleForm, setScheduleForm] = useState({
     name: "",
     reportType: "overview" as ScheduledReportType,
@@ -45,10 +46,8 @@ export function ScheduledReportsPanel() {
   const selectedType: ScheduledReportType | undefined = reportTypes.includes(scheduleForm.reportType) ? scheduleForm.reportType : reportTypes[0];
 
   function load() {
-    apiFetch<ScheduledReport[]>("/scheduled-reports").then(setScheduledReports);
+    void reloadScheduledReports();
   }
-
-  useEffect(load, []);
 
   async function createScheduledReport(e: React.FormEvent) {
     e.preventDefault();

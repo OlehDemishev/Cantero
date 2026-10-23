@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 
 type Band = "good" | "watch" | "at_risk";
 interface Health {
@@ -21,11 +20,7 @@ const bandClass: Record<Band, string> = {
 export function ProjectHealthBadge({ projectId }: { projectId: string }) {
   const t = useTranslations("projects");
   const th = useTranslations("projectHealth");
-  const [health, setHealth] = useState<Health | null>(null);
-
-  useEffect(() => {
-    apiFetch<Health>(`/insights/projects/${projectId}/health`).then(setHealth);
-  }, [projectId]);
+  const { data: health = null } = useApi<Health>(`/insights/projects/${projectId}/health`);
 
   if (!health) return null;
 

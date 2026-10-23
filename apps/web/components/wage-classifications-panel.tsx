@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { FRINGE_FUND_TYPES, type FringeFundType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
@@ -32,7 +33,7 @@ export function WageClassificationsPanel() {
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const [classifications, setClassifications] = useState<WageClassification[] | null>(null);
+  const { data: classifications = null, reload: reloadClassifications } = useApi<WageClassification[]>("/wage-classifications");
   const [form, setForm] = useState({ trade: "", hourlyRate: "", fringeRate: "", apprenticeRatio: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,10 +41,8 @@ export function WageClassificationsPanel() {
   const [fundForm, setFundForm] = useState({ fundType: "pension" as FringeFundType, name: "", ratePerHour: "" });
 
   function load() {
-    apiFetch<WageClassification[]>("/wage-classifications").then(setClassifications);
+    void reloadClassifications();
   }
-
-  useEffect(load, []);
 
   async function create(e: React.FormEvent) {
     e.preventDefault();

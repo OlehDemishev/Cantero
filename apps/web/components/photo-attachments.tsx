@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, apiUpload } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { Dialog } from "@/components/ui/dialog";
 
 type AttachmentParam = "punchListItemId" | "dailyLogId" | "incidentReportId" | "warrantyClaimId" | "deficiencyId" | "rfiId";
@@ -34,7 +35,7 @@ export function PhotoAttachments({
 }) {
   const t = useTranslations("photos");
 
-  const [docs, setDocs] = useState<DocumentSummary[] | null>(null);
+  const { data: docs = null, reload: reloadDocs } = useApi<DocumentSummary[]>(`/documents?${param}=${entityId}`);
   const [previews, setPreviews] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [viewingId, setViewingId] = useState<string | null>(null);
@@ -43,13 +44,8 @@ export function PhotoAttachments({
   const objectUrlsRef = useRef<string[]>([]);
 
   function load() {
-    apiFetch<DocumentSummary[]>(`/documents?${param}=${entityId}`).then(setDocs);
+    void reloadDocs();
   }
-
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entityId]);
 
   useEffect(() => {
     if (!docs) return;
@@ -71,7 +67,6 @@ export function PhotoAttachments({
       cancelled = true;
       objectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
     };
-     
   }, [docs]);
 
   function triggerUpload(category: "gallery_before" | "gallery_after" | "photo") {

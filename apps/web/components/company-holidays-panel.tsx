@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, ApiError } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -17,16 +18,14 @@ export function CompanyHolidaysPanel({ canManage }: { canManage: boolean }) {
   const confirm = useConfirm();
   const td = useTranslations("dialog");
   const tc = useTranslations("common");
-  const [holidays, setHolidays] = useState<CompanyHoliday[] | null>(null);
+  const { data: holidays = null, reload: reloadHolidays } = useApi<CompanyHoliday[]>("/company/holidays");
   const [form, setForm] = useState({ date: "", label: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function load() {
-    apiFetch<CompanyHoliday[]>("/company/holidays").then(setHolidays);
+    void reloadHolidays();
   }
-
-  useEffect(load, []);
 
   async function submit() {
     if (!form.date || !form.label.trim()) return;

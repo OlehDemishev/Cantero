@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   ENVIRONMENTAL_INCIDENT_SEVERITIES,
@@ -9,6 +9,7 @@ import {
   type EnvironmentalIncidentStatus,
 } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 
 interface BmpInspection {
@@ -48,8 +49,8 @@ export function EnvironmentalPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("environmental");
   const tc = useTranslations("common");
 
-  const [permits, setPermits] = useState<StormwaterPermit[] | null>(null);
-  const [incidents, setIncidents] = useState<EnvironmentalIncident[] | null>(null);
+  const { data: permits = null, reload: reloadPermits } = useApi<StormwaterPermit[]>(`/projects/${projectId}/stormwater-permits`);
+  const { data: incidents = null, reload: reloadIncidents } = useApi<EnvironmentalIncident[]>(`/projects/${projectId}/environmental-incidents`);
   const [addingPermit, setAddingPermit] = useState(false);
   const [permitForm, setPermitForm] = useState({ permitNumber: "", noiFiledAt: "" });
   const [inspectingPermitId, setInspectingPermitId] = useState<string | null>(null);
@@ -59,10 +60,9 @@ export function EnvironmentalPanel({ projectId }: { projectId: string }) {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<StormwaterPermit[]>(`/projects/${projectId}/stormwater-permits`).then(setPermits);
-    apiFetch<EnvironmentalIncident[]>(`/projects/${projectId}/environmental-incidents`).then(setIncidents);
+    void reloadPermits();
+    void reloadIncidents();
   }
-  useEffect(load, [projectId]);
 
   async function createPermit(e: React.FormEvent) {
     e.preventDefault();

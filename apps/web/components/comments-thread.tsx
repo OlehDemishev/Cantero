@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDateTime } from "@/lib/format-date";
 
 type CommentParam = "taskId" | "rfiId" | "punchListItemId" | "projectId";
@@ -25,7 +26,7 @@ interface CommentItem {
 export function CommentsThread({ param, entityId }: { param: CommentParam; entityId: string }) {
   const t = useTranslations("comments");
 
-  const [comments, setComments] = useState<CommentItem[] | null>(null);
+  const { data: comments = null, reload: reloadComments } = useApi<CommentItem[]>(`/comments?${param}=${entityId}`);
   const [members, setMembers] = useState<Member[]>([]);
   const [content, setContent] = useState("");
   const [mentionedIds, setMentionedIds] = useState<string[]>([]);
@@ -33,13 +34,11 @@ export function CommentsThread({ param, entityId }: { param: CommentParam; entit
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<CommentItem[]>(`/comments?${param}=${entityId}`).then(setComments);
+    void reloadComments();
   }
 
   useEffect(() => {
-    load();
     apiFetch<{ user: Member }[]>("/company/members").then((list) => setMembers(list.map((m) => m.user)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entityId]);
 
   function handleContentChange(value: string) {

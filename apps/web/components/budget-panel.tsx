@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatDate } from "@/lib/format-date";
@@ -50,7 +51,7 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("budget");
   const tc = useTranslations("common");
   const { data: me } = useMe();
-  const [budget, setBudget] = useState<BudgetVsActual | null>(null);
+  const { data: budget = null, reload: reloadBudget } = useApi<BudgetVsActual>(`/finance/budget-vs-actual?projectId=${projectId}`);
   const [addingRevision, setAddingRevision] = useState(false);
   const [revisionForm, setRevisionForm] = useState({ amount: "", reason: "" });
   const [addingDraw, setAddingDraw] = useState(false);
@@ -58,10 +59,8 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<BudgetVsActual>(`/finance/budget-vs-actual?projectId=${projectId}`).then(setBudget);
+    void reloadBudget();
   }
-
-  useEffect(load, [projectId]);
 
   async function submitRevision(e: React.FormEvent) {
     e.preventDefault();

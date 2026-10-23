@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, ApiError } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { EmptyState } from "@/components/ui/empty-state";
 
@@ -24,22 +25,19 @@ export function ClientTaxPanel({ clientId }: { clientId: string }) {
   const tt = useTranslations("tax");
   const tc = useTranslations("common");
 
-  const [taxJurisdictions, setTaxJurisdictions] = useState<TaxJurisdiction[]>([]);
+  const { data: taxJurisdictions = [] } = useApi<TaxJurisdiction[]>("/tax/jurisdictions");
   const [taxJurisdictionId, setTaxJurisdictionId] = useState("");
-  const [exemptionCertificates, setExemptionCertificates] = useState<TaxExemptionCertificate[] | null>(null);
+  const { data: exemptionCertificates = null, reload: reloadExemptionCertificates } = useApi<TaxExemptionCertificate[]>(`/clients/${clientId}/tax-exemption-certificates`);
   const [certForm, setCertForm] = useState({ certificateNumber: "", reason: "", expiresAt: "" });
   const [taxBusy, setTaxBusy] = useState(false);
   const [taxSaveMessage, setTaxSaveMessage] = useState<{ error: boolean; text: string } | null>(null);
 
   function loadExemptionCertificates() {
-    apiFetch<TaxExemptionCertificate[]>(`/clients/${clientId}/tax-exemption-certificates`).then(setExemptionCertificates);
+    void reloadExemptionCertificates();
   }
 
   useEffect(() => {
     apiFetch<Client>(`/clients/${clientId}`).then((c) => setTaxJurisdictionId(c.taxJurisdictionId ?? ""));
-    loadExemptionCertificates();
-    apiFetch<TaxJurisdiction[]>("/tax/jurisdictions").then(setTaxJurisdictions);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientId]);
 
   async function saveTaxJurisdiction(e: React.FormEvent) {

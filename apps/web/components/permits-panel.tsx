@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import type { InspectionResult, PermitStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -48,7 +49,7 @@ export function PermitsPanel({ projectId }: { projectId: string }) {
   const confirm = useConfirm();
   const tc = useTranslations("common");
 
-  const [permits, setPermits] = useState<Permit[] | null>(null);
+  const { data: permits = null, reload: reloadPermits } = useApi<Permit[]>(`/projects/${projectId}/permits`);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [inspections, setInspections] = useState<Inspection[] | null>(null);
   const [permitForm, setPermitForm] = useState({ permitType: "", permitNumber: "", authorityName: "", expiresAt: "" });
@@ -56,9 +57,8 @@ export function PermitsPanel({ projectId }: { projectId: string }) {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<Permit[]>(`/projects/${projectId}/permits`).then(setPermits);
+    void reloadPermits();
   }
-  useEffect(load, [projectId]);
 
   function loadInspections(permitId: string) {
     apiFetch<Inspection[]>(`/permits/${permitId}/inspections`).then(setInspections);

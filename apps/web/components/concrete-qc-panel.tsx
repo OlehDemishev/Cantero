@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 
 interface SlumpTest {
@@ -38,7 +39,7 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("concreteQc");
   const tc = useTranslations("common");
 
-  const [pours, setPours] = useState<ConcretePour[] | null>(null);
+  const { data: pours = null, reload: reloadPours } = useApi<ConcretePour[]>(`/projects/${projectId}/concrete-pours`);
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ location: "", pourDate: "", mixDesign: "", volume: "", specifiedStrength: "", specifiedSlump: "", supplierName: "" });
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -48,9 +49,8 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<ConcretePour[]>(`/projects/${projectId}/concrete-pours`).then(setPours);
+    void reloadPours();
   }
-  useEffect(load, [projectId]);
 
   async function createPour(e: React.FormEvent) {
     e.preventDefault();

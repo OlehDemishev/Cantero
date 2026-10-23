@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatCurrency } from "@/lib/format-currency";
 
 interface ProfitabilityRow {
@@ -29,11 +28,7 @@ export function ChangeOrderProfitabilityPanel({ estimateId, currency }: { estima
   const t = useTranslations("estimates");
   const tc = useTranslations("common");
 
-  const [report, setReport] = useState<Report | null>(null);
-
-  useEffect(() => {
-    apiFetch<Report>(`/estimates/${estimateId}/change-orders/profitability`).then(setReport);
-  }, [estimateId]);
+  const { data: report = null } = useApi<Report>(`/estimates/${estimateId}/change-orders/profitability`);
 
   if (!report || report.changeOrders.length === 0) return null;
 

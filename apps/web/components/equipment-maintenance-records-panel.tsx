@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
 
@@ -21,20 +22,14 @@ interface MaintenanceRecord {
 
 export function EquipmentMaintenanceRecordsPanel({ equipmentId, currency }: { equipmentId: string; currency: string }) {
   const t = useTranslations("equipment");
-  const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[] | null>(null);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const { data: maintenanceRecords = null, reload: reloadMaintenanceRecords } = useApi<MaintenanceRecord[]>(`/equipment/${equipmentId}/maintenance-records`);
+  const { data: suppliers = [] } = useApi<Supplier[]>("/materials/suppliers");
   const [maintenanceForm, setMaintenanceForm] = useState({ description: "", cost: "", supplierId: "", meterHours: "" });
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<MaintenanceRecord[]>(`/equipment/${equipmentId}/maintenance-records`).then(setMaintenanceRecords);
+    void reloadMaintenanceRecords();
   }
-
-  useEffect(() => {
-    load();
-    apiFetch<Supplier[]>("/materials/suppliers").then(setSuppliers);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [equipmentId]);
 
   async function addMaintenanceRecord(e: React.FormEvent) {
     e.preventDefault();

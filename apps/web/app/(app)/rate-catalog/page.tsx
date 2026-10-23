@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useState } from "react";
 import { useTranslations } from "next-intl";
 import { CsvImportButton } from "@/components/csv-import-button";
 import { AssembliesPanel } from "@/components/assemblies-panel";
@@ -9,6 +9,7 @@ import { MaterialPricesPanel } from "@/components/material-prices-panel";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CloseIcon, RateCatalogIcon } from "@/components/nav-icons";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate, formatDateTime } from "@/lib/format-date";
 
 interface MaterialCatalogItem {
@@ -65,9 +66,9 @@ export default function RateCatalogPage() {
   const tc = useTranslations("common");
   const ti = useTranslations("import");
 
-  const [items, setItems] = useState<RateCatalogItem[] | null>(null);
-  const [materials, setMaterials] = useState<MaterialCatalogItem[]>([]);
-  const [catalogs, setCatalogs] = useState<Catalog[]>([]);
+  const { data: items = null, reload: reloadItems } = useApi<RateCatalogItem[]>("/estimates/rate-catalog");
+  const { data: materials = [], reload: reloadMaterials } = useApi<MaterialCatalogItem[]>("/materials/catalog");
+  const { data: catalogs = [], reload: reloadCatalogs } = useApi<Catalog[]>("/catalogs");
   const [activeCatalogId, setActiveCatalogId] = useState<string>("all");
   const [newCatalogName, setNewCatalogName] = useState("");
   const [catalogBusy, setCatalogBusy] = useState(false);
@@ -79,27 +80,21 @@ export default function RateCatalogPage() {
   const [editForm, setEditForm] = useState(EMPTY_FORM);
   const [historyForId, setHistoryForId] = useState<string | null>(null);
   const [history, setHistory] = useState<Revision[] | null>(null);
-  const [pendingChanges, setPendingChanges] = useState<PendingChange[]>([]);
+  const { data: pendingChanges = [], reload: reloadPendingChanges } = useApi<PendingChange[]>("/estimates/rate-catalog/pending-changes");
   const [pendingNotice, setPendingNotice] = useState<string | null>(null);
 
   function load() {
-    apiFetch<RateCatalogItem[]>("/estimates/rate-catalog").then(setItems);
-    apiFetch<PendingChange[]>("/estimates/rate-catalog/pending-changes").then(setPendingChanges);
+    void reloadItems();
+    void reloadPendingChanges();
   }
 
   function loadMaterials() {
-    apiFetch<MaterialCatalogItem[]>("/materials/catalog").then(setMaterials);
+    void reloadMaterials();
   }
 
   function loadCatalogs() {
-    apiFetch<Catalog[]>("/catalogs").then(setCatalogs);
+    void reloadCatalogs();
   }
-
-  useEffect(() => {
-    load();
-    loadMaterials();
-    loadCatalogs();
-  }, []);
 
   function addLine() {
     if (materials.length === 0) return;

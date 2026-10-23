@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useDeepLinkedRow, buildItemDeepLink } from "@/lib/use-deep-linked-row";
 import { CopyLinkButton } from "@/components/ui/copy-link-button";
 import { PrintButton } from "@/components/ui/print-button";
@@ -45,8 +46,8 @@ export function MeetingsPanel({ projectId }: { projectId: string }) {
   const deepLinkedId = useDeepLinkedRow("meeting");
   const rowRefs = useRef<Record<string, HTMLLIElement | null>>({});
 
-  const [items, setItems] = useState<Meeting[] | null>(null);
-  const [openItems, setOpenItems] = useState<OpenActionItem[]>([]);
+  const { data: items = null, reload: reloadItems } = useApi<Meeting[]>(`/meetings?projectId=${projectId}`);
+  const { data: openItems = [], reload: reloadOpenItems } = useApi<OpenActionItem[]>(`/meetings/open-action-items?projectId=${projectId}`);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [expandedId, setExpandedId] = useState<string | null>(deepLinkedId);
@@ -54,16 +55,13 @@ export function MeetingsPanel({ projectId }: { projectId: string }) {
   const [actionItemDrafts, setActionItemDrafts] = useState<Record<string, { description: string; ownerName: string }>>({});
 
   function load() {
-    apiFetch<Meeting[]>(`/meetings?projectId=${projectId}`).then(setItems);
-    apiFetch<OpenActionItem[]>(`/meetings/open-action-items?projectId=${projectId}`).then(setOpenItems);
+    void reloadItems();
+    void reloadOpenItems();
   }
-
-  useEffect(load, [projectId]);
 
   useEffect(() => {
     if (!deepLinkedId || !items) return;
     rowRefs.current[deepLinkedId]?.scrollIntoView({ behavior: "smooth", block: "center" });
-     
   }, [items, deepLinkedId]);
 
   async function submit(e: React.FormEvent) {

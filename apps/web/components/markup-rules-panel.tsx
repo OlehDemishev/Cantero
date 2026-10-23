@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { MARKUP_COST_TYPES, type MarkupCostType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatNumber } from "@/lib/format-currency";
 
@@ -19,14 +20,13 @@ export function MarkupRulesPanel() {
   const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
-  const [rules, setRules] = useState<MarkupRule[] | null>(null);
+  const { data: rules = null, reload: reloadRules } = useApi<MarkupRule[]>("/markup-rules");
   const [form, setForm] = useState({ costType: "materials" as MarkupCostType, markupPercent: "" });
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<MarkupRule[]>("/markup-rules").then(setRules);
+    void reloadRules();
   }
-  useEffect(load, []);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();

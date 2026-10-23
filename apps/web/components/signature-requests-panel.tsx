@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import type { SignatureRequestStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 
 interface DocumentOption {
@@ -40,7 +41,7 @@ export function SignatureRequestsPanel({ documents }: { documents: DocumentOptio
   const t = useTranslations("signatureRequests");
   const tc = useTranslations("common");
 
-  const [requests, setRequests] = useState<SignatureRequest[] | null>(null);
+  const { data: requests = null, reload: reloadRequests } = useApi<SignatureRequest[]>("/signature-requests");
   const [creating, setCreating] = useState(false);
   const [title, setTitle] = useState("");
   const [documentId, setDocumentId] = useState("");
@@ -48,10 +49,8 @@ export function SignatureRequestsPanel({ documents }: { documents: DocumentOptio
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<SignatureRequest[]>("/signature-requests").then(setRequests);
+    void reloadRequests();
   }
-
-  useEffect(load, []);
 
   function addSignerRow() {
     setSigners((s) => [...s, { name: "", email: "" }]);

@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 
 interface CarbonRow {
   materialCatalogItemId: string;
@@ -23,11 +22,7 @@ interface CarbonReport {
 export function CarbonReportPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("sustainability");
 
-  const [report, setReport] = useState<CarbonReport | null>(null);
-
-  useEffect(() => {
-    apiFetch<CarbonReport>(`/sustainability/carbon-report?projectId=${projectId}`).then(setReport);
-  }, [projectId]);
+  const { data: report = null } = useApi<CarbonReport>(`/sustainability/carbon-report?projectId=${projectId}`);
 
   if (!report || report.rows.length === 0) return null;
 

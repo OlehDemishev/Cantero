@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { chartColors, chartAxisProps, chartGridProps, chartTooltipProps } from "@/components/charts/chart-theme";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { resetStateInEffect } from "@/lib/effect-reset";
 
@@ -62,7 +63,7 @@ export function SafetyScorecardPanel() {
   const [year, setYear] = useState(CURRENT_YEAR);
   const [scorecard, setScorecard] = useState<SafetyScorecard | null>(null);
   const [exporting, setExporting] = useState(false);
-  const [training, setTraining] = useState<TrainingCompliance | null>(null);
+  const { data: training = null } = useApi<TrainingCompliance>("/safety/analytics/training-compliance");
   const [nearMiss, setNearMiss] = useState<NearMissAnalytics | null>(null);
 
   useEffect(() => {
@@ -73,10 +74,6 @@ export function SafetyScorecardPanel() {
     apiFetch<SafetyScorecard>(`/safety/analytics/scorecard?year=${year}`).then(setScorecard);
     apiFetch<NearMissAnalytics>(`/safety/analytics/near-miss?year=${year}`).then(setNearMiss);
   }, [year]);
-
-  useEffect(() => {
-    apiFetch<TrainingCompliance>("/safety/analytics/training-compliance").then(setTraining);
-  }, []);
 
   async function downloadOsha300a() {
     setExporting(true);

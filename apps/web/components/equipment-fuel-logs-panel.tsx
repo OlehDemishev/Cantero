@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
 
@@ -32,24 +33,18 @@ interface Tco {
 
 export function EquipmentFuelLogsPanel({ equipmentId, currency }: { equipmentId: string; currency: string }) {
   const t = useTranslations("equipment");
-  const [fuelLogs, setFuelLogs] = useState<FuelLog[] | null>(null);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [costPerHour, setCostPerHour] = useState<CostPerHour | null>(null);
-  const [tco, setTco] = useState<Tco | null>(null);
+  const { data: fuelLogs = null, reload: reloadFuelLogs } = useApi<FuelLog[]>(`/equipment/${equipmentId}/fuel-logs`);
+  const { data: suppliers = [] } = useApi<Supplier[]>("/materials/suppliers");
+  const { data: costPerHour = null, reload: reloadCostPerHour } = useApi<CostPerHour>(`/equipment/${equipmentId}/cost-per-hour`);
+  const { data: tco = null, reload: reloadTco } = useApi<Tco>(`/equipment/${equipmentId}/tco`);
   const [fuelForm, setFuelForm] = useState({ quantity: "", cost: "", supplierId: "", meterHours: "" });
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<FuelLog[]>(`/equipment/${equipmentId}/fuel-logs`).then(setFuelLogs);
-    apiFetch<CostPerHour>(`/equipment/${equipmentId}/cost-per-hour`).then(setCostPerHour);
-    apiFetch<Tco>(`/equipment/${equipmentId}/tco`).then(setTco);
+    void reloadFuelLogs();
+    void reloadCostPerHour();
+    void reloadTco();
   }
-
-  useEffect(() => {
-    load();
-    apiFetch<Supplier[]>("/materials/suppliers").then(setSuppliers);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [equipmentId]);
 
   async function addFuelLog(e: React.FormEvent) {
     e.preventDefault();

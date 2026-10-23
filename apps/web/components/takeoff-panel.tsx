@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import type { PDFPageProxy } from "pdfjs-dist";
 import { TAKEOFF_RATIO_UNITS, type TakeoffRatioUnit } from "@cantero/shared";
 import { apiFetch, apiUpload } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { loadPdf, pageVertices, renderPage, VertexIndex } from "@/lib/pdf";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatNumber } from "@/lib/format-currency";
@@ -67,10 +68,10 @@ export function TakeoffPanel({ projectId }: { projectId: string }) {
   const tc = useTranslations("common");
   const searchParams = useSearchParams();
 
-  const [takeoffs, setTakeoffs] = useState<TakeoffSummary[] | null>(null);
+  const { data: takeoffs = null, reload: reloadTakeoffs } = useApi<TakeoffSummary[]>(`/takeoffs?projectId=${projectId}`);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<TakeoffDetail | null>(null);
-  const [rateItems, setRateItems] = useState<RateCatalogItem[]>([]);
+  const { data: rateItems = [] } = useApi<RateCatalogItem[]>("/estimates/rate-catalog");
   const [draftEstimates, setDraftEstimates] = useState<Estimate[]>([]);
 
   const [uploadName, setUploadName] = useState("");
@@ -92,7 +93,7 @@ export function TakeoffPanel({ projectId }: { projectId: string }) {
   const isPdf = detail?.imageMimeType === "application/pdf";
 
   function loadTakeoffs() {
-    apiFetch<TakeoffSummary[]>(`/takeoffs?projectId=${projectId}`).then(setTakeoffs);
+    void reloadTakeoffs();
   }
 
   const loadDetail = useCallback((id: string, keepMode = false) => {
@@ -104,10 +105,7 @@ export function TakeoffPanel({ projectId }: { projectId: string }) {
   }, []);
 
   useEffect(() => {
-    loadTakeoffs();
-    apiFetch<RateCatalogItem[]>("/estimates/rate-catalog").then(setRateItems);
     apiFetch<Estimate[]>("/estimates").then((all) => setDraftEstimates(all.filter((e) => e.project.id === projectId && e.status === "draft")));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
   // "Measure this sheet" in the Plan room links here with ?takeoff=<id>.

@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatCurrency } from "@/lib/format-currency";
 
 interface EacRow {
@@ -24,11 +23,7 @@ interface EacRow {
 export function EstimateAtCompletionReportPanel({ currency }: { currency: string }) {
   const t = useTranslations("reports");
   const tc = useTranslations("common");
-  const [eac, setEac] = useState<EacRow[] | null>(null);
-
-  useEffect(() => {
-    apiFetch<EacRow[]>("/reports/estimate-at-completion").then(setEac);
-  }, []);
+  const { data: eac = null } = useApi<EacRow[]>("/reports/estimate-at-completion");
 
   return (
     <>

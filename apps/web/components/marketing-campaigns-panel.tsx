@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 
@@ -22,14 +23,13 @@ export function MarketingCampaignsPanel() {
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const [campaigns, setCampaigns] = useState<Campaign[] | null>(null);
+  const { data: campaigns = null, reload: reloadCampaigns } = useApi<Campaign[]>("/marketing/campaigns");
   const [form, setForm] = useState({ name: "", channel: "", spend: "", startDate: "", endDate: "" });
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<Campaign[]>("/marketing/campaigns").then(setCampaigns);
+    void reloadCampaigns();
   }
-  useEffect(load, []);
 
   async function createCampaign(e: React.FormEvent) {
     e.preventDefault();

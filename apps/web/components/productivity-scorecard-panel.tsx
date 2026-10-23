@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatNumber } from "@/lib/format-currency";
 
 interface UnitRate {
@@ -23,11 +22,7 @@ export function ProductivityScorecardPanel() {
   const t = useTranslations("productivityScorecard");
   const tc = useTranslations("common");
 
-  const [rows, setRows] = useState<CrewRow[] | null>(null);
-
-  useEffect(() => {
-    apiFetch<CrewRow[]>("/productivity-logs/crew-scorecard").then(setRows);
-  }, []);
+  const { data: rows = null } = useApi<CrewRow[]>("/productivity-logs/crew-scorecard");
 
   if (rows && rows.length === 0) return null;
 

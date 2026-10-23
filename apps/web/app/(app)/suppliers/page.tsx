@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { SUPPLIER_DOCUMENT_TYPES, type ImportResult, type SupplierDocumentType } from "@cantero/shared";
@@ -10,6 +10,7 @@ import { MaterialRfqsPanel } from "@/components/material-rfqs-panel";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CloseIcon, SuppliersIcon } from "@/components/nav-icons";
 import { apiFetch, apiUpload } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatNumber } from "@/lib/format-currency";
@@ -58,7 +59,7 @@ export default function SuppliersPage() {
   const t = useTranslations("suppliers");
   const confirm = useConfirm();
   const tc = useTranslations("common");
-  const [suppliers, setSuppliers] = useState<Supplier[] | null>(null);
+  const { data: suppliers = null, reload: reloadSuppliers } = useApi<Supplier[]>("/materials/suppliers");
   const [form, setForm] = useState({ name: "", email: "", phone: "" });
   const [submitting, setSubmitting] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -145,10 +146,8 @@ export default function SuppliersPage() {
   }
 
   function load() {
-    apiFetch<Supplier[]>("/materials/suppliers").then(setSuppliers);
+    void reloadSuppliers();
   }
-
-  useEffect(load, []);
 
   async function syncCatalog(e: React.ChangeEvent<HTMLInputElement>, supplierId: string) {
     const file = e.target.files?.[0];

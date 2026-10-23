@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatCurrency } from "@/lib/format-currency";
 
 interface FranchiseBranch {
@@ -28,15 +29,11 @@ interface FranchiseOverview {
 export function FranchisePanel() {
   const t = useTranslations("settings");
   const tc = useTranslations("common");
-  const [franchiseOverview, setFranchiseOverview] = useState<FranchiseOverview | null>(null);
+  const { data: franchiseOverview = null } = useApi<FranchiseOverview>("/company/franchise-overview");
   const [franchiseLinkCode, setFranchiseLinkCode] = useState<string | null>(null);
   const [linkCodeInput, setLinkCodeInput] = useState("");
   const [franchiseBusy, setFranchiseBusy] = useState(false);
   const [franchiseError, setFranchiseError] = useState<string | null>(null);
-
-  useEffect(() => {
-    apiFetch<FranchiseOverview>("/company/franchise-overview").then(setFranchiseOverview);
-  }, []);
 
   async function generateFranchiseLinkCode() {
     setFranchiseBusy(true);

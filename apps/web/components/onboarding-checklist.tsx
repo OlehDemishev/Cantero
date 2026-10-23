@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 
 interface ChecklistStep {
   key: string;
@@ -15,12 +15,8 @@ interface ChecklistStep {
  * step is done. */
 export function OnboardingChecklist() {
   const t = useTranslations("onboardingChecklist");
-  const [steps, setSteps] = useState<ChecklistStep[] | null>(null);
+  const { data: steps = null } = useApi<ChecklistStep[]>("/me/onboarding-checklist");
   const [dismissed, setDismissed] = useState(false);
-
-  useEffect(() => {
-    apiFetch<ChecklistStep[]>("/me/onboarding-checklist").then(setSteps);
-  }, []);
 
   if (!steps || dismissed || steps.every((s) => s.done)) return null;
 

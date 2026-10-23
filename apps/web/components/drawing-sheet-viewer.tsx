@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { AnnotationType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { resetStateInEffect } from "@/lib/effect-reset";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -126,8 +127,8 @@ export function DrawingSheetViewer({ sheetId }: { sheetId: string }) {
   const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
-  const [sheet, setSheet] = useState<DrawingSheet | null>(null);
-  const [annotations, setAnnotations] = useState<Annotation[] | null>(null);
+  const { data: sheet = null } = useApi<DrawingSheet>(`/drawing-sheets/${sheetId}`);
+  const { data: annotations = null, reload: reloadAnnotations } = useApi<Annotation[]>(`/drawing-sheets/${sheetId}/annotations`);
   const [tool, setTool] = useState<AnnotationType | null>(null);
   const [draftPoints, setDraftPoints] = useState<Point[]>([]);
   const [busy, setBusy] = useState(false);
@@ -145,21 +146,15 @@ export function DrawingSheetViewer({ sheetId }: { sheetId: string }) {
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
   const drawingRef = useRef(false);
 
-  function loadMeta() {
-    apiFetch<DrawingSheet>(`/drawing-sheets/${sheetId}`).then(setSheet);
-  }
   function loadAnnotations() {
-    apiFetch<Annotation[]>(`/drawing-sheets/${sheetId}/annotations`).then(setAnnotations);
+    void reloadAnnotations();
   }
 
   useEffect(() => {
-    loadMeta();
-    loadAnnotations();
     resetStateInEffect(() => setLinks(null));
     apiFetch<SheetLinks>(`/drawing-sheets/${sheetId}/links`)
       .then(setLinks)
       .catch(() => setLinks({ outgoing: [], referencedBy: [] }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sheetId]);
 
   /** Opens the Digital takeoff on this sheet, in the project's Documents tab. */

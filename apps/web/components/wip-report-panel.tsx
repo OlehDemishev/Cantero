@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatCurrency } from "@/lib/format-currency";
 
 interface WipRow {
@@ -31,12 +32,8 @@ interface WipReport {
 export function WipReportPanel({ currency }: { currency: string }) {
   const t = useTranslations("reports");
   const tc = useTranslations("common");
-  const [wip, setWip] = useState<WipReport | null>(null);
+  const { data: wip = null } = useApi<WipReport>("/reports/wip-report");
   const [wipExporting, setWipExporting] = useState(false);
-
-  useEffect(() => {
-    apiFetch<WipReport>("/reports/wip-report").then(setWip);
-  }, []);
 
   async function downloadWipPdf() {
     setWipExporting(true);

@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 
@@ -26,11 +25,7 @@ export function CostImpactSummaryPanel({ projectId }: { projectId: string }) {
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const [summary, setSummary] = useState<CostImpactSummary | null>(null);
-
-  useEffect(() => {
-    apiFetch<CostImpactSummary>(`/rfis/cost-impact-summary?projectId=${projectId}`).then(setSummary);
-  }, [projectId]);
+  const { data: summary = null } = useApi<CostImpactSummary>(`/rfis/cost-impact-summary?projectId=${projectId}`);
 
   if (!summary || summary.rows.length === 0) return null;
 

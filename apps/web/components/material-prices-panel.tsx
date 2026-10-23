@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 
@@ -36,8 +37,8 @@ export function MaterialPricesPanel() {
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const [materials, setMaterials] = useState<MaterialCatalogItem[] | null>(null);
-  const [changes, setChanges] = useState<PriceChange[] | null>(null);
+  const { data: materials = null, reload: reloadMaterials } = useApi<MaterialCatalogItem[]>("/materials/catalog");
+  const { data: changes = null, reload: reloadChanges } = useApi<PriceChange[]>("/materials/catalog/price-changes");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [priceDraft, setPriceDraft] = useState("");
   const [editingStandardCostId, setEditingStandardCostId] = useState<string | null>(null);
@@ -47,11 +48,9 @@ export function MaterialPricesPanel() {
   const [affected, setAffected] = useState<AffectedEstimate[] | null>(null);
 
   function load() {
-    apiFetch<MaterialCatalogItem[]>("/materials/catalog").then(setMaterials);
-    apiFetch<PriceChange[]>("/materials/catalog/price-changes").then(setChanges);
+    void reloadMaterials();
+    void reloadChanges();
   }
-
-  useEffect(load, []);
 
   function startEdit(m: MaterialCatalogItem) {
     setEditingId(m.id);

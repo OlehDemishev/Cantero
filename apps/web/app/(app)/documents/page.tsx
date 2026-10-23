@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { DOCUMENT_CATEGORIES, type DocumentCategory } from "@cantero/shared";
 import { apiFetch, apiUpload, downloadBlob } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { SignatureRequestsPanel } from "@/components/signature-requests-panel";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatNumber } from "@/lib/format-currency";
@@ -38,7 +39,7 @@ export default function DocumentsPage() {
   const tc = useTranslations("common");
 
   const [documents, setDocuments] = useState<Document[] | null>(null);
-  const [projects, setProjects] = useState<Project[]>([]);
+  const { data: projects = [] } = useApi<Project[]>("/projects");
   const [category, setCategory] = useState<DocumentCategory | "">("");
   const [search, setSearch] = useState("");
   const [uploadCategory, setUploadCategory] = useState<DocumentCategory>("other");
@@ -54,9 +55,6 @@ export default function DocumentsPage() {
   }
 
   useEffect(load, [category, search]);
-  useEffect(() => {
-    apiFetch<Project[]>("/projects").then(setProjects);
-  }, []);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];

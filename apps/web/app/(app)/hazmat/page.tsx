@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 
 interface SdsSheet {
@@ -37,8 +38,8 @@ export default function HazmatPage() {
   const tc = useTranslations("common");
   const searchParams = useSearchParams();
 
-  const [materials, setMaterials] = useState<HazardousMaterial[] | null>(null);
-  const [stale, setStale] = useState<StaleEntry[] | null>(null);
+  const { data: materials = null, reload: reloadMaterials } = useApi<HazardousMaterial[]>("/hazmat/materials");
+  const { data: stale = null, reload: reloadStale } = useApi<StaleEntry[]>("/hazmat/stale-sds-report");
   const [search, setSearch] = useState("");
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ name: "", manufacturer: "", casNumber: "" });
@@ -47,10 +48,9 @@ export default function HazmatPage() {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<HazardousMaterial[]>("/hazmat/materials").then(setMaterials);
-    apiFetch<StaleEntry[]>("/hazmat/stale-sds-report").then(setStale);
+    void reloadMaterials();
+    void reloadStale();
   }
-  useEffect(load, []);
 
   async function createMaterial(e: React.FormEvent) {
     e.preventDefault();

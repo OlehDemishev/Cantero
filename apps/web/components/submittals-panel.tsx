@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { SUBMITTAL_REVIEW_DECISIONS, type BulkActionResult, type SubmittalReviewDecision, type SubmittalStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useBulkSelection } from "@/components/bulk-select";
 import { useDeepLinkedRow, buildItemDeepLink } from "@/lib/use-deep-linked-row";
 import { CopyLinkButton } from "@/components/ui/copy-link-button";
@@ -49,7 +50,7 @@ export function SubmittalsPanel({ projectId }: { projectId: string }) {
   const deepLinkedId = useDeepLinkedRow("submittal");
   const rowRefs = useRef<Record<string, HTMLLIElement | null>>({});
 
-  const [items, setItems] = useState<Submittal[] | null>(null);
+  const { data: items = null, reload: reloadItems } = useApi<Submittal[]>(`/submittals?projectId=${projectId}`);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [expandedId, setExpandedId] = useState<string | null>(deepLinkedId);
@@ -59,15 +60,12 @@ export function SubmittalsPanel({ projectId }: { projectId: string }) {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<Submittal[]>(`/submittals?projectId=${projectId}`).then(setItems);
+    void reloadItems();
   }
-
-  useEffect(load, [projectId]);
 
   useEffect(() => {
     if (!deepLinkedId || !items) return;
     rowRefs.current[deepLinkedId]?.scrollIntoView({ behavior: "smooth", block: "center" });
-     
   }, [items, deepLinkedId]);
 
   async function submit(e: React.FormEvent) {
