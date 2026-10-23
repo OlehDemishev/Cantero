@@ -27,6 +27,12 @@ export class EnpsSurveysController {
   }
 
   @Public()
+  @Get(":token")
+  getByToken(@Param("token") token: string) {
+    return this.service.getByToken(token);
+  }
+
+  @Public()
   @Post(":token")
   submit(@Param("token") token: string, @Body(new ZodValidationPipe(submitEnpsSurveySchema)) body: SubmitEnpsSurveyInput) {
     return this.service.submit(token, body);

@@ -63,6 +63,26 @@ export class NpsSurveysService {
     return survey;
   }
 
+  /** What the public survey page needs before it shows the form: whose survey it is, which
+   * language to show it in (the client's document language, else the company's), and whether
+   * it was already answered — so a dead or used link says so up front instead of on submit. */
+  async getByToken(token: string) {
+    const survey = await this.prisma.npsSurvey.findUnique({
+      where: { token },
+      include: {
+        company: { select: { name: true, locale: true } },
+        project: { select: { name: true, client: { select: { preferredLocale: true } } } },
+      },
+    });
+    if (!survey) throw new NotFoundException("Survey link not found");
+    return {
+      companyName: survey.company.name,
+      projectName: survey.project.name,
+      locale: survey.project.client?.preferredLocale ?? survey.company.locale,
+      submitted: survey.respondedAt !== null,
+    };
+  }
+
   async submit(token: string, input: SubmitNpsSurveyInput) {
     const survey = await this.prisma.npsSurvey.findUnique({ where: { token }, include: { project: { include: { client: true } } } });
     if (!survey) throw new NotFoundException("Survey link not found");

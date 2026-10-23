@@ -74,6 +74,25 @@ export class ServiceVisitsService {
     return updated;
   }
 
+  /** Lets the public feedback page check its link (and pick the client's language) on load. */
+  async getFeedbackByToken(feedbackToken: string) {
+    const visit = await this.prisma.serviceVisit.findUnique({
+      where: { feedbackToken },
+      include: {
+        company: { select: { name: true, locale: true } },
+        serviceContract: { select: { title: true, client: { select: { preferredLocale: true } } } },
+      },
+    });
+    if (!visit) throw new NotFoundException("Feedback link not found");
+    return {
+      companyName: visit.company.name,
+      contractTitle: visit.serviceContract.title,
+      locale: visit.serviceContract.client.preferredLocale ?? visit.company.locale,
+      completed: visit.completedAt !== null,
+      submitted: visit.satisfactionRating !== null,
+    };
+  }
+
   async submitFeedback(feedbackToken: string, input: SubmitServiceVisitFeedbackInput) {
     const visit = await this.prisma.serviceVisit.findUnique({ where: { feedbackToken } });
     if (!visit) throw new NotFoundException("Feedback link not found");

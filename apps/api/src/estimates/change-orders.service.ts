@@ -291,8 +291,8 @@ export class ChangeOrdersService {
       where: { clientAccessToken: token },
       include: {
         lines: { include: { rateCatalogItem: true }, orderBy: { sortOrder: "asc" } },
-        estimate: { select: { name: true, currency: true } },
-        company: { select: { name: true } },
+        estimate: { select: { name: true, currency: true, project: { select: { client: { select: { preferredLocale: true } } } } } },
+        company: { select: { name: true, locale: true } },
       },
     });
     if (!changeOrder) throw new NotFoundException("Change order not found");
@@ -306,6 +306,7 @@ export class ChangeOrdersService {
       decisionAt: changeOrder.decisionAt,
       clientDecisionNote: changeOrder.clientDecisionNote,
       companyName: changeOrder.company.name,
+      locale: changeOrder.estimate.project?.client?.preferredLocale ?? changeOrder.company.locale,
       currency: changeOrder.estimate.currency,
       estimateName: changeOrder.estimate.name,
       scheduleImpactDays: changeOrder.scheduleImpactDays,

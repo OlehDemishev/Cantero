@@ -108,6 +108,29 @@ describe("ServiceVisitsService", () => {
     });
   });
 
+  describe("getFeedbackByToken", () => {
+    it("throws on an unknown token", async () => {
+      prisma.serviceVisit.findUnique.mockResolvedValue(null);
+      await expect(service.getFeedbackByToken("bad-token")).rejects.toThrow(NotFoundException);
+    });
+
+    it("returns the client's language and whether the form can still be filled in", async () => {
+      prisma.serviceVisit.findUnique.mockResolvedValue({
+        completedAt: new Date(),
+        satisfactionRating: null,
+        company: { name: "Acme", locale: "en" },
+        serviceContract: { title: "HVAC", client: { preferredLocale: "uk" } },
+      });
+      await expect(service.getFeedbackByToken("t")).resolves.toEqual({
+        companyName: "Acme",
+        contractTitle: "HVAC",
+        locale: "uk",
+        completed: true,
+        submitted: false,
+      });
+    });
+  });
+
   describe("submitFeedback", () => {
     it("throws on an unknown token", async () => {
       prisma.serviceVisit.findUnique.mockResolvedValue(null);

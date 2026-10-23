@@ -105,6 +105,29 @@ describe("EnpsSurveysService", () => {
     });
   });
 
+  describe("getByToken()", () => {
+    it("404s on an unknown token", async () => {
+      prisma.enpsSurvey.findUnique.mockResolvedValue(null);
+      await expect(service.getByToken("bad")).rejects.toThrow(NotFoundException);
+    });
+
+    it("answers in the worker's own language, else the company's, and says whether it was answered", async () => {
+      prisma.enpsSurvey.findUnique.mockResolvedValue({
+        respondedAt: null,
+        company: { name: "Acme", locale: "de" },
+        worker: { preferredLocale: "pl" },
+      });
+      await expect(service.getByToken("t")).resolves.toEqual({ companyName: "Acme", locale: "pl", submitted: false });
+
+      prisma.enpsSurvey.findUnique.mockResolvedValue({
+        respondedAt: new Date(),
+        company: { name: "Acme", locale: "de" },
+        worker: { preferredLocale: null },
+      });
+      await expect(service.getByToken("t")).resolves.toEqual({ companyName: "Acme", locale: "de", submitted: true });
+    });
+  });
+
   describe("submit()", () => {
     it("404s on an unknown token", async () => {
       prisma.enpsSurvey.findUnique.mockResolvedValue(null);

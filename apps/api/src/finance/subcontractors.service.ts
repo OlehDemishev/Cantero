@@ -318,7 +318,7 @@ export class SubcontractorsService {
   async getPublicProfile(token: string) {
     const subcontractor = await this.prisma.subcontractor.findFirst({
       where: { publicToken: token, publicListed: true },
-      include: { company: { select: { name: true } } },
+      include: { company: { select: { name: true, locale: true, currency: true } } },
     });
     if (!subcontractor) throw new NotFoundException("Profile not found");
 
@@ -332,6 +332,8 @@ export class SubcontractorsService {
       specialization: subcontractor.specialization,
       bio: subcontractor.bio,
       referencedBy: subcontractor.company.name,
+      locale: subcontractor.company.locale,
+      currency: subcontractor.company.currency,
       projectsWorked,
       totalPaidOut: Number(paidTotal._sum.amount ?? 0),
     };

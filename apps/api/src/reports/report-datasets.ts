@@ -6,7 +6,11 @@ import type { ProjectAccessService, ProjectViewer } from "../common/project-acce
 
 export interface ReportField {
   key: string;
+  /** English column name — what the CSV export writes, and the fallback for API clients. */
   label: string;
+  /** Built-in fields only: the message key the web translates the column name with
+   * (messages: reportFields.<labelKey>). Custom fields have none; their label is the user's own. */
+  labelKey?: string;
 }
 
 export interface DatasetFilter {
@@ -23,7 +27,7 @@ export interface DatasetDeps {
 }
 
 /** Each dataset has exactly one built-in date field it filters on — keeps the builder's date-range filter simple instead of letting the user pick which field. */
-export const DATASET_FIELDS: Record<ReportDataset, ReportField[]> = {
+const BUILT_IN_FIELDS: Record<ReportDataset, Omit<ReportField, "labelKey">[]> = {
   projects: [
     { key: "name", label: "Name" },
     { key: "address", label: "Address" },
@@ -90,6 +94,10 @@ export const DATASET_FIELDS: Record<ReportDataset, ReportField[]> = {
     { key: "cost", label: "Cost" },
   ],
 };
+
+export const DATASET_FIELDS = Object.fromEntries(
+  Object.entries(BUILT_IN_FIELDS).map(([dataset, fields]) => [dataset, fields.map((f) => ({ ...f, labelKey: f.key }))]),
+) as Record<ReportDataset, ReportField[]>;
 
 /** Datasets with no status field — statusEquals is silently ignored for these. */
 const NO_STATUS_DATASETS = new Set<ReportDataset>(["projects", "time_entries"]);
