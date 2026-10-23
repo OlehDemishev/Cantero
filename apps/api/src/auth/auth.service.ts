@@ -17,6 +17,15 @@ const LOGIN_IP_LIMIT = 20;
 const LOGIN_EMAIL_LIMIT = 8;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 
+/** A hash of nothing anyone knows, at the same cost as real ones: login compares against it for
+ * an unknown email so that answer takes as long as a wrong password and timing can't tell which
+ * emails have accounts. Made on first use, not at import, to keep boot fast. */
+let dummyPasswordHash: Promise<string> | undefined;
+function getDummyPasswordHash(): Promise<string> {
+  dummyPasswordHash ??= bcrypt.hash(randomBytes(32).toString("hex"), BCRYPT_ROUNDS);
+  return dummyPasswordHash;
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -88,10 +97,8 @@ export class AuthService {
       where: { email: input.email },
       include: { memberships: { include: { customRole: true } } },
     });
-    if (!user) throw new UnauthorizedException("Invalid email or password");
-
-    const passwordOk = await bcrypt.compare(input.password, user.passwordHash);
-    if (!passwordOk) throw new UnauthorizedException("Invalid email or password");
+    const passwordOk = await bcrypt.compare(input.password, user?.passwordHash ?? (await getDummyPasswordHash()));
+    if (!user || !passwordOk) throw new UnauthorizedException("Invalid email or password");
 
     // The password itself is what's being brute-forced here — once it's confirmed correct,
     // further failures (if any) happen in the 2FA step, which has its own separate limiter.

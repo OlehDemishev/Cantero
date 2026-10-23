@@ -3,7 +3,7 @@ import { Test } from "@nestjs/testing";
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcryptjs";
 import { authenticator } from "otplib";
-import { TwoFactorService } from "./two-factor.service";
+import { randomBackupCode, TwoFactorService } from "./two-factor.service";
 import { AuthService } from "./auth.service";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { RateLimiterService } from "../common/rate-limiter/rate-limiter.service";
@@ -274,5 +274,16 @@ describe("TwoFactorService", () => {
       const otherUserToken = jwt.sign({ userId: "user-2", kind: "2fa_challenge" }, { expiresIn: "10m" });
       await expect(service.verifyChallenge(otherUserToken, "000000", {})).rejects.toThrow(UnauthorizedException);
     });
+  });
+});
+
+describe("randomBackupCode", () => {
+  it("draws ten base-36 characters from the CSPRNG, never Math.random", () => {
+    const mathRandom = jest.spyOn(Math, "random");
+    const codes = Array.from({ length: 50 }, () => randomBackupCode());
+    expect(mathRandom).not.toHaveBeenCalled();
+    mathRandom.mockRestore();
+    for (const code of codes) expect(code).toMatch(/^[0-9A-Z]{10}$/);
+    expect(new Set(codes).size).toBe(codes.length);
   });
 });

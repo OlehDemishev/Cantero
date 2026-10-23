@@ -6,8 +6,8 @@ import { hashApiKey } from "../../company/api-keys.service";
 import { ScimController } from "../../scim/scim.controller";
 import { REQUIRE_SCOPE_KEY } from "../decorators/require-scope.decorator";
 
-function makeContext(headers: Record<string, string>) {
-  const request: Record<string, any> = { headers };
+function makeContext(headers: Record<string, string>, ip?: string) {
+  const request: Record<string, any> = { headers, ip };
   return {
     switchToHttp: () => ({ getRequest: () => request }),
     getHandler: () => ({}),
@@ -34,6 +34,38 @@ describe("ApiKeyGuard", () => {
     prisma.apiKey.findFirst.mockResolvedValue(null);
 
     await expect(guard.canActivate(makeContext({ "x-api-key": "cnt_bad" }))).rejects.toThrow(UnauthorizedException);
+  });
+
+  describe("company IP allowlist", () => {
+    const keyFor = (ipAllowlist: string[]) => ({ id: "k-1", companyId: "company-a", scopes: [], expiresAt: null, company: { ipAllowlist } });
+
+    it("rejects a valid key used from an IP outside the company's allowlist", async () => {
+      prisma.apiKey.findFirst.mockResolvedValue(keyFor(["203.0.113.0/24"]));
+
+      await expect(guard.canActivate(makeContext({ "x-api-key": "cnt_ok" }, "198.51.100.7"))).rejects.toThrow(ForbiddenException);
+      expect(prisma.apiKey.update).not.toHaveBeenCalled();
+    });
+
+    it("accepts a key used from an allowed IP, IPv4-mapped or not", async () => {
+      prisma.apiKey.findFirst.mockResolvedValue(keyFor(["203.0.113.0/24"]));
+
+      await expect(guard.canActivate(makeContext({ "x-api-key": "cnt_ok" }, "::ffff:203.0.113.9"))).resolves.toBe(true);
+      await expect(guard.canActivate(makeContext({ "x-api-key": "cnt_ok" }, "203.0.113.10"))).resolves.toBe(true);
+    });
+
+    it("accepts any IP when the company has no allowlist", async () => {
+      prisma.apiKey.findFirst.mockResolvedValue(keyFor([]));
+
+      await expect(guard.canActivate(makeContext({ "x-api-key": "cnt_ok" }, "198.51.100.7"))).resolves.toBe(true);
+    });
+
+    it("loads the allowlist with the key, in the same query", async () => {
+      prisma.apiKey.findFirst.mockResolvedValue(keyFor([]));
+
+      await guard.canActivate(makeContext({ "x-api-key": "cnt_ok" }));
+
+      expect(prisma.apiKey.findFirst).toHaveBeenCalledWith(expect.objectContaining({ include: { company: { select: { ipAllowlist: true } } } }));
+    });
   });
 
   it("rejects a key past its expiresAt", async () => {
@@ -102,6 +134,7 @@ describe("ApiKeyGuard", () => {
 
     expect(prisma.apiKey.findFirst).toHaveBeenCalledWith({
       where: { keyHash: hashApiKey("cnt_raw_key"), revokedAt: null },
+      include: { company: { select: { ipAllowlist: true } } },
     });
   });
 });

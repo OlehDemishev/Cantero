@@ -7,7 +7,6 @@ import {
   Header,
   Patch,
   Post,
-  StreamableFile,
   UploadedFile,
   UseInterceptors,
 } from "@nestjs/common";
@@ -27,6 +26,7 @@ import { OpenToAllRoles, Roles } from "../common/decorators/roles.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { CompanyService } from "./company.service";
 import { Requires } from "../common/decorators/permissions.decorator";
+import { storedFileResponse } from "../common/http/file-response";
 
 @Controller("company")
 export class CompanyController {
@@ -68,7 +68,7 @@ export class CompanyController {
   @Get("logo")
   async logo(@CurrentUser() user: AuthUser) {
     const { buffer, mimeType } = await this.service.getLogo(user.companyId);
-    return new StreamableFile(buffer, { type: mimeType });
+    return storedFileResponse(buffer, mimeType);
   }
 
   @Roles("owner", "admin")

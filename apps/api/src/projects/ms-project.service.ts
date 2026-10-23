@@ -11,6 +11,26 @@ const MICROSOFT_IDENTITY_BASE_URL = "https://login.microsoftonline.com/common/oa
 /** Microsoft's documented cap on operations per OperationSet. */
 const OPERATION_SET_LIMIT = 200;
 
+/** A Dataverse environment's host: <org>.crm[N].dynamics.com, or its <org>.api.crm[N] Web API alias. */
+const DYNAMICS_HOST = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.api)?\.crm\d{0,2}\.dynamics\.com$/;
+
+/**
+ * The environment URL as a bare https origin, or null unless it's one of Microsoft's Dataverse
+ * hosts. The company types this URL in and we send it a bearer token, so anything else (another
+ * host, http, a port, credentials, a path) is refused rather than trusted.
+ */
+export function normalizeDynamicsEnvironmentUrl(raw: string): string | null {
+  let url: URL;
+  try {
+    url = new URL(raw.trim());
+  } catch {
+    return null;
+  }
+  if (url.protocol !== "https:" || url.port || url.username || url.password || url.search || url.hash) return null;
+  if (url.pathname.replace(/\/+$/, "") !== "") return null;
+  return DYNAMICS_HOST.test(url.hostname) ? `https://${url.hostname}` : null;
+}
+
 export interface MsProjectConnection {
   id: string;
   companyId: string;
@@ -61,7 +81,10 @@ export class MsProjectService {
     if (!clientId) {
       throw new BadRequestException("MS Project isn't configured on this server — set MS_PROJECT_CLIENT_ID/MS_PROJECT_CLIENT_SECRET");
     }
-    const normalizedUrl = environmentUrl.replace(/\/+$/, "");
+    const normalizedUrl = normalizeDynamicsEnvironmentUrl(environmentUrl);
+    if (!normalizedUrl) {
+      throw new BadRequestException("Enter your Dataverse environment URL, e.g. https://yourorg.crm.dynamics.com");
+    }
 
     const state = signState(this.jwt, "ms_project", user, { environmentUrl: normalizedUrl });
     const params = new URLSearchParams({
@@ -238,7 +261,11 @@ export class MsProjectService {
   /** Unbound actions (msdyn_*V1) and entity-set reads over the Dataverse Web API. Errors carry
    * Dataverse's own message, which is what says *why* a schedule operation was refused. */
   private async request(connection: MsProjectConnection, method: "GET" | "POST", path: string, body?: unknown): Promise<any> {
-    const res = await fetch(`${connection.environmentUrl}/api/data/v9.2/${path}`, {
+    // Re-checked here, right before the bearer token goes out, for connections saved before the
+    // URL was validated at connect time.
+    const environmentUrl = normalizeDynamicsEnvironmentUrl(connection.environmentUrl);
+    if (!environmentUrl) throw new BadRequestException("The connected MS Project environment URL isn't a Dataverse URL — reconnect MS Project");
+    const res = await fetch(`${environmentUrl}/api/data/v9.2/${path}`, {
       method,
       headers: {
         Authorization: `Bearer ${connection.accessToken}`,

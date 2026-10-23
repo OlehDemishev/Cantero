@@ -17,9 +17,19 @@ function ipMatches(ip: string, rule: string): boolean {
   return (toInt(ip) & mask) === (toInt(rangeIp) & mask);
 }
 
+/** Whether a request from `rawIp` passes a company's allowlist; an empty list allows everyone. */
+export function isIpAllowed(allowlist: readonly string[], rawIp: string | undefined): boolean {
+  if (allowlist.length === 0) return true;
+  const requestIp = rawIp?.replace(/^::ffff:/, "") ?? "";
+  return allowlist.some((rule) => ipMatches(requestIp, rule));
+}
+
+export const IP_NOT_ALLOWED = "This IP address isn't on the company's allowlist";
+
 /**
  * Runs after JwtAuthGuard (needs `request.user.companyId`) — a company with a non-empty
  * ipAllowlist rejects any authenticated request from an IP that doesn't match one of its entries.
+ * API-key routes (/v1, SCIM) are @Public to this guard; ApiKeyGuard applies the same allowlist.
  */
 @Injectable()
 export class IpAllowlistGuard implements CanActivate {
@@ -40,11 +50,9 @@ export class IpAllowlistGuard implements CanActivate {
     if (!user) return true; // JwtAuthGuard already rejected unauthenticated requests
 
     const company = await this.prisma.company.findUnique({ where: { id: user.companyId }, select: { ipAllowlist: true } });
-    if (!company || company.ipAllowlist.length === 0) return true;
+    if (!company) return true;
 
-    const requestIp = (request.ip as string | undefined)?.replace(/^::ffff:/, "") ?? "";
-    const allowed = company.ipAllowlist.some((rule) => ipMatches(requestIp, rule));
-    if (!allowed) throw new ForbiddenException("This IP address isn't on the company's allowlist");
+    if (!isIpAllowed(company.ipAllowlist, request.ip as string | undefined)) throw new ForbiddenException(IP_NOT_ALLOWED);
     return true;
   }
 }

@@ -11,7 +11,7 @@ describe("PasswordResetService", () => {
   let service: PasswordResetService;
   let prisma: {
     user: { findUnique: jest.Mock; update: jest.Mock };
-    passwordResetToken: { create: jest.Mock; findUnique: jest.Mock; update: jest.Mock };
+    passwordResetToken: { create: jest.Mock; findUnique: jest.Mock; update: jest.Mock; updateMany: jest.Mock };
     userSession: { updateMany: jest.Mock };
     membership: { findMany: jest.Mock };
     $transaction: jest.Mock;
@@ -22,10 +22,10 @@ describe("PasswordResetService", () => {
   beforeEach(async () => {
     prisma = {
       user: { findUnique: jest.fn(), update: jest.fn() },
-      passwordResetToken: { create: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
+      passwordResetToken: { create: jest.fn(), findUnique: jest.fn(), update: jest.fn(), updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
       userSession: { updateMany: jest.fn() },
       membership: { findMany: jest.fn().mockResolvedValue([]) },
-      $transaction: jest.fn((ops) => Promise.all(ops)),
+      $transaction: jest.fn((arg) => (typeof arg === "function" ? arg(prisma) : Promise.all(arg))),
     };
     mail = { send: jest.fn() };
     rateLimiter = new RateLimiterService();
@@ -129,7 +129,34 @@ describe("PasswordResetService", () => {
 
       await service.resetPassword({ token: raw, password: "newpassword123" });
 
-      expect(prisma.$transaction).toHaveBeenCalled();
+      expect(prisma.passwordResetToken.updateMany).toHaveBeenCalledWith({
+        where: { id: "reset-1", usedAt: null, expiresAt: { gt: expect.any(Date) } },
+        data: { usedAt: expect.any(Date) },
+      });
+      expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: "user-1" }, data: { passwordHash: expect.any(String) } });
+      expect(prisma.userSession.updateMany).toHaveBeenCalledWith({
+        where: { userId: "user-1", revokedAt: null },
+        data: { revokedAt: expect.any(Date) },
+      });
+    });
+
+    it("changes nothing when a concurrent reset claimed the token first", async () => {
+      prisma.passwordResetToken.findUnique.mockResolvedValue({ id: "reset-1", userId: "user-1", usedAt: null, expiresAt: new Date(Date.now() + 60_000) });
+      prisma.passwordResetToken.updateMany.mockResolvedValue({ count: 0 });
+
+      await expect(service.resetPassword({ token: "raced", password: "newpassword123" })).rejects.toThrow(BadRequestException);
+
+      expect(prisma.user.update).not.toHaveBeenCalled();
+      expect(prisma.userSession.updateMany).not.toHaveBeenCalled();
+    });
+
+    it("doesn't burn the link when the new password fails the policy", async () => {
+      prisma.passwordResetToken.findUnique.mockResolvedValue({ id: "reset-1", userId: "user-1", usedAt: null, expiresAt: new Date(Date.now() + 60_000) });
+      prisma.membership.findMany.mockResolvedValue([{ company: { passwordMinLength: 20, passwordRequireSymbol: false } }]);
+
+      await expect(service.resetPassword({ token: "valid", password: "tooshort123" })).rejects.toThrow(BadRequestException);
+
+      expect(prisma.passwordResetToken.updateMany).not.toHaveBeenCalled();
     });
 
     it("applies the strictest policy across every company the user belongs to", async () => {

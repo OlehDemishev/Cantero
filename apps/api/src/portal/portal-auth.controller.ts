@@ -1,4 +1,5 @@
-import { Body, Controller, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Post, Req, UseGuards } from "@nestjs/common";
+import type { Request } from "express";
 import { requestPortalLinkSchema, verifyPortalTokenSchema, type RequestPortalLinkInput, type VerifyPortalTokenInput } from "@cantero/shared";
 import { Public } from "../common/decorators/public.decorator";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
@@ -14,8 +15,8 @@ export class PortalAuthController {
   constructor(private readonly service: PortalAuthService) {}
 
   @Post("request-link")
-  requestLink(@Body(new ZodValidationPipe(requestPortalLinkSchema)) body: RequestPortalLinkInput) {
-    return this.service.requestLink(body.email);
+  requestLink(@Body(new ZodValidationPipe(requestPortalLinkSchema)) body: RequestPortalLinkInput, @Req() req: Request) {
+    return this.service.requestLink(body.email, req.ip);
   }
 
   @Post("verify")

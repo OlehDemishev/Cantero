@@ -1,6 +1,6 @@
 import { JwtService } from "@nestjs/jwt";
 import { BadRequestException, NotFoundException } from "@nestjs/common";
-import { MsProjectService } from "./ms-project.service";
+import { normalizeDynamicsEnvironmentUrl, MsProjectService } from "./ms-project.service";
 import { encrypted } from "../common/crypto/testing";
 import { signState } from "../common/oauth/oauth";
 
@@ -70,6 +70,53 @@ describe("MsProjectService", () => {
       const url = service.getAuthorizeUrl({ companyId: "company-a", userId: "user-a" }, `${ENV_URL}/`);
       const decoded = jwt.verify(new URL(url).searchParams.get("state")!) as { environmentUrl: string };
       expect(decoded.environmentUrl).toBe(ENV_URL);
+    });
+  });
+
+  describe("environment URL validation", () => {
+    it.each([
+      ["https://org12345.crm4.dynamics.com", "https://org12345.crm4.dynamics.com"],
+      ["https://contoso.crm.dynamics.com/", "https://contoso.crm.dynamics.com"],
+      ["https://contoso.api.crm11.dynamics.com", "https://contoso.api.crm11.dynamics.com"],
+      ["  HTTPS://Contoso.CRM.dynamics.com  ", "https://contoso.crm.dynamics.com"],
+    ])("accepts the Dataverse URL %j", (raw, expected) => {
+      expect(normalizeDynamicsEnvironmentUrl(raw)).toBe(expected);
+    });
+
+    it.each([
+      "http://contoso.crm.dynamics.com",
+      "https://attacker.example",
+      "https://contoso.crm.dynamics.com.attacker.example",
+      "https://attacker.example/contoso.crm.dynamics.com",
+      "https://contoso.crm.dynamics.com:8443",
+      "https://user:pass@contoso.crm.dynamics.com",
+      "https://contoso.crm.dynamics.com/api",
+      "https://contoso.crm.dynamics.com?x=1",
+      "https://dynamics.com",
+      "https://169.254.169.254",
+      "not a url",
+    ])("refuses %j", (raw) => {
+      expect(normalizeDynamicsEnvironmentUrl(raw)).toBeNull();
+    });
+
+    it("won't build an authorize URL for a non-Dataverse host", () => {
+      expect(() => service.getAuthorizeUrl({ companyId: "company-a", userId: "user-a" }, "https://attacker.example")).toThrow(BadRequestException);
+    });
+
+    it("never sends the bearer token to a stored URL that isn't Dataverse", async () => {
+      prisma.msProjectConnection.findUnique.mockResolvedValue({
+        id: "conn-1",
+        companyId: "company-a",
+        accessToken: "at",
+        refreshToken: "rt",
+        tokenExpiresAt: new Date(Date.now() + 3600_000),
+        environmentUrl: "https://attacker.example",
+      });
+      prisma.project.findFirst.mockResolvedValue({ id: "project-1", name: "Sample Reno", msProjectExternalId: null });
+      prisma.task.findMany.mockResolvedValue([{ id: "t-1", name: "Demo", startDate: new Date(), dueDate: new Date(), msProjectExternalId: null }]);
+
+      await expect(service.syncProject("company-a", "project-1")).rejects.toThrow("isn't a Dataverse URL");
+      expect(fetchMock).not.toHaveBeenCalled();
     });
   });
 

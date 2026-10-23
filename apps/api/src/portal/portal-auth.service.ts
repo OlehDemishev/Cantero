@@ -5,8 +5,16 @@ import { PrismaService } from "../common/prisma/prisma.service";
 import { MailService } from "../common/mail/mail.service";
 import { PortalJwtService, type PortalClientContext } from "./portal-jwt.service";
 import { html } from "../common/mail/html";
+import { RateLimiterService } from "../common/rate-limiter/rate-limiter.service";
 
 const LOGIN_TOKEN_TTL_MS = 15 * 60 * 1000;
+// Each request mails a link, so both are capped: per address (against flooding one inbox) and per
+// IP across all three portals (against one client spraying addresses). Same in-process limiter as
+// password login.
+export const PORTAL_LINK_EMAIL_LIMIT = 5;
+export const PORTAL_LINK_IP_LIMIT = 20;
+export const PORTAL_LINK_WINDOW_MS = 15 * 60 * 1000;
+const INVALID_LINK = "This link is invalid or has expired";
 
 @Injectable()
 export class PortalAuthService {
@@ -15,6 +23,7 @@ export class PortalAuthService {
     private readonly mail: MailService,
     private readonly config: ConfigService,
     private readonly portalJwt: PortalJwtService,
+    private readonly rateLimiter: RateLimiterService,
   ) {}
 
   /**
@@ -23,7 +32,9 @@ export class PortalAuthService {
    * Always returns the same generic response so this can't be used to probe which emails
    * are on file as clients.
    */
-  async requestLink(email: string): Promise<{ ok: true }> {
+  async requestLink(email: string, ip?: string): Promise<{ ok: true }> {
+    if (ip) this.rateLimiter.consume(`portal-link:ip:${ip}`, PORTAL_LINK_IP_LIMIT, PORTAL_LINK_WINDOW_MS);
+    this.rateLimiter.consume(`portal-link:client:${email.toLowerCase()}`, PORTAL_LINK_EMAIL_LIMIT, PORTAL_LINK_WINDOW_MS);
     const clients = await this.prisma.client.findMany({
       where: { email: { equals: email, mode: "insensitive" } },
       include: { company: { select: { name: true } } },
@@ -48,15 +59,18 @@ export class PortalAuthService {
   }
 
   async verify(token: string): Promise<{ accessToken: string; clientName: string; companyName: string }> {
+    // Check and use in one conditional write, so two concurrent verifies can't both succeed.
+    const now = new Date();
+    const { count } = await this.prisma.clientPortalLoginToken.updateMany({
+      where: { token, usedAt: null, expiresAt: { gt: now } },
+      data: { usedAt: now },
+    });
+    if (count !== 1) throw new BadRequestException(INVALID_LINK);
     const record = await this.prisma.clientPortalLoginToken.findUnique({
       where: { token },
       include: { client: { include: { company: { select: { name: true } } } } },
     });
-    if (!record || record.usedAt || record.expiresAt < new Date()) {
-      throw new BadRequestException("This link is invalid or has expired");
-    }
-
-    await this.prisma.clientPortalLoginToken.update({ where: { id: record.id }, data: { usedAt: new Date() } });
+    if (!record) throw new BadRequestException(INVALID_LINK);
 
     const accessToken = this.portalJwt.sign({
       clientId: record.clientId,

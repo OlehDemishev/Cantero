@@ -1,4 +1,4 @@
-import { parseCsvRecords, parseCsvRows } from "./csv";
+import { csvEscape, toCsv, parseCsvRecords, parseCsvRows } from "./csv";
 
 describe("parseCsvRows", () => {
   it("parses plain comma-separated rows", () => {
@@ -66,5 +66,38 @@ describe("parseCsvRecords", () => {
 
   it("returns an empty array for empty input", () => {
     expect(parseCsvRecords("")).toEqual([]);
+  });
+});
+
+describe("csvEscape", () => {
+  it.each([
+    ["=1+1", "'=1+1"],
+    ["+cmd|' /C calc'!A0", "'+cmd|' /C calc'!A0"],
+    ["-2+3", "'-2+3"],
+    ["@SUM(A1:A2)", "'@SUM(A1:A2)"],
+    ["\t=1", "'\t=1"],
+  ])("defuses a cell that a spreadsheet would run as a formula (%j)", (raw, expected) => {
+    expect(csvEscape(raw)).toBe(expected);
+  });
+
+  it("defuses a leading CR and still quotes the cell", () => {
+    expect(csvEscape("\r=1")).toBe(`"'\r=1"`);
+  });
+
+  it("quotes after defusing when the cell holds a comma or quote", () => {
+    expect(csvEscape('=HYPERLINK("x","y")')).toBe(`"'=HYPERLINK(""x"",""y"")"`);
+  });
+
+  it.each(["-12.50", "+3", "-7", "42"])("leaves the plain number %s alone", (raw) => {
+    expect(csvEscape(raw)).toBe(raw);
+  });
+
+  it("leaves ordinary text alone", () => {
+    expect(csvEscape("Jane Doe")).toBe("Jane Doe");
+    expect(csvEscape("a=b")).toBe("a=b");
+  });
+
+  it("applies to every cell toCsv writes", () => {
+    expect(toCsv(["name"], [["=evil()"]])).toBe("name\r\n'=evil()");
   });
 });

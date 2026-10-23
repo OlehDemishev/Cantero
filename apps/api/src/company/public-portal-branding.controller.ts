@@ -1,6 +1,7 @@
-import { Controller, Get, Header, NotFoundException, Query, StreamableFile } from "@nestjs/common";
+import { Controller, Get, Header, NotFoundException, Query } from "@nestjs/common";
 import { Public } from "../common/decorators/public.decorator";
 import { CompanyService } from "./company.service";
+import { storedFileResponse } from "../common/http/file-response";
 
 /** Unauthenticated — the client portal's login page calls this with the hostname the browser is
  * actually on (window.location.hostname) to fetch branding for a verified custom domain, before
@@ -25,6 +26,6 @@ export class PublicPortalBrandingController {
   async logo(@Query("domain") domain: string) {
     if (!domain) throw new NotFoundException("No logo uploaded");
     const { buffer, mimeType } = await this.service.getPortalLogoForDomain(domain);
-    return new StreamableFile(buffer, { type: mimeType });
+    return storedFileResponse(buffer, mimeType);
   }
 }

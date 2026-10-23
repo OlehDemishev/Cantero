@@ -7,7 +7,6 @@ import {
   Param,
   Post,
   Query,
-  StreamableFile,
   UploadedFile,
   UseInterceptors,
 } from "@nestjs/common";
@@ -22,6 +21,7 @@ import { ReceiptOcrService } from "./receipt-ocr.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
 import { CREW, SelfScopeService } from "../common/permissions/self-scope.service";
 import { Requires } from "../common/decorators/permissions.decorator";
+import { storedFileResponse } from "../common/http/file-response";
 
 const EXPENSES_PAGE_SIZE = 100;
 
@@ -77,7 +77,7 @@ export class ExpensesController {
   async downloadReceipt(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     await this.selfScope.assertOwnRecord(user, "expense", id, CREW.expenses);
     const { buffer, mimeType } = await this.service.downloadReceipt(user.companyId, id);
-    return new StreamableFile(buffer, { type: mimeType });
+    return storedFileResponse(buffer, mimeType);
   }
 
   @Requires("finance.manage")

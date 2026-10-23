@@ -4,10 +4,12 @@ import { EXPLICIT_API_KEY_SCOPES, type ApiKeyScope } from "@cantero/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import { hashApiKey } from "../../company/api-keys.service";
 import { REQUIRE_SCOPE_KEY } from "../decorators/require-scope.decorator";
+import { IP_NOT_ALLOWED, isIpAllowed } from "./ip-allowlist.guard";
 
 /** Authenticates /v1/* integration routes via the X-Api-Key header instead of a JWT, and — when
  * the route or its controller carries @RequireScope() — checks the key was issued with that scope.
- * An unscoped key passes every read scope, never an explicit one (SCIM). */
+ * An unscoped key passes every read scope, never an explicit one (SCIM). The key's company IP
+ * allowlist applies here too, since these routes are @Public to IpAllowlistGuard. */
 @Injectable()
 export class ApiKeyGuard implements CanActivate {
   constructor(
@@ -23,10 +25,15 @@ export class ApiKeyGuard implements CanActivate {
 
     const apiKey = await this.prisma.apiKey.findFirst({
       where: { keyHash: hashApiKey(key), revokedAt: null },
+      include: { company: { select: { ipAllowlist: true } } },
     });
     if (!apiKey) throw new UnauthorizedException("Invalid or revoked API key");
     if (apiKey.expiresAt && apiKey.expiresAt.getTime() < Date.now()) {
       throw new UnauthorizedException("API key has expired");
+    }
+
+    if (!isIpAllowed(apiKey.company?.ipAllowlist ?? [], request.ip as string | undefined)) {
+      throw new ForbiddenException(IP_NOT_ALLOWED);
     }
 
     const requiredScope = this.reflector.getAllAndOverride<ApiKeyScope | undefined>(REQUIRE_SCOPE_KEY, [context.getHandler(), context.getClass()]);

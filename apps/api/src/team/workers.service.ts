@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcryptjs";
 import type { AddWorkerCertificationInput, AdjustPtoBalanceInput, CreateWorkerInput, UpdateWorkerInput } from "@cantero/shared";
@@ -74,6 +74,7 @@ export class WorkersService {
   /** Clones the company's onboarding template into fresh tasks for this worker — a snapshot at
    * creation time, so editing the template later never rewrites tasks already assigned. */
   async create(companyId: string, input: CreateWorkerInput) {
+    await this.assertWageClassificationInCompany(companyId, input.wageClassificationId);
     const worker = await this.prisma.worker.create({ omit: { clockInPinHash: false }, data: { ...input, companyId } });
 
     const templateItems = await this.prisma.onboardingTemplateItem.findMany({
@@ -95,6 +96,7 @@ export class WorkersService {
 
   async update(companyId: string, actor: AuditActor, id: string, input: UpdateWorkerInput) {
     const before = await this.get(companyId, id);
+    await this.assertWageClassificationInCompany(companyId, input.wageClassificationId);
     const worker = await this.prisma.worker.update({ omit: { clockInPinHash: false }, where: { id }, data: input });
 
     if (input.hourlyCost !== undefined && Number(before.hourlyCost) !== Number(input.hourlyCost)) {
@@ -120,6 +122,14 @@ export class WorkersService {
       if (!input.active) await this.cloneOffboardingTemplate(companyId, id);
     }
     return this.redactPin(worker);
+  }
+
+  /** A wage classification is another company's pay data; a worker may only point at its own
+   * company's. Null/undefined (clearing it, or leaving it alone) needs no check. */
+  private async assertWageClassificationInCompany(companyId: string, wageClassificationId: string | null | undefined) {
+    if (!wageClassificationId) return;
+    const found = await this.prisma.wageClassification.findFirst({ where: { id: wageClassificationId, companyId }, select: { id: true } });
+    if (!found) throw new BadRequestException("Unknown wage classification");
   }
 
   /** Same clone-the-template-into-fresh-tasks pattern as create()'s onboarding clone, triggered

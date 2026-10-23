@@ -109,6 +109,7 @@ describe("BidRequestsService", () => {
 
       expect(subcontractors.assign).toHaveBeenCalledWith(COMPANY_A, "sub-1", "project-1");
       expect(prisma.$transaction).toHaveBeenCalled();
+      expect(prisma.bid.findFirst).toHaveBeenCalledWith(expect.objectContaining({ include: { subcontractor: { select: { id: true, name: true } } } }));
     });
 
     it("propagates a compliance-gate rejection from SubcontractorsService.assign without closing the request", async () => {

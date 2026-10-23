@@ -1,4 +1,4 @@
-import { NotFoundException } from "@nestjs/common";
+import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { WorkersService } from "./workers.service";
 import { PrismaService } from "../common/prisma/prisma.service";
@@ -10,6 +10,7 @@ import { verifyKioskToken } from "./kiosk-token";
 
 const COMPANY_A = "company-a";
 const ACTOR = { userId: "user-1", name: "PM" };
+const WAGE_CLASS = "0b9d6a0e-1f5c-4c3e-9d84-5f2a7d3c1e01";
 
 describe("WorkersService certifications", () => {
   let service: WorkersService;
@@ -103,11 +104,13 @@ describe("WorkersService — PTO and onboarding", () => {
     workerOnboardingTask: { createMany: jest.Mock; findMany: jest.Mock; findFirst: jest.Mock; update: jest.Mock };
     offboardingTemplateItem: { findMany: jest.Mock };
     workerOffboardingTask: { createMany: jest.Mock; findMany: jest.Mock; findFirst: jest.Mock; update: jest.Mock; count: jest.Mock };
+    wageClassification: { findFirst: jest.Mock };
   };
   let audit: { record: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
+      wageClassification: { findFirst: jest.fn().mockResolvedValue({ id: WAGE_CLASS }) },
       worker: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
       onboardingTemplateItem: { findMany: jest.fn() },
       workerOnboardingTask: { createMany: jest.fn(), findMany: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
@@ -148,6 +151,44 @@ describe("WorkersService — PTO and onboarding", () => {
       await service.create(COMPANY_A, { name: "Sam" });
 
       expect(prisma.workerOnboardingTask.createMany).not.toHaveBeenCalled();
+    });
+
+    it("refuses a wage classification from another company", async () => {
+      prisma.wageClassification.findFirst.mockResolvedValue(null);
+
+      await expect(service.create(COMPANY_A, { name: "Sam", wageClassificationId: WAGE_CLASS })).rejects.toThrow(BadRequestException);
+
+      expect(prisma.wageClassification.findFirst).toHaveBeenCalledWith({ where: { id: WAGE_CLASS, companyId: COMPANY_A }, select: { id: true } });
+      expect(prisma.worker.create).not.toHaveBeenCalled();
+    });
+
+    it("accepts the company's own wage classification", async () => {
+      prisma.worker.create.mockResolvedValue({ id: "worker-1", name: "Sam" });
+      prisma.onboardingTemplateItem.findMany.mockResolvedValue([]);
+
+      await service.create(COMPANY_A, { name: "Sam", wageClassificationId: WAGE_CLASS });
+
+      expect(prisma.worker.create).toHaveBeenCalled();
+    });
+  });
+
+  describe("update() — wage classification", () => {
+    it("refuses to point a worker at another company's wage classification", async () => {
+      prisma.worker.findFirst.mockResolvedValue({ id: "worker-1", name: "Sam", active: true, clockInPinHash: null });
+      prisma.wageClassification.findFirst.mockResolvedValue(null);
+
+      await expect(service.update(COMPANY_A, ACTOR, "worker-1", { wageClassificationId: WAGE_CLASS })).rejects.toThrow(BadRequestException);
+      expect(prisma.worker.update).not.toHaveBeenCalled();
+    });
+
+    it("lets a worker's wage classification be cleared without a lookup", async () => {
+      prisma.worker.findFirst.mockResolvedValue({ id: "worker-1", name: "Sam", active: true, clockInPinHash: null });
+      prisma.worker.update.mockResolvedValue({ id: "worker-1", name: "Sam", active: true, clockInPinHash: null });
+
+      await service.update(COMPANY_A, ACTOR, "worker-1", { wageClassificationId: null });
+
+      expect(prisma.wageClassification.findFirst).not.toHaveBeenCalled();
+      expect(prisma.worker.update).toHaveBeenCalled();
     });
   });
 

@@ -1,4 +1,5 @@
-import { Body, Controller, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Post, Req, UseGuards } from "@nestjs/common";
+import type { Request } from "express";
 import {
   requestSupplierPortalLinkSchema,
   verifySupplierPortalTokenSchema,
@@ -19,8 +20,8 @@ export class SupplierPortalAuthController {
   constructor(private readonly service: SupplierPortalAuthService) {}
 
   @Post("request-link")
-  requestLink(@Body(new ZodValidationPipe(requestSupplierPortalLinkSchema)) body: RequestSupplierPortalLinkInput) {
-    return this.service.requestLink(body.email);
+  requestLink(@Body(new ZodValidationPipe(requestSupplierPortalLinkSchema)) body: RequestSupplierPortalLinkInput, @Req() req: Request) {
+    return this.service.requestLink(body.email, req.ip);
   }
 
   @Post("verify")

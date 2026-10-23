@@ -170,7 +170,7 @@ export class BidRequestsService {
   async importGaebDa84Bid(companyId: string, actor: AuditActor, bidRequestId: string, subcontractorId: string, xml: string) {
     const invite = await this.prisma.bidInvite.findFirst({
       where: { bidRequestId, subcontractorId, bidRequest: { companyId } },
-      include: { bidRequest: { include: { lines: true } }, subcontractor: true },
+      include: { bidRequest: { include: { lines: true } }, subcontractor: { select: { id: true, name: true } } },
     });
     if (!invite) throw new NotFoundException("This subcontractor was not invited to this bid request");
     if (invite.bidRequest.status !== "open") throw new BadRequestException("This bid request is no longer accepting bids");
@@ -298,7 +298,7 @@ export class BidRequestsService {
 
     const bid = await this.prisma.bid.findFirst({
       where: { id: bidId, bidRequestId },
-      include: { subcontractor: true },
+      include: { subcontractor: { select: { id: true, name: true } } },
     });
     if (!bid) throw new NotFoundException("Bid not found");
 
