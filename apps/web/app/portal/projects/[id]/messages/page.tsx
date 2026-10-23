@@ -64,7 +64,7 @@ export default function PortalProjectMessagesPage({ params }: { params: Promise<
   if (error) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
-        <p className="text-sm text-gray-500 dark:text-gray-400">{error}</p>
+        <p className="text-sm text-fg-subtle">{error}</p>
       </main>
     );
   }
@@ -72,28 +72,28 @@ export default function PortalProjectMessagesPage({ params }: { params: Promise<
   return (
     <main className="flex min-h-screen justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
       <div className="flex w-full max-w-2xl flex-col">
-        <a href="/portal" className="mb-4 inline-block text-xs text-gray-500 dark:text-gray-400 hover:underline">
+        <a href="/portal" className="mb-4 inline-block text-xs text-fg-subtle hover:underline">
           ← {t("back")}
         </a>
         <div className="card flex flex-1 flex-col">
-          <h1 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-50">{t("messages")}</h1>
+          <h1 className="mb-3 text-lg font-semibold text-fg">{t("messages")}</h1>
 
           <div className="flex max-h-[60vh] min-h-[200px] flex-col gap-3 overflow-y-auto">
             {!messages ? (
-              <p className="text-sm text-gray-400 dark:text-gray-500">{t("loading")}</p>
+              <p className="text-sm text-fg-subtle">{t("loading")}</p>
             ) : messages.length === 0 ? (
-              <p className="text-sm text-gray-400 dark:text-gray-500">{t("noMessages")}</p>
+              <p className="text-sm text-fg-subtle">{t("noMessages")}</p>
             ) : (
               messages.map((m) => (
                 <div key={m.id} className={`max-w-[80%] ${m.authorClientId ? "self-end text-right" : "self-start"}`}>
                   <div
                     className={`inline-block rounded-lg px-3 py-2 text-sm ${
-                      m.authorClientId ? "bg-brand-500 text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100"
+                      m.authorClientId ? "bg-brand-500 text-white" : "bg-gray-100 dark:bg-gray-700 text-fg"
                     }`}
                   >
                     {m.content}
                   </div>
-                  <div className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
+                  <div className="mt-1 text-[11px] text-fg-subtle">
                     {m.authorName} · {formatDateTime(new Date(m.createdAt))}
                   </div>
                 </div>

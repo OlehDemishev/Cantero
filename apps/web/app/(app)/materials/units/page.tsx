@@ -68,10 +68,10 @@ export default function UnitsOfMeasurePage() {
   return (
     <>
       <h1 className="text-2xl font-semibold">{t("title")}</h1>
-      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <p className="mt-1 text-sm text-fg-subtle">{t("hint")}</p>
 
       <form onSubmit={handleSubmit} className="mt-6 flex flex-wrap items-end gap-2">
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
           {t("code")}
           <input
             required
@@ -81,7 +81,7 @@ export default function UnitsOfMeasurePage() {
             onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
           />
         </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
           {t("name")}
           <input
             required
@@ -91,7 +91,7 @@ export default function UnitsOfMeasurePage() {
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
           />
         </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
           {t("baseUnit")}
           <select
             className="input w-auto"
@@ -107,7 +107,7 @@ export default function UnitsOfMeasurePage() {
           </select>
         </label>
         {form.baseUnitId && (
-          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
             {t("factor")}
             <input
               type="number"
@@ -127,11 +127,11 @@ export default function UnitsOfMeasurePage() {
 
       <div className="mt-6 overflow-x-auto">
         {!units ? (
-          <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+          <p className="text-fg-subtle">{tc("loading")}</p>
         ) : (
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
                 <th className="py-2">{t("code")}</th>
                 <th>{t("name")}</th>
                 <th>{t("baseUnit")}</th>
@@ -144,14 +144,14 @@ export default function UnitsOfMeasurePage() {
                 <tr key={u.id} className="border-b border-gray-100 dark:border-gray-700">
                   <td className="py-2 font-medium">{u.code}</td>
                   <td>{u.name}</td>
-                  <td className="text-gray-500 dark:text-gray-400">
+                  <td className="text-fg-subtle">
                     {u.baseUnitId ? unitById.get(u.baseUnitId)?.code ?? "—" : t("baseUnitNone")}
                   </td>
-                  <td className="text-gray-500 dark:text-gray-400">{u.factorToBase ?? "—"}</td>
+                  <td className="text-fg-subtle">{u.factorToBase ?? "—"}</td>
                   <td className="text-right">
                     <button
                       onClick={() => handleDelete(u.id)}
-                      className="text-xs text-gray-400 dark:text-gray-500 hover:text-danger-fg"
+                      className="text-xs text-fg-subtle hover:text-danger-fg"
                     >
                       {tc("delete")}
                     </button>

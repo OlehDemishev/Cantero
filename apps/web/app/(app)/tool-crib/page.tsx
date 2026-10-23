@@ -128,7 +128,7 @@ export default function ToolCribPage() {
           </button>
         )}
       </div>
-      <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <p className="mb-6 text-sm text-fg-subtle">{t("hint")}</p>
 
       {adding && (
         <form onSubmit={create} className="card mb-6 flex flex-wrap items-end gap-2">
@@ -180,9 +180,9 @@ export default function ToolCribPage() {
       )}
 
       {!items ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
       ) : items.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noItems")}</p>
+        <p className="text-sm text-fg-subtle">{t("noItems")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {items.map((item) => {
@@ -190,11 +190,11 @@ export default function ToolCribPage() {
             return (
               <li key={item.id} className="card">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
+                  <span className="text-sm font-medium text-fg">
                     {item.name}
-                    {item.barcode && <span className="ml-1.5 text-xs text-gray-400 dark:text-gray-500">({item.barcode})</span>}
+                    {item.barcode && <span className="ml-1.5 text-xs text-fg-subtle">({item.barcode})</span>}
                   </span>
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${low ? "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"}`}>
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${low ? "bg-error-50 dark:bg-error-500/15 text-danger-fg" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"}`}>
                     {t("onHandCount", { count: item.quantityOnHand })}
                     {low && ` · ${t("lowStock")}`}
                   </span>
@@ -203,7 +203,7 @@ export default function ToolCribPage() {
                 {item.checkouts.length > 0 && (
                   <ul className="mt-2 flex flex-col gap-1">
                     {item.checkouts.map((co) => (
-                      <li key={co.id} className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                      <li key={co.id} className="flex items-center justify-between text-xs text-fg-subtle">
                         <span>
                           {t("checkedOutToPrefix", { quantity: co.quantity })}{" "}
                           <Link href={`/team/${co.worker.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">

@@ -121,24 +121,24 @@ export default function IntegrationsPage() {
   return (
     <>
       <h1 className="text-2xl font-semibold">{t("title")}</h1>
-      <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <p className="mt-2 text-sm text-fg-subtle">{t("hint")}</p>
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {cards.map((card) => (
           <a key={card.id} href={card.href} className="card flex flex-col gap-2 hover:border-gray-400">
             <div className="flex items-center justify-between gap-2">
-              <h2 className="text-sm font-semibold text-gray-800 dark:text-white/90">{t(card.titleKey)}</h2>
+              <h2 className="text-sm font-semibold text-fg">{t(card.titleKey)}</h2>
               {card.status !== "loading" && (
                 <span
                   className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
-                    card.status === "connected" ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
+                    card.status === "connected" ? "bg-success-50 dark:bg-success-500/15 text-success-fg" : "bg-gray-100 dark:bg-gray-700 text-fg-subtle"
                   }`}
                 >
                   {card.status === "connected" ? t("connected") : t("notConnected")}
                 </span>
               )}
             </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">{t(card.descriptionKey)}</p>
+            <p className="text-xs text-fg-subtle">{t(card.descriptionKey)}</p>
             {card.detail && <p className="text-xs font-medium text-gray-600 dark:text-gray-300">{card.detail}</p>}
           </a>
         ))}

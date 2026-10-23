@@ -99,17 +99,17 @@ export default function HazmatPage() {
           </button>
         )}
       </div>
-      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <p className="mt-1 text-sm text-fg-subtle">{t("hint")}</p>
 
       {stale && stale.length > 0 && (
         <div className="card mt-4">
-          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-warning-700 dark:text-warning-500">{t("staleSdsTitle")}</h2>
+          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-warning-fg">{t("staleSdsTitle")}</h2>
           <ul className="flex flex-col gap-1 text-sm">
             {stale.map((s) => (
-              <li key={s.id} className="text-gray-700 dark:text-gray-200">
+              <li key={s.id} className="text-fg-muted">
                 {s.name}
-                {s.manufacturer && <span className="text-gray-400 dark:text-gray-500"> · {s.manufacturer}</span>}
-                <span className="ml-1.5 text-xs text-warning-700 dark:text-warning-500">
+                {s.manufacturer && <span className="text-fg-subtle"> · {s.manufacturer}</span>}
+                <span className="ml-1.5 text-xs text-warning-fg">
                   {s.latestRevisionDate ? t("lastRevised", { date: formatDate(new Date(s.latestRevisionDate)) }) : t("noSdsOnFile")}
                 </span>
               </li>
@@ -161,9 +161,9 @@ export default function HazmatPage() {
 
       <div className="mt-4">
         {!filtered ? (
-          <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+          <p className="text-fg-subtle">{tc("loading")}</p>
         ) : filtered.length === 0 ? (
-          <p className="text-gray-500 dark:text-gray-400">{t("noMaterials")}</p>
+          <p className="text-fg-subtle">{t("noMaterials")}</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {filtered.map((m) => {
@@ -172,17 +172,17 @@ export default function HazmatPage() {
               return (
                 <li key={m.id} className="card">
                   <button onClick={() => setExpandedId(expanded ? null : m.id)} className="flex w-full items-center justify-between text-left">
-                    <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
+                    <span className="text-sm font-medium text-fg">
                       {m.name}
-                      {m.manufacturer && <span className="ml-1.5 text-xs text-gray-400 dark:text-gray-500">({m.manufacturer})</span>}
+                      {m.manufacturer && <span className="ml-1.5 text-xs text-fg-subtle">({m.manufacturer})</span>}
                     </span>
                     {latest?.revisionDate && (
-                      <span className="text-xs text-gray-400 dark:text-gray-500">{t("lastRevised", { date: formatDate(new Date(latest.revisionDate)) })}</span>
+                      <span className="text-xs text-fg-subtle">{t("lastRevised", { date: formatDate(new Date(latest.revisionDate)) })}</span>
                     )}
                   </button>
-                  {m.casNumber && <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">CAS {m.casNumber}</p>}
+                  {m.casNumber && <p className="mt-0.5 text-xs text-fg-subtle">CAS {m.casNumber}</p>}
                   {m.projectInventory.length > 0 && (
-                    <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                    <p className="mt-0.5 text-xs text-fg-subtle">
                       {t("onSiteAt")}:{" "}
                       {m.projectInventory.map((entry, i) => (
                         <span key={entry.id}>

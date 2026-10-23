@@ -96,7 +96,7 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
   if (error) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
-        <p className="text-sm text-gray-500 dark:text-gray-400">{error}</p>
+        <p className="text-sm text-fg-subtle">{error}</p>
       </main>
     );
   }
@@ -104,7 +104,7 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
   if (!estimate) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
-        <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
       </main>
     );
   }
@@ -116,12 +116,12 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500 text-sm font-semibold text-white">
             C
           </span>
-          <span className="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-50">{estimate.companyName}</span>
+          <span className="text-lg font-semibold tracking-tight text-fg">{estimate.companyName}</span>
         </div>
 
         <div className="card">
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">
+            <h1 className="text-xl font-semibold text-fg">
               {estimate.name}
               {estimate.variantLabel && (
                 <span className="ml-2 rounded-full bg-brand-50 dark:bg-brand-500/15 px-2 py-0.5 text-xs font-medium text-brand-700 dark:text-brand-400 align-middle">
@@ -130,12 +130,12 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
               )}
             </h1>
           </div>
-          {estimate.projectName && <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{estimate.projectName}</p>}
+          {estimate.projectName && <p className="mt-1 text-sm text-fg-subtle">{estimate.projectName}</p>}
 
           <div className="overflow-x-auto">
           <table className="mt-6 w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
                 <th className="py-2">{t("rateItem")}</th>
                 <th>{t("quantity")}</th>
                 <th className="text-right">{t("lineTotal")}</th>
@@ -159,19 +159,19 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
 
           <dl className="mt-4 flex flex-col gap-1.5 text-sm">
             <div className="flex justify-between">
-              <dt className="text-gray-500 dark:text-gray-400">{t("subtotal")}</dt>
+              <dt className="text-fg-subtle">{t("subtotal")}</dt>
               <dd>
                 {estimate.subtotal} {estimate.currency}
               </dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-gray-500 dark:text-gray-400">{t("markupAmount")}</dt>
+              <dt className="text-fg-subtle">{t("markupAmount")}</dt>
               <dd>
                 {estimate.markupAmount} {estimate.currency}
               </dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-gray-500 dark:text-gray-400">{t("taxAmount")}</dt>
+              <dt className="text-fg-subtle">{t("taxAmount")}</dt>
               <dd>
                 {estimate.taxAmount} {estimate.currency}
               </dd>
@@ -187,7 +187,7 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
           {estimate.clientDecision === "pending" ? (
             <div className="mt-6 border-t border-gray-100 dark:border-gray-700 pt-4">
               <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700 dark:text-gray-200">{t("clientNoteOptional")}</span>
+                <span className="font-medium text-fg-muted">{t("clientNoteOptional")}</span>
                 <textarea
                   rows={2}
                   className="input"
@@ -197,7 +197,7 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
               </label>
 
               <div className="mt-4 flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700 dark:text-gray-200">{t("signerNameLabel")}</span>
+                <span className="font-medium text-fg-muted">{t("signerNameLabel")}</span>
                 <input
                   className="input"
                   placeholder={t("signerNamePlaceholder")}
@@ -206,7 +206,7 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
                 />
               </div>
               <div className="mt-3 flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700 dark:text-gray-200">{t("signHere")}</span>
+                <span className="font-medium text-fg-muted">{t("signHere")}</span>
                 <SignaturePad onChange={setSignatureDataUrl} clearLabel={t("clearSignature")} />
               </div>
               {signatureError && <p className="mt-2 text-xs text-danger-fg">{signatureError}</p>}
@@ -214,7 +214,7 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
               {counterMode ? (
                 <div className="mt-3 rounded-lg bg-gray-50 dark:bg-gray-700 p-3">
                   <label className="flex flex-col gap-1.5 text-sm">
-                    <span className="font-medium text-gray-700 dark:text-gray-200">
+                    <span className="font-medium text-fg-muted">
                       {t("counterOfferAmountLabel")} ({estimate.currency})
                     </span>
                     <input
@@ -255,10 +255,10 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
             <div
               className={`mt-6 rounded-lg border-t px-4 py-3 text-sm ${
                 estimate.clientDecision === "approved"
-                  ? "border-success-200 bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
+                  ? "border-success-200 bg-success-50 dark:bg-success-500/15 text-success-fg"
                   : estimate.clientDecision === "countered"
                     ? "border-brand-200 bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400"
-                    : "border-error-200 bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500"
+                    : "border-error-200 bg-error-50 dark:bg-error-500/15 text-danger-fg"
               }`}
             >
               {estimate.clientDecision === "approved"

@@ -228,9 +228,9 @@ export default function RateCatalogPage() {
       </div>
 
       {pendingNotice && (
-        <div className="mt-3 flex items-center justify-between rounded-md bg-warning-50 dark:bg-warning-500/15 px-3 py-2 text-xs text-warning-700 dark:text-warning-500">
+        <div className="mt-3 flex items-center justify-between rounded-md bg-warning-50 dark:bg-warning-500/15 px-3 py-2 text-xs text-warning-fg">
           <span>{pendingNotice}</span>
-          <button onClick={() => setPendingNotice(null)} className="text-warning-700 dark:text-warning-500 hover:underline">
+          <button onClick={() => setPendingNotice(null)} className="text-warning-fg hover:underline">
             {tc("close")}
           </button>
         </div>
@@ -238,21 +238,21 @@ export default function RateCatalogPage() {
 
       {pendingChanges.length > 0 && (
         <div className="card mt-4">
-          <h2 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("pendingChanges")}</h2>
-          <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("pendingChangesHint")}</p>
+          <h2 className="mb-2 text-sm font-semibold text-fg-muted">{t("pendingChanges")}</h2>
+          <p className="mb-3 text-xs text-fg-subtle">{t("pendingChangesHint")}</p>
           <ul className="flex flex-col gap-2">
             {pendingChanges.map((pc) => (
               <li key={pc.id} className="flex items-center justify-between rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm">
                 <div>
-                  <span className="font-medium text-gray-900 dark:text-gray-50">
+                  <span className="font-medium text-fg">
                     {pc.rateCatalogItem.code} — {pc.name ?? pc.rateCatalogItem.name}
                   </span>
                   {pc.laborHoursPerUnit !== null && (
-                    <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                    <span className="ml-2 text-xs text-fg-subtle">
                       {t("laborHoursChange", { from: pc.rateCatalogItem.laborHoursPerUnit, to: pc.laborHoursPerUnit })}
                     </span>
                   )}
-                  <p className="text-xs text-gray-400 dark:text-gray-500">{t("proposedBy", { name: pc.proposedByName, date: formatDate(new Date(pc.proposedAt)) })}</p>
+                  <p className="text-xs text-fg-subtle">{t("proposedBy", { name: pc.proposedByName, date: formatDate(new Date(pc.proposedAt)) })}</p>
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => approvePendingChange(pc.id)} className="btn-primary px-2.5 py-1 text-xs">
@@ -306,12 +306,12 @@ export default function RateCatalogPage() {
       {showCreateForm && (
         <div className="mt-6 card max-w-md">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{tc("create")}</h2>
+            <h2 className="text-sm font-semibold text-fg-muted">{tc("create")}</h2>
             <button
               type="button"
               onClick={() => setShowCreateForm(false)}
               aria-label={tc("cancel")}
-              className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+              className="text-fg-subtle hover:text-gray-600 dark:hover:text-gray-300"
             >
               <CloseIcon className="size-4" />
             </button>
@@ -339,7 +339,7 @@ export default function RateCatalogPage() {
               value={form.unit}
               onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}
             />
-            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
               {t("laborHours")}
               <input
                 required
@@ -350,7 +350,7 @@ export default function RateCatalogPage() {
                 onChange={(e) => setForm((f) => ({ ...f, laborHoursPerUnit: e.target.value }))}
               />
             </label>
-            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
               {t("catalog")}
               <select
                 className="input mt-1"
@@ -366,7 +366,7 @@ export default function RateCatalogPage() {
               </select>
             </label>
 
-            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
               {t("formula")}
               <input
                 placeholder={t("formulaPlaceholder")}
@@ -376,7 +376,7 @@ export default function RateCatalogPage() {
               />
             </label>
             {form.formula && (
-              <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+              <label className="flex flex-col gap-1 text-xs text-fg-subtle">
                 {t("formulaParams")}
                 <input
                   placeholder={t("formulaParamsPlaceholder")}
@@ -388,7 +388,7 @@ export default function RateCatalogPage() {
             )}
 
             <div className="mt-2 flex items-center justify-between">
-              <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{t("materials")}</span>
+              <span className="text-xs font-semibold text-fg-subtle">{t("materials")}</span>
               <button type="button" onClick={addLine} className="btn-secondary px-2 py-1 text-xs">
                 +
               </button>
@@ -429,7 +429,7 @@ export default function RateCatalogPage() {
 
       <div className="mt-6">
         {!visibleItems ? (
-          <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+          <p className="text-fg-subtle">{tc("loading")}</p>
         ) : visibleItems.length === 0 ? (
           <div className="card">
             <EmptyState
@@ -443,7 +443,7 @@ export default function RateCatalogPage() {
             <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
                   <th className="py-2">{t("code")}</th>
                   <th>{tc("name")}</th>
                   <th>{t("unit")}</th>
@@ -506,8 +506,8 @@ export default function RateCatalogPage() {
                         </td>
                         <td>{item.unit}</td>
                         <td>{item.laborHoursPerUnit}</td>
-                        <td className="text-xs text-gray-500 dark:text-gray-400">{item.catalogId ? catalogNameById[item.catalogId] : t("uncategorized")}</td>
-                        <td className="text-xs text-gray-500 dark:text-gray-400">{item.materials.map((m) => m.materialCatalogItem.code).join(", ")}</td>
+                        <td className="text-xs text-fg-subtle">{item.catalogId ? catalogNameById[item.catalogId] : t("uncategorized")}</td>
+                        <td className="text-xs text-fg-subtle">{item.materials.map((m) => m.materialCatalogItem.code).join(", ")}</td>
                         <td className="whitespace-nowrap text-right">
                           <button onClick={() => startEdit(item)} className="text-xs text-brand-700 dark:text-brand-400 hover:underline">
                             {tc("edit")}
@@ -521,13 +521,13 @@ export default function RateCatalogPage() {
                         <tr className="border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
                           <td colSpan={7} className="py-2">
                             {!history ? (
-                              <span className="text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</span>
+                              <span className="text-xs text-fg-subtle">{tc("loading")}</span>
                             ) : history.length === 0 ? (
-                              <span className="text-xs text-gray-400 dark:text-gray-500">{t("noHistory")}</span>
+                              <span className="text-xs text-fg-subtle">{t("noHistory")}</span>
                             ) : (
                               <ul className="flex flex-col gap-1">
                                 {history.map((rev) => (
-                                  <li key={rev.id} className="text-xs text-gray-500 dark:text-gray-400">
+                                  <li key={rev.id} className="text-xs text-fg-subtle">
                                     {formatDateTime(new Date(rev.createdAt))} — {rev.name} ({rev.laborHoursPerUnit} {t("laborHours").toLowerCase()}) —{" "}
                                     {rev.changedByName}
                                   </li>

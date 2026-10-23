@@ -30,9 +30,9 @@ interface Review {
 }
 
 const RATING_STYLES: Record<PerformanceRating, string> = {
-  below_expectations: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
+  below_expectations: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
   meets_expectations: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
-  exceeds_expectations: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
+  exceeds_expectations: "bg-success-50 dark:bg-success-500/15 text-success-fg",
 };
 
 export default function PerformancePage() {
@@ -126,7 +126,7 @@ export default function PerformancePage() {
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="lg:col-span-1">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("cycles")}</h2>
+            <h2 className="text-sm font-semibold text-fg-muted">{t("cycles")}</h2>
             {!showCycleForm && (
               <button type="button" onClick={() => setShowCycleForm(true)} className="text-sm font-medium text-brand-700 dark:text-brand-400 hover:underline">
                 {t("launchCycle")}
@@ -134,7 +134,7 @@ export default function PerformancePage() {
             )}
           </div>
           {!cycles ? (
-            <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+            <p className="text-sm text-fg-subtle">{tc("loading")}</p>
           ) : (
             <ul className="mb-4 flex flex-col gap-1.5">
               {cycles.map((c) => (
@@ -145,7 +145,7 @@ export default function PerformancePage() {
                   >
                     <span>{c.name}</span>
                     <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${c.status === "open" ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"}`}
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${c.status === "open" ? "bg-success-50 dark:bg-success-500/15 text-success-fg" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"}`}
                     >
                       {t(`cycleStatus_${c.status}`)}
                     </span>
@@ -158,12 +158,12 @@ export default function PerformancePage() {
           {showCycleForm && (
             <form onSubmit={createCycle} className="card flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{t("launchCycle")}</span>
+                <span className="text-xs font-semibold text-fg-subtle">{t("launchCycle")}</span>
                 <button
                   type="button"
                   onClick={() => setShowCycleForm(false)}
                   aria-label={tc("cancel")}
-                  className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                  className="text-fg-subtle hover:text-gray-600 dark:hover:text-gray-300"
                 >
                   <CloseIcon className="size-4" />
                 </button>
@@ -176,7 +176,7 @@ export default function PerformancePage() {
                 value={cycleForm.name}
                 onChange={(e) => setCycleForm((f) => ({ ...f, name: e.target.value }))}
               />
-              <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+              <label className="flex flex-col gap-1 text-xs text-fg-subtle">
                 {t("periodStart")}
                 <input
                   required
@@ -186,7 +186,7 @@ export default function PerformancePage() {
                   onChange={(e) => setCycleForm((f) => ({ ...f, periodStart: e.target.value }))}
                 />
               </label>
-              <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+              <label className="flex flex-col gap-1 text-xs text-fg-subtle">
                 {t("periodEnd")}
                 <input
                   required
@@ -209,9 +209,9 @@ export default function PerformancePage() {
         </div>
 
         <div className="lg:col-span-2">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("reviews")}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("reviews")}</h2>
           {!selectedCycleId ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">{t("selectCycle")}</p>
+            <p className="text-sm text-fg-subtle">{t("selectCycle")}</p>
           ) : (
             <>
               {selectedCycle?.status === "open" && (
@@ -263,20 +263,20 @@ export default function PerformancePage() {
               )}
 
               {!reviews ? (
-                <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+                <p className="text-sm text-fg-subtle">{tc("loading")}</p>
               ) : reviews.length === 0 ? (
-                <p className="text-sm text-gray-400 dark:text-gray-500">{t("noReviews")}</p>
+                <p className="text-sm text-fg-subtle">{t("noReviews")}</p>
               ) : (
                 <ul className="flex flex-col gap-2">
                   {reviews.map((r) => (
                     <li key={r.id} className="card">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{r.worker.name}</span>
+                        <span className="text-sm font-medium text-fg">{r.worker.name}</span>
                         {r.rating && <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${RATING_STYLES[r.rating]}`}>{t(`rating_${r.rating}`)}</span>}
                       </div>
-                      {r.strengths && <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t("strengths")}: {r.strengths}</p>}
-                      {r.improvementAreas && <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{t("improvementAreas")}: {r.improvementAreas}</p>}
-                      <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                      {r.strengths && <p className="mt-1 text-xs text-fg-subtle">{t("strengths")}: {r.strengths}</p>}
+                      {r.improvementAreas && <p className="mt-0.5 text-xs text-fg-subtle">{t("improvementAreas")}: {r.improvementAreas}</p>}
+                      <p className="mt-1 text-xs text-fg-subtle">
                         {r.submittedAt ? t("submittedOn", { date: formatDate(new Date(r.submittedAt)) }) : t("draft")}
                       </p>
                     </li>

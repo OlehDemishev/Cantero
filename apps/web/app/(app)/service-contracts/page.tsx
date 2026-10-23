@@ -83,12 +83,12 @@ export default function ServiceContractsPage() {
       {showCreateForm && (
         <div className="mt-6 card max-w-md">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("newContract")}</h2>
+            <h2 className="text-sm font-semibold text-fg-muted">{t("newContract")}</h2>
             <button
               type="button"
               onClick={() => setShowCreateForm(false)}
               aria-label={tc("cancel")}
-              className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+              className="text-fg-subtle hover:text-gray-600 dark:hover:text-gray-300"
             >
               <CloseIcon className="size-4" />
             </button>
@@ -128,7 +128,7 @@ export default function ServiceContractsPage() {
                 </option>
               ))}
             </select>
-            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
               {t("frequencyMonths")}
               <input
                 required
@@ -139,7 +139,7 @@ export default function ServiceContractsPage() {
                 onChange={(e) => setForm((f) => ({ ...f, frequencyMonths: e.target.value }))}
               />
             </label>
-            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
               {t("startDate")}
               <input
                 required
@@ -158,7 +158,7 @@ export default function ServiceContractsPage() {
 
       <div className="mt-6">
         {!contracts ? (
-          <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+          <p className="text-fg-subtle">{tc("loading")}</p>
         ) : contracts.length === 0 ? (
           <div className="card">
             <EmptyState
@@ -176,7 +176,7 @@ export default function ServiceContractsPage() {
                     <a href={`/service-contracts/${c.id}`} className="font-medium hover:underline">
                       {c.title}
                     </a>
-                    <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
+                    <span className="ml-2 text-sm text-fg-subtle">
                       <Link href={`/projects/${c.project.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
                         {c.project.name}
                       </Link>{" "}
@@ -186,7 +186,7 @@ export default function ServiceContractsPage() {
                       </Link>
                     </span>
                   </div>
-                  <a href={`/service-contracts/${c.id}`} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">
+                  <a href={`/service-contracts/${c.id}`} className="text-sm text-fg-subtle hover:underline">
                     {t("nextVisit")}: {formatDate(new Date(c.nextVisitDate))}
                   </a>
                 </li>

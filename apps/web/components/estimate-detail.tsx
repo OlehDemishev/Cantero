@@ -332,14 +332,14 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
   if (!estimate) {
     return (
       <>
-        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        <p className="text-fg-subtle">{tc("loading")}</p>
       </>
     );
   }
 
   return (
     <>
-      <a href={`/projects/${estimate.project.id}`} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">
+      <a href={`/projects/${estimate.project.id}`} className="text-sm text-fg-subtle hover:underline">
         ← {estimate.project.name}
       </a>
       <div className="mt-2 flex items-center justify-between">

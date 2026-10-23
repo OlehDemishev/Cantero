@@ -66,14 +66,14 @@ export default function SignupPage() {
           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500 text-sm font-semibold text-white">
             C
           </span>
-          <span className="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-50">Cantero</span>
+          <span className="text-lg font-semibold tracking-tight text-fg">Cantero</span>
         </div>
 
         <div className="card">
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">{t("signupTitle")}</h1>
+          <h1 className="text-xl font-semibold text-fg">{t("signupTitle")}</h1>
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">{t("signupSubtitle")}</p>
 
-          {error && <p className="mt-4 rounded-lg bg-error-50 dark:bg-error-500/15 px-3 py-2 text-sm text-error-700 dark:text-error-500">{error}</p>}
+          {error && <p className="mt-4 rounded-lg bg-error-50 dark:bg-error-500/15 px-3 py-2 text-sm text-danger-fg">{error}</p>}
 
           <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
         <Field label={t("companyName")}>
@@ -179,7 +179,7 @@ export default function SignupPage() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1 text-sm">
-      <span className="font-medium text-gray-700 dark:text-gray-200">{label}</span>
+      <span className="font-medium text-fg-muted">{label}</span>
       {children}
     </label>
   );

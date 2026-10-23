@@ -47,15 +47,15 @@ interface TicketDetail extends Ticket {
 const STATUS_STYLES: Record<TicketStatus, string> = {
   open: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
   in_progress: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
-  waiting_on_customer: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
-  resolved: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
-  closed: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
+  waiting_on_customer: "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
+  resolved: "bg-success-50 dark:bg-success-500/15 text-success-fg",
+  closed: "bg-success-50 dark:bg-success-500/15 text-success-fg",
 };
 const PRIORITY_STYLES: Record<TicketPriority, string> = {
-  low: "text-gray-400 dark:text-gray-500",
+  low: "text-fg-subtle",
   medium: "text-gray-600 dark:text-gray-300",
-  high: "text-warning-700 dark:text-warning-500",
-  urgent: "text-error-700 dark:text-error-500",
+  high: "text-warning-fg",
+  urgent: "text-danger-fg",
 };
 
 export default function SupportTicketsPage() {
@@ -255,9 +255,9 @@ export default function SupportTicketsPage() {
 
       <div className="mt-6">
         {!tickets ? (
-          <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+          <p className="text-fg-subtle">{tc("loading")}</p>
         ) : tickets.length === 0 ? (
-          <p className="text-gray-500 dark:text-gray-400">{t("noTickets")}</p>
+          <p className="text-fg-subtle">{t("noTickets")}</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {tickets.map((ticket) => {
@@ -272,7 +272,7 @@ export default function SupportTicketsPage() {
                     className="flex w-full cursor-pointer items-center justify-between text-left"
                   >
                     <div>
-                      <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{ticket.subject}</span>
+                      <span className="text-sm font-medium text-fg">{ticket.subject}</span>
                       {ticket.requesterClient ? (
                         <Link
                           href={`/clients/${ticket.requesterClient.id}`}
@@ -282,7 +282,7 @@ export default function SupportTicketsPage() {
                           {ticket.requesterClient.name}
                         </Link>
                       ) : (
-                        <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">{ticket.requesterName}</span>
+                        <span className="ml-2 text-xs text-fg-subtle">{ticket.requesterName}</span>
                       )}
                       {ticket.project && (
                         <Link
@@ -297,7 +297,7 @@ export default function SupportTicketsPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       {(ticket.sla.responseBreached || ticket.sla.resolutionBreached) && (
-                        <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-error-700 dark:text-error-500">{t("slaBreached")}</span>
+                        <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-danger-fg">{t("slaBreached")}</span>
                       )}
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[ticket.status]}`}>{t(`status_${ticket.status}`)}</span>
                     </div>
@@ -328,14 +328,14 @@ export default function SupportTicketsPage() {
                       <ul className="flex flex-col gap-2">
                         {detail.messages.map((m) => (
                           <li key={m.id} className={`rounded-md px-3 py-2 text-sm ${m.isInternal ? "bg-warning-50 dark:bg-warning-500/15" : "bg-gray-50 dark:bg-gray-700"}`}>
-                            <div className="flex items-center justify-between text-xs text-gray-400 dark:text-gray-500">
+                            <div className="flex items-center justify-between text-xs text-fg-subtle">
                               <span>
                                 {m.authorName}
-                                {m.isInternal && <span className="ml-1.5 font-medium text-warning-700 dark:text-warning-500">{t("internalNote")}</span>}
+                                {m.isInternal && <span className="ml-1.5 font-medium text-warning-fg">{t("internalNote")}</span>}
                               </span>
                               <span>{formatDateTime(new Date(m.createdAt))}</span>
                             </div>
-                            <p className="mt-1 text-gray-700 dark:text-gray-200">{m.content}</p>
+                            <p className="mt-1 text-fg-muted">{m.content}</p>
                           </li>
                         ))}
                       </ul>
@@ -349,7 +349,7 @@ export default function SupportTicketsPage() {
                           onChange={(e) => setReplyText(e.target.value)}
                         />
                         <div className="flex items-center gap-2">
-                          <label className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                          <label className="flex items-center gap-1.5 text-xs text-fg-subtle">
                             <input type="checkbox" checked={replyInternal} onChange={(e) => setReplyInternal(e.target.checked)} />
                             {t("internalNote")}
                           </label>

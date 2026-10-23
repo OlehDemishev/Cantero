@@ -91,7 +91,7 @@ export default function DocumentsPage() {
       <h1 className="text-2xl font-semibold">{t("title")}</h1>
 
       <div className="mt-6 flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
           {t("category")}
           <select
             className="input mt-1 w-auto"
@@ -106,7 +106,7 @@ export default function DocumentsPage() {
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+        <label className="flex flex-col gap-1 text-xs text-fg-subtle">
           {tc("name")}
           <input className="input mt-1" placeholder={t("searchPlaceholder")} value={search} onChange={(e) => setSearch(e.target.value)} />
         </label>
@@ -114,13 +114,13 @@ export default function DocumentsPage() {
 
       <div className="mt-8 overflow-x-auto">
         {!documents ? (
-          <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+          <p className="text-fg-subtle">{tc("loading")}</p>
         ) : documents.length === 0 ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500">{t("noDocuments")}</p>
+          <p className="text-sm text-fg-subtle">{t("noDocuments")}</p>
         ) : (
           <table className="w-full min-w-[720px] border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
                 <th className="py-2">{tc("name")}</th>
                 <th>{t("category")}</th>
                 <th>{t("project")}</th>
@@ -135,7 +135,7 @@ export default function DocumentsPage() {
                   <td className="py-2">
                     {doc.name}
                     {doc.version > 1 && (
-                      <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">{t("version", { n: doc.version })}</span>
+                      <span className="ml-2 text-xs text-fg-subtle">{t("version", { n: doc.version })}</span>
                     )}
                   </td>
                   <td>
@@ -156,13 +156,13 @@ export default function DocumentsPage() {
                       "—"
                     )}
                   </td>
-                  <td className="text-gray-500 dark:text-gray-400">{doc.uploadedBy?.name ?? "—"}</td>
-                  <td className="text-right text-gray-500 dark:text-gray-400">{formatSize(doc.size)}</td>
+                  <td className="text-fg-subtle">{doc.uploadedBy?.name ?? "—"}</td>
+                  <td className="text-right text-fg-subtle">{formatSize(doc.size)}</td>
                   <td className="text-right text-xs">
                     <button onClick={() => download(doc)} className="text-brand-700 dark:text-brand-400 hover:underline">
                       {tc("download")}
                     </button>
-                    <button onClick={() => remove(doc)} disabled={busy} className="ml-3 text-error-700 dark:text-error-500 hover:underline">
+                    <button onClick={() => remove(doc)} disabled={busy} className="ml-3 text-danger-fg hover:underline">
                       {tc("delete")}
                     </button>
                   </td>
@@ -174,9 +174,9 @@ export default function DocumentsPage() {
       </div>
 
       <div className="card mt-8">
-        <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("uploadNew")}</h2>
+        <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("uploadNew")}</h2>
         <div className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
             {t("category")}
             <select
               className="input mt-1 w-auto"
@@ -190,7 +190,7 @@ export default function DocumentsPage() {
               ))}
             </select>
           </label>
-          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
             {t("project")}
             <select className="input mt-1 w-auto" value={uploadProjectId} onChange={(e) => setUploadProjectId(e.target.value)}>
               <option value="">{t("noProject")}</option>

@@ -31,15 +31,15 @@ export default function SubcontractorPortalLoginPage() {
           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500 text-sm font-semibold text-white">
             C
           </span>
-          <span className="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-50">Cantero</span>
+          <span className="text-lg font-semibold tracking-tight text-fg">Cantero</span>
         </div>
 
         <div className="card">
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">{t("signInTitle")}</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("signInHint")}</p>
+          <h1 className="text-xl font-semibold text-fg">{t("signInTitle")}</h1>
+          <p className="mt-1 text-sm text-fg-subtle">{t("signInHint")}</p>
 
           {sent ? (
-            <p className="mt-4 rounded-lg border border-success-200 bg-success-50 dark:bg-success-500/15 px-4 py-3 text-sm text-success-700 dark:text-success-500">
+            <p className="mt-4 rounded-lg border border-success-200 bg-success-50 dark:bg-success-500/15 px-4 py-3 text-sm text-success-fg">
               {t("linkSentHint")}
             </p>
           ) : (

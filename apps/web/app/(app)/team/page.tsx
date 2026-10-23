@@ -89,12 +89,12 @@ export default function TeamPage() {
       {showCreateForm && (
         <div className="mt-6 card max-w-md">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("newWorker")}</h2>
+            <h2 className="text-sm font-semibold text-fg-muted">{t("newWorker")}</h2>
             <button
               type="button"
               onClick={() => setShowCreateForm(false)}
               aria-label={tc("cancel")}
-              className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+              className="text-fg-subtle hover:text-gray-600 dark:hover:text-gray-300"
             >
               <CloseIcon className="size-4" />
             </button>
@@ -114,7 +114,7 @@ export default function TeamPage() {
               value={form.role}
               onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
             />
-            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
               {t("hourlyCost")} ({me?.company.currency})
               <input
                 type="number"
@@ -133,14 +133,14 @@ export default function TeamPage() {
 
       <div className="mt-6">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("workers")}</h2>
-          <label className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+          <h2 className="text-sm font-semibold text-fg-muted">{t("workers")}</h2>
+          <label className="flex items-center gap-2 text-xs text-fg-subtle">
             <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} />
             {t("showInactive")}
           </label>
         </div>
         {!visibleWorkers ? (
-          <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+          <p className="text-fg-subtle">{tc("loading")}</p>
         ) : visibleWorkers.length === 0 ? (
           <div className="card">
             <EmptyState
@@ -154,7 +154,7 @@ export default function TeamPage() {
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
                   <th className="py-2">{tc("name")}</th>
                   <th>{t("role")}</th>
                   <th>{t("hourlyCost")}</th>
@@ -179,9 +179,9 @@ export default function TeamPage() {
                     )}
                     <td>
                       {w.active ? (
-                        <span className="text-xs text-success-700 dark:text-success-500">{t("active")}</span>
+                        <span className="text-xs text-success-fg">{t("active")}</span>
                       ) : (
-                        <span className="text-xs text-gray-400 dark:text-gray-500">{t("inactive")}</span>
+                        <span className="text-xs text-fg-subtle">{t("inactive")}</span>
                       )}
                     </td>
                   </tr>
@@ -191,16 +191,16 @@ export default function TeamPage() {
             </div>
           )}
 
-          <h2 className="mb-3 mt-10 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("laborCostReport")}</h2>
+          <h2 className="mb-3 mt-10 text-sm font-semibold text-fg-muted">{t("laborCostReport")}</h2>
           {!report ? (
-            <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+            <p className="text-fg-subtle">{tc("loading")}</p>
           ) : report.byWorker.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noLaborCost")}</p>
+            <p className="text-sm text-fg-subtle">{t("noLaborCost")}</p>
           ) : (
             <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
                   <th className="py-2">{tc("name")}</th>
                   <th>{t("role")}</th>
                   <th className="text-right">{t("hours")}</th>

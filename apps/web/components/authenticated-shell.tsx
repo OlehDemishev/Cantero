@@ -295,7 +295,7 @@ function AppSidebar({ hiddenNavItems }: { hiddenNavItems: string[] | null }) {
     >
       <div className={`flex h-16 items-center ${expanded ? "justify-start" : "justify-center"}`}>
         {expanded ? (
-          <span className="text-lg font-semibold tracking-tight text-gray-900 dark:text-white">Cantero</span>
+          <span className="text-lg font-semibold tracking-tight text-fg">Cantero</span>
         ) : (
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500 text-sm font-semibold text-white">
             C
@@ -303,7 +303,7 @@ function AppSidebar({ hiddenNavItems }: { hiddenNavItems: string[] | null }) {
         )}
       </div>
       <nav className="flex flex-1 flex-col overflow-y-auto no-scrollbar">
-        {!expanded && <span className="mb-3 text-center text-xs font-medium uppercase text-gray-400 dark:text-gray-500">···</span>}
+        {!expanded && <span className="mb-3 text-center text-xs font-medium uppercase text-fg-subtle">···</span>}
         {!hiddenNavItems && <NavSkeleton expanded={expanded} />}
         <div className="flex flex-col gap-1">
           {visibleGroups.map((group, i) => {
@@ -313,7 +313,7 @@ function AppSidebar({ hiddenNavItems }: { hiddenNavItems: string[] | null }) {
                 {expanded && (
                   <button
                     onClick={() => toggleGroup(group.key)}
-                    className="mb-1 flex w-full items-center justify-between rounded px-1 py-1 text-xs font-medium uppercase tracking-wide text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                    className="mb-1 flex w-full items-center justify-between rounded px-1 py-1 text-xs font-medium uppercase tracking-wide text-fg-subtle hover:text-gray-600 dark:hover:text-gray-300"
                   >
                     {tn(`group_${group.key}`)}
                     <ChevronDownIcon className={`transition-transform ${isCollapsed ? "-rotate-90" : ""}`} />
@@ -382,12 +382,12 @@ function AppHeader({ me }: { me: MeResponse | null }) {
         <button
           onClick={handleToggle}
           aria-label="Toggle sidebar"
-          className="flex h-10 w-10 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5"
+          className="flex h-10 w-10 items-center justify-center rounded-lg text-fg-subtle hover:bg-gray-100 dark:hover:bg-white/5"
         >
           {isMobileOpen ? <CloseIcon /> : <MenuIcon />}
         </button>
         {me ? (
-          <span className="hidden text-sm font-medium text-gray-500 dark:text-gray-400 sm:block">{me.company.name}</span>
+          <span className="hidden text-sm font-medium text-fg-subtle sm:block">{me.company.name}</span>
         ) : (
           <span aria-hidden="true" className="hidden h-4 w-32 animate-pulse rounded bg-gray-100 dark:bg-gray-800 sm:block" />
         )}
@@ -401,7 +401,7 @@ function AppHeader({ me }: { me: MeResponse | null }) {
         <button
           onClick={toggleTheme}
           aria-label="Toggle theme"
-          className="flex h-10 w-10 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5"
+          className="flex h-10 w-10 items-center justify-center rounded-lg text-fg-subtle hover:bg-gray-100 dark:hover:bg-white/5"
         >
           {theme === "dark" ? <SunIcon /> : <MoonIcon />}
         </button>
@@ -449,9 +449,9 @@ function UserMenu({ me }: { me: MeResponse }) {
           {initial}
         </span>
         <span className="hidden text-left sm:block">
-          <span className="block text-sm font-medium text-gray-700 dark:text-gray-300">{me.user.name}</span>
+          <span className="block text-sm font-medium text-fg-muted">{me.user.name}</span>
         </span>
-        <ChevronDownIcon className={`text-gray-400 dark:text-gray-500 transition-transform ${menuOpen ? "rotate-180" : ""}`} />
+        <ChevronDownIcon className={`text-fg-subtle transition-transform ${menuOpen ? "rotate-180" : ""}`} />
       </button>
 
       {menuOpen && (
@@ -461,34 +461,34 @@ function UserMenu({ me }: { me: MeResponse }) {
               {initial}
             </span>
             <div>
-              <div className="text-sm font-medium text-gray-800 dark:text-white/90">{me.user.name}</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">{me.user.email}</div>
+              <div className="text-sm font-medium text-fg">{me.user.name}</div>
+              <div className="text-xs text-fg-subtle">{me.user.email}</div>
             </div>
           </div>
           <Link
             href="/settings"
             onClick={() => setMenuOpen(false)}
-            className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5"
+            className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-fg-muted hover:bg-gray-100 dark:hover:bg-white/5"
           >
-            <UserCircleIcon className="text-gray-500 dark:text-gray-400" />
+            <UserCircleIcon className="text-fg-subtle" />
             {tn("settings")}
           </Link>
           <Link
             href="/help"
             onClick={() => setMenuOpen(false)}
-            className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5"
+            className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-fg-muted hover:bg-gray-100 dark:hover:bg-white/5"
           >
-            <HelpIcon className="text-gray-500 dark:text-gray-400" />
+            <HelpIcon className="text-fg-subtle" />
             {tn("help")}
           </Link>
           <button
             onClick={signOut}
-            className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5"
+            className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm text-fg-muted hover:bg-gray-100 dark:hover:bg-white/5"
           >
-            <LogoutIcon className="text-gray-500 dark:text-gray-400" />
+            <LogoutIcon className="text-fg-subtle" />
             {tc("signOut")}
           </button>
-          <div className="mt-2 border-t border-gray-100 pt-2 text-xs text-gray-400 dark:border-gray-800">
+          <div className="mt-2 border-t border-gray-100 pt-2 text-xs text-fg-subtle dark:border-gray-800">
             {ts(me.user.role as never)}
           </div>
         </div>

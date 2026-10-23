@@ -29,13 +29,13 @@ export default function PortalVerifyPage() {
       <div className="w-full max-w-sm text-center">
         {error ? (
           <div className="card">
-            <p className="text-sm text-error-700 dark:text-error-500">{error}</p>
+            <p className="text-sm text-danger-fg">{error}</p>
             <a href="/portal/login" className="btn-primary mt-4 inline-block">
               {t("backToLogin")}
             </a>
           </div>
         ) : (
-          <p className="text-sm text-gray-500 dark:text-gray-400">{t("verifying")}</p>
+          <p className="text-sm text-fg-subtle">{t("verifying")}</p>
         )}
       </div>
     </main>

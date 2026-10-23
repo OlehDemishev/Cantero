@@ -111,15 +111,15 @@ export default function SubcontractorsPage() {
           {t("exportDatev")}
         </button>
       </div>
-      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("complianceSubtitle")}</p>
-      <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{t("datevTestImportNotice")}</p>
+      <p className="mt-1 text-sm text-fg-subtle">{t("complianceSubtitle")}</p>
+      <p className="mt-1 text-xs text-fg-subtle">{t("datevTestImportNotice")}</p>
       {datevError && <p className="mt-1 text-xs text-danger-fg">{datevError}</p>}
       {datevWarningCount !== null && datevWarningCount > 0 && (
-        <p className="mt-1 text-xs text-warning-700 dark:text-warning-500">{t("datevWarningCount", { count: datevWarningCount })}</p>
+        <p className="mt-1 text-xs text-warning-fg">{t("datevWarningCount", { count: datevWarningCount })}</p>
       )}
 
       <div className="mt-6 card max-w-md">
-        <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("newSubcontractor")}</h2>
+        <h2 className="mb-4 text-sm font-semibold text-fg-muted">{t("newSubcontractor")}</h2>
         <form onSubmit={createSubcontractor} className="flex flex-col gap-3">
           <input required placeholder={tc("name")} className="input" value={newForm.name} onChange={(e) => setNewForm((f) => ({ ...f, name: e.target.value }))} />
           <input type="email" placeholder={tc("email")} className="input" value={newForm.email} onChange={(e) => setNewForm((f) => ({ ...f, email: e.target.value }))} />
@@ -132,9 +132,9 @@ export default function SubcontractorsPage() {
 
       <div className="mt-8">
         {!subcontractors ? (
-          <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+          <p className="text-fg-subtle">{tc("loading")}</p>
         ) : subcontractors.length === 0 ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500">{t("noSubcontractors")}</p>
+          <p className="text-sm text-fg-subtle">{t("noSubcontractors")}</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {subcontractors.map((s) => (
@@ -147,7 +147,7 @@ export default function SubcontractorsPage() {
       {isUsCompany && (
         <div className="mt-8 card">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("taxSummaryTitle")}</h2>
+            <h2 className="text-sm font-semibold text-fg-muted">{t("taxSummaryTitle")}</h2>
             <select
               className="input w-auto"
               value={taxSummaryYear}
@@ -163,16 +163,16 @@ export default function SubcontractorsPage() {
               ))}
             </select>
           </div>
-          <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("taxSummaryHint")}</p>
+          <p className="mb-3 text-xs text-fg-subtle">{t("taxSummaryHint")}</p>
           {taxSummary === null ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+            <p className="text-sm text-fg-subtle">{tc("loading")}</p>
           ) : taxSummary.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noTaxSummary")}</p>
+            <p className="text-sm text-fg-subtle">{t("noTaxSummary")}</p>
           ) : (
             <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-100 dark:border-gray-700 text-left text-xs text-gray-500 dark:text-gray-400">
+                <tr className="border-b border-gray-100 dark:border-gray-700 text-left text-xs text-fg-subtle">
                   <th className="py-1.5 font-medium">{tc("name")}</th>
                   <th className="font-medium">{t("legalBusinessNamePlaceholder")}</th>
                   <th className="font-medium">{t("taxIdPlaceholder")}</th>
@@ -184,14 +184,14 @@ export default function SubcontractorsPage() {
                 {taxSummary.map((row) => (
                   <tr key={row.subcontractorId} className="border-b border-gray-100 dark:border-gray-700">
                     <td className="py-1.5">{row.name}</td>
-                    <td className="text-gray-500 dark:text-gray-400">{row.legalBusinessName ?? "—"}</td>
-                    <td className="text-gray-500 dark:text-gray-400">{row.taxIdMasked ?? "—"}</td>
+                    <td className="text-fg-subtle">{row.legalBusinessName ?? "—"}</td>
+                    <td className="text-fg-subtle">{row.taxIdMasked ?? "—"}</td>
                     <td className="text-right font-medium">{row.totalPaid}</td>
                     <td className="text-right">
                       {row.reportable ? (
-                        <span className="rounded-full bg-warning-50 dark:bg-warning-500/15 px-2 py-0.5 text-xs font-medium text-warning-700 dark:text-warning-500">{t("reportableYes")}</span>
+                        <span className="rounded-full bg-warning-50 dark:bg-warning-500/15 px-2 py-0.5 text-xs font-medium text-warning-fg">{t("reportableYes")}</span>
                       ) : (
-                        <span className="text-xs text-gray-400 dark:text-gray-500">{t("reportableNo")}</span>
+                        <span className="text-xs text-fg-subtle">{t("reportableNo")}</span>
                       )}
                     </td>
                   </tr>

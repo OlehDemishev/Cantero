@@ -102,14 +102,14 @@ export default function PortalChangeOrderPage({ params }: { params: Promise<{ id
   if (error) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
-        <p className="text-sm text-gray-500 dark:text-gray-400">{error}</p>
+        <p className="text-sm text-fg-subtle">{error}</p>
       </main>
     );
   }
   if (!co) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
-        <p className="text-sm text-gray-500 dark:text-gray-400">{t("loading")}</p>
+        <p className="text-sm text-fg-subtle">{t("loading")}</p>
       </main>
     );
   }
@@ -117,22 +117,22 @@ export default function PortalChangeOrderPage({ params }: { params: Promise<{ id
   return (
     <main className="flex min-h-screen justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
       <div className="w-full max-w-2xl">
-        <a href="/portal" className="mb-4 inline-block text-xs text-gray-500 dark:text-gray-400 hover:underline">
+        <a href="/portal" className="mb-4 inline-block text-xs text-fg-subtle hover:underline">
           ← {co.companyName}
         </a>
         <div className="card">
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">
+          <p className="text-xs font-medium uppercase tracking-wide text-fg-subtle">
             {te("changeOrderFor", { estimateName: co.estimateName })}
           </p>
-          <h1 className="mt-1 text-xl font-semibold text-gray-900 dark:text-gray-50">
+          <h1 className="mt-1 text-xl font-semibold text-fg">
             CO-{co.number} — {co.title}
           </h1>
-          {co.description && <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{co.description}</p>}
+          {co.description && <p className="mt-1 text-sm text-fg-subtle">{co.description}</p>}
 
           <div className="mt-6 overflow-x-auto">
             <table className="w-full min-w-[420px] border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
                   <th className="py-2">{te("rateItem")}</th>
                   <th>{te("quantity")}</th>
                   <th className="text-right">{te("lineTotal")}</th>
@@ -156,19 +156,19 @@ export default function PortalChangeOrderPage({ params }: { params: Promise<{ id
 
           <dl className="mt-4 flex flex-col gap-1.5 text-sm">
             <div className="flex justify-between">
-              <dt className="text-gray-500 dark:text-gray-400">{te("subtotal")}</dt>
+              <dt className="text-fg-subtle">{te("subtotal")}</dt>
               <dd>
                 {co.subtotal} {co.currency}
               </dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-gray-500 dark:text-gray-400">{te("markupAmount")}</dt>
+              <dt className="text-fg-subtle">{te("markupAmount")}</dt>
               <dd>
                 {co.markupAmount} {co.currency}
               </dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-gray-500 dark:text-gray-400">{te("taxAmount")}</dt>
+              <dt className="text-fg-subtle">{te("taxAmount")}</dt>
               <dd>
                 {co.taxAmount} {co.currency}
               </dd>
@@ -184,12 +184,12 @@ export default function PortalChangeOrderPage({ params }: { params: Promise<{ id
           {co.clientDecision === "pending" ? (
             <div className="mt-6 border-t border-gray-100 dark:border-gray-700 pt-4">
               <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700 dark:text-gray-200">{te("clientNoteOptional")}</span>
+                <span className="font-medium text-fg-muted">{te("clientNoteOptional")}</span>
                 <textarea rows={2} className="input" value={note} onChange={(e) => setNote(e.target.value)} />
               </label>
 
               <div className="mt-4 flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700 dark:text-gray-200">{te("signerNameLabel")}</span>
+                <span className="font-medium text-fg-muted">{te("signerNameLabel")}</span>
                 <input
                   className="input"
                   placeholder={te("signerNamePlaceholder")}
@@ -198,7 +198,7 @@ export default function PortalChangeOrderPage({ params }: { params: Promise<{ id
                 />
               </div>
               <div className="mt-3 flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700 dark:text-gray-200">{te("signHere")}</span>
+                <span className="font-medium text-fg-muted">{te("signHere")}</span>
                 <SignaturePad onChange={setSignatureDataUrl} clearLabel={te("clearSignature")} />
               </div>
               {signatureError && <p className="mt-2 text-xs text-danger-fg">{signatureError}</p>}
@@ -216,8 +216,8 @@ export default function PortalChangeOrderPage({ params }: { params: Promise<{ id
             <div
               className={`mt-6 rounded-lg border-t px-4 py-3 text-sm ${
                 co.clientDecision === "approved"
-                  ? "border-success-200 bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
-                  : "border-error-200 bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500"
+                  ? "border-success-200 bg-success-50 dark:bg-success-500/15 text-success-fg"
+                  : "border-error-200 bg-error-50 dark:bg-error-500/15 text-danger-fg"
               }`}
             >
               {co.clientDecision === "approved" ? te("clientDecisionThanksApproved") : te("clientDecisionThanksRejected")}

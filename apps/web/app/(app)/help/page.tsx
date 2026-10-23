@@ -44,7 +44,7 @@ export default function HelpPage() {
   return (
     <>
       <h1 className="text-2xl font-semibold">{t("title")}</h1>
-      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("subtitle")}</p>
+      <p className="mt-1 text-sm text-fg-subtle">{t("subtitle")}</p>
 
       <div className="mt-6 max-w-xl">
         <input
@@ -68,22 +68,22 @@ export default function HelpPage() {
 
       <div className="mt-8 flex flex-col gap-8">
         {sections.length === 0 ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500">{t("noResults")}</p>
+          <p className="text-sm text-fg-subtle">{t("noResults")}</p>
         ) : (
           sections.map((section) => (
             <section key={section.id} id={isSearching ? undefined : section.id}>
-              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{section.title}</h2>
+              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-fg-subtle">{section.title}</h2>
               <ul className="flex flex-col gap-2">
                 {section.items.map((item) =>
                   isSearching ? (
                     <li key={item.qid} className="card">
-                      <div className="text-sm font-medium text-gray-900 dark:text-white/90">{item.question}</div>
+                      <div className="text-sm font-medium text-fg">{item.question}</div>
                       <p className="mt-1.5 text-sm text-gray-600 dark:text-gray-400">{item.answer}</p>
                     </li>
                   ) : (
                     <li key={item.qid} className="card">
                       <details>
-                        <summary className="cursor-pointer text-sm font-medium text-gray-900 dark:text-white/90">
+                        <summary className="cursor-pointer text-sm font-medium text-fg">
                           {item.question}
                         </summary>
                         <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{item.answer}</p>
@@ -97,7 +97,7 @@ export default function HelpPage() {
         )}
       </div>
 
-      <p className="mt-10 text-xs text-gray-400 dark:text-gray-500">
+      <p className="mt-10 text-xs text-fg-subtle">
         {t("stillNeedHelp")}{" "}
         <a href="mailto:support@cantero.dev" className="text-brand-600 hover:underline dark:text-brand-400">
           support@cantero.dev

@@ -75,7 +75,7 @@ export default function SchedulePage() {
   return (
     <>
       <h1 className="text-2xl font-semibold">{t("title")}</h1>
-      <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <p className="mt-2 text-sm text-fg-subtle">{t("hint")}</p>
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
         {projects.map((p) => (
@@ -94,7 +94,7 @@ export default function SchedulePage() {
         </button>
       </div>
 
-      <div className="mt-3 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+      <div className="mt-3 flex items-center gap-4 text-xs text-fg-subtle">
         <span className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full ring-2 ring-error-600" /> {t("criticalPath")}
         </span>
@@ -104,9 +104,9 @@ export default function SchedulePage() {
       </div>
 
       {loading ? (
-        <p className="mt-6 text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        <p className="mt-6 text-sm text-fg-subtle">{tc("loading")}</p>
       ) : !schedules ? (
-        <p className="mt-6 text-sm text-gray-400 dark:text-gray-500">{t("selectProjects")}</p>
+        <p className="mt-6 text-sm text-fg-subtle">{t("selectProjects")}</p>
       ) : (
         <div className="mt-6 flex flex-col gap-8">
           {schedules.map((s) => (
@@ -130,12 +130,12 @@ function ProjectScheduleSection({ schedule }: { schedule: ProjectSchedule }) {
   if (dates.length === 0) {
     return (
       <div>
-        <h2 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
+        <h2 className="mb-2 text-sm font-semibold text-fg-muted">
         <Link href={`/projects/${schedule.projectId}`} className="text-brand-700 dark:text-brand-400 hover:underline">
           {schedule.projectName}
         </Link>
       </h2>
-        <p className="text-xs text-gray-400 dark:text-gray-500">{t("noScheduledTasks")}</p>
+        <p className="text-xs text-fg-subtle">{t("noScheduledTasks")}</p>
       </div>
     );
   }
@@ -147,7 +147,7 @@ function ProjectScheduleSection({ schedule }: { schedule: ProjectSchedule }) {
 
   return (
     <div>
-      <h2 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
+      <h2 className="mb-2 text-sm font-semibold text-fg-muted">
         <Link href={`/projects/${schedule.projectId}`} className="text-brand-700 dark:text-brand-400 hover:underline">
           {schedule.projectName}
         </Link>

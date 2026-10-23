@@ -247,7 +247,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
 
   return (
     <>
-      <button onClick={() => goBack(router, "/projects")} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">
+      <button onClick={() => goBack(router, "/projects")} className="text-sm text-fg-subtle hover:underline">
         ← {tc("back")}
       </button>
       <div className="mt-2 flex items-center gap-3">

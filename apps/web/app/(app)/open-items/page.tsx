@@ -86,9 +86,9 @@ export default function OpenItemsPage() {
   return (
     <>
       <h1 className="text-2xl font-semibold">{t("title")}</h1>
-      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("subtitle")}</p>
+      <p className="mt-1 text-sm text-fg-subtle">{t("subtitle")}</p>
       {projectIdFilter && (
-        <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+        <p className="mt-1 text-xs text-fg-subtle">
           {t("filteredByProject", { project: projectNameFilter ?? projectIdFilter })}{" "}
           <button onClick={() => router.replace(`/open-items?tab=${activeTab}`)} className="text-brand-700 dark:text-brand-400 hover:underline">
             {t("clearFilter")}
@@ -101,14 +101,14 @@ export default function OpenItemsPage() {
       {activeTab === "rfis" && (
         <div className="mt-4">
           {rfis === null ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+            <p className="text-sm text-fg-subtle">{tc("loading")}</p>
           ) : rfis.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noOpenRfis")}</p>
+            <p className="text-sm text-fg-subtle">{t("noOpenRfis")}</p>
           ) : (
             <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
                   <th className="py-2">{t("project")}</th>
                   <th>{t("number")}</th>
                   <th>{t("subject")}</th>
@@ -125,7 +125,7 @@ export default function OpenItemsPage() {
                         {r.project.name}
                       </a>
                     </td>
-                    <td className="font-mono text-xs text-gray-400 dark:text-gray-500">{r.number}</td>
+                    <td className="font-mono text-xs text-fg-subtle">{r.number}</td>
                     <td>{r.subject}</td>
                     <td>{r.status}</td>
                     <td>{r.priority}</td>
@@ -142,14 +142,14 @@ export default function OpenItemsPage() {
       {activeTab === "punchList" && (
         <div className="mt-4">
           {punchList === null ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+            <p className="text-sm text-fg-subtle">{tc("loading")}</p>
           ) : punchList.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noOpenPunchList")}</p>
+            <p className="text-sm text-fg-subtle">{t("noOpenPunchList")}</p>
           ) : (
             <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
                   <th className="py-2">{t("project")}</th>
                   <th>{t("itemTitle")}</th>
                   <th>{t("status")}</th>
@@ -179,14 +179,14 @@ export default function OpenItemsPage() {
       {activeTab === "submittals" && (
         <div className="mt-4">
           {submittals === null ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+            <p className="text-sm text-fg-subtle">{tc("loading")}</p>
           ) : submittals.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noPendingSubmittals")}</p>
+            <p className="text-sm text-fg-subtle">{t("noPendingSubmittals")}</p>
           ) : (
             <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
                   <th className="py-2">{t("project")}</th>
                   <th>{t("number")}</th>
                   <th>{t("itemTitle")}</th>
@@ -201,7 +201,7 @@ export default function OpenItemsPage() {
                         {s.project.name}
                       </a>
                     </td>
-                    <td className="font-mono text-xs text-gray-400 dark:text-gray-500">{s.number}</td>
+                    <td className="font-mono text-xs text-fg-subtle">{s.number}</td>
                     <td>{s.title}</td>
                     <td>{s.dueDate ? formatDate(new Date(s.dueDate)) : "—"}</td>
                   </tr>

@@ -37,11 +37,11 @@ interface Project {
 
 const STATUS_STYLES: Record<ExpenseStatus, string> = {
   pending:
-    "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
+    "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
   approved:
-    "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
+    "bg-success-50 dark:bg-success-500/15 text-success-fg",
   rejected:
-    "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
+    "bg-error-50 dark:bg-error-500/15 text-danger-fg",
 };
 
 const EXPENSES_PAGE_SIZE = 100;
@@ -136,12 +136,12 @@ export default function ExpensesPage() {
   return (
     <>
       <h1 className="text-2xl font-semibold">{t("title")}</h1>
-      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+      <p className="mt-1 text-sm text-fg-subtle">
         {t("subtitle")}
       </p>
 
       {totalPending > 0 && (
-        <p className="mt-3 text-sm text-warning-700 dark:text-warning-500">
+        <p className="mt-3 text-sm text-warning-fg">
           {t("pendingTotal", { amount: totalPending.toFixed(2), currency })}
         </p>
       )}
@@ -179,11 +179,11 @@ export default function ExpensesPage() {
 
       <div className="mt-4">
         {expenses === null ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500">
+          <p className="text-sm text-fg-subtle">
             {tc("loading")}
           </p>
         ) : expenses.length === 0 ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500">
+          <p className="text-sm text-fg-subtle">
             {t("empty")}
           </p>
         ) : (
@@ -194,7 +194,7 @@ export default function ExpensesPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
+                        <span className="text-sm font-medium text-fg">
                           {e.amount} {currency}
                         </span>
                         <span
@@ -209,7 +209,7 @@ export default function ExpensesPage() {
                         </span>
                         {e.anomaly.isAnomaly && (
                           <span
-                            className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-error-700 dark:text-error-500"
+                            className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-danger-fg"
                             title={t("anomalyHint", {
                               average: e.anomaly.historicalAverage ?? 0,
                               currency,
@@ -221,7 +221,7 @@ export default function ExpensesPage() {
                           </span>
                         )}
                       </div>
-                      <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      <div className="mt-1 text-xs text-fg-subtle">
                         <Link
                           href={`/team/${e.worker.id}`}
                           className="text-brand-700 dark:text-brand-400 hover:underline"
@@ -243,7 +243,7 @@ export default function ExpensesPage() {
                         </div>
                       )}
                       {e.rejectedReason && (
-                        <div className="mt-1 text-xs text-error-700 dark:text-error-500">
+                        <div className="mt-1 text-xs text-danger-fg">
                           {t("rejectedReasonLabel")}: {e.rejectedReason}
                         </div>
                       )}

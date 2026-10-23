@@ -89,12 +89,12 @@ export default function ProjectsPage() {
       {showCreateForm && (
         <div className="mt-6 card max-w-md">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("newProject")}</h2>
+            <h2 className="text-sm font-semibold text-fg-muted">{t("newProject")}</h2>
             <button
               type="button"
               onClick={() => setShowCreateForm(false)}
               aria-label={tc("cancel")}
-              className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+              className="text-fg-subtle hover:text-gray-600 dark:hover:text-gray-300"
             >
               <CloseIcon className="size-4" />
             </button>
@@ -163,7 +163,7 @@ export default function ProjectsPage() {
         )}
 
         {!projects ? (
-          <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+          <p className="text-fg-subtle">{tc("loading")}</p>
         ) : projects.length === 0 ? (
           <div className="card">
             <EmptyState
@@ -174,14 +174,14 @@ export default function ProjectsPage() {
             />
           </div>
         ) : filtered.length === 0 ? (
-          <p className="text-gray-500 dark:text-gray-400">{t("noMatches")}</p>
+          <p className="text-fg-subtle">{t("noMatches")}</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {filtered.map((p) => (
               <li key={p.id}>
                 <a href={`/projects/${p.id}`} className="card block hover:border-gray-400">
                   <div className="font-medium">{p.name}</div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                  <div className="text-sm text-fg-subtle">
                     {p.client?.name ?? t("noClient")} {p.address ? `· ${p.address}` : ""}
                   </div>
                 </a>

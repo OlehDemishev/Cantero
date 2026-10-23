@@ -103,8 +103,8 @@ export default function DashboardPage() {
               href={link.href}
               className="flex items-center gap-3 px-5 py-3.5 transition hover:bg-gray-50 dark:hover:bg-gray-700/40"
             >
-              <link.icon className="size-5 shrink-0 text-gray-400 dark:text-gray-500" />
-              <span className="flex-1 text-sm font-medium text-gray-700 dark:text-gray-200">{link.label}</span>
+              <link.icon className="size-5 shrink-0 text-fg-subtle" />
+              <span className="flex-1 text-sm font-medium text-fg-muted">{link.label}</span>
               <ChevronRightIcon className="size-4 shrink-0 text-gray-300 dark:text-gray-600" />
             </a>
           ))}
@@ -136,13 +136,13 @@ function StatCard({
   return (
     <div className="card">
       <div className="flex items-start justify-between gap-2">
-        <div className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">{label}</div>
+        <div className="text-xs font-medium uppercase tracking-wide text-fg-subtle">{label}</div>
         {trend && Math.round(trend.percent) !== 0 && (
           <span
             className={`inline-flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 text-xs font-medium tabular-nums ${
               trend.direction === "up"
-                ? "bg-success-50 text-success-700 dark:bg-success-500/10 dark:text-success-500"
-                : "bg-error-50 text-error-700 dark:bg-error-500/10 dark:text-error-500"
+                ? "bg-success-50 text-success-fg dark:bg-success-500/10"
+                : "bg-error-50 text-danger-fg dark:bg-error-500/10"
             }`}
           >
             {trend.direction === "up" ? <TrendUpIcon className="size-3" /> : <TrendDownIcon className="size-3" />}
@@ -150,8 +150,8 @@ function StatCard({
           </span>
         )}
       </div>
-      <div className={`mt-1 text-xl font-semibold tabular-nums ${warn ? "text-amber-600" : "text-gray-900 dark:text-gray-50"}`}>{value}</div>
-      {sub && <div className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{sub}</div>}
+      <div className={`mt-1 text-xl font-semibold tabular-nums ${warn ? "text-amber-600" : "text-fg"}`}>{value}</div>
+      {sub && <div className="mt-0.5 text-xs text-fg-subtle">{sub}</div>}
     </div>
   );
 }

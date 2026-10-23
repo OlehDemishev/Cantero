@@ -195,12 +195,12 @@ export default function SuppliersPage() {
       {showCreateForm && (
         <div className="mt-6 card max-w-md">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("newSupplier")}</h2>
+            <h2 className="text-sm font-semibold text-fg-muted">{t("newSupplier")}</h2>
             <button
               type="button"
               onClick={() => setShowCreateForm(false)}
               aria-label={tc("cancel")}
-              className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+              className="text-fg-subtle hover:text-gray-600 dark:hover:text-gray-300"
             >
               <CloseIcon className="size-4" />
             </button>
@@ -236,7 +236,7 @@ export default function SuppliersPage() {
 
       <div className="mt-6">
         {!suppliers ? (
-          <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+          <p className="text-fg-subtle">{tc("loading")}</p>
         ) : suppliers.length === 0 ? (
           <div className="card">
             <EmptyState
@@ -253,42 +253,42 @@ export default function SuppliersPage() {
                 return (
                   <li key={s.id} className="card cursor-pointer" onClick={() => toggleExpand(s.id)}>
                     <div className="font-medium">{s.name}</div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">{s.email ?? s.phone ?? "—"}</div>
+                    <div className="text-sm text-fg-subtle">{s.email ?? s.phone ?? "—"}</div>
                     {expandedId === s.id && (
                       <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-3" onClick={(e) => e.stopPropagation()}>
                         <div className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
                           {!card ? (
-                            <span className="text-gray-400 dark:text-gray-500">{tc("loading")}</span>
+                            <span className="text-fg-subtle">{tc("loading")}</span>
                           ) : (
                             <>
                               <div>
-                                <div className="text-gray-400 dark:text-gray-500">{t("totalOrders")}</div>
+                                <div className="text-fg-subtle">{t("totalOrders")}</div>
                                 <div className="font-medium">{card.totalOrders}</div>
                               </div>
                               <div>
-                                <div className="text-gray-400 dark:text-gray-500">{t("onTimeRate")}</div>
+                                <div className="text-fg-subtle">{t("onTimeRate")}</div>
                                 <div className="font-medium">{card.onTimeRate !== null ? `${Math.round(card.onTimeRate * 100)}%` : "—"}</div>
                               </div>
                               <div>
-                                <div className="text-gray-400 dark:text-gray-500">{t("averageDelay")}</div>
+                                <div className="text-fg-subtle">{t("averageDelay")}</div>
                                 <div className="font-medium">{card.averageDelayDays !== null ? `${card.averageDelayDays.toFixed(1)}d` : "—"}</div>
                               </div>
                               <div>
-                                <div className="text-gray-400 dark:text-gray-500">{t("totalSpend")}</div>
+                                <div className="text-fg-subtle">{t("totalSpend")}</div>
                                 <div className="font-medium">{card.totalSpend}</div>
                               </div>
                               <div>
-                                <div className="text-gray-400 dark:text-gray-500">{t("averageRating")}</div>
+                                <div className="text-fg-subtle">{t("averageRating")}</div>
                                 <div className="font-medium">{card.averageRating ?? "—"}</div>
                               </div>
                               <div>
-                                <div className="text-gray-400 dark:text-gray-500">{t("wouldReorderPercent")}</div>
+                                <div className="text-fg-subtle">{t("wouldReorderPercent")}</div>
                                 <div className="font-medium">{card.wouldReorderPercent !== null ? `${card.wouldReorderPercent}%` : "—"}</div>
                               </div>
                               <div>
-                                <div className="text-gray-400 dark:text-gray-500">{t("priceVariance")}</div>
+                                <div className="text-fg-subtle">{t("priceVariance")}</div>
                                 <div
-                                  className={`font-medium ${card.averagePriceVariancePercent !== null && card.averagePriceVariancePercent > 0 ? "text-danger-fg" : card.averagePriceVariancePercent !== null && card.averagePriceVariancePercent < 0 ? "text-success-700 dark:text-success-500" : ""}`}
+                                  className={`font-medium ${card.averagePriceVariancePercent !== null && card.averagePriceVariancePercent > 0 ? "text-danger-fg" : card.averagePriceVariancePercent !== null && card.averagePriceVariancePercent < 0 ? "text-success-fg" : ""}`}
                                 >
                                   {card.averagePriceVariancePercent !== null ? `${card.averagePriceVariancePercent > 0 ? "+" : ""}${card.averagePriceVariancePercent}%` : "—"}
                                 </div>
@@ -301,22 +301,22 @@ export default function SuppliersPage() {
 
                         <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-3">
                           <div className="mb-1.5 flex items-center justify-between">
-                            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("purchaseOrders")}</h3>
+                            <h3 className="text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("purchaseOrders")}</h3>
                             <Link href="/purchase-orders" className="text-xs text-brand-700 dark:text-brand-400 hover:underline">
                               {t("viewAllPurchaseOrders")}
                             </Link>
                           </div>
                           {purchaseOrders === null ? (
-                            <p className="text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+                            <p className="text-xs text-fg-subtle">{tc("loading")}</p>
                           ) : purchaseOrders.length === 0 ? (
-                            <p className="text-xs text-gray-400 dark:text-gray-500">{t("noPurchaseOrdersYet")}</p>
+                            <p className="text-xs text-fg-subtle">{t("noPurchaseOrdersYet")}</p>
                           ) : (
                             <ul className="flex flex-col gap-1">
                               {purchaseOrders.map((po) => {
                                 const total = po.lines.reduce((sum, l) => sum + Number(l.quantity) * Number(l.unitPrice), 0);
                                 return (
                                   <li key={po.id} className="flex items-center justify-between text-xs">
-                                    <span className="text-gray-500 dark:text-gray-400">{formatDate(new Date(po.createdAt))}</span>
+                                    <span className="text-fg-subtle">{formatDate(new Date(po.createdAt))}</span>
                                     <span>{t(po.status)}</span>
                                     <span className="font-medium">{total.toFixed(2)}</span>
                                   </li>
@@ -327,11 +327,11 @@ export default function SuppliersPage() {
                         </div>
 
                         <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-3">
-                          <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("coiDocuments")}</h3>
+                          <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("coiDocuments")}</h3>
                           {documents === null ? (
-                            <p className="text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+                            <p className="text-xs text-fg-subtle">{tc("loading")}</p>
                           ) : documents.length === 0 ? (
-                            <p className="text-xs text-gray-400 dark:text-gray-500">{t("noCoiDocuments")}</p>
+                            <p className="text-xs text-fg-subtle">{t("noCoiDocuments")}</p>
                           ) : (
                             <ul className="mb-2 flex flex-col gap-1.5">
                               {documents.map((doc) => {
@@ -339,15 +339,15 @@ export default function SuppliersPage() {
                                 return (
                                   <li key={doc.id} className="flex items-center justify-between text-xs">
                                     <span>
-                                      <span className="text-gray-500 dark:text-gray-400">{t(doc.type)}</span> — {doc.name}
+                                      <span className="text-fg-subtle">{t(doc.type)}</span> — {doc.name}
                                       {" · "}
-                                      <span className={expired ? "text-error-700 dark:text-error-500" : "text-gray-500 dark:text-gray-400"}>
+                                      <span className={expired ? "text-danger-fg" : "text-fg-subtle"}>
                                         {formatDate(new Date(doc.expiresAt))}
                                       </span>
                                     </span>
                                     <span className="flex items-center gap-2">
                                       <CertificateAttachment param="supplierDocumentId" entityId={doc.id} />
-                                      <button onClick={() => removeDocument(s.id, doc.id)} className="text-gray-400 dark:text-gray-500 hover:text-danger-fg">
+                                      <button onClick={() => removeDocument(s.id, doc.id)} className="text-fg-subtle hover:text-danger-fg">
                                         ×
                                       </button>
                                     </span>
@@ -389,20 +389,20 @@ export default function SuppliersPage() {
                         </div>
 
                         <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-3">
-                          <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("reviews")}</h3>
+                          <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("reviews")}</h3>
                           {reviews && reviews.length > 0 && (
                             <ul className="mb-2 flex flex-col gap-1.5">
                               {reviews.map((r) => (
                                 <li key={r.id} className="text-xs text-gray-600 dark:text-gray-300">
                                   <span className="font-medium">{"★".repeat(r.rating)}</span> — {r.reviewedByName},{" "}
                                   {formatDate(new Date(r.createdAt))}
-                                  {r.comments && <span className="text-gray-500 dark:text-gray-400"> · {r.comments}</span>}
+                                  {r.comments && <span className="text-fg-subtle"> · {r.comments}</span>}
                                 </li>
                               ))}
                             </ul>
                           )}
                           <form onSubmit={(e) => addReview(e, s.id)} className="flex flex-wrap items-end gap-2">
-                            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+                            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
                               {t("rating")}
                               <select
                                 className="input w-auto"
@@ -416,7 +416,7 @@ export default function SuppliersPage() {
                                 ))}
                               </select>
                             </label>
-                            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+                            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
                               {t("wouldReorder")}
                               <select
                                 className="input w-auto"
@@ -441,8 +441,8 @@ export default function SuppliersPage() {
                         </div>
 
                         <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-3">
-                          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("catalogSync")}</p>
-                          <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">{t("catalogSyncHint")}</p>
+                          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("catalogSync")}</p>
+                          <p className="mb-2 text-xs text-fg-subtle">{t("catalogSyncHint")}</p>
                           <label className="btn-secondary inline-block cursor-pointer px-2.5 py-1 text-xs">
                             {syncBusy ? tc("loading") : t("uploadCatalogCsv")}
                             <input type="file" accept=".csv" className="hidden" disabled={syncBusy} onChange={(e) => syncCatalog(e, s.id)} />

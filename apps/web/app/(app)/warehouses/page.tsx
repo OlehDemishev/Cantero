@@ -75,12 +75,12 @@ export default function WarehousesPage() {
       {showCreateForm && (
         <div className="mt-6 card max-w-md">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("newWarehouse")}</h2>
+            <h2 className="text-sm font-semibold text-fg-muted">{t("newWarehouse")}</h2>
             <button
               type="button"
               onClick={() => setShowCreateForm(false)}
               aria-label={tc("cancel")}
-              className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+              className="text-fg-subtle hover:text-gray-600 dark:hover:text-gray-300"
             >
               <CloseIcon className="size-4" />
             </button>
@@ -110,7 +110,7 @@ export default function WarehousesPage() {
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
         {hasWarehouses && (
           <div className="card lg:col-span-1 h-fit">
-            <div className="mb-2 text-xs font-semibold text-gray-500 dark:text-gray-400">{t("title")}</div>
+            <div className="mb-2 text-xs font-semibold text-fg-subtle">{t("title")}</div>
             <ul className="flex flex-col gap-1">
               {warehouses!.map((w) => (
                 <li key={w.id}>
@@ -130,7 +130,7 @@ export default function WarehousesPage() {
 
         <div className={hasWarehouses ? "lg:col-span-2" : "lg:col-span-3"}>
           {!warehouses ? (
-            <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+            <p className="text-fg-subtle">{tc("loading")}</p>
           ) : warehouses.length === 0 ? (
             <div className="card">
               <EmptyState

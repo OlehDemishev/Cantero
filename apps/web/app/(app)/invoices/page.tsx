@@ -296,15 +296,15 @@ export default function InvoicesPage() {
           </button>
         </div>
       </div>
-      <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{t("datevTestImportNotice")}</p>
+      <p className="mt-1 text-xs text-fg-subtle">{t("datevTestImportNotice")}</p>
       {datevError && <p className="mt-1 text-xs text-danger-fg">{datevError}</p>}
       {datevWarningCount !== null && datevWarningCount > 0 && (
-        <p className="mt-1 text-xs text-warning-700 dark:text-warning-500">{t("datevWarningCount", { count: datevWarningCount })}</p>
+        <p className="mt-1 text-xs text-warning-fg">{t("datevWarningCount", { count: datevWarningCount })}</p>
       )}
 
       <div className="mt-6">
         {!invoices ? (
-          <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+          <p className="text-fg-subtle">{tc("loading")}</p>
         ) : invoices.length === 0 ? (
           <div className="card">
             <EmptyState
@@ -318,7 +318,7 @@ export default function InvoicesPage() {
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
                   <th className="py-2">{t("number")}</th>
                   <th>{tc("name")}</th>
                   <th>{tc("status")}</th>
@@ -373,10 +373,10 @@ export default function InvoicesPage() {
       </div>
 
       <div className="mt-10">
-        <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">
+        <h2 className="mb-1 text-sm font-semibold text-fg-muted">
           {t("recurring")}
         </h2>
-        <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">
+        <p className="mb-4 text-xs text-fg-subtle">
           {t("recurringHint")}
         </p>
         {recurringError && (
@@ -386,7 +386,7 @@ export default function InvoicesPage() {
         )}
 
         {!recurring || recurring.length === 0 ? (
-          <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">
+          <p className="mb-4 text-sm text-fg-subtle">
             {t("noRecurring")}
           </p>
         ) : (
@@ -398,10 +398,10 @@ export default function InvoicesPage() {
               >
                 <div className="flex items-center justify-between gap-2">
                   <div>
-                    <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
+                    <span className="text-sm font-medium text-fg">
                       {r.name}
                     </span>
-                    <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                    <span className="ml-2 text-xs text-fg-subtle">
                       <Link
                         href={`/clients/${r.client.id}`}
                         className="text-brand-700 dark:text-brand-400 hover:underline"
@@ -419,12 +419,12 @@ export default function InvoicesPage() {
                     </span>
                   </div>
                   <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${r.active ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"}`}
+                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${r.active ? "bg-success-50 dark:bg-success-500/15 text-success-fg" : "bg-gray-100 dark:bg-gray-700 text-fg-subtle"}`}
                   >
                     {r.active ? t("active") : t("paused")}
                   </span>
                 </div>
-                <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                <p className="mt-1 text-xs text-fg-subtle">
                   {t("nextRun")}:{" "}
                   {new Date(r.nextRunDate).toLocaleDateString(locale)}
                   {r.lastGeneratedAt &&
@@ -535,7 +535,7 @@ export default function InvoicesPage() {
                 </option>
               ))}
             </select>
-            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
               {t("startDate")}
               <input
                 required
@@ -547,7 +547,7 @@ export default function InvoicesPage() {
                 }
               />
             </label>
-            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
               {t("endDateOptional")}
               <input
                 type="date"
@@ -558,7 +558,7 @@ export default function InvoicesPage() {
                 }
               />
             </label>
-            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
               {t("taxPercent")}
               <input
                 type="number"
@@ -642,10 +642,10 @@ export default function InvoicesPage() {
       </div>
 
       <a href="/reports" className="card mt-10 block hover:border-gray-400">
-        <div className="text-sm font-medium text-gray-700 dark:text-gray-200">
+        <div className="text-sm font-medium text-fg-muted">
           {t("cashFlowForecastLink")}
         </div>
-        <div className="mt-1 text-gray-900 dark:text-gray-50">→</div>
+        <div className="mt-1 text-fg">→</div>
       </a>
     </>
   );

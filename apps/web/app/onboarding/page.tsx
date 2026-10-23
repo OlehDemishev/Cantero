@@ -168,17 +168,17 @@ export default function OnboardingPage() {
           ))}
         </div>
         {step !== "done" && (
-          <button onClick={finish} disabled={finishing} className="text-sm text-gray-500 dark:text-gray-400 hover:text-fg-muted">
+          <button onClick={finish} disabled={finishing} className="text-sm text-fg-subtle hover:text-fg-muted">
             {t("skipSetup")}
           </button>
         )}
       </div>
-      {finishError && <p className="mb-4 text-sm text-error-700 dark:text-error-500">{finishError}</p>}
+      {finishError && <p className="mb-4 text-sm text-danger-fg">{finishError}</p>}
 
       <div className="card">
         {step === "profile" && (
           <>
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">{t("profileTitle")}</h1>
+            <h1 className="text-xl font-semibold text-fg">{t("profileTitle")}</h1>
             <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{t("profileHint")}</p>
 
             <div className="mt-5 flex flex-col gap-2">
@@ -194,20 +194,20 @@ export default function OnboardingPage() {
                       : "border-gray-200 hover:border-brand-300 hover:bg-brand-50 dark:border-gray-700 dark:hover:border-brand-700 dark:hover:bg-brand-500/10"
                   }`}
                 >
-                  <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{t(`profile.${profile}.label`)}</span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                  <span className="text-sm font-medium text-fg">{t(`profile.${profile}.label`)}</span>
+                  <span className="text-xs text-fg-subtle">
                     {profileChoice === profile && profileBusy ? tc("loading") : t(`profile.${profile}.hint`)}
                   </span>
                 </button>
               ))}
             </div>
-            <p className="mt-4 text-xs text-gray-400 dark:text-gray-500">{t("profileAdjustableHint")}</p>
+            <p className="mt-4 text-xs text-fg-subtle">{t("profileAdjustableHint")}</p>
           </>
         )}
 
         {step === "catalog" && (
           <>
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">{t("catalogTitle")}</h1>
+            <h1 className="text-xl font-semibold text-fg">{t("catalogTitle")}</h1>
             <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{t("catalogHint")}</p>
 
             {catalogState === "done" && catalogResult && (
@@ -236,11 +236,11 @@ export default function OnboardingPage() {
 
         {step === "invite" && (
           <>
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">{t("inviteTitle")}</h1>
+            <h1 className="text-xl font-semibold text-fg">{t("inviteTitle")}</h1>
             <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{t("inviteHint")}</p>
 
             {invitedEmails.length > 0 && (
-              <ul className="mt-4 space-y-1 text-sm text-gray-700 dark:text-gray-200">
+              <ul className="mt-4 space-y-1 text-sm text-fg-muted">
                 {invitedEmails.map((email) => (
                   <li key={email} className="rounded-md bg-gray-50 dark:bg-gray-700 px-3 py-1.5">
                     {email}
@@ -276,7 +276,7 @@ export default function OnboardingPage() {
             </form>
 
             <div className="mt-6 flex justify-between">
-              <button onClick={() => setStepIndex(1)} className="text-sm text-gray-500 dark:text-gray-400 hover:text-fg-muted">
+              <button onClick={() => setStepIndex(1)} className="text-sm text-fg-subtle hover:text-fg-muted">
                 {t("back")}
               </button>
               <button onClick={() => setStepIndex(3)} className="btn-primary">
@@ -288,14 +288,14 @@ export default function OnboardingPage() {
 
         {step === "project" && (
           <>
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">{t("projectTitle")}</h1>
+            <h1 className="text-xl font-semibold text-fg">{t("projectTitle")}</h1>
             <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{t("projectHint")}</p>
 
             {projectError && <p className="mt-4 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{projectError}</p>}
 
             <form onSubmit={createFirstProject} className="mt-4 space-y-3">
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">{t("clientNameLabel")}</label>
+                <label className="mb-1 block text-sm font-medium text-fg-muted">{t("clientNameLabel")}</label>
                 <input
                   className="input"
                   placeholder={t("clientNamePlaceholder")}
@@ -304,7 +304,7 @@ export default function OnboardingPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">{t("projectNameLabel")}</label>
+                <label className="mb-1 block text-sm font-medium text-fg-muted">{t("projectNameLabel")}</label>
                 <input
                   className="input"
                   placeholder={t("projectNamePlaceholder")}
@@ -314,7 +314,7 @@ export default function OnboardingPage() {
               </div>
 
               <div className="flex justify-between pt-2">
-                <button type="button" onClick={() => setStepIndex(2)} className="text-sm text-gray-500 dark:text-gray-400 hover:text-fg-muted">
+                <button type="button" onClick={() => setStepIndex(2)} className="text-sm text-fg-subtle hover:text-fg-muted">
                   {t("back")}
                 </button>
                 <button type="submit" disabled={projectBusy} className="btn-primary">
@@ -327,7 +327,7 @@ export default function OnboardingPage() {
 
         {step === "done" && (
           <>
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">{t("doneTitle")}</h1>
+            <h1 className="text-xl font-semibold text-fg">{t("doneTitle")}</h1>
             <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
               {projectDone ? t("doneHintWithProject") : t("doneHint")}
             </p>

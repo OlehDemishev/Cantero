@@ -56,9 +56,9 @@ interface Portfolio {
 function SummaryCard({ label, value, tone }: { label: string; value: string | number; tone?: "error" | "success" }) {
   return (
     <div className="card">
-      <div className="text-xs text-gray-500 dark:text-gray-400">{label}</div>
+      <div className="text-xs text-fg-subtle">{label}</div>
       <div
-        className={`mt-1 text-xl font-semibold ${tone === "error" ? "text-error-700 dark:text-error-500" : tone === "success" ? "text-success-700 dark:text-success-500" : "text-gray-900 dark:text-gray-50"}`}
+        className={`mt-1 text-xl font-semibold ${tone === "error" ? "text-danger-fg" : tone === "success" ? "text-success-fg" : "text-fg"}`}
       >
         {value}
       </div>
@@ -95,17 +95,17 @@ export default function PortfolioPage() {
   return (
     <>
       <h1 className="text-2xl font-semibold">{t("title")}</h1>
-      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("subtitle")}</p>
-      {data && <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{t("convertedToCurrency", { currency: data.currency })}</p>}
+      <p className="mt-1 text-sm text-fg-subtle">{t("subtitle")}</p>
+      {data && <p className="mt-1 text-xs text-fg-subtle">{t("convertedToCurrency", { currency: data.currency })}</p>}
 
       <TabNav tabs={TABS} active={activeTab} onChange={setTab} />
 
       {activeTab === "map" && <ProjectMapPanel />}
 
       {activeTab === "overview" && (!data ? (
-        <p className="mt-8 text-gray-500 dark:text-gray-400">{me && !figuresAllowed ? t("figuresRestricted") : tc("loading")}</p>
+        <p className="mt-8 text-fg-subtle">{me && !figuresAllowed ? t("figuresRestricted") : tc("loading")}</p>
       ) : data.projects.length === 0 ? (
-        <p className="mt-8 text-sm text-gray-400 dark:text-gray-500">{t("noProjects")}</p>
+        <p className="mt-8 text-sm text-fg-subtle">{t("noProjects")}</p>
       ) : (
         <>
           <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
@@ -125,11 +125,11 @@ export default function PortfolioPage() {
             <SummaryCard label={t("openDrawTotal")} value={data.summary.openDrawTotal} />
           </div>
 
-          <h2 className="mb-3 mt-10 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("projects")}</h2>
+          <h2 className="mb-3 mt-10 text-sm font-semibold text-fg-muted">{t("projects")}</h2>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1150px] border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
                   <th className="py-2">{t("project")}</th>
                   <th>{t("client")}</th>
                   <th className="text-right">{t("budget")}</th>
@@ -155,10 +155,10 @@ export default function PortfolioPage() {
                         {p.name}
                       </a>
                     </td>
-                    <td className="text-gray-500 dark:text-gray-400">{p.clientName ?? "—"}</td>
+                    <td className="text-fg-subtle">{p.clientName ?? "—"}</td>
                     <td className="text-right">{money(p.budgetTotal)}</td>
                     <td className="text-right">{money(p.actualTotal)}</td>
-                    <td className={`text-right ${p.variance < 0 ? "text-error-700 dark:text-error-500" : "text-success-700 dark:text-success-500"}`}>{money(p.variance)}</td>
+                    <td className={`text-right ${p.variance < 0 ? "text-danger-fg" : "text-success-fg"}`}>{money(p.variance)}</td>
                     <td className="text-right">{money(p.billedToDate)}</td>
                     <td className="text-right">{money(p.fundedToDate)}</td>
                     <td className="text-right">{p.openDrawCount || "—"}</td>
@@ -194,9 +194,9 @@ export default function PortfolioPage() {
                     <td className="text-right">{p.criticalTaskCount || "—"}</td>
                     <td className="text-right">
                       {p.atRisk ? (
-                        <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-error-700 dark:text-error-500">{t("atRisk")}</span>
+                        <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-danger-fg">{t("atRisk")}</span>
                       ) : (
-                        <span className="rounded-full bg-success-50 dark:bg-success-500/15 px-2 py-0.5 text-xs font-medium text-success-700 dark:text-success-500">{t("onTrack")}</span>
+                        <span className="rounded-full bg-success-50 dark:bg-success-500/15 px-2 py-0.5 text-xs font-medium text-success-fg">{t("onTrack")}</span>
                       )}
                     </td>
                   </tr>

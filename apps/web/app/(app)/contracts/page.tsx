@@ -22,8 +22,8 @@ interface Contract {
 const STATUS_STYLES: Record<Contract["status"], string> = {
   draft: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
   sent: "bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-400",
-  signed: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
-  void: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
+  signed: "bg-success-50 dark:bg-success-500/15 text-success-fg",
+  void: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
 };
 
 export default function ContractsPage() {
@@ -63,23 +63,23 @@ export default function ContractsPage() {
   return (
     <>
       <h1 className="text-2xl font-semibold">{t("title")}</h1>
-      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("subtitle")}</p>
+      <p className="mt-1 text-sm text-fg-subtle">{t("subtitle")}</p>
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("allContracts")}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("allContracts")}</h2>
           {!contracts ? (
-            <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+            <p className="text-fg-subtle">{tc("loading")}</p>
           ) : contracts.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noContracts")}</p>
+            <p className="text-sm text-fg-subtle">{t("noContracts")}</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {contracts.map((c) => (
                 <li key={c.id}>
                   <a href={`/contracts/${c.id}`} className="card flex items-center justify-between hover:border-gray-400">
                     <div>
-                      <div className="font-medium text-gray-900 dark:text-white/90">{c.title}</div>
-                      <div className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                      <div className="font-medium text-fg">{c.title}</div>
+                      <div className="mt-0.5 text-xs text-fg-subtle">
                         {c.client?.name ?? c.subcontractor?.name ?? "—"} · {formatDate(new Date(c.createdAt))}
                       </div>
                     </div>
@@ -92,16 +92,16 @@ export default function ContractsPage() {
         </div>
 
         <div>
-          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("templates")}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("templates")}</h2>
           <div className="card">
             {!templates || templates.length === 0 ? (
-              <p className="text-sm text-gray-400 dark:text-gray-500">{t("noTemplates")}</p>
+              <p className="text-sm text-fg-subtle">{t("noTemplates")}</p>
             ) : (
               <ul className="mb-4 flex flex-col gap-1.5">
                 {templates.map((tpl) => (
                   <li key={tpl.id} className="flex items-center justify-between text-sm">
-                    <span className="text-gray-700 dark:text-gray-300">{tpl.name}</span>
-                    <button onClick={() => deleteTemplate(tpl.id)} className="text-gray-400 dark:text-gray-500 hover:text-danger-fg">
+                    <span className="text-fg-muted">{tpl.name}</span>
+                    <button onClick={() => deleteTemplate(tpl.id)} className="text-fg-subtle hover:text-danger-fg">
                       ×
                     </button>
                   </li>

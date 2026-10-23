@@ -23,10 +23,10 @@ interface Equipment {
 }
 
 const STATUS_STYLES: Record<EquipmentStatus, string> = {
-  available: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
-  in_use: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
+  available: "bg-success-50 dark:bg-success-500/15 text-success-fg",
+  in_use: "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
   maintenance: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  retired: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
+  retired: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
   rented_out: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
 };
 
@@ -97,9 +97,9 @@ export default function EquipmentPage() {
 
       <div className="mt-6">
         {!items ? (
-          <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+          <p className="text-fg-subtle">{tc("loading")}</p>
         ) : items.length === 0 ? (
-          <p className="text-gray-500 dark:text-gray-400">{t("noEquipment")}</p>
+          <p className="text-fg-subtle">{t("noEquipment")}</p>
         ) : (
           <div className="flex flex-col gap-2">
             {items.map((eq) => {
@@ -108,10 +108,10 @@ export default function EquipmentPage() {
                 <div key={eq.id} className="card">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <a href={`/equipment/${eq.id}`} className="text-sm font-medium text-gray-900 dark:text-gray-50 hover:underline">
+                      <a href={`/equipment/${eq.id}`} className="text-sm font-medium text-fg hover:underline">
                         {eq.name}
                       </a>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                      <p className="text-xs text-fg-subtle">
                         {eq.category}
                         {eq.serialNumber && ` · ${eq.serialNumber}`}
                         {eq.purchaseCost && ` · ${eq.purchaseCost} ${currency}`}
@@ -170,7 +170,7 @@ export default function EquipmentPage() {
       </div>
 
       <section className="card mt-6">
-        <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("addEquipment")}</h2>
+        <h2 className="mb-4 text-sm font-semibold text-fg-muted">{t("addEquipment")}</h2>
         <form onSubmit={createEquipment} className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
           <input
             required
@@ -192,7 +192,7 @@ export default function EquipmentPage() {
             value={form.serialNumber}
             onChange={(e) => setForm((f) => ({ ...f, serialNumber: e.target.value }))}
           />
-          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+          <label className="flex flex-col gap-1 text-xs text-fg-subtle">
             {t("purchaseCost")}
             <input
               type="number"

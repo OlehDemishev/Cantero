@@ -171,13 +171,13 @@ export default function ClientsPage() {
 
       {summary && (
         <div className="mt-6">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("pipelineOverview")}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("pipelineOverview")}</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
             {summary.map((s) => (
               <div key={s.stage} className="card">
-                <div className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">{t(s.stage)}</div>
-                <div className="mt-1 text-xl font-semibold text-gray-900 dark:text-gray-50">{s.count}</div>
-                <div className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+                <div className="text-xs font-medium uppercase tracking-wide text-fg-subtle">{t(s.stage)}</div>
+                <div className="mt-1 text-xl font-semibold text-fg">{s.count}</div>
+                <div className="mt-0.5 text-xs text-fg-subtle">
                   {s.totalValue} {currency}
                 </div>
               </div>
@@ -188,7 +188,7 @@ export default function ClientsPage() {
 
       {upcoming && upcoming.length > 0 && (
         <div className="mt-6">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("upcomingReminders")}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("upcomingReminders")}</h2>
           <ul className="flex flex-col gap-2">
             {upcoming.map((r) => {
               const overdue = new Date(r.dueDate) < new Date();
@@ -196,9 +196,9 @@ export default function ClientsPage() {
                 <li key={r.id} className="card flex items-center justify-between">
                   <a href={`/clients/${r.client.id}`} className="text-sm hover:underline">
                     <span className="font-medium">{r.title}</span>
-                    <span className="text-gray-500 dark:text-gray-400"> · {r.client.name}</span>
+                    <span className="text-fg-subtle"> · {r.client.name}</span>
                   </a>
-                  <span className={`text-xs font-medium ${overdue ? "text-danger-fg" : "text-gray-500 dark:text-gray-400"}`}>
+                  <span className={`text-xs font-medium ${overdue ? "text-danger-fg" : "text-fg-subtle"}`}>
                     {formatDate(new Date(r.dueDate))}
                   </span>
                 </li>
@@ -211,12 +211,12 @@ export default function ClientsPage() {
       {showCreateForm && (
         <div className="mt-6 card max-w-md">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("newClient")}</h2>
+            <h2 className="text-sm font-semibold text-fg-muted">{t("newClient")}</h2>
             <button
               type="button"
               onClick={() => setShowCreateForm(false)}
               aria-label={tc("cancel")}
-              className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+              className="text-fg-subtle hover:text-gray-600 dark:hover:text-gray-300"
             >
               <CloseIcon className="size-4" />
             </button>
@@ -296,7 +296,7 @@ export default function ClientsPage() {
         )}
 
         {!clients ? (
-          <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+          <p className="text-fg-subtle">{tc("loading")}</p>
         ) : clients.length === 0 ? (
           <div className="card">
             <EmptyState
@@ -325,7 +325,7 @@ export default function ClientsPage() {
                   dragOverStage === stage ? "border-brand-400 bg-brand-50 dark:bg-brand-500/15" : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700"
                 }`}
               >
-                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t(stage)}</div>
+                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t(stage)}</div>
                 <div className="flex flex-col gap-2">
                   {filteredClients
                     .filter((c) => c.stage === stage)
@@ -340,13 +340,13 @@ export default function ClientsPage() {
                         <a href={`/clients/${c.id}`} className="text-sm font-medium hover:underline">
                           {c.name}
                         </a>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">{c.email ?? c.phone ?? "—"}</div>
+                        <div className="text-xs text-fg-subtle">{c.email ?? c.phone ?? "—"}</div>
                         {c.estimatedValue != null && (
-                          <div className="mt-1 text-xs font-medium text-gray-700 dark:text-gray-200">
+                          <div className="mt-1 text-xs font-medium text-fg-muted">
                             {c.estimatedValue} {currency}
                           </div>
                         )}
-                        {c.owner && <div className="text-xs text-gray-400 dark:text-gray-500">{t("ownedBy", { name: c.owner.name })}</div>}
+                        {c.owner && <div className="text-xs text-fg-subtle">{t("ownedBy", { name: c.owner.name })}</div>}
 
                         {pendingLostId === c.id ? (
                           <div className="mt-2 flex flex-col gap-1.5">
@@ -394,7 +394,7 @@ export default function ClientsPage() {
                                 {tc("cancel")}
                               </button>
                             </div>
-                            {convertError && <p className="text-xs text-error-700 dark:text-error-500">{convertError}</p>}
+                            {convertError && <p className="text-xs text-danger-fg">{convertError}</p>}
                           </form>
                         ) : (
                           <div className="mt-2 flex flex-wrap gap-1">

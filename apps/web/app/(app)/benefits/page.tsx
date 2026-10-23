@@ -85,18 +85,18 @@ export default function BenefitsPage() {
       {summary && summary.activeEnrollmentCount > 0 && (
         <div className="card mt-4 grid grid-cols-3 gap-3 max-w-lg">
           <div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">{t("activeEnrollments")}</div>
-            <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-50">{summary.activeEnrollmentCount}</div>
+            <div className="text-xs text-fg-subtle">{t("activeEnrollments")}</div>
+            <div className="mt-1 text-lg font-semibold text-fg">{summary.activeEnrollmentCount}</div>
           </div>
           <div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">{t("totalEmployerCost")}</div>
-            <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-50">
+            <div className="text-xs text-fg-subtle">{t("totalEmployerCost")}</div>
+            <div className="mt-1 text-lg font-semibold text-fg">
               {summary.totalMonthlyEmployerCost} {currency}
             </div>
           </div>
           <div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">{t("totalEmployeeCost")}</div>
-            <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-50">
+            <div className="text-xs text-fg-subtle">{t("totalEmployeeCost")}</div>
+            <div className="mt-1 text-lg font-semibold text-fg">
               {summary.totalMonthlyEmployeeCost} {currency}
             </div>
           </div>
@@ -104,7 +104,7 @@ export default function BenefitsPage() {
       )}
 
       <div className="card mt-6 max-w-lg">
-        <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("enrollWorker")}</h2>
+        <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("enrollWorker")}</h2>
         {plans.length === 0 ? (
           <EmptyState
             message={t("noPlansYet")}
@@ -140,7 +140,7 @@ export default function BenefitsPage() {
                 </option>
               ))}
             </select>
-            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
               {t("effectiveDate")}
               <input
                 required

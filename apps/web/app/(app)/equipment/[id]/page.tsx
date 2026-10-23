@@ -85,10 +85,10 @@ interface Rental {
   revenue: number;
 }
 const STATUS_STYLES: Record<EquipmentStatus, string> = {
-  available: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
-  in_use: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
+  available: "bg-success-50 dark:bg-success-500/15 text-success-fg",
+  in_use: "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
   maintenance: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  retired: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
+  retired: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
   rented_out: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
 };
 
@@ -324,7 +324,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
   if (!equipment) {
     return (
       <>
-        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        <p className="text-fg-subtle">{tc("loading")}</p>
       </>
     );
   }
@@ -334,7 +334,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">{equipment.name}</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-fg-subtle">
             {equipment.category}
             {equipment.serialNumber && ` · ${equipment.serialNumber}`}
           </p>
@@ -347,7 +347,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <section className="card">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{tc("actions")}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-fg-muted">{tc("actions")}</h2>
           {equipment.status === "available" && (
             <form onSubmit={checkOut} className="flex flex-col gap-3">
               <select
@@ -420,7 +420,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
 
           {equipment.status === "available" && (
             <form onSubmit={startRental} className="mt-4 flex flex-col gap-2 border-t border-gray-100 dark:border-gray-700 pt-4">
-              <span className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("rentOutToThirdParty")}</span>
+              <span className="text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("rentOutToThirdParty")}</span>
               <input
                 required
                 placeholder={t("renterNamePlaceholder")}
@@ -467,19 +467,19 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
         </section>
 
         <section className="card">
-          <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("maintenanceSchedule")}</h2>
-          <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("maintenanceScheduleHint")}</p>
+          <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("maintenanceSchedule")}</h2>
+          <p className="mb-3 text-xs text-fg-subtle">{t("maintenanceScheduleHint")}</p>
           {equipment.nextMaintenanceDueAt && (
             <p
               className={`mb-3 text-sm ${
-                new Date(equipment.nextMaintenanceDueAt) < new Date() ? "font-medium text-danger-fg" : "text-gray-700 dark:text-gray-200"
+                new Date(equipment.nextMaintenanceDueAt) < new Date() ? "font-medium text-danger-fg" : "text-fg-muted"
               }`}
             >
               {t("nextDue", { date: formatDate(new Date(equipment.nextMaintenanceDueAt)) })}
             </p>
           )}
           <form onSubmit={saveSchedule} className="flex flex-wrap items-end gap-2">
-            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+            <label className="flex flex-col gap-1 text-xs text-fg-subtle">
               {t("intervalDays")}
               <input
                 type="number"
@@ -502,14 +502,14 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
           </form>
 
           <div className="mt-4 border-t border-gray-100 pt-4 dark:border-gray-800">
-            <p className="mb-2 text-sm text-gray-700 dark:text-gray-300">
+            <p className="mb-2 text-sm text-fg-muted">
               {t("currentMeterHours")}: {equipment.currentMeterHours ?? "—"}
               {equipment.nextMaintenanceDueHours !== null && (
                 <span
                   className={
                     Number(equipment.currentMeterHours ?? 0) >= Number(equipment.nextMaintenanceDueHours)
                       ? "ml-2 font-medium text-danger-fg"
-                      : "ml-2 text-gray-500 dark:text-gray-400"
+                      : "ml-2 text-fg-subtle"
                   }
                 >
                   {t("nextDueHours", { hours: equipment.nextMaintenanceDueHours })}
@@ -517,7 +517,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
               )}
             </p>
             <form onSubmit={saveMeterReading} className="mb-3 flex flex-wrap items-end gap-2">
-              <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+              <label className="flex flex-col gap-1 text-xs text-fg-subtle">
                 {t("updateMeterReading")}
                 <input
                   type="number"
@@ -533,7 +533,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
               </button>
             </form>
             <form onSubmit={saveHoursSchedule} className="flex flex-wrap items-end gap-2">
-              <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+              <label className="flex flex-col gap-1 text-xs text-fg-subtle">
                 {t("intervalHours")}
                 <input
                   type="number"
@@ -558,14 +558,14 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
         </section>
 
         <section className="card">
-          <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("depreciation")}</h2>
-          <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("depreciationHint")}</p>
+          <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("depreciation")}</h2>
+          <p className="mb-3 text-xs text-fg-subtle">{t("depreciationHint")}</p>
 
           {equipment.disposal ? (
             <p className="text-sm text-gray-600 dark:text-gray-300">
               {t("disposedOn", { date: formatDate(new Date(equipment.disposal.disposedAt)) })}
               {equipment.disposal.saleAmount !== null && (
-                <span className="block text-xs text-gray-400 dark:text-gray-500">
+                <span className="block text-xs text-fg-subtle">
                   {t("saleAmount")}: {equipment.disposal.saleAmount} {currency}
                 </span>
               )}
@@ -573,9 +573,9 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
           ) : (
             <>
               {equipment.depreciation && (
-                <p className="mb-3 text-sm text-gray-700 dark:text-gray-200">
+                <p className="mb-3 text-sm text-fg-muted">
                   {t("bookValue")}: <span className="font-medium">{equipment.depreciation.bookValue} {currency}</span>
-                  <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
+                  <span className="ml-2 text-xs text-fg-subtle">
                     ({t("accumulatedDepreciation")}: {equipment.depreciation.accumulatedDepreciation} {currency})
                   </span>
                 </p>
@@ -593,7 +593,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
                     </option>
                   ))}
                 </select>
-                <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+                <label className="flex flex-col gap-1 text-xs text-fg-subtle">
                   {t("usefulLifeMonths")}
                   <input
                     type="number"
@@ -604,7 +604,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
                     onChange={(e) => setDepreciationForm((f) => ({ ...f, usefulLifeMonths: e.target.value }))}
                   />
                 </label>
-                <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+                <label className="flex flex-col gap-1 text-xs text-fg-subtle">
                   {t("salvageValue")}
                   <input
                     type="number"
@@ -628,7 +628,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
                     </button>
                   ) : (
                     <form onSubmit={dispose} className="flex flex-wrap items-end gap-2">
-                      <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+                      <label className="flex flex-col gap-1 text-xs text-fg-subtle">
                         {t("saleAmount")}
                         <input
                           type="number"
