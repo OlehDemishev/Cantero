@@ -822,7 +822,7 @@ export function WarehouseDetail({
                   </td>
                   <td
                     className={
-                      Number(l.quantityOnHand) < 0 ? "text-red-600" : ""
+                      Number(l.quantityOnHand) < 0 ? "text-danger-fg" : ""
                     }
                   >
                     {l.quantityOnHand} {l.materialCatalogItem.unit}
@@ -830,7 +830,7 @@ export function WarehouseDetail({
                   <td className="text-fg-subtle">
                     {l.reserved > 0 ? `${l.reserved} ${l.materialCatalogItem.unit}` : "—"}
                   </td>
-                  <td className={l.available < 0 ? "text-red-600" : ""}>
+                  <td className={l.available < 0 ? "text-danger-fg" : ""}>
                     {l.available} {l.materialCatalogItem.unit}
                   </td>
                   <td>

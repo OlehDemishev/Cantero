@@ -46,7 +46,7 @@ export function EquipmentUtilizationPanel() {
                     <div className="h-1.5 w-24 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
                       <div
                         className={`h-full rounded-full ${
-                          e.utilizationPercent >= 60 ? "bg-success-500" : e.utilizationPercent >= 25 ? "bg-amber-500" : "bg-error-500"
+                          e.utilizationPercent >= 60 ? "bg-success-500" : e.utilizationPercent >= 25 ? "bg-warning-500" : "bg-error-500"
                         }`}
                         style={{ width: `${Math.min(100, e.utilizationPercent)}%` }}
                       />

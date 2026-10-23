@@ -55,7 +55,7 @@ export function SimilarItemsHint({ type, projectId, text }: { type: "rfi" | "pun
             <Link href={item.link} className="underline underline-offset-2 hover:no-underline" target="_blank">
               {item.title}
             </Link>
-            {item.subtitle && <span className="text-warning-600 dark:text-warning-500/80"> · {item.subtitle}</span>}
+            {item.subtitle && <span className="text-warning-fg"> · {item.subtitle}</span>}
           </li>
         ))}
       </ul>

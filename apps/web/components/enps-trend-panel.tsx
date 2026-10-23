@@ -38,7 +38,7 @@ export function EnpsTrendPanel() {
   if (error && !data) return <PanelErrorState title={t("title")} error={error} onRetry={reload} className="mt-8" />;
   if (!data || data.totalResponses === 0) return null;
 
-  const scoreColor = data.enpsScore! >= 50 ? "text-success-fg" : data.enpsScore! >= 0 ? "text-amber-600" : "text-danger-fg";
+  const scoreColor = data.enpsScore! >= 50 ? "text-success-fg" : data.enpsScore! >= 0 ? "text-warning-fg" : "text-danger-fg";
   const monthsWithData = history?.filter((m) => m.responseCount > 0) ?? [];
 
   return (

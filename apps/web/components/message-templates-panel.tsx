@@ -75,7 +75,7 @@ export function MessageTemplatesPanel() {
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-fg">{t(`key_${entry.key}`)}</span>
               {entry.customBody !== null && (
-                <button onClick={() => reset(entry.key)} disabled={busyKey === entry.key} className="text-xs text-fg-subtle hover:text-error-700">
+                <button onClick={() => reset(entry.key)} disabled={busyKey === entry.key} className="text-xs text-fg-subtle hover:text-danger-fg">
                   {t("resetToDefault")}
                 </button>
               )}

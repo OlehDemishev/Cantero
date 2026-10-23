@@ -151,7 +151,7 @@ export function SignatureRequestsPanel({ documents }: { documents: DocumentOptio
                   onChange={(e) => setSigners((arr) => arr.map((row, j) => (j === i ? { ...row, email: e.target.value } : row)))}
                 />
                 {signers.length > 1 && (
-                  <button type="button" onClick={() => removeSignerRow(i)} className="text-xs text-fg-subtle hover:text-error-700">
+                  <button type="button" onClick={() => removeSignerRow(i)} className="text-xs text-fg-subtle hover:text-danger-fg">
                     ×
                   </button>
                 )}

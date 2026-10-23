@@ -11,6 +11,7 @@ import { formatDate, formatDateWithOptions } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
 import { FormError } from "@/components/ui/field";
+import { statusTone, TONE_FILL_CLASSES } from "@/lib/status-tone";
 
 type TaskStatus = "planned" | "in_progress" | "done";
 const STATUSES: TaskStatus[] = ["planned", "in_progress", "done"];
@@ -507,7 +508,7 @@ function GanttChart({
                   onMouseDown={(e) => handleMoveStart(e, task)}
                   className={`group absolute h-5 cursor-grab select-none rounded active:cursor-grabbing ${
                     critical ? "ring-2 ring-error-500" : ""
-                  } ${task.status === "done" ? "bg-green-500" : task.status === "in_progress" ? "bg-amber-500" : "bg-gray-400"} ${
+                  } ${TONE_FILL_CLASSES[statusTone(task.status)]} ${
                     isDragging ? "opacity-80" : ""
                   }`}
                   style={{ left: `${left}%`, width: `${Math.max(right - left, 1.5)}%` }}

@@ -35,7 +35,7 @@ export function NpsTrendPanel() {
   if (error && !data) return <PanelErrorState title={t("title")} error={error} onRetry={reload} className="mt-8" />;
   if (!data || data.totalResponses === 0) return null;
 
-  const scoreColor = data.npsScore! >= 50 ? "text-success-fg" : data.npsScore! >= 0 ? "text-amber-600" : "text-danger-fg";
+  const scoreColor = data.npsScore! >= 50 ? "text-success-fg" : data.npsScore! >= 0 ? "text-warning-fg" : "text-danger-fg";
 
   return (
     <div className="mt-8">

@@ -73,7 +73,7 @@ export function BondingCapacityPanel() {
           <div className="mt-3 flex items-center gap-2">
             <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
               <div
-                className={`h-full rounded-full ${capacity.utilizationPercent >= 90 ? "bg-error-500" : capacity.utilizationPercent >= 60 ? "bg-amber-500" : "bg-success-500"}`}
+                className={`h-full rounded-full ${capacity.utilizationPercent >= 90 ? "bg-error-500" : capacity.utilizationPercent >= 60 ? "bg-warning-500" : "bg-success-500"}`}
                 style={{ width: `${Math.min(100, capacity.utilizationPercent)}%` }}
               />
             </div>

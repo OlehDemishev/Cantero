@@ -89,7 +89,7 @@ export default function ServiceFeedbackPage({ params }: { params: Promise<{ toke
                       key={n}
                       type="button"
                       onClick={() => setRating(n)}
-                      className={`text-3xl ${n <= rating ? "text-amber-400" : "text-gray-300"}`}
+                      className={`text-3xl ${n <= rating ? "text-warning-400" : "text-gray-300"}`}
                       aria-label={t("starRating", { n })}
                     >
                       ★

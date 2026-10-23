@@ -75,7 +75,7 @@ export function CompanyHolidaysPanel({ canManage }: { canManage: boolean }) {
                 <span className="ml-2 text-fg-subtle">{h.label}</span>
               </span>
               {canManage && (
-                <button onClick={() => remove(h.id)} disabled={busy} className="text-fg-subtle hover:text-error-700">
+                <button onClick={() => remove(h.id)} disabled={busy} className="text-fg-subtle hover:text-danger-fg">
                   {tc("delete")}
                 </button>
               )}

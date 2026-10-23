@@ -200,7 +200,7 @@ export function DrawingSetImport({ projectId, onImported }: { projectId: string;
             {busy === "upload" ? t("uploading") : t("uploadSet")}
           </button>
           <span className="text-xs text-fg-subtle">{t("uploadHint")}</span>
-          {result && <p className="basis-full text-xs text-success-600">{t("imported", result)}</p>}
+          {result && <p className="basis-full text-xs text-success-fg">{t("imported", result)}</p>}
           {error && <FormError className="basis-full">{error}</FormError>}
         </div>
         {openSets.length > 0 && (
@@ -324,7 +324,7 @@ export function DrawingSetImport({ projectId, onImported }: { projectId: string;
                     ) : p.confidence === "medium" && key(p.sheetNumber ?? "") === key(r.sheetNumber) ? (
                       <Badge tone="neutral" size="sm">{t("checkIt")}</Badge>
                     ) : (
-                      <span className="text-success-600">{t("newSheet")}</span>
+                      <span className="text-success-fg">{t("newSheet")}</span>
                     )}
                   </td>
                 </tr>

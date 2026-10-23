@@ -143,7 +143,7 @@ export function WebhooksPanel() {
                   </p>
                   <p className="mt-1 text-xs text-fg-subtle">
                     {w.lastDeliveryAt ? (
-                      <span className={w.lastDeliveryStatus === "success" ? "text-success-600" : "text-danger-fg"}>
+                      <span className={w.lastDeliveryStatus === "success" ? "text-success-fg" : "text-danger-fg"}>
                         {t("lastDelivery")}: {t(w.lastDeliveryStatus === "success" ? "webhookSuccess" : "webhookFailed")} ·{" "}
                         {formatDateTime(new Date(w.lastDeliveryAt))}
                       </span>
@@ -183,7 +183,7 @@ export function WebhooksPanel() {
                     <ul className="flex flex-col gap-1">
                       {webhookDeliveries.map((d) => (
                         <li key={d.id} className="flex items-center justify-between text-xs">
-                          <span className={d.success ? "text-success-600" : "text-danger-fg"}>
+                          <span className={d.success ? "text-success-fg" : "text-danger-fg"}>
                             {d.event} {d.statusCode ? `· HTTP ${d.statusCode}` : d.error ? `· ${d.error}` : ""}
                           </span>
                           <span className="text-fg-subtle">{formatDateTime(new Date(d.createdAt))}</span>

@@ -123,7 +123,7 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
             [
               t("variance"),
               `${budget.materialsCostVariance >= 0 ? "+" : ""}${money(budget.materialsCostVariance)}`,
-              budget.materialsCostVariance < 0 ? "text-red-600" : "text-green-700",
+              budget.materialsCostVariance < 0 ? "text-danger-fg" : "text-success-fg",
             ],
           ]}
         />
@@ -135,7 +135,7 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
             [
               t("variance"),
               `${budget.laborCostVariance >= 0 ? "+" : ""}${money(budget.laborCostVariance)}`,
-              budget.laborCostVariance < 0 ? "text-red-600" : "text-green-700",
+              budget.laborCostVariance < 0 ? "text-danger-fg" : "text-success-fg",
             ],
             [t("hoursLogged"), `${budget.laborHoursLogged}h`],
             ...(budget.laborHoursUncosted > 0
@@ -182,7 +182,7 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
               [
                 t("contingencyRemaining"),
                 money(budget.contingencyRemaining),
-                (budget.contingencyRemaining ?? 0) < 0 ? "text-red-600 font-medium" : "font-medium text-fg",
+                (budget.contingencyRemaining ?? 0) < 0 ? "text-danger-fg font-medium" : "font-medium text-fg",
               ],
             ]}
           />

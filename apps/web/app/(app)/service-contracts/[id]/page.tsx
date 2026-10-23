@@ -142,7 +142,7 @@ export default function ServiceContractDetailPage({ params }: { params: Promise<
                     <span className="font-medium">{formatDate(new Date(v.scheduledDate))}</span>
                     {v.technician && <span className="ml-2 text-sm text-fg-subtle">{v.technician.name}</span>}
                     {v.satisfactionRating && (
-                      <span className="ml-2 text-sm text-amber-500">{"★".repeat(v.satisfactionRating)}</span>
+                      <span className="ml-2 text-sm text-warning-400">{"★".repeat(v.satisfactionRating)}</span>
                     )}
                   </div>
                   {v.completedAt ? (

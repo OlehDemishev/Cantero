@@ -620,7 +620,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
                         <tr key={r.materialCatalogItemId} className="border-b border-gray-100 dark:border-gray-700">
                           <td className="py-1">{r.name}</td>
                           <td>{r.required}</td>
-                          <td className={r.remainingStock < 0 ? "text-red-600" : ""}>{r.remainingStock}</td>
+                          <td className={r.remainingStock < 0 ? "text-danger-fg" : ""}>{r.remainingStock}</td>
                         </tr>
                       ))}
                     </tbody>

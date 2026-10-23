@@ -115,7 +115,7 @@ export function NotificationPreferencesPanel() {
                   ? t("disablePush")
                   : t("enablePush")}
             </button>
-            {pushStatus === "enabled" && <span className="text-sm text-green-700">{t("pushEnabled")}</span>}
+            {pushStatus === "enabled" && <span className="text-sm text-success-fg">{t("pushEnabled")}</span>}
           </div>
         </section>
       )}
@@ -134,7 +134,7 @@ export function NotificationPreferencesPanel() {
             <option value="daily">{t("digestDaily")}</option>
             <option value="weekly">{t("digestWeekly")}</option>
           </select>
-          {digestSaved && <span className="text-sm text-green-700">{tc("saved")}</span>}
+          {digestSaved && <span className="text-sm text-success-fg">{tc("saved")}</span>}
         </div>
       </section>
 
@@ -154,7 +154,7 @@ export function NotificationPreferencesPanel() {
             </label>
           ))}
         </div>
-        {mutedTypesSaved && <span className="mt-2 inline-block text-sm text-green-700">{tc("saved")}</span>}
+        {mutedTypesSaved && <span className="mt-2 inline-block text-sm text-success-fg">{tc("saved")}</span>}
       </section>
     </>
   );

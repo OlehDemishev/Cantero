@@ -99,7 +99,7 @@ export function RevisionDiffPanel({ estimateId, revisions, currency }: { estimat
                 </li>
               ))}
               {diff.changed.map((l) => (
-                <li key={`chg-${l.rateCatalogItemCode}`} className="text-amber-700">
+                <li key={`chg-${l.rateCatalogItemCode}`} className="text-warning-fg">
                   {l.rateCatalogItemName}: {l.previousQuantity} → {l.quantity} {l.unit}
                 </li>
               ))}

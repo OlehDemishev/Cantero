@@ -154,7 +154,7 @@ function StatCard({
           </Badge>
         )}
       </div>
-      <div className={`mt-1 text-xl font-semibold tabular-nums ${warn ? "text-amber-600" : "text-fg"}`}>{value}</div>
+      <div className={`mt-1 text-xl font-semibold tabular-nums ${warn ? "text-warning-fg" : "text-fg"}`}>{value}</div>
       {sub && <div className="mt-0.5 text-xs text-fg-subtle">{sub}</div>}
     </div>
   );
