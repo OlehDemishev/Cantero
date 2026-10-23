@@ -2,8 +2,6 @@
 
 import { use, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import Link from "next/link";
-import { DEPRECIATION_METHODS, type DepreciationMethod, type EquipmentStatus } from "@cantero/shared";
 import { EquipmentGpsPanel } from "@/components/equipment-gps-panel";
 import { CalibrationPanel } from "@/components/calibration-panel";
 import { EquipmentMaintenanceRecordsPanel } from "@/components/equipment-maintenance-records-panel";
@@ -11,110 +9,27 @@ import { EquipmentFuelLogsPanel } from "@/components/equipment-fuel-logs-panel";
 import { EquipmentRentalHistoryPanel } from "@/components/equipment-rental-history-panel";
 import { EquipmentAssignmentHistoryPanel } from "@/components/equipment-assignment-history-panel";
 import { apiFetch } from "@/lib/api-client";
-import { useApi } from "@/lib/use-api";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
-import { formatDate } from "@/lib/format-date";
-import { formatCurrency } from "@/lib/format-currency";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
 import { Alert } from "@/components/ui/alert";
 import { PageHeader } from "@/components/ui/page-header";
-import { Field } from "@/components/ui/field";
+import type { Equipment } from "@/components/equipment-detail/types";
+import { ActionsCard } from "@/components/equipment-detail/actions-card";
+import { MaintenanceScheduleCard } from "@/components/equipment-detail/maintenance-schedule-card";
+import { DepreciationCard } from "@/components/equipment-detail/depreciation-card";
 
-function getCurrentPositionSafe(): Promise<{ lat: number; lng: number } | null> {
-  return new Promise((resolve) => {
-    if (!("geolocation" in navigator)) {
-      resolve(null);
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => resolve(null),
-      { timeout: 8000, maximumAge: 60_000 },
-    );
-  });
-}
-
-interface Project {
-  id: string;
-  name: string;
-}
-interface Worker {
-  id: string;
-  name: string;
-}
-interface AssignmentSummary {
-  project: { id: string; name: string } | null;
-  worker: { id: string; name: string } | null;
-}
-interface DepreciationResult {
-  monthsElapsed: number;
-  accumulatedDepreciation: number;
-  bookValue: number;
-}
-interface AssetDisposal {
-  id: string;
-  disposedAt: string;
-  saleAmount: string | null;
-  notes: string | null;
-}
-interface Equipment {
-  id: string;
-  name: string;
-  category: string;
-  serialNumber: string | null;
-  purchaseDate: string | null;
-  purchaseCost: string | null;
-  status: EquipmentStatus;
-  notes: string | null;
-  assignments: AssignmentSummary[];
-  maintenanceIntervalDays: number | null;
-  nextMaintenanceDueAt: string | null;
-  currentMeterHours: string | null;
-  maintenanceIntervalHours: string | null;
-  nextMaintenanceDueHours: string | null;
-  depreciationMethod: DepreciationMethod | null;
-  usefulLifeMonths: number | null;
-  salvageValue: string | null;
-  depreciation: DepreciationResult | null;
-  disposal: AssetDisposal | null;
-}
-interface Rental {
-  id: string;
-  renterName: string;
-  renterContact: string | null;
-  dailyRate: string;
-  startDate: string;
-  expectedReturnDate: string | null;
-  actualReturnDate: string | null;
-  notes: string | null;
-  daysElapsed: number;
-  revenue: number;
-}
-
+/** One piece of equipment; its own cards live in components/equipment-detail/ and share one busy flag and error notice. */
 export default function EquipmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const t = useTranslations("equipment");
-  const tc = useTranslations("common");
-  const ta = useTranslations("a11y");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
   const [equipment, setEquipment] = useState<Equipment | null>(null);
   const [loadError, setLoadError] = useState<Error | null>(null);
-  const { data: projects = [] } = useApi<Project[]>("/projects");
-  const { data: workers = [] } = useApi<Worker[]>("/workers");
-  const [rentals, setRentals] = useState<Rental[] | null>(null);
-  const [checkOutForm, setCheckOutForm] = useState({ projectId: "", workerId: "" });
-  const [rentalForm, setRentalForm] = useState({ renterName: "", renterContact: "", dailyRate: "", expectedReturnDate: "", notes: "" });
-  const [scheduleIntervalDays, setScheduleIntervalDays] = useState("");
-  const [scheduleIntervalHours, setScheduleIntervalHours] = useState("");
-  const [meterReading, setMeterReading] = useState("");
-  const [depreciationForm, setDepreciationForm] = useState({ method: "" as DepreciationMethod | "", usefulLifeMonths: "", salvageValue: "" });
-  const [disposeForm, setDisposeForm] = useState({ saleAmount: "", notes: "" });
-  const [disposing, setDisposing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -123,19 +38,8 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
       .then((e) => {
         setLoadError(null);
         setEquipment(e);
-        setScheduleIntervalDays(e.maintenanceIntervalDays !== null ? String(e.maintenanceIntervalDays) : "");
-        setScheduleIntervalHours(e.maintenanceIntervalHours !== null ? e.maintenanceIntervalHours : "");
-        setMeterReading(e.currentMeterHours !== null ? e.currentMeterHours : "");
-        setDepreciationForm({
-          method: e.depreciationMethod ?? "",
-          usefulLifeMonths: e.usefulLifeMonths !== null ? String(e.usefulLifeMonths) : "",
-          salvageValue: e.salvageValue !== null ? e.salvageValue : "",
-        });
       })
       .catch(setLoadError);
-    apiFetch<Rental[]>(`/equipment/${id}/rentals`)
-      .then(setRentals)
-      .catch(() => setRentals([]));
   }
 
   useEffect(() => {
@@ -143,194 +47,11 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  async function checkOut(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    setError(null);
-    try {
-      const position = await getCurrentPositionSafe();
-      await apiFetch(`/equipment/${id}/check-out`, {
-        method: "POST",
-        body: JSON.stringify({
-          projectId: checkOutForm.projectId || undefined,
-          workerId: checkOutForm.workerId || undefined,
-          lat: position?.lat,
-          lng: position?.lng,
-        }),
-      });
-      setCheckOutForm({ projectId: "", workerId: "" });
-      load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : tc("error"));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function checkIn() {
-    const position = await getCurrentPositionSafe();
-    await apiFetch(`/equipment/${id}/check-in`, {
-      method: "POST",
-      body: JSON.stringify({ lat: position?.lat, lng: position?.lng }),
-    });
-    load();
-  }
-
-  async function startMaintenance() {
-    await apiFetch(`/equipment/${id}/maintenance/start`, { method: "POST" });
-    load();
-  }
-
-  async function completeMaintenance() {
-    await apiFetch(`/equipment/${id}/maintenance/complete`, { method: "POST" });
-    load();
-  }
-
-  async function retire() {
-    await apiFetch(`/equipment/${id}/retire`, { method: "POST" });
-    load();
-  }
-
-  async function startRental(e: React.FormEvent) {
-    e.preventDefault();
-    if (!rentalForm.renterName || !rentalForm.dailyRate) return;
-    setBusy(true);
-    setError(null);
-    try {
-      await apiFetch(`/equipment/${id}/rentals`, {
-        method: "POST",
-        body: JSON.stringify({
-          renterName: rentalForm.renterName,
-          renterContact: rentalForm.renterContact || undefined,
-          dailyRate: Number(rentalForm.dailyRate),
-          expectedReturnDate: rentalForm.expectedReturnDate ? new Date(rentalForm.expectedReturnDate).toISOString() : undefined,
-          notes: rentalForm.notes || undefined,
-        }),
-      });
-      setRentalForm({ renterName: "", renterContact: "", dailyRate: "", expectedReturnDate: "", notes: "" });
-      load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : tc("error"));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function endRental() {
-    await apiFetch(`/equipment/${id}/rentals/return`, { method: "POST" });
-    load();
-  }
-
-  async function saveDepreciationSchedule(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    try {
-      await apiFetch(`/equipment/${id}/depreciation-schedule`, {
-        method: "PATCH",
-        body: JSON.stringify({
-          depreciationMethod: depreciationForm.method || null,
-          usefulLifeMonths: depreciationForm.usefulLifeMonths ? Number(depreciationForm.usefulLifeMonths) : null,
-          salvageValue: depreciationForm.salvageValue ? Number(depreciationForm.salvageValue) : null,
-        }),
-      });
-      load();
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function dispose(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    setError(null);
-    try {
-      await apiFetch(`/equipment/${id}/dispose`, {
-        method: "POST",
-        body: JSON.stringify({
-          saleAmount: disposeForm.saleAmount ? Number(disposeForm.saleAmount) : undefined,
-          notes: disposeForm.notes || undefined,
-        }),
-      });
-      setDisposing(false);
-      load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : tc("error"));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function saveSchedule(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    try {
-      await apiFetch(`/equipment/${id}/maintenance-schedule`, {
-        method: "PATCH",
-        body: JSON.stringify({ intervalDays: scheduleIntervalDays ? Number(scheduleIntervalDays) : null }),
-      });
-      load();
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function clearSchedule() {
-    setBusy(true);
-    try {
-      await apiFetch(`/equipment/${id}/maintenance-schedule`, { method: "PATCH", body: JSON.stringify({ intervalDays: null }) });
-      setScheduleIntervalDays("");
-      load();
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function saveHoursSchedule(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    try {
-      await apiFetch(`/equipment/${id}/maintenance-schedule`, {
-        method: "PATCH",
-        body: JSON.stringify({ intervalHours: scheduleIntervalHours ? Number(scheduleIntervalHours) : null }),
-      });
-      load();
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function clearHoursSchedule() {
-    setBusy(true);
-    try {
-      await apiFetch(`/equipment/${id}/maintenance-schedule`, { method: "PATCH", body: JSON.stringify({ intervalHours: null }) });
-      setScheduleIntervalHours("");
-      load();
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function saveMeterReading(e: React.FormEvent) {
-    e.preventDefault();
-    if (!meterReading) return;
-    setBusy(true);
-    setError(null);
-    try {
-      await apiFetch(`/equipment/${id}/meter-reading`, {
-        method: "PATCH",
-        body: JSON.stringify({ currentMeterHours: Number(meterReading) }),
-      });
-      load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : tc("error"));
-    } finally {
-      setBusy(false);
-    }
-  }
-
   if (!equipment) {
     return loadError ? <ErrorState error={loadError} onRetry={load} backHref="/equipment" /> : <Skeleton variant="block" height="h-64" />;
   }
+
+  const cardProps = { equipmentId: id, equipment, currency, busy, setBusy, setError, reload: load };
 
   return (
     <>
@@ -347,312 +68,11 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
       {error && <Alert tone="danger" className="mt-4">{error}</Alert>}
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <section className="card">
-          <h2 className="mb-3 text-sm font-semibold text-fg-muted">{tc("actions")}</h2>
-          {equipment.status === "available" && (
-            <form onSubmit={checkOut} className="flex flex-col gap-3">
-              <select aria-label={ta("project")}
-                className="input"
-                value={checkOutForm.projectId}
-                onChange={(e) => setCheckOutForm((f) => ({ ...f, projectId: e.target.value }))}
-              >
-                <option value="">{t("selectProject")}</option>
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-              <select aria-label={ta("worker")}
-                className="input"
-                value={checkOutForm.workerId}
-                onChange={(e) => setCheckOutForm((f) => ({ ...f, workerId: e.target.value }))}
-              >
-                <option value="">{t("selectWorker")}</option>
-                {workers.map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.name}
-                  </option>
-                ))}
-              </select>
-              <button type="submit" disabled={busy} className="btn-primary">
-                {t("checkOut")}
-              </button>
-            </form>
-          )}
-          {equipment.status === "in_use" && (
-            <div>
-              {equipment.assignments[0] && (equipment.assignments[0].worker || equipment.assignments[0].project) && (
-                <p className="mb-3 text-sm text-gray-600 dark:text-gray-300">
-                  {t("currentlyWith")}:{" "}
-                  {equipment.assignments[0].worker ? (
-                    <Link href={`/team/${equipment.assignments[0].worker.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
-                      {equipment.assignments[0].worker.name}
-                    </Link>
-                  ) : (
-                    <Link href={`/projects/${equipment.assignments[0].project!.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
-                      {equipment.assignments[0].project!.name}
-                    </Link>
-                  )}
-                </p>
-              )}
-              <button onClick={checkIn} className="btn-primary">
-                {t("checkIn")}
-              </button>
-            </div>
-          )}
-          {equipment.status === "maintenance" && (
-            <button onClick={completeMaintenance} className="btn-primary">
-              {t("completeMaintenance")}
-            </button>
-          )}
-          {equipment.status === "rented_out" && (
-            <div>
-              {rentals?.find((r) => !r.actualReturnDate) && (
-                <p className="mb-3 text-sm text-gray-600 dark:text-gray-300">
-                  {t("currentlyRentedTo")}: {rentals.find((r) => !r.actualReturnDate)!.renterName}
-                </p>
-              )}
-              <button onClick={endRental} className="btn-primary">
-                {t("returnFromRental")}
-              </button>
-            </div>
-          )}
+        <ActionsCard {...cardProps} />
 
-          {equipment.status === "available" && (
-            <form onSubmit={startRental} className="mt-4 flex flex-col gap-2 border-t border-gray-100 dark:border-gray-700 pt-4">
-              <span className="text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("rentOutToThirdParty")}</span>
-              <input
-                required
-                placeholder={t("renterNamePlaceholder")} aria-label={t("renterNamePlaceholder")}
-                className="input"
-                value={rentalForm.renterName}
-                onChange={(e) => setRentalForm((f) => ({ ...f, renterName: e.target.value }))}
-              />
-              <div className="flex flex-wrap gap-2">
-                <input
-                  required
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder={t("dailyRatePlaceholder", { currency })} aria-label={t("dailyRatePlaceholder", { currency })}
-                  className="input w-40"
-                  value={rentalForm.dailyRate}
-                  onChange={(e) => setRentalForm((f) => ({ ...f, dailyRate: e.target.value }))}
-                />
-                <input aria-label={ta("expectedReturnDate")}
-                  type="date"
-                  className="input w-auto"
-                  value={rentalForm.expectedReturnDate}
-                  onChange={(e) => setRentalForm((f) => ({ ...f, expectedReturnDate: e.target.value }))}
-                />
-                <button type="submit" disabled={busy} className="btn-secondary shrink-0 px-3 py-1.5 text-xs">
-                  {t("startRental")}
-                </button>
-              </div>
-            </form>
-          )}
+        <MaintenanceScheduleCard {...cardProps} />
 
-          <div className="mt-4 flex flex-wrap gap-2 border-t border-gray-100 dark:border-gray-700 pt-4">
-            {equipment.status === "available" && (
-              <button onClick={startMaintenance} className="btn-secondary px-3 py-1.5 text-xs">
-                {t("startMaintenance")}
-              </button>
-            )}
-            {equipment.status !== "in_use" && equipment.status !== "rented_out" && equipment.status !== "retired" && (
-              <button onClick={retire} className="btn-secondary px-3 py-1.5 text-xs">
-                {t("retire")}
-              </button>
-            )}
-          </div>
-        </section>
-
-        <section className="card">
-          <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("maintenanceSchedule")}</h2>
-          <p className="mb-3 text-xs text-fg-subtle">{t("maintenanceScheduleHint")}</p>
-          {equipment.nextMaintenanceDueAt && (
-            <p
-              className={`mb-3 text-sm ${
-                new Date(equipment.nextMaintenanceDueAt) < new Date() ? "font-medium text-danger-fg" : "text-fg-muted"
-              }`}
-            >
-              {t("nextDue", { date: formatDate(new Date(equipment.nextMaintenanceDueAt)) })}
-            </p>
-          )}
-          <form onSubmit={saveSchedule} className="flex flex-wrap items-end gap-2">
-            <Field label={t("intervalDays")} size="sm">
-              <input
-                type="number"
-                min="1"
-                max="3650"
-                placeholder={t("intervalDaysPlaceholder")}
-                className="input w-32"
-                value={scheduleIntervalDays}
-                onChange={(e) => setScheduleIntervalDays(e.target.value)}
-              />
-            </Field>
-            <button type="submit" disabled={busy} className="btn-secondary">
-              {tc("save")}
-            </button>
-            {equipment.maintenanceIntervalDays !== null && (
-              <button type="button" onClick={clearSchedule} disabled={busy} className="btn-secondary">
-                {t("disableSchedule")}
-              </button>
-            )}
-          </form>
-
-          <div className="mt-4 border-t border-gray-100 pt-4 dark:border-gray-800">
-            <p className="mb-2 text-sm text-fg-muted">
-              {t("currentMeterHours")}: {equipment.currentMeterHours ?? "—"}
-              {equipment.nextMaintenanceDueHours !== null && (
-                <span
-                  className={
-                    Number(equipment.currentMeterHours ?? 0) >= Number(equipment.nextMaintenanceDueHours)
-                      ? "ml-2 font-medium text-danger-fg"
-                      : "ml-2 text-fg-subtle"
-                  }
-                >
-                  {t("nextDueHours", { hours: equipment.nextMaintenanceDueHours })}
-                </span>
-              )}
-            </p>
-            <form onSubmit={saveMeterReading} className="mb-3 flex flex-wrap items-end gap-2">
-              <Field label={t("updateMeterReading")} size="sm">
-                <input
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  className="input w-32"
-                  value={meterReading}
-                  onChange={(e) => setMeterReading(e.target.value)}
-                />
-              </Field>
-              <button type="submit" disabled={busy} className="btn-secondary">
-                {tc("save")}
-              </button>
-            </form>
-            <form onSubmit={saveHoursSchedule} className="flex flex-wrap items-end gap-2">
-              <Field label={t("intervalHours")} size="sm">
-                <input
-                  type="number"
-                  min="1"
-                  step="1"
-                  placeholder={t("intervalHoursPlaceholder")}
-                  className="input w-32"
-                  value={scheduleIntervalHours}
-                  onChange={(e) => setScheduleIntervalHours(e.target.value)}
-                />
-              </Field>
-              <button type="submit" disabled={busy} className="btn-secondary">
-                {tc("save")}
-              </button>
-              {equipment.maintenanceIntervalHours !== null && (
-                <button type="button" onClick={clearHoursSchedule} disabled={busy} className="btn-secondary">
-                  {t("disableSchedule")}
-                </button>
-              )}
-            </form>
-          </div>
-        </section>
-
-        <section className="card">
-          <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("depreciation")}</h2>
-          <p className="mb-3 text-xs text-fg-subtle">{t("depreciationHint")}</p>
-
-          {equipment.disposal ? (
-            <p className="text-sm text-gray-600 dark:text-gray-300">
-              {t("disposedOn", { date: formatDate(new Date(equipment.disposal.disposedAt)) })}
-              {equipment.disposal.saleAmount !== null && (
-                <span className="block text-xs text-fg-subtle">
-                  {t("saleAmount")}: {formatCurrency(equipment.disposal.saleAmount, currency)}
-                </span>
-              )}
-            </p>
-          ) : (
-            <>
-              {equipment.depreciation && (
-                <p className="mb-3 text-sm text-fg-muted">
-                  {t("bookValue")}: <span className="font-medium">{formatCurrency(equipment.depreciation.bookValue, currency)}</span>
-                  <span className="ml-2 text-xs text-fg-subtle">
-                    ({t("accumulatedDepreciation")}: {formatCurrency(equipment.depreciation.accumulatedDepreciation, currency)})
-                  </span>
-                </p>
-              )}
-              <form onSubmit={saveDepreciationSchedule} className="flex flex-wrap items-end gap-2">
-                <select aria-label={ta("depreciationMethod")}
-                  className="input"
-                  value={depreciationForm.method}
-                  onChange={(e) => setDepreciationForm((f) => ({ ...f, method: e.target.value as DepreciationMethod }))}
-                >
-                  <option value="">{t("noDepreciationMethod")}</option>
-                  {DEPRECIATION_METHODS.map((m) => (
-                    <option key={m} value={m}>
-                      {t(`depreciationMethod_${m}`)}
-                    </option>
-                  ))}
-                </select>
-                <Field label={t("usefulLifeMonths")} size="sm">
-                  <input
-                    type="number"
-                    min="1"
-                    max="600"
-                    className="input w-32"
-                    value={depreciationForm.usefulLifeMonths}
-                    onChange={(e) => setDepreciationForm((f) => ({ ...f, usefulLifeMonths: e.target.value }))}
-                  />
-                </Field>
-                <Field label={t("salvageValue")} size="sm">
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    className="input w-32"
-                    value={depreciationForm.salvageValue}
-                    onChange={(e) => setDepreciationForm((f) => ({ ...f, salvageValue: e.target.value }))}
-                  />
-                </Field>
-                <button type="submit" disabled={busy} className="btn-secondary">
-                  {tc("save")}
-                </button>
-              </form>
-
-              {equipment.status !== "in_use" && equipment.status !== "rented_out" && (
-                <div className="mt-4 border-t border-gray-100 dark:border-gray-700 pt-4">
-                  {!disposing ? (
-                    <button onClick={() => setDisposing(true)} className="btn-secondary px-3 py-1.5 text-xs">
-                      {t("disposeOfEquipment")}
-                    </button>
-                  ) : (
-                    <form onSubmit={dispose} className="flex flex-wrap items-end gap-2">
-                      <Field label={t("saleAmount")} size="sm">
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          className="input w-32"
-                          value={disposeForm.saleAmount}
-                          onChange={(e) => setDisposeForm((f) => ({ ...f, saleAmount: e.target.value }))}
-                        />
-                      </Field>
-                      <input
-                        placeholder={t("disposalNotesPlaceholder")} aria-label={t("disposalNotesPlaceholder")}
-                        className="input"
-                        value={disposeForm.notes}
-                        onChange={(e) => setDisposeForm((f) => ({ ...f, notes: e.target.value }))}
-                      />
-                      <button type="submit" disabled={busy} className="btn-primary">
-                        {t("confirmDisposal")}
-                      </button>
-                      <button type="button" onClick={() => setDisposing(false)} className="btn-secondary">
-                        {tc("cancel")}
-                      </button>
-                    </form>
-                  )}
-                </div>
-              )}
-            </>
-          )}
-        </section>
+        <DepreciationCard {...cardProps} />
 
         <EquipmentMaintenanceRecordsPanel equipmentId={id} currency={currency} />
 
