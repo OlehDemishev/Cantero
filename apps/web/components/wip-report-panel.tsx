@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/format-currency";
 
 interface WipRow {
@@ -32,7 +34,7 @@ interface WipReport {
 export function WipReportPanel({ currency }: { currency: string }) {
   const t = useTranslations("reports");
   const tc = useTranslations("common");
-  const { data: wip = null } = useApi<WipReport>("/reports/wip-report");
+  const { data: wip = null, error: wipError, reload: reloadWip } = useApi<WipReport>("/reports/wip-report");
   const [wipExporting, setWipExporting] = useState(false);
 
   async function downloadWipPdf() {
@@ -57,7 +59,7 @@ export function WipReportPanel({ currency }: { currency: string }) {
         </button>
       </div>
       {!wip ? (
-        <p className="text-fg-subtle">{tc("loading")}</p>
+        wipError ? <ErrorState error={wipError} onRetry={reloadWip} compact /> : <Skeleton lines={3} />
       ) : wip.rows.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noProjects")}</p>
       ) : (

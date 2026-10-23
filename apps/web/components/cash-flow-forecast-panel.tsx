@@ -2,6 +2,8 @@
 
 import { useTranslations } from "next-intl";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
 
@@ -23,14 +25,13 @@ interface CashFlowForecast {
 
 export function CashFlowForecastPanel({ currency }: { currency: string }) {
   const t = useTranslations("reports");
-  const tc = useTranslations("common");
-  const { data: cashFlow = null } = useApi<CashFlowForecast>("/reports/cash-flow-forecast");
+  const { data: cashFlow = null, error: cashFlowError, reload: reloadCashFlow } = useApi<CashFlowForecast>("/reports/cash-flow-forecast");
 
   return (
     <>
       <h2 className="mb-3 mt-10 text-sm font-semibold text-fg-muted">{t("cashFlowForecast")}</h2>
       {!cashFlow ? (
-        <p className="text-fg-subtle">{tc("loading")}</p>
+        cashFlowError ? <ErrorState error={cashFlowError} onRetry={reloadCashFlow} compact /> : <Skeleton lines={3} />
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">

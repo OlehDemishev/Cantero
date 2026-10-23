@@ -11,6 +11,8 @@ import {
 } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
@@ -48,8 +50,8 @@ export function LienCompliancePanel({ projectId }: { projectId: string }) {
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const { data: notices = null, reload: reloadNotices } = useApi<LienNotice[]>(`/projects/${projectId}/lien-notices`);
-  const { data: filings = null, reload: reloadFilings } = useApi<MechanicsLienFiling[]>(`/projects/${projectId}/lien-filings`);
+  const { data: notices = null, reload: reloadNotices, error: noticesError } = useApi<LienNotice[]>(`/projects/${projectId}/lien-notices`);
+  const { data: filings = null, reload: reloadFilings, error: filingsError } = useApi<MechanicsLienFiling[]>(`/projects/${projectId}/lien-filings`);
   const [addingNotice, setAddingNotice] = useState(false);
   const [noticeForm, setNoticeForm] = useState({
     direction: "sent" as LienNoticeDirection,
@@ -186,7 +188,7 @@ export function LienCompliancePanel({ projectId }: { projectId: string }) {
       )}
 
       {!notices ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        noticesError ? <ErrorState error={noticesError} onRetry={reloadNotices} compact /> : <Skeleton lines={3} />
       ) : notices.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noNotices")}</p>
       ) : (
@@ -257,7 +259,7 @@ export function LienCompliancePanel({ projectId }: { projectId: string }) {
       )}
 
       {!filings ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        filingsError ? <ErrorState error={filingsError} onRetry={reloadFilings} compact /> : <Skeleton lines={3} />
       ) : filings.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noFilings")}</p>
       ) : (

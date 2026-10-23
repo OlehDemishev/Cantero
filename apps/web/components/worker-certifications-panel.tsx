@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -16,8 +18,7 @@ interface Certification {
 export function WorkerCertificationsPanel({ workerId }: { workerId: string }) {
   const t = useTranslations("team");
   const confirm = useConfirm();
-  const tc = useTranslations("common");
-  const { data: certifications = null, reload: reloadCertifications } = useApi<Certification[]>(`/workers/${workerId}/certifications`);
+  const { data: certifications = null, reload: reloadCertifications, error: certificationsError } = useApi<Certification[]>(`/workers/${workerId}/certifications`);
   const [certForm, setCertForm] = useState({ name: "", expiresAt: "" });
   const [busy, setBusy] = useState(false);
 
@@ -51,7 +52,7 @@ export function WorkerCertificationsPanel({ workerId }: { workerId: string }) {
     <>
       <h2 className="mb-3 mt-8 text-sm font-semibold text-fg-muted">{t("certifications")}</h2>
       {certifications === null ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        certificationsError ? <ErrorState error={certificationsError} onRetry={reloadCertifications} compact /> : <Skeleton lines={3} />
       ) : certifications.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noCertifications")}</p>
       ) : (

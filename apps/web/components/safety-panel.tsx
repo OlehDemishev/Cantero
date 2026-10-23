@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { INCIDENT_SEVERITIES, OSHA_CASE_TYPES, type IncidentSeverity, type OshaCaseType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { PhotoAttachments } from "@/components/photo-attachments";
 import { TemplatePicker } from "@/components/template-picker";
 import { PrintButton } from "@/components/ui/print-button";
@@ -81,9 +83,9 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("safety");
   const tc = useTranslations("common");
 
-  const { data: incidents = null, reload: reloadIncidents } = useApi<IncidentReport[]>(`/safety/incidents?projectId=${projectId}`);
-  const { data: briefings = null, reload: reloadBriefings } = useApi<SafetyBriefing[]>(`/safety/briefings?projectId=${projectId}`);
-  const { data: jhas = null, reload: reloadJhas } = useApi<Jha[]>(`/safety/jha?projectId=${projectId}`);
+  const { data: incidents = null, reload: reloadIncidents, error: incidentsError } = useApi<IncidentReport[]>(`/safety/incidents?projectId=${projectId}`);
+  const { data: briefings = null, reload: reloadBriefings, error: briefingsError } = useApi<SafetyBriefing[]>(`/safety/briefings?projectId=${projectId}`);
+  const { data: jhas = null, reload: reloadJhas, error: jhasError } = useApi<Jha[]>(`/safety/jha?projectId=${projectId}`);
   const { data: workers = [] } = useApi<Worker[]>("/workers");
   const [creatingIncident, setCreatingIncident] = useState(false);
   const [quickNearMiss, setQuickNearMiss] = useState(false);
@@ -369,7 +371,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
       )}
 
       {incidents === null ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        incidentsError ? <ErrorState error={incidentsError} onRetry={reloadIncidents} compact /> : <Skeleton lines={3} />
       ) : incidents.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noIncidents")}</p>
       ) : (
@@ -501,7 +503,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
       )}
 
       {briefings === null ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        briefingsError ? <ErrorState error={briefingsError} onRetry={reloadBriefings} compact /> : <Skeleton lines={3} />
       ) : briefings.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noBriefings")}</p>
       ) : (
@@ -628,7 +630,7 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
       )}
 
       {jhas === null ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        jhasError ? <ErrorState error={jhasError} onRetry={reloadJhas} compact /> : <Skeleton lines={3} />
       ) : jhas.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noJhas")}</p>
       ) : (

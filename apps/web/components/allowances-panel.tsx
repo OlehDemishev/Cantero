@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import type { AllowanceStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 
@@ -37,7 +39,7 @@ export function AllowancesPanel({ projectId }: { projectId: string }) {
   const currency = me?.company.currency ?? "USD";
   const money = (amount: number | string) => formatCurrency(amount, currency);
 
-  const { data: allowances = null, reload: reloadAllowances } = useApi<Allowance[]>(`/projects/${projectId}/allowances`);
+  const { data: allowances = null, reload: reloadAllowances, error: allowancesError } = useApi<Allowance[]>(`/projects/${projectId}/allowances`);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ name: "", budgetedAmount: "", notes: "" });
   const [chargeForms, setChargeForms] = useState<Record<string, { description: string; amount: string }>>({});
@@ -136,7 +138,7 @@ export function AllowancesPanel({ projectId }: { projectId: string }) {
       )}
 
       {allowances === null ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        allowancesError ? <ErrorState error={allowancesError} onRetry={reloadAllowances} compact /> : <Skeleton lines={3} />
       ) : allowances.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noAllowances")}</p>
       ) : (

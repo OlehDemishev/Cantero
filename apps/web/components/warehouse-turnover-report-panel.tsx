@@ -2,6 +2,8 @@
 
 import { useTranslations } from "next-intl";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface TurnoverRow {
   materialId: string;
@@ -16,14 +18,13 @@ interface TurnoverRow {
 
 export function WarehouseTurnoverReportPanel() {
   const t = useTranslations("reports");
-  const tc = useTranslations("common");
-  const { data: turnover = null } = useApi<TurnoverRow[]>("/reports/warehouse-turnover");
+  const { data: turnover = null, error: turnoverError, reload: reloadTurnover } = useApi<TurnoverRow[]>("/reports/warehouse-turnover");
 
   return (
     <>
       <h2 className="mb-3 mt-10 text-sm font-semibold text-fg-muted">{t("warehouseTurnover")}</h2>
       {!turnover ? (
-        <p className="text-fg-subtle">{tc("loading")}</p>
+        turnoverError ? <ErrorState error={turnoverError} onRetry={reloadTurnover} compact /> : <Skeleton lines={3} />
       ) : turnover.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noTurnoverData")}</p>
       ) : (

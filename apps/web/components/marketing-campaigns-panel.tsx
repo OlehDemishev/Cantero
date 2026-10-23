@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 
@@ -19,11 +21,10 @@ interface Campaign {
 
 export function MarketingCampaignsPanel() {
   const t = useTranslations("marketing");
-  const tc = useTranslations("common");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const { data: campaigns = null, reload: reloadCampaigns } = useApi<Campaign[]>("/marketing/campaigns");
+  const { data: campaigns = null, reload: reloadCampaigns, error: campaignsError } = useApi<Campaign[]>("/marketing/campaigns");
   const [form, setForm] = useState({ name: "", channel: "", spend: "", startDate: "", endDate: "" });
   const [busy, setBusy] = useState(false);
 
@@ -90,7 +91,7 @@ export function MarketingCampaignsPanel() {
       </form>
 
       {campaigns === null ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        campaignsError ? <ErrorState error={campaignsError} onRetry={reloadCampaigns} compact /> : <Skeleton lines={3} />
       ) : campaigns.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noCampaigns")}</p>
       ) : (

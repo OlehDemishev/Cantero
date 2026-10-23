@@ -4,6 +4,8 @@ import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, apiUpload } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { DrawingSetImport } from "@/components/drawing-set-import";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -21,7 +23,7 @@ export function DrawingSheetsPanel({ projectId }: { projectId: string }) {
   const confirm = useConfirm();
   const tc = useTranslations("common");
 
-  const { data: sheets = null, reload: reloadSheets } = useApi<DrawingSheet[]>(`/projects/${projectId}/drawing-sheets`);
+  const { data: sheets = null, reload: reloadSheets, error: sheetsError } = useApi<DrawingSheet[]>(`/projects/${projectId}/drawing-sheets`);
   const [form, setForm] = useState({ sheetNumber: "", discipline: "", title: "", revision: "" });
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +73,7 @@ export function DrawingSheetsPanel({ projectId }: { projectId: string }) {
       <DrawingSetImport projectId={projectId} onImported={load} />
 
       {!sheets ? (
-        <p className="text-fg-subtle">{tc("loading")}</p>
+        sheetsError ? <ErrorState error={sheetsError} onRetry={reloadSheets} compact /> : <Skeleton lines={3} />
       ) : sheets.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noSheets")}</p>
       ) : (

@@ -3,6 +3,8 @@
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAssignableRoles } from "@/lib/permissions";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -22,7 +24,7 @@ export function TeamMembersPanel({ isManager }: { isManager: boolean }) {
   const t = useTranslations("settings");
   const confirm = useConfirm();
   const tc = useTranslations("common");
-  const { data: members = null, reload: reloadMembers } = useApi<Member[]>("/company/members");
+  const { data: members = null, reload: reloadMembers, error: membersError } = useApi<Member[]>("/company/members");
   const { data: customRoles = [], reload: reloadCustomRoles } = useApi<CustomRole[]>("/company/custom-roles");
   const { roles: assignableRoles, mayTouchAdmin } = useAssignableRoles();
   const isAdminLevel = (customRoleId: string | undefined) => !!customRoles.find((cr) => cr.id === customRoleId)?.basePermissions.includes("admin");
@@ -57,7 +59,7 @@ export function TeamMembersPanel({ isManager }: { isManager: boolean }) {
     <section className="card lg:col-span-2">
       <h2 className="mb-4 text-sm font-semibold text-fg-muted">{t("members")}</h2>
       {!members ? (
-        <p className="text-fg-subtle">{tc("loading")}</p>
+        membersError ? <ErrorState error={membersError} onRetry={reloadMembers} compact /> : <Skeleton lines={3} />
       ) : (
         <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">

@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { SUBMITTAL_REVIEW_DECISIONS, type BulkActionResult, type SubmittalReviewDecision, type SubmittalStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useBulkSelection } from "@/components/bulk-select";
 import { useDeepLinkedRow, buildItemDeepLink } from "@/lib/use-deep-linked-row";
 import { CopyLinkButton } from "@/components/ui/copy-link-button";
@@ -50,7 +52,7 @@ export function SubmittalsPanel({ projectId }: { projectId: string }) {
   const deepLinkedId = useDeepLinkedRow("submittal");
   const rowRefs = useRef<Record<string, HTMLLIElement | null>>({});
 
-  const { data: items = null, reload: reloadItems } = useApi<Submittal[]>(`/submittals?projectId=${projectId}`);
+  const { data: items = null, reload: reloadItems, error: itemsError } = useApi<Submittal[]>(`/submittals?projectId=${projectId}`);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [expandedId, setExpandedId] = useState<string | null>(deepLinkedId);
@@ -185,7 +187,7 @@ export function SubmittalsPanel({ projectId }: { projectId: string }) {
       )}
 
       {items === null ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        itemsError ? <ErrorState error={itemsError} onRetry={reloadItems} compact /> : <Skeleton lines={3} />
       ) : items.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noItems")}</p>
       ) : (

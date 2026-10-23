@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useDeepLinkedRow, buildItemDeepLink } from "@/lib/use-deep-linked-row";
 import { CopyLinkButton } from "@/components/ui/copy-link-button";
 import { PrintButton } from "@/components/ui/print-button";
@@ -46,7 +48,7 @@ export function MeetingsPanel({ projectId }: { projectId: string }) {
   const deepLinkedId = useDeepLinkedRow("meeting");
   const rowRefs = useRef<Record<string, HTMLLIElement | null>>({});
 
-  const { data: items = null, reload: reloadItems } = useApi<Meeting[]>(`/meetings?projectId=${projectId}`);
+  const { data: items = null, reload: reloadItems, error: itemsError } = useApi<Meeting[]>(`/meetings?projectId=${projectId}`);
   const { data: openItems = [], reload: reloadOpenItems } = useApi<OpenActionItem[]>(`/meetings/open-action-items?projectId=${projectId}`);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -186,7 +188,7 @@ export function MeetingsPanel({ projectId }: { projectId: string }) {
       )}
 
       {items === null ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        itemsError ? <ErrorState error={itemsError} onRetry={reloadItems} compact /> : <Skeleton lines={3} />
       ) : items.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noItems")}</p>
       ) : (

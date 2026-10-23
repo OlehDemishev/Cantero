@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -33,7 +35,7 @@ export default function ContractsPage() {
   const confirm = useConfirm();
   const tc = useTranslations("common");
 
-  const { data: contracts = null, reload: reloadContracts } = useApi<Contract[]>("/contracts");
+  const { data: contracts = null, reload: reloadContracts, error: contractsError } = useApi<Contract[]>("/contracts");
   const { data: templates = null, reload: reloadTemplates } = useApi<ContractTemplate[]>("/contract-templates");
   const [templateForm, setTemplateForm] = useState({ name: "", body: "" });
   const [busy, setBusy] = useState(false);
@@ -70,7 +72,7 @@ export default function ContractsPage() {
         <div className="lg:col-span-2">
           <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("allContracts")}</h2>
           {!contracts ? (
-            <p className="text-fg-subtle">{tc("loading")}</p>
+            contractsError ? <ErrorState error={contractsError} onRetry={reloadContracts} compact /> : <Skeleton lines={3} />
           ) : contracts.length === 0 ? (
             <p className="text-sm text-fg-subtle">{t("noContracts")}</p>
           ) : (

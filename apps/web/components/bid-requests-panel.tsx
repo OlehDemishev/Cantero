@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, apiUpload, downloadBlob, ApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatCurrency } from "@/lib/format-currency";
@@ -83,7 +85,7 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const { data: requests = null, reload: reloadRequests } = useApi<BidRequest[]>(`/bid-requests?projectId=${projectId}`);
+  const { data: requests = null, reload: reloadRequests, error: requestsError } = useApi<BidRequest[]>(`/bid-requests?projectId=${projectId}`);
   const { data: subcontractors = [] } = useApi<Subcontractor[]>("/finance/subcontractors");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<BidRequestDetail | null>(null);
@@ -369,7 +371,7 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
       )}
 
       {requests === null ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        requestsError ? <ErrorState error={requestsError} onRetry={reloadRequests} compact /> : <Skeleton lines={3} />
       ) : requests.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noBidRequests")}</p>
       ) : (

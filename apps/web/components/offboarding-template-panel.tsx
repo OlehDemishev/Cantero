@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface OffboardingTemplateItem {
@@ -18,7 +20,7 @@ export function OffboardingTemplatePanel() {
   const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
-  const { data: items = null, reload: reloadItems } = useApi<OffboardingTemplateItem[]>("/company/offboarding-template");
+  const { data: items = null, reload: reloadItems, error: itemsError } = useApi<OffboardingTemplateItem[]>("/company/offboarding-template");
   const [title, setTitle] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,7 +80,7 @@ export function OffboardingTemplatePanel() {
 
       <ul className="mt-4 flex max-w-md flex-col gap-1.5">
         {items === null ? (
-          <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+          itemsError ? <ErrorState error={itemsError} onRetry={reloadItems} compact /> : <Skeleton lines={3} />
         ) : items.length === 0 ? (
           <p className="text-sm text-fg-subtle">{t("noOffboardingTasks")}</p>
         ) : (

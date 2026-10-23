@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 import { useCan } from "@/lib/permissions";
 
@@ -29,7 +31,7 @@ export function TimeOffPanel() {
   const tc = useTranslations("common");
   const canDecide = useCan()("site.crewTime");
 
-  const { data: requests = null, reload: reloadRequests } = useApi<TimeOffRequest[]>("/time-off");
+  const { data: requests = null, reload: reloadRequests, error: requestsError } = useApi<TimeOffRequest[]>("/time-off");
   const { data: workers = [] } = useApi<Worker[]>("/workers");
   const [form, setForm] = useState({ workerId: "", type: "vacation" as TimeOffType, startDate: "", endDate: "", reason: "" });
   const [busy, setBusy] = useState(false);
@@ -128,7 +130,7 @@ export function TimeOffPanel() {
 
         <div className="lg:col-span-2">
           {!requests ? (
-            <p className="text-fg-subtle">{tc("loading")}</p>
+            requestsError ? <ErrorState error={requestsError} onRetry={reloadRequests} compact /> : <Skeleton lines={3} />
           ) : requests.length === 0 ? (
             <p className="text-sm text-fg-subtle">{t("noRequests")}</p>
           ) : (

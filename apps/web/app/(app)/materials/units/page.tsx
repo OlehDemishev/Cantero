@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface UnitOfMeasure {
@@ -23,7 +25,7 @@ export default function UnitsOfMeasurePage() {
   const tc = useTranslations("common");
   const tl = useTranslations("labels");
 
-  const { data: units = null, reload: reloadUnits } = useApi<UnitOfMeasure[]>("/materials/units-of-measure");
+  const { data: units = null, reload: reloadUnits, error: unitsError } = useApi<UnitOfMeasure[]>("/materials/units-of-measure");
   const [form, setForm] = useState(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -131,7 +133,7 @@ export default function UnitsOfMeasurePage() {
 
       <div className="mt-6 overflow-x-auto">
         {!units ? (
-          <p className="text-fg-subtle">{tc("loading")}</p>
+          unitsError ? <ErrorState error={unitsError} onRetry={reloadUnits} compact /> : <Skeleton lines={3} />
         ) : (
           <table className="w-full border-collapse text-sm">
             <thead>

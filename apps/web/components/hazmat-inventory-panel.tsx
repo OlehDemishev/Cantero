@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface HazardousMaterial {
@@ -22,9 +24,8 @@ export function HazmatInventoryPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("hazmat");
   const confirm = useConfirm();
   const td = useTranslations("dialog");
-  const tc = useTranslations("common");
 
-  const { data: items = null, reload: reloadItems } = useApi<InventoryItem[]>(`/projects/${projectId}/hazmat-inventory`);
+  const { data: items = null, reload: reloadItems, error: itemsError } = useApi<InventoryItem[]>(`/projects/${projectId}/hazmat-inventory`);
   const [materials, setMaterials] = useState<HazardousMaterial[]>([]);
   const [form, setForm] = useState({ hazardousMaterialId: "", quantity: "", location: "" });
   const [busy, setBusy] = useState(false);
@@ -74,7 +75,7 @@ export function HazmatInventoryPanel({ projectId }: { projectId: string }) {
       <p className="mb-3 text-xs text-fg-subtle">{t("inventoryHint")}</p>
 
       {!items ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        itemsError ? <ErrorState error={itemsError} onRetry={reloadItems} compact /> : <Skeleton lines={3} />
       ) : items.length === 0 ? (
         <p className="mb-3 text-sm text-fg-subtle">{t("noInventory")}</p>
       ) : (

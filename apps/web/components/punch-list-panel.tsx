@@ -6,6 +6,8 @@ import type { BulkActionResult, PunchListItemStatus } from "@cantero/shared";
 import { SimilarItemsHint } from "@/components/similar-items-hint";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { PhotoAttachments } from "@/components/photo-attachments";
 import { CommentsThread } from "@/components/comments-thread";
 import { useBulkSelection } from "@/components/bulk-select";
@@ -54,7 +56,7 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
   const tc = useTranslations("common");
   const tb = useTranslations("bulk");
 
-  const { data: items = null, reload: reloadItems } = useApi<PunchListItem[]>(`/punch-list?projectId=${projectId}`);
+  const { data: items = null, reload: reloadItems, error: itemsError } = useApi<PunchListItem[]>(`/punch-list?projectId=${projectId}`);
   const { data: workers = [] } = useApi<Worker[]>("/workers");
   const { data: subcontractors = [] } = useApi<Subcontractor[]>("/finance/subcontractors");
   const { data: templates = [] } = useApi<Template[]>("/checklist-templates?type=punch_list");
@@ -282,7 +284,7 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
       )}
 
       {items === null ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        itemsError ? <ErrorState error={itemsError} onRetry={reloadItems} compact /> : <Skeleton lines={3} />
       ) : items.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noItems")}</p>
       ) : (

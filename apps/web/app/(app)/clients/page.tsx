@@ -10,6 +10,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ClientsIcon, CloseIcon } from "@/components/nav-icons";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
@@ -56,7 +58,7 @@ export default function ClientsPage() {
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const { data: clients = null, reload: reloadClients } = useApi<Client[]>("/clients");
+  const { data: clients = null, reload: reloadClients, error: clientsError } = useApi<Client[]>("/clients");
   const { data: upcoming = null, reload: reloadUpcoming } = useApi<UpcomingReminder[]>("/clients/reminders/upcoming");
   const { data: summary = null, reload: reloadSummary } = useApi<PipelineSummaryRow[]>("/clients/pipeline-summary");
   const { data: workers = [] } = useApi<Worker[]>("/workers");
@@ -293,7 +295,7 @@ export default function ClientsPage() {
         )}
 
         {!clients ? (
-          <p className="text-fg-subtle">{tc("loading")}</p>
+          clientsError ? <ErrorState error={clientsError} onRetry={reloadClients} compact /> : <Skeleton lines={3} />
         ) : clients.length === 0 ? (
           <div className="card">
             <EmptyState

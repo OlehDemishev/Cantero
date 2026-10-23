@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { FRINGE_FUND_TYPES, type FringeFundType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
@@ -33,7 +35,7 @@ export function WageClassificationsPanel() {
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const { data: classifications = null, reload: reloadClassifications } = useApi<WageClassification[]>("/wage-classifications");
+  const { data: classifications = null, reload: reloadClassifications, error: classificationsError } = useApi<WageClassification[]>("/wage-classifications");
   const [form, setForm] = useState({ trade: "", hourlyRate: "", fringeRate: "", apprenticeRatio: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,7 +97,7 @@ export function WageClassificationsPanel() {
       <p className="mb-4 text-xs text-fg-subtle">{t("hint")}</p>
 
       {!classifications ? (
-        <p className="text-fg-subtle">{tc("loading")}</p>
+        classificationsError ? <ErrorState error={classificationsError} onRetry={reloadClassifications} compact /> : <Skeleton lines={3} />
       ) : classifications.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noClassifications")}</p>
       ) : (

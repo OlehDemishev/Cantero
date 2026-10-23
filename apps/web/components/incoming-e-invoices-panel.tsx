@@ -4,6 +4,8 @@ import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, apiUpload, downloadBlob } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -58,10 +60,9 @@ const STATUS_STYLES: Record<IncomingEInvoice["status"], string> = {
 export function IncomingEInvoicesPanel() {
   const t = useTranslations("incomingEInvoices");
   const confirm = useConfirm();
-  const tc = useTranslations("common");
   const { data: me } = useMe();
 
-  const { data: invoices = null, reload: reloadInvoices } = useApi<IncomingEInvoice[]>("/finance/incoming-invoices");
+  const { data: invoices = null, reload: reloadInvoices, error: invoicesError } = useApi<IncomingEInvoice[]>("/finance/incoming-invoices");
   const { data: suppliers = [] } = useApi<Supplier[]>("/materials/suppliers");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -151,7 +152,7 @@ export function IncomingEInvoicesPanel() {
       </div>
 
       {!invoices ? (
-        <p className="text-fg-subtle">{tc("loading")}</p>
+        invoicesError ? <ErrorState error={invoicesError} onRetry={reloadInvoices} compact /> : <Skeleton lines={3} />
       ) : invoices.length === 0 ? (
         <p className="text-fg-subtle">{t("noInvoices")}</p>
       ) : (

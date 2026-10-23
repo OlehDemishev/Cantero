@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import type { PrequalificationStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 
 interface Prequalification {
@@ -31,7 +33,7 @@ export function SubcontractorPrequalificationPanel({ subcontractorId }: { subcon
   const t = useTranslations("subcontractorPrequalification");
   const tc = useTranslations("common");
 
-  const { data: cycles = null, reload: reloadCycles } = useApi<Prequalification[]>(`/subcontractors/${subcontractorId}/prequalifications`);
+  const { data: cycles = null, reload: reloadCycles, error: cyclesError } = useApi<Prequalification[]>(`/subcontractors/${subcontractorId}/prequalifications`);
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ licenseNumber: "", bondingCapacity: "", yearsInBusiness: "", safetyEmrRating: "", referencesNotes: "" });
   const [decidingId, setDecidingId] = useState<string | null>(null);
@@ -149,7 +151,7 @@ export function SubcontractorPrequalificationPanel({ subcontractorId }: { subcon
       )}
 
       {!cycles ? (
-        <p className="text-xs text-fg-subtle">{tc("loading")}</p>
+        cyclesError ? <ErrorState error={cyclesError} onRetry={reloadCycles} compact /> : <Skeleton lines={3} />
       ) : cycles.length === 0 ? (
         <p className="text-xs text-fg-subtle">{t("noCycles")}</p>
       ) : (

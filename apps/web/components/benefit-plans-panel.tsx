@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { BENEFIT_PLAN_TYPES, type BenefitPlanType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 
@@ -26,11 +28,10 @@ interface Plan {
 
 export function BenefitPlansPanel() {
   const t = useTranslations("benefits");
-  const tc = useTranslations("common");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const { data: plans = null, reload: reloadPlans } = useApi<Plan[]>("/benefits/plans");
+  const { data: plans = null, reload: reloadPlans, error: plansError } = useApi<Plan[]>("/benefits/plans");
   const [form, setForm] = useState({ name: "", type: "medical" as BenefitPlanType, carrier: "" });
   const [tierForms, setTierForms] = useState<Record<string, { name: string; monthlyEmployerCost: string; monthlyEmployeeCost: string }>>({});
   const [busy, setBusy] = useState(false);
@@ -103,7 +104,7 @@ export function BenefitPlansPanel() {
       </form>
 
       {plans === null ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        plansError ? <ErrorState error={plansError} onRetry={reloadPlans} compact /> : <Skeleton lines={3} />
       ) : plans.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noPlans")}</p>
       ) : (

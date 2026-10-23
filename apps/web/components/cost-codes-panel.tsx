@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
 export interface CostCode {
@@ -17,7 +19,7 @@ export function CostCodesPanel() {
   const confirm = useConfirm();
   const tc = useTranslations("common");
 
-  const { data: costCodes = null, reload: reloadCostCodes } = useApi<CostCode[]>("/cost-codes");
+  const { data: costCodes = null, reload: reloadCostCodes, error: costCodesError } = useApi<CostCode[]>("/cost-codes");
   const [form, setForm] = useState({ code: "", name: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -76,7 +78,7 @@ export function CostCodesPanel() {
       )}
 
       {!costCodes ? (
-        <p className="text-fg-subtle">{tc("loading")}</p>
+        costCodesError ? <ErrorState error={costCodesError} onRetry={reloadCostCodes} compact /> : <Skeleton lines={3} />
       ) : costCodes.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noCostCodes")}</p>
       ) : (

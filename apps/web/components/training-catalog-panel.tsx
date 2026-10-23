@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -38,7 +40,7 @@ export function TrainingCatalogPanel() {
   const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
-  const { data: courses = null, reload: reloadCourses } = useApi<TrainingCourse[]>("/training/courses");
+  const { data: courses = null, reload: reloadCourses, error: coursesError } = useApi<TrainingCourse[]>("/training/courses");
   const { data: workers = [] } = useApi<Worker[]>("/workers");
   const { data: gaps = null, reload: reloadGaps } = useApi<ComplianceGap[]>("/training/compliance-gaps");
   const [form, setForm] = useState({ title: "", category: "", validityMonths: "" });
@@ -157,7 +159,7 @@ export function TrainingCatalogPanel() {
       </form>
 
       {courses === null ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        coursesError ? <ErrorState error={coursesError} onRetry={reloadCourses} compact /> : <Skeleton lines={3} />
       ) : courses.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noCourses")}</p>
       ) : (

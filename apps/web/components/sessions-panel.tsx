@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDateTime } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -19,8 +21,7 @@ export function SessionsPanel() {
   const t = useTranslations("sessions");
   const confirm = useConfirm();
   const td = useTranslations("dialog");
-  const tc = useTranslations("common");
-  const { data: sessions = null, reload: reloadSessions } = useApi<Session[]>("/auth/sessions");
+  const { data: sessions = null, reload: reloadSessions, error: sessionsError } = useApi<Session[]>("/auth/sessions");
   const [busy, setBusy] = useState(false);
 
   function load() {
@@ -44,7 +45,7 @@ export function SessionsPanel() {
       <p className="mb-4 text-xs text-fg-subtle">{t("hint")}</p>
 
       {!sessions ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        sessionsError ? <ErrorState error={sessionsError} onRetry={reloadSessions} compact /> : <Skeleton lines={3} />
       ) : sessions.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noSessions")}</p>
       ) : (

@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, apiUpload } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface GalleryDocument {
   id: string;
@@ -81,8 +83,7 @@ function GalleryColumn({
 
 export function GalleryPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("gallery");
-  const tc = useTranslations("common");
-  const { data: gallery = null, reload: reloadGallery } = useApi<Gallery>(`/projects/${projectId}/gallery`);
+  const { data: gallery = null, reload: reloadGallery, error: galleryError } = useApi<Gallery>(`/projects/${projectId}/gallery`);
   const [busy, setBusy] = useState(false);
 
   function load() {
@@ -103,7 +104,7 @@ export function GalleryPanel({ projectId }: { projectId: string }) {
     <div className="mt-10">
       <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("title")}</h2>
       {!gallery ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        galleryError ? <ErrorState error={galleryError} onRetry={reloadGallery} compact /> : <Skeleton lines={3} />
       ) : (
         <div className="card grid grid-cols-1 gap-6 sm:grid-cols-2">
           <GalleryColumn title={t("before")} docs={gallery.before} onUpload={(f) => upload("gallery_before", f)} busy={busy} />

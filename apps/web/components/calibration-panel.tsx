@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 
 interface CalibrationRecord {
@@ -18,13 +20,12 @@ type Props = { toolCribItemId: string; equipmentId?: undefined } | { equipmentId
 
 export function CalibrationPanel(props: Props) {
   const t = useTranslations("calibration");
-  const tc = useTranslations("common");
 
   const [form, setForm] = useState({ calibratedAt: "", nextDueAt: "", certificateNumber: "", performedBy: "" });
   const [busy, setBusy] = useState(false);
 
   const query = props.toolCribItemId ? `toolCribItemId=${props.toolCribItemId}` : `equipmentId=${props.equipmentId}`;
-  const { data: records = null, reload: reloadRecords } = useApi<CalibrationRecord[]>(`/calibration-records?${query}`);
+  const { data: records = null, reload: reloadRecords, error: recordsError } = useApi<CalibrationRecord[]>(`/calibration-records?${query}`);
 
   function load() {
     void reloadRecords();
@@ -62,7 +63,7 @@ export function CalibrationPanel(props: Props) {
       <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
 
       {!records ? (
-        <p className="mb-3 text-sm text-fg-subtle">{tc("loading")}</p>
+        recordsError ? <ErrorState error={recordsError} onRetry={reloadRecords} compact className="mb-3" /> : <Skeleton className="mb-3" lines={3} />
       ) : records.length === 0 ? (
         <p className="mb-3 text-sm text-fg-subtle">{t("noRecords")}</p>
       ) : (

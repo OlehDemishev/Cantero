@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import type { InspectionResult, PermitStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -49,7 +51,7 @@ export function PermitsPanel({ projectId }: { projectId: string }) {
   const confirm = useConfirm();
   const tc = useTranslations("common");
 
-  const { data: permits = null, reload: reloadPermits } = useApi<Permit[]>(`/projects/${projectId}/permits`);
+  const { data: permits = null, reload: reloadPermits, error: permitsError } = useApi<Permit[]>(`/projects/${projectId}/permits`);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [inspections, setInspections] = useState<Inspection[] | null>(null);
   const [permitForm, setPermitForm] = useState({ permitType: "", permitNumber: "", authorityName: "", expiresAt: "" });
@@ -149,7 +151,7 @@ export function PermitsPanel({ projectId }: { projectId: string }) {
       <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
 
       {!permits ? (
-        <p className="text-fg-subtle">{tc("loading")}</p>
+        permitsError ? <ErrorState error={permitsError} onRetry={reloadPermits} compact /> : <Skeleton lines={3} />
       ) : permits.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noPermits")}</p>
       ) : (

@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { CONTRACT_CLAIM_TYPES, type ContractClaimStatus, type ContractClaimType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
@@ -46,7 +48,7 @@ export function ContractClaimsPanel({ projectId }: { projectId: string }) {
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const { data: claims = null, reload: reloadClaims } = useApi<ContractClaim[]>(`/projects/${projectId}/contract-claims`);
+  const { data: claims = null, reload: reloadClaims, error: claimsError } = useApi<ContractClaim[]>(`/projects/${projectId}/contract-claims`);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<ClaimDetail | null>(null);
   const [adding, setAdding] = useState(false);
@@ -215,7 +217,7 @@ export function ContractClaimsPanel({ projectId }: { projectId: string }) {
       )}
 
       {!claims ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        claimsError ? <ErrorState error={claimsError} onRetry={reloadClaims} compact /> : <Skeleton lines={3} />
       ) : claims.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noClaims")}</p>
       ) : (

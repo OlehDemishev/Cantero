@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { CUSTOM_FIELD_ENTITY_TYPES, CUSTOM_FIELD_TYPES, type CustomFieldEntityType, type CustomFieldType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface FieldDefinition {
@@ -20,7 +22,7 @@ export function CustomFieldsSettingsPanel({ canManage }: { canManage: boolean })
   const confirm = useConfirm();
   const tc = useTranslations("common");
 
-  const { data: fields = null, reload: reloadFields } = useApi<FieldDefinition[]>("/custom-fields/definitions");
+  const { data: fields = null, reload: reloadFields, error: fieldsError } = useApi<FieldDefinition[]>("/custom-fields/definitions");
   const [form, setForm] = useState({ entityType: "project" as CustomFieldEntityType, name: "", type: "text" as CustomFieldType, options: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +72,7 @@ export function CustomFieldsSettingsPanel({ canManage }: { canManage: boolean })
       <p className="mb-4 text-xs text-fg-subtle">{t("hint")}</p>
 
       {!fields ? (
-        <p className="text-fg-subtle">{tc("loading")}</p>
+        fieldsError ? <ErrorState error={fieldsError} onRetry={reloadFields} compact /> : <Skeleton lines={3} />
       ) : fields.length === 0 ? (
         <p className="mb-4 text-sm text-fg-subtle">{t("noFields")}</p>
       ) : (

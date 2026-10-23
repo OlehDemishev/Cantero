@@ -3,6 +3,8 @@
 import { useTranslations } from "next-intl";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface RevenueTrendRow {
   month: string;
@@ -11,8 +13,7 @@ interface RevenueTrendRow {
 
 export function RevenueTrendPanel() {
   const t = useTranslations("reports");
-  const tc = useTranslations("common");
-  const { data: revenueTrend = null } = useApi<RevenueTrendRow[]>("/reports/revenue-trend");
+  const { data: revenueTrend = null, error: revenueTrendError, reload: reloadRevenueTrend } = useApi<RevenueTrendRow[]>("/reports/revenue-trend");
 
   async function downloadTaxSummary() {
     const blob = await apiFetch<Blob>("/reports/tax-summary");
@@ -28,7 +29,7 @@ export function RevenueTrendPanel() {
         </button>
       </div>
       {!revenueTrend ? (
-        <p className="text-fg-subtle">{tc("loading")}</p>
+        revenueTrendError ? <ErrorState error={revenueTrendError} onRetry={reloadRevenueTrend} compact /> : <Skeleton lines={3} />
       ) : (
         <div className="overflow-x-auto">
           <div className="flex items-end gap-2" style={{ minWidth: revenueTrend.length * 56 }}>

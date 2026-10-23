@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { DEFICIENCY_SEVERITIES, INSPECTION_ITEM_RESULTS, type DeficiencySeverity, type InspectionItemResult } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { PhotoAttachments } from "@/components/photo-attachments";
 import { formatDate } from "@/lib/format-date";
 
@@ -73,8 +75,8 @@ export function QualityPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("quality");
   const tc = useTranslations("common");
 
-  const { data: checklists = null, reload: reloadChecklists } = useApi<Checklist[]>(`/inspection-checklists?projectId=${projectId}`);
-  const { data: deficiencies = null, reload: reloadDeficiencies } = useApi<Deficiency[]>(`/deficiencies?projectId=${projectId}`);
+  const { data: checklists = null, reload: reloadChecklists, error: checklistsError } = useApi<Checklist[]>(`/inspection-checklists?projectId=${projectId}`);
+  const { data: deficiencies = null, reload: reloadDeficiencies, error: deficienciesError } = useApi<Deficiency[]>(`/deficiencies?projectId=${projectId}`);
   const { data: heatmap = null, reload: reloadHeatmap } = useApi<HeatmapBucket[]>(`/deficiencies/heat-map?projectId=${projectId}`);
   const { data: templates = [] } = useApi<InspectionTemplate[]>("/inspection-templates");
   const { data: workers = [] } = useApi<Worker[]>("/workers");
@@ -256,7 +258,7 @@ export function QualityPanel({ projectId }: { projectId: string }) {
       )}
 
       {checklists === null ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        checklistsError ? <ErrorState error={checklistsError} onRetry={reloadChecklists} compact /> : <Skeleton lines={3} />
       ) : checklists.length === 0 ? (
         <p className="mb-6 text-sm text-fg-subtle">{t("noInspections")}</p>
       ) : (
@@ -397,7 +399,7 @@ export function QualityPanel({ projectId }: { projectId: string }) {
 
       <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("deficiencies")}</h3>
       {deficiencies === null ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        deficienciesError ? <ErrorState error={deficienciesError} onRetry={reloadDeficiencies} compact /> : <Skeleton lines={3} />
       ) : deficiencies.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noDeficiencies")}</p>
       ) : (

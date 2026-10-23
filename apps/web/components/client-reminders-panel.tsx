@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 
 interface Reminder {
@@ -15,9 +17,8 @@ interface Reminder {
 
 export function ClientRemindersPanel({ clientId }: { clientId: string }) {
   const t = useTranslations("clients");
-  const tc = useTranslations("common");
 
-  const { data: reminders = null, reload: reloadReminders } = useApi<Reminder[]>(`/clients/${clientId}/reminders`);
+  const { data: reminders = null, reload: reloadReminders, error: remindersError } = useApi<Reminder[]>(`/clients/${clientId}/reminders`);
   const [reminderForm, setReminderForm] = useState({ title: "", dueDate: "" });
   const [busy, setBusy] = useState(false);
 
@@ -49,7 +50,7 @@ export function ClientRemindersPanel({ clientId }: { clientId: string }) {
     <div className="lg:col-span-1">
       <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("reminders")}</h2>
       {!reminders ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        remindersError ? <ErrorState error={remindersError} onRetry={reloadReminders} compact /> : <Skeleton lines={3} />
       ) : reminders.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noReminders")}</p>
       ) : (

@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import type { CostCode } from "@/components/cost-codes-panel";
 import { formatDate } from "@/lib/format-date";
@@ -36,7 +38,7 @@ export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const { data: costs = null, reload: reloadCosts } = useApi<SubcontractorCost[]>(`/finance/subcontractor-costs?projectId=${projectId}`);
+  const { data: costs = null, reload: reloadCosts, error: costsError } = useApi<SubcontractorCost[]>(`/finance/subcontractor-costs?projectId=${projectId}`);
   const [subcontractors, setSubcontractors] = useState<Subcontractor[]>([]);
   const [form, setForm] = useState({
     subcontractorId: "",
@@ -118,7 +120,7 @@ export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
     <div className="mt-10">
       <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("title")}</h2>
       {!costs ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        costsError ? <ErrorState error={costsError} onRetry={reloadCosts} compact /> : <Skeleton lines={3} />
       ) : costs.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noCosts")}</p>
       ) : (

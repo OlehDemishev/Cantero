@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { SURETY_BOND_TYPES, type SuretyBondStatus, type SuretyBondType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
@@ -32,7 +34,7 @@ export function SuretyBondsPanel({ projectId }: { projectId: string }) {
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const { data: bonds = null, reload: reloadBonds } = useApi<SuretyBond[]>(`/surety-bonds?projectId=${projectId}`);
+  const { data: bonds = null, reload: reloadBonds, error: bondsError } = useApi<SuretyBond[]>(`/surety-bonds?projectId=${projectId}`);
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ type: "performance" as SuretyBondType, suretyName: "", bondNumber: "", penalSum: "", issueDate: "", expiryDate: "" });
   const [busy, setBusy] = useState(false);
@@ -149,7 +151,7 @@ export function SuretyBondsPanel({ projectId }: { projectId: string }) {
       )}
 
       {!bonds ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        bondsError ? <ErrorState error={bondsError} onRetry={reloadBonds} compact /> : <Skeleton lines={3} />
       ) : bonds.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noBonds")}</p>
       ) : (

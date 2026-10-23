@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { WARRANTY_COVERAGE_TYPES, type WarrantyCoverageType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 
 interface WarrantyRegistration {
@@ -22,7 +24,7 @@ export function WarrantyRegistrationsPanel({ projectId }: { projectId: string })
   const t = useTranslations("warrantyRegistry");
   const tc = useTranslations("common");
 
-  const { data: registrations = null, reload: reloadRegistrations } = useApi<WarrantyRegistration[]>(`/projects/${projectId}/warranty-registrations`);
+  const { data: registrations = null, reload: reloadRegistrations, error: registrationsError } = useApi<WarrantyRegistration[]>(`/projects/${projectId}/warranty-registrations`);
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ scope: "", manufacturer: "", coverageType: "both" as WarrantyCoverageType, termMonths: "", startDate: "" });
   const [busy, setBusy] = useState(false);
@@ -113,7 +115,7 @@ export function WarrantyRegistrationsPanel({ projectId }: { projectId: string })
       )}
 
       {!registrations ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        registrationsError ? <ErrorState error={registrationsError} onRetry={reloadRegistrations} compact /> : <Skeleton lines={3} />
       ) : registrations.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noRegistrations")}</p>
       ) : (

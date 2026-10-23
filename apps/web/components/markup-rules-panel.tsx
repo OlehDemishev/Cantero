@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { MARKUP_COST_TYPES, type MarkupCostType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatNumber } from "@/lib/format-currency";
 
@@ -20,7 +22,7 @@ export function MarkupRulesPanel() {
   const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
-  const { data: rules = null, reload: reloadRules } = useApi<MarkupRule[]>("/markup-rules");
+  const { data: rules = null, reload: reloadRules, error: rulesError } = useApi<MarkupRule[]>("/markup-rules");
   const [form, setForm] = useState({ costType: "materials" as MarkupCostType, markupPercent: "" });
   const [busy, setBusy] = useState(false);
 
@@ -56,7 +58,7 @@ export function MarkupRulesPanel() {
       <p className="mb-4 text-xs text-fg-subtle">{t("hint")}</p>
 
       {!rules ? (
-        <p className="text-fg-subtle">{tc("loading")}</p>
+        rulesError ? <ErrorState error={rulesError} onRetry={reloadRules} compact /> : <Skeleton lines={3} />
       ) : rules.length === 0 ? (
         <p className="mb-4 text-sm text-fg-subtle">{t("noRules")}</p>
       ) : (

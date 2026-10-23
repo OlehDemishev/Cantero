@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 import { formatNumber } from "@/lib/format-currency";
 
@@ -27,7 +29,7 @@ export function ProductivityPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("productivity");
   const tc = useTranslations("common");
 
-  const { data: logs = null, reload: reloadLogs } = useApi<ProductivityLog[]>(`/projects/${projectId}/productivity-logs`);
+  const { data: logs = null, reload: reloadLogs, error: logsError } = useApi<ProductivityLog[]>(`/projects/${projectId}/productivity-logs`);
   const { data: costCodes = [] } = useApi<CostCode[]>("/cost-codes");
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({
@@ -159,7 +161,7 @@ export function ProductivityPanel({ projectId }: { projectId: string }) {
       )}
 
       {logs === null ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        logsError ? <ErrorState error={logsError} onRetry={reloadLogs} compact /> : <Skeleton lines={3} />
       ) : logs.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noLogs")}</p>
       ) : (

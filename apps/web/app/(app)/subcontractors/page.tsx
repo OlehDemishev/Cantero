@@ -6,6 +6,8 @@ import type { SubcontractorDiversityCategory } from "@cantero/shared";
 import { SubcontractorListItem } from "@/components/subcontractor-list-item";
 import { apiFetch, downloadBlob, getToken, API_URL, ApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 
 interface Subcontractor {
@@ -40,7 +42,7 @@ export default function SubcontractorsPage() {
   const { data: me } = useMe();
   const isUsCompany = me?.company.country === "US";
 
-  const { data: subcontractors = null, reload: reloadSubcontractors } = useApi<Subcontractor[]>("/finance/subcontractors");
+  const { data: subcontractors = null, reload: reloadSubcontractors, error: subcontractorsError } = useApi<Subcontractor[]>("/finance/subcontractors");
   const [newForm, setNewForm] = useState({ name: "", email: "", phone: "" });
   const [busy, setBusy] = useState(false);
   const [taxSummaryYear, setTaxSummaryYear] = useState(String(CURRENT_YEAR));
@@ -131,7 +133,7 @@ export default function SubcontractorsPage() {
 
       <div className="mt-8">
         {!subcontractors ? (
-          <p className="text-fg-subtle">{tc("loading")}</p>
+          subcontractorsError ? <ErrorState error={subcontractorsError} onRetry={reloadSubcontractors} compact /> : <Skeleton lines={3} />
         ) : subcontractors.length === 0 ? (
           <p className="text-sm text-fg-subtle">{t("noSubcontractors")}</p>
         ) : (

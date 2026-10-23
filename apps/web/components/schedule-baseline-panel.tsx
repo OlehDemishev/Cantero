@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 
 interface Baseline {
@@ -35,7 +37,7 @@ export function ScheduleBaselinePanel({ projectId }: { projectId: string }) {
   const t = useTranslations("scheduleBaseline");
   const tc = useTranslations("common");
 
-  const { data: baselines = null, reload: reloadBaselines } = useApi<Baseline[]>(`/schedule-baselines?projectId=${projectId}`);
+  const { data: baselines = null, reload: reloadBaselines, error: baselinesError } = useApi<Baseline[]>(`/schedule-baselines?projectId=${projectId}`);
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -95,7 +97,7 @@ export function ScheduleBaselinePanel({ projectId }: { projectId: string }) {
       )}
 
       {!baselines ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        baselinesError ? <ErrorState error={baselinesError} onRetry={reloadBaselines} compact /> : <Skeleton lines={3} />
       ) : baselines.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noBaselines")}</p>
       ) : (

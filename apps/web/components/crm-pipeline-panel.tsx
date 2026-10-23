@@ -2,6 +2,8 @@
 
 import { useTranslations } from "next-intl";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency, formatNumber } from "@/lib/format-currency";
 
@@ -44,20 +46,19 @@ interface LeaderboardRow {
 
 export function CrmPipelinePanel() {
   const t = useTranslations("clients");
-  const tc = useTranslations("common");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const { data: forecast = null } = useApi<Forecast>("/clients/pipeline-forecast");
-  const { data: funnel = null } = useApi<Funnel>("/clients/funnel-report");
-  const { data: leaderboard = null } = useApi<LeaderboardRow[]>("/clients/owner-leaderboard");
+  const { data: forecast = null, error: forecastError, reload: reloadForecast } = useApi<Forecast>("/clients/pipeline-forecast");
+  const { data: funnel = null, error: funnelError, reload: reloadFunnel } = useApi<Funnel>("/clients/funnel-report");
+  const { data: leaderboard = null, error: leaderboardError, reload: reloadLeaderboard } = useApi<LeaderboardRow[]>("/clients/owner-leaderboard");
 
   return (
     <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-3">
       <div>
         <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("pipelineForecast")}</h2>
         {!forecast ? (
-          <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+          forecastError ? <ErrorState error={forecastError} onRetry={reloadForecast} compact /> : <Skeleton lines={3} />
         ) : (
           <>
             <div className="card">
@@ -90,7 +91,7 @@ export function CrmPipelinePanel() {
       <div>
         <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("funnelReport")}</h2>
         {!funnel ? (
-          <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+          funnelError ? <ErrorState error={funnelError} onRetry={reloadFunnel} compact /> : <Skeleton lines={3} />
         ) : (
           <>
             <div className="card">
@@ -120,7 +121,7 @@ export function CrmPipelinePanel() {
       <div>
         <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("ownerLeaderboard")}</h2>
         {!leaderboard ? (
-          <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+          leaderboardError ? <ErrorState error={leaderboardError} onRetry={reloadLeaderboard} compact /> : <Skeleton lines={3} />
         ) : leaderboard.length === 0 ? (
           <p className="text-sm text-fg-subtle">{t("ownerLeaderboardEmpty")}</p>
         ) : (

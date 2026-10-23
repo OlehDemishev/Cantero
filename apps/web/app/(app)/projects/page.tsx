@@ -8,6 +8,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { CloseIcon, ProjectsIcon } from "@/components/nav-icons";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Client {
   id: string;
@@ -30,7 +32,7 @@ export default function ProjectsPage() {
   const t = useTranslations("projects");
   const tc = useTranslations("common");
   const ti = useTranslations("import");
-  const { data: projects = null, reload: reloadProjects } = useApi<Project[]>("/projects");
+  const { data: projects = null, reload: reloadProjects, error: projectsError } = useApi<Project[]>("/projects");
   const { data: clients = [] } = useApi<Client[]>("/clients");
   const [form, setForm] = useState({ name: "", address: "", clientId: "" });
   const [submitting, setSubmitting] = useState(false);
@@ -159,7 +161,7 @@ export default function ProjectsPage() {
         )}
 
         {!projects ? (
-          <p className="text-fg-subtle">{tc("loading")}</p>
+          projectsError ? <ErrorState error={projectsError} onRetry={reloadProjects} compact /> : <Skeleton lines={3} />
         ) : projects.length === 0 ? (
           <div className="card">
             <EmptyState

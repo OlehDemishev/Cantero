@@ -6,6 +6,8 @@ import Link from "next/link";
 import type { LoanStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency, formatNumber } from "@/lib/format-currency";
@@ -55,7 +57,7 @@ export default function LoansPage() {
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const { data: loans = null, reload: reloadLoans } = useApi<Loan[]>("/loans");
+  const { data: loans = null, reload: reloadLoans, error: loansError } = useApi<Loan[]>("/loans");
   const { data: summary = null, reload: reloadSummary } = useApi<DebtServiceSummary>("/loans/debt-service-summary");
   const { data: equipment = [] } = useApi<Equipment[]>("/equipment");
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -216,7 +218,7 @@ export default function LoansPage() {
 
       <div className="mt-6">
         {!loans ? (
-          <p className="text-fg-subtle">{tc("loading")}</p>
+          loansError ? <ErrorState error={loansError} onRetry={reloadLoans} compact /> : <Skeleton lines={3} />
         ) : loans.length === 0 ? (
           <p className="text-fg-subtle">{t("noLoans")}</p>
         ) : (

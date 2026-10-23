@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 import { EmptyState } from "@/components/ui/empty-state";
 
@@ -27,7 +29,7 @@ export function ClientTaxPanel({ clientId }: { clientId: string }) {
 
   const { data: taxJurisdictions = [] } = useApi<TaxJurisdiction[]>("/tax/jurisdictions");
   const [taxJurisdictionId, setTaxJurisdictionId] = useState("");
-  const { data: exemptionCertificates = null, reload: reloadExemptionCertificates } = useApi<TaxExemptionCertificate[]>(`/clients/${clientId}/tax-exemption-certificates`);
+  const { data: exemptionCertificates = null, reload: reloadExemptionCertificates, error: exemptionCertificatesError } = useApi<TaxExemptionCertificate[]>(`/clients/${clientId}/tax-exemption-certificates`);
   const [certForm, setCertForm] = useState({ certificateNumber: "", reason: "", expiresAt: "" });
   const [taxBusy, setTaxBusy] = useState(false);
   const [taxSaveMessage, setTaxSaveMessage] = useState<{ error: boolean; text: string } | null>(null);
@@ -104,7 +106,7 @@ export function ClientTaxPanel({ clientId }: { clientId: string }) {
 
       <h3 className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{tt("exemptionCertificates")}</h3>
       {exemptionCertificates === null ? (
-        <p className="text-xs text-fg-subtle">{tc("loading")}</p>
+        exemptionCertificatesError ? <ErrorState error={exemptionCertificatesError} onRetry={reloadExemptionCertificates} compact /> : <Skeleton lines={3} />
       ) : exemptionCertificates.length === 0 ? (
         <p className="text-xs text-fg-subtle">{tt("noExemptionCertificates")}</p>
       ) : (

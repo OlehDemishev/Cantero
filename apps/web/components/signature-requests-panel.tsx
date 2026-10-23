@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import type { SignatureRequestStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 
 interface DocumentOption {
@@ -41,7 +43,7 @@ export function SignatureRequestsPanel({ documents }: { documents: DocumentOptio
   const t = useTranslations("signatureRequests");
   const tc = useTranslations("common");
 
-  const { data: requests = null, reload: reloadRequests } = useApi<SignatureRequest[]>("/signature-requests");
+  const { data: requests = null, reload: reloadRequests, error: requestsError } = useApi<SignatureRequest[]>("/signature-requests");
   const [creating, setCreating] = useState(false);
   const [title, setTitle] = useState("");
   const [documentId, setDocumentId] = useState("");
@@ -171,7 +173,7 @@ export function SignatureRequestsPanel({ documents }: { documents: DocumentOptio
       )}
 
       {requests === null ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        requestsError ? <ErrorState error={requestsError} onRetry={reloadRequests} compact /> : <Skeleton lines={3} />
       ) : requests.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noRequests")}</p>
       ) : (

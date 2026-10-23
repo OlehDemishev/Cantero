@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface PerformanceGoal {
   id: string;
@@ -22,9 +24,8 @@ interface PerformanceReview {
 }
 
 export function WorkerPerformancePanel({ workerId }: { workerId: string }) {
-  const tc = useTranslations("common");
   const tp = useTranslations("performance");
-  const { data: performanceGoals = null, reload: reloadPerformanceGoals } = useApi<PerformanceGoal[]>(`/performance/workers/${workerId}/goals`);
+  const { data: performanceGoals = null, reload: reloadPerformanceGoals, error: performanceGoalsError } = useApi<PerformanceGoal[]>(`/performance/workers/${workerId}/goals`);
   const { data: performanceReviews = null, reload: reloadPerformanceReviews } = useApi<PerformanceReview[]>(`/performance/workers/${workerId}/reviews`);
   const [goalForm, setGoalForm] = useState({ title: "", targetDate: "" });
   const [goalBusy, setGoalBusy] = useState(false);
@@ -67,7 +68,7 @@ export function WorkerPerformancePanel({ workerId }: { workerId: string }) {
     <>
       <h2 className="mb-3 mt-8 text-sm font-semibold text-fg-muted">{tp("goals")}</h2>
       {performanceGoals === null ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        performanceGoalsError ? <ErrorState error={performanceGoalsError} onRetry={reloadPerformanceGoals} compact /> : <Skeleton lines={3} />
       ) : performanceGoals.length === 0 ? (
         <p className="text-sm text-fg-subtle">{tp("noGoals")}</p>
       ) : (

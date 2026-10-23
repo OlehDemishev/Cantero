@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { WEATHER_CONDITIONS, type WeatherCondition } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { PhotoAttachments } from "@/components/photo-attachments";
 import { VoiceInputButton } from "@/components/voice-input-button";
 import { formatDate } from "@/lib/format-date";
@@ -39,7 +41,7 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("dailyLogs");
   const tc = useTranslations("common");
 
-  const { data: logs = null, reload: reloadLogs } = useApi<DailyLog[]>(`/daily-logs?projectId=${projectId}`);
+  const { data: logs = null, reload: reloadLogs, error: logsError } = useApi<DailyLog[]>(`/daily-logs?projectId=${projectId}`);
   const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -247,7 +249,7 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
       )}
 
       {logs === null ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        logsError ? <ErrorState error={logsError} onRetry={reloadLogs} compact /> : <Skeleton lines={3} />
       ) : logs.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noLogs")}</p>
       ) : (

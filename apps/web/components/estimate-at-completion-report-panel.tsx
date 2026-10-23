@@ -2,6 +2,8 @@
 
 import { useTranslations } from "next-intl";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/format-currency";
 
 interface EacRow {
@@ -22,15 +24,14 @@ interface EacRow {
 
 export function EstimateAtCompletionReportPanel({ currency }: { currency: string }) {
   const t = useTranslations("reports");
-  const tc = useTranslations("common");
-  const { data: eac = null } = useApi<EacRow[]>("/reports/estimate-at-completion");
+  const { data: eac = null, error: eacError, reload: reloadEac } = useApi<EacRow[]>("/reports/estimate-at-completion");
 
   return (
     <>
       <h2 className="mb-3 mt-10 text-sm font-semibold text-fg-muted">{t("estimateAtCompletion")}</h2>
       <p className="mb-3 text-xs text-fg-subtle">{t("estimateAtCompletionHint")}</p>
       {!eac ? (
-        <p className="text-fg-subtle">{tc("loading")}</p>
+        eacError ? <ErrorState error={eacError} onRetry={reloadEac} compact /> : <Skeleton lines={3} />
       ) : eac.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noProjects")}</p>
       ) : (

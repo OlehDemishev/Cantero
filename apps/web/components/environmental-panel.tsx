@@ -10,6 +10,8 @@ import {
 } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 
 interface BmpInspection {
@@ -49,8 +51,8 @@ export function EnvironmentalPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("environmental");
   const tc = useTranslations("common");
 
-  const { data: permits = null, reload: reloadPermits } = useApi<StormwaterPermit[]>(`/projects/${projectId}/stormwater-permits`);
-  const { data: incidents = null, reload: reloadIncidents } = useApi<EnvironmentalIncident[]>(`/projects/${projectId}/environmental-incidents`);
+  const { data: permits = null, reload: reloadPermits, error: permitsError } = useApi<StormwaterPermit[]>(`/projects/${projectId}/stormwater-permits`);
+  const { data: incidents = null, reload: reloadIncidents, error: incidentsError } = useApi<EnvironmentalIncident[]>(`/projects/${projectId}/environmental-incidents`);
   const [addingPermit, setAddingPermit] = useState(false);
   const [permitForm, setPermitForm] = useState({ permitNumber: "", noiFiledAt: "" });
   const [inspectingPermitId, setInspectingPermitId] = useState<string | null>(null);
@@ -181,7 +183,7 @@ export function EnvironmentalPanel({ projectId }: { projectId: string }) {
       )}
 
       {!permits ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        permitsError ? <ErrorState error={permitsError} onRetry={reloadPermits} compact /> : <Skeleton lines={3} />
       ) : permits.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noPermits")}</p>
       ) : (
@@ -308,7 +310,7 @@ export function EnvironmentalPanel({ projectId }: { projectId: string }) {
       )}
 
       {!incidents ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        incidentsError ? <ErrorState error={incidentsError} onRetry={reloadIncidents} compact /> : <Skeleton lines={3} />
       ) : incidents.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noIncidents")}</p>
       ) : (

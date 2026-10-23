@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { TRANSMITTAL_METHODS, type TransmittalMethod } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 
 interface TransmittalItem {
@@ -34,7 +36,7 @@ export function TransmittalsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("transmittals");
   const tc = useTranslations("common");
 
-  const { data: transmittals = null, reload: reloadTransmittals } = useApi<Transmittal[]>(`/projects/${projectId}/transmittals`);
+  const { data: transmittals = null, reload: reloadTransmittals, error: transmittalsError } = useApi<Transmittal[]>(`/projects/${projectId}/transmittals`);
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ recipientName: "", recipientCompany: "", method: "email" as TransmittalMethod, purpose: "" });
   const [items, setItems] = useState<DraftItem[]>([{ description: "", quantity: "1" }]);
@@ -167,7 +169,7 @@ export function TransmittalsPanel({ projectId }: { projectId: string }) {
       )}
 
       {!transmittals ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        transmittalsError ? <ErrorState error={transmittalsError} onRetry={reloadTransmittals} compact /> : <Skeleton lines={3} />
       ) : transmittals.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noTransmittals")}</p>
       ) : (

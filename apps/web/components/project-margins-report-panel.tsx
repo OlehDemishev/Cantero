@@ -2,6 +2,8 @@
 
 import { useTranslations } from "next-intl";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/format-currency";
 
 interface ProjectMargin {
@@ -17,14 +19,13 @@ interface ProjectMargin {
 
 export function ProjectMarginsReportPanel({ currency }: { currency: string }) {
   const t = useTranslations("reports");
-  const tc = useTranslations("common");
-  const { data: margins = null } = useApi<ProjectMargin[]>("/reports/project-margins");
+  const { data: margins = null, error: marginsError, reload: reloadMargins } = useApi<ProjectMargin[]>("/reports/project-margins");
 
   return (
     <>
       <h2 className="mb-3 mt-8 text-sm font-semibold text-fg-muted">{t("projectMargins")}</h2>
       {!margins ? (
-        <p className="text-fg-subtle">{tc("loading")}</p>
+        marginsError ? <ErrorState error={marginsError} onRetry={reloadMargins} compact /> : <Skeleton lines={3} />
       ) : margins.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noProjects")}</p>
       ) : (

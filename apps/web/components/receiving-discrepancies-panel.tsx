@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { RECEIVING_DISCREPANCY_RESOLUTIONS, type ReceivingDiscrepancyResolution, type ReceivingDiscrepancyType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ReceivingDiscrepancy {
   id: string;
@@ -19,7 +21,7 @@ interface ReceivingDiscrepancy {
 export function ReceivingDiscrepanciesPanel() {
   const t = useTranslations("purchaseOrders");
   const tc = useTranslations("common");
-  const { data: discrepancies = null, reload: reloadDiscrepancies } = useApi<ReceivingDiscrepancy[]>("/materials/purchase-orders/receiving-discrepancies");
+  const { data: discrepancies = null, reload: reloadDiscrepancies, error: discrepanciesError } = useApi<ReceivingDiscrepancy[]>("/materials/purchase-orders/receiving-discrepancies");
   const [resolvingId, setResolvingId] = useState<string | null>(null);
   const [resolutionForm, setResolutionForm] = useState({ resolution: "credit_issued" as ReceivingDiscrepancyResolution, resolutionNotes: "" });
 
@@ -42,7 +44,7 @@ export function ReceivingDiscrepanciesPanel() {
       <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("discrepanciesTitle")}</h2>
       <p className="mb-3 text-xs text-fg-subtle">{t("discrepanciesHint")}</p>
       {!discrepancies ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        discrepanciesError ? <ErrorState error={discrepanciesError} onRetry={reloadDiscrepancies} compact /> : <Skeleton lines={3} />
       ) : discrepancies.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noDiscrepancies")}</p>
       ) : (

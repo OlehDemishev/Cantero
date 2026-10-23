@@ -2,6 +2,8 @@
 
 import { useTranslations } from "next-intl";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 
 type CertStatus = "expired" | "expiring_soon" | "valid";
@@ -27,13 +29,13 @@ const badgeClass: Record<CertStatus, string> = {
 export function CertificationsDashboardPanel() {
   const t = useTranslations("team");
   const tc = useTranslations("common");
-  const { data: dashboard = null } = useApi<CertDashboard>("/workers/certifications/dashboard");
+  const { data: dashboard = null, error: dashboardError, reload: reloadDashboard } = useApi<CertDashboard>("/workers/certifications/dashboard");
 
   return (
     <div className="mt-10">
       <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("certificationsDashboard")}</h2>
       {!dashboard ? (
-        <p className="text-fg-subtle">{tc("loading")}</p>
+        dashboardError ? <ErrorState error={dashboardError} onRetry={reloadDashboard} compact /> : <Skeleton lines={3} />
       ) : dashboard.certifications.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noCertifications")}</p>
       ) : (

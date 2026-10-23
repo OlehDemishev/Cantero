@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type ChangeRequestStatus = "submitted" | "under_review" | "converted" | "declined";
 interface ChangeRequest {
@@ -27,7 +29,7 @@ export function ClientChangeRequestsPanel({ projectId }: { projectId: string }) 
   const t = useTranslations("clientChangeRequests");
   const tc = useTranslations("common");
 
-  const { data: requests = null, reload: reloadRequests } = useApi<ChangeRequest[]>(`/client-change-requests?projectId=${projectId}`);
+  const { data: requests = null, reload: reloadRequests, error: requestsError } = useApi<ChangeRequest[]>(`/client-change-requests?projectId=${projectId}`);
   const [convertingId, setConvertingId] = useState<string | null>(null);
   const [changeOrderId, setChangeOrderId] = useState("");
   const [decliningId, setDecliningId] = useState<string | null>(null);
@@ -76,7 +78,7 @@ export function ClientChangeRequestsPanel({ projectId }: { projectId: string }) 
       <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("title")}</h2>
 
       {requests === null ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        requestsError ? <ErrorState error={requestsError} onRetry={reloadRequests} compact /> : <Skeleton lines={3} />
       ) : (
         <ul className="flex flex-col gap-2">
           {requests.map((r) => (

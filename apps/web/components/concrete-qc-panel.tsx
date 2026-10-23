@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 
 interface SlumpTest {
@@ -39,7 +41,7 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("concreteQc");
   const tc = useTranslations("common");
 
-  const { data: pours = null, reload: reloadPours } = useApi<ConcretePour[]>(`/projects/${projectId}/concrete-pours`);
+  const { data: pours = null, reload: reloadPours, error: poursError } = useApi<ConcretePour[]>(`/projects/${projectId}/concrete-pours`);
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ location: "", pourDate: "", mixDesign: "", volume: "", specifiedStrength: "", specifiedSlump: "", supplierName: "" });
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -206,7 +208,7 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
       )}
 
       {!pours ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        poursError ? <ErrorState error={poursError} onRetry={reloadPours} compact /> : <Skeleton lines={3} />
       ) : pours.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noPours")}</p>
       ) : (

@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { HR_CASE_ACTION_TYPES, HR_CASE_CATEGORIES, type HrCaseActionType, type HrCaseCategory, type HrCaseStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 
 interface HrCaseAction {
@@ -31,7 +33,7 @@ export function WorkerHrCasesPanel({ workerId }: { workerId: string }) {
   const tc = useTranslations("common");
   const th = useTranslations("hrCases");
 
-  const { data: hrCases = null, reload: reloadHrCases } = useApi<HrCase[]>(`/workers/${workerId}/hr-cases`);
+  const { data: hrCases = null, reload: reloadHrCases, error: hrCasesError } = useApi<HrCase[]>(`/workers/${workerId}/hr-cases`);
   const [hrCaseExpandedId, setHrCaseExpandedId] = useState<string | null>(null);
   const [hrCaseDetail, setHrCaseDetail] = useState<HrCaseDetail | null>(null);
   const [hrCaseForm, setHrCaseForm] = useState({ category: "attendance" as HrCaseCategory, description: "" });
@@ -139,7 +141,7 @@ export function WorkerHrCasesPanel({ workerId }: { workerId: string }) {
       )}
 
       {hrCases === null ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        hrCasesError ? <ErrorState error={hrCasesError} onRetry={reloadHrCases} compact /> : <Skeleton lines={3} />
       ) : hrCases.length === 0 ? (
         <p className="text-sm text-fg-subtle">{th("noCases")}</p>
       ) : (

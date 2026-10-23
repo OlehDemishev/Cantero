@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDateTime } from "@/lib/format-date";
 
 type ActivityType = "note" | "call" | "meeting" | "email";
@@ -23,7 +25,7 @@ export function ClientActivityPanel({ clientId }: { clientId: string }) {
   const t = useTranslations("clients");
   const tc = useTranslations("common");
 
-  const { data: activities = null, reload: reloadActivities } = useApi<Activity[]>(`/clients/${clientId}/activities`);
+  const { data: activities = null, reload: reloadActivities, error: activitiesError } = useApi<Activity[]>(`/clients/${clientId}/activities`);
   const [activityForm, setActivityForm] = useState({ type: "note" as ActivityType, content: "" });
   const [notesInput, setNotesInput] = useState("");
   const [notesSaved, setNotesSaved] = useState(false);
@@ -65,7 +67,7 @@ export function ClientActivityPanel({ clientId }: { clientId: string }) {
     <div className="lg:col-span-2">
       <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("activity")}</h2>
       {!activities ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        activitiesError ? <ErrorState error={activitiesError} onRetry={reloadActivities} compact /> : <Skeleton lines={3} />
       ) : activities.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noActivity")}</p>
       ) : (

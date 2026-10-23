@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import type { CommissioningSystemStatus, FunctionalTestResult } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 
 interface ChecklistItem {
@@ -48,7 +50,7 @@ export function CommissioningPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("commissioning");
   const tc = useTranslations("common");
 
-  const { data: systems = null, reload: reloadSystems } = useApi<CommissioningSystem[]>(`/projects/${projectId}/commissioning-systems`);
+  const { data: systems = null, reload: reloadSystems, error: systemsError } = useApi<CommissioningSystem[]>(`/projects/${projectId}/commissioning-systems`);
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ name: "", category: "" });
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -176,7 +178,7 @@ export function CommissioningPanel({ projectId }: { projectId: string }) {
       )}
 
       {!systems ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        systemsError ? <ErrorState error={systemsError} onRetry={reloadSystems} compact /> : <Skeleton lines={3} />
       ) : systems.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noSystems")}</p>
       ) : (

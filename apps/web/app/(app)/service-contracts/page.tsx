@@ -7,6 +7,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { CloseIcon, ServiceContractsIcon } from "@/components/nav-icons";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 
 interface Project {
@@ -31,7 +33,7 @@ export default function ServiceContractsPage() {
   const t = useTranslations("serviceContracts");
   const tc = useTranslations("common");
 
-  const { data: contracts = null, reload: reloadContracts } = useApi<ServiceContract[]>("/service-contracts");
+  const { data: contracts = null, reload: reloadContracts, error: contractsError } = useApi<ServiceContract[]>("/service-contracts");
   const { data: projects = [] } = useApi<Project[]>("/projects");
   const { data: clients = [] } = useApi<Client[]>("/clients");
   const [form, setForm] = useState({ projectId: "", clientId: "", title: "", frequencyMonths: "3", startDate: "" });
@@ -153,7 +155,7 @@ export default function ServiceContractsPage() {
 
       <div className="mt-6">
         {!contracts ? (
-          <p className="text-fg-subtle">{tc("loading")}</p>
+          contractsError ? <ErrorState error={contractsError} onRetry={reloadContracts} compact /> : <Skeleton lines={3} />
         ) : contracts.length === 0 ? (
           <div className="card">
             <EmptyState

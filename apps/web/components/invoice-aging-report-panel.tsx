@@ -2,6 +2,8 @@
 
 import { useTranslations } from "next-intl";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/format-currency";
 
 interface AgingInvoice {
@@ -25,14 +27,13 @@ function round2(n: number) {
 
 export function InvoiceAgingReportPanel({ currency }: { currency: string }) {
   const t = useTranslations("reports");
-  const tc = useTranslations("common");
-  const { data: aging = null } = useApi<InvoiceAging>("/reports/invoice-aging");
+  const { data: aging = null, error: agingError, reload: reloadAging } = useApi<InvoiceAging>("/reports/invoice-aging");
 
   return (
     <>
       <h2 className="mb-3 mt-10 text-sm font-semibold text-fg-muted">{t("invoiceAging")}</h2>
       {!aging ? (
-        <p className="text-fg-subtle">{tc("loading")}</p>
+        agingError ? <ErrorState error={agingError} onRetry={reloadAging} compact /> : <Skeleton lines={3} />
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">

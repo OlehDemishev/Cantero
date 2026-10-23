@@ -11,6 +11,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { CloseIcon, SuppliersIcon } from "@/components/nav-icons";
 import { apiFetch, apiUpload } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatNumber } from "@/lib/format-currency";
@@ -59,7 +61,7 @@ export default function SuppliersPage() {
   const t = useTranslations("suppliers");
   const confirm = useConfirm();
   const tc = useTranslations("common");
-  const { data: suppliers = null, reload: reloadSuppliers } = useApi<Supplier[]>("/materials/suppliers");
+  const { data: suppliers = null, reload: reloadSuppliers, error: suppliersError } = useApi<Supplier[]>("/materials/suppliers");
   const [form, setForm] = useState({ name: "", email: "", phone: "" });
   const [submitting, setSubmitting] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -238,7 +240,7 @@ export default function SuppliersPage() {
 
       <div className="mt-6">
         {!suppliers ? (
-          <p className="text-fg-subtle">{tc("loading")}</p>
+          suppliersError ? <ErrorState error={suppliersError} onRetry={reloadSuppliers} compact /> : <Skeleton lines={3} />
         ) : suppliers.length === 0 ? (
           <div className="card">
             <EmptyState

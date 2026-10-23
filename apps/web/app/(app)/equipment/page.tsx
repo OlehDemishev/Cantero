@@ -6,6 +6,8 @@ import Link from "next/link";
 import type { EquipmentStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 
@@ -38,7 +40,7 @@ export default function EquipmentPage() {
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const { data: items = null, reload: reloadItems } = useApi<Equipment[]>("/equipment");
+  const { data: items = null, reload: reloadItems, error: itemsError } = useApi<Equipment[]>("/equipment");
   const [form, setForm] = useState({ name: "", category: "", serialNumber: "", purchaseCost: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -97,7 +99,7 @@ export default function EquipmentPage() {
 
       <div className="mt-6">
         {!items ? (
-          <p className="text-fg-subtle">{tc("loading")}</p>
+          itemsError ? <ErrorState error={itemsError} onRetry={reloadItems} compact /> : <Skeleton lines={3} />
         ) : items.length === 0 ? (
           <p className="text-fg-subtle">{t("noEquipment")}</p>
         ) : (

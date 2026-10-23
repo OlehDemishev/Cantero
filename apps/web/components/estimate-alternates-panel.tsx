@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import type { EstimateAlternateStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/format-currency";
 
 interface Alternate {
@@ -32,7 +34,7 @@ export function EstimateAlternatesPanel({ estimateId, currency }: { estimateId: 
   const t = useTranslations("estimateAlternates");
   const tc = useTranslations("common");
 
-  const { data = null, reload: reloadData } = useApi<AlternatesResponse>(`/estimates/${estimateId}/alternates`);
+  const { data = null, reload: reloadData, error: dataError } = useApi<AlternatesResponse>(`/estimates/${estimateId}/alternates`);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", amount: "" });
   const [busy, setBusy] = useState(false);
@@ -108,7 +110,7 @@ export function EstimateAlternatesPanel({ estimateId, currency }: { estimateId: 
       )}
 
       {data === null ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        dataError ? <ErrorState error={dataError} onRetry={reloadData} compact /> : <Skeleton lines={3} />
       ) : data.alternates.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noAlternates")}</p>
       ) : (

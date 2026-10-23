@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface InspectionTemplateItem {
@@ -23,7 +25,7 @@ export function InspectionTemplatesPanel() {
   const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
-  const { data: templates = null, reload: reloadTemplates } = useApi<InspectionTemplate[]>("/inspection-templates");
+  const { data: templates = null, reload: reloadTemplates, error: templatesError } = useApi<InspectionTemplate[]>("/inspection-templates");
   const [form, setForm] = useState({ name: "", trade: "" });
   const [items, setItems] = useState<string[]>([""]);
   const [busy, setBusy] = useState(false);
@@ -120,7 +122,7 @@ export function InspectionTemplatesPanel() {
 
         <div className="lg:col-span-2">
           {templates === null ? (
-            <p className="text-fg-subtle">{tc("loading")}</p>
+            templatesError ? <ErrorState error={templatesError} onRetry={reloadTemplates} compact /> : <Skeleton lines={3} />
           ) : templates.length === 0 ? (
             <p className="text-sm text-fg-subtle">{t("noInspectionTemplates")}</p>
           ) : (

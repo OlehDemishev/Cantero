@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate, formatDateTime } from "@/lib/format-date";
 import { formatNumber } from "@/lib/format-currency";
 
@@ -19,9 +21,8 @@ interface ProgressEstimate {
 
 export function ProgressTrackingPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("progressTracking");
-  const tc = useTranslations("common");
 
-  const { data: history = null, reload: reloadHistory } = useApi<ProgressEstimate[]>(`/projects/${projectId}/progress-estimates`);
+  const { data: history = null, reload: reloadHistory, error: historyError } = useApi<ProgressEstimate[]>(`/projects/${projectId}/progress-estimates`);
   const [busy, setBusy] = useState(false);
 
   function load() {
@@ -51,7 +52,7 @@ export function ProgressTrackingPanel({ projectId }: { projectId: string }) {
       <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
 
       {!history ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        historyError ? <ErrorState error={historyError} onRetry={reloadHistory} compact /> : <Skeleton lines={3} />
       ) : !latest ? (
         <p className="text-sm text-fg-subtle">{t("noEstimates")}</p>
       ) : (

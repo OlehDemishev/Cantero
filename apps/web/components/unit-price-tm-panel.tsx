@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import type { TMTicketStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatDate } from "@/lib/format-date";
@@ -54,8 +56,8 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
   const currency = me?.company.currency ?? "USD";
   const money = (amount: number | string) => formatCurrency(amount, currency);
 
-  const { data: items = null, reload: reloadItems } = useApi<UnitPriceItem[]>(`/projects/${projectId}/unit-price-items`);
-  const { data: tickets = null, reload: reloadTickets } = useApi<TMTicket[]>(`/projects/${projectId}/tm-tickets`);
+  const { data: items = null, reload: reloadItems, error: itemsError } = useApi<UnitPriceItem[]>(`/projects/${projectId}/unit-price-items`);
+  const { data: tickets = null, reload: reloadTickets, error: ticketsError } = useApi<TMTicket[]>(`/projects/${projectId}/tm-tickets`);
   const [creatingItem, setCreatingItem] = useState(false);
   const [itemForm, setItemForm] = useState({ description: "", unit: "", contractUnitPrice: "", estimatedQuantity: "" });
   const [measureForms, setMeasureForms] = useState<Record<string, { measuredQuantity: string; measuredByName: string }>>({});
@@ -237,7 +239,7 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
       )}
 
       {items === null ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        itemsError ? <ErrorState error={itemsError} onRetry={reloadItems} compact /> : <Skeleton lines={3} />
       ) : items.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noUnitPriceItems")}</p>
       ) : (
@@ -396,7 +398,7 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
       )}
 
       {tickets === null ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        ticketsError ? <ErrorState error={ticketsError} onRetry={reloadTickets} compact /> : <Skeleton lines={3} />
       ) : tickets.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noTMTickets")}</p>
       ) : (

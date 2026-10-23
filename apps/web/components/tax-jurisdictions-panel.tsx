@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface TaxRate {
   id: string;
@@ -22,9 +24,8 @@ interface TaxJurisdiction {
 
 export function TaxJurisdictionsPanel() {
   const t = useTranslations("tax");
-  const tc = useTranslations("common");
 
-  const { data: jurisdictions = null, reload: reloadJurisdictions } = useApi<TaxJurisdiction[]>("/tax/jurisdictions");
+  const { data: jurisdictions = null, reload: reloadJurisdictions, error: jurisdictionsError } = useApi<TaxJurisdiction[]>("/tax/jurisdictions");
   const [form, setForm] = useState({ name: "", country: "", region: "" });
   const [rateForms, setRateForms] = useState<Record<string, { ratePercent: string; effectiveFrom: string }>>({});
   const [busy, setBusy] = useState(false);
@@ -98,7 +99,7 @@ export function TaxJurisdictionsPanel() {
       </form>
 
       {jurisdictions === null ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        jurisdictionsError ? <ErrorState error={jurisdictionsError} onRetry={reloadJurisdictions} compact /> : <Skeleton lines={3} />
       ) : jurisdictions.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noJurisdictions")}</p>
       ) : (

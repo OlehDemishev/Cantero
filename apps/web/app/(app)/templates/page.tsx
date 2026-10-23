@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import type { ChecklistTemplateType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -43,7 +45,7 @@ export default function TemplatesPage() {
   const confirm = useConfirm();
   const tc = useTranslations("common");
 
-  const { data: templates = null, reload: reloadTemplates } = useApi<Template[]>("/checklist-templates");
+  const { data: templates = null, reload: reloadTemplates, error: templatesError } = useApi<Template[]>("/checklist-templates");
   const [type, setType] = useState<ChecklistTemplateType>("punch_list");
   const [name, setName] = useState("");
   const [defaultSubject, setDefaultSubject] = useState("");
@@ -253,7 +255,7 @@ export default function TemplatesPage() {
       </div>
 
       {!templates ? (
-        <p className="mt-8 text-fg-subtle">{tc("loading")}</p>
+        templatesError ? <ErrorState error={templatesError} onRetry={reloadTemplates} compact className="mt-8" /> : <Skeleton className="mt-8" lines={3} />
       ) : (
         grouped.map(({ type: ty, list }) => (
           <div key={ty} className="mt-8">

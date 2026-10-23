@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import type { ObservationCategory } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { PrintButton } from "@/components/ui/print-button";
 import { formatDate } from "@/lib/format-date";
 
@@ -21,7 +23,7 @@ export function SafetyObservationsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("safetyObservations");
   const tc = useTranslations("common");
 
-  const { data: observations = null, reload: reloadObservations } = useApi<Observation[]>(`/safety/observations?projectId=${projectId}`);
+  const { data: observations = null, reload: reloadObservations, error: observationsError } = useApi<Observation[]>(`/safety/observations?projectId=${projectId}`);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ category: "safe" as ObservationCategory, behaviorObserved: "", correctiveAction: "" });
   const [busy, setBusy] = useState(false);
@@ -112,7 +114,7 @@ export function SafetyObservationsPanel({ projectId }: { projectId: string }) {
       )}
 
       {observations === null ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        observationsError ? <ErrorState error={observationsError} onRetry={reloadObservations} compact /> : <Skeleton lines={3} />
       ) : observations.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noObservations")}</p>
       ) : (

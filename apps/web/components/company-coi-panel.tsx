@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { COMPANY_DOCUMENT_TYPES, type CompanyDocumentType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { CertificateAttachment } from "@/components/certificate-attachment";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -23,10 +25,9 @@ interface Company {
 export function CompanyCoiPanel({ canManage }: { canManage: boolean }) {
   const t = useTranslations("companyCoi");
   const confirm = useConfirm();
-  const tc = useTranslations("common");
 
   const { data: company = null, reload: reloadCompany } = useApi<Company>("/company");
-  const { data: documents = null, reload: reloadDocuments } = useApi<CompanyDocument[]>("/company/coi-documents");
+  const { data: documents = null, reload: reloadDocuments, error: documentsError } = useApi<CompanyDocument[]>("/company/coi-documents");
   const [docForm, setDocForm] = useState({ type: "general_liability_insurance" as CompanyDocumentType, name: "", expiresAt: "" });
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -85,7 +86,7 @@ export function CompanyCoiPanel({ canManage }: { canManage: boolean }) {
       <p className="mb-4 text-xs text-fg-subtle">{t("hint")}</p>
 
       {documents === null ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        documentsError ? <ErrorState error={documentsError} onRetry={reloadDocuments} compact /> : <Skeleton lines={3} />
       ) : documents.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noDocuments")}</p>
       ) : (

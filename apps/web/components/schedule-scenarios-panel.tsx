@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -35,7 +37,7 @@ export function ScheduleScenariosPanel({ projectId }: { projectId: string }) {
   const confirm = useConfirm();
   const tc = useTranslations("common");
 
-  const { data: scenarios = null, reload: reloadScenarios } = useApi<Scenario[]>(`/projects/${projectId}/schedule-scenarios`);
+  const { data: scenarios = null, reload: reloadScenarios, error: scenariosError } = useApi<Scenario[]>(`/projects/${projectId}/schedule-scenarios`);
   const { data: tasks = [] } = useApi<Task[]>(`/tasks?projectId=${projectId}`);
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
@@ -117,7 +119,7 @@ export function ScheduleScenariosPanel({ projectId }: { projectId: string }) {
       )}
 
       {!scenarios ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        scenariosError ? <ErrorState error={scenariosError} onRetry={reloadScenarios} compact /> : <Skeleton lines={3} />
       ) : scenarios.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noScenarios")}</p>
       ) : (
