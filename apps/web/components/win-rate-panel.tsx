@@ -60,15 +60,15 @@ export function WinRatePanel() {
       </div>
 
       {report.byMonth.length > 0 && (
-        <div className="card mt-3 overflow-x-auto">
+        <div tabIndex={0} className="card mt-3 overflow-x-auto">
           <div className="mb-2 text-xs font-semibold text-fg-muted">{t("byMonth")}</div>
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                <th className="py-1.5">{t("month")}</th>
-                <th className="text-right">{t("winRate")}</th>
-                <th className="text-right">{t("wonCount")}</th>
-                <th className="text-right">{t("lostCount")}</th>
+                <th scope="col" className="py-1.5">{t("month")}</th>
+                <th scope="col" className="text-right">{t("winRate")}</th>
+                <th scope="col" className="text-right">{t("wonCount")}</th>
+                <th scope="col" className="text-right">{t("lostCount")}</th>
               </tr>
             </thead>
             <tbody>
@@ -86,15 +86,15 @@ export function WinRatePanel() {
       )}
 
       {report.byMarginBand.length > 0 && (
-        <div className="card mt-3 overflow-x-auto">
+        <div tabIndex={0} className="card mt-3 overflow-x-auto">
           <div className="mb-2 text-xs font-semibold text-fg-muted">{t("byMarginBand")}</div>
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                <th className="py-1.5">{t("marginBand")}</th>
-                <th className="text-right">{t("winRate")}</th>
-                <th className="text-right">{t("wonCount")}</th>
-                <th className="text-right">{t("lostCount")}</th>
+                <th scope="col" className="py-1.5">{t("marginBand")}</th>
+                <th scope="col" className="text-right">{t("winRate")}</th>
+                <th scope="col" className="text-right">{t("wonCount")}</th>
+                <th scope="col" className="text-right">{t("lostCount")}</th>
               </tr>
             </thead>
             <tbody>

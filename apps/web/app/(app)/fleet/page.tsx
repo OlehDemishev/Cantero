@@ -250,14 +250,14 @@ export default function FleetPage() {
       )}
 
       {fuelEfficiency && fuelEfficiency.some((r) => r.totalQuantity > 0) && (
-        <div className="card mt-6 overflow-x-auto">
+        <div tabIndex={0} className="card mt-6 overflow-x-auto">
           <h2 className="mb-2 text-sm font-semibold text-fg-muted">{t("fuelEfficiencyTitle")}</h2>
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                <th className="py-1.5">{t("vehicle")}</th>
-                <th className="text-right">{t("milesPerUnit")}</th>
-                <th className="text-right">{t("totalIdleHours")}</th>
+                <th scope="col" className="py-1.5">{t("vehicle")}</th>
+                <th scope="col" className="text-right">{t("milesPerUnit")}</th>
+                <th scope="col" className="text-right">{t("totalIdleHours")}</th>
               </tr>
             </thead>
             <tbody>

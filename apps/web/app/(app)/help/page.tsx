@@ -99,7 +99,7 @@ export default function HelpPage() {
 
       <p className="mt-10 text-xs text-fg-subtle">
         {t("stillNeedHelp")}{" "}
-        <a href="mailto:support@cantero.dev" className="text-brand-600 hover:underline dark:text-brand-400">
+        <a href="mailto:support@cantero.dev" className="text-brand-700 underline underline-offset-2 hover:no-underline dark:text-brand-400">
           support@cantero.dev
         </a>
       </p>

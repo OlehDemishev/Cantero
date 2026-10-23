@@ -140,15 +140,15 @@ export function SafetyScorecardPanel() {
           </div>
 
           {scorecard.projects.length > 0 && (
-            <div className="overflow-x-auto">
+            <div tabIndex={0} className="overflow-x-auto">
             <table className="mt-4 w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                  <th className="py-2">{t("project")}</th>
-                  <th className="text-right">{t("totalIncidents")}</th>
-                  <th className="text-right">{t("recordableCases")}</th>
-                  <th className="text-right">{t("hoursWorked")}</th>
-                  <th className="text-right">{t("trir")}</th>
+                  <th scope="col" className="py-2">{t("project")}</th>
+                  <th scope="col" className="text-right">{t("totalIncidents")}</th>
+                  <th scope="col" className="text-right">{t("recordableCases")}</th>
+                  <th scope="col" className="text-right">{t("hoursWorked")}</th>
+                  <th scope="col" className="text-right">{t("trir")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -188,14 +188,14 @@ export function SafetyScorecardPanel() {
           </div>
 
           {nearMiss.projects.length > 0 && (
-            <div className="overflow-x-auto">
+            <div tabIndex={0} className="overflow-x-auto">
             <table className="mt-4 w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                  <th className="py-2">{t("project")}</th>
-                  <th className="text-right">{t("totalNearMiss")}</th>
-                  <th className="text-right">{t("recordableCases")}</th>
-                  <th className="text-right">{t("nearMissRatio")}</th>
+                  <th scope="col" className="py-2">{t("project")}</th>
+                  <th scope="col" className="text-right">{t("totalNearMiss")}</th>
+                  <th scope="col" className="text-right">{t("recordableCases")}</th>
+                  <th scope="col" className="text-right">{t("nearMissRatio")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -238,12 +238,12 @@ export function SafetyScorecardPanel() {
           </div>
 
           {training.overdueWorkers.length > 0 && (
-            <div className="overflow-x-auto">
+            <div tabIndex={0} className="overflow-x-auto">
             <table className="mt-4 w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                  <th className="py-2">{t("worker")}</th>
-                  <th className="text-right">{t("lastTrainingAt")}</th>
+                  <th scope="col" className="py-2">{t("worker")}</th>
+                  <th scope="col" className="text-right">{t("lastTrainingAt")}</th>
                 </tr>
               </thead>
               <tbody>

@@ -53,9 +53,9 @@ export function EstimateAccuracyPanel() {
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-              <th className="py-2">{t("rateItem")}</th>
-              <th>{t("labor")}</th>
-              <th>{t("materials")}</th>
+              <th scope="col" className="py-2">{t("rateItem")}</th>
+              <th scope="col">{t("labor")}</th>
+              <th scope="col">{t("materials")}</th>
             </tr>
           </thead>
           <tbody>

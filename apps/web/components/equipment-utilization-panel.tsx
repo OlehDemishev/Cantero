@@ -25,14 +25,14 @@ export function EquipmentUtilizationPanel() {
       <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
       <p className="mb-3 text-xs text-fg-subtle">{t("description")}</p>
       <div className="card">
-        <div className="overflow-x-auto">
+        <div tabIndex={0} className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-              <th className="py-1.5">{t("equipment")}</th>
-              <th>{t("category")}</th>
-              <th>{t("hoursInUse")}</th>
-              <th>{t("utilization")}</th>
+              <th scope="col" className="py-1.5">{t("equipment")}</th>
+              <th scope="col">{t("category")}</th>
+              <th scope="col">{t("hoursInUse")}</th>
+              <th scope="col">{t("utilization")}</th>
             </tr>
           </thead>
           <tbody>

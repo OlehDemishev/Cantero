@@ -4931,6 +4931,26 @@
     "color_amber": "Bursztynowy",
     "color_green": "Zielony",
     "color_blue": "Niebieski",
-    "color_black": "Czarny"
+    "color_black": "Czarny",
+    "unreadCount": "Nieprzeczytane: {count}",
+    "severityCritical": "Krytyczne",
+    "severityWarning": "Ostrzeżenie",
+    "read": "Przeczytane",
+    "unread": "Nieprzeczytane",
+    "actions": "Akcje",
+    "amount": "Kwota",
+    "appliesTo": "Dotyczy",
+    "description": "Opis",
+    "fxGainLoss": "Zysk/strata kursowa",
+    "hours": "Godziny",
+    "installment": "Rata",
+    "lienWaiver": "Zrzeczenie się zastawu",
+    "location": "Lokalizacja",
+    "name": "Nazwa",
+    "options": "Opcje",
+    "paymentMethod": "Metoda płatności",
+    "status": "Status",
+    "total": "Razem",
+    "unitPrice": "Cena jednostkowa"
   }
 }

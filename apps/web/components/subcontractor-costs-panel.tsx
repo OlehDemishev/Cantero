@@ -128,6 +128,17 @@ export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
       ) : (
         <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
+          <thead>
+            <tr className="border-b border-gray-200 text-left text-xs text-fg-subtle dark:border-gray-700">
+              <th scope="col" className="py-1.5 font-medium">{ta("description")}</th>
+              <th scope="col" className="font-medium">{ta("subcontractor")}</th>
+              <th scope="col" className="font-medium">{ta("dueDate")}</th>
+              <th scope="col" className="font-medium">{ta("status")}</th>
+              <th scope="col" className="text-right font-medium">{ta("amount")}</th>
+              <th scope="col" className="text-right font-medium"><span className="sr-only">{ta("actions")}</span></th>
+              <th scope="col" className="text-right font-medium">{ta("lienWaiver")}</th>
+            </tr>
+          </thead>
           <tbody>
             {costs.map((c) => (
               <tr key={c.id} className="border-b border-gray-100 dark:border-gray-700">

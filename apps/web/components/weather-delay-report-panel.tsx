@@ -67,14 +67,14 @@ export function WeatherDelayReportPanel({ projectId }: { projectId: string }) {
         <p className="text-sm text-fg-muted">
           {t("weatherDelayTotal", { hours: report.totalHours, days: report.suggestedShiftDays })}
         </p>
-        <div className="overflow-x-auto">
+        <div tabIndex={0} className="overflow-x-auto">
         <table className="mt-3 w-full border-collapse text-xs">
           <thead>
             <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-              <th className="py-1.5">{t("date")}</th>
-              <th>{t("weather")}</th>
-              <th>{t("weatherDelayHours")}</th>
-              <th>{t("weatherNotes")}</th>
+              <th scope="col" className="py-1.5">{t("date")}</th>
+              <th scope="col">{t("weather")}</th>
+              <th scope="col">{t("weatherDelayHours")}</th>
+              <th scope="col">{t("weatherNotes")}</th>
             </tr>
           </thead>
           <tbody>

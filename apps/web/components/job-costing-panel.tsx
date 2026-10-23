@@ -113,17 +113,17 @@ export function JobCostingPanel({ projectId }: { projectId: string }) {
     <div className="mt-8">
       <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
       <p className="mb-3 text-xs text-fg-subtle">{t("hint", { percent: report.percentComplete })}</p>
-      <div className="card overflow-x-auto">
+      <div tabIndex={0} className="card overflow-x-auto">
         <table className="w-full min-w-[720px] border-collapse text-sm">
           <thead>
             <tr className="border-b border-gray-200 text-left text-gray-500 dark:border-gray-800">
-              <th className="py-2">{t("costCode")}</th>
-              <th className="text-right">{t("estimated")}</th>
-              <th className="text-right">{t("committed")}</th>
-              <th className="text-right">{t("actual")}</th>
-              <th className="text-right">{t("variance")}</th>
-              <th className="text-right">{t("eac")}</th>
-              <th className="text-right">{t("vac")}</th>
+              <th scope="col" className="py-2">{t("costCode")}</th>
+              <th scope="col" className="text-right">{t("estimated")}</th>
+              <th scope="col" className="text-right">{t("committed")}</th>
+              <th scope="col" className="text-right">{t("actual")}</th>
+              <th scope="col" className="text-right">{t("variance")}</th>
+              <th scope="col" className="text-right">{t("eac")}</th>
+              <th scope="col" className="text-right">{t("vac")}</th>
             </tr>
           </thead>
           <tbody>

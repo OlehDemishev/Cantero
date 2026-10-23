@@ -4931,6 +4931,26 @@
     "color_amber": "Gelb",
     "color_green": "Grün",
     "color_blue": "Blau",
-    "color_black": "Schwarz"
+    "color_black": "Schwarz",
+    "unreadCount": "{count} ungelesen",
+    "severityCritical": "Kritisch",
+    "severityWarning": "Warnung",
+    "read": "Gelesen",
+    "unread": "Ungelesen",
+    "actions": "Aktionen",
+    "amount": "Betrag",
+    "appliesTo": "Gilt für",
+    "description": "Beschreibung",
+    "fxGainLoss": "Kursgewinn/-verlust",
+    "hours": "Stunden",
+    "installment": "Rate",
+    "lienWaiver": "Verzichtserklärung",
+    "location": "Standort",
+    "name": "Name",
+    "options": "Optionen",
+    "paymentMethod": "Zahlungsart",
+    "status": "Status",
+    "total": "Summe",
+    "unitPrice": "Einzelpreis"
   }
 }

@@ -96,15 +96,15 @@ export function CashFlowForecastPanel({ currency }: { currency: string }) {
             })()}
           </div>
 
-          <div className="mt-4 overflow-x-auto">
+          <div tabIndex={0} className="mt-4 overflow-x-auto">
             <table className="w-full min-w-[720px] border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                  <th className="py-2">{t("week")}</th>
-                  <th className="text-right">{t("inflow")}</th>
-                  <th className="text-right">{t("outflow")}</th>
-                  <th className="text-right">{t("net")}</th>
-                  <th className="text-right">{t("cumulativeNet")}</th>
+                  <th scope="col" className="py-2">{t("week")}</th>
+                  <th scope="col" className="text-right">{t("inflow")}</th>
+                  <th scope="col" className="text-right">{t("outflow")}</th>
+                  <th scope="col" className="text-right">{t("net")}</th>
+                  <th scope="col" className="text-right">{t("cumulativeNet")}</th>
                 </tr>
               </thead>
               <tbody>

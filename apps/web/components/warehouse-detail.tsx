@@ -807,11 +807,11 @@ export function WarehouseDetail({
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                <th className="py-2">{t("material")}</th>
-                <th>{t("quantity")}</th>
-                <th>{t("reserved")}</th>
-                <th>{t("available")}</th>
-                <th>{t("bin")}</th>
+                <th scope="col" className="py-2">{t("material")}</th>
+                <th scope="col">{t("quantity")}</th>
+                <th scope="col">{t("reserved")}</th>
+                <th scope="col">{t("available")}</th>
+                <th scope="col">{t("bin")}</th>
               </tr>
             </thead>
             <tbody>
@@ -928,11 +928,11 @@ export function WarehouseDetail({
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                <th className="py-2">{t("material")}</th>
-                <th>{t("quantity")}</th>
-                <th>{t("movementProject")}</th>
-                <th>{t("note")}</th>
-                <th></th>
+                <th scope="col" className="py-2">{t("material")}</th>
+                <th scope="col">{t("quantity")}</th>
+                <th scope="col">{t("movementProject")}</th>
+                <th scope="col">{t("note")}</th>
+                <th scope="col"></th>
               </tr>
             </thead>
             <tbody>
@@ -983,14 +983,14 @@ export function WarehouseDetail({
               method: t(`costingMethod_${valuation.method}`),
             })}
           </p>
-          <div className="overflow-x-auto">
+          <div tabIndex={0} className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                  <th className="py-2">{t("material")}</th>
-                  <th>{t("quantity")}</th>
-                  <th className="text-right">{t("unitValue")}</th>
-                  <th className="text-right">{t("totalValue")}</th>
+                  <th scope="col" className="py-2">{t("material")}</th>
+                  <th scope="col">{t("quantity")}</th>
+                  <th scope="col" className="text-right">{t("unitValue")}</th>
+                  <th scope="col" className="text-right">{t("totalValue")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1034,14 +1034,14 @@ export function WarehouseDetail({
           <h2 className="mb-3 text-sm font-semibold text-fg-muted">
             {t("standardCostVariance")}
           </h2>
-          <div className="overflow-x-auto">
+          <div tabIndex={0} className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                  <th className="py-2">{t("material")}</th>
-                  <th className="text-right">{t("standardCost")}</th>
-                  <th className="text-right">{t("unitValue")}</th>
-                  <th className="text-right">{t("variance")}</th>
+                  <th scope="col" className="py-2">{t("material")}</th>
+                  <th scope="col" className="text-right">{t("standardCost")}</th>
+                  <th scope="col" className="text-right">{t("unitValue")}</th>
+                  <th scope="col" className="text-right">{t("variance")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1225,11 +1225,11 @@ export function WarehouseDetail({
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                  <th className="py-2">{t("material")}</th>
-                  <th>{t("movementType")}</th>
-                  <th>{t("movementQuantity")}</th>
-                  <th>{t("movementProject")}</th>
-                  <th>{t("movementDate")}</th>
+                  <th scope="col" className="py-2">{t("material")}</th>
+                  <th scope="col">{t("movementType")}</th>
+                  <th scope="col">{t("movementQuantity")}</th>
+                  <th scope="col">{t("movementProject")}</th>
+                  <th scope="col">{t("movementDate")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1382,11 +1382,11 @@ export function WarehouseDetail({
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                  <th className="py-2">{t("material")}</th>
-                  <th>{t("route")}</th>
-                  <th>{t("quantity")}</th>
-                  <th>{tc("status")}</th>
-                  <th></th>
+                  <th scope="col" className="py-2">{t("material")}</th>
+                  <th scope="col">{t("route")}</th>
+                  <th scope="col">{t("quantity")}</th>
+                  <th scope="col">{tc("status")}</th>
+                  <th scope="col"></th>
                 </tr>
               </thead>
               <tbody>
@@ -1503,10 +1503,10 @@ export function WarehouseDetail({
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                  <th className="py-2">{t("material")}</th>
-                  <th>{t("systemQuantity")}</th>
-                  <th>{t("countedQuantity")}</th>
-                  <th>{t("variance")}</th>
+                  <th scope="col" className="py-2">{t("material")}</th>
+                  <th scope="col">{t("systemQuantity")}</th>
+                  <th scope="col">{t("countedQuantity")}</th>
+                  <th scope="col">{t("variance")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1683,10 +1683,10 @@ export function WarehouseDetail({
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                <th className="py-2">{t("material")}</th>
-                <th>{tc("status")}</th>
-                <th>{t("returnReasonLabel")}</th>
-                <th></th>
+                <th scope="col" className="py-2">{t("material")}</th>
+                <th scope="col">{tc("status")}</th>
+                <th scope="col">{t("returnReasonLabel")}</th>
+                <th scope="col"></th>
               </tr>
             </thead>
             <tbody>

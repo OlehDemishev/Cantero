@@ -357,15 +357,15 @@ export function QualityPanel({ projectId }: { projectId: string }) {
       {heatmap && heatmap.length > 0 && (
         <div className="mb-6">
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("heatmapTitle")}</h3>
-          <div className="card overflow-x-auto">
+          <div tabIndex={0} className="card overflow-x-auto">
             <table className="w-full min-w-[420px] border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-xs text-fg-subtle">
-                  <th className="py-1">{t("location")}</th>
-                  <th className="text-right">{t("severity_minor")}</th>
-                  <th className="text-right">{t("severity_major")}</th>
-                  <th className="text-right">{t("severity_critical")}</th>
-                  <th className="text-right">{t("total")}</th>
+                  <th scope="col" className="py-1">{t("location")}</th>
+                  <th scope="col" className="text-right">{t("severity_minor")}</th>
+                  <th scope="col" className="text-right">{t("severity_major")}</th>
+                  <th scope="col" className="text-right">{t("severity_critical")}</th>
+                  <th scope="col" className="text-right">{t("total")}</th>
                 </tr>
               </thead>
               <tbody>

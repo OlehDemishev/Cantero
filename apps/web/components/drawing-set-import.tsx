@@ -275,13 +275,13 @@ export function DrawingSetImport({ projectId, onImported }: { projectId: string;
         <table className="w-full min-w-[760px] text-sm">
           <thead>
             <tr className="text-left text-xs text-fg-subtle">
-              <th className="w-8 py-1" />
-              <th className="w-14 py-1 font-medium">{t("page")}</th>
-              <th className="py-1 font-medium">{t("sheetNumber")}</th>
-              <th className="py-1 font-medium">{t("sheetTitle")}</th>
-              <th className="py-1 font-medium">{t("discipline")}</th>
-              <th className="w-20 py-1 font-medium">{t("revision")}</th>
-              <th className="py-1 font-medium">{t("status")}</th>
+              <th scope="col" className="w-8 py-1" />
+              <th scope="col" className="w-14 py-1 font-medium">{t("page")}</th>
+              <th scope="col" className="py-1 font-medium">{t("sheetNumber")}</th>
+              <th scope="col" className="py-1 font-medium">{t("sheetTitle")}</th>
+              <th scope="col" className="py-1 font-medium">{t("discipline")}</th>
+              <th scope="col" className="w-20 py-1 font-medium">{t("revision")}</th>
+              <th scope="col" className="py-1 font-medium">{t("status")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-800">

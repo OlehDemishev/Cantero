@@ -336,10 +336,10 @@ export default function InvoicesPage() {
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                  <th className="py-2">{t("number")}</th>
-                  <th>{tc("name")}</th>
-                  <th>{tc("status")}</th>
-                  <th>{t("total")}</th>
+                  <th scope="col" className="py-2">{t("number")}</th>
+                  <th scope="col">{tc("name")}</th>
+                  <th scope="col">{tc("status")}</th>
+                  <th scope="col">{t("total")}</th>
                 </tr>
               </thead>
               <tbody>

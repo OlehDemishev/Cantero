@@ -63,15 +63,15 @@ export function ComplianceCalendarPanel() {
         {data.items.length === 0 ? (
           <p className="text-sm text-fg-subtle">{t("empty")}</p>
         ) : (
-          <div className="overflow-x-auto">
+          <div tabIndex={0} className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                <th className="py-1.5">{t("item")}</th>
-                <th>{t("type")}</th>
-                <th>{t("holder")}</th>
-                <th>{t("expiresAt")}</th>
-                <th>{t("status")}</th>
+                <th scope="col" className="py-1.5">{t("item")}</th>
+                <th scope="col">{t("type")}</th>
+                <th scope="col">{t("holder")}</th>
+                <th scope="col">{t("expiresAt")}</th>
+                <th scope="col">{t("status")}</th>
               </tr>
             </thead>
             <tbody>

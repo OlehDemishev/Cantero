@@ -33,12 +33,12 @@ export function ProjectMarginsReportPanel({ currency }: { currency: string }) {
           <table className="w-full min-w-[720px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                <th className="py-2">{t("project")}</th>
-                <th className="text-right">{t("budget")}</th>
-                <th className="text-right">{t("invoiced")}</th>
-                <th className="text-right">{t("actualCost")}</th>
-                <th className="text-right">{t("margin")}</th>
-                <th className="text-right">{t("marginPercent")}</th>
+                <th scope="col" className="py-2">{t("project")}</th>
+                <th scope="col" className="text-right">{t("budget")}</th>
+                <th scope="col" className="text-right">{t("invoiced")}</th>
+                <th scope="col" className="text-right">{t("actualCost")}</th>
+                <th scope="col" className="text-right">{t("margin")}</th>
+                <th scope="col" className="text-right">{t("marginPercent")}</th>
               </tr>
             </thead>
             <tbody>

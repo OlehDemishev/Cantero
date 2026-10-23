@@ -124,12 +124,12 @@ export default function DocumentsPage() {
           <table className="w-full min-w-[720px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                <th className="py-2">{tc("name")}</th>
-                <th>{t("category")}</th>
-                <th>{t("project")}</th>
-                <th>{t("uploadedByLabel")}</th>
-                <th className="text-right">{t("size")}</th>
-                <th></th>
+                <th scope="col" className="py-2">{tc("name")}</th>
+                <th scope="col">{t("category")}</th>
+                <th scope="col">{t("project")}</th>
+                <th scope="col">{t("uploadedByLabel")}</th>
+                <th scope="col" className="text-right">{t("size")}</th>
+                <th scope="col"></th>
               </tr>
             </thead>
             <tbody>

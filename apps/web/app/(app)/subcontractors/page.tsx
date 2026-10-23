@@ -170,15 +170,15 @@ export default function SubcontractorsPage() {
           ) : taxSummary.length === 0 ? (
             <p className="text-sm text-fg-subtle">{t("noTaxSummary")}</p>
           ) : (
-            <div className="overflow-x-auto">
+            <div tabIndex={0} className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-100 dark:border-gray-700 text-left text-xs text-fg-subtle">
-                  <th className="py-1.5 font-medium">{tc("name")}</th>
-                  <th className="font-medium">{t("legalBusinessNamePlaceholder")}</th>
-                  <th className="font-medium">{t("taxIdPlaceholder")}</th>
-                  <th className="text-right font-medium">{t("totalPaid")}</th>
-                  <th className="text-right font-medium">{t("reportable")}</th>
+                  <th scope="col" className="py-1.5 font-medium">{tc("name")}</th>
+                  <th scope="col" className="font-medium">{t("legalBusinessNamePlaceholder")}</th>
+                  <th scope="col" className="font-medium">{t("taxIdPlaceholder")}</th>
+                  <th scope="col" className="text-right font-medium">{t("totalPaid")}</th>
+                  <th scope="col" className="text-right font-medium">{t("reportable")}</th>
                 </tr>
               </thead>
               <tbody>

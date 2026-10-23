@@ -36,14 +36,14 @@ export function CostImpactSummaryPanel({ projectId }: { projectId: string }) {
     <div className="mt-10">
       <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
       <p className="mb-3 text-xs text-fg-subtle">{t("hint", { count: summary.unconfirmedCount })}</p>
-      <div className="card overflow-x-auto">
+      <div tabIndex={0} className="card overflow-x-auto">
         <table className="w-full min-w-[480px] border-collapse text-sm">
           <thead>
             <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-              <th className="py-2">{t("source")}</th>
-              <th>{t("item")}</th>
-              <th className="text-right">{t("amount")}</th>
-              <th className="text-right">{t("status")}</th>
+              <th scope="col" className="py-2">{t("source")}</th>
+              <th scope="col">{t("item")}</th>
+              <th scope="col" className="text-right">{t("amount")}</th>
+              <th scope="col" className="text-right">{t("status")}</th>
             </tr>
           </thead>
           <tbody>

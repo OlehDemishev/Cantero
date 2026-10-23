@@ -381,12 +381,12 @@ export function VendorBillsPanel() {
           <div className="card mt-4 lg:col-span-3">
             <h3 className="mb-1 text-sm font-semibold text-fg-muted">{t("disbursementCalendar")}</h3>
             <p className="mb-3 text-xs text-fg-subtle">{t("disbursementCalendarHint")}</p>
-            <div className="overflow-x-auto">
+            <div tabIndex={0} className="overflow-x-auto">
               <table className="w-full min-w-[480px] border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                    <th className="py-1">{t("weekOf")}</th>
-                    <th className="text-right">{t("totalDue")}</th>
+                    <th scope="col" className="py-1">{t("weekOf")}</th>
+                    <th scope="col" className="text-right">{t("totalDue")}</th>
                   </tr>
                 </thead>
                 <tbody>

@@ -50,6 +50,7 @@ const POLL_INTERVAL_MS = 60_000;
 
 export function NotificationBell() {
   const t = useTranslations("notifications");
+  const ta = useTranslations("a11y");
   const { data = null, error, setData, reload } = useApi<NotificationsResponse>("/notifications");
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -105,12 +106,13 @@ export function NotificationBell() {
     <div className="relative" ref={ref}>
       <button
         onClick={toggleOpen}
-        aria-label={t("title")}
+        aria-label={unread > 0 ? ta("fieldOf", { field: t("title"), item: ta("unreadCount", { count: unread }) }) : t("title")}
+        aria-expanded={open}
         className="relative flex h-10 w-10 items-center justify-center rounded-lg text-fg-subtle hover:bg-gray-100 dark:hover:bg-white/5"
       >
         <BellIcon />
         {unread > 0 && (
-          <span className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-error-500 px-1 text-2xs font-semibold text-white">
+          <span aria-hidden="true" className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-error-500 px-1 text-2xs font-semibold text-white">
             {unread > 9 ? "9+" : unread}
           </span>
         )}
@@ -143,23 +145,30 @@ export function NotificationBell() {
                   </div>
                   <ul className="flex flex-col gap-0.5">
                     {g.items.map((n) => (
-                      <li key={n.key} className={`flex items-start gap-1 rounded-lg px-1 hover:bg-gray-100 dark:hover:bg-white/5 ${n.read ? "opacity-50" : ""}`}>
+                      // Read or not is told by weight and by text, not by fading (which also failed contrast).
+                      <li key={n.key} className="flex items-start gap-1 rounded-lg px-1 hover:bg-gray-100 dark:hover:bg-white/5">
                         <a href={n.link} onClick={() => setOpen(false)} className="block flex-1 px-1 py-2">
                           <div className="flex items-start gap-2">
                             <span
+                              aria-hidden="true"
                               className={`mt-1 h-2 w-2 flex-shrink-0 rounded-full ${
                                 n.severity === "critical" ? "bg-error-500" : "bg-warning-500"
                               }`}
                             />
                             <div>
-                              <div className="text-sm font-medium text-fg">{n.title}</div>
+                              <span className="sr-only">
+                                {ta(n.severity === "critical" ? "severityCritical" : "severityWarning")}, {ta(n.read ? "read" : "unread")}:{" "}
+                              </span>
+                              <div className={`text-sm ${n.read ? "font-normal text-fg-muted" : "font-semibold text-fg"}`}>{n.title}</div>
                               <div className="text-xs text-fg-subtle">{n.body}</div>
                             </div>
                           </div>
                         </a>
                         {!n.read && (
-                          <button aria-label={t("markRead")}
+                          <button
+                            type="button"
                             onClick={() => markRead(n.key)}
+                            aria-label={t("markRead")}
                             title={t("markRead")}
                             className="mt-2 flex-shrink-0 text-xs text-fg-subtle hover:text-brand-700"
                           >

@@ -49,13 +49,13 @@ export function CarbonReportPanel({ projectId }: { projectId: string }) {
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      <div tabIndex={0} className="overflow-x-auto">
       <table className="mt-4 w-full border-collapse text-sm">
         <thead>
           <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-            <th className="py-2">{t("material")}</th>
-            <th className="text-right">{t("quantityUsed")}</th>
-            <th className="text-right">{t("carbonFootprint")}</th>
+            <th scope="col" className="py-2">{t("material")}</th>
+            <th scope="col" className="text-right">{t("quantityUsed")}</th>
+            <th scope="col" className="text-right">{t("carbonFootprint")}</th>
           </tr>
         </thead>
         <tbody>

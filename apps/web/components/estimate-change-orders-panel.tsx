@@ -222,8 +222,15 @@ export function EstimateChangeOrdersPanel({
                 )}
 
                 {co.lines.length > 0 && (
-                  <div className="overflow-x-auto">
+                  <div tabIndex={0} className="overflow-x-auto">
                   <table className="mt-3 w-full border-collapse text-xs">
+                    <thead>
+                      <tr className="border-b border-gray-200 text-left text-xs text-fg-subtle dark:border-gray-700">
+                        <th scope="col" className="py-1.5 font-medium">{ta("rateItem")}</th>
+                        <th scope="col" className="font-medium">{ta("quantity")}</th>
+                        <th scope="col" className="text-right font-medium">{ta("total")}</th>
+                      </tr>
+                    </thead>
                     <tbody>
                       {co.lines.map((l) => (
                         <tr key={l.id} className="border-b border-gray-100 dark:border-gray-700">

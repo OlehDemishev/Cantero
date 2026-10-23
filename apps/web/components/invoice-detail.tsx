@@ -70,6 +70,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   const t = useTranslations("invoices");
   const confirm = useConfirm();
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loadError, setLoadError] = useState<Error | null>(null);
@@ -305,12 +306,12 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <div className="overflow-x-auto">
+          <div tabIndex={0} className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                <th className="py-2">{tc("name")}</th>
-                <th>{tc("actions")}</th>
+                <th scope="col" className="py-2">{tc("name")}</th>
+                <th scope="col">{tc("actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -328,8 +329,16 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
           {installmentRows.length === 0 ? (
             <p className="text-sm text-fg-subtle">{t("noInstallments")}</p>
           ) : (
-            <div className="overflow-x-auto">
+            <div tabIndex={0} className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 text-left text-xs text-fg-subtle dark:border-gray-700">
+                  <th scope="col" className="py-1.5 font-medium">{ta("installment")}</th>
+                  <th scope="col" className="font-medium">{ta("dueDate")}</th>
+                  <th scope="col" className="font-medium">{ta("status")}</th>
+                  <th scope="col" className="text-right font-medium">{ta("amount")}</th>
+                </tr>
+              </thead>
               <tbody>
                 {installmentRows.map((inst) => (
                   <tr key={inst.id} className="border-b border-gray-100 dark:border-gray-700">
@@ -383,8 +392,16 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
           {invoice.payments.length === 0 ? (
             <p className="text-sm text-fg-subtle">{t("noPayments")}</p>
           ) : (
-            <div className="overflow-x-auto">
+            <div tabIndex={0} className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 text-left text-xs text-fg-subtle dark:border-gray-700">
+                  <th scope="col" className="py-1.5 font-medium">{ta("date")}</th>
+                  <th scope="col" className="font-medium">{ta("paymentMethod")}</th>
+                  <th scope="col" className="text-right font-medium">{ta("amount")}</th>
+                  <th scope="col" className="text-right font-medium">{ta("fxGainLoss")}</th>
+                </tr>
+              </thead>
               <tbody>
                 {invoice.payments.map((p) => (
                   <tr key={p.id} className="border-b border-gray-100 dark:border-gray-700">

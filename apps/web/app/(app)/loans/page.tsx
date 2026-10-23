@@ -228,6 +228,7 @@ export default function LoansPage() {
                   <div
                     role="button"
                     tabIndex={0}
+                    aria-expanded={expanded}
                     onClick={() => toggleExpand(loan.id)}
                     onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && toggleExpand(loan.id)}
                     className="flex w-full cursor-pointer items-center justify-between text-left"
@@ -257,10 +258,10 @@ export default function LoansPage() {
                       <table className="w-full border-collapse text-sm">
                         <thead>
                           <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                            <th className="py-1.5">{t("dueDate")}</th>
-                            <th>{t("principalPortion")}</th>
-                            <th>{t("interestPortion")}</th>
-                            <th>{tc("status")}</th>
+                            <th scope="col" className="py-1.5">{t("dueDate")}</th>
+                            <th scope="col">{t("principalPortion")}</th>
+                            <th scope="col">{t("interestPortion")}</th>
+                            <th scope="col">{tc("status")}</th>
                           </tr>
                         </thead>
                         <tbody>

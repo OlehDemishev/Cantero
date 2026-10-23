@@ -30,15 +30,15 @@ export function EquipmentRentalHistoryPanel({ equipmentId, currency }: { equipme
       {!rentals || rentals.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noRentals")}</p>
       ) : (
-        <div className="overflow-x-auto">
+        <div tabIndex={0} className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-              <th className="py-2">{t("renter")}</th>
-              <th>{t("dailyRate")}</th>
-              <th>{t("rentalStart")}</th>
-              <th>{t("rentalReturn")}</th>
-              <th className="text-right">{t("rentalRevenue")}</th>
+              <th scope="col" className="py-2">{t("renter")}</th>
+              <th scope="col">{t("dailyRate")}</th>
+              <th scope="col">{t("rentalStart")}</th>
+              <th scope="col">{t("rentalReturn")}</th>
+              <th scope="col" className="text-right">{t("rentalRevenue")}</th>
             </tr>
           </thead>
           <tbody>

@@ -115,14 +115,14 @@ export function ScheduleBaselinePanel({ projectId }: { projectId: string }) {
                 {expanded && !result && <p className="mt-3 text-xs text-fg-subtle">{tc("loading")}</p>}
 
                 {expanded && result && (
-                  <div className="mt-3 overflow-x-auto border-t border-gray-100 dark:border-gray-700 pt-3">
+                  <div tabIndex={0} className="mt-3 overflow-x-auto border-t border-gray-100 dark:border-gray-700 pt-3">
                     <table className="w-full min-w-[560px] border-collapse text-sm">
                       <thead>
                         <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-xs text-fg-subtle">
-                          <th className="py-1">{tc("name")}</th>
-                          <th>{t("baselineDates")}</th>
-                          <th>{t("currentDates")}</th>
-                          <th className="text-right">{t("slippage")}</th>
+                          <th scope="col" className="py-1">{tc("name")}</th>
+                          <th scope="col">{t("baselineDates")}</th>
+                          <th scope="col">{t("currentDates")}</th>
+                          <th scope="col" className="text-right">{t("slippage")}</th>
                         </tr>
                       </thead>
                       <tbody>

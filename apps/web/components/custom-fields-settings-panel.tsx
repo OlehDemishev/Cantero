@@ -22,6 +22,7 @@ export function CustomFieldsSettingsPanel({ canManage }: { canManage: boolean })
   const t = useTranslations("customFields");
   const confirm = useConfirm();
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const { data: fields = null, reload: reloadFields, error: fieldsError } = useApi<FieldDefinition[]>("/custom-fields/definitions");
   const [form, setForm] = useState({ entityType: "project" as CustomFieldEntityType, name: "", type: "text" as CustomFieldType, options: "" });
@@ -79,6 +80,19 @@ export function CustomFieldsSettingsPanel({ canManage }: { canManage: boolean })
       ) : (
         <div className="overflow-x-auto">
         <table className="mb-4 w-full border-collapse text-sm">
+          <thead>
+            <tr className="border-b border-gray-200 text-left text-xs text-fg-subtle dark:border-gray-700">
+              <th scope="col" className="py-1.5 font-medium">{ta("name")}</th>
+              <th scope="col" className="font-medium">{ta("appliesTo")}</th>
+              <th scope="col" className="font-medium">{ta("type")}</th>
+              <th scope="col" className="font-medium">{ta("options")}</th>
+              {canManage && (
+                <th scope="col" className="text-right font-medium">
+                  <span className="sr-only">{ta("actions")}</span>
+                </th>
+              )}
+            </tr>
+          </thead>
           <tbody>
             {fields.map((f) => (
               <tr key={f.id} className="border-b border-gray-100 dark:border-gray-700">

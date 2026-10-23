@@ -29,15 +29,15 @@ export function WarehouseTurnoverReportPanel() {
       ) : turnover.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noTurnoverData")}</p>
       ) : (
-        <div className="overflow-x-auto">
+        <div tabIndex={0} className="overflow-x-auto">
           <table className="w-full min-w-[640px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                <th className="py-2">{t("material")}</th>
-                <th className="text-right">{t("onHand")}</th>
-                <th className="text-right">{t("consumed")}</th>
-                <th className="text-right">{t("turnoverRatio")}</th>
-                <th></th>
+                <th scope="col" className="py-2">{t("material")}</th>
+                <th scope="col" className="text-right">{t("onHand")}</th>
+                <th scope="col" className="text-right">{t("consumed")}</th>
+                <th scope="col" className="text-right">{t("turnoverRatio")}</th>
+                <th scope="col"></th>
               </tr>
             </thead>
             <tbody>

@@ -98,12 +98,12 @@ export function ApiKeysPanel() {
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-              <th className="py-2">{tc("name")}</th>
-              <th>{t("apiKeyPrefix")}</th>
-              <th>{t("apiKeyScopes")}</th>
-              <th>{t("apiKeyExpires")}</th>
-              <th>{t("apiKeyLastUsed")}</th>
-              <th></th>
+              <th scope="col" className="py-2">{tc("name")}</th>
+              <th scope="col">{t("apiKeyPrefix")}</th>
+              <th scope="col">{t("apiKeyScopes")}</th>
+              <th scope="col">{t("apiKeyExpires")}</th>
+              <th scope="col">{t("apiKeyLastUsed")}</th>
+              <th scope="col"></th>
             </tr>
           </thead>
           <tbody>

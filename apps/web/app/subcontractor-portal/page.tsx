@@ -74,6 +74,7 @@ interface MyPunchListItem {
 
 export default function SubcontractorPortalDashboardPage() {
   const t = useTranslations("subcontractorPortal");
+  const ta = useTranslations("a11y");
   const router = useRouter();
 
   const [me, setMe] = useState<Me | null>(null);
@@ -298,8 +299,16 @@ export default function SubcontractorPortalDashboardPage() {
           {!costs || costs.length === 0 ? (
             <p className="mb-4 text-sm text-fg-subtle">{t("noCosts")}</p>
           ) : (
-            <div className="overflow-x-auto">
+            <div tabIndex={0} className="overflow-x-auto">
             <table className="mb-4 w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 text-left text-xs text-fg-subtle dark:border-gray-700">
+                  <th scope="col" className="py-1.5 font-medium">{ta("description")}</th>
+                  <th scope="col" className="font-medium">{ta("project")}</th>
+                  <th scope="col" className="font-medium">{ta("status")}</th>
+                  <th scope="col" className="text-right font-medium">{ta("amount")}</th>
+                </tr>
+              </thead>
               <tbody>
                 {costs.map((c) => (
                   <tr key={c.id} className="border-b border-gray-100 dark:border-gray-700">

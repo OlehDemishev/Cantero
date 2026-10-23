@@ -32,9 +32,9 @@ export function EquipmentAssignmentHistoryPanel({ equipmentId }: { equipmentId: 
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-              <th className="py-2">{tc("name")}</th>
-              <th>{t("checkedOutAt")}</th>
-              <th>{t("checkedInAt")}</th>
+              <th scope="col" className="py-2">{tc("name")}</th>
+              <th scope="col">{t("checkedOutAt")}</th>
+              <th scope="col">{t("checkedInAt")}</th>
             </tr>
           </thead>
           <tbody>

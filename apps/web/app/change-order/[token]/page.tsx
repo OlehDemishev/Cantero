@@ -114,13 +114,13 @@ export default function PublicChangeOrderPage({ params }: { params: Promise<{ to
           </h1>
           {changeOrder.description && <p className="mt-1 text-sm text-fg-subtle">{changeOrder.description}</p>}
 
-          <div className="overflow-x-auto">
+          <div tabIndex={0} className="overflow-x-auto">
           <table className="mt-6 w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                <th className="py-2">{t("rateItem")}</th>
-                <th>{t("quantity")}</th>
-                <th className="text-right">{t("lineTotal")}</th>
+                <th scope="col" className="py-2">{t("rateItem")}</th>
+                <th scope="col">{t("quantity")}</th>
+                <th scope="col" className="text-right">{t("lineTotal")}</th>
               </tr>
             </thead>
             <tbody>

@@ -52,10 +52,10 @@ export function CertificationsDashboardPanel() {
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                <th className="py-2">{tc("name")}</th>
-                <th>{t("certification")}</th>
-                <th>{t("expires")}</th>
-                <th>{tc("status")}</th>
+                <th scope="col" className="py-2">{tc("name")}</th>
+                <th scope="col">{t("certification")}</th>
+                <th scope="col">{t("expires")}</th>
+                <th scope="col">{tc("status")}</th>
               </tr>
             </thead>
             <tbody>

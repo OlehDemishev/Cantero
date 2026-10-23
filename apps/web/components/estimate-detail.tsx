@@ -443,15 +443,15 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <div className="overflow-x-auto">
+          <div tabIndex={0} className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                <th className="py-2">{t("rateItem")}</th>
-                <th>{t("quantity")}</th>
-                <th>{t("materialsCost")}</th>
-                <th>{t("laborCost")}</th>
-                <th>{t("lineTotal")}</th>
+                <th scope="col" className="py-2">{t("rateItem")}</th>
+                <th scope="col">{t("quantity")}</th>
+                <th scope="col">{t("materialsCost")}</th>
+                <th scope="col">{t("laborCost")}</th>
+                <th scope="col">{t("lineTotal")}</th>
               </tr>
             </thead>
             <tbody>
@@ -577,8 +577,14 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
           {estimate.status === "approved" && (
             <div className="mt-8">
               <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("materialRequirements")}</h2>
-              <div className="overflow-x-auto">
+              <div tabIndex={0} className="overflow-x-auto">
               <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200 text-left text-xs text-fg-subtle dark:border-gray-700">
+                    <th scope="col" className="py-1.5 font-medium">{ta("material")}</th>
+                    <th scope="col" className="text-right font-medium">{ta("quantity")}</th>
+                  </tr>
+                </thead>
                 <tbody>
                   {estimate.requirements.map((r) => (
                     <tr key={r.id} className="border-b border-gray-100 dark:border-gray-700">
@@ -610,13 +616,13 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
               {issueReport && (
                 <div className="mt-4">
                   <h3 className="mb-2 text-xs font-semibold text-fg-subtle">{t("issueReport")}</h3>
-                  <div className="overflow-x-auto">
+                  <div tabIndex={0} className="overflow-x-auto">
                   <table className="w-full border-collapse text-sm">
                     <thead>
                       <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                        <th className="py-1"></th>
-                        <th>{t("required")}</th>
-                        <th>{t("remainingStock")}</th>
+                        <th scope="col" className="py-1"></th>
+                        <th scope="col">{t("required")}</th>
+                        <th scope="col">{t("remainingStock")}</th>
                       </tr>
                     </thead>
                     <tbody>

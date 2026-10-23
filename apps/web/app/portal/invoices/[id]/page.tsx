@@ -48,6 +48,7 @@ export default function PortalInvoicePage({ params }: { params: Promise<{ id: st
   const t = useTranslations("portal");
   const tp = useTranslations("publicLink");
   const ti = useTranslations("invoices");
+  const ta = useTranslations("a11y");
   const router = useRouter();
 
   const [invoice, setInvoice] = useState<PortalInvoice | null>(null);
@@ -142,12 +143,12 @@ export default function PortalInvoicePage({ params }: { params: Promise<{ id: st
           </div>
           <p className="mt-1 text-sm text-fg-subtle">{invoice.project.name}</p>
 
-          <div className="mt-6 overflow-x-auto">
+          <div tabIndex={0} className="mt-6 overflow-x-auto">
             <table className="w-full min-w-[300px] border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                  <th className="py-2">{t("description")}</th>
-                  <th>{ti("total")}</th>
+                  <th scope="col" className="py-2">{t("description")}</th>
+                  <th scope="col">{ti("total")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -181,6 +182,15 @@ export default function PortalInvoicePage({ params }: { params: Promise<{ id: st
               <h2 className="mb-2 mt-6 text-sm font-semibold text-fg-muted">{ti("paymentPlan")}</h2>
               <div className="overflow-x-auto">
               <table className="w-full min-w-[420px] border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200 text-left text-xs text-fg-subtle dark:border-gray-700">
+                    <th scope="col" className="py-1.5 font-medium">{ta("installment")}</th>
+                    <th scope="col" className="font-medium">{ta("dueDate")}</th>
+                    <th scope="col" className="font-medium">{ta("status")}</th>
+                    <th scope="col" className="text-right font-medium">{ta("amount")}</th>
+                    <th scope="col" className="text-right font-medium"><span className="sr-only">{ta("actions")}</span></th>
+                  </tr>
+                </thead>
                 <tbody>
                   {installmentRows.map((inst) => (
                     <tr key={inst.id} className="border-b border-gray-100 dark:border-gray-700">

@@ -213,7 +213,7 @@ export function CertifiedPayrollPanel({ projectId }: { projectId: string }) {
           </div>
 
           {preview && (
-            <div className="mb-4 overflow-x-auto">
+            <div tabIndex={0} className="mb-4 overflow-x-auto">
               {preview.apprenticeRatioViolations.filter((v) => !v.compliant).length > 0 && (
                 <ul className="mb-3 flex flex-col gap-1">
                   {preview.apprenticeRatioViolations
@@ -231,13 +231,13 @@ export function CertifiedPayrollPanel({ projectId }: { projectId: string }) {
                 <table className="min-w-[640px] text-sm">
                   <thead>
                     <tr className="text-left text-xs text-fg-subtle">
-                      <th className="pb-1 pr-3">{t("employee")}</th>
-                      <th className="pb-1 pr-3">{t("classification")}</th>
-                      <th className="pb-1 pr-3">{t("regularHours")}</th>
-                      <th className="pb-1 pr-3">{t("overtimeHours")}</th>
-                      <th className="pb-1 pr-3">{t("rate")}</th>
-                      <th className="pb-1 pr-3">{t("fringe")}</th>
-                      <th className="pb-1 pr-3">{t("grossPay")}</th>
+                      <th scope="col" className="pb-1 pr-3">{t("employee")}</th>
+                      <th scope="col" className="pb-1 pr-3">{t("classification")}</th>
+                      <th scope="col" className="pb-1 pr-3">{t("regularHours")}</th>
+                      <th scope="col" className="pb-1 pr-3">{t("overtimeHours")}</th>
+                      <th scope="col" className="pb-1 pr-3">{t("rate")}</th>
+                      <th scope="col" className="pb-1 pr-3">{t("fringe")}</th>
+                      <th scope="col" className="pb-1 pr-3">{t("grossPay")}</th>
                     </tr>
                   </thead>
                   <tbody>

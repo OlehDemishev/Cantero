@@ -4931,6 +4931,26 @@
     "color_amber": "Ámbar",
     "color_green": "Verde",
     "color_blue": "Azul",
-    "color_black": "Negro"
+    "color_black": "Negro",
+    "unreadCount": "{count} sin leer",
+    "severityCritical": "Crítico",
+    "severityWarning": "Aviso",
+    "read": "Leído",
+    "unread": "Sin leer",
+    "actions": "Acciones",
+    "amount": "Importe",
+    "appliesTo": "Se aplica a",
+    "description": "Descripción",
+    "fxGainLoss": "Ganancia/pérdida cambiaria",
+    "hours": "Horas",
+    "installment": "Plazo",
+    "lienWaiver": "Renuncia de gravamen",
+    "location": "Ubicación",
+    "name": "Nombre",
+    "options": "Opciones",
+    "paymentMethod": "Método de pago",
+    "status": "Estado",
+    "total": "Total",
+    "unitPrice": "Precio unitario"
   }
 }

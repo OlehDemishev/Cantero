@@ -76,16 +76,16 @@ export function FranchisePanel() {
       {franchiseOverview && franchiseOverview.branches.length > 0 ? (
         <>
           <p className="mb-2 text-xs text-fg-subtle">{t("reportingIn", { currency: franchiseOverview.reportingCurrency ?? "" })}</p>
-          <div className="overflow-x-auto">
+          <div tabIndex={0} className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                <th className="py-2">{tc("name")}</th>
-                <th className="py-2">{t("branchRevenue")}</th>
-                <th className="py-2">{t("branchCost")}</th>
-                <th className="py-2">{t("branchMargin")}</th>
-                <th className="py-2">{t("branchProjects")}</th>
-                <th className="py-2">{t("branchMembers")}</th>
+                <th scope="col" className="py-2">{tc("name")}</th>
+                <th scope="col" className="py-2">{t("branchRevenue")}</th>
+                <th scope="col" className="py-2">{t("branchCost")}</th>
+                <th scope="col" className="py-2">{t("branchMargin")}</th>
+                <th scope="col" className="py-2">{t("branchProjects")}</th>
+                <th scope="col" className="py-2">{t("branchMembers")}</th>
               </tr>
             </thead>
             <tbody>

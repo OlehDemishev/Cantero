@@ -92,9 +92,9 @@ export function RolePermissionsPanel() {
         <table className="w-full min-w-[720px] border-collapse text-sm">
           <thead>
             <tr className="border-b border-gray-200 text-left text-xs text-fg-subtle dark:border-gray-700">
-              <th className="py-2 pr-3 font-medium">{t("permission")}</th>
+              <th scope="col" className="py-2 pr-3 font-medium">{t("permission")}</th>
               {matrix.roles.map(({ role, editable }) => (
-                <th key={role} className="px-2 py-2 text-center font-medium" title={!editable ? (role === "owner" ? t("ownerLocked") : t("adminOwnerOnly")) : undefined}>
+                <th scope="col" key={role} className="px-2 py-2 text-center font-medium" title={!editable ? (role === "owner" ? t("ownerLocked") : t("adminOwnerOnly")) : undefined}>
                   <span className="block">{ts(role)}</span>
                   {editable && changedRoles.has(role) && (
                     <button onClick={() => reset(role)} className="mt-0.5 text-xs font-normal text-brand-600 hover:underline dark:text-brand-400">
@@ -109,7 +109,7 @@ export function RolePermissionsPanel() {
             {sections.map(([section, permissions]) => (
               <Fragment key={section}>
                 <tr>
-                  <th colSpan={matrix.roles.length + 1} className="pb-1 pt-4 text-left text-xs font-semibold uppercase tracking-wide text-fg-subtle">
+                  <th scope="row" colSpan={matrix.roles.length + 1} className="pb-1 pt-4 text-left text-xs font-semibold uppercase tracking-wide text-fg-subtle">
                     {t(`section_${section}`)}
                   </th>
                 </tr>

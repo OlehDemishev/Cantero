@@ -132,21 +132,21 @@ export default function PortfolioPage() {
               <table className="w-full min-w-[1150px] border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                    <th className="py-2">{t("project")}</th>
-                    <th>{t("client")}</th>
-                    <th className="text-right">{t("budget")}</th>
-                    <th className="text-right">{t("actual")}</th>
-                    <th className="text-right">{t("variance")}</th>
-                    <th className="text-right">{t("billedToDate")}</th>
-                    <th className="text-right">{t("fundedToDate")}</th>
-                    <th className="text-right">{t("openDraws")}</th>
-                    <th className="text-right">{t("openRfis")}</th>
-                    <th className="text-right">{t("openPunchList")}</th>
-                    <th className="text-right">{t("pendingSubmittals")}</th>
-                    <th className="text-right">{t("incidents")}</th>
-                    <th className="text-right">{t("overdueTasks")}</th>
-                    <th className="text-right">{t("critical")}</th>
-                    <th className="text-right">{t("status")}</th>
+                    <th scope="col" className="py-2">{t("project")}</th>
+                    <th scope="col">{t("client")}</th>
+                    <th scope="col" className="text-right">{t("budget")}</th>
+                    <th scope="col" className="text-right">{t("actual")}</th>
+                    <th scope="col" className="text-right">{t("variance")}</th>
+                    <th scope="col" className="text-right">{t("billedToDate")}</th>
+                    <th scope="col" className="text-right">{t("fundedToDate")}</th>
+                    <th scope="col" className="text-right">{t("openDraws")}</th>
+                    <th scope="col" className="text-right">{t("openRfis")}</th>
+                    <th scope="col" className="text-right">{t("openPunchList")}</th>
+                    <th scope="col" className="text-right">{t("pendingSubmittals")}</th>
+                    <th scope="col" className="text-right">{t("incidents")}</th>
+                    <th scope="col" className="text-right">{t("overdueTasks")}</th>
+                    <th scope="col" className="text-right">{t("critical")}</th>
+                    <th scope="col" className="text-right">{t("status")}</th>
                   </tr>
                 </thead>
                 <tbody>

@@ -315,12 +315,12 @@ function ReportTable({ result, emptyLabel }: { result: RunResult; emptyLabel: st
   const fieldLabel = useReportFieldLabel();
   if (result.rows.length === 0) return <p className="text-sm text-fg-subtle">{emptyLabel}</p>;
   return (
-    <div className="overflow-x-auto">
+    <div tabIndex={0} className="overflow-x-auto">
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
             {result.columns.map((c) => (
-              <th key={c.key} className="py-2 pr-4">
+              <th scope="col" key={c.key} className="py-2 pr-4">
                 {fieldLabel(c)}
               </th>
             ))}

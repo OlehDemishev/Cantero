@@ -261,11 +261,18 @@ export default function SuppliersPage() {
               {suppliers.map((s) => {
                 const card = scorecards[s.id];
                 return (
-                  <li key={s.id} className="card cursor-pointer" onClick={() => toggleExpand(s.id)}>
-                    <div className="font-medium">{s.name}</div>
-                    <div className="text-sm text-fg-subtle">{s.email ?? s.phone ?? "—"}</div>
+                  <li key={s.id} className="card">
+                    <button
+                      type="button"
+                      onClick={() => toggleExpand(s.id)}
+                      aria-expanded={expandedId === s.id}
+                      className="block w-full cursor-pointer text-left"
+                    >
+                      <span className="block font-medium">{s.name}</span>
+                      <span className="block text-sm text-fg-subtle">{s.email ?? s.phone ?? "—"}</span>
+                    </button>
                     {expandedId === s.id && (
-                      <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-3" onClick={(e) => e.stopPropagation()}>
+                      <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-3">
                         <div className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
                           {!card ? (
                             <span className="text-fg-subtle">{tc("loading")}</span>

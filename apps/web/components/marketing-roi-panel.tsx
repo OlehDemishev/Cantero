@@ -34,17 +34,17 @@ export function MarketingRoiPanel() {
     <div className="mt-10">
       <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("roiTitle")}</h2>
       <p className="mb-3 text-xs text-fg-subtle">{t("roiHint")}</p>
-      <div className="card overflow-x-auto">
+      <div tabIndex={0} className="card overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-              <th className="py-1.5">{t("channel")}</th>
-              <th>{t("leads")}</th>
-              <th>{t("won")}</th>
-              <th>{t("conversionRate")}</th>
-              <th>{t("costPerLead")}</th>
-              <th>{t("costPerWonDeal")}</th>
-              <th className="text-right">{t("wonValue")}</th>
+              <th scope="col" className="py-1.5">{t("channel")}</th>
+              <th scope="col">{t("leads")}</th>
+              <th scope="col">{t("won")}</th>
+              <th scope="col">{t("conversionRate")}</th>
+              <th scope="col">{t("costPerLead")}</th>
+              <th scope="col">{t("costPerWonDeal")}</th>
+              <th scope="col" className="text-right">{t("wonValue")}</th>
             </tr>
           </thead>
           <tbody>

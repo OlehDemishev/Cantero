@@ -80,10 +80,10 @@ export function InvoiceAgingReportPanel({ currency }: { currency: string }) {
               <table className="w-full min-w-[560px] border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                    <th className="py-2">{t("invoiceNumber")}</th>
-                    <th>{t("client")}</th>
-                    <th className="text-right">{t("outstanding")}</th>
-                    <th className="text-right">{t("daysOverdue")}</th>
+                    <th scope="col" className="py-2">{t("invoiceNumber")}</th>
+                    <th scope="col">{t("client")}</th>
+                    <th scope="col" className="text-right">{t("outstanding")}</th>
+                    <th scope="col" className="text-right">{t("daysOverdue")}</th>
                   </tr>
                 </thead>
                 <tbody>

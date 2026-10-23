@@ -162,13 +162,13 @@ export function MaterialPricesPanel() {
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-              <th className="py-1.5">{t("code")}</th>
-              <th>{tc("name")}</th>
-              <th>{t("unit")}</th>
-              <th>{t("price")}</th>
-              <th></th>
-              <th>{t("standardCost")}</th>
-              <th></th>
+              <th scope="col" className="py-1.5">{t("code")}</th>
+              <th scope="col">{tc("name")}</th>
+              <th scope="col">{t("unit")}</th>
+              <th scope="col">{t("price")}</th>
+              <th scope="col"></th>
+              <th scope="col">{t("standardCost")}</th>
+              <th scope="col"></th>
             </tr>
           </thead>
           <tbody>

@@ -143,13 +143,13 @@ export default function PortalEstimatePage({ params }: { params: Promise<{ id: s
           </h1>
           {estimate.projectName && <p className="mt-1 text-sm text-fg-subtle">{estimate.projectName}</p>}
 
-          <div className="mt-6 overflow-x-auto">
+          <div tabIndex={0} className="mt-6 overflow-x-auto">
             <table className="w-full min-w-[420px] border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                  <th className="py-2">{te("rateItem")}</th>
-                  <th>{te("quantity")}</th>
-                  <th className="text-right">{te("lineTotal")}</th>
+                  <th scope="col" className="py-2">{te("rateItem")}</th>
+                  <th scope="col">{te("quantity")}</th>
+                  <th scope="col" className="text-right">{te("lineTotal")}</th>
                 </tr>
               </thead>
               <tbody>

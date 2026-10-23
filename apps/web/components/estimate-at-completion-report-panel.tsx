@@ -39,13 +39,13 @@ export function EstimateAtCompletionReportPanel({ currency }: { currency: string
           <table className="w-full min-w-[860px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                <th className="py-2">{t("project")}</th>
-                <th className="text-right">{t("percentComplete")}</th>
-                <th className="text-right">{t("costPerformanceIndex")}</th>
-                <th className="text-right">{t("estimateAtCompletionShort")}</th>
-                <th className="text-right">{t("varianceAtCompletion")}</th>
-                <th className="text-right">{t("projectedMargin")}</th>
-                <th className="text-right">{t("marginErosion")}</th>
+                <th scope="col" className="py-2">{t("project")}</th>
+                <th scope="col" className="text-right">{t("percentComplete")}</th>
+                <th scope="col" className="text-right">{t("costPerformanceIndex")}</th>
+                <th scope="col" className="text-right">{t("estimateAtCompletionShort")}</th>
+                <th scope="col" className="text-right">{t("varianceAtCompletion")}</th>
+                <th scope="col" className="text-right">{t("projectedMargin")}</th>
+                <th scope="col" className="text-right">{t("marginErosion")}</th>
               </tr>
             </thead>
             <tbody>

@@ -157,14 +157,14 @@ export function EstimateRevisionHistoryPanel({
           <h3 className="mb-2 text-xs font-semibold text-fg-subtle">
             {t("compareToCurrent", { version: selectedRevision.versionNumber })}
           </h3>
-          <div className="overflow-x-auto">
+          <div tabIndex={0} className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                <th className="py-1">{t("rateItem")}</th>
-                <th>{t("version")} {selectedRevision.versionNumber}</th>
-                <th>{tc("status")}</th>
-                <th>{t("current")}</th>
+                <th scope="col" className="py-1">{t("rateItem")}</th>
+                <th scope="col">{t("version")} {selectedRevision.versionNumber}</th>
+                <th scope="col">{tc("status")}</th>
+                <th scope="col">{t("current")}</th>
               </tr>
             </thead>
             <tbody>

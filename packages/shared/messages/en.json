@@ -4931,6 +4931,26 @@
     "color_amber": "Amber",
     "color_green": "Green",
     "color_blue": "Blue",
-    "color_black": "Black"
+    "color_black": "Black",
+    "unreadCount": "{count} unread",
+    "severityCritical": "Critical",
+    "severityWarning": "Warning",
+    "read": "Read",
+    "unread": "Unread",
+    "actions": "Actions",
+    "amount": "Amount",
+    "appliesTo": "Applies to",
+    "description": "Description",
+    "fxGainLoss": "FX gain/loss",
+    "hours": "Hours",
+    "installment": "Installment",
+    "lienWaiver": "Lien waiver",
+    "location": "Location",
+    "name": "Name",
+    "options": "Options",
+    "paymentMethod": "Payment method",
+    "status": "Status",
+    "total": "Total",
+    "unitPrice": "Unit price"
   }
 }

@@ -34,6 +34,7 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("team");
   const confirm = useConfirm();
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const TIME_ENTRIES_PAGE_SIZE = 100;
   const [entries, setEntries] = useState<TimeEntry[] | null>(null);
@@ -153,6 +154,16 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-gray-200 text-left text-xs text-fg-subtle dark:border-gray-700">
+                <th scope="col" className="py-1.5 font-medium">{ta("date")}</th>
+                <th scope="col" className="font-medium">{ta("worker")}</th>
+                <th scope="col" className="font-medium">{ta("task")}</th>
+                <th scope="col" className="font-medium"><span className="sr-only">{ta("location")}</span></th>
+                <th scope="col" className="text-right font-medium">{ta("hours")}</th>
+                <th scope="col" className="text-right font-medium"><span className="sr-only">{ta("actions")}</span></th>
+              </tr>
+            </thead>
             <tbody>
               {entries.map((entry) => (
                 <tr

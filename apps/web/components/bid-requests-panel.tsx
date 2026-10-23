@@ -436,15 +436,15 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                     <table className="w-full border-collapse text-sm">
                       <thead>
                         <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-xs text-fg-subtle">
-                          <th className="py-1">{t("subcontractor")}</th>
-                          <th className="text-right">{t("amount")}</th>
+                          <th scope="col" className="py-1">{t("subcontractor")}</th>
+                          <th scope="col" className="text-right">{t("amount")}</th>
                           {d.criteria.map((c) => (
-                            <th key={c.id} className="px-1 text-center">
+                            <th scope="col" key={c.id} className="px-1 text-center">
                               {c.label}
                             </th>
                           ))}
-                          <th className="text-right">{t("weightedScore")}</th>
-                          <th></th>
+                          <th scope="col" className="text-right">{t("weightedScore")}</th>
+                          <th scope="col"></th>
                         </tr>
                       </thead>
                       <tbody>
@@ -549,13 +549,13 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                         ) : leveling.scopeItems.length === 0 ? (
                           <p className="text-xs text-fg-subtle">{t("noLevelingData")}</p>
                         ) : (
-                          <div className="overflow-x-auto">
+                          <div tabIndex={0} className="overflow-x-auto">
                             <table className="w-full min-w-[480px] border-collapse text-xs">
                               <thead>
                                 <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                                  <th className="py-1">{t("scopeItem")}</th>
+                                  <th scope="col" className="py-1">{t("scopeItem")}</th>
                                   {leveling.bids.map((b) => (
-                                    <th key={b.id} className="px-1 text-right">
+                                    <th scope="col" key={b.id} className="px-1 text-right">
                                       {b.subcontractorName}
                                     </th>
                                   ))}

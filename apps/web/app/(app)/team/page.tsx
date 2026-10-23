@@ -154,11 +154,11 @@ export default function TeamPage() {
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                  <th className="py-2">{tc("name")}</th>
-                  <th>{t("role")}</th>
-                  <th>{t("hourlyCost")}</th>
-                  {burdenPercent > 0 && <th>{t("loadedRate")}</th>}
-                  <th>{tc("status")}</th>
+                  <th scope="col" className="py-2">{tc("name")}</th>
+                  <th scope="col">{t("role")}</th>
+                  <th scope="col">{t("hourlyCost")}</th>
+                  {burdenPercent > 0 && <th scope="col">{t("loadedRate")}</th>}
+                  <th scope="col">{tc("status")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -200,10 +200,10 @@ export default function TeamPage() {
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                  <th className="py-2">{tc("name")}</th>
-                  <th>{t("role")}</th>
-                  <th className="text-right">{t("hours")}</th>
-                  <th className="text-right">{t("cost")}</th>
+                  <th scope="col" className="py-2">{tc("name")}</th>
+                  <th scope="col">{t("role")}</th>
+                  <th scope="col" className="text-right">{t("hours")}</th>
+                  <th scope="col" className="text-right">{t("cost")}</th>
                 </tr>
               </thead>
               <tbody>

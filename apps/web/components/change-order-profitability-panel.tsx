@@ -42,15 +42,15 @@ export function ChangeOrderProfitabilityPanel({ estimateId, currency }: { estima
     <div className="mt-6 border-t border-gray-100 dark:border-gray-700 pt-4">
       <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("changeOrderProfitability")}</h3>
       <p className="mb-3 text-xs text-fg-subtle">{t("changeOrderProfitabilityHint")}</p>
-      <div className="overflow-x-auto">
+      <div tabIndex={0} className="overflow-x-auto">
         <table className="w-full min-w-[520px] border-collapse text-xs">
           <thead>
             <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-              <th className="py-1">{tc("name")}</th>
-              <th className="text-right">{t("cost")}</th>
-              <th className="text-right">{t("revenue")}</th>
-              <th className="text-right">{t("margin")}</th>
-              <th className="text-right">{t("marginPercent")}</th>
+              <th scope="col" className="py-1">{tc("name")}</th>
+              <th scope="col" className="text-right">{t("cost")}</th>
+              <th scope="col" className="text-right">{t("revenue")}</th>
+              <th scope="col" className="text-right">{t("margin")}</th>
+              <th scope="col" className="text-right">{t("marginPercent")}</th>
             </tr>
           </thead>
           <tbody>

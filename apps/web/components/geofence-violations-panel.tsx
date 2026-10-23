@@ -73,15 +73,15 @@ export function GeofenceViolationsPanel() {
         {violations.length === 0 ? (
           <p className="text-sm text-fg-subtle">{t("empty")}</p>
         ) : (
-          <div className="overflow-x-auto">
+          <div tabIndex={0} className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                <th className="py-1.5">{t("date")}</th>
-                <th>{t("worker")}</th>
-                <th>{t("project")}</th>
-                <th>{t("hours")}</th>
-                <th>{t("distance")}</th>
+                <th scope="col" className="py-1.5">{t("date")}</th>
+                <th scope="col">{t("worker")}</th>
+                <th scope="col">{t("project")}</th>
+                <th scope="col">{t("hours")}</th>
+                <th scope="col">{t("distance")}</th>
               </tr>
             </thead>
             <tbody>

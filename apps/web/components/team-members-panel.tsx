@@ -66,11 +66,11 @@ export function TeamMembersPanel({ isManager }: { isManager: boolean }) {
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-              <th className="py-2">{tc("name")}</th>
-              <th>{tc("email")}</th>
-              <th>{t("role")}</th>
-              <th>{t("customRole")}</th>
-              {isManager && <th></th>}
+              <th scope="col" className="py-2">{tc("name")}</th>
+              <th scope="col">{tc("email")}</th>
+              <th scope="col">{t("role")}</th>
+              <th scope="col">{t("customRole")}</th>
+              {isManager && <th scope="col"></th>}
             </tr>
           </thead>
           <tbody>

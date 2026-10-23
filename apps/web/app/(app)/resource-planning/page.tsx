@@ -411,13 +411,13 @@ function WorkloadHeatmap({ rows }: { rows: HeatmapRow[] }) {
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+    <div tabIndex={0} className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
       <table className="border-collapse text-xs">
         <thead>
           <tr>
-            <th className="sticky left-0 bg-white dark:bg-gray-800 pr-3 text-left font-medium text-fg-subtle">{t("worker")}</th>
+            <th scope="col" className="sticky left-0 bg-white dark:bg-gray-800 pr-3 text-left font-medium text-fg-subtle">{t("worker")}</th>
             {allDates.map((date) => (
-              <th key={date} className="px-1 py-1 text-center font-normal text-fg-subtle">
+              <th scope="col" key={date} className="px-1 py-1 text-center font-normal text-fg-subtle">
                 {formatDateWithOptions(date, { day: "numeric", month: "numeric" })}
               </th>
             ))}

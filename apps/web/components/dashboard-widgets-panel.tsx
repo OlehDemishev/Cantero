@@ -322,12 +322,12 @@ function WidgetBody({
     const d = data as { columns: { key: string; label: string; labelKey?: string }[]; rows: Record<string, unknown>[] };
     if (d.rows.length === 0) return <p className="text-sm text-fg-subtle">{emptyLabel}</p>;
     return (
-      <div className="overflow-x-auto">
+      <div tabIndex={0} className="overflow-x-auto">
         <table className="w-full border-collapse text-xs">
           <thead>
             <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
               {d.columns.map((c) => (
-                <th key={c.key} className="py-1 pr-2">
+                <th scope="col" key={c.key} className="py-1 pr-2">
                   {fieldLabel(c)}
                 </th>
               ))}
@@ -355,12 +355,12 @@ function WidgetBody({
   if (!Array.isArray(rows) || rows.length === 0) return <p className="text-sm text-fg-subtle">{emptyLabel}</p>;
   const columns = Object.keys(rows[0] as Record<string, unknown>).slice(0, 4);
   return (
-    <div className="overflow-x-auto">
+    <div tabIndex={0} className="overflow-x-auto">
       <table className="w-full border-collapse text-xs">
         <thead>
           <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
             {columns.map((c) => (
-              <th key={c} className="py-1 pr-2">
+              <th scope="col" key={c} className="py-1 pr-2">
                 {c}
               </th>
             ))}

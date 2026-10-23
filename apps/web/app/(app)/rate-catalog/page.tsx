@@ -448,13 +448,13 @@ export default function RateCatalogPage() {
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                  <th className="py-2">{t("code")}</th>
-                  <th>{tc("name")}</th>
-                  <th>{t("unit")}</th>
-                  <th>{t("laborHours")}</th>
-                  <th>{t("catalog")}</th>
-                  <th>{t("materials")}</th>
-                  <th></th>
+                  <th scope="col" className="py-2">{t("code")}</th>
+                  <th scope="col">{tc("name")}</th>
+                  <th scope="col">{t("unit")}</th>
+                  <th scope="col">{t("laborHours")}</th>
+                  <th scope="col">{t("catalog")}</th>
+                  <th scope="col">{t("materials")}</th>
+                  <th scope="col"></th>
                 </tr>
               </thead>
               <tbody>

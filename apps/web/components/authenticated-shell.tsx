@@ -378,7 +378,8 @@ function NavSkeleton({ expanded }: { expanded: boolean }) {
 function SidebarBackdrop() {
   const { isMobileOpen, toggleMobileSidebar } = useSidebar();
   if (!isMobileOpen) return null;
-  return <div className="fixed inset-0 z-40 bg-gray-900/50 lg:hidden" onClick={toggleMobileSidebar} />;
+  // A click target for the mouse; keyboard users close the drawer with Escape or the menu button.
+  return <div aria-hidden="true" className="fixed inset-0 z-40 bg-gray-900/50 lg:hidden" onClick={toggleMobileSidebar} />;
 }
 
 /** `me` is null while /me loads: the header draws at once, with placeholders where the company and

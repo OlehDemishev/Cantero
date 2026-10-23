@@ -108,10 +108,10 @@ export function TeamWorkloadPanel({ currency }: { currency: string }) {
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-              <th className="py-2">{tc("name")}</th>
-              <th>{tt("role")}</th>
-              <th className="text-right">{tt("hours")}</th>
-              <th className="text-right">{tt("cost")}</th>
+              <th scope="col" className="py-2">{tc("name")}</th>
+              <th scope="col">{tt("role")}</th>
+              <th scope="col" className="text-right">{tt("hours")}</th>
+              <th scope="col" className="text-right">{tt("cost")}</th>
             </tr>
           </thead>
           <tbody>

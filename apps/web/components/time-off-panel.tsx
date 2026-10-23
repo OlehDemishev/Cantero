@@ -139,11 +139,11 @@ export function TimeOffPanel() {
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                  <th className="py-2">{tc("name")}</th>
-                  <th>{t("type")}</th>
-                  <th>{t("dates")}</th>
-                  <th>{tc("status")}</th>
-                  {canDecide && <th></th>}
+                  <th scope="col" className="py-2">{tc("name")}</th>
+                  <th scope="col">{t("type")}</th>
+                  <th scope="col">{t("dates")}</th>
+                  <th scope="col">{tc("status")}</th>
+                  {canDecide && <th scope="col"></th>}
                 </tr>
               </thead>
               <tbody>

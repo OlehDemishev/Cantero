@@ -141,11 +141,11 @@ export function WarehouseReorderSettings() {
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-            <th className="py-2">{t("material")}</th>
-            <th>{t("reorderThreshold")}</th>
-            <th>{t("reorderQuantity")}</th>
-            <th>{t("preferredSupplier")}</th>
-            <th></th>
+            <th scope="col" className="py-2">{t("material")}</th>
+            <th scope="col">{t("reorderThreshold")}</th>
+            <th scope="col">{t("reorderQuantity")}</th>
+            <th scope="col">{t("preferredSupplier")}</th>
+            <th scope="col"></th>
           </tr>
         </thead>
         <tbody>
@@ -224,8 +224,15 @@ export function WarehouseReorderSettings() {
                           ) : priceHistory.length <= 1 ? (
                             <p className="text-xs text-fg-subtle">{t("noPriceHistory")}</p>
                           ) : (
-                            <div className="overflow-x-auto">
+                            <div tabIndex={0} className="overflow-x-auto">
                             <table className="w-full text-xs">
+                              <thead>
+                                <tr className="border-b border-gray-200 text-left text-xs text-fg-subtle dark:border-gray-700">
+                                  <th scope="col" className="py-1.5 font-medium">{ta("date")}</th>
+                                  <th scope="col" className="font-medium">{ta("supplier")}</th>
+                                  <th scope="col" className="text-right font-medium">{ta("unitPrice")}</th>
+                                </tr>
+                              </thead>
                               <tbody>
                                 {priceHistory.map((p, i) => (
                                   <tr key={i} className="border-b border-gray-200 dark:border-gray-700">
@@ -248,13 +255,13 @@ export function WarehouseReorderSettings() {
                           ) : supplierPrices.length === 0 ? (
                             <p className="text-xs text-fg-subtle">{t("noSupplierPrices")}</p>
                           ) : (
-                            <div className="overflow-x-auto">
+                            <div tabIndex={0} className="overflow-x-auto">
                             <table className="w-full text-xs">
                               <thead>
                                 <tr className="text-left text-fg-subtle">
-                                  <th className="py-1 font-normal">{tc("name")}</th>
-                                  <th className="font-normal">{t("latestPrice")}</th>
-                                  <th className="font-normal">{t("avgPrice")}</th>
+                                  <th scope="col" className="py-1 font-normal">{tc("name")}</th>
+                                  <th scope="col" className="font-normal">{t("latestPrice")}</th>
+                                  <th scope="col" className="font-normal">{t("avgPrice")}</th>
                                 </tr>
                               </thead>
                               <tbody>

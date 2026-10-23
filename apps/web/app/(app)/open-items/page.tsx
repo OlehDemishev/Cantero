@@ -109,12 +109,12 @@ export default function OpenItemsPage() {
               <table className="w-full border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                    <th className="py-2">{t("project")}</th>
-                    <th>{t("number")}</th>
-                    <th>{t("subject")}</th>
-                    <th>{t("status")}</th>
-                    <th>{t("priority")}</th>
-                    <th>{t("dueDate")}</th>
+                    <th scope="col" className="py-2">{t("project")}</th>
+                    <th scope="col">{t("number")}</th>
+                    <th scope="col">{t("subject")}</th>
+                    <th scope="col">{t("status")}</th>
+                    <th scope="col">{t("priority")}</th>
+                    <th scope="col">{t("dueDate")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -150,10 +150,10 @@ export default function OpenItemsPage() {
               <table className="w-full border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                    <th className="py-2">{t("project")}</th>
-                    <th>{t("itemTitle")}</th>
-                    <th>{t("status")}</th>
-                    <th>{t("dueDate")}</th>
+                    <th scope="col" className="py-2">{t("project")}</th>
+                    <th scope="col">{t("itemTitle")}</th>
+                    <th scope="col">{t("status")}</th>
+                    <th scope="col">{t("dueDate")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -187,10 +187,10 @@ export default function OpenItemsPage() {
               <table className="w-full border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                    <th className="py-2">{t("project")}</th>
-                    <th>{t("number")}</th>
-                    <th>{t("itemTitle")}</th>
-                    <th>{t("dueDate")}</th>
+                    <th scope="col" className="py-2">{t("project")}</th>
+                    <th scope="col">{t("number")}</th>
+                    <th scope="col">{t("itemTitle")}</th>
+                    <th scope="col">{t("dueDate")}</th>
                   </tr>
                 </thead>
                 <tbody>

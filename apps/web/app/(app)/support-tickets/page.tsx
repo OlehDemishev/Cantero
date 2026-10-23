@@ -265,6 +265,7 @@ export default function SupportTicketsPage() {
                   <div
                     role="button"
                     tabIndex={0}
+                    aria-expanded={expanded}
                     onClick={() => toggleExpand(ticket.id)}
                     onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && toggleExpand(ticket.id)}
                     className="flex w-full cursor-pointer items-center justify-between text-left"

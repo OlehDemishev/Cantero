@@ -148,13 +148,13 @@ export function LongLeadItemsPanel({ projectId }: { projectId: string }) {
           <table className="w-full min-w-[820px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-left text-gray-500 dark:border-gray-800">
-                <th className="py-2">{t("description")}</th>
-                <th>{t("supplier")}</th>
-                <th>{t("status")}</th>
-                <th>{t("requiredOnSiteDate")}</th>
-                <th>{t("expectedDeliveryDate")}</th>
-                <th>{t("actualDeliveryDate")}</th>
-                <th>{t("risk")}</th>
+                <th scope="col" className="py-2">{t("description")}</th>
+                <th scope="col">{t("supplier")}</th>
+                <th scope="col">{t("status")}</th>
+                <th scope="col">{t("requiredOnSiteDate")}</th>
+                <th scope="col">{t("expectedDeliveryDate")}</th>
+                <th scope="col">{t("actualDeliveryDate")}</th>
+                <th scope="col">{t("risk")}</th>
               </tr>
             </thead>
             <tbody>

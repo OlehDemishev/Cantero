@@ -27,13 +27,13 @@ export function WarrantyExpiringPanel() {
     <div className="mt-10">
       <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("expiringTitle")}</h2>
       <p className="mb-3 text-xs text-fg-subtle">{t("expiringHint")}</p>
-      <div className="card overflow-x-auto">
+      <div tabIndex={0} className="card overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-              <th className="py-1.5">{t("scope")}</th>
-              <th>{t("project")}</th>
-              <th className="text-right">{t("expiresOn2")}</th>
+              <th scope="col" className="py-1.5">{t("scope")}</th>
+              <th scope="col">{t("project")}</th>
+              <th scope="col" className="text-right">{t("expiresOn2")}</th>
             </tr>
           </thead>
           <tbody>
