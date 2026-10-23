@@ -100,10 +100,12 @@ export class ApiError extends Error {
 /**
  * For the `.catch()` of a request whose failure has no inline place to show: tells the user in a
  * toast, unless apiFetch already did (a failed write) — so nothing is shown twice and no rejection
- * goes unhandled. An aborted request (the component moved on) is not a failure.
+ * goes unhandled. Not a failure worth a toast: an aborted request (the component moved on), and a
+ * read the member's role may not make (403 — the part that needed it just stays empty) or one
+ * refused for an expired session (401 — the shell sends them to sign in).
  */
 export function notifyApiError(err: unknown): void {
-  if (err instanceof ApiError && err.notified) return;
+  if (err instanceof ApiError && (err.notified || err.status === 401 || err.status === 403)) return;
   if (err instanceof DOMException && err.name === "AbortError") return;
   notifyError?.(err instanceof Error && err.message ? err.message : genericMessage("server"));
 }

@@ -6,6 +6,8 @@ import Link from "next/link";
 import { SUPPORTED_CURRENCIES } from "@cantero/shared";
 import { DocumentsPanel } from "@/components/documents-panel";
 import { apiFetch, downloadBlob, ApiError } from "@/lib/api-client";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatDate } from "@/lib/format-date";
@@ -63,6 +65,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   const tc = useTranslations("common");
   const { data: me } = useMe();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const [loadError, setLoadError] = useState<Error | null>(null);
   const [paymentForm, setPaymentForm] = useState({ amount: "", method: "bank_transfer" as (typeof PAYMENT_METHODS)[number] });
   const [foreignPayment, setForeignPayment] = useState(false);
   const [foreignPaymentForm, setForeignPaymentForm] = useState<{
@@ -85,10 +88,13 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   const [voidError, setVoidError] = useState<string | null>(null);
 
   function load() {
-    apiFetch<Invoice>(`/invoices/${invoiceId}`).then((inv) => {
-      setInvoice(inv);
-      setDueDateInput(inv.dueDate ? inv.dueDate.slice(0, 10) : "");
-    });
+    apiFetch<Invoice>(`/invoices/${invoiceId}`)
+      .then((inv) => {
+        setLoadError(null);
+        setInvoice(inv);
+        setDueDateInput(inv.dueDate ? inv.dueDate.slice(0, 10) : "");
+      })
+      .catch(setLoadError);
   }
 
   useEffect(load, [invoiceId]);
@@ -252,11 +258,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   }
 
   if (!invoice) {
-    return (
-      <>
-        <p className="text-fg-subtle">{tc("loading")}</p>
-      </>
-    );
+    return loadError ? <ErrorState error={loadError} onRetry={load} backHref="/invoices" /> : <Skeleton variant="block" height="h-64" />;
   }
 
   const currency = invoice.currency ?? me?.company.currency ?? "";

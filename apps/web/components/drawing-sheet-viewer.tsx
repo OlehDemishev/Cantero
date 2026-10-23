@@ -5,8 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { AnnotationType } from "@cantero/shared";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { resetStateInEffect } from "@/lib/effect-reset";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
@@ -127,14 +129,14 @@ export function DrawingSheetViewer({ sheetId }: { sheetId: string }) {
   const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
-  const { data: sheet = null } = useApi<DrawingSheet>(`/drawing-sheets/${sheetId}`);
+  const { data: sheet = null, error: sheetError, reload: reloadSheet } = useApi<DrawingSheet>(`/drawing-sheets/${sheetId}`);
   const { data: annotations = null, reload: reloadAnnotations } = useApi<Annotation[]>(`/drawing-sheets/${sheetId}/annotations`);
   const [tool, setTool] = useState<AnnotationType | null>(null);
   const [draftPoints, setDraftPoints] = useState<Point[]>([]);
   const [busy, setBusy] = useState(false);
 
-  const [allRfis, setAllRfis] = useState<RfiRow[]>([]);
-  const [allPunchItems, setAllPunchItems] = useState<PunchRow[]>([]);
+  const { data: allRfis = [], reload: reloadRfis } = useApi<RfiRow[]>(sheet ? `/rfis?projectId=${sheet.projectId}` : null);
+  const { data: allPunchItems = [], reload: reloadPunchItems } = useApi<PunchRow[]>(sheet ? `/punch-list?projectId=${sheet.projectId}` : null);
   const [pinTool, setPinTool] = useState(false);
   const [pinDraft, setPinDraft] = useState<{ point: Point; kind: "rfi" | "punch"; targetId: string } | null>(null);
 
@@ -170,12 +172,9 @@ export function DrawingSheetViewer({ sheetId }: { sheetId: string }) {
   }
 
   function loadPins() {
-    if (!sheet) return;
-    apiFetch<RfiRow[]>(`/rfis?projectId=${sheet.projectId}`).then(setAllRfis);
-    apiFetch<PunchRow[]>(`/punch-list?projectId=${sheet.projectId}`).then(setAllPunchItems);
+    void reloadRfis();
+    void reloadPunchItems();
   }
-
-  useEffect(loadPins, [sheet, sheetId]);
 
   const rfis = allRfis.filter((r) => r.drawingSheetId === sheetId);
   const punchItems = allPunchItems.filter((p) => p.drawingSheetId === sheetId);
@@ -219,7 +218,7 @@ export function DrawingSheetViewer({ sheetId }: { sheetId: string }) {
         base.getContext("2d")!.drawImage(img, 0, 0);
       }
       redrawOverlay();
-    });
+    }).catch(notifyApiError);
 
     return () => {
       cancelled = true;
@@ -341,7 +340,7 @@ export function DrawingSheetViewer({ sheetId }: { sheetId: string }) {
     loadPins();
   }
 
-  if (!sheet) return <p className="text-fg-subtle">{tc("loading")}</p>;
+  if (!sheet) return sheetError ? <ErrorState error={sheetError} onRetry={reloadSheet} compact /> : <Skeleton variant="block" height="h-96" />;
 
   return (
     <div>

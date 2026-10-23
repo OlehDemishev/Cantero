@@ -11,7 +11,9 @@ import { EstimateRevisionHistoryPanel } from "@/components/estimate-revision-his
 import { EstimateVariantsPanel } from "@/components/estimate-variants-panel";
 import { EstimateChangeOrdersPanel } from "@/components/estimate-change-orders-panel";
 import type { CostCode } from "@/components/cost-codes-panel";
-import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { apiFetch, downloadBlob, notifyApiError } from "@/lib/api-client";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { fetchClientLink } from "@/lib/client-link";
 import { useCan } from "@/lib/permissions";
 import { useMe } from "@/lib/use-me";
@@ -104,6 +106,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
   const { data: me } = useMe();
 
   const [estimate, setEstimate] = useState<Estimate | null>(null);
+  const [loadError, setLoadError] = useState<Error | null>(null);
   const [rateItems, setRateItems] = useState<RateCatalogItem[]>([]);
   const [newLine, setNewLine] = useState({ rateCatalogItemId: "", quantity: "1", costCodeId: "" });
   const [formulaValues, setFormulaValues] = useState<Record<string, string>>({});
@@ -130,13 +133,18 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
   const [benchmarks, setBenchmarks] = useState<Record<string, LineBenchmark>>({});
 
   function load() {
-    apiFetch<Estimate>(`/estimates/${estimateId}`).then((e) => {
-      setEstimate(e);
-      setCoverLetterDraft(e.coverLetter ?? "");
-      if (e.clientDecision === "approved" && e.signerName) {
-        apiFetch<Blob>(`/estimates/${estimateId}/signature`).then((blob) => setEstimateSignatureUrl(URL.createObjectURL(blob)));
-      }
-    });
+    apiFetch<Estimate>(`/estimates/${estimateId}`)
+      .then((e) => {
+        setLoadError(null);
+        setEstimate(e);
+        setCoverLetterDraft(e.coverLetter ?? "");
+        if (e.clientDecision === "approved" && e.signerName) {
+          apiFetch<Blob>(`/estimates/${estimateId}/signature`)
+            .then((blob) => setEstimateSignatureUrl(URL.createObjectURL(blob)))
+            .catch(() => setEstimateSignatureUrl(null));
+        }
+      })
+      .catch(setLoadError);
   }
 
   async function saveCoverLetter() {
@@ -152,24 +160,31 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
     }
   }
 
+  /** Cost benchmarks are a costing figure — only for members who may see costs (costing.view). */
+  const seesCosts = can("costing.view");
   function loadBenchmarks() {
-    apiFetch<LineBenchmark[]>(`/estimate-accuracy/cost-benchmarks/${estimateId}`).then((list) =>
-      setBenchmarks(Object.fromEntries(list.map((b) => [b.estimateLineId, b]))),
-    );
+    if (!seesCosts) return;
+    apiFetch<LineBenchmark[]>(`/estimate-accuracy/cost-benchmarks/${estimateId}`)
+      .then((list) => setBenchmarks(Object.fromEntries(list.map((b) => [b.estimateLineId, b]))))
+      .catch(() => setBenchmarks({}));
   }
 
   useEffect(() => {
     load();
     loadBenchmarks();
-    apiFetch<RateCatalogItem[]>("/estimates/rate-catalog").then((items) => {
-      setRateItems(items);
-      if (items[0]) setNewLine((l) => ({ ...l, rateCatalogItemId: items[0].id }));
-    });
-    apiFetch<Warehouse[]>("/materials/warehouses").then((list) => {
-      setWarehouses(list);
-      if (list[0]) setIssueWarehouseId(list[0].id);
-    });
-    apiFetch<CostCode[]>("/cost-codes").then(setCostCodes);
+    apiFetch<RateCatalogItem[]>("/estimates/rate-catalog")
+      .then((items) => {
+        setRateItems(items);
+        if (items[0]) setNewLine((l) => ({ ...l, rateCatalogItemId: items[0].id }));
+      })
+      .catch(notifyApiError);
+    apiFetch<Warehouse[]>("/materials/warehouses")
+      .then((list) => {
+        setWarehouses(list);
+        if (list[0]) setIssueWarehouseId(list[0].id);
+      })
+      .catch(notifyApiError);
+    apiFetch<CostCode[]>("/cost-codes").then(setCostCodes).catch(notifyApiError);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [estimateId]);
 
@@ -334,11 +349,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
   }
 
   if (!estimate) {
-    return (
-      <>
-        <p className="text-fg-subtle">{tc("loading")}</p>
-      </>
-    );
+    return loadError ? <ErrorState error={loadError} onRetry={load} backHref="/estimates" /> : <Skeleton variant="block" height="h-64" />;
   }
 
   return (

@@ -1,26 +1,26 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { DrawingSheetViewer } from "@/components/drawing-sheet-viewer";
 import { DrawingRevisionsPanel } from "@/components/drawing-revisions-panel";
-import { apiFetch } from "@/lib/api-client";
+import { ErrorState } from "@/components/ui/error-state";
+import { useApi } from "@/lib/use-api";
 
 export default function DrawingSheetPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const t = useTranslations("drawings");
   const router = useRouter();
-  const [projectId, setProjectId] = useState<string | null>(null);
+  // The same request as the viewer's own (useApi shares it): only the project link is read here.
+  const { data: sheet, error, reload } = useApi<{ projectId: string }>(`/drawing-sheets/${id}`);
 
-  useEffect(() => {
-    apiFetch<{ projectId: string }>(`/drawing-sheets/${id}`).then((s) => setProjectId(s.projectId));
-  }, [id]);
+  if (error && !sheet) return <ErrorState error={error} onRetry={reload} backHref="/drawings" />;
 
   return (
     <>
-      {projectId && (
-        <a href={`/projects/${projectId}`} className="text-sm text-fg-subtle hover:underline">
+      {sheet && (
+        <a href={`/projects/${sheet.projectId}`} className="text-sm text-fg-subtle hover:underline">
           ← {t("title")}
         </a>
       )}

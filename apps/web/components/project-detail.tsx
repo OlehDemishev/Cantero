@@ -1,11 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { TabNav, type TabNavItem } from "@/components/ui/tab-nav";
 import { goBack } from "@/lib/back-navigation";
+import { useApi } from "@/lib/use-api";
+import { resetStateInEffect } from "@/lib/effect-reset";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { CommentsThread } from "@/components/comments-thread";
 import { SchedulingPanel } from "@/components/scheduling-panel";
 import { ScheduleBaselinePanel } from "@/components/schedule-baseline-panel";
@@ -120,6 +124,8 @@ export const ITEM_TYPE_TO_TAB: Record<string, ProjectTabKey> = {
   submittal: "quality",
 };
 
+const NO_TEMPLATES: Template[] = [];
+
 export function ProjectDetail({ projectId }: { projectId: string }) {
   const t = useTranslations("estimates");
   const tp = useTranslations("projects");
@@ -131,8 +137,12 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
   const canEstimates = can("estimates.view");
 
   const [project, setProject] = useState<Project | null>(null);
-  const [estimates, setEstimates] = useState<Estimate[] | null>(null);
-  const [templates, setTemplates] = useState<Template[]>([]);
+  const [projectError, setProjectError] = useState<Error | null>(null);
+  const [projectAttempt, setProjectAttempt] = useState(0);
+  // Estimates carry prices: only fetched, and only shown, for someone who may see them.
+  const { data: allEstimates, error: estimatesError, reload: reloadEstimates } = useApi<Estimate[]>(canEstimates ? "/estimates" : null);
+  const estimates = useMemo(() => allEstimates?.filter((e) => e.project.id === projectId) ?? null, [allEstimates, projectId]);
+  const { data: templates = NO_TEMPLATES } = useApi<Template[]>(canEstimates ? "/estimates/templates" : null);
   const [form, setForm] = useState({
     name: "",
     laborRatePerHour: "35",
@@ -170,19 +180,26 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
   }));
 
   useEffect(() => {
-    apiFetch<Project>(`/projects/${projectId}`).then((p) => {
-      setProject(p);
-      setBudgetThresholdDraft(p.budgetAlertThresholdPercent !== null ? String(p.budgetAlertThresholdPercent) : "");
-      setContingencyDraft(p.contingencyAmount !== null ? p.contingencyAmount : "");
+    // Another project: never show the previous one's name and settings while this one loads.
+    let current = true;
+    resetStateInEffect(() => {
+      setProject(null);
+      setProjectError(null);
     });
-  }, [projectId]);
-
-  // Estimates carry prices: only fetched, and only shown, for someone who may see them.
-  useEffect(() => {
-    if (!canEstimates) return;
-    apiFetch<Estimate[]>("/estimates").then((all) => setEstimates(all.filter((e) => e.project.id === projectId)));
-    apiFetch<Template[]>("/estimates/templates").then(setTemplates);
-  }, [projectId, canEstimates]);
+    apiFetch<Project>(`/projects/${projectId}`)
+      .then((p) => {
+        if (!current) return;
+        setProject(p);
+        setBudgetThresholdDraft(p.budgetAlertThresholdPercent !== null ? String(p.budgetAlertThresholdPercent) : "");
+        setContingencyDraft(p.contingencyAmount !== null ? p.contingencyAmount : "");
+      })
+      .catch((err: Error) => {
+        if (current) setProjectError(err);
+      });
+    return () => {
+      current = false;
+    };
+  }, [projectId, projectAttempt]);
 
   async function saveCurrency(value: string) {
     setCurrencyBusy(true);
@@ -245,6 +262,8 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
       setSubmitting(false);
     }
   }
+
+  if (projectError) return <ErrorState error={projectError} onRetry={() => setProjectAttempt((n) => n + 1)} backHref="/projects" />;
 
   return (
     <>
@@ -399,7 +418,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
             <div className="lg:col-span-2">
               <h2 className="mb-3 text-sm font-semibold text-fg-muted">{tp("viewEstimates")}</h2>
               {!estimates ? (
-                <p className="text-fg-subtle">{tc("loading")}</p>
+                estimatesError ? <ErrorState error={estimatesError} onRetry={reloadEstimates} compact /> : <Skeleton lines={3} />
               ) : estimates.length === 0 ? (
                 <p className="text-fg-subtle">{t("noEstimatesForProject")}</p>
               ) : (

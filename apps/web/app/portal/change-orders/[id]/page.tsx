@@ -59,7 +59,9 @@ export default function PortalChangeOrderPage({ params }: { params: Promise<{ id
       .then((c) => {
         setCo(c);
         if (c.hasSignature) {
-          portalApiFetch<Blob>(`/portal/change-orders/${id}/signature`).then((blob) => setSignatureUrl(URL.createObjectURL(blob)));
+          portalApiFetch<Blob>(`/portal/change-orders/${id}/signature`)
+            .then((blob) => setSignatureUrl(URL.createObjectURL(blob)))
+            .catch(() => setSignatureUrl(null));
         }
       })
       .catch(setLoadError);

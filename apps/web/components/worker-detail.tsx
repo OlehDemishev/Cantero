@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { goBack } from "@/lib/back-navigation";
 import { WorkerProfilePanel } from "@/components/worker-profile-panel";
@@ -40,18 +42,14 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
   const can = useCan();
   const isManager = can("people.manage");
 
-  const { data: summary = null, reload: reloadSummary } = useApi<Summary>(`/workers/${workerId}/summary`);
+  const { data: summary = null, error: loadError, reload: reloadSummary } = useApi<Summary>(`/workers/${workerId}/summary`);
 
   function loadSummary() {
     void reloadSummary();
   }
 
   if (!summary) {
-    return (
-      <>
-        <p className="text-fg-subtle">{tc("loading")}</p>
-      </>
-    );
+    return loadError ? <ErrorState error={loadError} onRetry={reloadSummary} backHref="/team" /> : <Skeleton variant="block" height="h-64" />;
   }
 
   const currency = me?.company.currency ?? "";

@@ -58,7 +58,9 @@ export default function PortalEstimatePage({ params }: { params: Promise<{ id: s
       .then((e) => {
         setEstimate(e);
         if (e.hasSignature) {
-          portalApiFetch<Blob>(`/portal/estimates/${id}/signature`).then((blob) => setSignatureUrl(URL.createObjectURL(blob)));
+          portalApiFetch<Blob>(`/portal/estimates/${id}/signature`)
+            .then((blob) => setSignatureUrl(URL.createObjectURL(blob)))
+            .catch(() => setSignatureUrl(null));
         }
       })
       .catch(setLoadError);

@@ -11,6 +11,8 @@ import { ClientActivityPanel } from "@/components/client-activity-panel";
 import { ClientRemindersPanel } from "@/components/client-reminders-panel";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { goBack } from "@/lib/back-navigation";
 import { useCan } from "@/lib/permissions";
@@ -38,7 +40,7 @@ export function ClientDetail({ clientId }: { clientId: string }) {
   const currency = me?.company.currency ?? "";
   const isManager = useCan()("clients.manage");
 
-  const { data: client = null, reload: reloadClient } = useApi<Client>(`/clients/${clientId}`);
+  const { data: client = null, error: loadError, reload: reloadClient } = useApi<Client>(`/clients/${clientId}`);
   const [busy, setBusy] = useState(false);
   const [losingStage, setLosingStage] = useState(false);
   const [lostReasonDraft, setLostReasonDraft] = useState("");
@@ -103,11 +105,7 @@ export function ClientDetail({ clientId }: { clientId: string }) {
   }
 
   if (!client) {
-    return (
-      <>
-        <p className="text-fg-subtle">{tc("loading")}</p>
-      </>
-    );
+    return loadError ? <ErrorState error={loadError} onRetry={reloadClient} backHref="/clients" /> : <Skeleton variant="block" height="h-64" />;
   }
 
   return (

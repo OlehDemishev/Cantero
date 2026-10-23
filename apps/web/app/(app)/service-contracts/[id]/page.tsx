@@ -6,6 +6,8 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 import { goBack } from "@/lib/back-navigation";
 
@@ -39,7 +41,7 @@ export default function ServiceContractDetailPage({ params }: { params: Promise<
   const tc = useTranslations("common");
   const router = useRouter();
 
-  const { data: contract = null, reload: reloadContract } = useApi<ServiceContract>(`/service-contracts/${id}`);
+  const { data: contract = null, error: loadError, reload: reloadContract } = useApi<ServiceContract>(`/service-contracts/${id}`);
   const { data: workers = [] } = useApi<Worker[]>("/workers");
   const [visitForm, setVisitForm] = useState({ scheduledDate: "", technicianWorkerId: "" });
   const [busy, setBusy] = useState(false);
@@ -77,11 +79,7 @@ export default function ServiceContractDetailPage({ params }: { params: Promise<
   }
 
   if (!contract) {
-    return (
-      <>
-        <p className="text-fg-subtle">{tc("loading")}</p>
-      </>
-    );
+    return loadError ? <ErrorState error={loadError} onRetry={reloadContract} backHref="/service-contracts" /> : <Skeleton variant="block" height="h-64" />;
   }
 
   return (

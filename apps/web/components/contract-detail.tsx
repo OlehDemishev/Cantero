@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { fetchClientLink } from "@/lib/client-link";
 import { useCan } from "@/lib/permissions";
 import { goBack } from "@/lib/back-navigation";
@@ -37,6 +39,7 @@ export function ContractDetail({ contractId }: { contractId: string }) {
   const router = useRouter();
 
   const [contract, setContract] = useState<Contract | null>(null);
+  const [loadError, setLoadError] = useState<Error | null>(null);
   const [bodyDraft, setBodyDraft] = useState("");
   const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -45,15 +48,18 @@ export function ContractDetail({ contractId }: { contractId: string }) {
   const [docusignError, setDocusignError] = useState<string | null>(null);
 
   function load() {
-    apiFetch<Contract>(`/contracts/${contractId}`).then((c) => {
-      setContract(c);
-      setBodyDraft(c.body);
-      if (c.status === "signed") {
-        apiFetch<Blob>(`/contracts/${contractId}/signature`)
-          .then((blob) => setSignatureUrl(URL.createObjectURL(blob)))
-          .catch(() => setSignatureUrl(null));
-      }
-    });
+    apiFetch<Contract>(`/contracts/${contractId}`)
+      .then((c) => {
+        setLoadError(null);
+        setContract(c);
+        setBodyDraft(c.body);
+        if (c.status === "signed") {
+          apiFetch<Blob>(`/contracts/${contractId}/signature`)
+            .then((blob) => setSignatureUrl(URL.createObjectURL(blob)))
+            .catch(() => setSignatureUrl(null));
+        }
+      })
+      .catch(setLoadError);
   }
 
   useEffect(load, [contractId]);
@@ -117,11 +123,7 @@ export function ContractDetail({ contractId }: { contractId: string }) {
   }
 
   if (!contract) {
-    return (
-      <>
-        <p className="text-fg-subtle">{tc("loading")}</p>
-      </>
-    );
+    return loadError ? <ErrorState error={loadError} onRetry={load} backHref="/contracts" /> : <Skeleton variant="block" height="h-64" />;
   }
 
   return (

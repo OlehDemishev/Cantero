@@ -12,6 +12,8 @@ import { EquipmentRentalHistoryPanel } from "@/components/equipment-rental-histo
 import { EquipmentAssignmentHistoryPanel } from "@/components/equipment-assignment-history-panel";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
@@ -102,6 +104,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
   const currency = me?.company.currency ?? "";
 
   const [equipment, setEquipment] = useState<Equipment | null>(null);
+  const [loadError, setLoadError] = useState<Error | null>(null);
   const { data: projects = [] } = useApi<Project[]>("/projects");
   const { data: workers = [] } = useApi<Worker[]>("/workers");
   const [rentals, setRentals] = useState<Rental[] | null>(null);
@@ -117,18 +120,23 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
   const [error, setError] = useState<string | null>(null);
 
   function load() {
-    apiFetch<Equipment>(`/equipment/${id}`).then((e) => {
-      setEquipment(e);
-      setScheduleIntervalDays(e.maintenanceIntervalDays !== null ? String(e.maintenanceIntervalDays) : "");
-      setScheduleIntervalHours(e.maintenanceIntervalHours !== null ? e.maintenanceIntervalHours : "");
-      setMeterReading(e.currentMeterHours !== null ? e.currentMeterHours : "");
-      setDepreciationForm({
-        method: e.depreciationMethod ?? "",
-        usefulLifeMonths: e.usefulLifeMonths !== null ? String(e.usefulLifeMonths) : "",
-        salvageValue: e.salvageValue !== null ? e.salvageValue : "",
-      });
-    });
-    apiFetch<Rental[]>(`/equipment/${id}/rentals`).then(setRentals);
+    apiFetch<Equipment>(`/equipment/${id}`)
+      .then((e) => {
+        setLoadError(null);
+        setEquipment(e);
+        setScheduleIntervalDays(e.maintenanceIntervalDays !== null ? String(e.maintenanceIntervalDays) : "");
+        setScheduleIntervalHours(e.maintenanceIntervalHours !== null ? e.maintenanceIntervalHours : "");
+        setMeterReading(e.currentMeterHours !== null ? e.currentMeterHours : "");
+        setDepreciationForm({
+          method: e.depreciationMethod ?? "",
+          usefulLifeMonths: e.usefulLifeMonths !== null ? String(e.usefulLifeMonths) : "",
+          salvageValue: e.salvageValue !== null ? e.salvageValue : "",
+        });
+      })
+      .catch(setLoadError);
+    apiFetch<Rental[]>(`/equipment/${id}/rentals`)
+      .then(setRentals)
+      .catch(() => setRentals([]));
   }
 
   useEffect(() => {
@@ -322,11 +330,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
   }
 
   if (!equipment) {
-    return (
-      <>
-        <p className="text-fg-subtle">{tc("loading")}</p>
-      </>
-    );
+    return loadError ? <ErrorState error={loadError} onRetry={load} backHref="/equipment" /> : <Skeleton variant="block" height="h-64" />;
   }
 
   return (
