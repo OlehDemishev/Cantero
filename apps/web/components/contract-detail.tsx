@@ -6,6 +6,8 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { fetchClientLink } from "@/lib/client-link";
+import { useCan } from "@/lib/permissions";
 import { goBack } from "@/lib/back-navigation";
 import { formatDateTime } from "@/lib/format-date";
 
@@ -16,7 +18,6 @@ interface Contract {
   status: "draft" | "sent" | "signed" | "void";
   signerName: string | null;
   signedAt: string | null;
-  clientAccessToken: string | null;
   client: { id: string; name: string } | null;
   subcontractor: { id: string; name: string } | null;
   docusignEnvelopeId: string | null;
@@ -41,6 +42,7 @@ export function ContractDetail({ contractId }: { contractId: string }) {
   const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const can = useCan();
   const [docusignError, setDocusignError] = useState<string | null>(null);
 
   function load() {
@@ -111,8 +113,7 @@ export function ContractDetail({ contractId }: { contractId: string }) {
   }
 
   async function copyLink() {
-    if (!contract?.clientAccessToken) return;
-    await navigator.clipboard.writeText(`${window.location.origin}/contract/${contract.clientAccessToken}`);
+    await navigator.clipboard.writeText(await fetchClientLink(`/contracts/${contractId}/client-link`, "contract"));
     setLinkCopied(true);
   }
 
@@ -208,7 +209,8 @@ export function ContractDetail({ contractId }: { contractId: string }) {
                 {t("downloadDocusignSignedPdf")}
               </button>
             )}
-            {contract.clientAccessToken && (
+            {/* Only a contract sent by the app's own link has one — DocuSign envelopes don't. */}
+            {contract.status !== "draft" && !contract.docusignEnvelopeId && can("contracts.manage") && (
               <button onClick={copyLink} className="btn-secondary">
                 {linkCopied ? tc("linkCopied") : tc("copyLink")}
               </button>

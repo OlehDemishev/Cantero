@@ -84,6 +84,8 @@ describe("EstimateRemindersService", () => {
     expect(mail.send).toHaveBeenCalledTimes(1);
     expect(mail.send.mock.calls[0][0].to).toBe("client@example.com");
     expect(mail.send.mock.calls[0][0].text).toContain("token-123");
+    // Token reads are opt-in (GLOBAL_OMIT); the reminder's link needs it.
+    expect(prisma.estimate.findMany).toHaveBeenCalledWith(expect.objectContaining({ omit: { clientAccessToken: false } }));
     expect(prisma.estimate.update).toHaveBeenCalledWith({
       where: { id: "est-1" },
       data: { reminderCount: 1, lastReminderSentAt: expect.any(Date) },

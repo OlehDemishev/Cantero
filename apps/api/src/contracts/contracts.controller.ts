@@ -11,7 +11,7 @@ import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { ContractsService } from "./contracts.service";
 import { ProjectResource } from "../common/project-access/project-resource.decorator";
 import { OpenToAllRoles } from "../common/decorators/roles.decorator";
-import { RequiresFor } from "../common/decorators/permissions.decorator";
+import { Requires, RequiresFor } from "../common/decorators/permissions.decorator";
 
 @ProjectResource("Contract")
 @RequiresFor("contracts.view", "contracts.manage")
@@ -27,6 +27,13 @@ export class ContractsController {
   @Get(":id")
   get(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.get(user.companyId, id);
+  }
+
+  /** A GET, but it hands out the client's signing credential — manage only. */
+  @Get(":id/client-link")
+  @Requires("contracts.manage")
+  clientLink(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.clientLink(user.companyId, id);
   }
 
   @Post()

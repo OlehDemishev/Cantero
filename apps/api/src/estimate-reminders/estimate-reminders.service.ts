@@ -76,6 +76,8 @@ export class EstimateRemindersService implements OnModuleInit {
         reminderCount: { lt: CADENCE_DAYS.length },
       },
       include: { project: { include: { client: true } } },
+      // The reminder email carries the client's link, so this is one of the few reads that needs the token.
+      omit: { clientAccessToken: false },
     });
 
     let sent = 0;

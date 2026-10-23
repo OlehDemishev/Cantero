@@ -38,7 +38,7 @@ describe("IntacctService", () => {
       $transaction: jest.fn(async (ops: unknown[]) => ops),
     };
     audit = { record: jest.fn() };
-    jwt = { sign: jest.fn().mockReturnValue("STATE"), verify: jest.fn().mockReturnValue({ companyId: COMPANY }) };
+    jwt = { sign: jest.fn().mockReturnValue("STATE"), verify: jest.fn().mockReturnValue({ kind: "oauth_state", provider: "intacct", companyId: COMPANY, userId: "user-1" }) };
     env = { INTACCT_CLIENT_ID: "cid", INTACCT_CLIENT_SECRET: "secret" };
     const config = { get: (k: string) => env[k], getOrThrow: (k: string) => env[k] };
     fetchMock = jest.fn();
@@ -49,15 +49,16 @@ describe("IntacctService", () => {
   describe("OAuth", () => {
     it("refuses to build an authorize URL when the server has no client id", () => {
       delete env.INTACCT_CLIENT_ID;
-      expect(() => service.getAuthorizeUrl(COMPANY)).toThrow(BadRequestException);
+      expect(() => service.getAuthorizeUrl({ companyId: COMPANY, userId: "user-1" })).toThrow(BadRequestException);
     });
 
     it("asks for offline_access so a refresh token comes back", () => {
-      const url = new URL(service.getAuthorizeUrl(COMPANY));
+      const url = new URL(service.getAuthorizeUrl({ companyId: COMPANY, userId: "user-1" }));
       expect(url.origin + url.pathname).toBe("https://api.intacct.com/ia/api/v1/oauth2/authorize");
       expect(url.searchParams.get("scope")).toBe("offline_access");
       expect(url.searchParams.get("response_type")).toBe("code");
       expect(url.searchParams.get("state")).toBe("STATE");
+      expect(jwt.sign).toHaveBeenCalledWith({ kind: "oauth_state", provider: "intacct", companyId: COMPANY, userId: "user-1" }, { expiresIn: "10m" });
     });
 
     it("exchanges the code and stores both tokens", async () => {
@@ -74,6 +75,12 @@ describe("IntacctService", () => {
       fetchMock.mockResolvedValue(jsonRes(200, { access_token: "A", expires_in: 43200 }));
       await expect(service.handleCallback("CODE", "STATE")).rejects.toThrow(/refresh token/);
       expect(prisma.intacctConnection.upsert).not.toHaveBeenCalled();
+    });
+
+    it("refuses an access token passed off as state", async () => {
+      jwt.verify.mockReturnValue({ userId: "user-1", companyId: COMPANY, email: "a@b.c", role: "owner", sid: "s1" });
+      await expect(service.handleCallback("CODE", "STATE")).rejects.toThrow(BadRequestException);
+      expect(fetchMock).not.toHaveBeenCalled();
     });
 
     it("rejects an expired state token", async () => {

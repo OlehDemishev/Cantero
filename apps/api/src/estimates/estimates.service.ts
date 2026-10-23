@@ -65,6 +65,16 @@ export class EstimatesService {
   }
 
   /** Recomputes the estimate live (without persisting) and flags it if that differs from the stored totals — a catalog price moved since it was last saved. */
+  /** The client's review/sign token, for staff with the manage permission to copy the link the
+   * client got by email. Kept out of every other response (GLOBAL_OMIT): whoever holds it can act
+   * as the client. */
+  async clientLink(companyId: string, id: string): Promise<{ token: string }> {
+    const estimate = await this.prisma.estimate.findFirst({ where: { id, companyId }, select: { clientAccessToken: true } });
+    if (!estimate) throw new NotFoundException("Estimate not found");
+    if (!estimate.clientAccessToken) throw new BadRequestException("This estimate hasn't been sent to the client yet");
+    return { token: estimate.clientAccessToken };
+  }
+
   async get(companyId: string, id: string, role?: string) {
     const estimate = await this.findOrThrow(companyId, id);
     const hideCostData = await this.shouldHideCostData(companyId, role);
@@ -423,11 +433,13 @@ export class EstimatesService {
     if (estimate.status !== "approved") {
       throw new BadRequestException("Only an approved estimate can be sent to the client");
     }
+    const clientAccessToken = randomBytes(24).toString("hex");
     const updated = await this.prisma.$transaction(async (tx) => {
       const updated = await tx.estimate.update({
         where: { id: estimateId },
+        omit: { clientAccessToken: true },
         data: {
-          clientAccessToken: randomBytes(24).toString("hex"),
+          clientAccessToken,
           sentAt: new Date(),
           clientDecision: "pending",
           decisionAt: null,
@@ -445,7 +457,7 @@ export class EstimatesService {
     if (client?.email) {
       const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
       const webOrigin = this.config.get<string>("WEB_ORIGIN") ?? "http://localhost:3000";
-      const link = `${webOrigin}/estimate/${updated.clientAccessToken}`;
+      const link = `${webOrigin}/estimate/${clientAccessToken}`;
       const email = estimateSentEmail(client.preferredLocale ?? company.locale, company.name, estimate.name, link);
       this.mail.send({ to: client.email, subject: email.subject, html: email.html, text: email.text });
     }
@@ -546,7 +558,7 @@ export class EstimatesService {
     return this.applyDecision(estimate, { decision: "rejected", note: input.note }, undefined, actor);
   }
 
-  private async applyDecision(estimate: Estimate, input: EstimateClientDecisionInput, signerIp?: string, recordedBy?: AuditActor) {
+  private async applyDecision(estimate: Omit<Estimate, "clientAccessToken">, input: EstimateClientDecisionInput, signerIp?: string, recordedBy?: AuditActor) {
     if (estimate.clientDecision !== "pending") {
       throw new BadRequestException("This estimate has already been decided");
     }

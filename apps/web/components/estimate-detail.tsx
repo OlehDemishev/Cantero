@@ -13,6 +13,8 @@ import { EstimateVariantsPanel } from "@/components/estimate-variants-panel";
 import { EstimateChangeOrdersPanel } from "@/components/estimate-change-orders-panel";
 import type { CostCode } from "@/components/cost-codes-panel";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { fetchClientLink } from "@/lib/client-link";
+import { useCan } from "@/lib/permissions";
 import { useMe } from "@/lib/use-me";
 import { formatDateTime } from "@/lib/format-date";
 
@@ -87,7 +89,6 @@ interface Estimate {
   decisionAt: string | null;
   clientDecisionNote: string | null;
   counterOfferAmount: string | null;
-  clientAccessToken: string | null;
   variantOfId: string | null;
   variantLabel: string | null;
   coverLetter: string | null;
@@ -114,6 +115,9 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
   const [templateName, setTemplateName] = useState("");
   const [templateSaved, setTemplateSaved] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  /** Fetched on the first copy — list/get responses don't carry the client's token. */
+  const [clientLink, setClientLink] = useState<string | null>(null);
+  const can = useCan();
   const [emailSentTo, setEmailSentTo] = useState<string | null | undefined>(undefined);
 
   const [estimateSignatureUrl, setEstimateSignatureUrl] = useState<string | null>(null);
@@ -236,6 +240,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
   async function send() {
     setBusy(true);
     setLinkCopied(false);
+    setClientLink(null);
     try {
       const result = await apiFetch<{ emailSentTo: string | null }>(`/estimates/${estimateId}/send`, { method: "POST" });
       setEmailSentTo(result.emailSentTo);
@@ -246,8 +251,9 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
   }
 
   async function copyLink() {
-    if (!estimate?.clientAccessToken) return;
-    await navigator.clipboard.writeText(`${window.location.origin}/estimate/${estimate.clientAccessToken}`);
+    const link = clientLink ?? (await fetchClientLink(`/estimates/${estimateId}/client-link`, "estimate"));
+    setClientLink(link);
+    await navigator.clipboard.writeText(link);
     setLinkCopied(true);
   }
 
@@ -704,15 +710,11 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
 
           {estimate.status === "approved" && <ProgressBillingPanel estimateId={estimateId} currency={currency} />}
 
-          {estimate.sentAt && estimate.clientAccessToken && (
+          {estimate.sentAt && can("estimates.manage") && (
             <div className="mt-4 border-t border-gray-100 dark:border-gray-700 pt-4">
               <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{t("clientLink")}</span>
               <div className="mt-2 flex items-center gap-2">
-                <input
-                  readOnly
-                  className="input flex-1 text-xs"
-                  value={`${typeof window !== "undefined" ? window.location.origin : ""}/estimate/${estimate.clientAccessToken}`}
-                />
+                {clientLink && <input readOnly className="input flex-1 text-xs" value={clientLink} />}
                 <button onClick={copyLink} className="btn-secondary shrink-0 px-3 py-1 text-xs">
                   {linkCopied ? tc("saved") : t("copyLink")}
                 </button>

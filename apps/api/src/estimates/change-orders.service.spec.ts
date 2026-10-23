@@ -22,6 +22,7 @@ describe("ChangeOrdersService", () => {
     materialCatalogItem: { findMany: jest.Mock };
     markupRule: { findMany: jest.Mock };
     company: { findUniqueOrThrow: jest.Mock };
+    client: { findUnique: jest.Mock };
     $transaction: jest.Mock;
   };
 
@@ -35,6 +36,7 @@ describe("ChangeOrdersService", () => {
       materialCatalogItem: { findMany: jest.fn().mockResolvedValue([]) },
       markupRule: { findMany: jest.fn().mockResolvedValue([]) },
       company: { findUniqueOrThrow: jest.fn() },
+      client: { findUnique: jest.fn() },
       // Supports both the array form (prisma.$transaction([op1, op2])) already used elsewhere in
       // this service and the callback form (prisma.$transaction(async tx => {...})) used by the
       // outbox-enqueueing send()/applyDecision() paths.
@@ -258,6 +260,39 @@ describe("ChangeOrdersService", () => {
 
       await expect(service.send(COMPANY_A, { name: "Owner" }, "co-1")).rejects.toThrow(BadRequestException);
       expect(prisma.changeOrder.update).not.toHaveBeenCalled();
+    });
+
+    it("emails the token it generated — the update's result doesn't carry it", async () => {
+      prisma.changeOrder.findFirst.mockResolvedValue({ id: "co-1", companyId: COMPANY_A, status: "approved", number: 1, title: "Extra work", estimateId: "est-1", lines: [] });
+      prisma.estimate.findUniqueOrThrow.mockResolvedValue({ id: "est-1", project: { clientId: "client-1" } });
+      prisma.changeOrder.update.mockResolvedValue({ id: "co-1", sentAt: new Date() });
+      prisma.client.findUnique.mockResolvedValue({ email: "client@example.com", preferredLocale: "en" });
+      prisma.company.findUniqueOrThrow.mockResolvedValue({ name: "Acme", locale: "en" });
+      const mail: { send: jest.Mock } = (service as any).mail;
+
+      const result = await service.send(COMPANY_A, { name: "Owner" }, "co-1");
+
+      const update = prisma.changeOrder.update.mock.calls[0][0];
+      expect(update.omit).toEqual({ clientAccessToken: true });
+      expect(update.data.clientAccessToken).toMatch(/^[0-9a-f]{48}$/);
+      expect(mail.send.mock.calls[0][0].text).toContain(`/change-order/${update.data.clientAccessToken}`);
+      expect(result).not.toHaveProperty("clientAccessToken");
+    });
+  });
+
+  describe("clientLink()", () => {
+    it("reads only the token of a change order on this estimate and company", async () => {
+      prisma.changeOrder.findFirst.mockResolvedValue({ clientAccessToken: "tok" });
+
+      await expect(service.clientLink(COMPANY_A, "est-1", "co-1")).resolves.toEqual({ token: "tok" });
+      expect(prisma.changeOrder.findFirst).toHaveBeenCalledWith({ where: { id: "co-1", estimateId: "est-1", companyId: COMPANY_A }, select: { clientAccessToken: true } });
+    });
+
+    it("404s when not found and 400s before it was sent", async () => {
+      prisma.changeOrder.findFirst.mockResolvedValueOnce(null).mockResolvedValueOnce({ clientAccessToken: null });
+
+      await expect(service.clientLink(COMPANY_A, "est-1", "co-1")).rejects.toThrow(NotFoundException);
+      await expect(service.clientLink(COMPANY_A, "est-1", "co-1")).rejects.toThrow(BadRequestException);
     });
   });
 

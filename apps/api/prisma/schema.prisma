@@ -860,6 +860,10 @@ model User {
 model UserSession {
   id         String    @id @default(uuid())
   userId     String
+  /// The company the session's access token was issued for, so a company can sign a person out of
+  /// its own workspace (SCIM deactivation) without touching their sessions elsewhere. Null on
+  /// sessions created before this column existed.
+  companyId  String?
   createdAt  DateTime  @default(now())
   lastSeenAt DateTime  @default(now())
   userAgent  String?
@@ -869,6 +873,7 @@ model UserSession {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([userId, companyId])
   @@map("user_sessions")
 }
 

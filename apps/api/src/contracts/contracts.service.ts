@@ -43,6 +43,16 @@ export class ContractsService {
     return contract;
   }
 
+  /** The client's review/sign token, for staff with the manage permission to copy the link the
+   * client got by email. Kept out of every other response (GLOBAL_OMIT): whoever holds it can act
+   * as the client. */
+  async clientLink(companyId: string, id: string): Promise<{ token: string }> {
+    const contract = await this.prisma.contract.findFirst({ where: { id, companyId }, select: { clientAccessToken: true } });
+    if (!contract) throw new NotFoundException("Contract not found");
+    if (!contract.clientAccessToken) throw new BadRequestException("This contract hasn't been sent to the client yet");
+    return { token: contract.clientAccessToken };
+  }
+
   async create(companyId: string, actor: AuditActor, input: CreateContractInput) {
     const project = await this.prisma.project.findFirst({ where: { id: input.projectId, companyId } });
     if (!project) throw new NotFoundException("Project not found");
@@ -89,9 +99,10 @@ export class ContractsService {
     const contract = await this.findOrThrow(companyId, id);
     if (contract.status !== "draft") throw new BadRequestException("Only a draft contract can be sent");
 
+    const clientAccessToken = randomBytes(24).toString("hex");
     const updated = await this.prisma.contract.update({
       where: { id },
-      data: { status: "sent", clientAccessToken: randomBytes(24).toString("hex"), sentAt: new Date() },
+      data: { status: "sent", clientAccessToken, sentAt: new Date() },
       include: { client: { select: { id: true, name: true, email: true } } },
     });
     this.audit.record(companyId, actor, "contract.sent", "Contract", id, `Sent contract "${contract.title}" for signature`);
@@ -99,7 +110,7 @@ export class ContractsService {
     if (updated.client?.email) {
       const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
       const webOrigin = this.config.get<string>("WEB_ORIGIN") ?? "http://localhost:3000";
-      const link = `${webOrigin}/contract/${updated.clientAccessToken}`;
+      const link = `${webOrigin}/contract/${clientAccessToken}`;
       this.mail.send({
         to: updated.client.email,
         subject: `${contract.title} — please sign`,

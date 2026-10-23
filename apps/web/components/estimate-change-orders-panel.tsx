@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { fetchClientLink } from "@/lib/client-link";
+import { useCan } from "@/lib/permissions";
 import { useMe } from "@/lib/use-me";
 import { formatDateTime } from "@/lib/format-date";
 import { ChangeOrderProfitabilityPanel } from "@/components/change-order-profitability-panel";
@@ -33,7 +35,6 @@ interface ChangeOrder {
   status: "draft" | "pending_approval" | "approved";
   clientDecision: ClientDecision;
   sentAt: string | null;
-  clientAccessToken: string | null;
   grandTotal: string;
   lines: ChangeOrderLine[];
   signerName: string | null;
@@ -63,6 +64,9 @@ export function EstimateChangeOrdersPanel({
   const [coScheduleImpactForm, setCoScheduleImpactForm] = useState<Record<string, string>>({});
   const [coEmailSentTo, setCoEmailSentTo] = useState<Record<string, string | null>>({});
   const [coLinkCopiedId, setCoLinkCopiedId] = useState<string | null>(null);
+  /** Fetched per change order on the first copy — list responses don't carry the client's token. */
+  const [coClientLinks, setCoClientLinks] = useState<Record<string, string>>({});
+  const can = useCan();
   const [coSignatureUrls, setCoSignatureUrls] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
 
@@ -149,6 +153,12 @@ export function EstimateChangeOrdersPanel({
         { method: "POST" },
       );
       setCoEmailSentTo((m) => ({ ...m, [coId]: result.emailSentTo }));
+      // A resend issues a new token, so a link copied before is stale.
+      setCoClientLinks((m) => {
+        const next = { ...m };
+        delete next[coId];
+        return next;
+      });
       loadChangeOrders();
     } finally {
       setBusy(false);
@@ -156,8 +166,9 @@ export function EstimateChangeOrdersPanel({
   }
 
   async function copyChangeOrderLink(co: ChangeOrder) {
-    if (!co.clientAccessToken) return;
-    await navigator.clipboard.writeText(`${window.location.origin}/change-order/${co.clientAccessToken}`);
+    const link = coClientLinks[co.id] ?? (await fetchClientLink(`/estimates/${estimateId}/change-orders/${co.id}/client-link`, "change-order"));
+    setCoClientLinks((m) => ({ ...m, [co.id]: link }));
+    await navigator.clipboard.writeText(link);
     setCoLinkCopiedId(co.id);
   }
 
@@ -318,14 +329,10 @@ export function EstimateChangeOrdersPanel({
                   </button>
                 )}
 
-                {co.sentAt && co.clientAccessToken && (
+                {co.sentAt && can("estimates.manage") && (
                   <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-3">
                     <div className="flex items-center gap-2">
-                      <input
-                        readOnly
-                        className="input flex-1 text-xs"
-                        value={`${typeof window !== "undefined" ? window.location.origin : ""}/change-order/${co.clientAccessToken}`}
-                      />
+                      {coClientLinks[co.id] && <input readOnly className="input flex-1 text-xs" value={coClientLinks[co.id]} />}
                       <button
                         type="button"
                         onClick={() => copyChangeOrderLink(co)}

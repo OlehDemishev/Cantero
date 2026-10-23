@@ -4,7 +4,7 @@ import { JwtService } from "@nestjs/jwt";
 import type { PushIntacctContractInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
-import { callbackUrl, exchangeCode, refreshIfExpiring, requestToken, signState, tokenExpiry, verifyState, type TokenEndpoint } from "../common/oauth/oauth";
+import { callbackUrl, exchangeCode, refreshIfExpiring, requestToken, signState, tokenExpiry, verifyState, type OAuthStateClaims, type TokenEndpoint } from "../common/oauth/oauth";
 import { encryptSecret, withDecryptedTokens, withEncryptedTokens } from "../common/crypto/secret-box";
 
 const FETCH_TIMEOUT_MS = 15_000;
@@ -60,21 +60,21 @@ export class IntacctService {
     return { connected: true as const, connectedAt: connection.connectedAt, changeOrderItemId: connection.changeOrderItemId };
   }
 
-  getAuthorizeUrl(companyId: string): string {
+  getAuthorizeUrl(user: OAuthStateClaims): string {
     const clientId = this.config.get<string>("INTACCT_CLIENT_ID");
     if (!clientId) throw new BadRequestException("Sage Intacct isn't configured on this server — set INTACCT_CLIENT_ID/INTACCT_CLIENT_SECRET");
     const params = new URLSearchParams({
       response_type: "code",
       client_id: clientId,
       redirect_uri: this.callbackUrl(),
-      state: signState(this.jwt, { companyId }),
+      state: signState(this.jwt, "intacct", user),
       scope: "offline_access",
     });
     return `${this.baseUrl()}/oauth2/authorize?${params.toString()}`;
   }
 
   async handleCallback(code: string, state: string): Promise<{ companyId: string }> {
-    const { companyId } = verifyState(this.jwt, state);
+    const { companyId } = verifyState(this.jwt, state, "intacct");
     const tokens = await exchangeCode(this.tokenEndpoint(), { code, redirect_uri: this.callbackUrl() });
 
     const data = { accessToken: encryptSecret(tokens.access_token), refreshToken: encryptSecret(tokens.refresh_token), tokenExpiresAt: tokenExpiry(tokens) };

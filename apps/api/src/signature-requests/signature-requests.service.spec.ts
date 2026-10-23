@@ -7,6 +7,7 @@ import { StorageService } from "../common/storage/storage.service";
 import { MailService } from "../common/mail/mail.service";
 import { AuditService } from "../common/audit/audit.service";
 import { OutboxService } from "../common/webhooks/outbox.service";
+import { ProjectAccessService } from "../common/project-access/project-access.service";
 
 const COMPANY_A = "company-a";
 const ACTOR = { userId: "user-1", name: "Ana" };
@@ -32,26 +33,32 @@ describe("SignatureRequestsService", () => {
   let service: SignatureRequestsService;
   let prisma: {
     document: { findFirst: jest.Mock };
-    signatureRequest: { findFirst: jest.Mock; create: jest.Mock; update: jest.Mock };
-    signatureRequestSigner: { findUnique: jest.Mock; update: jest.Mock };
+    signatureRequest: { findFirst: jest.Mock; findMany: jest.Mock; create: jest.Mock; update: jest.Mock };
+    signatureRequestSigner: { findUnique: jest.Mock; findUniqueOrThrow: jest.Mock; update: jest.Mock };
     company: { findUniqueOrThrow: jest.Mock };
     $transaction: jest.Mock;
   };
   let storage: { save: jest.Mock; read: jest.Mock };
   let mail: { send: jest.Mock };
   let outbox: { enqueue: jest.Mock };
+  let projectAccess: { visibleWhere: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
       document: { findFirst: jest.fn() },
-      signatureRequest: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
-      signatureRequestSigner: { findUnique: jest.fn(), update: jest.fn() },
+      signatureRequest: { findFirst: jest.fn(), findMany: jest.fn().mockResolvedValue([]), create: jest.fn(), update: jest.fn() },
+      signatureRequestSigner: {
+        findUnique: jest.fn(),
+        findUniqueOrThrow: jest.fn(async ({ where }: { where: { id: string } }) => ({ accessToken: `token-of-${where.id}` })),
+        update: jest.fn(),
+      },
       company: { findUniqueOrThrow: jest.fn().mockResolvedValue({ name: "Acme Co" }) },
       $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
     };
     storage = { save: jest.fn().mockResolvedValue({ storageKey: "sig-key" }), read: jest.fn() };
     mail = { send: jest.fn() };
     outbox = { enqueue: jest.fn() };
+    projectAccess = { visibleWhere: jest.fn().mockResolvedValue({}) };
 
     const module = await Test.createTestingModule({
       providers: [
@@ -62,6 +69,7 @@ describe("SignatureRequestsService", () => {
         { provide: ConfigService, useValue: { get: () => undefined } },
         { provide: AuditService, useValue: { record: jest.fn() } },
         { provide: OutboxService, useValue: outbox },
+        { provide: ProjectAccessService, useValue: projectAccess },
       ],
     }).compile();
 
@@ -96,6 +104,18 @@ describe("SignatureRequestsService", () => {
         expect.objectContaining({ order: 1, name: "Jane" }),
         expect.objectContaining({ order: 2, name: "Bob" }),
       ]);
+    });
+  });
+
+  describe("list()", () => {
+    it("leaves out requests on projects the viewer can't see", async () => {
+      const hidden = { document: { is: { projectId: { notIn: ["p-secret"] } } } };
+      projectAccess.visibleWhere.mockResolvedValue(hidden);
+
+      await service.list(COMPANY_A, { userId: "user-2", role: "member" });
+
+      expect(projectAccess.visibleWhere).toHaveBeenCalledWith(COMPANY_A, "SignatureRequest", "user-2", "member");
+      expect(prisma.signatureRequest.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { AND: [{ companyId: COMPANY_A }, hidden] } }));
     });
   });
 
@@ -148,6 +168,9 @@ describe("SignatureRequestsService", () => {
         expect.objectContaining({ where: { id: "signer-1" }, data: expect.objectContaining({ signatureImageKey: "sig-key" }) }),
       );
       expect(mail.send).toHaveBeenCalledWith(expect.objectContaining({ to: "bob@example.com" }));
+      // The link is built from the next signer's own token, read by id since list/get reads omit it.
+      expect(prisma.signatureRequestSigner.findUniqueOrThrow).toHaveBeenCalledWith({ where: { id: "signer-2" }, select: { accessToken: true } });
+      expect(mail.send.mock.calls[0][0].text).toContain("/sign/token-of-signer-2");
       expect(prisma.signatureRequest.update).not.toHaveBeenCalled();
       expect(outbox.enqueue).not.toHaveBeenCalled();
     });

@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { PrismaService } from "../common/prisma/prisma.service";
-import { callbackUrl, exchangeCode, refreshIfExpiring, requestToken, signState, tokenExpiry, verifyState, type TokenEndpoint } from "../common/oauth/oauth";
+import { callbackUrl, exchangeCode, refreshIfExpiring, requestToken, signState, tokenExpiry, verifyState, type OAuthStateClaims, type TokenEndpoint } from "../common/oauth/oauth";
 import { encryptSecret, withDecryptedTokens, withEncryptedTokens } from "../common/crypto/secret-box";
 
 const FETCH_TIMEOUT_MS = 10_000;
@@ -67,13 +67,13 @@ export class DocusignService {
     return { connected: true as const, accountId: connection.accountId, connectedAt: connection.connectedAt };
   }
 
-  getAuthorizeUrl(companyId: string): string {
+  getAuthorizeUrl(user: OAuthStateClaims): string {
     const clientId = this.config.get<string>("DOCUSIGN_CLIENT_ID");
     if (!clientId) {
       throw new BadRequestException("DocuSign isn't configured on this server — set DOCUSIGN_CLIENT_ID/DOCUSIGN_CLIENT_SECRET");
     }
 
-    const state = signState(this.jwt, { companyId });
+    const state = signState(this.jwt, "docusign", user);
     const params = new URLSearchParams({
       response_type: "code",
       scope: "signature",
@@ -89,7 +89,7 @@ export class DocusignService {
    * here, since different accounts live on different regional clusters (na1/na2/eu/au/...).
    * Returns the companyId so the controller can redirect appropriately even on later failures. */
   async handleCallback(code: string, state: string): Promise<{ companyId: string }> {
-    const { companyId } = verifyState(this.jwt, state);
+    const { companyId } = verifyState(this.jwt, state, "docusign");
 
     const tokens = await exchangeCode(this.tokenEndpoint(), { code });
     const userInfo = await this.fetchUserInfo(tokens.access_token);

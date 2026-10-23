@@ -20,12 +20,33 @@ describe("oauth helpers", () => {
     const jwt = new JwtService({ secret: "s" });
 
     it("round-trips the payload", () => {
-      expect(verifyState(jwt, signState(jwt, { companyId: "c1", provider: "xero" }))).toMatchObject({ companyId: "c1", provider: "xero" });
+      const state = signState(jwt, "ms_project", { companyId: "c1", userId: "u1" }, { environmentUrl: "https://x" });
+      expect(verifyState(jwt, state, "ms_project")).toMatchObject({ kind: "oauth_state", provider: "ms_project", companyId: "c1", userId: "u1", environmentUrl: "https://x" });
+    });
+
+    it("keeps only companyId and userId from the claims, and extra can't override them", () => {
+      const user = { companyId: "c1", userId: "u1", email: "a@b.c", role: "owner" } as { companyId: string; userId: string };
+      const state = signState(jwt, "xero", user, { kind: "access", provider: "quickbooks", companyId: "c2" });
+      expect(jwt.verify(state)).toEqual({ kind: "oauth_state", provider: "xero", companyId: "c1", userId: "u1", iat: expect.any(Number), exp: expect.any(Number) });
+    });
+
+    it("refuses an access token signed with the same secret", () => {
+      const accessToken = jwt.sign({ userId: "u1", companyId: "c1", email: "a@b.c", role: "owner", sid: "s1" });
+      expect(() => verifyState(jwt, accessToken, "docusign")).toThrow(BadRequestException);
+    });
+
+    it("refuses a state signed for another provider", () => {
+      expect(() => verifyState(jwt, signState(jwt, "xero", { companyId: "c1", userId: "u1" }), "quickbooks")).toThrow(BadRequestException);
+    });
+
+    it("refuses a state without a userId", () => {
+      const state = jwt.sign({ kind: "oauth_state", provider: "docusign", companyId: "c1" });
+      expect(() => verifyState(jwt, state, "docusign")).toThrow(BadRequestException);
     });
 
     it("turns a forged or expired state into a 400 asking to connect again", () => {
-      expect(() => verifyState(jwt, "forged")).toThrow(/expired — try connecting again/);
-      expect(() => verifyState(jwt, new JwtService({ secret: "other" }).sign({ companyId: "c1" }))).toThrow(BadRequestException);
+      expect(() => verifyState(jwt, "forged", "xero")).toThrow(/expired — try connecting again/);
+      expect(() => verifyState(jwt, new JwtService({ secret: "other" }).sign({ companyId: "c1" }), "xero")).toThrow(BadRequestException);
     });
   });
 

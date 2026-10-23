@@ -2,6 +2,7 @@ import { SetMetadata } from "@nestjs/common";
 import type { ApiKeyScope } from "@cantero/shared";
 
 export const REQUIRE_SCOPE_KEY = "requireScope";
-/** Restricts a /v1/* route to API keys whose scopes include this one (an empty scopes array on
- * the key means unrestricted, so this only ever narrows — never widens — what a key can reach). */
+/** Restricts an API-key route (handler or whole controller) to keys whose scopes include this one.
+ * An empty scopes array on the key means every read dataset — but not the scopes listed in
+ * EXPLICIT_API_KEY_SCOPES (SCIM), which the key must name. */
 export const RequireScope = (scope: ApiKeyScope) => SetMetadata(REQUIRE_SCOPE_KEY, scope);

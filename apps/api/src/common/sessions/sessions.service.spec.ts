@@ -6,13 +6,13 @@ import { PrismaService } from "../prisma/prisma.service";
 describe("SessionsService", () => {
   let service: SessionsService;
   let prisma: {
-    userSession: { create: jest.Mock; findUnique: jest.Mock; update: jest.Mock; findMany: jest.Mock };
+    userSession: { create: jest.Mock; findUnique: jest.Mock; update: jest.Mock; findMany: jest.Mock; updateMany: jest.Mock };
     company: { findUnique: jest.Mock };
   };
 
   beforeEach(async () => {
     prisma = {
-      userSession: { create: jest.fn(), findUnique: jest.fn(), update: jest.fn(), findMany: jest.fn() },
+      userSession: { create: jest.fn(), findUnique: jest.fn(), update: jest.fn(), findMany: jest.fn(), updateMany: jest.fn().mockResolvedValue({ count: 2 }) },
       company: { findUnique: jest.fn() },
     };
 
@@ -24,14 +24,25 @@ describe("SessionsService", () => {
   });
 
   describe("create", () => {
-    it("creates a session row and returns its id", async () => {
+    it("creates a session row for the company the token is issued for and returns its id", async () => {
       prisma.userSession.create.mockResolvedValue({ id: "session-1" });
 
-      const id = await service.create("user-1", { userAgent: "Chrome", ipAddress: "1.2.3.4" });
+      const id = await service.create("user-1", "company-1", { userAgent: "Chrome", ipAddress: "1.2.3.4" });
 
       expect(id).toBe("session-1");
       expect(prisma.userSession.create).toHaveBeenCalledWith({
-        data: { userId: "user-1", userAgent: "Chrome", ipAddress: "1.2.3.4" },
+        data: { userId: "user-1", companyId: "company-1", userAgent: "Chrome", ipAddress: "1.2.3.4" },
+      });
+    });
+  });
+
+  describe("revokeAllInCompany", () => {
+    it("revokes the person's live sessions in that company (and unattributed legacy ones), not elsewhere", async () => {
+      await expect(service.revokeAllInCompany("user-1", "company-1")).resolves.toBe(2);
+
+      expect(prisma.userSession.updateMany).toHaveBeenCalledWith({
+        where: { userId: "user-1", revokedAt: null, OR: [{ companyId: "company-1" }, { companyId: null }] },
+        data: { revokedAt: expect.any(Date) },
       });
     });
   });

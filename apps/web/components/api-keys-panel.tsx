@@ -20,6 +20,8 @@ interface ApiKey {
 export function ApiKeysPanel() {
   const t = useTranslations("settings");
   const tc = useTranslations("common");
+  // Dataset scopes read as their /v1 path; SCIM is a different kind of access, so it gets a name.
+  const scopeLabel = (scope: string) => (scope === "scim" ? t("apiKeyScopeScim") : scope);
   const [apiKeys, setApiKeys] = useState<ApiKey[] | null>(null);
   const [newKeyName, setNewKeyName] = useState("");
   const [newKeyScopes, setNewKeyScopes] = useState<ApiKeyScope[]>([]);
@@ -106,7 +108,7 @@ export function ApiKeysPanel() {
               <tr key={k.id} className="border-b border-gray-100 dark:border-gray-700">
                 <td className="py-2">{k.name}</td>
                 <td className="font-mono text-xs text-gray-500 dark:text-gray-400">{k.keyPrefix}…</td>
-                <td className="text-xs text-gray-500 dark:text-gray-400">{k.scopes.length > 0 ? k.scopes.join(", ") : t("apiKeyUnrestricted")}</td>
+                <td className="text-xs text-gray-500 dark:text-gray-400">{k.scopes.length > 0 ? k.scopes.map(scopeLabel).join(", ") : t("apiKeyUnrestricted")}</td>
                 <td className="text-xs text-gray-500 dark:text-gray-400">{k.expiresAt ? formatDate(new Date(k.expiresAt)) : "—"}</td>
                 <td className="text-xs text-gray-500 dark:text-gray-400">
                   {k.revokedAt
@@ -168,7 +170,7 @@ export function ApiKeysPanel() {
                   setNewKeyScopes((prev) => (prev.includes(scope) ? prev.filter((s) => s !== scope) : [...prev, scope]))
                 }
               />
-              {scope}
+              {scopeLabel(scope)}
             </label>
           ))}
         </div>

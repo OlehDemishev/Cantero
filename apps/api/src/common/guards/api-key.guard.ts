@@ -1,12 +1,13 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable, UnauthorizedException } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
-import type { ApiKeyScope } from "@cantero/shared";
+import { EXPLICIT_API_KEY_SCOPES, type ApiKeyScope } from "@cantero/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import { hashApiKey } from "../../company/api-keys.service";
 import { REQUIRE_SCOPE_KEY } from "../decorators/require-scope.decorator";
 
 /** Authenticates /v1/* integration routes via the X-Api-Key header instead of a JWT, and — when
- * the route carries @RequireScope() — checks the key was issued with that scope. */
+ * the route or its controller carries @RequireScope() — checks the key was issued with that scope.
+ * An unscoped key passes every read scope, never an explicit one (SCIM). */
 @Injectable()
 export class ApiKeyGuard implements CanActivate {
   constructor(
@@ -28,8 +29,8 @@ export class ApiKeyGuard implements CanActivate {
       throw new UnauthorizedException("API key has expired");
     }
 
-    const requiredScope = this.reflector.get<ApiKeyScope | undefined>(REQUIRE_SCOPE_KEY, context.getHandler());
-    if (requiredScope && apiKey.scopes.length > 0 && !apiKey.scopes.includes(requiredScope)) {
+    const requiredScope = this.reflector.getAllAndOverride<ApiKeyScope | undefined>(REQUIRE_SCOPE_KEY, [context.getHandler(), context.getClass()]);
+    if (requiredScope && !ApiKeyGuard.allows(apiKey.scopes, requiredScope)) {
       throw new ForbiddenException(`This API key is not scoped for "${requiredScope}"`);
     }
 
@@ -38,5 +39,10 @@ export class ApiKeyGuard implements CanActivate {
     request.apiKeyScopes = apiKey.scopes;
     request.apiKeyName = apiKey.name;
     return true;
+  }
+
+  static allows(keyScopes: readonly string[], required: ApiKeyScope): boolean {
+    if (keyScopes.includes(required)) return true;
+    return keyScopes.length === 0 && !EXPLICIT_API_KEY_SCOPES.includes(required);
   }
 }

@@ -123,7 +123,7 @@ export class AuthService {
   }
 
   async issueAccessToken(user: Omit<AuthUser, "sid">, meta: SessionMeta): Promise<string> {
-    const sid = await this.sessions.create(user.userId, meta);
+    const sid = await this.sessions.create(user.userId, user.companyId, meta);
     return this.jwtService.sign({ ...user, sid } satisfies AuthUser);
   }
 }

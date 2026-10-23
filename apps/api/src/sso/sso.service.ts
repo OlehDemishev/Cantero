@@ -131,7 +131,7 @@ export class SsoService {
     }
 
     const membership = user.memberships[0];
-    const sid = await this.sessions.create(user.id, meta);
+    const sid = await this.sessions.create(user.id, companyId, meta);
     const accessToken = this.jwt.sign({
       userId: user.id,
       companyId,

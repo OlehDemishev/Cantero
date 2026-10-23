@@ -12,6 +12,11 @@ import { ProjectAccessService } from "../project-access/project-access.service";
  * documents, tasks, RFIs, etc. all get filtered by this one guard without each of those services
  * needing to remember to ask.
  *
+ * Every project the request names is checked, not just the first one found: a handler may read
+ * its projectId from a different place than the guard looked first (`POST /tasks?projectId=<own>`
+ * with `{ projectId: <restricted> }` in the body), so all of them must be visible. The
+ * comma-separated `projectIds` query list (the portfolio schedule) counts too.
+ *
  * A route shaped `projects/:id/…` (ProjectsController, and ~50 older nested routes) names the
  * project `:id` rather than `:projectId`; that `:id` is read as the project too, so those routes
  * can't silently skip the check. project-routes.spec.ts fails on any other spelling.
@@ -42,14 +47,15 @@ export class ProjectAccessGuard implements CanActivate {
 
     if (ProjectAccessService.seesEveryProject(user.userId, user.role)) return true;
 
-    const projectId =
-      firstString(request.params?.projectId) ??
-      projectIdFromProjectsRoute(request) ??
-      firstString(request.query?.projectId) ??
-      firstString(request.body?.projectId);
-    if (projectId) await this.projectAccess.assertAccess(user.companyId, projectId, user.userId, user.role);
+    const checked = new Set([
+      ...strings(request.params?.projectId),
+      ...strings(projectIdFromProjectsRoute(request)),
+      ...strings(request.query?.projectId),
+      ...strings(request.query?.projectIds).flatMap((list) => list.split(",").map((id) => id.trim())).filter(Boolean),
+      ...strings(request.body?.projectId),
+    ]);
+    for (const projectId of checked) await this.projectAccess.assertAccess(user.companyId, projectId, user.userId, user.role);
 
-    const checked = new Set(projectId ? [projectId] : []);
     const resources = this.reflector.getAll<(ProjectResourceMeta[] | undefined)[]>(PROJECT_RESOURCE_KEY, [context.getHandler(), context.getClass()]).flat();
     for (const resource of resources) {
       if (!resource || !("model" in resource)) continue;
@@ -72,6 +78,13 @@ function projectIdFromProjectsRoute(request: { route?: { path?: unknown }; param
   const path = request.route?.path;
   if (typeof path !== "string" || !PROJECTS_ID_ROUTE.test(path)) return undefined;
   return firstString(request.params?.id);
+}
+
+/** Every non-empty string in a param/query/body value — a query key repeated (`?projectId=a&projectId=b`)
+ * arrives as an array, and each one could be the one a handler reads. */
+function strings(value: unknown): string[] {
+  const values = Array.isArray(value) ? value : [value];
+  return values.filter((v): v is string => typeof v === "string" && v.length > 0);
 }
 
 function firstString(value: unknown): string | undefined {

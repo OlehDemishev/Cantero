@@ -23,7 +23,7 @@ export class DocusignController {
   @Requires("settings.integrations")
   @Get("company/docusign/authorize-url")
   authorizeUrl(@CurrentUser() user: AuthUser) {
-    return { url: this.service.getAuthorizeUrl(user.companyId) };
+    return { url: this.service.getAuthorizeUrl(user) };
   }
 
   @Requires("settings.integrations")

@@ -2,6 +2,7 @@ import { JwtService } from "@nestjs/jwt";
 import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { AccountingSyncService } from "./accounting-sync.service";
 import { encrypted } from "../common/crypto/testing";
+import { signState } from "../common/oauth/oauth";
 
 function jsonResponse(body: unknown, ok = true, status = ok ? 200 : 400) {
   return { ok, status, json: async () => body } as Response;
@@ -81,15 +82,15 @@ describe("AccountingSyncService", () => {
     it("throws when the provider's client ID isn't configured", () => {
       config.get.mockImplementation(() => undefined);
 
-      expect(() => service.getAuthorizeUrl("company-a", "quickbooks")).toThrow(BadRequestException);
+      expect(() => service.getAuthorizeUrl({ companyId: "company-a", userId: "user-a" }, "quickbooks")).toThrow(BadRequestException);
     });
 
     it("refuses lexoffice, which connects with an API key instead of OAuth", () => {
-      expect(() => service.getAuthorizeUrl("company-a", "lexoffice")).toThrow(BadRequestException);
+      expect(() => service.getAuthorizeUrl({ companyId: "company-a", userId: "user-a" }, "lexoffice")).toThrow(BadRequestException);
     });
 
     it("builds a QuickBooks authorize URL carrying a signed state and the callback redirect_uri", () => {
-      const url = service.getAuthorizeUrl("company-a", "quickbooks");
+      const url = service.getAuthorizeUrl({ companyId: "company-a", userId: "user-a" }, "quickbooks");
       const parsed = new URL(url);
 
       expect(parsed.origin + parsed.pathname).toBe("https://appcenter.intuit.com/connect/oauth2");
@@ -100,6 +101,7 @@ describe("AccountingSyncService", () => {
       const decoded = jwt.verify(state) as { companyId: string; provider: string };
       expect(decoded.companyId).toBe("company-a");
       expect(decoded.provider).toBe("quickbooks");
+      expect(decoded).toMatchObject({ kind: "oauth_state", userId: "user-a" });
     });
   });
 
@@ -109,7 +111,7 @@ describe("AccountingSyncService", () => {
     });
 
     it("rejects a state signed for a different provider", async () => {
-      const state = jwt.sign({ companyId: "company-a", provider: "xero" });
+      const state = signState(jwt, "xero", { companyId: "company-a", userId: "user-a" });
 
       await expect(service.handleCallback("quickbooks", "code", state, "realm-1")).rejects.toThrow(BadRequestException);
     });
@@ -121,7 +123,7 @@ describe("AccountingSyncService", () => {
     });
 
     it("exchanges the code and stores the connection using the realmId from the callback for QuickBooks", async () => {
-      const state = jwt.sign({ companyId: "company-a", provider: "quickbooks" });
+      const state = signState(jwt, "quickbooks", { companyId: "company-a", userId: "user-a" });
       fetchMock.mockResolvedValueOnce(
         jsonResponse({ access_token: "at", refresh_token: "rt", expires_in: 3600 }),
       );
@@ -138,7 +140,7 @@ describe("AccountingSyncService", () => {
     });
 
     it("fetches the tenant ID from /connections for Xero, since it's not on the callback", async () => {
-      const state = jwt.sign({ companyId: "company-a", provider: "xero" });
+      const state = signState(jwt, "xero", { companyId: "company-a", userId: "user-a" });
       fetchMock
         .mockResolvedValueOnce(jsonResponse({ access_token: "at", refresh_token: "rt", expires_in: 1800 }))
         .mockResolvedValueOnce(jsonResponse([{ tenantId: "tenant-1", tenantName: "Acme" }]));
@@ -153,7 +155,7 @@ describe("AccountingSyncService", () => {
     });
 
     it("throws when the provider rejects the authorization code", async () => {
-      const state = jwt.sign({ companyId: "company-a", provider: "quickbooks" });
+      const state = signState(jwt, "quickbooks", { companyId: "company-a", userId: "user-a" });
       fetchMock.mockResolvedValueOnce(jsonResponse({ error: "invalid_grant" }, false, 400));
 
       await expect(service.handleCallback("quickbooks", "bad-code", state, "realm-1")).rejects.toThrow(BadRequestException);

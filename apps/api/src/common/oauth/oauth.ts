@@ -42,16 +42,53 @@ export class OAuthTokenError extends Error {
   }
 }
 
-export function signState(jwt: JwtService, payload: Record<string, unknown>): string {
-  return jwt.sign(payload, { expiresIn: STATE_TTL });
+/** Marks a JWT as an OAuth `state`. Access tokens are signed with the same secret, so without
+ * this (and the provider) any logged-in user's bearer token would pass as state on the public
+ * callbacks and let them connect their own provider account to the company. */
+const STATE_KIND = "oauth_state";
+
+export interface OAuthStateClaims {
+  companyId: string;
+  /** Who started the connection — recorded so a state is always tied to a person, never to a
+   * token minted for something else. */
+  userId: string;
 }
 
-export function verifyState<T extends { companyId: string }>(jwt: JwtService, state: string): T {
+/** Signs the `state` for one provider's authorize URL. `extra` carries what the callback needs
+ * that can't be recovered afterwards (e.g. MS Project's environment URL). */
+export function signState(
+  jwt: JwtService,
+  provider: string,
+  claims: OAuthStateClaims,
+  extra: Record<string, unknown> = {},
+): string {
+  return jwt.sign({ ...extra, companyId: claims.companyId, userId: claims.userId, kind: STATE_KIND, provider }, { expiresIn: STATE_TTL });
+}
+
+/** Verifies a `state` signed by signState() for `provider`. Anything else signed with the same
+ * secret (an access token, another provider's state) is refused. */
+export function verifyState<T extends Record<string, unknown> = Record<string, unknown>>(
+  jwt: JwtService,
+  state: string,
+  provider: string,
+): OAuthStateClaims & T {
+  let payload: Record<string, unknown>;
   try {
-    return jwt.verify<T>(state);
+    payload = jwt.verify<Record<string, unknown>>(state);
   } catch {
     throw new BadRequestException("This connection link has expired — try connecting again");
   }
+  if (
+    payload.kind !== STATE_KIND ||
+    payload.provider !== provider ||
+    typeof payload.companyId !== "string" ||
+    typeof payload.userId !== "string" ||
+    !payload.companyId ||
+    !payload.userId
+  ) {
+    throw new BadRequestException("This connection link isn't valid — try connecting again");
+  }
+  return payload as OAuthStateClaims & T;
 }
 
 export function apiOrigin(config: ConfigService): string {

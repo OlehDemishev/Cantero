@@ -23,7 +23,7 @@ import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { EstimatesService } from "./estimates.service";
 import { NotProjectScoped, ProjectResource } from "../common/project-access/project-resource.decorator";
 import { OpenToAllRoles } from "../common/decorators/roles.decorator";
-import { RequiresFor } from "../common/decorators/permissions.decorator";
+import { Requires, RequiresFor } from "../common/decorators/permissions.decorator";
 import { DateQueryPipe } from "../common/pipes/query-pipes";
 
 @ProjectResource("Estimate")
@@ -56,6 +56,13 @@ export class EstimatesController {
   @Get(":id")
   get(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.service.get(user.companyId, id, user.role);
+  }
+
+  /** A GET, but it hands out the client's decision credential — manage only. */
+  @Get(":id/client-link")
+  @Requires("estimates.manage")
+  clientLink(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.service.clientLink(user.companyId, id);
   }
 
   @Get(":id/suggested-lines")

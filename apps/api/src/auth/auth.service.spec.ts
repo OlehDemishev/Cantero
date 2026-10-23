@@ -50,6 +50,8 @@ describe("AuthService.login", () => {
 
     expect(decoded.role).toBe("worker");
     expect(decoded.additionalRoles).toBeUndefined();
+    // The session remembers its company, so SCIM can sign the person out of this company only.
+    expect(sessions.create).toHaveBeenCalledWith("user-1", "company-a", NO_META);
   });
 
   it("includes the custom role's basePermissions as additionalRoles in the issued token", async () => {

@@ -184,7 +184,8 @@ export const updateSeatsSchema = z.object({
 });
 export type UpdateSeatsInput = z.infer<typeof updateSeatsSchema>;
 
-/** The public API's readable resources — matches the datasets exposed under /api/v1/*. */
+/** The public API's readable resources — matches the datasets exposed under /api/v1/* — plus
+ * "scim", user provisioning under /api/scim/v2. */
 export const API_KEY_SCOPES = [
   "projects",
   "clients",
@@ -194,8 +195,13 @@ export const API_KEY_SCOPES = [
   "materials",
   "time-entries",
   "budget",
+  "scim",
 ] as const;
 export type ApiKeyScope = (typeof API_KEY_SCOPES)[number];
+
+/** Scopes a key with an empty scope list does NOT get: they write (create users, sign people out),
+ * so they have to be picked on purpose — a read-only BI key must never reach them. */
+export const EXPLICIT_API_KEY_SCOPES: readonly ApiKeyScope[] = ["scim"];
 
 export const COMPANY_DOCUMENT_TYPES = [
   "general_liability_insurance",
@@ -220,7 +226,7 @@ export type SetCoiPubliclySharedInput = z.infer<typeof setCoiPubliclySharedSchem
 
 export const createApiKeySchema = z.object({
   name: z.string().min(1).max(80),
-  /// Empty/omitted = unrestricted (full read access to every /v1 dataset).
+  /// Empty/omitted = every /v1 read dataset; never SCIM (see EXPLICIT_API_KEY_SCOPES).
   scopes: z.array(z.enum(API_KEY_SCOPES)).max(API_KEY_SCOPES.length).optional(),
   expiresAt: z.string().datetime().optional(),
 });

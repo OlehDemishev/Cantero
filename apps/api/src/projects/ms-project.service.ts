@@ -3,7 +3,7 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from "@nes
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { PrismaService } from "../common/prisma/prisma.service";
-import { callbackUrl, exchangeCode, refreshIfExpiring, requestToken, signState, tokenExpiry, verifyState, type TokenEndpoint } from "../common/oauth/oauth";
+import { callbackUrl, exchangeCode, refreshIfExpiring, requestToken, signState, tokenExpiry, verifyState, type OAuthStateClaims, type TokenEndpoint } from "../common/oauth/oauth";
 import { encryptSecret, withDecryptedTokens, withEncryptedTokens } from "../common/crypto/secret-box";
 
 const FETCH_TIMEOUT_MS = 10_000;
@@ -56,14 +56,14 @@ export class MsProjectService {
     return { connected: true as const, environmentUrl: connection.environmentUrl, connectedAt: connection.connectedAt };
   }
 
-  getAuthorizeUrl(companyId: string, environmentUrl: string): string {
+  getAuthorizeUrl(user: OAuthStateClaims, environmentUrl: string): string {
     const clientId = this.config.get<string>("MS_PROJECT_CLIENT_ID");
     if (!clientId) {
       throw new BadRequestException("MS Project isn't configured on this server — set MS_PROJECT_CLIENT_ID/MS_PROJECT_CLIENT_SECRET");
     }
     const normalizedUrl = environmentUrl.replace(/\/+$/, "");
 
-    const state = signState(this.jwt, { companyId, environmentUrl: normalizedUrl });
+    const state = signState(this.jwt, "ms_project", user, { environmentUrl: normalizedUrl });
     const params = new URLSearchParams({
       response_type: "code",
       client_id: clientId,
@@ -79,7 +79,7 @@ export class MsProjectService {
    * the way DocuSign's account info can), then exchanges the code. Returns the companyId so the
    * controller can redirect appropriately even on later failures. */
   async handleCallback(code: string, state: string): Promise<{ companyId: string }> {
-    const { companyId, environmentUrl } = verifyState<{ companyId: string; environmentUrl: string }>(this.jwt, state);
+    const { companyId, environmentUrl } = verifyState<{ environmentUrl: string }>(this.jwt, state, "ms_project");
 
     const tokens = await exchangeCode(this.tokenEndpoint(), { code, redirect_uri: this.callbackUrl(), scope: scopeFor(environmentUrl) });
 
