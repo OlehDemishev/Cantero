@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
 
 interface FringeBenefitFund {
   id: string;
@@ -108,7 +109,7 @@ export function WageClassificationsPanel() {
                 <button onClick={() => setExpandedId(expandedId === wc.id ? null : wc.id)} className="text-left text-fg-muted hover:underline">
                   {wc.trade} — {formatCurrency(wc.hourlyRate, currency)}/{tc("hour")}
                   {Number(wc.fringeRate) > 0 && <span className="text-fg-subtle"> + {formatCurrency(wc.fringeRate, currency)} {t("fringeAbbr")}</span>}
-                  {wc.apprenticeRatio && <span className="ml-1.5 rounded-full bg-brand-50 dark:bg-brand-500/15 px-1.5 py-0.5 text-xs text-brand-700 dark:text-brand-400">{t("ratioAbbr", { ratio: wc.apprenticeRatio })}</span>}
+                  {wc.apprenticeRatio && <Badge tone="brand" size="sm" className="ml-1.5">{t("ratioAbbr", { ratio: wc.apprenticeRatio })}</Badge>}
                 </button>
                 <button onClick={() => remove(wc.id)} className="text-fg-subtle hover:text-danger-fg">
                   ×

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { SearchIcon } from "@/components/nav-icons";
+import { Badge } from "@/components/ui/badge";
 
 type ResultType =
   | "project"
@@ -152,9 +153,9 @@ export function GlobalSearch() {
                         <span className="block text-xs text-fg-subtle">{t("sameTextMore", { count: r.sameTextCount })}</span>
                       )}
                     </span>
-                    <span className="ml-2 shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-fg-subtle dark:bg-white/10">
+                    <Badge tone="neutral" className="ml-2 shrink-0 dark:bg-white/10">
                       {t(`type_${r.type}`)}
-                    </span>
+                    </Badge>
                   </button>
                 </li>
               ))}

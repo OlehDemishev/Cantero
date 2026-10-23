@@ -7,6 +7,7 @@ import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { formatDateTime } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Badge } from "@/components/ui/badge";
 
 interface WebhookEndpoint {
   id: string;
@@ -134,9 +135,9 @@ export function WebhooksPanel() {
                   <p className="truncate text-sm font-medium text-fg">{w.url}</p>
                   <p className="mt-0.5 flex flex-wrap gap-1">
                     {w.events.map((ev) => (
-                      <span key={ev} className="rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs text-gray-600 dark:text-gray-300">
+                      <Badge tone="neutral" key={ev}>
                         {t(`webhookEvent_${ev.replace(".", "_")}`)}
-                      </span>
+                      </Badge>
                     ))}
                   </p>
                   <p className="mt-1 text-xs text-fg-subtle">
@@ -151,9 +152,9 @@ export function WebhooksPanel() {
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1">
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${w.active ? "bg-success-50 dark:bg-success-500/15 text-success-fg" : "bg-gray-100 dark:bg-gray-700 text-fg-subtle"}`}>
+                  <Badge tone={w.active ? "success" : "neutral"}>
                     {w.active ? t("active") : t("inactive")}
-                  </span>
+                  </Badge>
                   <div className="flex gap-1">
                     <button onClick={() => toggleWebhookLog(w.id)} className="btn-secondary px-2 py-1 text-xs">
                       {t("viewLog")}

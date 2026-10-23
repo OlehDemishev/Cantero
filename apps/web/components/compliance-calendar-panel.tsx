@@ -6,6 +6,7 @@ import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 type ComplianceItemType = "subcontractor_document" | "supplier_document" | "worker_certification" | "permit" | "company_document";
 type ComplianceStatus = "expired" | "expiring";
@@ -47,14 +48,14 @@ export function ComplianceCalendarPanel() {
         {(data.expiredCount > 0 || data.expiringCount > 0) && (
           <div className="mb-3 flex flex-wrap gap-2 text-xs">
             {data.expiredCount > 0 && (
-              <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2.5 py-1 font-medium text-danger-fg">
+              <Badge tone="danger">
                 {t("expiredCount", { count: data.expiredCount })}
-              </span>
+              </Badge>
             )}
             {data.expiringCount > 0 && (
-              <span className="rounded-full bg-warning-50 dark:bg-warning-500/15 px-2.5 py-1 font-medium text-warning-fg">
+              <Badge tone="warning">
                 {t("expiringCount", { count: data.expiringCount })}
-              </span>
+              </Badge>
             )}
           </div>
         )}
@@ -81,13 +82,9 @@ export function ComplianceCalendarPanel() {
                   <td className="text-xs text-fg-subtle">{item.holderName ?? "—"}</td>
                   <td className="text-xs text-fg-subtle">{formatDate(new Date(item.expiresAt))}</td>
                   <td>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        item.status === "expired" ? "bg-error-50 dark:bg-error-500/15 text-danger-fg" : "bg-warning-50 dark:bg-warning-500/15 text-warning-fg"
-                      }`}
-                    >
+                    <Badge tone={item.status === "expired" ? "danger" : "warning"}>
                       {t(item.status)}
-                    </span>
+                    </Badge>
                   </td>
                 </tr>
               ))}

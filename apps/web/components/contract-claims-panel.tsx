@@ -10,6 +10,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface ContractClaim {
   id: string;
@@ -33,13 +35,6 @@ interface ClaimDetail extends ContractClaim {
   events: ClaimEvent[];
 }
 
-const STATUS_STYLES: Record<ContractClaimStatus, string> = {
-  notice_given: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  submitted: "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
-  negotiating: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
-  resolved: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-  rejected: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
-};
 const OPEN_STATUSES: ContractClaimStatus[] = ["notice_given", "submitted", "negotiating"];
 
 export function ContractClaimsPanel({ projectId }: { projectId: string }) {
@@ -230,7 +225,7 @@ export function ContractClaimsPanel({ projectId }: { projectId: string }) {
                   <span className="text-sm font-medium text-fg">
                     {t(`type_${claim.type}`)} · {claim.title}
                   </span>
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[claim.status]}`}>{t(`status_${claim.status}`)}</span>
+                  <Badge tone={statusTone(claim.status)}>{t(`status_${claim.status}`)}</Badge>
                 </button>
                 <p className="mt-1 text-xs text-fg-subtle">
                   {t("noticeDate")}: {formatDate(new Date(claim.noticeDate))}

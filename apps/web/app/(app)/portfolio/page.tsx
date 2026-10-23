@@ -9,6 +9,7 @@ import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { useReportAccess } from "@/lib/report-access";
 import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
 
 // Leaflet touches `window` at module load time, so it must never be part of the server render.
 const ProjectMapPanel = dynamic(() => import("@/components/project-map-panel").then((m) => m.ProjectMapPanel), { ssr: false });
@@ -194,9 +195,9 @@ export default function PortfolioPage() {
                     <td className="text-right">{p.criticalTaskCount || "—"}</td>
                     <td className="text-right">
                       {p.atRisk ? (
-                        <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-danger-fg">{t("atRisk")}</span>
+                        <Badge tone="danger">{t("atRisk")}</Badge>
                       ) : (
-                        <span className="rounded-full bg-success-50 dark:bg-success-500/15 px-2 py-0.5 text-xs font-medium text-success-fg">{t("onTrack")}</span>
+                        <Badge tone="success">{t("onTrack")}</Badge>
                       )}
                     </td>
                   </tr>

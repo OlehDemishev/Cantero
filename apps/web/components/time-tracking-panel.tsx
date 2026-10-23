@@ -10,6 +10,7 @@ import { resetStateInEffect } from "@/lib/effect-reset";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 interface Worker {
   id: string;
@@ -163,9 +164,9 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
                   <td>{entry.task?.name ?? "—"}</td>
                   <td>
                     {entry.withinGeofence === false && (
-                      <span className="rounded-full bg-warning-50 dark:bg-warning-500/15 px-2 py-0.5 text-xs font-medium text-warning-fg">
+                      <Badge tone="warning">
                         {t("outsideGeofence")}
-                      </span>
+                      </Badge>
                     )}
                   </td>
                   <td className="text-right">

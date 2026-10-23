@@ -8,6 +8,8 @@ import { useApi } from "@/lib/use-api";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface Alternate {
   id: string;
@@ -23,12 +25,6 @@ interface AlternatesResponse {
   rejectedCount: number;
   acceptedTotal: number;
 }
-
-const STATUS_STYLES: Record<EstimateAlternateStatus, string> = {
-  pending: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  accepted: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-  rejected: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
-};
 
 export function EstimateAlternatesPanel({ estimateId, currency }: { estimateId: string; currency: string }) {
   const t = useTranslations("estimateAlternates");
@@ -125,7 +121,7 @@ export function EstimateAlternatesPanel({ estimateId, currency }: { estimateId: 
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-fg">{a.title}</span>
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[a.status]}`}>{t(a.status)}</span>
+                      <Badge tone={statusTone(a.status)}>{t(a.status)}</Badge>
                     </div>
                     {a.description && <p className="mt-1 text-xs text-fg-subtle">{a.description}</p>}
                   </div>

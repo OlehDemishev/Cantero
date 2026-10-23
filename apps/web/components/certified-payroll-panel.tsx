@@ -8,6 +8,7 @@ import { useMe } from "@/lib/use-me";
 import { formatCurrency, formatNumber } from "@/lib/format-currency";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 interface Project {
   isPublicWork: boolean;
@@ -246,7 +247,7 @@ export function CertifiedPayrollPanel({ projectId }: { projectId: string }) {
                         <td className="py-1 pr-3">{line.workerName}</td>
                         <td className="py-1 pr-3 text-fg-subtle">
                           {line.trade ?? t("unclassified")}
-                          {line.isApprentice && <span className="ml-1 rounded-full bg-brand-50 dark:bg-brand-500/15 px-1.5 py-0.5 text-xs text-brand-700 dark:text-brand-400">{t("apprentice")}</span>}
+                          {line.isApprentice && <Badge tone="brand" size="sm" className="ml-1">{t("apprentice")}</Badge>}
                         </td>
                         <td className="py-1 pr-3">{formatNumber(line.regularHours, { fractionDigits: 2 })}</td>
                         <td className="py-1 pr-3">{formatNumber(line.overtimeHours, { fractionDigits: 2 })}</td>

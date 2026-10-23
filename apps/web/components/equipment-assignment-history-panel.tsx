@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useApi } from "@/lib/use-api";
 import { formatDateTime } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
 
 interface Assignment {
   id: string;
@@ -55,17 +56,17 @@ export function EquipmentAssignmentHistoryPanel({ equipmentId }: { equipmentId: 
                 <td>
                   {formatDateTime(new Date(a.checkedOutAt))}
                   {a.checkOutWithinGeofence === false && (
-                    <span className="ml-1 rounded-full bg-warning-50 dark:bg-warning-500/15 px-1.5 py-0.5 text-[10px] font-medium text-warning-fg">
+                    <Badge tone="warning" size="sm" className="ml-1">
                       {t("offSite")}
-                    </span>
+                    </Badge>
                   )}
                 </td>
                 <td>
                   {a.checkedInAt ? formatDateTime(new Date(a.checkedInAt)) : t("stillOut")}
                   {a.checkInWithinGeofence === false && (
-                    <span className="ml-1 rounded-full bg-warning-50 dark:bg-warning-500/15 px-1.5 py-0.5 text-[10px] font-medium text-warning-fg">
+                    <Badge tone="warning" size="sm" className="ml-1">
                       {t("offSite")}
-                    </span>
+                    </Badge>
                   )}
                 </td>
               </tr>

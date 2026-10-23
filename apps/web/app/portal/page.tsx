@@ -9,6 +9,7 @@ import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatCurrency } from "@/lib/format-currency";
 import { useCompanyLocale } from "@/components/public-locale";
+import { Badge } from "@/components/ui/badge";
 
 interface Me {
   name: string;
@@ -350,17 +351,9 @@ export default function PortalDashboardPage() {
                       <span className="text-xs text-fg-subtle">
                         {formatCurrency(e.grandTotal, me.currency)}
                       </span>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          e.clientDecision === "approved"
-                            ? "bg-success-50 dark:bg-success-500/15 text-success-fg"
-                            : e.clientDecision === "rejected"
-                              ? "bg-error-50 dark:bg-error-500/15 text-danger-fg"
-                              : "bg-warning-50 dark:bg-warning-500/15 text-warning-fg"
-                        }`}
-                      >
+                      <Badge tone={e.clientDecision === "approved" ? "success" : e.clientDecision === "rejected" ? "danger" : "warning"}>
                         {te(`clientDecision_${e.clientDecision}`)}
-                      </span>
+                      </Badge>
                     </span>
                   </a>
                 </li>
@@ -389,17 +382,9 @@ export default function PortalDashboardPage() {
                       <span className="text-xs text-fg-subtle">
                         {formatCurrency(co.grandTotal, me.currency)}
                       </span>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          co.clientDecision === "approved"
-                            ? "bg-success-50 dark:bg-success-500/15 text-success-fg"
-                            : co.clientDecision === "rejected"
-                              ? "bg-error-50 dark:bg-error-500/15 text-danger-fg"
-                              : "bg-warning-50 dark:bg-warning-500/15 text-warning-fg"
-                        }`}
-                      >
+                      <Badge tone={co.clientDecision === "approved" ? "success" : co.clientDecision === "rejected" ? "danger" : "warning"}>
                         {te(`clientDecision_${co.clientDecision}`)}
-                      </span>
+                      </Badge>
                     </span>
                   </a>
                 </li>
@@ -428,13 +413,9 @@ export default function PortalDashboardPage() {
                       <span className="text-xs text-fg-subtle">
                         {formatCurrency(inv.total, me.currency)}
                       </span>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          inv.status === "paid" ? "bg-success-50 dark:bg-success-500/15 text-success-fg" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-                        }`}
-                      >
+                      <Badge tone={inv.status === "paid" ? "success" : "neutral"}>
                         {ti(inv.status)}
-                      </span>
+                      </Badge>
                     </span>
                   </a>
                 </li>
@@ -479,19 +460,9 @@ export default function PortalDashboardPage() {
                     <span className="ml-2 text-xs text-fg-subtle">{claim.project.name}</span>
                     {claim.location && <span className="ml-2 text-xs text-fg-subtle">— {claim.location}</span>}
                   </span>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                      claim.status === "resolved"
-                        ? "bg-success-50 dark:bg-success-500/15 text-success-fg"
-                        : claim.status === "denied"
-                          ? "bg-error-50 dark:bg-error-500/15 text-danger-fg"
-                          : claim.status === "in_progress"
-                            ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400"
-                            : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-                    }`}
-                  >
+                  <Badge tone={claim.status === "resolved" ? "success" : claim.status === "denied" ? "danger" : claim.status === "in_progress" ? "brand" : "neutral"}>
                     {t(`claimStatus_${claim.status}`)}
-                  </span>
+                  </Badge>
                 </li>
               ))}
             </ul>
@@ -558,19 +529,9 @@ export default function PortalDashboardPage() {
                       {request.title}
                       <span className="ml-2 text-xs text-fg-subtle">{request.project.name}</span>
                     </span>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        request.status === "converted"
-                          ? "bg-success-50 dark:bg-success-500/15 text-success-fg"
-                          : request.status === "declined"
-                            ? "bg-error-50 dark:bg-error-500/15 text-danger-fg"
-                            : request.status === "under_review"
-                              ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400"
-                              : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-                      }`}
-                    >
+                    <Badge tone={request.status === "converted" ? "success" : request.status === "declined" ? "danger" : request.status === "under_review" ? "brand" : "neutral"}>
                       {t(`changeRequestStatus_${request.status}`)}
-                    </span>
+                    </Badge>
                   </div>
                   {request.status === "declined" && request.reviewNote && (
                     <p className="mt-1 text-xs text-fg-subtle">{t("declineReason", { note: request.reviewNote })}</p>
@@ -637,17 +598,9 @@ export default function PortalDashboardPage() {
                       {ticket.subject}
                       <span className="ml-2 text-xs text-fg-subtle">{formatDate(new Date(ticket.createdAt))}</span>
                     </span>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        ticket.status === "resolved" || ticket.status === "closed"
-                          ? "bg-success-50 dark:bg-success-500/15 text-success-fg"
-                          : ticket.status === "waiting_on_customer"
-                            ? "bg-warning-50 dark:bg-warning-500/15 text-warning-fg"
-                            : "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400"
-                      }`}
-                    >
+                    <Badge tone={ticket.status === "resolved" || ticket.status === "closed" ? "success" : ticket.status === "waiting_on_customer" ? "warning" : "brand"}>
                       {t(`ticketStatus_${ticket.status}`)}
-                    </span>
+                    </Badge>
                   </a>
                 </li>
               ))}

@@ -11,6 +11,7 @@ import { CloseIcon, RateCatalogIcon } from "@/components/nav-icons";
 import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { formatDate, formatDateTime } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
 
 interface MaterialCatalogItem {
   id: string;
@@ -497,7 +498,7 @@ export default function RateCatalogPage() {
                         <td className="py-2 font-mono text-xs">{item.code}</td>
                         <td>
                           {item.name}
-                          {item.formula && <span className="ml-1 rounded-full bg-brand-50 dark:bg-brand-500/15 px-1.5 py-0.5 text-[10px] text-brand-700 dark:text-brand-400">ƒ</span>}
+                          {item.formula && <Badge tone="brand" size="sm" className="ml-1">ƒ</Badge>}
                         </td>
                         <td>{item.unit}</td>
                         <td>{item.laborHoursPerUnit}</td>

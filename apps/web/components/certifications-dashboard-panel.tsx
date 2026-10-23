@@ -6,6 +6,8 @@ import { useCan } from "@/lib/permissions";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 type CertStatus = "expired" | "expiring_soon" | "valid";
 
@@ -20,12 +22,6 @@ interface CertDashboard {
   certifications: CertRow[];
   summary: { expired: number; expiringSoon: number; valid: number };
 }
-
-const badgeClass: Record<CertStatus, string> = {
-  expired: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
-  expiring_soon: "bg-amber-50 text-amber-700",
-  valid: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-};
 
 export function CertificationsDashboardPanel() {
   const t = useTranslations("team");
@@ -73,7 +69,7 @@ export function CertificationsDashboardPanel() {
                   <td>{c.name}</td>
                   <td>{formatDate(new Date(c.expiresAt))}</td>
                   <td>
-                    <span className={`rounded-full px-2 py-0.5 text-xs ${badgeClass[c.status]}`}>{t(`certStatus_${c.status}`)}</span>
+                    <Badge tone={statusTone(c.status)}>{t(`certStatus_${c.status}`)}</Badge>
                   </td>
                 </tr>
               ))}

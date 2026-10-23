@@ -9,6 +9,7 @@ import { useApi } from "@/lib/use-api";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
+import { Badge } from "@/components/ui/badge";
 
 interface Subcontractor {
   id: string;
@@ -184,7 +185,7 @@ export default function SubcontractorsPage() {
                     <td className="text-right font-medium">{row.totalPaid}</td>
                     <td className="text-right">
                       {row.reportable ? (
-                        <span className="rounded-full bg-warning-50 dark:bg-warning-500/15 px-2 py-0.5 text-xs font-medium text-warning-fg">{t("reportableYes")}</span>
+                        <Badge tone="warning">{t("reportableYes")}</Badge>
                       ) : (
                         <span className="text-xs text-fg-subtle">{t("reportableNo")}</span>
                       )}

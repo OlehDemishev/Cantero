@@ -9,6 +9,8 @@ import { useCan } from "@/lib/permissions";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface DocumentOption {
   id: string;
@@ -32,13 +34,6 @@ interface DraftSigner {
   name: string;
   email: string;
 }
-
-const STATUS_STYLES: Record<SignatureRequestStatus, string> = {
-  draft: "bg-gray-100 dark:bg-gray-700 text-fg-subtle",
-  sent: "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
-  completed: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-  voided: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
-};
 
 export function SignatureRequestsPanel({ documents }: { documents: DocumentOption[] }) {
   const t = useTranslations("signatureRequests");
@@ -187,7 +182,7 @@ export function SignatureRequestsPanel({ documents }: { documents: DocumentOptio
             <li key={r.id} className="card">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-fg">{r.title}</span>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[r.status]}`}>{t(r.status)}</span>
+                <Badge tone={statusTone(r.status)}>{t(r.status)}</Badge>
               </div>
               <p className="mt-1 text-xs text-fg-subtle">{r.document.name}</p>
               <ul className="mt-2 flex flex-col gap-1 text-xs text-fg-subtle">

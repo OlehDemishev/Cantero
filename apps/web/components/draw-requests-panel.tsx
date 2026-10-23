@@ -7,6 +7,8 @@ import { apiFetch, downloadBlob, notifyApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface Invoice {
   id: string;
@@ -24,14 +26,6 @@ interface DrawRequest {
   lenderName: string | null;
   invoice: { id: string; number: string; total: string };
 }
-
-const STATUS_STYLES: Record<DrawRequestStatus, string> = {
-  draft: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  submitted: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
-  under_review: "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
-  approved: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-  funded: "bg-success-600 text-white",
-};
 
 const EMPTY_FORM = { invoiceId: "", periodStart: "", periodEnd: "", lenderName: "", lenderContactEmail: "", notes: "" };
 
@@ -196,9 +190,9 @@ export function DrawRequestsPanel({ projectId }: { projectId: string }) {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <span className="font-medium text-fg">{t("drawNumber", { number: draw.drawNumber })}</span>
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[draw.status]}`}>
+                  <Badge tone={statusTone(draw.status)}>
                     {t(`status_${draw.status}`)}
-                  </span>
+                  </Badge>
                 </div>
                 <span className="text-sm font-medium tabular-nums text-fg-muted">
                   {formatCurrency(draw.invoice.total, currency)}

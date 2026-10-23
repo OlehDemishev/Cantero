@@ -9,6 +9,7 @@ import { formatCurrency } from "@/lib/format-currency";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApi } from "@/lib/use-api";
+import { Badge } from "@/components/ui/badge";
 
 interface MaterialCatalogItem {
   id: string;
@@ -263,13 +264,9 @@ export function MaterialRfqsPanel() {
                     <span className="text-sm font-medium text-fg">{rfq.title}</span>{" "}
                     <span className="text-xs text-fg-subtle">{rfq.project ? rfq.project.name : t("companyWide")}</span>
                   </div>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                      rfq.status === "open" ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-                    }`}
-                  >
+                  <Badge tone={rfq.status === "open" ? "brand" : "neutral"}>
                     {t(rfq.status)}
-                  </span>
+                  </Badge>
                 </button>
 
                 {expanded && !detail && <p className="mt-3 text-xs text-fg-subtle">{tc("loading")}</p>}
@@ -290,7 +287,7 @@ export function MaterialRfqsPanel() {
                                 <span className={i === 0 ? "font-medium text-success-fg" : "text-gray-600 dark:text-gray-300"}>
                                   {q.supplier.name} — {formatCurrency(q.unitPrice, currency, { maximumFractionDigits: 4 })}/{line.materialCatalogItem.unit}
                                   {" "}({formatCurrency((Number(q.unitPrice) * Number(line.quantity)), currency)})
-                                  {q.isAwarded && <span className="ml-1.5 rounded-full bg-success-50 dark:bg-success-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-success-fg">{t("awarded")}</span>}
+                                  {q.isAwarded && <Badge tone="success" size="sm" className="ml-1.5">{t("awarded")}</Badge>}
                                 </span>
                                 {detail.status === "open" && !q.isAwarded && (
                                   <button onClick={() => award(detail.id, q.id)} className="text-brand-700 dark:text-brand-400 hover:underline">

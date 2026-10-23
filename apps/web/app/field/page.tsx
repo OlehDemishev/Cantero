@@ -17,6 +17,7 @@ import { LogsTab } from "@/components/field-logs-tab";
 import { PunchTab } from "@/components/field-punch-tab";
 import { RfiTab } from "@/components/field-rfi-tab";
 import { OfflineOthersNotice } from "@/components/offline-others-notice";
+import { Badge } from "@/components/ui/badge";
 
 interface Project {
   id: string;
@@ -98,9 +99,9 @@ export default function FieldPage() {
           </div>
           <div className="flex items-center gap-1">
             {pendingCount > 0 && (
-              <span className="mr-1 rounded-full bg-warning-50 dark:bg-warning-500/15 px-2.5 py-1 text-xs font-medium text-warning-fg">
+              <Badge tone="warning" className="mr-1">
                 {t("pendingSync", { count: pendingCount })}
-              </span>
+              </Badge>
             )}
             <a href="/field/kiosk" className="mr-1 text-xs font-medium text-brand-700 dark:text-brand-400 hover:underline">
               {t("kioskMode")}

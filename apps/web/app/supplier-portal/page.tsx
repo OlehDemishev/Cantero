@@ -8,6 +8,8 @@ import { getSupplierPortalToken, supplierPortalApiFetch, signOutSupplierPortal, 
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
 import { useCompanyLocale } from "@/components/public-locale";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface Me {
   name: string;
@@ -31,12 +33,6 @@ interface PurchaseOrder {
   supplierNote: string | null;
   lines: POLine[];
 }
-
-const STATUS_STYLES: Record<PurchaseOrderStatus, string> = {
-  draft: "bg-gray-100 dark:bg-gray-700 text-fg-subtle",
-  ordered: "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
-  received: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-};
 
 export default function SupplierPortalDashboardPage() {
   const t = useTranslations("supplierPortal");
@@ -137,9 +133,9 @@ export default function SupplierPortalDashboardPage() {
                       <span className="font-medium text-fg">
                         {t("orderNumber", { id: po.id.slice(0, 8) })}
                       </span>
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[po.status]}`}>
+                      <Badge tone={statusTone(po.status)}>
                         {t(po.status)}
-                      </span>
+                      </Badge>
                     </div>
                     <ul className="mt-1.5 flex flex-col gap-0.5 text-xs text-fg-subtle">
                       {po.lines.map((l) => (

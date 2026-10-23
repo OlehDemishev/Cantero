@@ -59,6 +59,7 @@ const DEFAULT_TONES: Record<string, Tone> = {
   first_aid: "brand",
   // warning — waiting on someone / needs attention
   pending: "warning",
+  pending_approval: "warning",
   sent: "warning",
   ordered: "warning",
   partially_paid: "warning",
@@ -153,6 +154,10 @@ const DOMAIN_TONES = {
   lienFiling: { filed: "warning", disputed: "danger" },
   /** Allowances: active is the normal state, nothing to flag. */
   allowance: { active: "neutral" },
+  /** Support-ticket priority has four levels: low / medium / high / urgent. */
+  ticketPriority: { medium: "neutral", high: "warning" },
+  /** Inspection results: a pending inspection simply hasn't happened yet. */
+  inspectionResult: { pending: "neutral" },
 } satisfies Record<string, Record<string, Tone>>;
 
 export type StatusDomain = keyof typeof DOMAIN_TONES;
@@ -163,3 +168,23 @@ export function statusTone(status: string | null | undefined, domain?: StatusDom
   const override = domain ? (DOMAIN_TONES[domain] as Record<string, Tone>)[status] : undefined;
   return override ?? DEFAULT_TONES[status] ?? "neutral";
 }
+
+/** Text colour for a tone — a status word or value shown without a badge. */
+export const TONE_TEXT_CLASSES: Record<Tone, string> = {
+  neutral: "text-fg-subtle",
+  brand: "text-brand-fg",
+  info: "text-info-fg",
+  success: "text-success-fg",
+  warning: "text-warning-fg",
+  danger: "text-danger-fg",
+};
+
+/** Solid fill for a tone — a status dot, a bar or a legend swatch. */
+export const TONE_FILL_CLASSES: Record<Tone, string> = {
+  neutral: "bg-gray-400",
+  brand: "bg-brand-500",
+  info: "bg-info-500",
+  success: "bg-success-500",
+  warning: "bg-warning-500",
+  danger: "bg-error-500",
+};

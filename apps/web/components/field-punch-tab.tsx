@@ -6,6 +6,7 @@ import { submitOrQueue } from "@/lib/offline-queue";
 import { fetchCached, updateCache } from "@/lib/offline-cache";
 import { CachedNote } from "@/components/field-cached-note";
 import { FieldMessage, type FieldMessageType } from "@/components/field-message";
+import { Badge } from "@/components/ui/badge";
 
 interface PunchListItem {
   id: string;
@@ -126,9 +127,9 @@ export function PunchTab({ projectId }: { projectId: string }) {
                   {tp("markResolved")}
                 </button>
               ) : (
-                <span className="rounded-full bg-warning-50 dark:bg-warning-500/15 px-2.5 py-1 text-xs font-medium text-warning-fg">
+                <Badge tone="warning">
                   {tp("resolved")}
-                </span>
+                </Badge>
               )}
             </li>
           ))}

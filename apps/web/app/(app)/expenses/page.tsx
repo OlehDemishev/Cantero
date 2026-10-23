@@ -16,6 +16,8 @@ import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { useCan } from "@/lib/permissions";
 import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface Expense {
   id: string;
@@ -38,15 +40,6 @@ interface Project {
   id: string;
   name: string;
 }
-
-const STATUS_STYLES: Record<ExpenseStatus, string> = {
-  pending:
-    "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
-  approved:
-    "bg-success-50 dark:bg-success-500/15 text-success-fg",
-  rejected:
-    "bg-error-50 dark:bg-error-500/15 text-danger-fg",
-};
 
 const EXPENSES_PAGE_SIZE = 100;
 
@@ -202,27 +195,22 @@ export default function ExpensesPage() {
                         <span className="text-sm font-medium text-fg">
                           {formatCurrency(e.amount, currency)}
                         </span>
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[e.status]}`}
-                        >
+                        <Badge tone={statusTone(e.status)}>
                           {t(e.status)}
-                        </span>
-                        <span className="rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs text-gray-600 dark:text-gray-300">
+                        </Badge>
+                        <Badge tone="neutral">
                           {EXPENSE_CATEGORIES.includes(e.category as never)
                             ? t(e.category)
                             : e.category}
-                        </span>
+                        </Badge>
                         {e.anomaly.isAnomaly && (
-                          <span
-                            className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-danger-fg"
-                            title={t("anomalyHint", {
+                          <Badge tone="danger" title={t("anomalyHint", {
                               average: formatCurrency(e.anomaly.historicalAverage ?? 0, currency),
-                            })}
-                          >
+                            })}>
                             {t("anomaly", {
                               percent: e.anomaly.deviationPercent ?? 0,
                             })}
-                          </span>
+                          </Badge>
                         )}
                       </div>
                       <div className="mt-1 text-xs text-fg-subtle">

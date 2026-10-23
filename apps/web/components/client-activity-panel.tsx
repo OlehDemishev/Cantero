@@ -7,6 +7,7 @@ import { useApi } from "@/lib/use-api";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDateTime } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
 
 type ActivityType = "note" | "call" | "meeting" | "email";
 const ACTIVITY_TYPES: ActivityType[] = ["note", "call", "meeting", "email"];
@@ -75,9 +76,9 @@ export function ClientActivityPanel({ clientId }: { clientId: string }) {
           {activities.map((a) => (
             <li key={a.id} className="card">
               <div className="flex items-center justify-between">
-                <span className="rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-300">
+                <Badge tone="neutral">
                   {t(a.type)}
-                </span>
+                </Badge>
                 <span className="text-xs text-fg-subtle">
                   {formatDateTime(new Date(a.createdAt))}
                 </span>

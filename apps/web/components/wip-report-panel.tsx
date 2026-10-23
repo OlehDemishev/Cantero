@@ -7,6 +7,7 @@ import { useApi } from "@/lib/use-api";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
 
 interface WipRow {
   projectId: string;
@@ -98,17 +99,9 @@ export function WipReportPanel({ currency }: { currency: string }) {
                     {formatCurrency(row.billedToDate, currency)}
                   </td>
                   <td className="text-right tabular-nums">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        row.status === "overbilled"
-                          ? "bg-warning-50 dark:bg-warning-500/15 text-warning-fg"
-                          : row.status === "underbilled"
-                            ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400"
-                            : "bg-gray-100 dark:bg-gray-700 text-fg-subtle"
-                      }`}
-                    >
+                    <Badge tone={row.status === "overbilled" ? "warning" : row.status === "underbilled" ? "brand" : "neutral"}>
                       {formatCurrency(row.overUnderBilling, currency)}
-                    </span>
+                    </Badge>
                   </td>
                 </tr>
               ))}

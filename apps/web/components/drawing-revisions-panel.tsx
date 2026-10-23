@@ -7,6 +7,7 @@ import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 interface DrawingSheetVersion {
   id: string;
@@ -61,9 +62,9 @@ export function DrawingRevisionsPanel({ sheetId, onSuperseded }: { sheetId: stri
           {versions.map((v, i) => (
             <li key={v.id} className="flex items-center gap-2 text-xs text-fg-subtle">
               {i === 0 ? (
-                <span className="rounded-full bg-success-50 dark:bg-success-500/15 px-2 py-0.5 font-medium text-success-fg">{t("current")}</span>
+                <Badge tone="success">{t("current")}</Badge>
               ) : (
-                <span className="rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-fg-subtle">{t("superseded")}</span>
+                <Badge tone="neutral">{t("superseded")}</Badge>
               )}
               <span>{t("revisionLabel", { n: v.version })}</span>
               {v.revision && <span>· {v.revision}</span>}

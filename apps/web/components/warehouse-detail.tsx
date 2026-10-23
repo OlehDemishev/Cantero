@@ -12,6 +12,7 @@ import { formatCurrency, formatNumber } from "@/lib/format-currency";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApi } from "@/lib/use-api";
+import { Badge } from "@/components/ui/badge";
 
 interface Warehouse {
   id: string;
@@ -1398,17 +1399,9 @@ export function WarehouseDetail({
                       {tr.quantity} {tr.materialCatalogItem.unit}
                     </td>
                     <td>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          tr.status === "in_transit"
-                            ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400"
-                            : tr.status === "received"
-                              ? "bg-success-50 dark:bg-success-500/15 text-success-fg"
-                              : "bg-gray-100 dark:bg-gray-700 text-fg-subtle"
-                        }`}
-                      >
+                      <Badge tone={tr.status === "in_transit" ? "brand" : tr.status === "received" ? "success" : "neutral"}>
                         {t(`transferStatus_${tr.status}`)}
-                      </span>
+                      </Badge>
                     </td>
                     <td className="text-right">
                       {tr.status === "in_transit" &&
@@ -1483,15 +1476,9 @@ export function WarehouseDetail({
                         {t("variances", { count: varianceCount })}
                       </span>
                     )}
-                    <span
-                      className={`rounded-full px-2 py-0.5 font-medium ${
-                        c.status === "finalized"
-                          ? "bg-green-100 dark:bg-green-500/15 text-green-800 dark:text-green-400"
-                          : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-                      }`}
-                    >
+                    <Badge tone={c.status === "finalized" ? "success" : "neutral"}>
                       {t(c.status)}
-                    </span>
+                    </Badge>
                   </span>
                 </button>
               </li>
@@ -1706,17 +1693,9 @@ export function WarehouseDetail({
                     {sr.lines.map((l) => `${l.materialCatalogItem.name} (${l.quantity} ${l.materialCatalogItem.unit})`).join(", ")}
                   </td>
                   <td>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        sr.status === "draft"
-                          ? "bg-gray-100 dark:bg-gray-700 text-fg-subtle"
-                          : sr.status === "sent"
-                            ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400"
-                            : "bg-success-50 dark:bg-success-500/15 text-success-fg"
-                      }`}
-                    >
+                    <Badge tone={sr.status === "draft" ? "neutral" : sr.status === "sent" ? "brand" : "success"}>
                       {t(`returnStatus_${sr.status}`)}
-                    </span>
+                    </Badge>
                   </td>
                   <td className="text-xs text-fg-subtle">{t(`returnReason_${sr.reason}`)}</td>
                   <td className="text-right">

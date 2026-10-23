@@ -8,6 +8,7 @@ import { useApi } from "@/lib/use-api";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
 
 interface HrCaseAction {
   id: string;
@@ -152,13 +153,9 @@ export function WorkerHrCasesPanel({ workerId }: { workerId: string }) {
               <li key={c.id} className="card text-sm">
                 <button onClick={() => toggleHrCaseExpand(c.id)} className="flex w-full items-center justify-between text-left">
                   <span>{th(`category_${c.category}`)}</span>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                      c.status === "closed" || c.status === "resolved" ? "bg-success-50 dark:bg-success-500/15 text-success-fg" : "bg-warning-50 dark:bg-warning-500/15 text-warning-fg"
-                    }`}
-                  >
+                  <Badge tone={c.status === "closed" || c.status === "resolved" ? "success" : "warning"}>
                     {th(`caseStatus_${c.status}`)}
-                  </span>
+                  </Badge>
                 </button>
                 <p className="mt-1 text-xs text-fg-subtle">{c.description}</p>
 

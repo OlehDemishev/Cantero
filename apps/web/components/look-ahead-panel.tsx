@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
 
 type TaskStatus = "planned" | "in_progress" | "done";
 type CommitmentStatus = "committed" | "completed" | "missed";
@@ -104,7 +105,7 @@ export function LookAheadPanel({ projectId }: { projectId: string }) {
       <div className="mb-1 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-fg-muted">{t("lookAhead")}</h2>
         {ppc && ppc.ppcPercent !== null && (
-          <span className="rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-300">{t("ppc", { percent: ppc.ppcPercent })}</span>
+          <Badge tone="neutral">{t("ppc", { percent: ppc.ppcPercent })}</Badge>
         )}
       </div>
       <p className="mb-3 text-xs text-fg-subtle">{t("lookAheadHint")}</p>
@@ -130,13 +131,9 @@ export function LookAheadPanel({ projectId }: { projectId: string }) {
                         <li key={task.id} className="rounded-lg border border-gray-100 dark:border-gray-700 px-2.5 py-2 text-sm">
                           <div className="flex items-center justify-between gap-2">
                             <span className="font-medium text-fg">{task.name}</span>
-                            <span
-                              className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
-                                task.ready ? "bg-success-50 dark:bg-success-500/15 text-success-fg" : "bg-warning-50 dark:bg-warning-500/15 text-warning-fg"
-                              }`}
-                            >
+                            <Badge tone={task.ready ? "success" : "warning"} className="shrink-0">
                               {task.ready ? t("lookAheadReady") : t("lookAheadBlocked")}
-                            </span>
+                            </Badge>
                           </div>
                           {task.startDate && (
                             <p className="mt-0.5 text-xs text-fg-subtle">
@@ -157,7 +154,7 @@ export function LookAheadPanel({ projectId }: { projectId: string }) {
                           )}
                           {commitment && commitment.status === "committed" && resolvingId !== commitment.id && (
                             <div className="mt-2 flex items-center gap-1.5">
-                              <span className="rounded-full bg-brand-50 dark:bg-brand-500/15 px-2 py-0.5 text-xs font-medium text-brand-700 dark:text-brand-400">{t("committed")}</span>
+                              <Badge tone="brand">{t("committed")}</Badge>
                               <button onClick={() => resolve(commitment.id, "completed")} disabled={busy} className="btn-secondary px-2 py-0.5 text-xs">
                                 {t("markCompleted")}
                               </button>
@@ -184,9 +181,9 @@ export function LookAheadPanel({ projectId }: { projectId: string }) {
                             </div>
                           )}
                           {commitment && commitment.status === "completed" && (
-                            <span className="mt-2 inline-block rounded-full bg-success-50 dark:bg-success-500/15 px-2 py-0.5 text-xs font-medium text-success-fg">
+                            <Badge tone="success" className="mt-2">
                               {t("completed")}
-                            </span>
+                            </Badge>
                           )}
                           {commitment && commitment.status === "missed" && (
                             <p className="mt-2 text-xs text-danger-fg">{t("missedWithReason", { reason: commitment.varianceReason ?? "" })}</p>

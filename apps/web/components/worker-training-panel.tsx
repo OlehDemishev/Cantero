@@ -8,6 +8,7 @@ import { formatDate } from "@/lib/format-date";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 interface TrainingEnrollment {
   id: string;
@@ -48,9 +49,9 @@ export function WorkerTrainingPanel({ workerId }: { workerId: string }) {
           <li key={en.id} className="card flex items-center justify-between gap-2 text-sm">
             <span>{en.course.title}</span>
             {en.status === "completed" ? (
-              <span className="rounded-full bg-success-50 dark:bg-success-500/15 px-2 py-0.5 text-xs font-medium text-success-fg">
+              <Badge tone="success">
                 {en.completedAt ? formatDate(new Date(en.completedAt)) : t("trainingCompleted")}
-              </span>
+              </Badge>
             ) : (
               <button
                 onClick={() => completeTraining(en.id)}

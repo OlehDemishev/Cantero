@@ -8,6 +8,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Badge } from "@/components/ui/badge";
 
 interface TrainingCourse {
   id: string;
@@ -212,9 +213,9 @@ export function TrainingCatalogPanel() {
                           <li key={en.id} className="flex items-center justify-between text-xs">
                             <span>{en.worker.name}</span>
                             {en.status === "completed" ? (
-                              <span className="rounded-full bg-success-50 dark:bg-success-500/15 px-2 py-0.5 font-medium text-success-fg">
+                              <Badge tone="success">
                                 {t("completedOn", { date: en.completedAt ? formatDate(new Date(en.completedAt)) : "" })}
-                              </span>
+                              </Badge>
                             ) : (
                               <button onClick={() => complete(en.id, course.id)} disabled={busy} className="text-brand-600 hover:underline">
                                 {t("markComplete")}

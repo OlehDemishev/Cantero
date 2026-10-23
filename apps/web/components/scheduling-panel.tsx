@@ -9,6 +9,7 @@ import { useApi } from "@/lib/use-api";
 import { CommentsThread } from "@/components/comments-thread";
 import { formatDate, formatDateWithOptions } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Badge } from "@/components/ui/badge";
 
 type TaskStatus = "planned" | "in_progress" | "done";
 const STATUSES: TaskStatus[] = ["planned", "in_progress", "done"];
@@ -168,14 +169,14 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
                   <div className="flex items-center gap-1.5">
                     <span className="text-sm font-medium">{task.name}</span>
                     {criticalTaskIds.has(task.id) && (
-                      <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-danger-fg">
+                      <Badge tone="danger" size="sm" className="uppercase tracking-wide">
                         {t("critical")}
-                      </span>
+                      </Badge>
                     )}
                     {task.isOutdoorWork && (
-                      <span className="rounded-full bg-brand-50 dark:bg-brand-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-700 dark:text-brand-400">
+                      <Badge tone="brand" size="sm" className="uppercase tracking-wide">
                         {t("outdoorWork")}
-                      </span>
+                      </Badge>
                     )}
                   </div>
                   {(task.startDate || task.dueDate) && (

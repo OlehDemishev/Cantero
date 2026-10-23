@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useApi } from "@/lib/use-api";
 import { useCan } from "@/lib/permissions";
+import { Badge } from "@/components/ui/badge";
 
 interface RateItemAccuracy {
   rateCatalogItemId: string;
@@ -23,14 +24,10 @@ function DeviationBadge({ percent }: { percent: number | null }) {
   if (percent === null) return <span className="text-xs text-fg-subtle">—</span>;
   const overrun = percent > 0;
   return (
-    <span
-      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-        overrun ? "bg-warning-50 dark:bg-warning-500/15 text-warning-fg" : "bg-success-50 dark:bg-success-500/15 text-success-fg"
-      }`}
-    >
+    <Badge tone={overrun ? "warning" : "success"}>
       {overrun ? "+" : ""}
       {percent}%
-    </span>
+    </Badge>
   );
 }
 

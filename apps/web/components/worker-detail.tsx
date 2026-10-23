@@ -20,6 +20,7 @@ import { WorkerPerformancePanel } from "@/components/worker-performance-panel";
 import { WorkerHrCasesPanel } from "@/components/worker-hr-cases-panel";
 import { useCan } from "@/lib/permissions";
 import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
 
 interface ProjectBreakdown {
   projectId: string;
@@ -61,13 +62,9 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
       </button>
       <div className="mt-2 flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{summary.worker.name}</h1>
-        <span
-          className={`rounded-full px-3 py-1 text-xs font-medium ${
-            summary.worker.active ? "bg-success-50 dark:bg-success-500/15 text-success-fg" : "bg-gray-100 dark:bg-gray-700 text-fg-subtle"
-          }`}
-        >
+        <Badge tone={summary.worker.active ? "success" : "neutral"}>
           {summary.worker.active ? t("active") : t("inactive")}
-        </span>
+        </Badge>
       </div>
       <p className="text-sm text-fg-subtle">{summary.worker.role ?? "—"}</p>
 

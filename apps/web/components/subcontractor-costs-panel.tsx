@@ -10,6 +10,7 @@ import { useMe } from "@/lib/use-me";
 import type { CostCode } from "@/components/cost-codes-panel";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
 
 const NEW_SUBCONTRACTOR = "__new__";
 
@@ -133,13 +134,9 @@ export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
                 <td className="text-fg-subtle">{c.subcontractor.name}</td>
                 <td className="text-fg-subtle">{c.dueDate ? formatDate(new Date(c.dueDate)) : "—"}</td>
                 <td>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                      c.paid ? "bg-success-50 dark:bg-success-500/15 text-success-fg" : "bg-gray-100 dark:bg-gray-700 text-fg-subtle"
-                    }`}
-                  >
+                  <Badge tone={c.paid ? "success" : "neutral"}>
                     {c.paid ? t("paid") : t("unpaid")}
-                  </span>
+                  </Badge>
                 </td>
                 <td className="text-right font-medium">
                   {formatCurrency(c.amount, currency)}
@@ -171,9 +168,9 @@ export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
                       {t("downloadWaiver")}
                     </button>
                   ) : (
-                    <span className="rounded-full bg-warning-50 dark:bg-warning-500/15 px-2 py-0.5 text-xs font-medium text-warning-fg">
+                    <Badge tone="warning">
                       {t("waiverAwaitingSignature")}
-                    </span>
+                    </Badge>
                   )}
                 </td>
               </tr>

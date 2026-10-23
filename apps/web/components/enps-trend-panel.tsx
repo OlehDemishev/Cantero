@@ -6,6 +6,7 @@ import { chartColors, chartAxisProps, chartGridProps, chartTooltipProps } from "
 import { useApi } from "@/lib/use-api";
 import { useCan } from "@/lib/permissions";
 import { PanelErrorState } from "@/components/ui/error-state";
+import { Badge } from "@/components/ui/badge";
 
 interface EnpsComment {
   comment: string | null;
@@ -83,7 +84,7 @@ export function EnpsTrendPanel() {
           <ul className="flex flex-col gap-2">
             {data.comments.slice(0, 5).map((c, i) => (
               <li key={i} className="text-sm">
-                <span className="mr-1 rounded-full bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 text-xs font-medium text-fg-muted">{c.score}</span>
+                <Badge tone="neutral" size="sm" className="mr-1">{c.score}</Badge>
                 <span className="text-fg-muted">{c.comment}</span>
               </li>
             ))}

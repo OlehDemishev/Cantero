@@ -8,6 +8,8 @@ import { fetchCached, updateCache } from "@/lib/offline-cache";
 import { VoiceInputButton } from "@/components/voice-input-button";
 import { CachedNote } from "@/components/field-cached-note";
 import { FieldMessage, type FieldMessageType } from "@/components/field-message";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface FieldRfi {
   id: string;
@@ -16,12 +18,6 @@ interface FieldRfi {
   status: "open" | "answered" | "closed";
   priority: RfiPriority;
 }
-
-const RFI_STATUS_STYLES: Record<FieldRfi["status"], string> = {
-  open: "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
-  answered: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
-  closed: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-};
 
 export function RfiTab({ projectId }: { projectId: string }) {
   const t = useTranslations("field");
@@ -116,7 +112,7 @@ export function RfiTab({ projectId }: { projectId: string }) {
                 <div className="text-xs font-mono text-fg-subtle">{item.number}</div>
                 <div className="text-sm font-medium text-fg">{item.subject}</div>
               </div>
-              <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${RFI_STATUS_STYLES[item.status]}`}>{tr(item.status)}</span>
+              <Badge tone={statusTone(item.status)}>{tr(item.status)}</Badge>
             </li>
           ))}
         </ul>

@@ -9,6 +9,8 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PhotoAttachments } from "@/components/photo-attachments";
 import { formatDate } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface Worker {
   id: string;
@@ -52,22 +54,6 @@ interface HeatmapBucket {
   major: number;
   critical: number;
 }
-
-const STATUS_STYLES: Record<Checklist["status"], string> = {
-  open: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  passed: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-  failed: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
-};
-const SEVERITY_STYLES: Record<DeficiencySeverity, string> = {
-  minor: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  major: "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
-  critical: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
-};
-const DEFICIENCY_STATUS_STYLES: Record<Deficiency["status"], string> = {
-  open: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
-  resolved: "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
-  verified: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-};
 
 const EMPTY_CHECKLIST_FORM = { name: "", trade: "", phase: "", templateId: "", inspectorWorkerId: "", adHocItems: "" };
 
@@ -271,7 +257,7 @@ export function QualityPanel({ projectId }: { projectId: string }) {
                   {cl.trade}
                   {cl.phase ? ` · ${cl.phase}` : ""}
                 </span>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[cl.status]}`}>{t(`status_${cl.status}`)}</span>
+                <Badge tone={statusTone(cl.status)}>{t(`status_${cl.status}`)}</Badge>
               </div>
               {cl.inspector && <p className="mt-1 text-xs text-fg-subtle">{t("inspectorLabel", { name: cl.inspector.name })}</p>}
 
@@ -407,8 +393,8 @@ export function QualityPanel({ projectId }: { projectId: string }) {
           {deficiencies.map((d) => (
             <li key={d.id} className="card">
               <div className="flex items-center gap-2">
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${SEVERITY_STYLES[d.severity]}`}>{t(`severity_${d.severity}`)}</span>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${DEFICIENCY_STATUS_STYLES[d.status]}`}>{t(`deficiencyStatus_${d.status}`)}</span>
+                <Badge tone={statusTone(d.severity)}>{t(`severity_${d.severity}`)}</Badge>
+                <Badge tone={statusTone(d.status, "deficiency")}>{t(`deficiencyStatus_${d.status}`)}</Badge>
                 {d.dueDate && <span className="text-xs text-fg-subtle">{formatDate(new Date(d.dueDate))}</span>}
                 {d.location && <span className="text-xs text-fg-subtle">{d.location}</span>}
               </div>

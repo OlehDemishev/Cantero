@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, ApiError, notifyApiError } from "@/lib/api-client";
+import { Badge } from "@/components/ui/badge";
 
 interface Company {
   customPortalDomain: string | null;
@@ -85,13 +86,9 @@ export function CustomPortalDomainPanel({ canManage }: { canManage: boolean }) {
         <div className="mt-4 border-t border-gray-100 dark:border-gray-700 pt-4">
           <p className="text-xs text-fg-subtle">{t("cnameInstructions", { target: CNAME_TARGET })}</p>
           <div className="mt-2 flex items-center gap-2">
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                company.customPortalDomainVerifiedAt ? "bg-success-50 dark:bg-success-500/15 text-success-fg" : "bg-warning-50 dark:bg-warning-500/15 text-warning-fg"
-              }`}
-            >
+            <Badge tone={company.customPortalDomainVerifiedAt ? "success" : "warning"}>
               {company.customPortalDomainVerifiedAt ? t("verified") : t("notVerified")}
-            </span>
+            </Badge>
             <button onClick={verify} disabled={busy} className="btn-secondary px-3 py-1 text-xs">
               {t("verifyNow")}
             </button>

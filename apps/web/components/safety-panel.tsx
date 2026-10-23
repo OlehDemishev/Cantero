@@ -11,6 +11,8 @@ import { PhotoAttachments } from "@/components/photo-attachments";
 import { TemplatePicker } from "@/components/template-picker";
 import { PrintButton } from "@/components/ui/print-button";
 import { formatDate } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface Worker {
   id: string;
@@ -48,14 +50,6 @@ interface Jha {
   conductedByName: string;
   acknowledgments: { worker: Worker }[];
 }
-
-const SEVERITY_STYLES: Record<IncidentSeverity, string> = {
-  near_miss: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  first_aid: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
-  medical_treatment: "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
-  lost_time_injury: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
-  fatality: "bg-error-600 text-white",
-};
 
 const EMPTY_INCIDENT_FORM = {
   occurredAt: new Date().toISOString().slice(0, 10),
@@ -379,15 +373,15 @@ export function SafetyPanel({ projectId }: { projectId: string }) {
           {incidents.map((item) => (
             <li key={item.id} className="card">
               <div className="flex items-center gap-2">
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${SEVERITY_STYLES[item.severity]}`}>
+                <Badge tone={statusTone(item.severity)}>
                   {t(`severity_${item.severity}`)}
-                </span>
+                </Badge>
                 <span className="text-xs text-fg-subtle">{formatDate(new Date(item.occurredAt))}</span>
                 {item.location && <span className="text-xs text-fg-subtle">· {item.location}</span>}
                 {item.oshaRecordable && (
-                  <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-danger-fg">
+                  <Badge tone="danger">
                     {t("oshaRecordable")}
-                  </span>
+                  </Badge>
                 )}
               </div>
               <p className="mt-1.5 text-sm text-fg">{item.description}</p>

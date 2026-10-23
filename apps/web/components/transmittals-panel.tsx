@@ -8,6 +8,7 @@ import { useApi } from "@/lib/use-api";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
 
 interface TransmittalItem {
   id: string;
@@ -181,9 +182,9 @@ export function TransmittalsPanel({ projectId }: { projectId: string }) {
                   T-{tr.number} — {tr.recipientName}
                   {tr.recipientCompany && <span className="text-xs text-fg-subtle"> ({tr.recipientCompany})</span>}
                 </span>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${tr.acknowledgedAt ? "bg-success-50 dark:bg-success-500/15 text-success-fg" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"}`}>
+                <Badge tone={tr.acknowledgedAt ? "success" : "neutral"}>
                   {tr.acknowledgedAt ? t("acknowledged") : t("pending")}
-                </span>
+                </Badge>
               </div>
               <p className="mt-1 text-xs text-fg-subtle">
                 {t(`method_${tr.method}`)} · {formatDate(new Date(tr.sentAt))}

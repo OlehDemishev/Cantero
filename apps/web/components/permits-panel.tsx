@@ -9,6 +9,8 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Badge } from "@/components/ui/badge";
+import { statusTone, TONE_TEXT_CLASSES } from "@/lib/status-tone";
 
 interface Permit {
   id: string;
@@ -32,19 +34,6 @@ interface Inspection {
 
 const PERMIT_STATUSES: PermitStatus[] = ["draft", "submitted", "approved", "rejected", "expired"];
 
-const STATUS_STYLES: Record<PermitStatus, string> = {
-  draft: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  submitted: "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
-  approved: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-  rejected: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
-  expired: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
-};
-const RESULT_STYLES: Record<InspectionResult, string> = {
-  pending: "text-fg-subtle",
-  passed: "text-success-fg",
-  failed: "text-danger-fg",
-  cancelled: "text-fg-subtle",
-};
 
 export function PermitsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("permits");
@@ -166,7 +155,7 @@ export function PermitsPanel({ projectId }: { projectId: string }) {
                   <span className="text-sm font-medium text-fg">
                     {p.permitType} {p.permitNumber && <span className="text-fg-subtle">({p.permitNumber})</span>}
                   </span>
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[p.status]}`}>{t(`status_${p.status}`)}</span>
+                  <Badge tone={statusTone(p.status)}>{t(`status_${p.status}`)}</Badge>
                 </button>
 
                 {expanded && (
@@ -208,7 +197,7 @@ export function PermitsPanel({ projectId }: { projectId: string }) {
                                 {i.inspectorName && <span className="text-fg-subtle"> · {i.inspectorName}</span>}
                               </span>
                               <span className="flex items-center gap-1.5">
-                                <span className={RESULT_STYLES[i.result]}>{t(`result_${i.result}`)}</span>
+                                <span className={TONE_TEXT_CLASSES[statusTone(i.result, "inspectionResult")]}>{t(`result_${i.result}`)}</span>
                                 {i.result === "pending" && (
                                   <>
                                     <button onClick={() => recordResult(p.id, i.id, "passed")} className="text-success-fg hover:underline">

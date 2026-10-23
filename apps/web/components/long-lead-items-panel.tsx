@@ -8,6 +8,8 @@ import { useApi } from "@/lib/use-api";
 import { useCan } from "@/lib/permissions";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface Supplier {
   id: string;
@@ -29,14 +31,6 @@ interface LongLeadItem extends LongLeadRisk {
 }
 
 const STATUSES: LongLeadItemStatus[] = ["tracking", "ordered", "in_fabrication", "shipped", "delivered"];
-const RISK_STYLES: Record<LongLeadRisk["risk"], string> = {
-  delivered_on_time: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-  delivered_late: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
-  on_track: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-  at_risk: "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
-  critical: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
-  unscheduled: "bg-gray-100 dark:bg-gray-700 text-fg-subtle",
-};
 
 const EMPTY_FORM = { description: "", supplierId: "", requiredOnSiteDate: "", expectedDeliveryDate: "" };
 
@@ -208,10 +202,10 @@ export function LongLeadItemsPanel({ projectId }: { projectId: string }) {
                     />
                   </td>
                   <td>
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${RISK_STYLES[item.risk]}`}>
+                    <Badge tone={statusTone(item.risk, "longLead")}>
                       {t(`risk_${item.risk}`)}
                       {item.slackDays !== null && ` (${item.slackDays >= 0 ? "+" : ""}${item.slackDays}d)`}
-                    </span>
+                    </Badge>
                   </td>
                 </tr>
               ))}

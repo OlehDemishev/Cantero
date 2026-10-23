@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { getPortalToken, portalApiFetch } from "@/lib/portal-api-client";
 import { formatDateTime } from "@/lib/format-date";
 import { PublicLinkError } from "@/components/public-link-error";
+import { Badge } from "@/components/ui/badge";
 
 type TicketStatus = "open" | "in_progress" | "waiting_on_customer" | "resolved" | "closed";
 interface TicketMessage {
@@ -91,9 +92,9 @@ export default function PortalTicketDetailPage({ params }: { params: Promise<{ i
           <div className="card flex flex-1 flex-col">
             <div className="mb-3 flex items-center justify-between">
               <h1 className="text-lg font-semibold text-fg">{ticket.subject}</h1>
-              <span className="rounded-full bg-brand-50 dark:bg-brand-500/15 px-2 py-0.5 text-xs font-medium text-brand-700 dark:text-brand-400">
+              <Badge tone="brand">
                 {t(`ticketStatus_${ticket.status}`)}
-              </span>
+              </Badge>
             </div>
 
             <div className="flex max-h-[60vh] min-h-[200px] flex-col gap-3 overflow-y-auto">

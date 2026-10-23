@@ -11,6 +11,8 @@ import { useBulkSelection } from "@/components/bulk-select";
 import { useDeepLinkedRow, buildItemDeepLink } from "@/lib/use-deep-linked-row";
 import { CopyLinkButton } from "@/components/ui/copy-link-button";
 import { formatDate } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface SubmittalHistoryEntry {
   id: string;
@@ -31,15 +33,6 @@ interface Submittal {
   reviewComments: string | null;
   escalatedAt: string | null;
 }
-
-const STATUS_STYLES: Record<SubmittalStatus, string> = {
-  draft: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  submitted: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
-  approved: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-  approved_as_noted: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-  revise_and_resubmit: "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
-  rejected: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
-};
 
 const EMPTY_FORM = { title: "", specSection: "", dueDate: "" };
 
@@ -243,13 +236,13 @@ export function SubmittalsPanel({ projectId }: { projectId: string }) {
                         <span className="text-sm font-medium text-fg">{item.title}</span>
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[item.status]}`}>
+                        <Badge tone={statusTone(item.status)}>
                           {t(item.status)}
-                        </span>
+                        </Badge>
                         {item.specSection && <span className="text-xs text-fg-subtle">{item.specSection}</span>}
                         {item.dueDate && <span className="text-xs text-fg-subtle">{formatDate(new Date(item.dueDate))}</span>}
                         {item.escalatedAt && (
-                          <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-danger-fg">{t("escalated")}</span>
+                          <Badge tone="danger">{t("escalated")}</Badge>
                         )}
                       </div>
                     </div>

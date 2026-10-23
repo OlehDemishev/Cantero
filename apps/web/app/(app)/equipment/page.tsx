@@ -10,6 +10,8 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface AssignmentSummary {
   project: { id: string; name: string } | null;
@@ -25,14 +27,6 @@ interface Equipment {
   notes: string | null;
   assignments: AssignmentSummary[];
 }
-
-const STATUS_STYLES: Record<EquipmentStatus, string> = {
-  available: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-  in_use: "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
-  maintenance: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  retired: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
-  rented_out: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
-};
 
 export default function EquipmentPage() {
   const t = useTranslations("equipment");
@@ -133,9 +127,9 @@ export default function EquipmentPage() {
                         </p>
                       )}
                     </div>
-                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[eq.status]}`}>
+                    <Badge tone={statusTone(eq.status)} className="shrink-0">
                       {t(`status_${eq.status}`)}
-                    </span>
+                    </Badge>
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
                     {eq.status === "available" && (

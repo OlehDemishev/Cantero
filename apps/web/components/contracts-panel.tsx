@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface ContractTemplate {
   id: string;
@@ -15,13 +17,6 @@ interface Contract {
   status: "draft" | "sent" | "signed" | "void";
   client: { id: string; name: string } | null;
 }
-
-const STATUS_STYLES: Record<Contract["status"], string> = {
-  draft: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  sent: "bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-400",
-  signed: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-  void: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
-};
 
 export function ContractsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("contracts");
@@ -68,7 +63,7 @@ export function ContractsPanel({ projectId }: { projectId: string }) {
               <li key={c.id}>
                 <a href={`/contracts/${c.id}`} className="flex items-center justify-between rounded-lg px-1 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-white/5">
                   <span className="text-fg-muted">{c.title}</span>
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[c.status]}`}>{t(c.status)}</span>
+                  <Badge tone={statusTone(c.status)}>{t(c.status)}</Badge>
                 </a>
               </li>
             ))}

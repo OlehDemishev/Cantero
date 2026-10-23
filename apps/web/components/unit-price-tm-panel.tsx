@@ -10,6 +10,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatDate } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface UnitPriceMeasurement {
   id: string;
@@ -40,14 +42,6 @@ interface TMTicket {
   disputeReason: string | null;
   revisionCount: number;
 }
-
-const TICKET_STATUS_STYLES: Record<TMTicketStatus, string> = {
-  draft: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  submitted: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  approved: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-  rejected: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
-  disputed: "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
-};
 
 export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("unitPriceTm");
@@ -411,9 +405,9 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-fg">{t("ticketNumber", { number: ticket.ticketNumber })}</span>
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${TICKET_STATUS_STYLES[ticket.status]}`}>
+                      <Badge tone={statusTone(ticket.status)}>
                         {t(ticket.status)}
-                      </span>
+                      </Badge>
                     </div>
                     <p className="mt-1 text-xs text-fg-subtle">{formatDate(new Date(ticket.workDate))}</p>
                     <p className="mt-1 text-xs text-fg-subtle">{ticket.description}</p>

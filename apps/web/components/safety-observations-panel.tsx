@@ -9,6 +9,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PrintButton } from "@/components/ui/print-button";
 import { formatDate } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
 
 interface Observation {
   id: string;
@@ -122,13 +123,9 @@ export function SafetyObservationsPanel({ projectId }: { projectId: string }) {
           {observations.map((o) => (
             <li key={o.id} className="card">
               <div className="flex items-center gap-2">
-                <span
-                  className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                    o.category === "safe" ? "bg-success-50 dark:bg-success-500/15 text-success-fg" : "bg-warning-50 dark:bg-warning-500/15 text-warning-fg"
-                  }`}
-                >
+                <Badge tone={o.category === "safe" ? "success" : "warning"}>
                   {t(o.category)}
-                </span>
+                </Badge>
                 <span className="text-xs text-fg-subtle">{formatDate(new Date(o.observedAt))}</span>
                 <span className="text-xs text-fg-subtle">{o.observerName}</span>
               </div>

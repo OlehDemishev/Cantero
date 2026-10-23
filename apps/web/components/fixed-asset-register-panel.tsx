@@ -7,6 +7,7 @@ import { PanelErrorState } from "@/components/ui/error-state";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
 
 interface Depreciation {
   monthsElapsed: number;
@@ -69,11 +70,11 @@ export function FixedAssetRegisterPanel() {
                 <td className="font-medium">{e.depreciation ? `${formatCurrency(e.depreciation.bookValue, currency)}` : "—"}</td>
                 <td>
                   {e.disposal ? (
-                    <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-danger-fg">
+                    <Badge tone="danger">
                       {t("disposed", { date: formatDate(new Date(e.disposal.disposedAt)) })}
-                    </span>
+                    </Badge>
                   ) : e.depreciation ? (
-                    <span className="rounded-full bg-success-50 dark:bg-success-500/15 px-2 py-0.5 text-xs font-medium text-success-fg">{t("tracked")}</span>
+                    <Badge tone="success">{t("tracked")}</Badge>
                   ) : (
                     <span className="text-xs text-fg-subtle">{t("noSchedule")}</span>
                   )}

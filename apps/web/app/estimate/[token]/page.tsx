@@ -8,6 +8,7 @@ import { useCompanyLocale } from "@/components/public-locale";
 import { SignaturePad } from "@/components/signature-pad";
 import { formatDateTime } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
 
 interface PublicLine {
   id: string;
@@ -124,9 +125,9 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
             <h1 className="text-xl font-semibold text-fg">
               {estimate.name}
               {estimate.variantLabel && (
-                <span className="ml-2 rounded-full bg-brand-50 dark:bg-brand-500/15 px-2 py-0.5 text-xs font-medium text-brand-700 dark:text-brand-400 align-middle">
+                <Badge tone="brand" className="ml-2 align-middle">
                   {estimate.variantLabel}
-                </span>
+                </Badge>
               )}
             </h1>
           </div>

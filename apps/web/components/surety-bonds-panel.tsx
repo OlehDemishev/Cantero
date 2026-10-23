@@ -10,6 +10,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface SuretyBond {
   id: string;
@@ -21,12 +23,6 @@ interface SuretyBond {
   expiryDate: string | null;
   status: SuretyBondStatus;
 }
-
-const STATUS_STYLES: Record<SuretyBondStatus, string> = {
-  active: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-  released: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  expired: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
-};
 
 export function SuretyBondsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("suretyBonds");
@@ -163,7 +159,7 @@ export function SuretyBondsPanel({ projectId }: { projectId: string }) {
                   {t(`type_${bond.type}`)} · {bond.suretyName}
                   {bond.bondNumber && <span className="ml-1 text-xs text-fg-subtle">({bond.bondNumber})</span>}
                 </div>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[bond.status]}`}>{t(`status_${bond.status}`)}</span>
+                <Badge tone={statusTone(bond.status, "suretyBond")}>{t(`status_${bond.status}`)}</Badge>
               </div>
               <p className="mt-1 text-xs text-fg-subtle">
                 {t("penalSum")}: {formatCurrency(bond.penalSum, currency)} · {t("issueDate")}: {formatDate(new Date(bond.issueDate))}

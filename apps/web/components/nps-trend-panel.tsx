@@ -7,6 +7,7 @@ import { useApi } from "@/lib/use-api";
 import { useCan } from "@/lib/permissions";
 import { PanelErrorState } from "@/components/ui/error-state";
 import { formatDate } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
 
 interface NpsResponse {
   projectId: string;
@@ -83,7 +84,7 @@ export function NpsTrendPanel() {
               .reverse()
               .map((r) => (
                 <li key={r.projectId} className="text-sm">
-                  <span className="mr-1 rounded-full bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 text-xs font-medium text-fg-muted">{r.score}</span>
+                  <Badge tone="neutral" size="sm" className="mr-1">{r.score}</Badge>
                   <span className="text-fg-muted">{r.comment}</span>
                   <span className="ml-1 text-xs text-fg-subtle">— {r.projectName}</span>
                 </li>

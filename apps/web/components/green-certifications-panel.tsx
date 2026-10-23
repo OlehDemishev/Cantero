@@ -9,6 +9,7 @@ import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 interface GreenCertification {
   id: string;
@@ -133,7 +134,7 @@ export function GreenCertificationsPanel({ projectId }: { projectId: string }) {
           {items.map((item) => (
             <li key={item.id} className="card flex items-center justify-between">
               <div>
-                <span className="rounded-full bg-success-50 dark:bg-success-500/15 px-2 py-0.5 text-xs font-medium text-success-fg">{t(`certType_${item.type}`)}</span>
+                <Badge tone="success">{t(`certType_${item.type}`)}</Badge>
                 <span className="ml-2 text-sm font-medium text-fg">{item.name}</span>
                 {item.expiresAt && <span className="ml-2 text-xs text-fg-subtle">{t("expires", { date: formatDate(new Date(item.expiresAt)) })}</span>}
               </div>

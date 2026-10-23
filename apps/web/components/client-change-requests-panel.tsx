@@ -6,6 +6,8 @@ import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 type ChangeRequestStatus = "submitted" | "under_review" | "converted" | "declined";
 interface ChangeRequest {
@@ -17,13 +19,6 @@ interface ChangeRequest {
   submittedByClient: { name: string };
   convertedChangeOrder: { id: string; number: number } | null;
 }
-
-const STATUS_STYLES: Record<ChangeRequestStatus, string> = {
-  submitted: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  under_review: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
-  converted: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-  declined: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
-};
 
 export function ClientChangeRequestsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("clientChangeRequests");
@@ -87,7 +82,7 @@ export function ClientChangeRequestsPanel({ projectId }: { projectId: string }) 
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-fg">{r.title}</span>
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[r.status]}`}>{t(r.status)}</span>
+                    <Badge tone={statusTone(r.status)}>{t(r.status)}</Badge>
                   </div>
                   <p className="mt-1 text-xs text-fg-subtle">{t("submittedBy", { name: r.submittedByClient.name })}</p>
                   <p className="mt-1.5 text-xs text-fg-subtle">{r.description}</p>

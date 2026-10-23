@@ -7,6 +7,7 @@ import { getPortalToken, portalApiFetch } from "@/lib/portal-api-client";
 import { ApiError, downloadBlob } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
 import { PublicLinkError } from "@/components/public-link-error";
+import { Badge } from "@/components/ui/badge";
 
 interface PortalInvoiceLine {
   id: string;
@@ -135,13 +136,9 @@ export default function PortalInvoicePage({ params }: { params: Promise<{ id: st
         <div className="card">
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-semibold text-fg">{invoice.number}</h1>
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                invoice.status === "paid" ? "bg-success-50 dark:bg-success-500/15 text-success-fg" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-              }`}
-            >
+            <Badge tone={invoice.status === "paid" ? "success" : "neutral"}>
               {ti(invoice.status)}
-            </span>
+            </Badge>
           </div>
           <p className="mt-1 text-sm text-fg-subtle">{invoice.project.name}</p>
 
@@ -190,17 +187,9 @@ export default function PortalInvoicePage({ params }: { params: Promise<{ id: st
                       <td className="py-1.5">{inst.label}</td>
                       <td className="text-fg-subtle">{inst.dueDate ? formatDate(new Date(inst.dueDate)) : "—"}</td>
                       <td>
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                            inst.fulfilled
-                              ? "bg-success-50 dark:bg-success-500/15 text-success-fg"
-                              : inst.partial
-                                ? "bg-warning-50 dark:bg-warning-500/15 text-warning-fg"
-                                : "bg-gray-100 dark:bg-gray-700 text-fg-subtle"
-                          }`}
-                        >
+                        <Badge tone={inst.fulfilled ? "success" : inst.partial ? "warning" : "neutral"}>
                           {inst.fulfilled ? ti("fulfilled") : inst.partial ? ti("partial") : ti("pending")}
-                        </span>
+                        </Badge>
                       </td>
                       <td className="text-right font-medium">{inst.amount}</td>
                       <td className="pl-2 text-right">

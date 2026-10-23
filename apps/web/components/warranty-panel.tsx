@@ -10,6 +10,8 @@ import { useBulkSelection } from "@/components/bulk-select";
 import { formatDate } from "@/lib/format-date";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface Worker {
   id: string;
@@ -38,13 +40,6 @@ interface Project {
   handoverDate: string | null;
   warrantyMonths: number | null;
 }
-
-const STATUS_STYLES: Record<WarrantyClaimStatus, string> = {
-  open: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  in_progress: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
-  resolved: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-  denied: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
-};
 
 function warrantyExpiresAt(handoverDate: string | null, warrantyMonths: number | null): Date | null {
   if (!handoverDate || !warrantyMonths) return null;
@@ -330,11 +325,11 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-fg">{claim.title}</span>
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[claim.status]}`}>
+                        <Badge tone={statusTone(claim.status)}>
                           {t(claim.status)}
-                        </span>
+                        </Badge>
                         {claim.submittedByClientId && (
-                          <span className="rounded-full bg-brand-50 dark:bg-brand-500/15 px-2 py-0.5 text-xs font-medium text-brand-700 dark:text-brand-400">{t("fromClient")}</span>
+                          <Badge tone="brand">{t("fromClient")}</Badge>
                         )}
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-fg-subtle">

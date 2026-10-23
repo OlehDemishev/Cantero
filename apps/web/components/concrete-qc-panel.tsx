@@ -7,6 +7,7 @@ import { useApi } from "@/lib/use-api";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
 
 interface SlumpTest {
   id: string;
@@ -223,7 +224,7 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
                     {pour.location} — {formatDate(new Date(pour.pourDate))}
                     {pour.mixDesign && <span className="ml-1.5 text-xs text-fg-subtle">({pour.mixDesign})</span>}
                   </span>
-                  {anyFail && <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-danger-fg">{t("hasFailure")}</span>}
+                  {anyFail && <Badge tone="danger">{t("hasFailure")}</Badge>}
                 </button>
                 <p className="mt-1 text-xs text-fg-subtle">
                   {pour.specifiedStrength && `${t("specifiedStrength")}: ${pour.specifiedStrength}`}
@@ -284,9 +285,9 @@ export function ConcreteQcPanel({ projectId }: { projectId: string }) {
                                   {cb.breakStrength !== null && ` — ${cb.breakStrength}`}
                                 </span>
                                 {cb.result ? (
-                                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${cb.result === "pass" ? "bg-success-50 dark:bg-success-500/15 text-success-fg" : "bg-error-50 dark:bg-error-500/15 text-danger-fg"}`}>
+                                  <Badge tone={cb.result === "pass" ? "success" : "danger"}>
                                     {t(`result_${cb.result}`)}
-                                  </span>
+                                  </Badge>
                                 ) : cb.breakStrength === null ? (
                                   <span className="flex items-center gap-1.5">
                                     <input

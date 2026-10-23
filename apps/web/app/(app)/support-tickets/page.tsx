@@ -10,6 +10,8 @@ import { formatDateTime } from "@/lib/format-date";
 import { useCan } from "@/lib/permissions";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { statusTone, TONE_TEXT_CLASSES } from "@/lib/status-tone";
 
 interface Member {
   id: string;
@@ -47,19 +49,6 @@ interface TicketDetail extends Ticket {
   messages: TicketMessage[];
 }
 
-const STATUS_STYLES: Record<TicketStatus, string> = {
-  open: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  in_progress: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
-  waiting_on_customer: "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
-  resolved: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-  closed: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-};
-const PRIORITY_STYLES: Record<TicketPriority, string> = {
-  low: "text-fg-subtle",
-  medium: "text-gray-600 dark:text-gray-300",
-  high: "text-warning-fg",
-  urgent: "text-danger-fg",
-};
 
 export default function SupportTicketsPage() {
   const t = useTranslations("supportTickets");
@@ -298,13 +287,13 @@ export default function SupportTicketsPage() {
                           {ticket.project.name}
                         </Link>
                       )}
-                      <span className={`ml-2 text-xs font-medium ${PRIORITY_STYLES[ticket.priority]}`}>{t(`priority_${ticket.priority}`)}</span>
+                      <span className={`ml-2 text-xs font-medium ${TONE_TEXT_CLASSES[statusTone(ticket.priority, "ticketPriority")]}`}>{t(`priority_${ticket.priority}`)}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       {(ticket.sla.responseBreached || ticket.sla.resolutionBreached) && (
-                        <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-danger-fg">{t("slaBreached")}</span>
+                        <Badge tone="danger">{t("slaBreached")}</Badge>
                       )}
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[ticket.status]}`}>{t(`status_${ticket.status}`)}</span>
+                      <Badge tone={statusTone(ticket.status)}>{t(`status_${ticket.status}`)}</Badge>
                     </div>
                   </div>
 

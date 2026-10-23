@@ -12,6 +12,8 @@ import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 const PAYMENT_METHODS = ["bank_transfer", "card", "cash", "other"] as const;
 
@@ -277,15 +279,6 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
     { rows: [] as ((typeof invoice.installments)[number] & { fulfilled: boolean; partial: boolean })[], cumulative: 0 },
   ).rows;
 
-  const statusColor =
-    invoice.status === "paid"
-      ? "bg-green-100 dark:bg-green-500/15 text-green-800 dark:text-green-400"
-      : invoice.status === "sent"
-        ? "bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-400"
-        : invoice.status === "void"
-          ? "bg-red-100 dark:bg-red-500/15 text-red-800 dark:text-red-400"
-          : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300";
-
   return (
     <>
       <a href={`/projects/${invoice.project.id}`} className="text-sm text-fg-subtle hover:underline">
@@ -293,7 +286,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
       </a>
       <div className="mt-2 flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{invoice.number}</h1>
-        <span className={`rounded-full px-3 py-1 text-xs font-medium ${statusColor}`}>{t(invoice.status)}</span>
+        <Badge tone={statusTone(invoice.status)}>{t(invoice.status)}</Badge>
       </div>
       <p className="text-sm text-fg-subtle">
         <Link href={`/clients/${invoice.client.id}`} className="hover:underline">
@@ -342,17 +335,9 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
                       {inst.dueDate ? formatDate(new Date(inst.dueDate)) : "—"}
                     </td>
                     <td>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          inst.fulfilled
-                            ? "bg-success-50 dark:bg-success-500/15 text-success-fg"
-                            : inst.partial
-                              ? "bg-warning-50 dark:bg-warning-500/15 text-warning-fg"
-                              : "bg-gray-100 dark:bg-gray-700 text-fg-subtle"
-                        }`}
-                      >
+                      <Badge tone={inst.fulfilled ? "success" : inst.partial ? "warning" : "neutral"}>
                         {inst.fulfilled ? t("fulfilled") : inst.partial ? t("partial") : t("pending")}
-                      </span>
+                      </Badge>
                     </td>
                     <td className="text-right font-medium">{money(inst.amount)}</td>
                   </tr>

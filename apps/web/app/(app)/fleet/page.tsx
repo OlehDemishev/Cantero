@@ -10,6 +10,7 @@ import { formatDate } from "@/lib/format-date";
 import { formatNumber } from "@/lib/format-currency";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 interface Worker {
   id: string;
@@ -293,14 +294,14 @@ export default function FleetPage() {
                     </span>
                     <div className="flex items-center gap-1.5">
                       {regFlag && (
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${regFlag === "expired" ? "bg-error-50 dark:bg-error-500/15 text-danger-fg" : "bg-warning-50 dark:bg-warning-500/15 text-warning-fg"}`}>
+                        <Badge tone={regFlag === "expired" ? "danger" : "warning"}>
                           {t(regFlag === "expired" ? "registrationExpired" : "registrationExpiringSoon")}
-                        </span>
+                        </Badge>
                       )}
                       {insFlag && (
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${insFlag === "expired" ? "bg-error-50 dark:bg-error-500/15 text-danger-fg" : "bg-warning-50 dark:bg-warning-500/15 text-warning-fg"}`}>
+                        <Badge tone={insFlag === "expired" ? "danger" : "warning"}>
                           {t(insFlag === "expired" ? "insuranceExpired" : "insuranceExpiringSoon")}
-                        </span>
+                        </Badge>
                       )}
                     </div>
                   </button>

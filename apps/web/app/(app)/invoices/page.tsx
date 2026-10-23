@@ -17,6 +17,7 @@ import { useMe } from "@/lib/use-me";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatDate } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
 
 interface Invoice {
   id: string;
@@ -428,11 +429,9 @@ export default function InvoicesPage() {
                       · {t(`frequency_${r.frequency}`)}
                     </span>
                   </div>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${r.active ? "bg-success-50 dark:bg-success-500/15 text-success-fg" : "bg-gray-100 dark:bg-gray-700 text-fg-subtle"}`}
-                  >
+                  <Badge tone={r.active ? "success" : "neutral"}>
                     {r.active ? t("active") : t("paused")}
-                  </span>
+                  </Badge>
                 </div>
                 <p className="mt-1 text-xs text-fg-subtle">
                   {t("nextRun")}:{" "}

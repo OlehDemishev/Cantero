@@ -8,6 +8,8 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface ContractTemplate {
   id: string;
@@ -23,12 +25,6 @@ interface Contract {
   createdAt: string;
 }
 
-const STATUS_STYLES: Record<Contract["status"], string> = {
-  draft: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  sent: "bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-400",
-  signed: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-  void: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
-};
 
 export default function ContractsPage() {
   const t = useTranslations("contracts");
@@ -86,7 +82,7 @@ export default function ContractsPage() {
                         {c.client?.name ?? c.subcontractor?.name ?? "—"} · {formatDate(new Date(c.createdAt))}
                       </div>
                     </div>
-                    <span className={`rounded-full px-3 py-1 text-xs font-medium ${STATUS_STYLES[c.status]}`}>{t(c.status)}</span>
+                    <Badge tone={statusTone(c.status)}>{t(c.status)}</Badge>
                   </a>
                 </li>
               ))}

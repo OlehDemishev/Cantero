@@ -7,6 +7,7 @@ import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 interface ReceivingDiscrepancy {
   id: string;
@@ -55,13 +56,9 @@ export function ReceivingDiscrepanciesPanel() {
                 <span className="text-sm font-medium text-fg">
                   {t(`discrepancyType_${d.type}`)} · {d.purchaseOrderLine.materialCatalogItem.code} × {d.quantity}
                 </span>
-                <span
-                  className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                    d.resolution === "pending" ? "bg-warning-50 dark:bg-warning-500/15 text-warning-fg" : "bg-success-50 dark:bg-success-500/15 text-success-fg"
-                  }`}
-                >
+                <Badge tone={d.resolution === "pending" ? "warning" : "success"}>
                   {t(`resolution_${d.resolution}`)}
-                </span>
+                </Badge>
               </div>
               <p className="mt-1 text-xs text-fg-subtle">{d.purchaseOrder.supplier.name}</p>
               {d.resolutionNotes && <p className="mt-1 text-xs text-fg-subtle">{d.resolutionNotes}</p>}

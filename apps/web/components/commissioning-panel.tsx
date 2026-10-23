@@ -8,6 +8,8 @@ import { useApi } from "@/lib/use-api";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface ChecklistItem {
   id: string;
@@ -39,12 +41,6 @@ interface CommissioningSystem {
   functionalTests: FunctionalTest[];
   trainingSessions: TrainingSession[];
 }
-
-const STATUS_STYLES: Record<CommissioningSystemStatus, string> = {
-  pending_testing: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  testing: "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
-  complete: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-};
 
 export function CommissioningPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("commissioning");
@@ -192,7 +188,7 @@ export function CommissioningPanel({ projectId }: { projectId: string }) {
                     {sys.name}
                     {sys.category && <span className="ml-1.5 text-xs text-fg-subtle">({sys.category})</span>}
                   </span>
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[sys.status]}`}>{t(`status_${sys.status}`)}</span>
+                  <Badge tone={statusTone(sys.status)}>{t(`status_${sys.status}`)}</Badge>
                 </button>
 
                 {expanded && (

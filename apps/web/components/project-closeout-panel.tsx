@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { Badge } from "@/components/ui/badge";
 
 interface CloseoutReadiness {
   asBuiltCount: number;
@@ -74,19 +75,15 @@ export function ProjectCloseoutPanel({ projectId }: { projectId: string }) {
         <div className="card mb-3">
           <div className="flex items-center justify-between gap-3">
             <span className="text-sm font-medium text-fg-muted">{t("readinessTitle")}</span>
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                readiness.ready ? "bg-success-50 dark:bg-success-500/15 text-success-fg" : "bg-warning-50 dark:bg-warning-500/15 text-warning-fg"
-              }`}
-            >
+            <Badge tone={readiness.ready ? "success" : "warning"}>
               {readiness.ready ? t("readinessReady") : t("readinessNotReady")}
-            </span>
+            </Badge>
           </div>
           {!readiness.ready && (
             <ul className="mt-2 flex flex-wrap gap-1.5">
               {readiness.missing.map((key) => (
-                <li key={key} className="rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs text-gray-600 dark:text-gray-300">
-                  {t(`missing_${key}`)}
+                <li key={key}>
+                  <Badge>{t(`missing_${key}`)}</Badge>
                 </li>
               ))}
             </ul>

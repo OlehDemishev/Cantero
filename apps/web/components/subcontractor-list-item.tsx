@@ -13,6 +13,7 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApi } from "@/lib/use-api";
+import { Badge } from "@/components/ui/badge";
 
 const DOCUMENT_TYPES: SubcontractorDocumentType[] = ["general_liability_insurance", "workers_comp_insurance", "license", "bonding", "other"];
 
@@ -346,13 +347,9 @@ export function SubcontractorListItem({
           {s.email && <span className="ml-2 text-xs text-fg-subtle">{s.email}</span>}
         </div>
         {expanded && compliance && (
-          <span
-            className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-              compliance.compliant ? "bg-success-50 dark:bg-success-500/15 text-success-fg" : "bg-error-50 dark:bg-error-500/15 text-danger-fg"
-            }`}
-          >
+          <Badge tone={compliance.compliant ? "success" : "danger"}>
             {compliance.compliant ? t("compliant") : t("nonCompliant")}
-          </span>
+          </Badge>
         )}
       </button>
 

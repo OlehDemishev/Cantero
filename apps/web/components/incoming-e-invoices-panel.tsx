@@ -11,6 +11,8 @@ import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface Supplier {
   id: string;
@@ -50,13 +52,6 @@ interface IncomingEInvoice {
   createdAt: string;
   lines: IncomingEInvoiceLine[];
 }
-
-const STATUS_STYLES: Record<IncomingEInvoice["status"], string> = {
-  pending_review: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  matched: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
-  converted: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-  rejected: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
-};
 
 export function IncomingEInvoicesPanel() {
   const t = useTranslations("incomingEInvoices");
@@ -175,11 +170,11 @@ export function IncomingEInvoicesPanel() {
                   </div>
                   <div className="flex items-center gap-2">
                     {inv.validationErrors.length > 0 && (
-                      <span className="rounded-full bg-amber-100 dark:bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-800 dark:text-amber-400">
+                      <Badge tone="warning">
                         {t("validationWarnings", { count: inv.validationErrors.length })}
-                      </span>
+                      </Badge>
                     )}
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[inv.status]}`}>{t(`status_${inv.status}`)}</span>
+                    <Badge tone={statusTone(inv.status)}>{t(`status_${inv.status}`)}</Badge>
                   </div>
                 </button>
 

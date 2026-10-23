@@ -9,6 +9,8 @@ import { formatDate } from "@/lib/format-date";
 import { useApi } from "@/lib/use-api";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface Cycle {
   id: string;
@@ -31,12 +33,6 @@ interface Review {
   submittedAt: string | null;
   worker: { id: string; name: string };
 }
-
-const RATING_STYLES: Record<PerformanceRating, string> = {
-  below_expectations: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
-  meets_expectations: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
-  exceeds_expectations: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-};
 
 export default function PerformancePage() {
   const t = useTranslations("performance");
@@ -147,11 +143,9 @@ export default function PerformancePage() {
                     className={`card flex w-full items-center justify-between text-left text-sm ${selectedCycleId === c.id ? "ring-2 ring-brand-500" : ""}`}
                   >
                     <span>{c.name}</span>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${c.status === "open" ? "bg-success-50 dark:bg-success-500/15 text-success-fg" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"}`}
-                    >
+                    <Badge tone={c.status === "open" ? "success" : "neutral"}>
                       {t(`cycleStatus_${c.status}`)}
-                    </span>
+                    </Badge>
                   </button>
                 </li>
               ))}
@@ -275,7 +269,7 @@ export default function PerformancePage() {
                     <li key={r.id} className="card">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-fg">{r.worker.name}</span>
-                        {r.rating && <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${RATING_STYLES[r.rating]}`}>{t(`rating_${r.rating}`)}</span>}
+                        {r.rating && <Badge tone={statusTone(r.rating)}>{t(`rating_${r.rating}`)}</Badge>}
                       </div>
                       {r.strengths && <p className="mt-1 text-xs text-fg-subtle">{t("strengths")}: {r.strengths}</p>}
                       {r.improvementAreas && <p className="mt-0.5 text-xs text-fg-subtle">{t("improvementAreas")}: {r.improvementAreas}</p>}

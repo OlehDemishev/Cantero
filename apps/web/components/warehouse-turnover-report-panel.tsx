@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { useApi } from "@/lib/use-api";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 interface TurnoverRow {
   materialId: string;
@@ -54,9 +55,9 @@ export function WarehouseTurnoverReportPanel() {
                   <td className="text-right">{row.turnoverRatio ?? "—"}</td>
                   <td className="text-right">
                     {row.slowMoving && (
-                      <span className="rounded-full bg-warning-50 dark:bg-warning-500/15 px-2 py-0.5 text-xs font-medium text-warning-fg">
+                      <Badge tone="warning">
                         {t("slowMoving")}
-                      </span>
+                      </Badge>
                     )}
                   </td>
                 </tr>

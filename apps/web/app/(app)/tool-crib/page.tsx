@@ -11,6 +11,7 @@ import { formatDate } from "@/lib/format-date";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApi } from "@/lib/use-api";
+import { Badge } from "@/components/ui/badge";
 
 interface Worker {
   id: string;
@@ -196,10 +197,10 @@ export default function ToolCribPage() {
                     {item.name}
                     {item.barcode && <span className="ml-1.5 text-xs text-fg-subtle">({item.barcode})</span>}
                   </span>
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${low ? "bg-error-50 dark:bg-error-500/15 text-danger-fg" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"}`}>
+                  <Badge tone={low ? "danger" : "neutral"}>
                     {t("onHandCount", { count: item.quantityOnHand })}
                     {low && ` · ${t("lowStock")}`}
-                  </span>
+                  </Badge>
                 </div>
 
                 {item.checkouts.length > 0 && (

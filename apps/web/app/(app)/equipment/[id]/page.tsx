@@ -17,6 +17,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 function getCurrentPositionSafe(): Promise<{ lat: number; lng: number } | null> {
   return new Promise((resolve) => {
@@ -88,13 +90,6 @@ interface Rental {
   daysElapsed: number;
   revenue: number;
 }
-const STATUS_STYLES: Record<EquipmentStatus, string> = {
-  available: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-  in_use: "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
-  maintenance: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  retired: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
-  rented_out: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
-};
 
 export default function EquipmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -343,9 +338,9 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
             {equipment.serialNumber && ` · ${equipment.serialNumber}`}
           </p>
         </div>
-        <span className={`rounded-full px-3 py-1 text-xs font-medium ${STATUS_STYLES[equipment.status]}`}>
+        <Badge tone={statusTone(equipment.status)}>
           {t(`status_${equipment.status}`)}
-        </span>
+        </Badge>
       </div>
       {error && <p className="mt-4 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{error}</p>}
 

@@ -17,6 +17,7 @@ import { useMe } from "@/lib/use-me";
 import { goBack } from "@/lib/back-navigation";
 import { useCan } from "@/lib/permissions";
 import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
 
 type ClientStage = "lead" | "contacted" | "qualified" | "won" | "lost";
 const STAGES: ClientStage[] = ["lead", "contacted", "qualified", "won", "lost"];
@@ -115,7 +116,7 @@ export function ClientDetail({ clientId }: { clientId: string }) {
       </button>
       <div className="mt-2 flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{client.name}</h1>
-        <span className="rounded-full bg-brand-50 dark:bg-brand-500/15 px-3 py-1 text-xs font-medium text-brand-700 dark:text-brand-400">{t(client.stage)}</span>
+        <Badge tone="brand">{t(client.stage)}</Badge>
       </div>
       <p className="text-sm text-fg-subtle">{client.email ?? client.phone ?? "—"}</p>
       {client.estimatedValue != null && (

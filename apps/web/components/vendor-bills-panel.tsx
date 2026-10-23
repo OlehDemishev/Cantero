@@ -11,6 +11,7 @@ import { formatCurrency } from "@/lib/format-currency";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApi } from "@/lib/use-api";
+import { Badge } from "@/components/ui/badge";
 
 interface Supplier {
   id: string;
@@ -316,27 +317,13 @@ export function VendorBillsPanel() {
                     </div>
                     <div className="flex items-center gap-2">
                       {bill.match.status !== "no_po" && (
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                            bill.match.status === "variance" ? "bg-error-50 dark:bg-error-500/15 text-danger-fg" : "bg-success-50 dark:bg-success-500/15 text-success-fg"
-                          }`}
-                        >
+                        <Badge tone={bill.match.status === "variance" ? "danger" : "success"}>
                           {t(`matchStatus_${bill.match.status}`)}
-                        </span>
+                        </Badge>
                       )}
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          bill.status === "paid"
-                            ? "bg-success-50 dark:bg-success-500/15 text-success-fg"
-                            : bill.status === "approved"
-                              ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400"
-                              : bill.status === "void"
-                                ? "bg-error-50 dark:bg-error-500/15 text-danger-fg"
-                                : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-                        }`}
-                      >
+                      <Badge tone={bill.status === "paid" ? "success" : bill.status === "approved" ? "brand" : bill.status === "void" ? "danger" : "neutral"}>
                         {t(`billStatus_${bill.status}`)}
-                      </span>
+                      </Badge>
                     </div>
                   </div>
                   <ul className="mt-2 text-sm text-fg-subtle">

@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { useApi } from "@/lib/use-api";
 import { useCan } from "@/lib/permissions";
 import { PanelErrorState } from "@/components/ui/error-state";
+import { Badge } from "@/components/ui/badge";
 
 interface TriageItem {
   kind: "rfi" | "punch_list_item";
@@ -35,7 +36,7 @@ export function TriagePanel() {
                 <span className="font-medium">{item.title}</span>
                 <span className="ml-2 text-sm text-fg-subtle">{item.projectName}</span>
               </div>
-              <span className="rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs text-gray-600 dark:text-gray-300">{item.score}</span>
+              <Badge tone="neutral">{item.score}</Badge>
             </a>
           </li>
         ))}

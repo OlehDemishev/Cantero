@@ -9,6 +9,8 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface AllowanceCharge {
   id: string;
@@ -25,12 +27,6 @@ interface Allowance {
   status: AllowanceStatus;
   charges: AllowanceCharge[];
 }
-
-const STATUS_STYLES: Record<AllowanceStatus, string> = {
-  active: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  exceeded: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
-  closed: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-};
 
 export function AllowancesPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("allowances");
@@ -152,7 +148,7 @@ export function AllowancesPanel({ projectId }: { projectId: string }) {
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-fg">{a.name}</span>
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[a.status]}`}>{t(a.status)}</span>
+                      <Badge tone={statusTone(a.status, "allowance")}>{t(a.status)}</Badge>
                     </div>
                     <p className="mt-1 text-xs text-fg-subtle">
                       {t("spentOfBudget", { spent: money(spent), budget: money(a.budgetedAmount) })}

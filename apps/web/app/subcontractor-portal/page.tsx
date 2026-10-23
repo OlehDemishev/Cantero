@@ -14,6 +14,7 @@ import { SignaturePad } from "@/components/signature-pad";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
 import { useCompanyLocale } from "@/components/public-locale";
+import { Badge } from "@/components/ui/badge";
 
 interface Me {
   name: string;
@@ -274,17 +275,9 @@ export default function SubcontractorPortalDashboardPage() {
                 <li key={item.id} className="rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm">
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-fg">{item.title}</span>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        item.status === "verified"
-                          ? "bg-success-50 dark:bg-success-500/15 text-success-fg"
-                          : item.status === "resolved"
-                            ? "bg-warning-50 dark:bg-warning-500/15 text-warning-fg"
-                            : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-                      }`}
-                    >
+                    <Badge tone={item.status === "verified" ? "success" : item.status === "resolved" ? "warning" : "neutral"}>
                       {t(`punchListStatus_${item.status}`)}
-                    </span>
+                    </Badge>
                   </div>
                   <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-fg-subtle">
                     <span>{item.project.name}</span>
@@ -311,13 +304,9 @@ export default function SubcontractorPortalDashboardPage() {
                     <td className="py-1.5">{c.description}</td>
                     <td className="text-fg-subtle">{c.project.name}</td>
                     <td>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          c.paid ? "bg-success-50 dark:bg-success-500/15 text-success-fg" : "bg-gray-100 dark:bg-gray-700 text-fg-subtle"
-                        }`}
-                      >
+                      <Badge tone={c.paid ? "success" : "neutral"}>
                         {c.paid ? t("paid") : t("unpaid")}
-                      </span>
+                      </Badge>
                     </td>
                     <td className="text-right font-medium">
                       {formatCurrency(c.amount, me.currency)}
@@ -381,17 +370,9 @@ export default function SubcontractorPortalDashboardPage() {
                         <p className="font-medium text-fg">{r.title}</p>
                         <p className="text-xs text-fg-subtle">{r.project.name}</p>
                       </div>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          r.status === "open"
-                            ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400"
-                            : r.status === "awarded" && myBid?.isAwarded
-                              ? "bg-success-50 dark:bg-success-500/15 text-success-fg"
-                              : "bg-gray-100 dark:bg-gray-700 text-fg-subtle"
-                        }`}
-                      >
+                      <Badge tone={r.status === "open" ? "brand" : r.status === "awarded" && myBid?.isAwarded ? "success" : "neutral"}>
                         {r.status === "awarded" && myBid?.isAwarded ? t("youWon") : t(`bidStatus_${r.status}`)}
-                      </span>
+                      </Badge>
                     </div>
                     {r.description && <p className="mt-1.5 text-xs text-fg-subtle">{r.description}</p>}
 
@@ -464,13 +445,9 @@ export default function SubcontractorPortalDashboardPage() {
                         {w.project.name} · {formatCurrency(w.amount, me.currency)}
                       </p>
                     </div>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        w.signedAt ? "bg-success-50 dark:bg-success-500/15 text-success-fg" : "bg-warning-50 dark:bg-warning-500/15 text-warning-fg"
-                      }`}
-                    >
+                    <Badge tone={w.signedAt ? "success" : "warning"}>
                       {w.signedAt ? t("signed") : t("awaitingSignature")}
-                    </span>
+                    </Badge>
                   </div>
 
                   {!w.signedAt && signingId !== w.id && (

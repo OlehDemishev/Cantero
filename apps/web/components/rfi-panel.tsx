@@ -15,6 +15,8 @@ import { formatDate } from "@/lib/format-date";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApi } from "@/lib/use-api";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface RfiAnalytics {
   openCount: number;
@@ -46,21 +48,6 @@ interface Rfi {
   escalatedAt: string | null;
 }
 
-const STATUS_STYLES: Record<RfiStatus, string> = {
-  open: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  answered: "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
-  closed: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-};
-const PRIORITY_STYLES: Record<RfiPriority, string> = {
-  low: "bg-gray-100 dark:bg-gray-700 text-fg-subtle",
-  medium: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
-  high: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
-};
-const BALL_IN_COURT_STYLES: Record<BallInCourtParty, string> = {
-  internal: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
-  client: "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
-  subcontractor: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-};
 const BALL_IN_COURT_PARTIES: BallInCourtParty[] = ["internal", "client", "subcontractor"];
 
 const EMPTY_FORM = {
@@ -324,9 +311,9 @@ export function RfiPanel({ projectId }: { projectId: string }) {
               <div className="mb-1 text-xs text-fg-subtle">{t("analyticsBallInCourtBreakdown")}</div>
               <div className="flex flex-wrap gap-1.5">
                 {analytics.ballInCourtBreakdown.map((b) => (
-                  <span key={b.party} className={`rounded-full px-2 py-0.5 text-xs font-medium ${BALL_IN_COURT_STYLES[b.party]}`}>
+                  <Badge tone={statusTone(b.party)} key={b.party}>
                     {t(`ballInCourtParty_${b.party}`)}: {b.count}
-                  </span>
+                  </Badge>
                 ))}
               </div>
             </div>
@@ -388,24 +375,24 @@ export function RfiPanel({ projectId }: { projectId: string }) {
                         <span className="text-sm font-medium text-fg">{item.subject}</span>
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[item.status]}`}>
+                        <Badge tone={statusTone(item.status)}>
                           {t(item.status)}
-                        </span>
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${PRIORITY_STYLES[item.priority]}`}>
+                        </Badge>
+                        <Badge tone={statusTone(item.priority)}>
                           {t(item.priority)}
-                        </span>
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${BALL_IN_COURT_STYLES[item.ballInCourtParty]}`}>
+                        </Badge>
+                        <Badge tone={statusTone(item.ballInCourtParty)}>
                           {t("ballInCourt", { party: t(`ballInCourtParty_${item.ballInCourtParty}`) })}
-                        </span>
+                        </Badge>
                         {item.costImpact && (
-                          <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-danger-fg">
+                          <Badge tone="danger">
                             {t("costImpact")}
-                          </span>
+                          </Badge>
                         )}
                         {item.escalatedAt && (
-                          <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-danger-fg">
+                          <Badge tone="danger">
                             {t("escalated")}
-                          </span>
+                          </Badge>
                         )}
                         {item.dueDate && <span className="text-xs text-fg-subtle">{formatDate(new Date(item.dueDate))}</span>}
                       </div>

@@ -14,6 +14,8 @@ import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { resetStateInEffect } from "@/lib/effect-reset";
 import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface Claim {
   id: string;
@@ -39,15 +41,6 @@ interface Project {
   id: string;
   name: string;
 }
-
-const STATUS_STYLES: Record<InsuranceClaimStatus, string> = {
-  filed: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  under_review: "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
-  approved: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
-  denied: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
-  settled: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-  closed: "bg-gray-100 dark:bg-gray-700 text-fg-subtle",
-};
 
 const emptyForm = {
   claimType: "general_liability" as InsuranceClaimType,
@@ -320,10 +313,10 @@ export default function InsuranceClaimsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <span className="font-medium text-fg">{claim.insurerName}</span>
-                  <span className="ml-2 rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs text-gray-600 dark:text-gray-300">{t(`type_${claim.claimType}`)}</span>
-                  <span className={`ml-2 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[claim.status]}`}>
+                  <Badge tone="neutral" className="ml-2">{t(`type_${claim.claimType}`)}</Badge>
+                  <Badge tone={statusTone(claim.status, "insuranceClaim")} className="ml-2">
                     {t(`status_${claim.status}`)}
-                  </span>
+                  </Badge>
                 </div>
                 <button
                   onClick={() => setExpandedId(expandedId === claim.id ? null : claim.id)}

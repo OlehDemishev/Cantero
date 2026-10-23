@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import type { AccountingProviderType } from "@cantero/shared";
 import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
+import { Badge } from "@/components/ui/badge";
 
 interface Company {
   // Whether each is set up — the webhook URLs and feed token themselves only reach settings.company holders.
@@ -127,13 +128,9 @@ export default function IntegrationsPage() {
             <div className="flex items-center justify-between gap-2">
               <h2 className="text-sm font-semibold text-fg">{t(card.titleKey)}</h2>
               {card.status !== "loading" && (
-                <span
-                  className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
-                    card.status === "connected" ? "bg-success-50 dark:bg-success-500/15 text-success-fg" : "bg-gray-100 dark:bg-gray-700 text-fg-subtle"
-                  }`}
-                >
+                <Badge tone={card.status === "connected" ? "success" : "neutral"} className="shrink-0">
                   {card.status === "connected" ? t("connected") : t("notConnected")}
-                </span>
+                </Badge>
               )}
             </div>
             <p className="text-xs text-fg-subtle">{t(card.descriptionKey)}</p>

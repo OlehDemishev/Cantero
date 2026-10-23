@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
 
 interface Rental {
   id: string;
@@ -46,9 +47,9 @@ export function EquipmentRentalHistoryPanel({ equipmentId, currency }: { equipme
                 <td className="py-2">
                   {r.renterName}
                   {!r.actualReturnDate && (
-                    <span className="ml-1.5 rounded-full bg-brand-50 dark:bg-brand-500/15 px-1.5 py-0.5 text-[10px] font-medium text-brand-700 dark:text-brand-400">
+                    <Badge tone="brand" size="sm" className="ml-1.5">
                       {t("rentalActive")}
-                    </span>
+                    </Badge>
                   )}
                 </td>
                 <td>

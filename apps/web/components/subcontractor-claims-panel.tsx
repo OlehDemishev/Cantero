@@ -11,6 +11,8 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApi } from "@/lib/use-api";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface Subcontractor {
   id: string;
@@ -38,17 +40,6 @@ interface DefaultNotice {
   status: SubcontractorDefaultNoticeStatus;
   subcontractor: Subcontractor;
 }
-
-const BACKCHARGE_STATUS_STYLES: Record<SubcontractorBackchargeStatus, string> = {
-  pending: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  deducted: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-  waived: "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
-};
-const NOTICE_STATUS_STYLES: Record<SubcontractorDefaultNoticeStatus, string> = {
-  issued: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
-  cured: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-  terminated: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-};
 
 export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("subcontractorClaims");
@@ -234,9 +225,9 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-fg">{b.subcontractor.name}</span>
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${BACKCHARGE_STATUS_STYLES[b.status]}`}>
+                    <Badge tone={statusTone(b.status)}>
                       {t(b.status)}
-                    </span>
+                    </Badge>
                   </div>
                   <p className="mt-1 text-xs text-fg-subtle">{b.description}</p>
                   {b.warrantyClaim && <p className="mt-1 text-xs text-fg-subtle">{t("recoveryFor", { title: b.warrantyClaim.title })}</p>}
@@ -332,7 +323,7 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-fg">{n.title}</span>
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${NOTICE_STATUS_STYLES[n.status]}`}>{t(n.status)}</span>
+                    <Badge tone={statusTone(n.status)}>{t(n.status)}</Badge>
                   </div>
                   <p className="mt-1 text-xs text-fg-subtle">{n.subcontractor.name}</p>
                   <p className="mt-1 text-xs text-fg-subtle">{n.description}</p>

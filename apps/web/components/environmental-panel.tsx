@@ -13,6 +13,8 @@ import { useApi } from "@/lib/use-api";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface BmpInspection {
   id: string;
@@ -40,11 +42,6 @@ interface EnvironmentalIncident {
   regulatorNotified: boolean;
 }
 
-const SEVERITY_STYLES: Record<EnvironmentalIncidentSeverity, string> = {
-  minor: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  moderate: "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
-  major: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
-};
 const OPEN_INCIDENT_STATUSES: EnvironmentalIncidentStatus[] = ["open", "contained"];
 
 export function EnvironmentalPanel({ projectId }: { projectId: string }) {
@@ -192,9 +189,9 @@ export function EnvironmentalPanel({ projectId }: { projectId: string }) {
             <li key={p.id} className="card">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-fg">{p.permitNumber ?? t("permitNumberPlaceholder")}</span>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${p.active ? "bg-success-50 dark:bg-success-500/15 text-success-fg" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"}`}>
+                <Badge tone={p.active ? "success" : "neutral"}>
                   {p.active ? t("active") : t("inactive")}
-                </span>
+                </Badge>
               </div>
               {p.noiFiledAt && <p className="mt-1 text-xs text-fg-subtle">{t("noiFiledAt")}: {formatDate(new Date(p.noiFiledAt))}</p>}
 
@@ -319,7 +316,7 @@ export function EnvironmentalPanel({ projectId }: { projectId: string }) {
             <li key={inc.id} className="card">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-fg">{inc.description}</span>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${SEVERITY_STYLES[inc.severity]}`}>{t(`severity_${inc.severity}`)}</span>
+                <Badge tone={statusTone(inc.severity, "environmental")}>{t(`severity_${inc.severity}`)}</Badge>
               </div>
               <p className="mt-1 text-xs text-fg-subtle">
                 {formatDate(new Date(inc.occurredAt))} · {t(`status_${inc.status}`)}

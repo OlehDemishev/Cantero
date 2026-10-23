@@ -16,6 +16,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface LienNotice {
   id: string;
@@ -37,12 +39,6 @@ interface MechanicsLienFiling {
   releasedAt: string | null;
   notes: string | null;
 }
-
-const FILING_STATUS_STYLES: Record<LienFilingStatus, string> = {
-  filed: "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
-  released: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-  disputed: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
-};
 
 export function LienCompliancePanel({ projectId }: { projectId: string }) {
   const t = useTranslations("lienCompliance");
@@ -199,9 +195,9 @@ export function LienCompliancePanel({ projectId }: { projectId: string }) {
                 <span className="text-sm font-medium text-fg">
                   {t(`type_${n.type}`)} · {n.relatedPartyName}
                 </span>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${n.sentAt ? "bg-success-50 dark:bg-success-500/15 text-success-fg" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"}`}>
+                <Badge tone={n.sentAt ? "success" : "neutral"}>
                   {t(`direction_${n.direction}`)} · {n.sentAt ? t("sent") : t("pending")}
-                </span>
+                </Badge>
               </div>
               <p className="mt-1 text-xs text-fg-subtle">
                 {n.deadlineDate && `${t("deadlineDate")}: ${formatDate(new Date(n.deadlineDate))}`}
@@ -270,7 +266,7 @@ export function LienCompliancePanel({ projectId }: { projectId: string }) {
                 <span className="text-sm font-medium text-fg">
                   {f.filedByName} · {formatCurrency(f.amount, currency)}
                 </span>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${FILING_STATUS_STYLES[f.status]}`}>{t(`status_${f.status}`)}</span>
+                <Badge tone={statusTone(f.status, "lienFiling")}>{t(`status_${f.status}`)}</Badge>
               </div>
               <p className="mt-1 text-xs text-fg-subtle">{t("filedAt")}: {formatDate(new Date(f.filedAt))}</p>
               {f.status === "filed" && (

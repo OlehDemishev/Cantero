@@ -8,6 +8,8 @@ import { useApi } from "@/lib/use-api";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface Prequalification {
   id: string;
@@ -23,11 +25,6 @@ interface Prequalification {
   createdAt: string;
 }
 
-const STATUS_STYLES: Record<PrequalificationStatus, string> = {
-  pending: "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
-  approved: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-  rejected: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
-};
 
 export function SubcontractorPrequalificationPanel({ subcontractorId }: { subcontractorId: string }) {
   const t = useTranslations("subcontractorPrequalification");
@@ -164,7 +161,7 @@ export function SubcontractorPrequalificationPanel({ subcontractorId }: { subcon
                   {c.yearsInBusiness !== null && ` · ${t("yearsInBusinessAbbr", { years: c.yearsInBusiness })}`}
                   {c.score !== null && ` · ${t("scoreAbbr", { score: c.score })}`}
                 </span>
-                <span className={`rounded-full px-2 py-0.5 font-medium ${STATUS_STYLES[c.status]}`}>{t(`status_${c.status}`)}</span>
+                <Badge tone={statusTone(c.status)}>{t(`status_${c.status}`)}</Badge>
               </div>
               {c.status === "approved" && c.expiresAt && (
                 <p className="mt-0.5 text-fg-subtle">

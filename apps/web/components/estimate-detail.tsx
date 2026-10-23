@@ -20,6 +20,8 @@ import { useMe } from "@/lib/use-me";
 import { formatDateTime } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface RateCatalogItem {
   id: string;
@@ -361,38 +363,20 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
         <h1 className="text-2xl font-semibold">
           {estimate.name}
           {estimate.variantLabel && (
-            <span className="ml-2 rounded-full bg-brand-50 dark:bg-brand-500/15 px-2 py-0.5 text-xs font-medium text-brand-700 dark:text-brand-400 align-middle">
+            <Badge tone="brand" className="ml-2 align-middle">
               {estimate.variantLabel}
-            </span>
+            </Badge>
           )}
         </h1>
         <div className="flex items-center gap-2">
           {estimate.sentAt && (
-            <span
-              className={`rounded-full px-3 py-1 text-xs font-medium ${
-                estimate.clientDecision === "approved"
-                  ? "bg-success-50 dark:bg-success-500/15 text-success-fg"
-                  : estimate.clientDecision === "rejected"
-                    ? "bg-error-50 dark:bg-error-500/15 text-danger-fg"
-                    : estimate.clientDecision === "countered"
-                      ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400"
-                      : "bg-warning-50 dark:bg-warning-500/15 text-warning-fg"
-              }`}
-            >
+            <Badge tone={estimate.clientDecision === "approved" ? "success" : estimate.clientDecision === "rejected" ? "danger" : estimate.clientDecision === "countered" ? "brand" : "warning"}>
               {t(`clientDecision_${estimate.clientDecision}`)}
-            </span>
+            </Badge>
           )}
-          <span
-            className={`rounded-full px-3 py-1 text-xs font-medium ${
-              estimate.status === "approved"
-                ? "bg-green-100 dark:bg-green-500/15 text-green-800 dark:text-green-400"
-                : estimate.status === "pending_approval"
-                  ? "bg-warning-50 dark:bg-warning-500/15 text-warning-fg"
-                  : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-            }`}
-          >
+          <Badge tone={statusTone(estimate.status)}>
             {estimate.status === "approved" ? t("approved") : estimate.status === "pending_approval" ? t("pendingApproval") : t("draft")}
-          </span>
+          </Badge>
           {estimate.sentAt && estimate.clientDecision === "pending" && (
             <button onClick={declineOnBehalfOfClient} disabled={busy} className="btn-secondary px-3 py-1 text-xs">
               {t("declineOnBehalfOfClient")}
@@ -479,20 +463,17 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
                         {formatCurrency(line.lineTotal, currency)}
                       </span>
                       {benchmarks[line.id] && Math.abs(benchmarks[line.id].deviationPercent) >= BENCHMARK_FLAG_THRESHOLD && (
-                        <span
+                        <Badge
+                          tone={benchmarks[line.id].deviationPercent > 0 ? "warning" : "success"}
+                          className="shrink-0"
                           title={t("benchmarkHint", {
                             median: formatCurrency(benchmarks[line.id].benchmarkMedian, currency),
                             count: benchmarks[line.id].benchmarkSampleSize,
                           })}
-                          className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
-                            benchmarks[line.id].deviationPercent > 0
-                              ? "bg-warning-50 dark:bg-warning-500/15 text-warning-fg"
-                              : "bg-success-50 dark:bg-success-500/15 text-success-fg"
-                          }`}
                         >
                           {benchmarks[line.id].deviationPercent > 0 ? "+" : ""}
                           {benchmarks[line.id].deviationPercent}%
-                        </span>
+                        </Badge>
                       )}
                     </div>
                   </td>

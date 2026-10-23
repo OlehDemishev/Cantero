@@ -9,6 +9,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Badge } from "@/components/ui/badge";
 
 const TYPES: ChecklistTemplateType[] = ["punch_list", "rfi", "safety_briefing", "jha"];
 
@@ -270,7 +271,7 @@ export default function TemplatesPage() {
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium text-fg">{tpl.name}</span>
-                          <span className="rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs text-fg-subtle">{t("versionBadge", { version: tpl.version })}</span>
+                          <Badge tone="neutral">{t("versionBadge", { version: tpl.version })}</Badge>
                         </div>
                         {tpl.type === "punch_list" ? (
                           <div className="mt-1 text-xs text-fg-subtle">{t("itemCount", { count: tpl.items.length })}</div>

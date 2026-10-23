@@ -9,6 +9,8 @@ import { apiFetch } from "@/lib/api-client";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApi } from "@/lib/use-api";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface JobPosting {
   id: string;
@@ -37,15 +39,6 @@ interface Interview {
 interface CandidateDetail extends Candidate {
   interviews: Interview[];
 }
-
-const STAGE_STYLES: Record<CandidateStage, string> = {
-  applied: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  screening: "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
-  interviewing: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
-  offer: "bg-amber-50 text-amber-700",
-  hired: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-  rejected: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
-};
 
 export default function RecruitingPage() {
   const t = useTranslations("recruiting");
@@ -215,11 +208,9 @@ export default function RecruitingPage() {
                       {p.trade && <span className="text-fg-subtle"> · {p.trade}</span>}
                       <span className="ml-1 text-xs text-fg-subtle">({p._count.candidates})</span>
                     </span>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${p.status === "open" ? "bg-success-50 dark:bg-success-500/15 text-success-fg" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"}`}
-                    >
+                    <Badge tone={p.status === "open" ? "success" : "neutral"}>
                       {t(`postingStatus_${p.status}`)}
-                    </span>
+                    </Badge>
                   </button>
                 </li>
               ))}
@@ -323,7 +314,7 @@ export default function RecruitingPage() {
                             {c.name}
                             {c.source && <span className="ml-1 text-xs text-fg-subtle">({c.source})</span>}
                           </span>
-                          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STAGE_STYLES[c.stage]}`}>{t(`stage_${c.stage}`)}</span>
+                          <Badge tone={statusTone(c.stage)}>{t(`stage_${c.stage}`)}</Badge>
                         </button>
 
                         {expanded && detail && detail.id === c.id && (

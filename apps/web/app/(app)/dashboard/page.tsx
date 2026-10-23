@@ -22,6 +22,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { useReportAccess } from "@/lib/report-access";
 import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
 
 interface Overview {
   projectsTotal: number;
@@ -147,16 +148,10 @@ function StatCard({
       <div className="flex items-start justify-between gap-2">
         <div className="text-xs font-medium uppercase tracking-wide text-fg-subtle">{label}</div>
         {trend && Math.round(trend.percent) !== 0 && (
-          <span
-            className={`inline-flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 text-xs font-medium tabular-nums ${
-              trend.direction === "up"
-                ? "bg-success-50 text-success-fg dark:bg-success-500/10"
-                : "bg-error-50 text-danger-fg dark:bg-error-500/10"
-            }`}
-          >
+          <Badge tone={trend.direction === "up" ? "success" : "danger"} size="sm" className="shrink-0 tabular-nums">
             {trend.direction === "up" ? <TrendUpIcon className="size-3" /> : <TrendDownIcon className="size-3" />}
             {Math.abs(Math.round(trend.percent))}%
-          </span>
+          </Badge>
         )}
       </div>
       <div className={`mt-1 text-xl font-semibold tabular-nums ${warn ? "text-amber-600" : "text-fg"}`}>{value}</div>

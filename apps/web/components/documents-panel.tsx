@@ -10,6 +10,7 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApi } from "@/lib/use-api";
+import { Badge } from "@/components/ui/badge";
 
 interface Document {
   id: string;
@@ -217,13 +218,13 @@ export function DocumentsPanel({
               <div className="flex items-center justify-between">
                 <div>
                   <span className="text-sm">{doc.name}</span>
-                  <span className="ml-2 rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs text-gray-600 dark:text-gray-300">
+                  <Badge tone="neutral" className="ml-2">
                     {t(`category_${doc.category}`)}
-                  </span>
+                  </Badge>
                   {doc.tags.map((tag) => (
-                    <span key={tag} className="ml-1 rounded-full bg-brand-50 dark:bg-brand-500/15 px-2 py-0.5 text-xs text-brand-700 dark:text-brand-400">
+                    <Badge tone="brand" className="ml-1" key={tag}>
                       {tag}
-                    </span>
+                    </Badge>
                   ))}
                   {doc.version > 1 && (
                     <button

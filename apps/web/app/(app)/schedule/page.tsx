@@ -6,6 +6,7 @@ import Link from "next/link";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
+import { statusTone, TONE_FILL_CLASSES } from "@/lib/status-tone";
 
 interface Project {
   id: string;
@@ -31,11 +32,6 @@ interface ProjectSchedule {
   milestones: ScheduleMilestone[];
 }
 
-const STATUS_STYLES: Record<ScheduleTask["status"], string> = {
-  planned: "bg-gray-400",
-  in_progress: "bg-warning-500",
-  done: "bg-success-500",
-};
 
 export default function SchedulePage() {
   const t = useTranslations("schedule");
@@ -169,7 +165,7 @@ function ProjectScheduleSection({ schedule }: { schedule: ProjectSchedule }) {
                 <div className="w-36 flex-none truncate text-xs text-gray-600 dark:text-gray-300">{task.name}</div>
                 <div className="relative h-6 min-w-[300px] flex-1 rounded bg-gray-100 dark:bg-gray-700">
                   <div
-                    className={`absolute h-6 rounded ${STATUS_STYLES[task.status]} ${task.isCritical ? "ring-2 ring-error-600" : ""}`}
+                    className={`absolute h-6 rounded ${TONE_FILL_CLASSES[statusTone(task.status)]} ${task.isCritical ? "ring-2 ring-error-600" : ""}`}
                     style={{ left: `${left}%`, width: `${Math.max(right - left, 2)}%` }}
                     title={`${task.name}: ${formatDate(new Date(task.startDate!))} – ${formatDate(new Date(task.dueDate!))}`}
                   />

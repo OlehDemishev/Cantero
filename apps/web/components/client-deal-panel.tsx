@@ -7,6 +7,7 @@ import { useApi } from "@/lib/use-api";
 import { formatCurrency } from "@/lib/format-currency";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 type ClientStage = "lead" | "contacted" | "qualified" | "won" | "lost";
 interface Worker {
@@ -238,14 +239,10 @@ export function ClientDealPanel({
         <div className="mt-4 border-t border-gray-100 dark:border-gray-700 pt-3">
           <h3 className="mb-1 text-xs font-semibold text-fg-subtle">{t("referralReward")}</h3>
           <div className="flex items-center justify-between">
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                client.referralRewardStatus === "paid" ? "bg-success-50 dark:bg-success-500/15 text-success-fg" : "bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-400"
-              }`}
-            >
+            <Badge tone={client.referralRewardStatus === "paid" ? "success" : "warning"}>
               {t(`referralReward_${client.referralRewardStatus}`)}
               {client.referralRewardAmount != null && ` · ${formatCurrency(client.referralRewardAmount, currency)}`}
-            </span>
+            </Badge>
             {isManager && client.referralRewardStatus === "pending" && (
               <button onClick={markReferralRewardPaid} disabled={busy} className="btn-secondary px-2 py-1 text-xs">
                 {t("markRewardPaid")}

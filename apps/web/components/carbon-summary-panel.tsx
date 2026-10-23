@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { useApi } from "@/lib/use-api";
 import { useCan } from "@/lib/permissions";
 import { PanelErrorState } from "@/components/ui/error-state";
+import { Badge } from "@/components/ui/badge";
 
 interface CarbonRow {
   materialCatalogItemId: string;
@@ -69,7 +70,7 @@ export function CarbonSummaryPanel() {
               <tr key={r.materialCatalogItemId} className="border-b border-gray-100 dark:border-gray-700">
                 <td className="py-2">
                   {r.name}
-                  {r.greenCertified && <span className="ml-1 rounded-full bg-success-50 dark:bg-success-500/15 px-1.5 py-0.5 text-[10px] text-success-fg">{t("greenCertified")}</span>}
+                  {r.greenCertified && <Badge tone="success" size="sm" className="ml-1">{t("greenCertified")}</Badge>}
                 </td>
                 <td className="text-right">
                   {r.quantity} {r.unit}

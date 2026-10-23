@@ -8,6 +8,7 @@ import { formatDateTime } from "@/lib/format-date";
 import { useCan } from "@/lib/permissions";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 interface GobdLedgerEntry {
   id: string;
@@ -138,16 +139,16 @@ export function GobdCompliancePanel() {
         </button>
         {verification &&
           (verification.valid ? (
-            <span className="rounded-full bg-success-50 dark:bg-success-500/15 px-2.5 py-1 text-xs font-medium text-success-fg">
+            <Badge tone="success">
               {t("chainValid", { count: verification.entryCount })}
               {verification.anchoring.anchorCount > 0 && ` · ${t("anchorsConfirm", { count: verification.anchoring.anchorCount })}`}
-            </span>
+            </Badge>
           ) : (
-            <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2.5 py-1 text-xs font-medium text-danger-fg">
+            <Badge tone="danger">
               {verification.chainValid
                 ? t("anchorBroken", { sequence: verification.anchoring.brokenAtSequence ?? 0 })
                 : t("chainBroken", { sequence: verification.brokenAtSequence ?? 0 })}
-            </span>
+            </Badge>
           ))}
       </div>
 

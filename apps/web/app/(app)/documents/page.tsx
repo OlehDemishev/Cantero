@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SignatureRequestsPanel } from "@/components/signature-requests-panel";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatNumber } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
 
 interface Project {
   id: string;
@@ -141,9 +142,9 @@ export default function DocumentsPage() {
                     )}
                   </td>
                   <td>
-                    <span className="rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs text-gray-600 dark:text-gray-300">
+                    <Badge tone="neutral">
                       {t(`category_${doc.category}`)}
-                    </span>
+                    </Badge>
                   </td>
                   <td>
                     {doc.projectId ? (

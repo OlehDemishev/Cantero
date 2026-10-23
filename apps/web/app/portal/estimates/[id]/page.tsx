@@ -9,6 +9,7 @@ import { SignaturePad } from "@/components/signature-pad";
 import { formatDateTime } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
 import { PublicLinkError } from "@/components/public-link-error";
+import { Badge } from "@/components/ui/badge";
 
 interface PortalLine {
   id: string;
@@ -133,9 +134,9 @@ export default function PortalEstimatePage({ params }: { params: Promise<{ id: s
           <h1 className="text-xl font-semibold text-fg">
             {estimate.name}
             {estimate.variantLabel && (
-              <span className="ml-2 rounded-full bg-brand-50 dark:bg-brand-500/15 px-2 py-0.5 text-xs font-medium text-brand-700 dark:text-brand-400 align-middle">
+              <Badge tone="brand" className="ml-2 align-middle">
                 {estimate.variantLabel}
-              </span>
+              </Badge>
             )}
           </h1>
           {estimate.projectName && <p className="mt-1 text-sm text-fg-subtle">{estimate.projectName}</p>}

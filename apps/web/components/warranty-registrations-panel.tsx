@@ -8,6 +8,7 @@ import { useApi } from "@/lib/use-api";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
 
 interface WarrantyRegistration {
   id: string;
@@ -129,9 +130,9 @@ export function WarrantyRegistrationsPanel({ projectId }: { projectId: string })
                     {r.scope}
                     {r.manufacturer && <span className="ml-1.5 text-xs text-fg-subtle">({r.manufacturer})</span>}
                   </span>
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${expired ? "bg-error-50 dark:bg-error-500/15 text-danger-fg" : "bg-success-50 dark:bg-success-500/15 text-success-fg"}`}>
+                  <Badge tone={expired ? "danger" : "success"}>
                     {expired ? t("expired") : t("underWarranty")}
-                  </span>
+                  </Badge>
                 </div>
                 <p className="mt-1 text-xs text-fg-subtle">
                   {t(`coverage_${r.coverageType}`)} · {t("expiresOn", { date: formatDate(new Date(r.expirationDate)) })}

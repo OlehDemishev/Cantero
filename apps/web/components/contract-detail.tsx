@@ -11,6 +11,8 @@ import { fetchClientLink } from "@/lib/client-link";
 import { useCan } from "@/lib/permissions";
 import { goBack } from "@/lib/back-navigation";
 import { formatDateTime } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface Contract {
   id: string;
@@ -26,12 +28,6 @@ interface Contract {
   docusignSignedPdfKey: string | null;
 }
 
-const STATUS_STYLES: Record<Contract["status"], string> = {
-  draft: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  sent: "bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-400",
-  signed: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-  void: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
-};
 
 export function ContractDetail({ contractId }: { contractId: string }) {
   const t = useTranslations("contracts");
@@ -133,7 +129,7 @@ export function ContractDetail({ contractId }: { contractId: string }) {
       </button>
       <div className="mt-2 flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{contract.title}</h1>
-        <span className={`rounded-full px-3 py-1 text-xs font-medium ${STATUS_STYLES[contract.status]}`}>{t(contract.status)}</span>
+        <Badge tone={statusTone(contract.status)}>{t(contract.status)}</Badge>
       </div>
       {(contract.client || contract.subcontractor) && (
         <p className="text-sm text-fg-subtle">

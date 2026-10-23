@@ -7,6 +7,8 @@ import { fetchCached, updateCache } from "@/lib/offline-cache";
 import { resetStateInEffect } from "@/lib/effect-reset";
 import { CachedNote } from "@/components/field-cached-note";
 import { FieldMessage } from "@/components/field-message";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 type TaskStatus = "planned" | "in_progress" | "done";
 const STATUS_ORDER: TaskStatus[] = ["planned", "in_progress", "done"];
@@ -19,12 +21,7 @@ interface Task {
 
 function StatusBadge({ status }: { status: TaskStatus }) {
   const ts = useTranslations("scheduling");
-  const styles: Record<TaskStatus, string> = {
-    planned: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-    in_progress: "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
-    done: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-  };
-  return <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${styles[status]}`}>{ts(status)}</span>;
+  return <Badge tone={statusTone(status)}>{ts(status)}</Badge>;
 }
 
 export function TasksTab({ projectId }: { projectId: string }) {

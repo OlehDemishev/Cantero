@@ -15,6 +15,8 @@ import { useDeepLinkedRow, buildItemDeepLink } from "@/lib/use-deep-linked-row";
 import { CopyLinkButton } from "@/components/ui/copy-link-button";
 import { PrintButton } from "@/components/ui/print-button";
 import { formatDate } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface Worker {
   id: string;
@@ -44,12 +46,6 @@ interface PunchListItem {
   estimatedCostImpact: string | null;
   changeOrderId: string | null;
 }
-
-const STATUS_STYLES: Record<PunchListItemStatus, string> = {
-  open: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  resolved: "bg-warning-50 dark:bg-warning-500/15 text-warning-fg",
-  verified: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-};
 
 export function PunchListPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("punchList");
@@ -320,13 +316,13 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
                   <div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-fg">{item.title}</span>
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[item.status]}`}>
+                    <Badge tone={statusTone(item.status, "punchList")}>
                       {t(item.status)}
-                    </span>
+                    </Badge>
                     {item.escalatedAt && (
-                      <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-danger-fg">
+                      <Badge tone="danger">
                         {t("escalated")}
-                      </span>
+                      </Badge>
                     )}
                   </div>
                   <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-fg-subtle">

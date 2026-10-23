@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 interface BenefitEnrollment {
   id: string;
@@ -54,13 +55,9 @@ export function WorkerBenefitsPanel({ workerId }: { workerId: string }) {
               <span>
                 {en.plan.name} <span className="text-xs text-fg-subtle">({en.tier.name})</span>
               </span>
-              <span
-                className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                  en.status === "active" ? "bg-success-50 dark:bg-success-500/15 text-success-fg" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-                }`}
-              >
+              <Badge tone={en.status === "active" ? "success" : "neutral"}>
                 {tb(`enrollmentStatus_${en.status}`)}
-              </span>
+              </Badge>
             </div>
             {en.status === "active" && (
               <div className="mt-1.5 flex gap-2">

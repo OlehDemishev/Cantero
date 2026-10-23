@@ -9,6 +9,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface Subcontractor {
   id: string;
@@ -70,12 +72,6 @@ interface Leveling {
   bids: LevelingBid[];
   scopeItems: LevelingScopeRow[];
 }
-
-const STATUS_STYLES: Record<BidRequestStatus, string> = {
-  open: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
-  awarded: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-  cancelled: "bg-gray-100 dark:bg-gray-700 text-fg-subtle",
-};
 
 export function BidRequestsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("bidding");
@@ -391,7 +387,7 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                 <button onClick={() => toggleExpand(r.id)} className="flex w-full items-center justify-between text-left">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-fg">{r.title}</span>
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[r.status]}`}>{t(r.status)}</span>
+                    <Badge tone={statusTone(r.status)}>{t(r.status)}</Badge>
                   </div>
                   <span className="text-xs text-fg-subtle">{t("bidCount", { count: r.bids.length, total: r.invites.length })}</span>
                 </button>
@@ -407,12 +403,12 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                       <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("scoringCriteria")}</p>
                       <div className="flex flex-wrap gap-1.5">
                         {d.criteria.map((c) => (
-                          <span key={c.id} className="flex items-center gap-1 rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs text-fg-muted">
+                          <Badge tone="neutral" className="flex" key={c.id}>
                             {c.label} ({c.weight})
                             <button onClick={() => removeCriterion(r.id, c.id)} className="text-fg-subtle hover:text-error-700">
                               ×
                             </button>
-                          </span>
+                          </Badge>
                         ))}
                       </div>
                       <form onSubmit={(e) => addCriterion(r.id, e)} className="mt-1.5 flex items-center gap-1.5">
@@ -490,9 +486,9 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                               <td className="pl-2 text-right">
                                 <div className="flex items-center justify-end gap-1.5">
                                   {bid?.isAwarded && (
-                                    <span className="rounded-full bg-success-50 dark:bg-success-500/15 px-2 py-0.5 text-xs font-medium text-success-fg">
+                                    <Badge tone="success">
                                       {t("awarded")}
-                                    </span>
+                                    </Badge>
                                   )}
                                   {bid && !bid.isAwarded && r.status === "open" && (
                                     <button onClick={() => award(r.id, bid.id)} disabled={busy} className="btn-secondary px-2 py-1 text-xs">

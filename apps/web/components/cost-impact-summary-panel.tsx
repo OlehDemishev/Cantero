@@ -5,6 +5,7 @@ import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 import { PanelErrorState } from "@/components/ui/error-state";
+import { Badge } from "@/components/ui/badge";
 
 interface CostImpactRow {
   type: "rfi" | "punch_list";
@@ -55,9 +56,9 @@ export function CostImpactSummaryPanel({ projectId }: { projectId: string }) {
                 </td>
                 <td className="text-right">
                   {row.confirmedAmount !== null ? (
-                    <span className="rounded-full bg-success-50 dark:bg-success-500/15 px-2 py-0.5 text-xs font-medium text-success-fg">{t("confirmed")}</span>
+                    <Badge tone="success">{t("confirmed")}</Badge>
                   ) : (
-                    <span className="rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs font-medium text-fg-subtle">{t("estimated")}</span>
+                    <Badge tone="neutral">{t("estimated")}</Badge>
                   )}
                 </td>
               </tr>

@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PhotoAttachments } from "@/components/photo-attachments";
 import { VoiceInputButton } from "@/components/voice-input-button";
 import { formatDate } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
 
 interface DailyLog {
   id: string;
@@ -267,19 +268,19 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
                       {formatDate(new Date(log.date))}
                     </span>
                     {log.weatherCondition && (
-                      <span className="rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs text-gray-600 dark:text-gray-300">
+                      <Badge tone="neutral">
                         {t(`weather_${log.weatherCondition}`)}
-                      </span>
+                      </Badge>
                     )}
                     {log.delays && (
-                      <span className="rounded-full bg-warning-50 dark:bg-warning-500/15 px-2 py-0.5 text-xs font-medium text-warning-fg">
+                      <Badge tone="warning">
                         {t("hasDelays")}
-                      </span>
+                      </Badge>
                     )}
                     {!!log.weatherDelayHours && (
-                      <span className="rounded-full bg-warning-50 dark:bg-warning-500/15 px-2 py-0.5 text-xs font-medium text-warning-fg">
+                      <Badge tone="warning">
                         {t("weatherDelayBadge", { hours: log.weatherDelayHours })}
-                      </span>
+                      </Badge>
                     )}
                   </div>
                   <span className="text-xs text-fg-subtle">{log.authorName}</span>

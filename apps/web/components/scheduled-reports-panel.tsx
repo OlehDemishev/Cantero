@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 import { useReportAccess } from "@/lib/report-access";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Badge } from "@/components/ui/badge";
 
 interface ScheduledReport {
   id: string;
@@ -171,13 +172,9 @@ export function ScheduledReportsPanel() {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-fg">{report.name}</span>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        report.active ? "bg-success-50 dark:bg-success-500/15 text-success-fg" : "bg-gray-100 dark:bg-gray-700 text-fg-subtle"
-                      }`}
-                    >
+                    <Badge tone={report.active ? "success" : "neutral"}>
                       {report.active ? t("active") : t("paused")}
-                    </span>
+                    </Badge>
                   </div>
                   <div className="mt-1 text-xs text-fg-subtle">
                     {t(`reportType_${report.reportType}`)} · {t(`frequency_${report.frequency}`)} · {report.recipientEmails.join(", ")}

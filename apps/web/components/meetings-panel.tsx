@@ -10,6 +10,7 @@ import { useDeepLinkedRow, buildItemDeepLink } from "@/lib/use-deep-linked-row";
 import { CopyLinkButton } from "@/components/ui/copy-link-button";
 import { PrintButton } from "@/components/ui/print-button";
 import { formatDate } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
 
 interface MeetingActionItem {
   id: string;
@@ -213,9 +214,9 @@ export function MeetingsPanel({ projectId }: { projectId: string }) {
                       <div className="mt-1 text-xs text-fg-subtle">{formatDate(new Date(meeting.meetingDate))}</div>
                     </div>
                   {meeting.actionItems.filter((a) => a.status === "open").length > 0 && (
-                    <span className="rounded-full bg-warning-50 dark:bg-warning-500/15 px-2 py-0.5 text-xs font-medium text-warning-fg">
+                    <Badge tone="warning">
                       {t("openCount", { count: meeting.actionItems.filter((a) => a.status === "open").length })}
-                    </span>
+                    </Badge>
                   )}
                   </button>
                 </div>

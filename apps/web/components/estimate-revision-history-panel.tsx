@@ -6,6 +6,7 @@ import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
 import { RevisionDiffPanel } from "@/components/revision-diff-panel";
 import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
 
 interface RateCatalogItem {
   code: string;
@@ -174,19 +175,9 @@ export function EstimateRevisionHistoryPanel({
                     {row.revQuantity !== null ? `${row.revQuantity} ${row.unit} · ${formatCurrency(row.revTotal, currency)}` : "—"}
                   </td>
                   <td>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        row.kind === "added"
-                          ? "bg-success-50 dark:bg-success-500/15 text-success-fg"
-                          : row.kind === "removed"
-                            ? "bg-error-50 dark:bg-error-500/15 text-danger-fg"
-                            : row.kind === "changed"
-                              ? "bg-warning-50 dark:bg-warning-500/15 text-warning-fg"
-                              : "bg-gray-100 dark:bg-gray-700 text-fg-subtle"
-                      }`}
-                    >
+                    <Badge tone={row.kind === "added" ? "success" : row.kind === "removed" ? "danger" : row.kind === "changed" ? "warning" : "neutral"}>
                       {t(row.kind)}
-                    </span>
+                    </Badge>
                   </td>
                   <td className={row.kind === "added" ? "text-success-fg" : ""}>
                     {row.curQuantity !== null ? `${row.curQuantity} ${row.unit} · ${formatCurrency(row.curTotal, currency)}` : "—"}

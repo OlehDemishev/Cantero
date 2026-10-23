@@ -7,6 +7,7 @@ import type { PDFDocumentProxy } from "pdfjs-dist";
 import { apiFetch, apiUpload } from "@/lib/api-client";
 import { loadPdf, renderPage } from "@/lib/pdf";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Badge } from "@/components/ui/badge";
 
 interface SetPage {
   page: number;
@@ -316,11 +317,11 @@ export function DrawingSetImport({ projectId, onImported }: { projectId: string;
                     ) : !r.include ? (
                       <span className="text-fg-subtle">{p.sheetNumber ? t("skipped") : t("notRecognized")}</span>
                     ) : revises ? (
-                      <span className="rounded bg-warning-50 px-1.5 py-0.5 text-warning-fg dark:bg-warning-500/15">{t("revises", { sheet: revises.sheetNumber, version: revises.version + 1 })}</span>
+                      <Badge tone="warning" size="sm">{t("revises", { sheet: revises.sheetNumber, version: revises.version + 1 })}</Badge>
                     ) : p.fromScan && key(p.sheetNumber ?? "") === key(r.sheetNumber) ? (
-                      <span className="rounded bg-gray-100 px-1.5 py-0.5 text-gray-600 dark:bg-gray-800 dark:text-gray-300">{t("fromScan")}</span>
+                      <Badge tone="neutral" size="sm">{t("fromScan")}</Badge>
                     ) : p.confidence === "medium" && key(p.sheetNumber ?? "") === key(r.sheetNumber) ? (
-                      <span className="rounded bg-gray-100 px-1.5 py-0.5 text-gray-600 dark:bg-gray-800 dark:text-gray-300">{t("checkIt")}</span>
+                      <Badge tone="neutral" size="sm">{t("checkIt")}</Badge>
                     ) : (
                       <span className="text-success-600">{t("newSheet")}</span>
                     )}

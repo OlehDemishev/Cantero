@@ -11,6 +11,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency, formatNumber } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface Equipment {
   id: string;
@@ -43,12 +45,6 @@ interface DebtServiceSummary {
   upcomingDebtService: number;
   monthsAhead: number;
 }
-
-const STATUS_STYLES: Record<LoanStatus, string> = {
-  active: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
-  paid_off: "bg-success-50 dark:bg-success-500/15 text-success-fg",
-  defaulted: "bg-error-50 dark:bg-error-500/15 text-danger-fg",
-};
 
 export default function LoansPage() {
   const t = useTranslations("loans");
@@ -250,7 +246,7 @@ export default function LoansPage() {
                       <span className="text-xs text-fg-subtle">
                         {formatCurrency(loan.principal, currency)} · {formatNumber(loan.interestRatePercent)}% · {tl("termMonths", { count: loan.termMonths })}
                       </span>
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[loan.status]}`}>{t(`status_${loan.status}`)}</span>
+                      <Badge tone={statusTone(loan.status)}>{t(`status_${loan.status}`)}</Badge>
                     </div>
                   </div>
 
