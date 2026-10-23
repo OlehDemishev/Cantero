@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { CustomFieldsValuesPanel } from "@/components/custom-fields-values-panel";
 import { ClientDealPanel } from "@/components/client-deal-panel";
 import { ClientBillingAddressPanel } from "@/components/client-billing-address-panel";
@@ -105,15 +104,15 @@ export function ClientDetail({ clientId }: { clientId: string }) {
 
   if (!client) {
     return (
-      <AuthenticatedShell>
-        <p className="text-fg-subtle">{tc("loading")}</p>
-      </AuthenticatedShell>
+      <>
+        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+      </>
     );
   }
 
   return (
-    <AuthenticatedShell>
-      <button onClick={() => goBack(router, "/clients")} className="text-sm text-fg-subtle hover:underline">
+    <>
+      <button onClick={() => goBack(router, "/clients")} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">
         ← {t("title")}
       </button>
       <div className="mt-2 flex items-center justify-between">
@@ -204,6 +203,6 @@ export function ClientDetail({ clientId }: { clientId: string }) {
         <ClientActivityPanel clientId={clientId} />
         <ClientRemindersPanel clientId={clientId} />
       </div>
-    </AuthenticatedShell>
+    </>
   );
 }

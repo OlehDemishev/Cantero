@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { SUPPORTED_CURRENCIES } from "@cantero/shared";
-import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { DocumentsPanel } from "@/components/documents-panel";
 import { apiFetch, downloadBlob, ApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
@@ -252,9 +251,9 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
 
   if (!invoice) {
     return (
-      <AuthenticatedShell>
-        <p className="text-fg-subtle">{tc("loading")}</p>
-      </AuthenticatedShell>
+      <>
+        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+      </>
     );
   }
 
@@ -285,8 +284,8 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
           : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300";
 
   return (
-    <AuthenticatedShell>
-      <a href={`/projects/${invoice.project.id}`} className="text-sm text-fg-subtle hover:underline">
+    <>
+      <a href={`/projects/${invoice.project.id}`} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">
         ← {invoice.project.name}
       </a>
       <div className="mt-2 flex items-center justify-between">
@@ -577,7 +576,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
       </div>
 
       <DocumentsPanel invoiceId={invoice.id} />
-    </AuthenticatedShell>
+    </>
   );
 }
 

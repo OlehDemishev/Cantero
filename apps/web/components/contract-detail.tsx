@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { fetchClientLink } from "@/lib/client-link";
 import { useCan } from "@/lib/permissions";
@@ -119,15 +118,15 @@ export function ContractDetail({ contractId }: { contractId: string }) {
 
   if (!contract) {
     return (
-      <AuthenticatedShell>
-        <p className="text-fg-subtle">{tc("loading")}</p>
-      </AuthenticatedShell>
+      <>
+        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+      </>
     );
   }
 
   return (
-    <AuthenticatedShell>
-      <button onClick={() => goBack(router, "/contracts")} className="text-sm text-fg-subtle hover:underline">
+    <>
+      <button onClick={() => goBack(router, "/contracts")} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">
         ← {tc("back")}
       </button>
       <div className="mt-2 flex items-center justify-between">
@@ -218,6 +217,6 @@ export function ContractDetail({ contractId }: { contractId: string }) {
           </div>
         </div>
       </div>
-    </AuthenticatedShell>
+    </>
   );
 }

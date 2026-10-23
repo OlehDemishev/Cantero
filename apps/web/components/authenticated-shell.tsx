@@ -4,8 +4,8 @@ import { useEffect, useRef, useState, type SVGProps } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { clearToken, getToken, signOutSession } from "@/lib/api-client";
-import { useMe } from "@/lib/use-me";
+import { clearToken, signOutSession } from "@/lib/api-client";
+import { useMe, type MeResponse } from "@/lib/use-me";
 import { OfflineOthersNotice } from "@/components/offline-others-notice";
 import { useCan } from "@/lib/permissions";
 import { permissionsFor } from "@/lib/route-access";
@@ -168,20 +168,21 @@ function useVisibleNavItems(hiddenNavItems: string[]): (item: NavItem) => boolea
 
 const COLLAPSED_NAV_GROUPS_STORAGE_KEY = "cantero:collapsedNavGroups";
 
+/**
+ * The signed-in app's frame — menu, header, command palette — rendered once by app/(app)/layout.tsx
+ * around every page in it, so moving between pages swaps only the content. The frame draws at once;
+ * the page itself waits for /me (MeProvider) and an active subscription, so a signed-out visit goes
+ * to /login without any of the page's own requests going out.
+ */
 export function AuthenticatedShell({ children }: { children: React.ReactNode }) {
   const tc = useTranslations("common");
   const router = useRouter();
-  const { data, loading, unauthorized } = useMe();
+  const { data, unauthorized } = useMe();
   const { isExpanded, isMobileOpen } = useSidebar();
 
   useEffect(() => {
-    if (!getToken()) router.replace("/login");
-  }, [router]);
-
-  useEffect(() => {
-    // A stored token that the API now rejects (expired, or from a database that's since been
-    // reset) leaves `getToken()` above satisfied forever — without this, the page sits on the
-    // loading state indefinitely instead of bouncing back to sign-in.
+    // No stored token, or one the API now rejects (expired, or from a database that's since been
+    // reset): without this the content would sit on its loading state instead of going to sign-in.
     if (unauthorized) {
       clearToken();
       router.replace("/login");
@@ -193,41 +194,62 @@ export function AuthenticatedShell({ children }: { children: React.ReactNode }) 
   }, [data, router]);
 
   const isNavItemVisible = useVisibleNavItems(data?.company.hiddenNavItems ?? []);
-
-  if (loading || !data) {
-    return <div className="flex min-h-screen items-center justify-center text-gray-500 dark:text-gray-400">{tc("loading")}</div>;
-  }
+  const ready = data?.subscriptionStatus === "active";
 
   const mainMargin = isMobileOpen ? "ml-0" : isExpanded ? "lg:ml-[270px]" : "lg:ml-[90px]";
 
   return (
     <div className="min-h-screen xl:flex">
-      <AppSidebar hiddenNavItems={data.company.hiddenNavItems} />
+      <AppSidebar hiddenNavItems={data?.company.hiddenNavItems ?? null} />
       <SidebarBackdrop />
       <div className={`flex-1 transition-all duration-300 ease-in-out print:ml-0 ${mainMargin}`}>
         <AppHeader me={data} />
         <div className="mx-auto max-w-(--breakpoint-2xl) p-4 md:p-6 print:max-w-none print:p-0">
-          <OfflineOthersNotice />
-          {children}
+          {ready ? (
+            <>
+              <OfflineOthersNotice />
+              {children}
+            </>
+          ) : (
+            <ContentSkeleton label={tc("loading")} />
+          )}
         </div>
       </div>
-      <CommandPalette navItems={NAV_ITEMS.filter(isNavItemVisible)} />
+      {ready && <CommandPalette navItems={NAV_ITEMS.filter(isNavItemVisible)} />}
       <KeyboardShortcutsHelp />
     </div>
   );
 }
 
-function AppSidebar({ hiddenNavItems }: { hiddenNavItems: string[] }) {
+/** Stands in for the page while /me loads — the frame around it is already there. */
+function ContentSkeleton({ label }: { label: string }) {
+  return (
+    <div role="status" aria-busy="true" className="animate-pulse">
+      <span className="sr-only">{label}</span>
+      <div className="mb-6 h-8 w-56 max-w-full rounded-lg bg-gray-200 dark:bg-gray-800" />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="h-28 rounded-2xl bg-gray-200 dark:bg-gray-800" />
+        <div className="h-28 rounded-2xl bg-gray-200 dark:bg-gray-800" />
+        <div className="hidden h-28 rounded-2xl bg-gray-200 dark:bg-gray-800 lg:block" />
+      </div>
+      <div className="mt-6 h-72 rounded-2xl bg-gray-200 dark:bg-gray-800" />
+    </div>
+  );
+}
+
+/** `hiddenNavItems` is null while /me loads: the menu then shows placeholders rather than items the
+ * member may turn out not to have. */
+function AppSidebar({ hiddenNavItems }: { hiddenNavItems: string[] | null }) {
   const tn = useTranslations("nav");
   const pathname = usePathname();
-  const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
+  const { isExpanded, isMobile, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const expanded = isExpanded || isHovered || isMobileOpen;
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
   // A group that ends up with nothing left to show (every item in it hidden) doesn't render at
   // all — an empty section header would just be dead weight, not a useful "nothing here" signal.
-  const isVisible = useVisibleNavItems(hiddenNavItems);
-  const visibleGroups = NAV_GROUPS.map((group) => ({
+  const isVisible = useVisibleNavItems(hiddenNavItems ?? []);
+  const visibleGroups = (hiddenNavItems ? NAV_GROUPS : []).map((group) => ({
     ...group,
     items: group.items.filter(isVisible),
   })).filter((group) => group.items.length > 0);
@@ -266,6 +288,8 @@ function AppSidebar({ hiddenNavItems }: { hiddenNavItems: string[] }) {
       className={`fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-gray-200 bg-white px-4 transition-all duration-300 ease-in-out print:hidden dark:border-gray-800 dark:bg-gray-900 ${
         expanded ? "w-[270px]" : "w-[90px]"
       } ${isMobileOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}
+      // Off-canvas on a phone: out of the Tab order and the accessibility tree, not just out of sight.
+      inert={isMobile && !isMobileOpen}
       onMouseEnter={() => !isExpanded && setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -280,6 +304,7 @@ function AppSidebar({ hiddenNavItems }: { hiddenNavItems: string[] }) {
       </div>
       <nav className="flex flex-1 flex-col overflow-y-auto no-scrollbar">
         {!expanded && <span className="mb-3 text-center text-xs font-medium uppercase text-gray-400 dark:text-gray-500">···</span>}
+        {!hiddenNavItems && <NavSkeleton expanded={expanded} />}
         <div className="flex flex-col gap-1">
           {visibleGroups.map((group, i) => {
             const isCollapsed = collapsedGroups.has(group.key) && group.key !== activeGroupKey;
@@ -324,41 +349,32 @@ function AppSidebar({ hiddenNavItems }: { hiddenNavItems: string[] }) {
   );
 }
 
+function NavSkeleton({ expanded }: { expanded: boolean }) {
+  return (
+    <div aria-hidden="true" className="flex animate-pulse flex-col gap-3 pt-1">
+      {Array.from({ length: 8 }, (_, i) => (
+        <div key={i} className={`h-9 rounded-lg bg-gray-100 dark:bg-gray-800 ${expanded ? "" : "mx-auto w-10"}`} />
+      ))}
+    </div>
+  );
+}
+
 function SidebarBackdrop() {
   const { isMobileOpen, toggleMobileSidebar } = useSidebar();
   if (!isMobileOpen) return null;
   return <div className="fixed inset-0 z-40 bg-gray-900/50 lg:hidden" onClick={toggleMobileSidebar} />;
 }
 
-function AppHeader({ me }: { me: NonNullable<ReturnType<typeof useMe>["data"]> }) {
-  const tc = useTranslations("common");
-  const tn = useTranslations("nav");
-  const ts = useTranslations("settings");
-  const router = useRouter();
+/** `me` is null while /me loads: the header draws at once, with placeholders where the company and
+ * the person go, and the parts that ask the API themselves (search, notifications) wait for it. */
+function AppHeader({ me }: { me: MeResponse | null }) {
   const { theme, toggleTheme } = useTheme();
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
 
   function handleToggle() {
     if (window.innerWidth >= 1024) toggleSidebar();
     else toggleMobileSidebar();
   }
-
-  async function signOut() {
-    await signOutSession();
-    router.replace("/login");
-  }
-
-  const initial = me.user.name?.[0]?.toUpperCase() ?? "?";
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4 print:hidden dark:border-gray-800 dark:bg-gray-900 md:px-6">
@@ -370,15 +386,17 @@ function AppHeader({ me }: { me: NonNullable<ReturnType<typeof useMe>["data"]> }
         >
           {isMobileOpen ? <CloseIcon /> : <MenuIcon />}
         </button>
-        <span className="hidden text-sm font-medium text-gray-500 dark:text-gray-400 sm:block">{me.company.name}</span>
+        {me ? (
+          <span className="hidden text-sm font-medium text-gray-500 dark:text-gray-400 sm:block">{me.company.name}</span>
+        ) : (
+          <span aria-hidden="true" className="hidden h-4 w-32 animate-pulse rounded bg-gray-100 dark:bg-gray-800 sm:block" />
+        )}
       </div>
 
-      <div className="hidden flex-1 justify-center px-4 md:flex">
-        <GlobalSearch />
-      </div>
+      <div className="hidden flex-1 justify-center px-4 md:flex">{me && <GlobalSearch />}</div>
 
       <div className="flex items-center gap-2">
-        <NotificationBell />
+        {me ? <NotificationBell /> : <span aria-hidden="true" className="h-10 w-10" />}
 
         <button
           onClick={toggleTheme}
@@ -388,61 +406,93 @@ function AppHeader({ me }: { me: NonNullable<ReturnType<typeof useMe>["data"]> }
           {theme === "dark" ? <SunIcon /> : <MoonIcon />}
         </button>
 
-        <div className="relative" ref={menuRef}>
-          <button
-            onClick={() => setMenuOpen((v) => !v)}
-            className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-white/5"
-          >
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-500 text-sm font-semibold text-white">
-              {initial}
-            </span>
-            <span className="hidden text-left sm:block">
-              <span className="block text-sm font-medium text-gray-700 dark:text-gray-300">{me.user.name}</span>
-            </span>
-            <ChevronDownIcon className={`text-gray-400 dark:text-gray-500 transition-transform ${menuOpen ? "rotate-180" : ""}`} />
-          </button>
-
-          {menuOpen && (
-            <div className="absolute right-0 mt-2 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-theme-md dark:border-gray-800 dark:bg-gray-900">
-              <div className="mb-2 flex items-center gap-3 border-b border-gray-100 pb-3 dark:border-gray-800">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-500 text-sm font-semibold text-white">
-                  {initial}
-                </span>
-                <div>
-                  <div className="text-sm font-medium text-gray-800 dark:text-white/90">{me.user.name}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">{me.user.email}</div>
-                </div>
-              </div>
-              <Link
-                href="/settings"
-                onClick={() => setMenuOpen(false)}
-                className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5"
-              >
-                <UserCircleIcon className="text-gray-500 dark:text-gray-400" />
-                {tn("settings")}
-              </Link>
-              <Link
-                href="/help"
-                onClick={() => setMenuOpen(false)}
-                className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5"
-              >
-                <HelpIcon className="text-gray-500 dark:text-gray-400" />
-                {tn("help")}
-              </Link>
-              <button
-                onClick={signOut}
-                className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5"
-              >
-                <LogoutIcon className="text-gray-500 dark:text-gray-400" />
-                {tc("signOut")}
-              </button>
-              <div className="mt-2 border-t border-gray-100 pt-2 text-xs text-gray-400 dark:border-gray-800">
-                {ts(me.user.role as never)}
-              </div>
-            </div>
-          )}
-        </div>
+        {me ? (
+          <UserMenu me={me} />
+        ) : (
+          <span aria-hidden="true" className="mx-2 my-1.5 h-9 w-9 animate-pulse rounded-full bg-gray-100 dark:bg-gray-800" />
+        )}
       </div>
     </header>
+  );
+}
+
+function UserMenu({ me }: { me: MeResponse }) {
+  const tc = useTranslations("common");
+  const tn = useTranslations("nav");
+  const ts = useTranslations("settings");
+  const router = useRouter();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  async function signOut() {
+    await signOutSession();
+    router.replace("/login");
+  }
+
+  const initial = me.user.name?.[0]?.toUpperCase() ?? "?";
+
+  return (
+    <div className="relative" ref={menuRef}>
+      <button
+        onClick={() => setMenuOpen((v) => !v)}
+        className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-white/5"
+      >
+        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-500 text-sm font-semibold text-white">
+          {initial}
+        </span>
+        <span className="hidden text-left sm:block">
+          <span className="block text-sm font-medium text-gray-700 dark:text-gray-300">{me.user.name}</span>
+        </span>
+        <ChevronDownIcon className={`text-gray-400 dark:text-gray-500 transition-transform ${menuOpen ? "rotate-180" : ""}`} />
+      </button>
+
+      {menuOpen && (
+        <div className="absolute right-0 mt-2 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-theme-md dark:border-gray-800 dark:bg-gray-900">
+          <div className="mb-2 flex items-center gap-3 border-b border-gray-100 pb-3 dark:border-gray-800">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-500 text-sm font-semibold text-white">
+              {initial}
+            </span>
+            <div>
+              <div className="text-sm font-medium text-gray-800 dark:text-white/90">{me.user.name}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{me.user.email}</div>
+            </div>
+          </div>
+          <Link
+            href="/settings"
+            onClick={() => setMenuOpen(false)}
+            className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5"
+          >
+            <UserCircleIcon className="text-gray-500 dark:text-gray-400" />
+            {tn("settings")}
+          </Link>
+          <Link
+            href="/help"
+            onClick={() => setMenuOpen(false)}
+            className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5"
+          >
+            <HelpIcon className="text-gray-500 dark:text-gray-400" />
+            {tn("help")}
+          </Link>
+          <button
+            onClick={signOut}
+            className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5"
+          >
+            <LogoutIcon className="text-gray-500 dark:text-gray-400" />
+            {tc("signOut")}
+          </button>
+          <div className="mt-2 border-t border-gray-100 pt-2 text-xs text-gray-400 dark:border-gray-800">
+            {ts(me.user.role as never)}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

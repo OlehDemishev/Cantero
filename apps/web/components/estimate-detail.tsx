@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { ProgressBillingPanel } from "@/components/progress-billing-panel";
 import { EstimateSuggestionsPanel } from "@/components/estimate-suggestions-panel";
 import { AssemblyQuickAddPanel } from "@/components/assembly-quick-add-panel";
@@ -332,15 +331,15 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
 
   if (!estimate) {
     return (
-      <AuthenticatedShell>
-        <p className="text-fg-subtle">{tc("loading")}</p>
-      </AuthenticatedShell>
+      <>
+        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+      </>
     );
   }
 
   return (
-    <AuthenticatedShell>
-      <a href={`/projects/${estimate.project.id}`} className="text-sm text-fg-subtle hover:underline">
+    <>
+      <a href={`/projects/${estimate.project.id}`} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">
         ← {estimate.project.name}
       </a>
       <div className="mt-2 flex items-center justify-between">
@@ -746,7 +745,7 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
           </form>
         </div>
       </div>
-    </AuthenticatedShell>
+    </>
   );
 }
 

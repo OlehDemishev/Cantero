@@ -4621,5 +4621,26 @@
     "back": "Go to the dashboard",
     "quoted": "“{name}”",
     "or": " or "
+  },
+  "pageTitle": {
+    "signIn": "Sign in",
+    "signUp": "Sign up",
+    "forgotPassword": "Forgot password",
+    "resetPassword": "Reset password",
+    "acceptInvite": "Accept invitation",
+    "billing": "Subscription",
+    "onboarding": "Getting started",
+    "clientPortal": "Client portal",
+    "subcontractorPortal": "Subcontractor portal",
+    "supplierPortal": "Supplier portal",
+    "subcontractorProfile": "Subcontractor profile",
+    "changeOrder": "Change order",
+    "certificateOfInsurance": "Certificate of insurance",
+    "contract": "Contract",
+    "estimate": "Estimate",
+    "quoteRequest": "Request a quote",
+    "signDocument": "Sign document",
+    "survey": "Survey",
+    "feedback": "Feedback"
   }
 }

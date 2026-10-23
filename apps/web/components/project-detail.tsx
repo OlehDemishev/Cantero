@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { TabNav, type TabNavItem } from "@/components/ui/tab-nav";
 import { goBack } from "@/lib/back-navigation";
 import { CommentsThread } from "@/components/comments-thread";
@@ -247,8 +246,8 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
   }
 
   return (
-    <AuthenticatedShell>
-      <button onClick={() => goBack(router, "/projects")} className="text-sm text-fg-subtle hover:underline">
+    <>
+      <button onClick={() => goBack(router, "/projects")} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">
         ← {tc("back")}
       </button>
       <div className="mt-2 flex items-center gap-3">
@@ -516,6 +515,6 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
           {can("site.manage") && <ProjectCloseoutPanel projectId={projectId} />}
         </>
       )}
-    </AuthenticatedShell>
+    </>
   );
 }

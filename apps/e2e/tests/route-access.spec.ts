@@ -2,6 +2,7 @@ import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { test, expect } from "@playwright/test";
 import { OPEN, PUBLIC, RESTRICTED, covers } from "../../web/lib/route-access";
+import { pageTitleKey } from "../../web/lib/page-titles";
 
 /**
  * Every page of the web app has a decision on who may open it (apps/web/lib/route-access.ts):
@@ -31,4 +32,9 @@ test("every web page is restricted, open to members, or public", () => {
   }
   expect(undecided).toEqual([]);
   expect(ambiguous).toEqual([]);
+});
+
+test("every web page but the bare redirect at / has its own tab title", () => {
+  const untitled = pages(join(__dirname, "../../web/app")).filter((page) => page !== "/" && !pageTitleKey(page));
+  expect(untitled).toEqual([]);
 });

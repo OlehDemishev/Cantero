@@ -5,12 +5,14 @@ import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { DEFAULT_CURRENCY_BY_LOCALE, PLAN_IDS, SUPPORTED_CURRENCIES, SUPPORTED_LOCALES, UNIT_SYSTEMS, type Locale } from "@cantero/shared";
 import { apiFetch, ApiError, setToken } from "@/lib/api-client";
+import { useRedirectIfSignedIn } from "@/lib/use-redirect-if-signed-in";
 
 export default function SignupPage() {
   const t = useTranslations("auth");
   const tc = useTranslations("common");
   const searchParams = useSearchParams();
   const referralCode = searchParams.get("ref") ?? undefined;
+  useRedirectIfSignedIn();
 
   const [form, setForm] = useState({
     companyName: "",

@@ -7,8 +7,8 @@ import { SidebarProvider } from "@/context/SidebarContext";
 import { PwaRegister } from "@/components/pwa-register";
 import { SentryInit } from "@/components/sentry-init";
 import { ToastProvider } from "@/components/ui/toast-provider";
-import { RouteAccessGate } from "@/components/route-access-gate";
 import { THEME_INIT_SCRIPT } from "@/lib/theme-script";
+import { PageTitle } from "@/components/page-title";
 import "./globals.css";
 
 const outfit = Outfit({
@@ -16,8 +16,9 @@ const outfit = Outfit({
   subsets: ["latin"],
 });
 
+// No `title` here: <PageTitle /> renders it per page ("Projects · Cantero"), and a metadata title
+// would add a second, competing <title> that streaming metadata can re-apply after navigation.
 export const metadata: Metadata = {
-  title: "Cantero",
   description: "Estimate → materials → invoice, in one place.",
   appleWebApp: { capable: true, statusBarStyle: "default", title: "Cantero" },
 };
@@ -43,7 +44,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <ThemeProvider>
             <SidebarProvider>
               <ToastProvider>
-                <RouteAccessGate>{children}</RouteAccessGate>
+                <PageTitle />
+                {children}
                 <PwaRegister />
                 <SentryInit />
               </ToastProvider>

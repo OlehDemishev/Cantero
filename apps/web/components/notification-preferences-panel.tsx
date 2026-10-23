@@ -14,7 +14,7 @@ import { resetStateInEffect } from "@/lib/effect-reset";
 export function NotificationPreferencesPanel() {
   const t = useTranslations("settings");
   const tc = useTranslations("common");
-  const { data: me } = useMe();
+  const { data: me, reload: reloadMe } = useMe();
 
   const [pushStatus, setPushStatus] = useState<"checking" | "unsupported" | "enabled" | "disabled">(() =>
     isPushSupported() ? "checking" : "unsupported",
@@ -70,6 +70,7 @@ export function NotificationPreferencesPanel() {
         body: JSON.stringify({ emailDigestFrequency: next }),
       });
       setDigestSaved(true);
+      reloadMe();
       setTimeout(() => setDigestSaved(false), 2000);
     } finally {
       setDigestBusy(false);
@@ -87,6 +88,7 @@ export function NotificationPreferencesPanel() {
         body: JSON.stringify({ mutedNotificationTypes: next }),
       });
       setMutedTypesSaved(true);
+      reloadMe();
       setTimeout(() => setMutedTypesSaved(false), 2000);
     } finally {
       setMutedTypesBusy(false);

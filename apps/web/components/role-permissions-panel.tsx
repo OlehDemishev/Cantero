@@ -4,6 +4,7 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useCan } from "@/lib/permissions";
+import { useMe } from "@/lib/use-me";
 
 interface Matrix {
   permissions: { key: string; section: string; sensitive: boolean }[];
@@ -23,6 +24,7 @@ export function RolePermissionsPanel() {
   const t = useTranslations("permissions");
   const ts = useTranslations("settings");
   const can = useCan();
+  const { reload: reloadMe } = useMe();
   const allowed = can("settings.roles");
   const [matrix, setMatrix] = useState<Matrix | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
@@ -53,6 +55,8 @@ export function RolePermissionsPanel() {
     try {
       await apiFetch("/company/permissions", { method: "PATCH", body: JSON.stringify({ role, permission: permission.key, granted }) });
       load();
+      // The change may be to the viewer's own role: refresh what the menu and pages allow them.
+      reloadMe();
     } catch {
       setMatrix(previous);
     } finally {
