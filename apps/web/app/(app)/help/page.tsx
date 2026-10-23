@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
+import { PageHeader } from "@/components/ui/page-header";
 
 const CATEGORIES = [
   { id: "gettingStarted", questions: ["q1", "q2", "q3", "q4"] },
@@ -43,8 +44,7 @@ export default function HelpPage() {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">{t("title")}</h1>
-      <p className="mt-1 text-sm text-fg-subtle">{t("subtitle")}</p>
+      <PageHeader title={t("title")} description={t("subtitle")} />
 
       <div className="mt-6 max-w-xl">
         <input

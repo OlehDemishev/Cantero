@@ -13,6 +13,7 @@ import { useApi } from "@/lib/use-api";
 import { formatDate, formatDateTime } from "@/lib/format-date";
 import { Badge } from "@/components/ui/badge";
 import { Alert } from "@/components/ui/alert";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface MaterialCatalogItem {
   id: string;
@@ -211,18 +212,20 @@ export default function RateCatalogPage() {
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">{t("title")}</h1>
-        <div className="flex flex-wrap gap-2">
-          <CsvImportButton endpoint="/materials/catalog/import" label={ti("importMaterials")} onDone={loadMaterials} />
-          <CsvImportButton endpoint="/estimates/rate-catalog/import" label={ti("importRateItems")} onDone={load} />
-          {!showCreateForm && (
-            <button type="button" onClick={() => setShowCreateForm(true)} className="btn-primary">
-              {tc("create")}
-            </button>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title={t("title")}
+        actions={
+          <>
+            <CsvImportButton endpoint="/materials/catalog/import" label={ti("importMaterials")} onDone={loadMaterials} />
+            <CsvImportButton endpoint="/estimates/rate-catalog/import" label={ti("importRateItems")} onDone={load} />
+            {!showCreateForm && (
+              <button type="button" onClick={() => setShowCreateForm(true)} className="btn-primary">
+                {tc("create")}
+              </button>
+            )}
+          </>
+        }
+      />
 
       {pendingNotice && (
         <Alert

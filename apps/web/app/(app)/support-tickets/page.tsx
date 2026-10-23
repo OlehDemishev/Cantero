@@ -12,6 +12,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { statusTone, TONE_TEXT_CLASSES } from "@/lib/status-tone";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface Member {
   id: string;
@@ -157,21 +158,23 @@ export default function SupportTicketsPage() {
 
   return (
     <>
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{t("title")}</h1>
-        <div className="flex items-center gap-3">
-          {isManager && (
-            <Link href="/settings?tab=operations" className="text-xs font-medium text-brand-700 dark:text-brand-400 hover:underline">
-              {t("manageSlaPolicies")}
-            </Link>
-          )}
-          {!adding && (
-            <button onClick={() => setAdding(true)} className="btn-secondary px-3 py-1.5 text-sm">
-              {t("newTicket")}
-            </button>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title={t("title")}
+        actions={
+          <>
+            {isManager && (
+              <Link href="/settings?tab=operations" className="text-xs font-medium text-brand-700 dark:text-brand-400 hover:underline">
+                {t("manageSlaPolicies")}
+              </Link>
+            )}
+            {!adding && (
+              <button onClick={() => setAdding(true)} className="btn-secondary px-3 py-1.5 text-sm">
+                {t("newTicket")}
+              </button>
+            )}
+          </>
+        }
+      />
 
       <div className="mt-4 flex flex-wrap gap-1.5">
         <button

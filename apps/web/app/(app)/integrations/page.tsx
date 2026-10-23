@@ -6,6 +6,7 @@ import type { AccountingProviderType } from "@cantero/shared";
 import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface Company {
   // Whether each is set up — the webhook URLs and feed token themselves only reach settings.company holders.
@@ -119,8 +120,7 @@ export default function IntegrationsPage() {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">{t("title")}</h1>
-      <p className="mt-2 text-sm text-fg-subtle">{t("hint")}</p>
+      <PageHeader title={t("title")} description={t("hint")} />
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {cards.map((card) => (

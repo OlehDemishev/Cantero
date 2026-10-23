@@ -18,6 +18,7 @@ import { useCan } from "@/lib/permissions";
 import { formatCurrency } from "@/lib/format-currency";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface Expense {
   id: string;
@@ -135,7 +136,7 @@ export default function ExpensesPage() {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">{t("title")}</h1>
+      <PageHeader title={t("title")} />
       <p className="mt-1 text-sm text-fg-subtle">
         {t("subtitle")}
       </p>

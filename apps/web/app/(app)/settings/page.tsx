@@ -53,6 +53,7 @@ import { SecuritySettingsPanel } from "@/components/security-settings-panel";
 import { ReferralProgramPanel } from "@/components/referral-program-panel";
 import { CompanyCoiPanel } from "@/components/company-coi-panel";
 import { MessageTemplatesPanel } from "@/components/message-templates-panel";
+import { PageHeader } from "@/components/ui/page-header";
 
 const SETTINGS_TAB_KEYS = [
   "account",
@@ -94,7 +95,7 @@ export default function SettingsPage() {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">{t("title")}</h1>
+      <PageHeader title={t("title")} />
 
       <TabNav tabs={TABS} active={activeTab} onChange={setTab} />
 

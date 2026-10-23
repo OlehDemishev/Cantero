@@ -16,6 +16,7 @@ import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
 import { FormError } from "@/components/ui/field";
+import { PageHeader } from "@/components/ui/page-header";
 
 type ClientStage = "lead" | "contacted" | "qualified" | "won" | "lost";
 const STAGES: ClientStage[] = ["lead", "contacted", "qualified", "won", "lost"];
@@ -157,17 +158,19 @@ export default function ClientsPage() {
 
   return (
     <>
-      <div className="flex items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold">{t("title")}</h1>
-        <div className="flex items-center gap-2">
-          <CsvImportButton endpoint="/clients/import" label={ti("importClients")} onDone={load} />
-          {!showCreateForm && (
-            <button type="button" onClick={() => setShowCreateForm(true)} className="btn-primary">
-              {t("newClient")}
-            </button>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title={t("title")}
+        actions={
+          <>
+            <CsvImportButton endpoint="/clients/import" label={ti("importClients")} onDone={load} />
+            {!showCreateForm && (
+              <button type="button" onClick={() => setShowCreateForm(true)} className="btn-primary">
+                {t("newClient")}
+              </button>
+            )}
+          </>
+        }
+      />
 
       {summary && (
         <div className="mt-6">

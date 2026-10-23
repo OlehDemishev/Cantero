@@ -23,6 +23,7 @@ import { useMe } from "@/lib/use-me";
 import { useReportAccess } from "@/lib/report-access";
 import { formatCurrency } from "@/lib/format-currency";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface Overview {
   projectsTotal: number;
@@ -63,7 +64,7 @@ export default function DashboardPage() {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">{data ? t("welcome", { name: data.user.name }) : ""}</h1>
+      <PageHeader title={data ? t("welcome", { name: data.user.name }) : ""} />
 
       {showFigures && !overview && (
         <div className="mt-8">

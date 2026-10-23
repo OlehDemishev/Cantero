@@ -7,6 +7,7 @@ import { useApi } from "@/lib/use-api";
 import { useCan } from "@/lib/permissions";
 import { buildItemDeepLink } from "@/lib/use-deep-linked-row";
 import { formatDate } from "@/lib/format-date";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface WithProject {
   id: string;
@@ -84,8 +85,7 @@ export default function OpenItemsPage() {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">{t("title")}</h1>
-      <p className="mt-1 text-sm text-fg-subtle">{t("subtitle")}</p>
+      <PageHeader title={t("title")} description={t("subtitle")} />
       {projectIdFilter && (
         <p className="mt-1 text-xs text-fg-subtle">
           {t("filteredByProject", { project: projectNameFilter ?? projectIdFilter })}{" "}

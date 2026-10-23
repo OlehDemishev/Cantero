@@ -19,6 +19,7 @@ import { useCan } from "@/lib/permissions";
 import { formatCurrency } from "@/lib/format-currency";
 import { Badge } from "@/components/ui/badge";
 import { FormError } from "@/components/ui/field";
+import { PageHeader } from "@/components/ui/page-header";
 
 type ClientStage = "lead" | "contacted" | "qualified" | "won" | "lost";
 const STAGES: ClientStage[] = ["lead", "contacted", "qualified", "won", "lost"];
@@ -112,14 +113,12 @@ export function ClientDetail({ clientId }: { clientId: string }) {
 
   return (
     <>
-      <button onClick={() => goBack(router, "/clients")} className="text-sm text-fg-subtle hover:underline">
-        ← {t("title")}
-      </button>
-      <div className="mt-2 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{client.name}</h1>
-        <Badge tone="brand">{t(client.stage)}</Badge>
-      </div>
-      <p className="text-sm text-fg-subtle">{client.email ?? client.phone ?? "—"}</p>
+      <PageHeader
+        back={{ onClick: () => goBack(router, "/clients"), label: t("title") }}
+        title={client.name}
+        description={client.email ?? client.phone ?? "—"}
+        actions={<Badge tone="brand">{t(client.stage)}</Badge>}
+      />
       {client.estimatedValue != null && (
         <p className="mt-1 text-sm font-medium text-fg-muted">
           {t("estimatedValue")}: {formatCurrency(client.estimatedValue, currency)}

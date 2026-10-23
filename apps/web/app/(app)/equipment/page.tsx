@@ -13,6 +13,7 @@ import { formatCurrency } from "@/lib/format-currency";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
 import { Alert } from "@/components/ui/alert";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface AssignmentSummary {
   project: { id: string; name: string } | null;
@@ -89,7 +90,7 @@ export default function EquipmentPage() {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">{t("title")}</h1>
+      <PageHeader title={t("title")} />
       {error && <Alert tone="danger" className="mt-4">{error}</Alert>}
 
       <div className="mt-6">

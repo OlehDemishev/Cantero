@@ -97,7 +97,7 @@ export function RolePermissionsPanel() {
                 <th key={role} className="px-2 py-2 text-center font-medium" title={!editable ? (role === "owner" ? t("ownerLocked") : t("adminOwnerOnly")) : undefined}>
                   <span className="block">{ts(role)}</span>
                   {editable && changedRoles.has(role) && (
-                    <button onClick={() => reset(role)} className="mt-0.5 text-[11px] font-normal text-brand-600 hover:underline dark:text-brand-400">
+                    <button onClick={() => reset(role)} className="mt-0.5 text-xs font-normal text-brand-600 hover:underline dark:text-brand-400">
                       {t("resetRole", { role: ts(role) })}
                     </button>
                   )}

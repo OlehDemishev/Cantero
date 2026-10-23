@@ -11,6 +11,7 @@ import { formatNumber } from "@/lib/format-currency";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface Worker {
   id: string;
@@ -170,14 +171,14 @@ export default function FleetPage() {
 
   return (
     <>
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{t("title")}</h1>
-        {!adding && (
+      <PageHeader
+        title={t("title")}
+        actions={!adding && (
           <button onClick={() => setAdding(true)} className="btn-secondary px-3 py-1.5 text-sm">
             {t("addVehicle")}
           </button>
         )}
-      </div>
+      />
 
       {adding && (
         <form onSubmit={createVehicle} className="card mt-4 flex max-w-lg flex-col gap-2">

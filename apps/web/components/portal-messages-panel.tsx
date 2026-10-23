@@ -75,7 +75,7 @@ export function PortalMessagesPanel({ projectId }: { projectId: string }) {
                 >
                   {m.content}
                 </div>
-                <div className="mt-1 text-[11px] text-fg-subtle">
+                <div className="mt-1 text-xs text-fg-subtle">
                   {m.authorName} · {formatDateTime(new Date(m.createdAt))}
                 </div>
               </div>

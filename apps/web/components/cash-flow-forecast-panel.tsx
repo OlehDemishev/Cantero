@@ -88,7 +88,7 @@ export function CashFlowForecastPanel({ currency }: { currency: string }) {
                           title={`${t("outflow")}: ${formatCurrency(w.outflow, currency)}`}
                         />
                       </div>
-                      <span className="text-[10px] text-fg-subtle">{t("weekLabel", { n: i + 1 })}</span>
+                      <span className="text-2xs text-fg-subtle">{t("weekLabel", { n: i + 1 })}</span>
                     </div>
                   ))}
                 </div>

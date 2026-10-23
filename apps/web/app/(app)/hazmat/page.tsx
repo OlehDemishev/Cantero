@@ -7,6 +7,7 @@ import Link from "next/link";
 import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface SdsSheet {
   id: string;
@@ -91,14 +92,14 @@ export default function HazmatPage() {
 
   return (
     <>
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{t("title")}</h1>
-        {!adding && (
+      <PageHeader
+        title={t("title")}
+        actions={!adding && (
           <button onClick={() => setAdding(true)} className="btn-secondary px-3 py-1.5 text-sm">
             {t("addMaterial")}
           </button>
         )}
-      </div>
+      />
       <p className="mt-1 text-sm text-fg-subtle">{t("hint")}</p>
 
       {stale && stale.length > 0 && (

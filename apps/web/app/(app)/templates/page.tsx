@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
 
 const TYPES: ChecklistTemplateType[] = ["punch_list", "rfi", "safety_briefing", "jha"];
 
@@ -156,8 +157,7 @@ export default function TemplatesPage() {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">{t("title")}</h1>
-      <p className="mt-1 text-sm text-fg-subtle">{t("subtitle")}</p>
+      <PageHeader title={t("title")} description={t("subtitle")} />
 
       <div className="mt-6 card max-w-xl">
         <h2 className="mb-4 text-sm font-semibold text-fg-muted">{editingId ? t("editTemplate") : t("newTemplate")}</h2>

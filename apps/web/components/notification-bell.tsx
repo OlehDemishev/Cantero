@@ -110,7 +110,7 @@ export function NotificationBell() {
       >
         <BellIcon />
         {unread > 0 && (
-          <span className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-error-500 px-1 text-[10px] font-semibold text-white">
+          <span className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-error-500 px-1 text-2xs font-semibold text-white">
             {unread > 9 ? "9+" : unread}
           </span>
         )}
@@ -138,7 +138,7 @@ export function NotificationBell() {
             <div className="flex flex-col gap-2">
               {grouped.map((g) => (
                 <div key={g.type}>
-                  <div className="px-2 pb-0.5 text-[10px] font-semibold uppercase tracking-wide text-fg-subtle">
+                  <div className="px-2 pb-0.5 text-2xs font-semibold uppercase tracking-wide text-fg-subtle">
                     {t(`type_${g.type}`)}
                   </div>
                   <ul className="flex flex-col gap-0.5">

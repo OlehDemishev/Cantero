@@ -37,7 +37,7 @@ export default function BillingPendingPage() {
 
   return (
     <Centered>
-      <h1 className="text-2xl font-semibold">{t("title")}</h1>
+      <h1 className="text-2xl font-semibold text-fg">{t("title")}</h1>
       <p className="mt-2 max-w-sm text-sm text-gray-600 dark:text-gray-300">{t("subtitle")}</p>
       {error && <Alert tone="danger" className="mt-4">{error}</Alert>}
       <button onClick={startCheckout} disabled={starting} className="btn-primary mt-6">

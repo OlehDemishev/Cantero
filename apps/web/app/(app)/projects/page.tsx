@@ -11,6 +11,7 @@ import { useApi } from "@/lib/use-api";
 import { useCan } from "@/lib/permissions";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface Client {
   id: string;
@@ -75,17 +76,19 @@ export default function ProjectsPage() {
 
   return (
     <>
-      <div className="flex items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold">{t("title")}</h1>
-        <div className="flex items-center gap-2">
-          <CsvImportButton endpoint="/projects/import" label={ti("importProjects")} onDone={load} />
-          {!showCreateForm && (
-            <button type="button" onClick={() => setShowCreateForm(true)} className="btn-primary">
-              {t("newProject")}
-            </button>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title={t("title")}
+        actions={
+          <>
+            <CsvImportButton endpoint="/projects/import" label={ti("importProjects")} onDone={load} />
+            {!showCreateForm && (
+              <button type="button" onClick={() => setShowCreateForm(true)} className="btn-primary">
+                {t("newProject")}
+              </button>
+            )}
+          </>
+        }
+      />
 
       {showCreateForm && (
         <div className="mt-6 card max-w-md">

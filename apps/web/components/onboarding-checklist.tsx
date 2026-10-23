@@ -56,7 +56,7 @@ export function OnboardingChecklist() {
               }`}
             >
               <span
-                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[10px] ${
+                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-2xs ${
                   step.done
                     ? "border-success-500 bg-success-500 text-white"
                     : "border-gray-300 text-transparent dark:border-gray-600"

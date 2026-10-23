@@ -76,7 +76,7 @@ export function ProjectCashFlowPanel({ projectId }: { projectId: string }) {
                 <div className="w-2.5 rounded-t bg-success-500" style={{ height: `${(w.inflow / maxVal) * 100}%` }} title={`${t("inflow")}: ${formatCurrency(w.inflow, currency)}`} />
                 <div className="w-2.5 rounded-t bg-error-500" style={{ height: `${(w.outflow / maxVal) * 100}%` }} title={`${t("outflow")}: ${formatCurrency(w.outflow, currency)}`} />
               </div>
-              <span className="text-[10px] text-fg-subtle">{t("weekLabel", { n: i + 1 })}</span>
+              <span className="text-2xs text-fg-subtle">{t("weekLabel", { n: i + 1 })}</span>
             </div>
           ))}
         </div>

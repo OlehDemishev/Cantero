@@ -16,6 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatNumber } from "@/lib/format-currency";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface Supplier {
   id: string;
@@ -190,14 +191,14 @@ export default function SuppliersPage() {
 
   return (
     <>
-      <div className="flex items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold">{t("title")}</h1>
-        {!showCreateForm && (
+      <PageHeader
+        title={t("title")}
+        actions={!showCreateForm && (
           <button type="button" onClick={() => setShowCreateForm(true)} className="btn-primary">
             {t("newSupplier")}
           </button>
         )}
-      </div>
+      />
 
       {showCreateForm && (
         <div className="mt-6 card max-w-md">

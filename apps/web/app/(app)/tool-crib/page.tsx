@@ -12,6 +12,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApi } from "@/lib/use-api";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface Worker {
   id: string;
@@ -123,14 +124,15 @@ export default function ToolCribPage() {
 
   return (
     <>
-      <div className="mb-1 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{t("title")}</h1>
-        {!adding && (
+      <PageHeader
+        className="mb-1"
+        title={t("title")}
+        actions={!adding && (
           <button onClick={() => setAdding(true)} className="btn-secondary px-2.5 py-1 text-xs">
             {t("addItem")}
           </button>
         )}
-      </div>
+      />
       <p className="mb-6 text-sm text-fg-subtle">{t("hint")}</p>
 
       {adding && (

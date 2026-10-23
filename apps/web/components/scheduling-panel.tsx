@@ -476,7 +476,7 @@ function GanttChart({
       )}
       <div className="flex items-center gap-3">
         <div className="w-32 flex-none" />
-        <div className="relative h-5 flex-1 text-[10px] text-fg-subtle">
+        <div className="relative h-5 flex-1 text-2xs text-fg-subtle">
           {weekTicks.map((tick) => (
             <div key={tick} className="absolute -translate-x-1/2 border-l border-gray-100 dark:border-gray-700 pl-1" style={{ left: `${pct(tick)}%`, height: "100%" }}>
               {formatDateWithOptions(tick, { month: "short", day: "numeric" })}

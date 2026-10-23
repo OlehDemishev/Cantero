@@ -100,7 +100,7 @@ export default function EnpsSurveyPage({ params }: { params: Promise<{ token: st
                       </button>
                     ))}
                   </div>
-                  <div className="mt-1 flex justify-between text-[10px] text-fg-subtle">
+                  <div className="mt-1 flex justify-between text-xs text-fg-subtle">
                     <span>{t("notLikely")}</span>
                     <span>{t("veryLikely")}</span>
                   </div>

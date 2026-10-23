@@ -8,6 +8,7 @@ import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { useCan } from "@/lib/permissions";
 import { formatCurrency } from "@/lib/format-currency";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface Worker {
   id: string;
@@ -82,7 +83,7 @@ export default function BenefitsPage() {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">{t("title")}</h1>
+      <PageHeader title={t("title")} />
 
       {summary && summary.activeEnrollmentCount > 0 && (
         <div className="card mt-4 grid grid-cols-3 gap-3 max-w-lg">

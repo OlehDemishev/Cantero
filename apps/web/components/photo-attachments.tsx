@@ -115,7 +115,7 @@ export function PhotoAttachments({
               // eslint-disable-next-line @next/next/no-img-element
               <img src={previews[d.id]} alt={d.name} className="h-full w-full object-cover" />
             ) : (
-              <span className="flex h-full w-full items-center justify-center text-[10px] text-fg-subtle">…</span>
+              <span className="flex h-full w-full items-center justify-center text-2xs text-fg-subtle">…</span>
             )}
           </button>
         ))}
@@ -152,16 +152,16 @@ export function PhotoAttachments({
       ) : beforeAfter ? (
         <div className="flex flex-wrap gap-4">
           <div className="flex flex-col gap-1.5">
-            <span className="text-[11px] font-medium uppercase tracking-wide text-fg-subtle">{t("before")}</span>
+            <span className="text-xs font-medium uppercase tracking-wide text-fg-subtle">{t("before")}</span>
             {beforeDocs.length === 0 ? <p className="text-xs text-fg-subtle">{t("noPhotos")}</p> : renderGrid(beforeDocs)}
           </div>
           <div className="flex flex-col gap-1.5">
-            <span className="text-[11px] font-medium uppercase tracking-wide text-fg-subtle">{t("after")}</span>
+            <span className="text-xs font-medium uppercase tracking-wide text-fg-subtle">{t("after")}</span>
             {afterDocs.length === 0 ? <p className="text-xs text-fg-subtle">{t("noPhotos")}</p> : renderGrid(afterDocs)}
           </div>
           {otherDocs.length > 0 && (
             <div className="flex flex-col gap-1.5">
-              <span className="text-[11px] font-medium uppercase tracking-wide text-fg-subtle">{t("title")}</span>
+              <span className="text-xs font-medium uppercase tracking-wide text-fg-subtle">{t("title")}</span>
               {renderGrid(otherDocs)}
             </div>
           )}

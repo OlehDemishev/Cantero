@@ -11,6 +11,7 @@ import { SignatureRequestsPanel } from "@/components/signature-requests-panel";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatNumber } from "@/lib/format-currency";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface Project {
   id: string;
@@ -91,7 +92,7 @@ export default function DocumentsPage() {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">{t("title")}</h1>
+      <PageHeader title={t("title")} />
 
       <div className="mt-6 flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1 text-xs text-fg-subtle">

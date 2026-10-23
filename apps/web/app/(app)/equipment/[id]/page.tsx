@@ -20,6 +20,7 @@ import { formatCurrency } from "@/lib/format-currency";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
 import { Alert } from "@/components/ui/alert";
+import { PageHeader } from "@/components/ui/page-header";
 
 function getCurrentPositionSafe(): Promise<{ lat: number; lng: number } | null> {
   return new Promise((resolve) => {
@@ -331,18 +332,16 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
 
   return (
     <>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">{equipment.name}</h1>
-          <p className="text-sm text-fg-subtle">
+      <PageHeader
+        title={equipment.name}
+        description={
+          <>
             {equipment.category}
             {equipment.serialNumber && ` · ${equipment.serialNumber}`}
-          </p>
-        </div>
-        <Badge tone={statusTone(equipment.status)}>
-          {t(`status_${equipment.status}`)}
-        </Badge>
-      </div>
+          </>
+        }
+        actions={<Badge tone={statusTone(equipment.status)}>{t(`status_${equipment.status}`)}</Badge>}
+      />
       {error && <Alert tone="danger" className="mt-4">{error}</Alert>}
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">

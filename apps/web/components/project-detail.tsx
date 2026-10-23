@@ -79,6 +79,7 @@ import { useMe } from "@/lib/use-me";
 import { useCan } from "@/lib/permissions";
 import type { Permission } from "@cantero/shared";
 import { formatCurrency } from "@/lib/format-currency";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface Project {
   id: string;
@@ -267,13 +268,11 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
 
   return (
     <>
-      <button onClick={() => goBack(router, "/projects")} className="text-sm text-fg-subtle hover:underline">
-        ← {tc("back")}
-      </button>
-      <div className="mt-2 flex items-center gap-3">
-        <h1 className="text-2xl font-semibold">{project?.name ?? tc("loading")}</h1>
-        {project && <ProjectHealthBadge projectId={projectId} />}
-      </div>
+      <PageHeader
+        back={{ onClick: () => goBack(router, "/projects"), label: tc("back") }}
+        title={project?.name ?? tc("loading")}
+        actions={project && <ProjectHealthBadge projectId={projectId} />}
+      />
       {project?.client && (
         <Link href={`/clients/${project.client.id}`} className="text-sm text-brand-700 dark:text-brand-400 hover:underline">
           {project.client.name}

@@ -37,12 +37,12 @@ export function RevenueTrendPanel() {
               const maxVal = Math.max(...revenueTrend.map((row) => row.revenue), 1);
               return (
                 <div key={r.month} className="flex w-12 flex-col items-center gap-1">
-                  <div className="text-[10px] text-fg-subtle">{r.revenue}</div>
+                  <div className="text-2xs text-fg-subtle">{r.revenue}</div>
                   <div
                     className="w-6 rounded-t bg-brand-500"
                     style={{ height: `${Math.max((r.revenue / maxVal) * 96, 2)}px` }}
                   />
-                  <div className="text-[10px] text-fg-subtle">{r.month.slice(5)}</div>
+                  <div className="text-2xs text-fg-subtle">{r.month.slice(5)}</div>
                 </div>
               );
             })}

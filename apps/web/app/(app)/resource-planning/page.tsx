@@ -12,6 +12,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApi } from "@/lib/use-api";
 import { Alert } from "@/components/ui/alert";
+import { PageHeader } from "@/components/ui/page-header";
 
 type ResourceType = "worker" | "equipment";
 
@@ -201,8 +202,7 @@ export default function ResourcePlanningPage() {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">{t("title")}</h1>
-      <p className="mt-1 text-sm text-fg-subtle">{t("subtitle")}</p>
+      <PageHeader title={t("title")} description={t("subtitle")} />
 
       <div className="mt-6 card max-w-xl">
         <h2 className="mb-4 text-sm font-semibold text-fg-muted">{t("newAssignment")}</h2>
@@ -483,7 +483,7 @@ function Timeline({ calendar }: { calendar: Calendar }) {
                     <Link
                       key={a.id}
                       href={`/projects/${a.projectId}`}
-                      className={`absolute block h-6 overflow-hidden whitespace-nowrap rounded px-1 text-[10px] leading-6 text-white ${
+                      className={`absolute block h-6 overflow-hidden whitespace-nowrap rounded px-1 text-2xs leading-6 text-white ${
                         conflicted ? "bg-error-500 ring-2 ring-error-700" : "bg-brand-500"
                       }`}
                       style={{ left: `${left}%`, width: `${Math.max(right - left, 2)}%` }}

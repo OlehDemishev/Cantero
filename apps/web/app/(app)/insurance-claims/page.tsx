@@ -16,6 +16,7 @@ import { resetStateInEffect } from "@/lib/effect-reset";
 import { formatCurrency } from "@/lib/format-currency";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface Claim {
   id: string;
@@ -167,20 +168,20 @@ export default function InsuranceClaimsPage() {
 
   return (
     <>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">{t("title")}</h1>
-          <p className="text-sm text-fg-subtle">{t("subtitle")}</p>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={exportCsv} className="btn-secondary">
-            {t("exportCsv")}
-          </button>
-          <button onClick={() => setCreating((v) => !v)} className="btn-primary">
-            {t("newClaim")}
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title={t("title")}
+        description={t("subtitle")}
+        actions={
+          <>
+            <button onClick={exportCsv} className="btn-secondary">
+              {t("exportCsv")}
+            </button>
+            <button onClick={() => setCreating((v) => !v)} className="btn-primary">
+              {t("newClaim")}
+            </button>
+          </>
+        }
+      />
 
       {claims && claims.length > 0 && (
         <p className="mt-2 text-sm font-medium text-fg-muted">{t("openTotal", { amount: formatCurrency(openTotal, currency) })}</p>

@@ -10,6 +10,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 import { goBack } from "@/lib/back-navigation";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface Worker {
   id: string;
@@ -87,16 +88,21 @@ export default function ServiceContractDetailPage({ params }: { params: Promise<
       <button onClick={() => goBack(router, "/service-contracts")} className="text-sm text-fg-subtle hover:underline">
         ← {tc("back")}
       </button>
-      <h1 className="mt-2 text-2xl font-semibold">{contract.title}</h1>
-      <p className="text-sm text-fg-subtle">
-        <Link href={`/projects/${contract.project.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
-          {contract.project.name}
-        </Link>{" "}
-        ·{" "}
-        <Link href={`/clients/${contract.client.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
-          {contract.client.name}
-        </Link>
-      </p>
+      <PageHeader
+        className="mt-2"
+        title={contract.title}
+        description={
+          <>
+            <Link href={`/projects/${contract.project.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
+              {contract.project.name}
+            </Link>{" "}
+            ·{" "}
+            <Link href={`/clients/${contract.client.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
+              {contract.client.name}
+            </Link>
+          </>
+        }
+      />
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="card lg:col-span-1">

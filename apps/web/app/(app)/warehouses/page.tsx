@@ -12,6 +12,7 @@ import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface Warehouse {
   id: string;
@@ -56,21 +57,23 @@ export default function WarehousesPage() {
 
   return (
     <>
-      <div className="flex items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold">{t("title")}</h1>
-        <div className="flex items-center gap-2">
-          <CsvImportButton
-            endpoint="/materials/catalog/import"
-            label={ti("importMaterials")}
-            onDone={() => window.location.reload()}
-          />
-          {!showCreateForm && (
-            <button type="button" onClick={() => setShowCreateForm(true)} className="btn-primary">
-              {t("newWarehouse")}
-            </button>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title={t("title")}
+        actions={
+          <>
+            <CsvImportButton
+              endpoint="/materials/catalog/import"
+              label={ti("importMaterials")}
+              onDone={() => window.location.reload()}
+            />
+            {!showCreateForm && (
+              <button type="button" onClick={() => setShowCreateForm(true)} className="btn-primary">
+                {t("newWarehouse")}
+              </button>
+            )}
+          </>
+        }
+      />
 
       {showCreateForm && (
         <div className="mt-6 card max-w-md">

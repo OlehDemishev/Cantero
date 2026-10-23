@@ -106,7 +106,7 @@ export default function PortalTicketDetailPage({ params }: { params: Promise<{ i
                     <div className={`inline-block rounded-lg px-3 py-2 text-sm ${!m.authorUserId ? "bg-brand-500 text-white" : "bg-gray-100 dark:bg-gray-700 text-fg"}`}>
                       {m.content}
                     </div>
-                    <div className="mt-1 text-[11px] text-fg-subtle">
+                    <div className="mt-1 text-xs text-fg-subtle">
                       {m.authorName} · {formatDateTime(new Date(m.createdAt))}
                     </div>
                   </div>

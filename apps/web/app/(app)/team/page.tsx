@@ -11,6 +11,7 @@ import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { useCan } from "@/lib/permissions";
 import { formatCurrency } from "@/lib/format-currency";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface Worker {
   id: string;
@@ -80,14 +81,14 @@ export default function TeamPage() {
 
   return (
     <>
-      <div className="flex items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold">{t("title")}</h1>
-        {!showCreateForm && (
+      <PageHeader
+        title={t("title")}
+        actions={!showCreateForm && (
           <button type="button" onClick={() => setShowCreateForm(true)} className="btn-primary">
             {t("newWorker")}
           </button>
         )}
-      </div>
+      />
 
       {showCreateForm && (
         <div className="mt-6 card max-w-md">

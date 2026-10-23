@@ -13,6 +13,7 @@ import { formatDate } from "@/lib/format-date";
 import { formatCurrency, formatNumber } from "@/lib/format-currency";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface Equipment {
   id: string;
@@ -119,14 +120,14 @@ export default function LoansPage() {
 
   return (
     <>
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{t("title")}</h1>
-        {!adding && (
+      <PageHeader
+        title={t("title")}
+        actions={!adding && (
           <button onClick={() => setAdding(true)} className="btn-secondary px-3 py-1.5 text-sm">
             {t("addLoan")}
           </button>
         )}
-      </div>
+      />
 
       {summary && summary.activeLoanCount > 0 && (
         <div className="card mt-4 grid grid-cols-3 gap-3 max-w-lg">

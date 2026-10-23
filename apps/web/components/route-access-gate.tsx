@@ -36,7 +36,7 @@ function NoAccess({ needs }: { needs: readonly Permission[] }) {
   const names = needs.map((p) => t("quoted", { name: tp(`p_${p.replace(/\./g, "_")}`) })).join(t("or"));
   return (
     <section className="mx-auto mt-16 max-w-md text-center" role="alert" aria-labelledby="no-access-title">
-      <h1 id="no-access-title" className="text-2xl font-semibold text-gray-900 dark:text-gray-50">
+      <h1 id="no-access-title" className="text-2xl font-semibold text-fg">
         {t("title")}
       </h1>
       <p className="mt-3 text-sm text-gray-600 dark:text-gray-300">{t("body", { permission: names })}</p>

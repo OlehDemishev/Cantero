@@ -20,6 +20,7 @@ import { formatDate } from "@/lib/format-date";
 import { Badge } from "@/components/ui/badge";
 import { Alert } from "@/components/ui/alert";
 import { FormError } from "@/components/ui/field";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface Invoice {
   id: string;
@@ -292,23 +293,25 @@ export default function InvoicesPage() {
 
   return (
     <>
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{t("title")}</h1>
-        <div className="flex gap-2">
-          <button onClick={exportCsv} className="btn-secondary">
-            {t("exportCsv")}
-          </button>
-          <button onClick={exportQuickBooksCsv} className="btn-secondary">
-            {t("exportQuickBooks")}
-          </button>
-          <button onClick={exportXeroCsv} className="btn-secondary">
-            {t("exportXero")}
-          </button>
-          <button onClick={exportDatevCsv} className="btn-secondary">
-            {t("exportDatev")}
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title={t("title")}
+        actions={
+          <>
+            <button onClick={exportCsv} className="btn-secondary">
+              {t("exportCsv")}
+            </button>
+            <button onClick={exportQuickBooksCsv} className="btn-secondary">
+              {t("exportQuickBooks")}
+            </button>
+            <button onClick={exportXeroCsv} className="btn-secondary">
+              {t("exportXero")}
+            </button>
+            <button onClick={exportDatevCsv} className="btn-secondary">
+              {t("exportDatev")}
+            </button>
+          </>
+        }
+      />
       <p className="mt-1 text-xs text-fg-subtle">{t("datevTestImportNotice")}</p>
       {datevError && <FormError className="mt-1">{datevError}</FormError>}
       {datevWarningCount !== null && datevWarningCount > 0 && (

@@ -10,6 +10,7 @@ import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface ContractTemplate {
   id: string;
@@ -61,8 +62,7 @@ export default function ContractsPage() {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">{t("title")}</h1>
-      <p className="mt-1 text-sm text-fg-subtle">{t("subtitle")}</p>
+      <PageHeader title={t("title")} description={t("subtitle")} />
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2">

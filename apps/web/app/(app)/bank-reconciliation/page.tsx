@@ -13,6 +13,7 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatCurrency } from "@/lib/format-currency";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface BankTransaction {
   id: string;
@@ -185,15 +186,17 @@ export default function BankReconciliationPage() {
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">{t("title")}</h1>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setShowRules((v) => !v)} className="btn-secondary px-3 py-1 text-xs">
-            {t("categorizationRules")}
-          </button>
-          <CsvImportButton endpoint="/bank-transactions/import" label={ti("importBankTransactions")} onDone={load} />
-        </div>
-      </div>
+      <PageHeader
+        title={t("title")}
+        actions={
+          <>
+            <button onClick={() => setShowRules((v) => !v)} className="btn-secondary px-3 py-1 text-xs">
+              {t("categorizationRules")}
+            </button>
+            <CsvImportButton endpoint="/bank-transactions/import" label={ti("importBankTransactions")} onDone={load} />
+          </>
+        }
+      />
       <p className="mt-2 text-sm text-fg-subtle">{t("hint")}</p>
 
       {showRules && (

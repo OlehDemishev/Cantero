@@ -26,6 +26,7 @@ import { TeamWorkloadPanel } from "@/components/team-workload-panel";
 import { ScheduledReportsPanel } from "@/components/scheduled-reports-panel";
 import { useMe } from "@/lib/use-me";
 import { useReportAccess } from "@/lib/report-access";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default function ReportsPage() {
   const t = useTranslations("reports");
@@ -35,7 +36,7 @@ export default function ReportsPage() {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">{t("title")}</h1>
+      <PageHeader title={t("title")} />
 
       {canView("project-margins") && <ProjectMarginsReportPanel currency={currency} />}
       {canView("estimate-at-completion") && <EstimateAtCompletionReportPanel currency={currency} />}

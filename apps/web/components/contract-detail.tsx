@@ -14,6 +14,7 @@ import { formatDateTime } from "@/lib/format-date";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
 import { FormError } from "@/components/ui/field";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface Contract {
   id: string;
@@ -125,13 +126,11 @@ export function ContractDetail({ contractId }: { contractId: string }) {
 
   return (
     <>
-      <button onClick={() => goBack(router, "/contracts")} className="text-sm text-fg-subtle hover:underline">
-        ← {tc("back")}
-      </button>
-      <div className="mt-2 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{contract.title}</h1>
-        <Badge tone={statusTone(contract.status)}>{t(contract.status)}</Badge>
-      </div>
+      <PageHeader
+        back={{ onClick: () => goBack(router, "/contracts"), label: tc("back") }}
+        title={contract.title}
+        actions={<Badge tone={statusTone(contract.status)}>{t(contract.status)}</Badge>}
+      />
       {(contract.client || contract.subcontractor) && (
         <p className="text-sm text-fg-subtle">
           {contract.client ? (

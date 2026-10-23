@@ -21,6 +21,7 @@ import { WorkerHrCasesPanel } from "@/components/worker-hr-cases-panel";
 import { useCan } from "@/lib/permissions";
 import { formatCurrency } from "@/lib/format-currency";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface ProjectBreakdown {
   projectId: string;
@@ -57,16 +58,12 @@ export function WorkerDetail({ workerId }: { workerId: string }) {
 
   return (
     <>
-      <button onClick={() => goBack(router, "/team")} className="text-sm text-fg-subtle hover:underline">
-        ← {t("title")}
-      </button>
-      <div className="mt-2 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{summary.worker.name}</h1>
-        <Badge tone={summary.worker.active ? "success" : "neutral"}>
-          {summary.worker.active ? t("active") : t("inactive")}
-        </Badge>
-      </div>
-      <p className="text-sm text-fg-subtle">{summary.worker.role ?? "—"}</p>
+      <PageHeader
+        back={{ onClick: () => goBack(router, "/team"), label: t("title") }}
+        title={summary.worker.name}
+        description={summary.worker.role ?? "—"}
+        actions={<Badge tone={summary.worker.active ? "success" : "neutral"}>{summary.worker.active ? t("active") : t("inactive")}</Badge>}
+      />
 
       <div className="mt-4 flex gap-4 text-sm">
         <div className="card flex-1">

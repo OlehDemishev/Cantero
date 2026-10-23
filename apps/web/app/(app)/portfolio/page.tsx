@@ -10,6 +10,7 @@ import { useMe } from "@/lib/use-me";
 import { useReportAccess } from "@/lib/report-access";
 import { formatCurrency } from "@/lib/format-currency";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
 
 // Leaflet touches `window` at module load time, so it must never be part of the server render.
 const ProjectMapPanel = dynamic(() => import("@/components/project-map-panel").then((m) => m.ProjectMapPanel), { ssr: false });
@@ -95,8 +96,7 @@ export default function PortfolioPage() {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">{t("title")}</h1>
-      <p className="mt-1 text-sm text-fg-subtle">{t("subtitle")}</p>
+      <PageHeader title={t("title")} description={t("subtitle")} />
       {data && <p className="mt-1 text-xs text-fg-subtle">{t("convertedToCurrency", { currency: data.currency })}</p>}
 
       <TabNav tabs={TABS} active={activeTab} onChange={setTab} />

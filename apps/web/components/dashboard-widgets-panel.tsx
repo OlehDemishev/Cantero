@@ -230,7 +230,7 @@ function WidgetBody({
         {rows.map((r) => (
           <div key={r.month} className="flex flex-1 flex-col items-center gap-1">
             <div className="w-full rounded-t bg-brand-500" style={{ height: `${Math.max((r.revenue / max) * 70, 2)}px` }} />
-            <div className="text-[9px] text-fg-subtle">{r.month.slice(5)}</div>
+            <div className="text-2xs text-fg-subtle">{r.month.slice(5)}</div>
           </div>
         ))}
       </div>

@@ -23,6 +23,7 @@ import { formatCurrency } from "@/lib/format-currency";
 import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
 import { Alert } from "@/components/ui/alert";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface RateCatalogItem {
   id: string;
@@ -357,34 +358,36 @@ export function EstimateDetail({ estimateId }: { estimateId: string }) {
 
   return (
     <>
-      <a href={`/projects/${estimate.project.id}`} className="text-sm text-fg-subtle hover:underline">
-        ← {estimate.project.name}
-      </a>
-      <div className="mt-2 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">
-          {estimate.name}
-          {estimate.variantLabel && (
-            <Badge tone="brand" className="ml-2 align-middle">
-              {estimate.variantLabel}
+      <PageHeader
+        back={{ href: `/projects/${estimate.project.id}`, label: estimate.project.name }}
+        title={
+          <>
+            {estimate.name}
+            {estimate.variantLabel && (
+              <Badge tone="brand" className="ml-2 align-middle">
+                {estimate.variantLabel}
+              </Badge>
+            )}
+          </>
+        }
+        actions={
+          <>
+            {estimate.sentAt && (
+              <Badge tone={estimate.clientDecision === "approved" ? "success" : estimate.clientDecision === "rejected" ? "danger" : estimate.clientDecision === "countered" ? "brand" : "warning"}>
+                {t(`clientDecision_${estimate.clientDecision}`)}
+              </Badge>
+            )}
+            <Badge tone={statusTone(estimate.status)}>
+              {estimate.status === "approved" ? t("approved") : estimate.status === "pending_approval" ? t("pendingApproval") : t("draft")}
             </Badge>
-          )}
-        </h1>
-        <div className="flex items-center gap-2">
-          {estimate.sentAt && (
-            <Badge tone={estimate.clientDecision === "approved" ? "success" : estimate.clientDecision === "rejected" ? "danger" : estimate.clientDecision === "countered" ? "brand" : "warning"}>
-              {t(`clientDecision_${estimate.clientDecision}`)}
-            </Badge>
-          )}
-          <Badge tone={statusTone(estimate.status)}>
-            {estimate.status === "approved" ? t("approved") : estimate.status === "pending_approval" ? t("pendingApproval") : t("draft")}
-          </Badge>
-          {estimate.sentAt && estimate.clientDecision === "pending" && (
-            <button onClick={declineOnBehalfOfClient} disabled={busy} className="btn-secondary px-3 py-1 text-xs">
-              {t("declineOnBehalfOfClient")}
-            </button>
-          )}
-        </div>
-      </div>
+            {estimate.sentAt && estimate.clientDecision === "pending" && (
+              <button onClick={declineOnBehalfOfClient} disabled={busy} className="btn-secondary px-3 py-1 text-xs">
+                {t("declineOnBehalfOfClient")}
+              </button>
+            )}
+          </>
+        }
+      />
       {estimate.status === "pending_approval" && me?.company.requiredApprovalCount && (
         <Alert tone="warning" className="mt-2">
           <p className="text-sm text-warning-fg">

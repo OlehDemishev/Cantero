@@ -8,6 +8,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { FormError } from "@/components/ui/field";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface UnitOfMeasure {
   id: string;
@@ -74,8 +75,7 @@ export default function UnitsOfMeasurePage() {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">{t("title")}</h1>
-      <p className="mt-1 text-sm text-fg-subtle">{t("hint")}</p>
+      <PageHeader title={t("title")} description={t("hint")} />
 
       <form onSubmit={handleSubmit} className="mt-6 flex flex-wrap items-end gap-2">
         <label className="flex flex-col gap-1 text-xs text-fg-subtle">

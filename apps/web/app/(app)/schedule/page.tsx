@@ -7,6 +7,7 @@ import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { statusTone, TONE_FILL_CLASSES } from "@/lib/status-tone";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface Project {
   id: string;
@@ -67,8 +68,7 @@ export default function SchedulePage() {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">{t("title")}</h1>
-      <p className="mt-2 text-sm text-fg-subtle">{t("hint")}</p>
+      <PageHeader title={t("title")} description={t("hint")} />
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
         {projects.map((p) => (

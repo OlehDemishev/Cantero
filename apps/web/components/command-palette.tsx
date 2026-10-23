@@ -132,7 +132,7 @@ export function CommandPalette({ navItems }: { navItems: readonly NavAction[] })
           }}
           onKeyDown={handleKeyDown}
         />
-        <kbd className="shrink-0 rounded border border-border px-1.5 py-0.5 text-[10px] text-fg-subtle">Esc</kbd>
+        <kbd className="shrink-0 rounded border border-border px-1.5 py-0.5 text-2xs text-fg-subtle">Esc</kbd>
       </div>
       <div className="max-h-96 overflow-y-auto p-2">
         {items.length === 0 ? (

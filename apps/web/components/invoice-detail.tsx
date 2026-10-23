@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { statusTone } from "@/lib/status-tone";
 import { Alert } from "@/components/ui/alert";
 import { FormError } from "@/components/ui/field";
+import { PageHeader } from "@/components/ui/page-header";
 
 const PAYMENT_METHODS = ["bank_transfer", "card", "cash", "other"] as const;
 
@@ -283,13 +284,11 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
 
   return (
     <>
-      <a href={`/projects/${invoice.project.id}`} className="text-sm text-fg-subtle hover:underline">
-        ← {invoice.project.name}
-      </a>
-      <div className="mt-2 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{invoice.number}</h1>
-        <Badge tone={statusTone(invoice.status)}>{t(invoice.status)}</Badge>
-      </div>
+      <PageHeader
+        back={{ href: `/projects/${invoice.project.id}`, label: invoice.project.name }}
+        title={invoice.number}
+        actions={<Badge tone={statusTone(invoice.status)}>{t(invoice.status)}</Badge>}
+      />
       <p className="text-sm text-fg-subtle">
         <Link href={`/clients/${invoice.client.id}`} className="hover:underline">
           {invoice.client.name}
