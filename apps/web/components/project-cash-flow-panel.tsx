@@ -68,7 +68,7 @@ export function ProjectCashFlowPanel({ projectId }: { projectId: string }) {
         </div>
       </div>
 
-      <div className="mt-4 overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+      <div tabIndex={0} className="mt-4 overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
         <div className="flex items-end gap-2" style={{ minWidth: cashFlow.weeks.length * 40 }}>
           {cashFlow.weeks.map((w, i) => (
             <div key={w.weekStart} className="flex flex-1 flex-col items-center gap-1">

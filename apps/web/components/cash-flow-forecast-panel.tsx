@@ -61,7 +61,7 @@ export function CashFlowForecastPanel({ currency }: { currency: string }) {
             </p>
           )}
 
-          <div className="mt-4 overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+          <div tabIndex={0} className="mt-4 overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
             <div className="mb-3 flex items-center gap-3 text-xs text-fg-subtle">
               <span className="flex items-center gap-1">
                 <span className="inline-block h-2.5 w-2.5 rounded-sm bg-success-500" /> {t("inflow")}

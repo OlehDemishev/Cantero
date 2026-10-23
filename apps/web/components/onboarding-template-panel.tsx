@@ -70,22 +70,22 @@ export function OnboardingTemplatePanel() {
         </button>
       </form>
 
-      <ul className="mt-4 flex max-w-md flex-col gap-1.5">
-        {items === null ? (
-          itemsError ? <ErrorState error={itemsError} onRetry={reloadItems} compact /> : <Skeleton lines={3} />
-        ) : items.length === 0 ? (
-          <p className="text-sm text-fg-subtle">{t("noOnboardingTasks")}</p>
-        ) : (
-          items.map((item) => (
+      {items === null ? (
+        <div className="mt-4 max-w-md">{itemsError ? <ErrorState error={itemsError} onRetry={reloadItems} compact /> : <Skeleton lines={3} />}</div>
+      ) : items.length === 0 ? (
+        <p className="mt-4 text-sm text-fg-subtle">{t("noOnboardingTasks")}</p>
+      ) : (
+        <ul className="mt-4 flex max-w-md flex-col gap-1.5">
+          {items.map((item) => (
             <li key={item.id} className="card flex items-center justify-between text-sm">
               <span>{item.title}</span>
               <button onClick={() => remove(item.id)} disabled={busy} className="text-xs text-danger-fg hover:underline">
                 {tc("delete")}
               </button>
             </li>
-          ))
-        )}
-      </ul>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

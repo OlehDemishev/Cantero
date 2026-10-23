@@ -24,7 +24,7 @@ export function AppearancePanel() {
         {OPTIONS.map((o) => (
           <label
             key={o.value}
-            className="cursor-pointer rounded-md px-3 py-1.5 text-sm font-medium text-fg-subtle has-checked:bg-brand-50 has-checked:text-brand-fg has-focus-visible:ring-2 has-focus-visible:ring-focus dark:has-checked:bg-brand-500/[0.12]"
+            className="cursor-pointer rounded-md px-3 py-1.5 text-sm font-medium text-fg-subtle has-checked:bg-brand-50 has-checked:text-brand-700 dark:has-checked:text-brand-fg has-focus-visible:ring-2 has-focus-visible:ring-focus dark:has-checked:bg-brand-500/[0.12]"
           >
             <input
               type="radio"

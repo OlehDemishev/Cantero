@@ -31,7 +31,7 @@ export function RevenueTrendPanel() {
       {!revenueTrend ? (
         revenueTrendError ? <ErrorState error={revenueTrendError} onRetry={reloadRevenueTrend} compact /> : <Skeleton lines={3} />
       ) : (
-        <div className="overflow-x-auto">
+        <div tabIndex={0} className="overflow-x-auto">
           <div className="flex items-end gap-2" style={{ minWidth: revenueTrend.length * 56 }}>
             {revenueTrend.map((r) => {
               const maxVal = Math.max(...revenueTrend.map((row) => row.revenue), 1);
