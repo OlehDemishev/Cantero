@@ -36,3 +36,16 @@ Verified: up (~14 s warm), second up (no duplicates), down (no leftover processe
 up again (no pending migrations, data kept), down. Docker-unavailable path exits 1 with a message.
 
 Left: merge the PR (the user merges it).
+
+## 2026-10-23 — UI, design code and security audit (branch claude/kind-allen-sjrtoq)
+
+Report: `docs/audit/2026-10-23-ui-audit.md` (Russian). Static review of apps/web (design system, a11y,
+i18n, frontend security) and apps/api security, plus a live Playwright walk of all 82 routes as owner,
+worker, logged out and portal users (en/de/pl, desktop and 390 px). No code changed.
+
+Most urgent: `RolesGuard` ignores `@Public()`, so NPS/eNPS/service-feedback submissions always 403 (L1);
+the API crashes on boot with the placeholder VAPID keys from `.env.example` (L2). Security highs: OAuth
+`state` accepts any access JWT (S1), client signing tokens returned to staff (S2), any API key has SCIM
+write (S3), project guard checks only the first projectId (S4).
+
+Left: everything in the report. Section 8 lists the order, one session per item, starting with L1+L2.
