@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { TabNav, type TabNavItem } from "@/components/ui/tab-nav";
+import { TabNav, TabPanel, type TabNavItem } from "@/components/ui/tab-nav";
 import { useApi } from "@/lib/use-api";
 import { useCan } from "@/lib/permissions";
 import { buildItemDeepLink } from "@/lib/use-deep-linked-row";
@@ -95,122 +95,124 @@ export default function OpenItemsPage() {
         </p>
       )}
 
-      <TabNav tabs={TABS} active={activeTab} onChange={setTab} />
+      <TabNav id="open-items-tabs" tabs={TABS} active={activeTab} onChange={setTab} />
+      <TabPanel tabsId="open-items-tabs" active={activeTab}>
 
-      {activeTab === "rfis" && (
-        <div className="mt-4">
-          {rfis === null ? (
-            <p className="text-sm text-fg-subtle">{tc("loading")}</p>
-          ) : rfis.length === 0 ? (
-            <p className="text-sm text-fg-subtle">{t("noOpenRfis")}</p>
-          ) : (
-            <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                  <th className="py-2">{t("project")}</th>
-                  <th>{t("number")}</th>
-                  <th>{t("subject")}</th>
-                  <th>{t("status")}</th>
-                  <th>{t("priority")}</th>
-                  <th>{t("dueDate")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rfis.map((r) => (
-                  <tr key={r.id} className="border-b border-gray-100 dark:border-gray-700">
-                    <td className="py-2">
-                      <a href={projectLink(r.project.id, "rfi", r.id, "quality")} className="text-brand-700 dark:text-brand-400 hover:underline">
-                        {r.project.name}
-                      </a>
-                    </td>
-                    <td className="font-mono text-xs text-fg-subtle">{r.number}</td>
-                    <td>{r.subject}</td>
-                    <td>{tRfi.has(r.status) ? tRfi(r.status) : r.status}</td>
-                    <td>{tRfi.has(r.priority) ? tRfi(r.priority) : r.priority}</td>
-                    <td>{r.dueDate ? formatDate(new Date(r.dueDate)) : "—"}</td>
+        {activeTab === "rfis" && (
+          <div className="mt-4">
+            {rfis === null ? (
+              <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+            ) : rfis.length === 0 ? (
+              <p className="text-sm text-fg-subtle">{t("noOpenRfis")}</p>
+            ) : (
+              <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
+                    <th className="py-2">{t("project")}</th>
+                    <th>{t("number")}</th>
+                    <th>{t("subject")}</th>
+                    <th>{t("status")}</th>
+                    <th>{t("priority")}</th>
+                    <th>{t("dueDate")}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            </div>
-          )}
-        </div>
-      )}
+                </thead>
+                <tbody>
+                  {rfis.map((r) => (
+                    <tr key={r.id} className="border-b border-gray-100 dark:border-gray-700">
+                      <td className="py-2">
+                        <a href={projectLink(r.project.id, "rfi", r.id, "quality")} className="text-brand-700 dark:text-brand-400 hover:underline">
+                          {r.project.name}
+                        </a>
+                      </td>
+                      <td className="font-mono text-xs text-fg-subtle">{r.number}</td>
+                      <td>{r.subject}</td>
+                      <td>{tRfi.has(r.status) ? tRfi(r.status) : r.status}</td>
+                      <td>{tRfi.has(r.priority) ? tRfi(r.priority) : r.priority}</td>
+                      <td>{r.dueDate ? formatDate(new Date(r.dueDate)) : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              </div>
+            )}
+          </div>
+        )}
 
-      {activeTab === "punchList" && (
-        <div className="mt-4">
-          {punchList === null ? (
-            <p className="text-sm text-fg-subtle">{tc("loading")}</p>
-          ) : punchList.length === 0 ? (
-            <p className="text-sm text-fg-subtle">{t("noOpenPunchList")}</p>
-          ) : (
-            <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                  <th className="py-2">{t("project")}</th>
-                  <th>{t("itemTitle")}</th>
-                  <th>{t("status")}</th>
-                  <th>{t("dueDate")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {punchList.map((p) => (
-                  <tr key={p.id} className="border-b border-gray-100 dark:border-gray-700">
-                    <td className="py-2">
-                      <a href={projectLink(p.project.id, "punch_list", p.id, "quality")} className="text-brand-700 dark:text-brand-400 hover:underline">
-                        {p.project.name}
-                      </a>
-                    </td>
-                    <td>{p.title}</td>
-                    <td>{tPunch.has(p.status) ? tPunch(p.status) : p.status}</td>
-                    <td>{p.dueDate ? formatDate(new Date(p.dueDate)) : "—"}</td>
+        {activeTab === "punchList" && (
+          <div className="mt-4">
+            {punchList === null ? (
+              <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+            ) : punchList.length === 0 ? (
+              <p className="text-sm text-fg-subtle">{t("noOpenPunchList")}</p>
+            ) : (
+              <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
+                    <th className="py-2">{t("project")}</th>
+                    <th>{t("itemTitle")}</th>
+                    <th>{t("status")}</th>
+                    <th>{t("dueDate")}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            </div>
-          )}
-        </div>
-      )}
+                </thead>
+                <tbody>
+                  {punchList.map((p) => (
+                    <tr key={p.id} className="border-b border-gray-100 dark:border-gray-700">
+                      <td className="py-2">
+                        <a href={projectLink(p.project.id, "punch_list", p.id, "quality")} className="text-brand-700 dark:text-brand-400 hover:underline">
+                          {p.project.name}
+                        </a>
+                      </td>
+                      <td>{p.title}</td>
+                      <td>{tPunch.has(p.status) ? tPunch(p.status) : p.status}</td>
+                      <td>{p.dueDate ? formatDate(new Date(p.dueDate)) : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              </div>
+            )}
+          </div>
+        )}
 
-      {activeTab === "submittals" && (
-        <div className="mt-4">
-          {submittals === null ? (
-            <p className="text-sm text-fg-subtle">{tc("loading")}</p>
-          ) : submittals.length === 0 ? (
-            <p className="text-sm text-fg-subtle">{t("noPendingSubmittals")}</p>
-          ) : (
-            <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                  <th className="py-2">{t("project")}</th>
-                  <th>{t("number")}</th>
-                  <th>{t("itemTitle")}</th>
-                  <th>{t("dueDate")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {submittals.map((s) => (
-                  <tr key={s.id} className="border-b border-gray-100 dark:border-gray-700">
-                    <td className="py-2">
-                      <a href={projectLink(s.project.id, "submittal", s.id, "quality")} className="text-brand-700 dark:text-brand-400 hover:underline">
-                        {s.project.name}
-                      </a>
-                    </td>
-                    <td className="font-mono text-xs text-fg-subtle">{s.number}</td>
-                    <td>{s.title}</td>
-                    <td>{s.dueDate ? formatDate(new Date(s.dueDate)) : "—"}</td>
+        {activeTab === "submittals" && (
+          <div className="mt-4">
+            {submittals === null ? (
+              <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+            ) : submittals.length === 0 ? (
+              <p className="text-sm text-fg-subtle">{t("noPendingSubmittals")}</p>
+            ) : (
+              <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
+                    <th className="py-2">{t("project")}</th>
+                    <th>{t("number")}</th>
+                    <th>{t("itemTitle")}</th>
+                    <th>{t("dueDate")}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            </div>
-          )}
-        </div>
-      )}
+                </thead>
+                <tbody>
+                  {submittals.map((s) => (
+                    <tr key={s.id} className="border-b border-gray-100 dark:border-gray-700">
+                      <td className="py-2">
+                        <a href={projectLink(s.project.id, "submittal", s.id, "quality")} className="text-brand-700 dark:text-brand-400 hover:underline">
+                          {s.project.name}
+                        </a>
+                      </td>
+                      <td className="font-mono text-xs text-fg-subtle">{s.number}</td>
+                      <td>{s.title}</td>
+                      <td>{s.dueDate ? formatDate(new Date(s.dueDate)) : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              </div>
+            )}
+          </div>
+        )}
+      </TabPanel>
     </>
   );
 }

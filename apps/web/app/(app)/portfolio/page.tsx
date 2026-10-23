@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { TabNav, type TabNavItem } from "@/components/ui/tab-nav";
+import { TabNav, TabPanel, type TabNavItem } from "@/components/ui/tab-nav";
 import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { useReportAccess } from "@/lib/report-access";
@@ -99,114 +99,116 @@ export default function PortfolioPage() {
       <PageHeader title={t("title")} description={t("subtitle")} />
       {data && <p className="mt-1 text-xs text-fg-subtle">{t("convertedToCurrency", { currency: data.currency })}</p>}
 
-      <TabNav tabs={TABS} active={activeTab} onChange={setTab} />
+      <TabNav id="portfolio-tabs" tabs={TABS} active={activeTab} onChange={setTab} />
+      <TabPanel tabsId="portfolio-tabs" active={activeTab}>
 
-      {activeTab === "map" && <ProjectMapPanel />}
+        {activeTab === "map" && <ProjectMapPanel />}
 
-      {activeTab === "overview" && (!data ? (
-        <p className="mt-8 text-fg-subtle">{me && !figuresAllowed ? t("figuresRestricted") : tc("loading")}</p>
-      ) : data.projects.length === 0 ? (
-        <p className="mt-8 text-sm text-fg-subtle">{t("noProjects")}</p>
-      ) : (
-        <>
-          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            <SummaryCard label={t("projectsAtRisk")} value={`${data.summary.projectsAtRisk} / ${data.summary.projectsTotal}`} tone={data.summary.projectsAtRisk > 0 ? "error" : "success"} />
-            <SummaryCard
-              label={t("varianceTotal")}
-              value={money(data.summary.varianceTotal)}
-              tone={data.summary.varianceTotal < 0 ? "error" : "success"}
-            />
-            <SummaryCard label={t("openRfiTotal")} value={data.summary.openRfiTotal} />
-            <SummaryCard label={t("openPunchListTotal")} value={data.summary.openPunchListTotal} />
-            <SummaryCard label={t("pendingSubmittalTotal")} value={data.summary.pendingSubmittalTotal} />
-            <SummaryCard label={t("incidentTotal")} value={data.summary.incidentTotal} />
-            <SummaryCard label={t("overdueTaskTotal")} value={data.summary.overdueTaskTotal} />
-            <SummaryCard label={t("billedToDateTotal")} value={money(data.summary.billedToDateTotal)} />
-            <SummaryCard label={t("fundedToDateTotal")} value={money(data.summary.fundedToDateTotal)} />
-            <SummaryCard label={t("openDrawTotal")} value={data.summary.openDrawTotal} />
-          </div>
+        {activeTab === "overview" && (!data ? (
+          <p className="mt-8 text-fg-subtle">{me && !figuresAllowed ? t("figuresRestricted") : tc("loading")}</p>
+        ) : data.projects.length === 0 ? (
+          <p className="mt-8 text-sm text-fg-subtle">{t("noProjects")}</p>
+        ) : (
+          <>
+            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+              <SummaryCard label={t("projectsAtRisk")} value={`${data.summary.projectsAtRisk} / ${data.summary.projectsTotal}`} tone={data.summary.projectsAtRisk > 0 ? "error" : "success"} />
+              <SummaryCard
+                label={t("varianceTotal")}
+                value={money(data.summary.varianceTotal)}
+                tone={data.summary.varianceTotal < 0 ? "error" : "success"}
+              />
+              <SummaryCard label={t("openRfiTotal")} value={data.summary.openRfiTotal} />
+              <SummaryCard label={t("openPunchListTotal")} value={data.summary.openPunchListTotal} />
+              <SummaryCard label={t("pendingSubmittalTotal")} value={data.summary.pendingSubmittalTotal} />
+              <SummaryCard label={t("incidentTotal")} value={data.summary.incidentTotal} />
+              <SummaryCard label={t("overdueTaskTotal")} value={data.summary.overdueTaskTotal} />
+              <SummaryCard label={t("billedToDateTotal")} value={money(data.summary.billedToDateTotal)} />
+              <SummaryCard label={t("fundedToDateTotal")} value={money(data.summary.fundedToDateTotal)} />
+              <SummaryCard label={t("openDrawTotal")} value={data.summary.openDrawTotal} />
+            </div>
 
-          <h2 className="mb-3 mt-10 text-sm font-semibold text-fg-muted">{t("projects")}</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1150px] border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
-                  <th className="py-2">{t("project")}</th>
-                  <th>{t("client")}</th>
-                  <th className="text-right">{t("budget")}</th>
-                  <th className="text-right">{t("actual")}</th>
-                  <th className="text-right">{t("variance")}</th>
-                  <th className="text-right">{t("billedToDate")}</th>
-                  <th className="text-right">{t("fundedToDate")}</th>
-                  <th className="text-right">{t("openDraws")}</th>
-                  <th className="text-right">{t("openRfis")}</th>
-                  <th className="text-right">{t("openPunchList")}</th>
-                  <th className="text-right">{t("pendingSubmittals")}</th>
-                  <th className="text-right">{t("incidents")}</th>
-                  <th className="text-right">{t("overdueTasks")}</th>
-                  <th className="text-right">{t("critical")}</th>
-                  <th className="text-right">{t("status")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.projects.map((p) => (
-                  <tr key={p.id} className="border-b border-gray-100 dark:border-gray-700">
-                    <td className="py-2">
-                      <a href={`/projects/${p.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
-                        {p.name}
-                      </a>
-                    </td>
-                    <td className="text-fg-subtle">{p.clientName ?? "—"}</td>
-                    <td className="text-right">{money(p.budgetTotal)}</td>
-                    <td className="text-right">{money(p.actualTotal)}</td>
-                    <td className={`text-right ${p.variance < 0 ? "text-danger-fg" : "text-success-fg"}`}>{money(p.variance)}</td>
-                    <td className="text-right">{money(p.billedToDate)}</td>
-                    <td className="text-right">{money(p.fundedToDate)}</td>
-                    <td className="text-right">{p.openDrawCount || "—"}</td>
-                    <td className="text-right">
-                      {p.openRfiCount ? (
-                        <a href={`/open-items?tab=rfis&projectId=${p.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
-                          {p.openRfiCount}
-                        </a>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                    <td className="text-right">
-                      {p.openPunchListCount ? (
-                        <a href={`/open-items?tab=punchList&projectId=${p.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
-                          {p.openPunchListCount}
-                        </a>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                    <td className="text-right">
-                      {p.pendingSubmittalCount ? (
-                        <a href={`/open-items?tab=submittals&projectId=${p.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
-                          {p.pendingSubmittalCount}
-                        </a>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                    <td className="text-right">{p.incidentCount || "—"}</td>
-                    <td className="text-right">{p.overdueTaskCount || "—"}</td>
-                    <td className="text-right">{p.criticalTaskCount || "—"}</td>
-                    <td className="text-right">
-                      {p.atRisk ? (
-                        <Badge tone="danger">{t("atRisk")}</Badge>
-                      ) : (
-                        <Badge tone="success">{t("onTrack")}</Badge>
-                      )}
-                    </td>
+            <h2 className="mb-3 mt-10 text-sm font-semibold text-fg-muted">{t("projects")}</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[1150px] border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
+                    <th className="py-2">{t("project")}</th>
+                    <th>{t("client")}</th>
+                    <th className="text-right">{t("budget")}</th>
+                    <th className="text-right">{t("actual")}</th>
+                    <th className="text-right">{t("variance")}</th>
+                    <th className="text-right">{t("billedToDate")}</th>
+                    <th className="text-right">{t("fundedToDate")}</th>
+                    <th className="text-right">{t("openDraws")}</th>
+                    <th className="text-right">{t("openRfis")}</th>
+                    <th className="text-right">{t("openPunchList")}</th>
+                    <th className="text-right">{t("pendingSubmittals")}</th>
+                    <th className="text-right">{t("incidents")}</th>
+                    <th className="text-right">{t("overdueTasks")}</th>
+                    <th className="text-right">{t("critical")}</th>
+                    <th className="text-right">{t("status")}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
-      ))}
+                </thead>
+                <tbody>
+                  {data.projects.map((p) => (
+                    <tr key={p.id} className="border-b border-gray-100 dark:border-gray-700">
+                      <td className="py-2">
+                        <a href={`/projects/${p.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
+                          {p.name}
+                        </a>
+                      </td>
+                      <td className="text-fg-subtle">{p.clientName ?? "—"}</td>
+                      <td className="text-right">{money(p.budgetTotal)}</td>
+                      <td className="text-right">{money(p.actualTotal)}</td>
+                      <td className={`text-right ${p.variance < 0 ? "text-danger-fg" : "text-success-fg"}`}>{money(p.variance)}</td>
+                      <td className="text-right">{money(p.billedToDate)}</td>
+                      <td className="text-right">{money(p.fundedToDate)}</td>
+                      <td className="text-right">{p.openDrawCount || "—"}</td>
+                      <td className="text-right">
+                        {p.openRfiCount ? (
+                          <a href={`/open-items?tab=rfis&projectId=${p.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
+                            {p.openRfiCount}
+                          </a>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="text-right">
+                        {p.openPunchListCount ? (
+                          <a href={`/open-items?tab=punchList&projectId=${p.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
+                            {p.openPunchListCount}
+                          </a>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="text-right">
+                        {p.pendingSubmittalCount ? (
+                          <a href={`/open-items?tab=submittals&projectId=${p.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
+                            {p.pendingSubmittalCount}
+                          </a>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="text-right">{p.incidentCount || "—"}</td>
+                      <td className="text-right">{p.overdueTaskCount || "—"}</td>
+                      <td className="text-right">{p.criticalTaskCount || "—"}</td>
+                      <td className="text-right">
+                        {p.atRisk ? (
+                          <Badge tone="danger">{t("atRisk")}</Badge>
+                        ) : (
+                          <Badge tone="success">{t("onTrack")}</Badge>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        ))}
+      </TabPanel>
     </>
   );
 }

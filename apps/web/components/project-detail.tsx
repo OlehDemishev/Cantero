@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { TabNav, type TabNavItem } from "@/components/ui/tab-nav";
+import { TabNav, TabPanel, type TabNavItem } from "@/components/ui/tab-nav";
 import { goBack } from "@/lib/back-navigation";
 import { useApi } from "@/lib/use-api";
 import { resetStateInEffect } from "@/lib/effect-reset";
@@ -293,255 +293,257 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
         </Link>
       )}
 
-      <TabNav tabs={TABS} active={activeTab} onChange={setTab} />
+      <TabNav id="project-tabs" tabs={TABS} active={activeTab} onChange={setTab} />
+      <TabPanel tabsId="project-tabs" active={activeTab}>
 
-      {activeTab === "overview" && (
-        <>
-          {project && can("projects.manage") && (
-            <label className="mt-4 flex w-fit items-center gap-2 text-xs text-fg-subtle">
-              {tp("billingCurrency")}
-              <select
-                className="input w-auto py-1"
-                value={project.currency ?? ""}
-                disabled={currencyBusy}
-                onChange={(e) => saveCurrency(e.target.value)}
-              >
-                <option value="">{tp("billingCurrencyDefault", { currency: me?.company.currency ?? "" })}</option>
-                {SUPPORTED_CURRENCIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-          {project && can("projects.manage") && (
-            <label className="mt-2 flex w-fit items-center gap-2 text-xs text-fg-subtle">
-              {tp("budgetAlertThreshold")}
-              <input
-                type="number"
-                min="1"
-                max="100"
-                className="input w-20 py-1"
-                placeholder={String(me?.company.budgetAlertThresholdPercent ?? 90)}
-                value={budgetThresholdDraft}
-                disabled={budgetThresholdBusy}
-                onChange={(e) => setBudgetThresholdDraft(e.target.value)}
-                onBlur={saveBudgetThreshold}
-              />
-              %
-            </label>
-          )}
-          {project && can("projects.manage") && (
-            <label className="mt-2 flex w-fit items-center gap-2 text-xs text-fg-subtle">
-              {tp("contingencyAmount")}
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                className="input w-28 py-1"
-                placeholder={tp("contingencyAmountPlaceholder")}
-                value={contingencyDraft}
-                disabled={contingencyBusy}
-                onChange={(e) => setContingencyDraft(e.target.value)}
-                onBlur={saveContingency}
-              />
-              {project.currency ?? me?.company.currency}
-            </label>
-          )}
-
-          <div className="mt-6">
-            <h2 className="mb-3 text-sm font-semibold text-fg-muted">{tp("projectChannel")}</h2>
-            <div className="card">
-              <CommentsThread param="projectId" entityId={projectId} />
-            </div>
-          </div>
-
-          {can("clients.view") && <PortalMessagesPanel projectId={projectId} />}
-          {can("estimates.view") && <ClientChangeRequestsPanel projectId={projectId} />}
-
-          {canEstimates && (
-          <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
-            <div className="card lg:col-span-1">
-              <h2 className="mb-4 text-sm font-semibold text-fg-muted">{t("newEstimate")}</h2>
-              <form ref={formRef} onSubmit={handleSubmit} noValidate className="flex flex-col gap-3">
-                {templates.length > 0 && (
-                  <Field label={t("startFromTemplate")} size="sm">
-                    <select className="input" value={form.templateId} onChange={(e) => updateEstimateField("templateId", e.target.value)}>
-                      <option value="">{t("blankEstimate")}</option>
-                      {templates.map((tpl) => (
-                        <option key={tpl.id} value={tpl.id}>
-                          {tpl.name}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                )}
-                <Field label={tc("name")} size="sm" error={errors.name}>
-                  <input required className="input" value={form.name} onChange={(e) => updateEstimateField("name", e.target.value)} />
-                </Field>
-                <Field label={`${t("laborRate")} (${me?.company.currency ?? ""})`} size="sm" error={errors.laborRatePerHour}>
-                  <input
-                    required
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    className="input"
-                    value={form.laborRatePerHour}
-                    onChange={(e) => updateEstimateField("laborRatePerHour", e.target.value)}
-                  />
-                </Field>
-                <Field label={t("markup")} size="sm" error={errors.markupPercent}>
-                  <input
-                    required
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="500"
-                    className="input"
-                    value={form.markupPercent}
-                    onChange={(e) => updateEstimateField("markupPercent", e.target.value)}
-                  />
-                </Field>
-                <Field label={t("tax")} size="sm" error={errors.taxPercent}>
-                  <input
-                    required
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="100"
-                    className="input"
-                    value={form.taxPercent}
-                    onChange={(e) => updateEstimateField("taxPercent", e.target.value)}
-                  />
-                </Field>
-                <FormError>{submitError}</FormError>
-                <Button type="submit" loading={submitting}>
-                  {tc("create")}
-                </Button>
-              </form>
-            </div>
-
-            <div className="lg:col-span-2">
-              <h2 className="mb-3 text-sm font-semibold text-fg-muted">{tp("viewEstimates")}</h2>
-              {!estimates ? (
-                estimatesError ? <ErrorState error={estimatesError} onRetry={reloadEstimates} compact /> : <Skeleton lines={3} />
-              ) : estimates.length === 0 ? (
-                <p className="text-fg-subtle">{t("noEstimatesForProject")}</p>
-              ) : (
-                <ul className="flex flex-col gap-2">
-                  {estimates.map((e) => (
-                    <li key={e.id}>
-                      <a href={`/estimates/${e.id}`} className="card flex items-center justify-between hover:border-gray-400">
-                        <span className="font-medium">{e.name}</span>
-                        <span className="text-sm text-fg-subtle">
-                          {e.status === "approved" ? t("approved") : t("draft")} · {formatCurrency(e.grandTotal, me?.company.currency)}
-                        </span>
-                      </a>
-                    </li>
+        {activeTab === "overview" && (
+          <>
+            {project && can("projects.manage") && (
+              <label className="mt-4 flex w-fit items-center gap-2 text-xs text-fg-subtle">
+                {tp("billingCurrency")}
+                <select
+                  className="input w-auto py-1"
+                  value={project.currency ?? ""}
+                  disabled={currencyBusy}
+                  onChange={(e) => saveCurrency(e.target.value)}
+                >
+                  <option value="">{tp("billingCurrencyDefault", { currency: me?.company.currency ?? "" })}</option>
+                  {SUPPORTED_CURRENCIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
                   ))}
-                </ul>
-              )}
+                </select>
+              </label>
+            )}
+            {project && can("projects.manage") && (
+              <label className="mt-2 flex w-fit items-center gap-2 text-xs text-fg-subtle">
+                {tp("budgetAlertThreshold")}
+                <input
+                  type="number"
+                  min="1"
+                  max="100"
+                  className="input w-20 py-1"
+                  placeholder={String(me?.company.budgetAlertThresholdPercent ?? 90)}
+                  value={budgetThresholdDraft}
+                  disabled={budgetThresholdBusy}
+                  onChange={(e) => setBudgetThresholdDraft(e.target.value)}
+                  onBlur={saveBudgetThreshold}
+                />
+                %
+              </label>
+            )}
+            {project && can("projects.manage") && (
+              <label className="mt-2 flex w-fit items-center gap-2 text-xs text-fg-subtle">
+                {tp("contingencyAmount")}
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="input w-28 py-1"
+                  placeholder={tp("contingencyAmountPlaceholder")}
+                  value={contingencyDraft}
+                  disabled={contingencyBusy}
+                  onChange={(e) => setContingencyDraft(e.target.value)}
+                  onBlur={saveContingency}
+                />
+                {project.currency ?? me?.company.currency}
+              </label>
+            )}
+
+            <div className="mt-6">
+              <h2 className="mb-3 text-sm font-semibold text-fg-muted">{tp("projectChannel")}</h2>
+              <div className="card">
+                <CommentsThread param="projectId" entityId={projectId} />
+              </div>
             </div>
-          </div>
-          )}
 
-          {can("site.manage") && <ProjectMembersPanel projectId={projectId} />}
-          <CustomFieldsValuesPanel entityType="project" entityId={projectId} />
-        </>
-      )}
+            {can("clients.view") && <PortalMessagesPanel projectId={projectId} />}
+            {can("estimates.view") && <ClientChangeRequestsPanel projectId={projectId} />}
 
-      {activeTab === "schedule" && (
-        <>
-          <SchedulingPanel projectId={projectId} />
-          {can("site.manage") && <ScheduleBaselinePanel projectId={projectId} />}
-          {can("site.manage") && <ScheduleScenariosPanel projectId={projectId} />}
-          <LookAheadPanel projectId={projectId} />
-          {can("site.manage") && <ProgressTrackingPanel projectId={projectId} />}
-          {can("site.manage") && <CommissioningPanel projectId={projectId} />}
-          {can("site.manage") && <ScheduleFilesPanel projectId={projectId} />}
-          {can("site.manage") && <MsProjectSyncPanel projectId={projectId} />}
-        </>
-      )}
+            {canEstimates && (
+            <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
+              <div className="card lg:col-span-1">
+                <h2 className="mb-4 text-sm font-semibold text-fg-muted">{t("newEstimate")}</h2>
+                <form ref={formRef} onSubmit={handleSubmit} noValidate className="flex flex-col gap-3">
+                  {templates.length > 0 && (
+                    <Field label={t("startFromTemplate")} size="sm">
+                      <select className="input" value={form.templateId} onChange={(e) => updateEstimateField("templateId", e.target.value)}>
+                        <option value="">{t("blankEstimate")}</option>
+                        {templates.map((tpl) => (
+                          <option key={tpl.id} value={tpl.id}>
+                            {tpl.name}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                  )}
+                  <Field label={tc("name")} size="sm" error={errors.name}>
+                    <input required className="input" value={form.name} onChange={(e) => updateEstimateField("name", e.target.value)} />
+                  </Field>
+                  <Field label={`${t("laborRate")} (${me?.company.currency ?? ""})`} size="sm" error={errors.laborRatePerHour}>
+                    <input
+                      required
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="input"
+                      value={form.laborRatePerHour}
+                      onChange={(e) => updateEstimateField("laborRatePerHour", e.target.value)}
+                    />
+                  </Field>
+                  <Field label={t("markup")} size="sm" error={errors.markupPercent}>
+                    <input
+                      required
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="500"
+                      className="input"
+                      value={form.markupPercent}
+                      onChange={(e) => updateEstimateField("markupPercent", e.target.value)}
+                    />
+                  </Field>
+                  <Field label={t("tax")} size="sm" error={errors.taxPercent}>
+                    <input
+                      required
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="100"
+                      className="input"
+                      value={form.taxPercent}
+                      onChange={(e) => updateEstimateField("taxPercent", e.target.value)}
+                    />
+                  </Field>
+                  <FormError>{submitError}</FormError>
+                  <Button type="submit" loading={submitting}>
+                    {tc("create")}
+                  </Button>
+                </form>
+              </div>
 
-      {activeTab === "financials" && (
-        <>
-          {can("finance.view") && <IntacctProjectPanel projectId={projectId} />}
-          {can("costing.view") && <BudgetPanel projectId={projectId} />}
-          {can("costing.view") && <AllowancesPanel projectId={projectId} />}
-          {can("estimates.view") && <UnitPriceTmPanel projectId={projectId} />}
-          {can("costing.view") && <JobCostingPanel projectId={projectId} />}
-          {can("finance.view") && <DrawRequestsPanel projectId={projectId} />}
-          <ProjectCashFlowPanel projectId={projectId} />
-          {can("contracts.view") && <ContractsPanel projectId={projectId} />}
-          {can("estimates.view") && <CostImpactSummaryPanel projectId={projectId} />}
-        </>
-      )}
+              <div className="lg:col-span-2">
+                <h2 className="mb-3 text-sm font-semibold text-fg-muted">{tp("viewEstimates")}</h2>
+                {!estimates ? (
+                  estimatesError ? <ErrorState error={estimatesError} onRetry={reloadEstimates} compact /> : <Skeleton lines={3} />
+                ) : estimates.length === 0 ? (
+                  <p className="text-fg-subtle">{t("noEstimatesForProject")}</p>
+                ) : (
+                  <ul className="flex flex-col gap-2">
+                    {estimates.map((e) => (
+                      <li key={e.id}>
+                        <a href={`/estimates/${e.id}`} className="card flex items-center justify-between hover:border-gray-400">
+                          <span className="font-medium">{e.name}</span>
+                          <span className="text-sm text-fg-subtle">
+                            {e.status === "approved" ? t("approved") : t("draft")} · {formatCurrency(e.grandTotal, me?.company.currency)}
+                          </span>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+            )}
 
-      {activeTab === "field" && (
-        <>
-          <DailyLogsPanel projectId={projectId} />
-          {can("site.manage") && <CrewSmsBroadcastPanel projectId={projectId} />}
-          <SiteSignInsPanel projectId={projectId} />
-          <WeatherForecastPanel projectId={projectId} />
-          {can("site.manage") && <WeatherDelayReportPanel projectId={projectId} />}
-          {can("projects.manage") && <GeofencePanel projectId={projectId} />}
-          <SafetyPanel projectId={projectId} />
-          <SafetyObservationsPanel projectId={projectId} />
-        </>
-      )}
+            {can("site.manage") && <ProjectMembersPanel projectId={projectId} />}
+            <CustomFieldsValuesPanel entityType="project" entityId={projectId} />
+          </>
+        )}
 
-      {activeTab === "quality" && (
-        <>
-          <PunchListPanel projectId={projectId} />
-          <RfiPanel projectId={projectId} />
-          {can("site.manage") && <MeetingsPanel projectId={projectId} />}
-          {can("site.manage") && <LongLeadItemsPanel projectId={projectId} />}
-          {can("site.manage") && <QualityPanel projectId={projectId} />}
-          {can("site.manage") && <ConcreteQcPanel projectId={projectId} />}
-          {can("site.manage") && <SubmittalsPanel projectId={projectId} />}
-          {can("site.manage") && <TransmittalsPanel projectId={projectId} />}
-          {can("site.manage") && <WarrantyPanel projectId={projectId} />}
-          {project && <AutodeskSyncPanel projectId={projectId} initialAutodeskProjectId={project.autodeskProjectId} />}
-        </>
-      )}
+        {activeTab === "schedule" && (
+          <>
+            <SchedulingPanel projectId={projectId} />
+            {can("site.manage") && <ScheduleBaselinePanel projectId={projectId} />}
+            {can("site.manage") && <ScheduleScenariosPanel projectId={projectId} />}
+            <LookAheadPanel projectId={projectId} />
+            {can("site.manage") && <ProgressTrackingPanel projectId={projectId} />}
+            {can("site.manage") && <CommissioningPanel projectId={projectId} />}
+            {can("site.manage") && <ScheduleFilesPanel projectId={projectId} />}
+            {can("site.manage") && <MsProjectSyncPanel projectId={projectId} />}
+          </>
+        )}
 
-      {activeTab === "compliance" && (
-        <>
-          {can("site.manage") && <PermitsPanel projectId={projectId} />}
-          {can("finance.view") && <SuretyBondsPanel projectId={projectId} />}
-          {can("contracts.view") && <ContractClaimsPanel projectId={projectId} />}
-          {can("site.manage") && <WarrantyRegistrationsPanel projectId={projectId} />}
-          {can("site.manage") && <HazmatInventoryPanel projectId={projectId} />}
-          {can("finance.view") && <LienCompliancePanel projectId={projectId} />}
-          {can("site.manage") && <EnvironmentalPanel projectId={projectId} />}
-          {can("hr.payroll") && <CertifiedPayrollPanel projectId={projectId} />}
-          {can("site.manage") && <GreenCertificationsPanel projectId={projectId} />}
-          {can("site.manage") && <CarbonReportPanel projectId={projectId} />}
-        </>
-      )}
+        {activeTab === "financials" && (
+          <>
+            {can("finance.view") && <IntacctProjectPanel projectId={projectId} />}
+            {can("costing.view") && <BudgetPanel projectId={projectId} />}
+            {can("costing.view") && <AllowancesPanel projectId={projectId} />}
+            {can("estimates.view") && <UnitPriceTmPanel projectId={projectId} />}
+            {can("costing.view") && <JobCostingPanel projectId={projectId} />}
+            {can("finance.view") && <DrawRequestsPanel projectId={projectId} />}
+            <ProjectCashFlowPanel projectId={projectId} />
+            {can("contracts.view") && <ContractsPanel projectId={projectId} />}
+            {can("estimates.view") && <CostImpactSummaryPanel projectId={projectId} />}
+          </>
+        )}
 
-      {activeTab === "subcontractors" && (
-        <>
-          {can("estimates.view") && <BidRequestsPanel projectId={projectId} />}
-          {can("subcontractors.view") && <SubcontractorAssignmentsPanel projectId={projectId} />}
-          {can("finance.view") && <SubcontractorCostsPanel projectId={projectId} />}
-          {can("subcontractors.view") && <SubcontractorClaimsPanel projectId={projectId} />}
-        </>
-      )}
+        {activeTab === "field" && (
+          <>
+            <DailyLogsPanel projectId={projectId} />
+            {can("site.manage") && <CrewSmsBroadcastPanel projectId={projectId} />}
+            <SiteSignInsPanel projectId={projectId} />
+            <WeatherForecastPanel projectId={projectId} />
+            {can("site.manage") && <WeatherDelayReportPanel projectId={projectId} />}
+            {can("projects.manage") && <GeofencePanel projectId={projectId} />}
+            <SafetyPanel projectId={projectId} />
+            <SafetyObservationsPanel projectId={projectId} />
+          </>
+        )}
 
-      {activeTab === "documents" && (
-        <>
-          {can("estimates.view") && <TakeoffPanel projectId={projectId} />}
-          <DrawingSheetsPanel projectId={projectId} />
-          {project && <BimModelPanel projectId={projectId} canEdit={can("site.manage")} initial={project} />}
-          <TimeTrackingPanel projectId={projectId} />
-          {can("site.manage") && <ProductivityPanel projectId={projectId} />}
-          <DocumentsPanel projectId={projectId} />
-          <GalleryPanel projectId={projectId} />
-          {can("site.manage") && <ProjectCloseoutPanel projectId={projectId} />}
-        </>
-      )}
+        {activeTab === "quality" && (
+          <>
+            <PunchListPanel projectId={projectId} />
+            <RfiPanel projectId={projectId} />
+            {can("site.manage") && <MeetingsPanel projectId={projectId} />}
+            {can("site.manage") && <LongLeadItemsPanel projectId={projectId} />}
+            {can("site.manage") && <QualityPanel projectId={projectId} />}
+            {can("site.manage") && <ConcreteQcPanel projectId={projectId} />}
+            {can("site.manage") && <SubmittalsPanel projectId={projectId} />}
+            {can("site.manage") && <TransmittalsPanel projectId={projectId} />}
+            {can("site.manage") && <WarrantyPanel projectId={projectId} />}
+            {project && <AutodeskSyncPanel projectId={projectId} initialAutodeskProjectId={project.autodeskProjectId} />}
+          </>
+        )}
+
+        {activeTab === "compliance" && (
+          <>
+            {can("site.manage") && <PermitsPanel projectId={projectId} />}
+            {can("finance.view") && <SuretyBondsPanel projectId={projectId} />}
+            {can("contracts.view") && <ContractClaimsPanel projectId={projectId} />}
+            {can("site.manage") && <WarrantyRegistrationsPanel projectId={projectId} />}
+            {can("site.manage") && <HazmatInventoryPanel projectId={projectId} />}
+            {can("finance.view") && <LienCompliancePanel projectId={projectId} />}
+            {can("site.manage") && <EnvironmentalPanel projectId={projectId} />}
+            {can("hr.payroll") && <CertifiedPayrollPanel projectId={projectId} />}
+            {can("site.manage") && <GreenCertificationsPanel projectId={projectId} />}
+            {can("site.manage") && <CarbonReportPanel projectId={projectId} />}
+          </>
+        )}
+
+        {activeTab === "subcontractors" && (
+          <>
+            {can("estimates.view") && <BidRequestsPanel projectId={projectId} />}
+            {can("subcontractors.view") && <SubcontractorAssignmentsPanel projectId={projectId} />}
+            {can("finance.view") && <SubcontractorCostsPanel projectId={projectId} />}
+            {can("subcontractors.view") && <SubcontractorClaimsPanel projectId={projectId} />}
+          </>
+        )}
+
+        {activeTab === "documents" && (
+          <>
+            {can("estimates.view") && <TakeoffPanel projectId={projectId} />}
+            <DrawingSheetsPanel projectId={projectId} />
+            {project && <BimModelPanel projectId={projectId} canEdit={can("site.manage")} initial={project} />}
+            <TimeTrackingPanel projectId={projectId} />
+            {can("site.manage") && <ProductivityPanel projectId={projectId} />}
+            <DocumentsPanel projectId={projectId} />
+            <GalleryPanel projectId={projectId} />
+            {can("site.manage") && <ProjectCloseoutPanel projectId={projectId} />}
+          </>
+        )}
+      </TabPanel>
     </>
   );
 }

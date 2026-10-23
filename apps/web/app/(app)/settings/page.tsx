@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { TabNav, type TabNavItem } from "@/components/ui/tab-nav";
+import { TabNav, TabPanel, type TabNavItem } from "@/components/ui/tab-nav";
 import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useCan } from "@/lib/permissions";
 import { useMe } from "@/lib/use-me";
@@ -97,87 +97,89 @@ export default function SettingsPage() {
     <>
       <PageHeader title={t("title")} />
 
-      <TabNav tabs={TABS} active={activeTab} onChange={setTab} />
+      <TabNav id="settings-tabs" tabs={TABS} active={activeTab} onChange={setTab} />
+      <TabPanel tabsId="settings-tabs" active={activeTab}>
 
-      {activeTab === "account" && <LanguagePanel />}
-      {activeTab === "account" && <AppearancePanel />}
-      {activeTab === "account" && <NotificationPreferencesPanel />}
+        {activeTab === "account" && <LanguagePanel />}
+        {activeTab === "account" && <AppearancePanel />}
+        {activeTab === "account" && <NotificationPreferencesPanel />}
 
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {activeTab === "company" && <CompanySettingsPanel isManager={can("settings.company")} />}
+        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {activeTab === "company" && <CompanySettingsPanel isManager={can("settings.company")} />}
 
-        {activeTab === "company" && <NavItemsSettingsPanel canManage={can("settings.company")} />}
+          {activeTab === "company" && <NavItemsSettingsPanel canManage={can("settings.company")} />}
 
-        {activeTab === "billing" && <BillingPlanPanel isManager={!!isManager} />}
-        {activeTab === "billing" && isManager && <StripeConnectPanel />}
+          {activeTab === "billing" && <BillingPlanPanel isManager={!!isManager} />}
+          {activeTab === "billing" && isManager && <StripeConnectPanel />}
 
-        {activeTab === "billing" && isManager && <FranchisePanel />}
+          {activeTab === "billing" && isManager && <FranchisePanel />}
 
-        {activeTab === "team" && <TeamMembersPanel isManager={can("settings.roles")} />}
+          {activeTab === "team" && <TeamMembersPanel isManager={can("settings.roles")} />}
 
-        {activeTab === "team" && <RolePermissionsPanel />}
+          {activeTab === "team" && <RolePermissionsPanel />}
 
-        {activeTab === "team" && <CustomRolesPanel isManager={can("settings.roles")} />}
+          {activeTab === "team" && <CustomRolesPanel isManager={can("settings.roles")} />}
 
-        {activeTab === "team" && can("settings.roles") && <TeamInvitesPanel />}
+          {activeTab === "team" && can("settings.roles") && <TeamInvitesPanel />}
 
-        {activeTab === "integrations" && isManager && <ApiKeysPanel />}
+          {activeTab === "integrations" && isManager && <ApiKeysPanel />}
 
-        {activeTab === "integrations" && can("settings.integrations") && <WebhooksPanel />}
+          {activeTab === "integrations" && can("settings.integrations") && <WebhooksPanel />}
 
-        {activeTab === "templates" && <MessageTemplatesPanel />}
+          {activeTab === "templates" && <MessageTemplatesPanel />}
 
-        {activeTab === "templates" && <CustomFieldsSettingsPanel canManage={can("templates.company")} />}
+          {activeTab === "templates" && <CustomFieldsSettingsPanel canManage={can("templates.company")} />}
 
-        {activeTab === "templates" && <LeadFormSettingsPanel token={leadFormToken} canManage={can("settings.company")} onChange={loadLeadFormToken} />}
+          {activeTab === "templates" && <LeadFormSettingsPanel token={leadFormToken} canManage={can("settings.company")} onChange={loadLeadFormToken} />}
 
-        {activeTab === "marketing" && <CustomPortalDomainPanel canManage={can("settings.company")} />}
+          {activeTab === "marketing" && <CustomPortalDomainPanel canManage={can("settings.company")} />}
 
-        {activeTab === "team" && <SsoSettingsPanel canManage={isManager} />}
+          {activeTab === "team" && <SsoSettingsPanel canManage={isManager} />}
 
-        {activeTab === "integrations" && <AccountingSyncPanel canManage={can("finance.manage")} />}
+          {activeTab === "integrations" && <AccountingSyncPanel canManage={can("finance.manage")} />}
 
-        {activeTab === "integrations" && <DocusignSettingsPanel canManage={can("settings.integrations")} />}
+          {activeTab === "integrations" && <DocusignSettingsPanel canManage={can("settings.integrations")} />}
 
-        {activeTab === "integrations" && <IntacctSettingsPanel canManage={can("finance.manage")} />}
+          {activeTab === "integrations" && <IntacctSettingsPanel canManage={can("finance.manage")} />}
 
-        {activeTab === "integrations" && <MsProjectSettingsPanel canManage={can("settings.integrations")} />}
+          {activeTab === "integrations" && <MsProjectSettingsPanel canManage={can("settings.integrations")} />}
 
-        {activeTab === "integrations" && <AutodeskSettingsPanel canManage={can("settings.integrations")} />}
+          {activeTab === "integrations" && <AutodeskSettingsPanel canManage={can("settings.integrations")} />}
 
-        {activeTab === "team" && <TwoFactorSettingsPanel />}
+          {activeTab === "team" && <TwoFactorSettingsPanel />}
 
-        {activeTab === "team" && <SessionsPanel />}
+          {activeTab === "team" && <SessionsPanel />}
 
-        {activeTab === "security" && <SecuritySettingsPanel canManage={can("settings.company")} />}
+          {activeTab === "security" && <SecuritySettingsPanel canManage={can("settings.company")} />}
 
-        {activeTab === "integrations" && <IntegrationsPanel canManage={can("settings.company")} />}
+          {activeTab === "integrations" && <IntegrationsPanel canManage={can("settings.company")} />}
 
-        {activeTab === "security" && <DataPrivacyPanel canExport={can("settings.export")} canDelete={!!isManager} />}
+          {activeTab === "security" && <DataPrivacyPanel canExport={can("settings.export")} canDelete={!!isManager} />}
 
-        {activeTab === "security" && can("documents.delete") && <DeletedDocumentsPanel />}
+          {activeTab === "security" && can("documents.delete") && <DeletedDocumentsPanel />}
 
-        {activeTab === "marketing" && <ReferralProgramPanel />}
+          {activeTab === "marketing" && <ReferralProgramPanel />}
 
-        {activeTab === "security" && <CompanyCoiPanel canManage={can("templates.company")} />}
+          {activeTab === "security" && <CompanyCoiPanel canManage={can("templates.company")} />}
 
-        {activeTab === "security" && can("settings.export") && <AuditLogPanel />}
+          {activeTab === "security" && can("settings.export") && <AuditLogPanel />}
 
-        {activeTab === "security" && can("finance.export") && <GobdCompliancePanel />}
+          {activeTab === "security" && can("finance.export") && <GobdCompliancePanel />}
 
-        {activeTab === "templates" && can("templates.company") && <OnboardingTemplatePanel />}
-        {activeTab === "templates" && can("templates.company") && <OffboardingTemplatePanel />}
-        {activeTab === "templates" && can("training.manage") && <TrainingCatalogPanel />}
-        {activeTab === "billing" && can("finance.view") && <BondingCapacityPanel />}
-        {activeTab === "marketing" && can("finance.manage") && <MarketingCampaignsPanel />}
-        {activeTab === "operations" && can("site.manage") && <SlaPoliciesPanel />}
-        {activeTab === "billing" && can("finance.manage") && <TaxJurisdictionsPanel />}
-        {activeTab === "team" && can("hr.payroll") && <BenefitPlansPanel />}
-        {activeTab === "operations" && can("templates.field") && <InspectionTemplatesPanel />}
-        {activeTab === "operations" && can("pricing.manage") && <CostCodesPanel />}
-        {activeTab === "operations" && can("hr.payroll") && <WageClassificationsPanel />}
-        {activeTab === "operations" && can("pricing.manage") && <MarkupRulesPanel />}
-      </div>
+          {activeTab === "templates" && can("templates.company") && <OnboardingTemplatePanel />}
+          {activeTab === "templates" && can("templates.company") && <OffboardingTemplatePanel />}
+          {activeTab === "templates" && can("training.manage") && <TrainingCatalogPanel />}
+          {activeTab === "billing" && can("finance.view") && <BondingCapacityPanel />}
+          {activeTab === "marketing" && can("finance.manage") && <MarketingCampaignsPanel />}
+          {activeTab === "operations" && can("site.manage") && <SlaPoliciesPanel />}
+          {activeTab === "billing" && can("finance.manage") && <TaxJurisdictionsPanel />}
+          {activeTab === "team" && can("hr.payroll") && <BenefitPlansPanel />}
+          {activeTab === "operations" && can("templates.field") && <InspectionTemplatesPanel />}
+          {activeTab === "operations" && can("pricing.manage") && <CostCodesPanel />}
+          {activeTab === "operations" && can("hr.payroll") && <WageClassificationsPanel />}
+          {activeTab === "operations" && can("pricing.manage") && <MarkupRulesPanel />}
+        </div>
+      </TabPanel>
     </>
   );
 }
