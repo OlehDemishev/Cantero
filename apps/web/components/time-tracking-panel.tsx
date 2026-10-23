@@ -8,6 +8,8 @@ import { formatDate } from "@/lib/format-date";
 import { useCrewChoices } from "@/lib/permissions";
 import { resetStateInEffect } from "@/lib/effect-reset";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Worker {
   id: string;
@@ -34,6 +36,7 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
 
   const TIME_ENTRIES_PAGE_SIZE = 100;
   const [entries, setEntries] = useState<TimeEntry[] | null>(null);
+  const [entriesError, setEntriesError] = useState<Error | null>(null);
   const { data: workers = [] } = useApi<Worker[]>("/workers");
   const { data: tasks = [] } = useApi<Task[]>(`/tasks?projectId=${projectId}`);
   const [form, setForm] = useState({
@@ -49,12 +52,13 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
   const [loadMoreBusy, setLoadMoreBusy] = useState(false);
 
   function load() {
-    apiFetch<TimeEntry[]>(`/time-entries?projectId=${projectId}`).then(
-      (page) => {
+    apiFetch<TimeEntry[]>(`/time-entries?projectId=${projectId}`)
+      .then((page) => {
+        setEntriesError(null);
         setEntries(page);
         setHasMore(page.length === TIME_ENTRIES_PAGE_SIZE);
-      },
-    );
+      })
+      .catch(setEntriesError);
   }
 
   async function loadMore() {
@@ -140,9 +144,7 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
         {t("timeEntries")}
       </h2>
       {!entries ? (
-        <p className="text-sm text-fg-subtle">
-          {tc("loading")}
-        </p>
+        entriesError ? <ErrorState error={entriesError} onRetry={load} compact /> : <Skeleton lines={3} />
       ) : entries.length === 0 ? (
         <p className="text-sm text-fg-subtle">
           {t("noTimeEntries")}

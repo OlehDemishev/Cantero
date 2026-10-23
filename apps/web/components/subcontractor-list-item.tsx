@@ -10,6 +10,9 @@ import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
 import { useCan } from "@/lib/permissions";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useApi } from "@/lib/use-api";
 
 const DOCUMENT_TYPES: SubcontractorDocumentType[] = ["general_liability_insurance", "workers_comp_insurance", "license", "bonding", "other"];
 
@@ -108,8 +111,14 @@ export function SubcontractorListItem({
   const tc = useTranslations("common");
 
   const [expanded, setExpanded] = useState(false);
-  const [documents, setDocuments] = useState<SubcontractorDocument[] | null>(null);
-  const [compliance, setCompliance] = useState<Compliance | null>(null);
+  // The details below are loaded once the row is opened.
+  const base = `/finance/subcontractors/${s.id}`;
+  const {
+    data: documents = null,
+    error: documentsError,
+    reload: reloadDocuments,
+  } = useApi<SubcontractorDocument[]>(expanded ? `${base}/documents` : null);
+  const { data: compliance = null, reload: reloadCompliance } = useApi<Compliance>(expanded ? `${base}/compliance` : null);
   const [docForm, setDocForm] = useState({ type: "general_liability_insurance" as SubcontractorDocumentType, name: "", expiresAt: "" });
   const [profileForm, setProfileForm] = useState({
     specialization: s.specialization ?? "",
@@ -125,22 +134,40 @@ export function SubcontractorListItem({
   const [linkCopied, setLinkCopied] = useState(false);
   const [busy, setBusy] = useState(false);
   const can = useCan();
-  const [scorecard, setScorecard] = useState<Scorecard | null>(null);
-  const [reviews, setReviews] = useState<PerformanceReview[] | null>(null);
+  const { data: scorecard = null, reload: reloadScorecard } = useApi<Scorecard>(expanded ? `${base}/scorecard` : null);
+  const { data: reviews = null, reload: reloadReviews } = useApi<PerformanceReview[]>(expanded ? `${base}/performance-reviews` : null);
   const [reviewForm, setReviewForm] = useState({ rating: "5", onTime: "", safetyIncidents: "0", reworkCount: "0", wouldHireAgain: "", comments: "" });
   const [taxForm, setTaxForm] = useState({ taxId: "", legalBusinessName: "", mailingAddress: "", datevKreditorNumber: "" });
-  const [payments, setPayments] = useState<SubcontractorPayment[] | null>(null);
+  const {
+    data: payments = null,
+    error: paymentsError,
+    reload: reloadPayments,
+  } = useApi<SubcontractorPayment[]>(expanded && isUsCompany ? `${base}/payments` : null);
   const [paymentForm, setPaymentForm] = useState({ amount: "", paidAt: "", note: "" });
-  const [assignments, setAssignments] = useState<Assignment[] | null>(null);
-  const [costs, setCosts] = useState<SubcontractorCost[] | null>(null);
+  const {
+    data: assignments = null,
+    error: assignmentsError,
+    reload: reloadAssignments,
+  } = useApi<Assignment[]>(expanded ? `${base}/assignments` : null);
+  const {
+    data: costs = null,
+    error: costsError,
+    reload: reloadCosts,
+  } = useApi<SubcontractorCost[]>(expanded ? `/finance/subcontractor-costs?subcontractorId=${s.id}` : null);
 
+  /** After a change in the open row: everything it shows again. */
   function loadDetail() {
-    apiFetch<SubcontractorDocument[]>(`/finance/subcontractors/${s.id}/documents`).then(setDocuments);
-    apiFetch<Compliance>(`/finance/subcontractors/${s.id}/compliance`).then(setCompliance).catch(notifyApiError);
-    apiFetch<Scorecard>(`/finance/subcontractors/${s.id}/scorecard`).then(setScorecard).catch(notifyApiError);
-    apiFetch<PerformanceReview[]>(`/finance/subcontractors/${s.id}/performance-reviews`).then(setReviews).catch(notifyApiError);
-    apiFetch<Assignment[]>(`/finance/subcontractors/${s.id}/assignments`).then(setAssignments);
-    apiFetch<SubcontractorCost[]>(`/finance/subcontractor-costs?subcontractorId=${s.id}`).then(setCosts);
+    void reloadDocuments();
+    void reloadCompliance();
+    void reloadScorecard();
+    void reloadReviews();
+    void reloadAssignments();
+    void reloadCosts();
+    if (isUsCompany) void reloadPayments();
+    loadTaxProfile();
+  }
+
+  function loadTaxProfile() {
     // Tax profile carries both US 1099 fields and the DATEV Kreditor number, so it's fetched
     // regardless of isUsCompany — only the US-specific inputs/payments ledger below stay gated.
     apiFetch<TaxProfile>(`/finance/subcontractors/${s.id}/tax-profile`).then((p) =>
@@ -151,9 +178,6 @@ export function SubcontractorListItem({
         datevKreditorNumber: p.datevKreditorNumber ?? "",
       }),
     ).catch(notifyApiError);
-    if (isUsCompany) {
-      apiFetch<SubcontractorPayment[]>(`/finance/subcontractors/${s.id}/payments`).then(setPayments);
-    }
   }
 
   function toggleExpand() {
@@ -162,7 +186,7 @@ export function SubcontractorListItem({
       return;
     }
     setExpanded(true);
-    loadDetail();
+    loadTaxProfile();
   }
 
   function toggleDiversityCategory(category: SubcontractorDiversityCategory) {
@@ -362,7 +386,7 @@ export function SubcontractorListItem({
           <div>
             <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("documents")}</h3>
             {documents === null ? (
-              <p className="text-xs text-fg-subtle">{tc("loading")}</p>
+              documentsError ? <ErrorState error={documentsError} onRetry={reloadDocuments} compact /> : <Skeleton lines={3} />
             ) : documents.length === 0 ? (
               <p className="text-xs text-fg-subtle">{t("noDocuments")}</p>
             ) : (
@@ -425,7 +449,7 @@ export function SubcontractorListItem({
           <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
             <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("projects")}</h3>
             {assignments === null ? (
-              <p className="text-xs text-fg-subtle">{tc("loading")}</p>
+              assignmentsError ? <ErrorState error={assignmentsError} onRetry={reloadAssignments} compact /> : <Skeleton lines={3} />
             ) : assignments.length === 0 ? (
               <p className="text-xs text-fg-subtle">{t("noAssignedProjects")}</p>
             ) : (
@@ -451,7 +475,7 @@ export function SubcontractorListItem({
           <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
             <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("costsAcrossProjects")}</h3>
             {costs === null ? (
-              <p className="text-xs text-fg-subtle">{tc("loading")}</p>
+              costsError ? <ErrorState error={costsError} onRetry={reloadCosts} compact /> : <Skeleton lines={3} />
             ) : costs.length === 0 ? (
               <p className="text-xs text-fg-subtle">{t("noCostsYet")}</p>
             ) : (
@@ -716,7 +740,7 @@ export function SubcontractorListItem({
 
               <h3 className="mb-1.5 mt-4 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("payments")}</h3>
               {payments === null ? (
-                <p className="text-xs text-fg-subtle">{tc("loading")}</p>
+                paymentsError ? <ErrorState error={paymentsError} onRetry={reloadPayments} compact /> : <Skeleton lines={3} />
               ) : payments.length === 0 ? (
                 <p className="mb-2 text-xs text-fg-subtle">{t("noPayments")}</p>
               ) : (

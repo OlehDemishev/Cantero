@@ -6,6 +6,8 @@ import { ApiError, apiFetch, downloadBlob } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { formatDateTime } from "@/lib/format-date";
 import { useCan } from "@/lib/permissions";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface GobdLedgerEntry {
   id: string;
@@ -43,6 +45,8 @@ export function GobdCompliancePanel() {
   const tc = useTranslations("common");
 
   const [ledger, setLedger] = useState<GobdLedgerEntry[] | null>(null);
+
+  const [ledgerError, setLedgerError] = useState<Error | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [loadMoreBusy, setLoadMoreBusy] = useState(false);
   const [verification, setVerification] = useState<GobdVerification | null>(null);
@@ -55,9 +59,10 @@ export function GobdCompliancePanel() {
 
   function load() {
     apiFetch<GobdLedgerEntry[]>("/company/gobd/ledger").then((page) => {
+      setLedgerError(null);
       setLedger(page);
       setHasMore(page.length === LEDGER_PAGE_SIZE);
-    });
+    }).catch(setLedgerError);
   }
 
   function loadAnchors() {
@@ -179,7 +184,7 @@ export function GobdCompliancePanel() {
       )}
 
       {!ledger ? (
-        <p className="text-fg-subtle">{tc("loading")}</p>
+        ledgerError ? <ErrorState error={ledgerError} onRetry={load} compact /> : <Skeleton lines={3} />
       ) : ledger.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noEntries")}</p>
       ) : (

@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useApi } from "@/lib/use-api";
 
 interface MaterialCatalogItem {
   id: string;
@@ -32,7 +35,7 @@ export function StockKits() {
   const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
-  const [kits, setKits] = useState<StockKit[] | null>(null);
+  const { data: kits = null, error: kitsError, reload: reloadKits } = useApi<StockKit[]>("/materials/stock-kits");
   const [materials, setMaterials] = useState<MaterialCatalogItem[]>([]);
   const [form, setForm] = useState({ kitMaterialCatalogItemId: "", name: "" });
   const [components, setComponents] = useState<DraftComponent[]>([]);
@@ -40,11 +43,10 @@ export function StockKits() {
   const [error, setError] = useState<string | null>(null);
 
   function load() {
-    apiFetch<StockKit[]>("/materials/stock-kits").then(setKits);
+    void reloadKits();
   }
 
   useEffect(() => {
-    load();
     apiFetch<MaterialCatalogItem[]>("/materials/catalog").then((items) => {
       setMaterials(items);
       if (items[0]) {
@@ -168,7 +170,7 @@ export function StockKits() {
 
       <div className="mt-8">
         {!kits ? (
-          <p className="text-fg-subtle">{tc("loading")}</p>
+          kitsError ? <ErrorState error={kitsError} onRetry={reloadKits} compact /> : <Skeleton lines={3} />
         ) : kits.length === 0 ? (
           <p className="text-sm text-fg-subtle">{t("noKits")}</p>
         ) : (

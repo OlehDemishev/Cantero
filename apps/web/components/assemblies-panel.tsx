@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useApi } from "@/lib/use-api";
 
 interface RateCatalogItem {
   id: string;
@@ -33,18 +36,17 @@ export function AssembliesPanel() {
   const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
-  const [assemblies, setAssemblies] = useState<Assembly[] | null>(null);
+  const { data: assemblies = null, error: assembliesError, reload: reloadAssemblies } = useApi<Assembly[]>("/assemblies");
   const [rateItems, setRateItems] = useState<RateCatalogItem[]>([]);
   const [form, setForm] = useState({ code: "", name: "", unit: "" });
   const [draftLines, setDraftLines] = useState<DraftLine[]>([]);
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<Assembly[]>("/assemblies").then(setAssemblies);
+    void reloadAssemblies();
   }
 
   useEffect(() => {
-    load();
     apiFetch<RateCatalogItem[]>("/estimates/rate-catalog").then((items) => {
       setRateItems(items);
       if (items[0]) setDraftLines([{ rateCatalogItemId: items[0].id, quantityPerUnit: "1" }]);
@@ -164,7 +166,7 @@ export function AssembliesPanel() {
 
         <div className="lg:col-span-2">
           {!assemblies ? (
-            <p className="text-fg-subtle">{tc("loading")}</p>
+            assembliesError ? <ErrorState error={assembliesError} onRetry={reloadAssemblies} compact /> : <Skeleton lines={3} />
           ) : assemblies.length === 0 ? (
             <p className="text-sm text-fg-subtle">{t("noAssemblies")}</p>
           ) : (

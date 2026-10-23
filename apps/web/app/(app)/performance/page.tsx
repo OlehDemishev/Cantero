@@ -6,6 +6,9 @@ import { PERFORMANCE_RATINGS, type PerformanceRating, type PerformanceReviewCycl
 import { CloseIcon } from "@/components/nav-icons";
 import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Cycle {
   id: string;
@@ -39,9 +42,15 @@ export default function PerformancePage() {
   const t = useTranslations("performance");
   const tc = useTranslations("common");
 
-  const [cycles, setCycles] = useState<Cycle[] | null>(null);
-  const [selectedCycleId, setSelectedCycleId] = useState<string | null>(null);
-  const [reviews, setReviews] = useState<Review[] | null>(null);
+  const { data: cycles = null, error: cyclesError, reload: reloadCycles } = useApi<Cycle[]>("/performance/cycles");
+  const [pickedCycleId, setSelectedCycleId] = useState<string | null>(null);
+  // The first cycle is open until another is picked.
+  const selectedCycleId = pickedCycleId ?? cycles?.[0]?.id ?? null;
+  const {
+    data: reviews = null,
+    error: reviewsError,
+    reload: reloadReviews,
+  } = useApi<Review[]>(selectedCycleId ? `/performance/cycles/${selectedCycleId}/reviews` : null);
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [cycleForm, setCycleForm] = useState({ name: "", periodStart: "", periodEnd: "" });
   const [reviewWorkerId, setReviewWorkerId] = useState("");
@@ -50,12 +59,8 @@ export default function PerformancePage() {
   const [showCycleForm, setShowCycleForm] = useState(false);
 
   function loadCycles() {
-    apiFetch<Cycle[]>("/performance/cycles").then((list) => {
-      setCycles(list);
-      if (!selectedCycleId && list[0]) setSelectedCycleId(list[0].id);
-    });
+    void reloadCycles();
   }
-  useEffect(loadCycles, []);
   useEffect(() => {
     apiFetch<Worker[]>("/workers").then((list) => {
       setWorkers(list);
@@ -64,10 +69,8 @@ export default function PerformancePage() {
   }, []);
 
   function loadReviews() {
-    if (!selectedCycleId) return;
-    apiFetch<Review[]>(`/performance/cycles/${selectedCycleId}/reviews`).then(setReviews);
+    void reloadReviews();
   }
-  useEffect(loadReviews, [selectedCycleId]);
 
   async function createCycle(e: React.FormEvent) {
     e.preventDefault();
@@ -134,7 +137,7 @@ export default function PerformancePage() {
             )}
           </div>
           {!cycles ? (
-            <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+            cyclesError ? <ErrorState error={cyclesError} onRetry={reloadCycles} compact /> : <Skeleton lines={3} />
           ) : (
             <ul className="mb-4 flex flex-col gap-1.5">
               {cycles.map((c) => (
@@ -263,7 +266,7 @@ export default function PerformancePage() {
               )}
 
               {!reviews ? (
-                <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+                reviewsError ? <ErrorState error={reviewsError} onRetry={reloadReviews} compact /> : <Skeleton lines={3} />
               ) : reviews.length === 0 ? (
                 <p className="text-sm text-fg-subtle">{t("noReviews")}</p>
               ) : (

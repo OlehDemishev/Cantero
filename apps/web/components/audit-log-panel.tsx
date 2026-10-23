@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { formatDateTime } from "@/lib/format-date";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface AuditLogEntry {
   id: string;
@@ -14,9 +16,9 @@ interface AuditLogEntry {
 
 export function AuditLogPanel() {
   const t = useTranslations("settings");
-  const tc = useTranslations("common");
   const AUDIT_PAGE_SIZE = 50;
   const [auditLog, setAuditLog] = useState<AuditLogEntry[] | null>(null);
+  const [auditLogError, setAuditLogError] = useState<Error | null>(null);
   const [auditFilter, setAuditFilter] = useState({ dateFrom: "", dateTo: "", entityType: "", action: "" });
   const [auditExportBusy, setAuditExportBusy] = useState(false);
   const [auditHasMore, setAuditHasMore] = useState(false);
@@ -35,9 +37,10 @@ export function AuditLogPanel() {
 
   function loadAuditLog(filter: typeof auditFilter = auditFilter) {
     apiFetch<AuditLogEntry[]>(`/company/audit-log${auditQueryString(filter)}`).then((page) => {
+      setAuditLogError(null);
       setAuditLog(page);
       setAuditHasMore(page.length === AUDIT_PAGE_SIZE);
-    });
+    }).catch(setAuditLogError);
   }
 
   async function loadMoreAuditLog() {
@@ -119,7 +122,7 @@ export function AuditLogPanel() {
       </div>
 
       {!auditLog ? (
-        <p className="text-fg-subtle">{tc("loading")}</p>
+        auditLogError ? <ErrorState error={auditLogError} onRetry={() => loadAuditLog()} compact /> : <Skeleton lines={3} />
       ) : auditLog.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noAuditLog")}</p>
       ) : (

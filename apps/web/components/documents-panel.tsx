@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { DOCUMENT_CATEGORIES, type DocumentCategory } from "@cantero/shared";
 import { apiFetch, apiUpload, downloadBlob, notifyApiError } from "@/lib/api-client";
 import { formatDateTime } from "@/lib/format-date";
 import { Dialog } from "@/components/ui/dialog";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useApi } from "@/lib/use-api";
 
 interface Document {
   id: string;
@@ -32,7 +35,6 @@ export function DocumentsPanel({
   const t = useTranslations("documents");
   const confirm = useConfirm();
   const tc = useTranslations("common");
-  const [documents, setDocuments] = useState<Document[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [category, setCategory] = useState<DocumentCategory>("other");
   const [newTags, setNewTags] = useState("");
@@ -57,14 +59,18 @@ export function DocumentsPanel({
     return params.toString();
   }
 
-  function load() {
-    const params = new URLSearchParams(query());
-    if (search) params.set("search", search);
-    if (tagFilter) params.set("tag", tagFilter);
-    apiFetch<Document[]>(`/documents?${params.toString()}`).then(setDocuments);
-  }
+  const listParams = new URLSearchParams(query());
+  if (search) listParams.set("search", search);
+  if (tagFilter) listParams.set("tag", tagFilter);
+  const {
+    data: documents = null,
+    error: documentsError,
+    reload: reloadDocuments,
+  } = useApi<Document[]>(`/documents?${listParams.toString()}`, { keepPrevious: query() });
 
-  useEffect(load, [projectId, invoiceId, insuranceClaimId, search, tagFilter]);
+  function load() {
+    void reloadDocuments();
+  }
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -201,7 +207,7 @@ export function DocumentsPanel({
       </div>
 
       {!documents ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        documentsError ? <ErrorState error={documentsError} onRetry={reloadDocuments} compact /> : <Skeleton lines={3} />
       ) : documents.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noDocuments")}</p>
       ) : (

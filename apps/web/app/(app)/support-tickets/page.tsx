@@ -8,6 +8,8 @@ import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { formatDateTime } from "@/lib/format-date";
 import { useCan } from "@/lib/permissions";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Member {
   id: string;
@@ -64,8 +66,12 @@ export default function SupportTicketsPage() {
   const tc = useTranslations("common");
   const isManager = useCan()("site.manage");
 
-  const [tickets, setTickets] = useState<Ticket[] | null>(null);
   const [statusFilter, setStatusFilter] = useState<TicketStatus | "">("");
+  const {
+    data: tickets = null,
+    error: ticketsError,
+    reload: reloadTickets,
+  } = useApi<Ticket[]>(`/support-tickets${statusFilter ? `?status=${statusFilter}` : ""}`, { keepPrevious: true });
   const [members, setMembers] = useState<Member[]>([]);
   const { data: clients = [] } = useApi<Client[]>("/clients");
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -77,9 +83,8 @@ export default function SupportTicketsPage() {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<Ticket[]>(`/support-tickets${statusFilter ? `?status=${statusFilter}` : ""}`).then(setTickets);
+    void reloadTickets();
   }
-  useEffect(load, [statusFilter]);
 
   useEffect(() => {
     apiFetch<{ user: Member }[]>("/company/members").then((list) => setMembers(list.map((m) => m.user))).catch(notifyApiError);
@@ -255,7 +260,7 @@ export default function SupportTicketsPage() {
 
       <div className="mt-6">
         {!tickets ? (
-          <p className="text-fg-subtle">{tc("loading")}</p>
+          ticketsError ? <ErrorState error={ticketsError} onRetry={reloadTickets} compact /> : <Skeleton lines={3} />
         ) : tickets.length === 0 ? (
           <p className="text-fg-subtle">{t("noTickets")}</p>
         ) : (

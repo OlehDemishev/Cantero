@@ -1,16 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { EXPENSE_CATEGORIES, type ExpenseCategory } from "@cantero/shared";
 import { CsvImportButton } from "@/components/csv-import-button";
-import { apiFetch, notifyApiError } from "@/lib/api-client";
+import { apiFetch } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatCurrency } from "@/lib/format-currency";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface BankTransaction {
   id: string;
@@ -60,31 +62,34 @@ export default function BankReconciliationPage() {
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const [transactions, setTransactions] = useState<BankTransaction[] | null>(null);
+  const [filter, setFilter] = useState<"all" | "unreconciled">("unreconciled");
+  const {
+    data: transactions = null,
+    error: transactionsError,
+    reload: reloadTransactions,
+  } = useApi<BankTransaction[]>(`/bank-transactions${filter === "unreconciled" ? "?reconciled=false" : ""}`, { keepPrevious: true });
+  const { data: suggestionList, reload: reloadSuggestions } = useApi<MatchSuggestion[]>("/bank-transactions/suggested-matches");
+  const suggestions = useMemo<Record<string, MatchCandidate[]>>(
+    () => Object.fromEntries((suggestionList ?? []).map((s) => [s.transactionId, s.candidates])),
+    [suggestionList],
+  );
   const { data: invoices = [] } = useApi<Invoice[]>("/invoices");
   const { data: expenses = [] } = useApi<Expense[]>("/expenses");
   const { data: rules = null, reload: reloadRules } = useApi<BankTransactionRule[]>("/bank-transactions/rules");
   const [ruleForm, setRuleForm] = useState<{ pattern: string; category: ExpenseCategory }>({ pattern: "", category: "other" });
   const [showRules, setShowRules] = useState(false);
-  const [filter, setFilter] = useState<"all" | "unreconciled">("unreconciled");
   const [matchDrafts, setMatchDrafts] = useState<Record<string, { target: MatchTarget; id: string }>>({});
-  const [suggestions, setSuggestions] = useState<Record<string, MatchCandidate[]>>({});
   const [busy, setBusy] = useState(false);
   const [applyResult, setApplyResult] = useState<{ categorized: number } | null>(null);
 
   function load() {
-    const query = filter === "unreconciled" ? "?reconciled=false" : "";
-    apiFetch<BankTransaction[]>(`/bank-transactions${query}`).then(setTransactions);
-    apiFetch<MatchSuggestion[]>("/bank-transactions/suggested-matches").then((list) =>
-      setSuggestions(Object.fromEntries(list.map((s) => [s.transactionId, s.candidates]))),
-    ).catch(notifyApiError);
+    void reloadTransactions();
+    void reloadSuggestions();
   }
 
   function loadRules() {
     void reloadRules();
   }
-
-  useEffect(load, [filter]);
 
   async function createRule(e: React.FormEvent) {
     e.preventDefault();
@@ -260,7 +265,11 @@ export default function BankReconciliationPage() {
       </div>
 
       {!transactions ? (
-        <p className="mt-6 text-fg-subtle">{tc("loading")}</p>
+        transactionsError ? (
+          <ErrorState error={transactionsError} onRetry={reloadTransactions} compact className="mt-6" />
+        ) : (
+          <Skeleton className="mt-6" variant="table" rows={5} columns={4} />
+        )
       ) : transactions.length === 0 ? (
         <p className="mt-6 text-sm text-fg-subtle">{t("noTransactions")}</p>
       ) : (

@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { formatDateTime } from "@/lib/format-date";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface DeletedDocument {
   id: string;
@@ -23,15 +25,17 @@ export function DeletedDocumentsPanel() {
   const t = useTranslations("documents");
   const tc = useTranslations("common");
   const [documents, setDocuments] = useState<DeletedDocument[] | null>(null);
+  const [documentsError, setDocumentsError] = useState<Error | null>(null);
   const [restoringId, setRestoringId] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [loadMoreBusy, setLoadMoreBusy] = useState(false);
 
   function load() {
     apiFetch<DeletedDocument[]>("/documents/deleted").then((page) => {
+      setDocumentsError(null);
       setDocuments(page);
       setHasMore(page.length === DELETED_DOCUMENTS_PAGE_SIZE);
-    });
+    }).catch(setDocumentsError);
   }
 
   useEffect(load, []);
@@ -69,9 +73,7 @@ export function DeletedDocumentsPanel() {
         {t("deletedDocumentsHint")}
       </p>
       {!documents ? (
-        <p className="text-sm text-fg-subtle">
-          {tc("loading")}
-        </p>
+        documentsError ? <ErrorState error={documentsError} onRetry={load} compact /> : <Skeleton lines={3} />
       ) : documents.length === 0 ? (
         <p className="text-sm text-fg-subtle">
           {t("noDeletedDocuments")}

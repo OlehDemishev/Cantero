@@ -6,6 +6,8 @@ import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { useCan } from "@/lib/permissions";
 import { formatDate } from "@/lib/format-date";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface MaterialCatalogItem {
   id: string;
@@ -46,8 +48,18 @@ export function WarehouseReorderSettings() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [priceHistory, setPriceHistory] = useState<PricePoint[] | null>(null);
-  const [supplierPrices, setSupplierPrices] = useState<SupplierPrice[] | null>(null);
+  // The open material's price history and supplier prices (purchasing.view, like the API).
+  const seesPrices = canSeeSuppliers;
+  const {
+    data: priceHistory = null,
+    error: priceHistoryError,
+    reload: reloadPriceHistory,
+  } = useApi<PricePoint[]>(expandedId && seesPrices ? `/materials/catalog/${expandedId}/price-history` : null);
+  const {
+    data: supplierPrices = null,
+    error: supplierPricesError,
+    reload: reloadSupplierPrices,
+  } = useApi<SupplierPrice[]>(expandedId && seesPrices ? `/materials/catalog/${expandedId}/supplier-prices` : null);
   const [barcodeDraft, setBarcodeDraft] = useState("");
   const [barcodeSaving, setBarcodeSaving] = useState(false);
 
@@ -101,11 +113,7 @@ export function WarehouseReorderSettings() {
       return;
     }
     setExpandedId(materialId);
-    setPriceHistory(null);
-    setSupplierPrices(null);
     setBarcodeDraft(currentBarcode ?? "");
-    apiFetch<PricePoint[]>(`/materials/catalog/${materialId}/price-history`).then(setPriceHistory);
-    apiFetch<SupplierPrice[]>(`/materials/catalog/${materialId}/supplier-prices`).then(setSupplierPrices);
   }
 
   async function saveBarcode(materialId: string) {
@@ -206,65 +214,67 @@ export function WarehouseReorderSettings() {
                         {tc("save")}
                       </button>
                     </div>
-                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                      <div>
-                        <div className="mb-2 text-xs font-semibold text-fg-subtle">{t("priceHistory")}</div>
-                        {!priceHistory ? (
-                          <p className="text-xs text-fg-subtle">{tc("loading")}</p>
-                        ) : priceHistory.length <= 1 ? (
-                          <p className="text-xs text-fg-subtle">{t("noPriceHistory")}</p>
-                        ) : (
-                          <div className="overflow-x-auto">
-                          <table className="w-full text-xs">
-                            <tbody>
-                              {priceHistory.map((p, i) => (
-                                <tr key={i} className="border-b border-gray-200 dark:border-gray-700">
-                                  <td className="py-1 text-fg-subtle">
-                                    {p.source === "catalog" ? t("currentPrice") : formatDate(new Date(p.date))}
-                                  </td>
-                                  <td className="text-fg-subtle">{p.supplierName}</td>
-                                  <td className="text-right font-medium">{p.unitPrice}</td>
+                    {seesPrices && (
+                      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                        <div>
+                          <div className="mb-2 text-xs font-semibold text-fg-subtle">{t("priceHistory")}</div>
+                          {!priceHistory ? (
+                            priceHistoryError ? <ErrorState error={priceHistoryError} onRetry={reloadPriceHistory} compact /> : <Skeleton lines={3} />
+                          ) : priceHistory.length <= 1 ? (
+                            <p className="text-xs text-fg-subtle">{t("noPriceHistory")}</p>
+                          ) : (
+                            <div className="overflow-x-auto">
+                            <table className="w-full text-xs">
+                              <tbody>
+                                {priceHistory.map((p, i) => (
+                                  <tr key={i} className="border-b border-gray-200 dark:border-gray-700">
+                                    <td className="py-1 text-fg-subtle">
+                                      {p.source === "catalog" ? t("currentPrice") : formatDate(new Date(p.date))}
+                                    </td>
+                                    <td className="text-fg-subtle">{p.supplierName}</td>
+                                    <td className="text-right font-medium">{p.unitPrice}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <div className="mb-2 text-xs font-semibold text-fg-subtle">{t("supplierComparison")}</div>
+                          {!supplierPrices ? (
+                            supplierPricesError ? <ErrorState error={supplierPricesError} onRetry={reloadSupplierPrices} compact /> : <Skeleton lines={3} />
+                          ) : supplierPrices.length === 0 ? (
+                            <p className="text-xs text-fg-subtle">{t("noSupplierPrices")}</p>
+                          ) : (
+                            <div className="overflow-x-auto">
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="text-left text-fg-subtle">
+                                  <th className="py-1 font-normal">{tc("name")}</th>
+                                  <th className="font-normal">{t("latestPrice")}</th>
+                                  <th className="font-normal">{t("avgPrice")}</th>
                                 </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                          </div>
-                        )}
+                              </thead>
+                              <tbody>
+                                {supplierPrices.map((s, i) => (
+                                  <tr key={s.supplierId} className="border-b border-gray-200 dark:border-gray-700">
+                                    <td className={`py-1 ${i === 0 ? "font-medium text-success-fg" : "text-fg-muted"}`}>
+                                      {s.supplierName}
+                                    </td>
+                                    <td className={i === 0 ? "font-medium text-success-fg" : "text-fg-muted"}>
+                                      {s.latestUnitPrice}
+                                    </td>
+                                    <td className="text-fg-subtle">{s.averageUnitPrice}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div>
-                        <div className="mb-2 text-xs font-semibold text-fg-subtle">{t("supplierComparison")}</div>
-                        {!supplierPrices ? (
-                          <p className="text-xs text-fg-subtle">{tc("loading")}</p>
-                        ) : supplierPrices.length === 0 ? (
-                          <p className="text-xs text-fg-subtle">{t("noSupplierPrices")}</p>
-                        ) : (
-                          <div className="overflow-x-auto">
-                          <table className="w-full text-xs">
-                            <thead>
-                              <tr className="text-left text-fg-subtle">
-                                <th className="py-1 font-normal">{tc("name")}</th>
-                                <th className="font-normal">{t("latestPrice")}</th>
-                                <th className="font-normal">{t("avgPrice")}</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {supplierPrices.map((s, i) => (
-                                <tr key={s.supplierId} className="border-b border-gray-200 dark:border-gray-700">
-                                  <td className={`py-1 ${i === 0 ? "font-medium text-success-fg" : "text-fg-muted"}`}>
-                                    {s.supplierName}
-                                  </td>
-                                  <td className={i === 0 ? "font-medium text-success-fg" : "text-fg-muted"}>
-                                    {s.latestUnitPrice}
-                                  </td>
-                                  <td className="text-fg-subtle">{s.averageUnitPrice}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                    )}
                   </td>
                 </tr>
               )}

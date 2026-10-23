@@ -9,6 +9,9 @@ import { formatDate } from "@/lib/format-date";
 import { resetStateInEffect } from "@/lib/effect-reset";
 import { WarehouseLocations } from "@/components/warehouse-locations";
 import { formatCurrency, formatNumber } from "@/lib/format-currency";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useApi } from "@/lib/use-api";
 
 interface Warehouse {
   id: string;
@@ -205,7 +208,9 @@ export function WarehouseDetail({
 
   const MOVEMENTS_PAGE_SIZE = 100;
   const STOCK_TRANSFERS_PAGE_SIZE = 100;
-  const [levels, setLevels] = useState<StockLevel[] | null>(null);
+  const { data: levels = null, error: levelsError, reload: reloadLevels } = useApi<StockLevel[]>(
+    `/materials/stock/levels?warehouseId=${warehouseId}`,
+  );
   const [movements, setMovements] = useState<StockMovement[] | null>(null);
   const [movementsHasMore, setMovementsHasMore] = useState(false);
   const [movementsLoadMoreBusy, setMovementsLoadMoreBusy] = useState(false);
@@ -289,10 +294,13 @@ export function WarehouseDetail({
 
   const otherWarehouses = allWarehouses.filter((w) => w.id !== warehouseId);
 
+  /** After a change: the stock levels again, and everything else this warehouse shows. */
   function load() {
-    apiFetch<StockLevel[]>(
-      `/materials/stock/levels?warehouseId=${warehouseId}`,
-    ).then(setLevels);
+    void reloadLevels();
+    loadRest();
+  }
+
+  function loadRest() {
     apiFetch<InventoryValuation>(
       `/materials/stock/valuation?warehouseId=${warehouseId}`,
     ).then(setValuation).catch(notifyApiError);
@@ -357,7 +365,7 @@ export function WarehouseDetail({
   }
 
   useEffect(() => {
-    load();
+    loadRest();
     loadCounts();
     resetStateInEffect(() => setActiveCount(null));
     apiFetch<MaterialCatalogItem[]>("/materials/catalog").then((items) => {
@@ -788,7 +796,7 @@ export function WarehouseDetail({
         {t("stockLevels")}
       </h2>
       {!levels ? (
-        <p className="text-fg-subtle">{tc("loading")}</p>
+        levelsError ? <ErrorState error={levelsError} onRetry={reloadLevels} compact /> : <Skeleton lines={3} />
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">

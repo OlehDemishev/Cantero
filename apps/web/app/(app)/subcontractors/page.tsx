@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import type { SubcontractorDiversityCategory } from "@cantero/shared";
 import { SubcontractorListItem } from "@/components/subcontractor-list-item";
@@ -46,7 +46,11 @@ export default function SubcontractorsPage() {
   const [newForm, setNewForm] = useState({ name: "", email: "", phone: "" });
   const [busy, setBusy] = useState(false);
   const [taxSummaryYear, setTaxSummaryYear] = useState(String(CURRENT_YEAR));
-  const [taxSummary, setTaxSummary] = useState<TaxSummaryRow[] | null>(null);
+  const {
+    data: taxSummary = null,
+    error: taxSummaryError,
+    reload: reloadTaxSummary,
+  } = useApi<TaxSummaryRow[]>(isUsCompany ? `/finance/subcontractors/tax-summary?year=${taxSummaryYear}` : null);
   const [datevError, setDatevError] = useState<string | null>(null);
   const [datevWarningCount, setDatevWarningCount] = useState<number | null>(null);
 
@@ -75,18 +79,9 @@ export default function SubcontractorsPage() {
     void reloadSubcontractors();
   }
 
-  function loadTaxSummary(year: string) {
-    apiFetch<TaxSummaryRow[]>(`/finance/subcontractors/tax-summary?year=${year}`).then(setTaxSummary);
-  }
-
-  useEffect(() => {
-    if (isUsCompany) loadTaxSummary(taxSummaryYear);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isUsCompany]);
-
   function onChanged() {
     load();
-    if (isUsCompany) loadTaxSummary(taxSummaryYear);
+    if (isUsCompany) void reloadTaxSummary();
   }
 
   async function createSubcontractor(e: React.FormEvent) {
@@ -154,7 +149,6 @@ export default function SubcontractorsPage() {
               value={taxSummaryYear}
               onChange={(e) => {
                 setTaxSummaryYear(e.target.value);
-                loadTaxSummary(e.target.value);
               }}
             >
               {[CURRENT_YEAR, CURRENT_YEAR - 1, CURRENT_YEAR - 2].map((y) => (
@@ -166,7 +160,7 @@ export default function SubcontractorsPage() {
           </div>
           <p className="mb-3 text-xs text-fg-subtle">{t("taxSummaryHint")}</p>
           {taxSummary === null ? (
-            <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+            taxSummaryError ? <ErrorState error={taxSummaryError} onRetry={reloadTaxSummary} compact /> : <Skeleton lines={3} />
           ) : taxSummary.length === 0 ? (
             <p className="text-sm text-fg-subtle">{t("noTaxSummary")}</p>
           ) : (

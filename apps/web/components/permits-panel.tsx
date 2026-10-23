@@ -53,7 +53,11 @@ export function PermitsPanel({ projectId }: { projectId: string }) {
 
   const { data: permits = null, reload: reloadPermits, error: permitsError } = useApi<Permit[]>(`/projects/${projectId}/permits`);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [inspections, setInspections] = useState<Inspection[] | null>(null);
+  const {
+    data: inspections = null,
+    error: inspectionsError,
+    reload: reloadInspections,
+  } = useApi<Inspection[]>(expandedId ? `/permits/${expandedId}/inspections` : null);
   const [permitForm, setPermitForm] = useState({ permitType: "", permitNumber: "", authorityName: "", expiresAt: "" });
   const [inspectionForm, setInspectionForm] = useState({ inspectionType: "", scheduledDate: "", inspectorName: "" });
   const [busy, setBusy] = useState(false);
@@ -62,19 +66,17 @@ export function PermitsPanel({ projectId }: { projectId: string }) {
     void reloadPermits();
   }
 
-  function loadInspections(permitId: string) {
-    apiFetch<Inspection[]>(`/permits/${permitId}/inspections`).then(setInspections);
+  /** After a change to the open permit's inspections. */
+  function loadInspections() {
+    void reloadInspections();
   }
 
   function toggleExpand(id: string) {
     if (expandedId === id) {
       setExpandedId(null);
-      setInspections(null);
       return;
     }
     setExpandedId(id);
-    setInspections(null);
-    loadInspections(id);
   }
 
   async function createPermit(e: React.FormEvent) {
@@ -129,7 +131,7 @@ export function PermitsPanel({ projectId }: { projectId: string }) {
         }),
       });
       setInspectionForm({ inspectionType: "", scheduledDate: "", inspectorName: "" });
-      loadInspections(permitId);
+      loadInspections();
     } finally {
       setBusy(false);
     }
@@ -139,7 +141,7 @@ export function PermitsPanel({ projectId }: { projectId: string }) {
     setBusy(true);
     try {
       await apiFetch(`/permits/${permitId}/inspections/${inspectionId}/result`, { method: "POST", body: JSON.stringify({ result }) });
-      loadInspections(permitId);
+      loadInspections();
     } finally {
       setBusy(false);
     }
@@ -193,7 +195,7 @@ export function PermitsPanel({ projectId }: { projectId: string }) {
                     <div>
                       <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("inspections")}</h3>
                       {!inspections ? (
-                        <p className="text-xs text-fg-subtle">{tc("loading")}</p>
+                        inspectionsError ? <ErrorState error={inspectionsError} onRetry={reloadInspections} compact /> : <Skeleton lines={3} />
                       ) : inspections.length === 0 ? (
                         <p className="text-xs text-fg-subtle">{t("noInspections")}</p>
                       ) : (

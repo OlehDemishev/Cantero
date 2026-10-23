@@ -6,6 +6,8 @@ import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { formatCurrency } from "@/lib/format-currency";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Supplier {
   id: string;
@@ -56,6 +58,7 @@ export function PurchaseOrdersPanel() {
 
   const PURCHASE_ORDERS_PAGE_SIZE = 100;
   const [orders, setOrders] = useState<PurchaseOrder[] | null>(null);
+  const [ordersError, setOrdersError] = useState<Error | null>(null);
   const [ordersHasMore, setOrdersHasMore] = useState(false);
   const [ordersLoadMoreBusy, setOrdersLoadMoreBusy] = useState(false);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -73,9 +76,10 @@ export function PurchaseOrdersPanel() {
 
   function load() {
     apiFetch<PurchaseOrder[]>("/materials/purchase-orders").then((page) => {
+      setOrdersError(null);
       setOrders(page);
       setOrdersHasMore(page.length === PURCHASE_ORDERS_PAGE_SIZE);
-    });
+    }).catch(setOrdersError);
   }
 
   async function loadMoreOrders() {
@@ -300,7 +304,7 @@ export function PurchaseOrdersPanel() {
 
       <div className="lg:col-span-2">
         {!orders ? (
-          <p className="text-fg-subtle">{tc("loading")}</p>
+          ordersError ? <ErrorState error={ordersError} onRetry={load} compact /> : <Skeleton lines={3} />
         ) : (
           <ul className="flex flex-col gap-2">
             {orders.map((po) => (

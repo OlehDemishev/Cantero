@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { BallInCourtParty, BulkActionResult, RfiPriority, RfiStatus } from "@cantero/shared";
 import { SimilarItemsHint } from "@/components/similar-items-hint";
-import { apiFetch, notifyApiError } from "@/lib/api-client";
+import { apiFetch } from "@/lib/api-client";
 import { useBulkSelection } from "@/components/bulk-select";
 import { CommentsThread } from "@/components/comments-thread";
 import { TemplatePicker } from "@/components/template-picker";
@@ -12,6 +12,9 @@ import { PhotoAttachments } from "@/components/photo-attachments";
 import { useDeepLinkedRow, buildItemDeepLink } from "@/lib/use-deep-linked-row";
 import { CopyLinkButton } from "@/components/ui/copy-link-button";
 import { formatDate } from "@/lib/format-date";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useApi } from "@/lib/use-api";
 
 interface RfiAnalytics {
   openCount: number;
@@ -79,8 +82,6 @@ export function RfiPanel({ projectId }: { projectId: string }) {
   const deepLinkedId = useDeepLinkedRow("rfi");
   const rowRefs = useRef<Record<string, HTMLLIElement | null>>({});
 
-  const [items, setItems] = useState<Rfi[] | null>(null);
-  const [analytics, setAnalytics] = useState<RfiAnalytics | null>(null);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [expandedId, setExpandedId] = useState<string | null>(deepLinkedId);
@@ -89,19 +90,24 @@ export function RfiPanel({ projectId }: { projectId: string }) {
   const [myTurnOnly, setMyTurnOnly] = useState(false);
   const [changeOrderIdDrafts, setChangeOrderIdDrafts] = useState<Record<string, string>>({});
 
+  const query = new URLSearchParams({ projectId });
+  if (myTurnOnly) query.set("ballInCourtParty", "internal");
+  const {
+    data: items = null,
+    error: itemsError,
+    reload: reloadItems,
+  } = useApi<Rfi[]>(`/rfis?${query.toString()}`, { keepPrevious: projectId });
+  const { data: analytics = null, reload: reloadAnalytics } = useApi<RfiAnalytics>(`/rfis/analytics?projectId=${projectId}`);
+
   function load() {
-    const query = new URLSearchParams({ projectId });
-    if (myTurnOnly) query.set("ballInCourtParty", "internal");
-    apiFetch<Rfi[]>(`/rfis?${query.toString()}`).then(setItems);
-    apiFetch<RfiAnalytics>(`/rfis/analytics?projectId=${projectId}`).then(setAnalytics).catch(notifyApiError);
+    void reloadItems();
+    void reloadAnalytics();
   }
 
   useEffect(() => {
     if (!deepLinkedId || !items) return;
     rowRefs.current[deepLinkedId]?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [items, deepLinkedId]);
-
-  useEffect(load, [projectId, myTurnOnly]);
 
   async function setBallInCourt(id: string, ballInCourtParty: BallInCourtParty) {
     await apiFetch(`/rfis/${id}/ball-in-court`, { method: "PATCH", body: JSON.stringify({ ballInCourtParty }) });
@@ -338,7 +344,7 @@ export function RfiPanel({ projectId }: { projectId: string }) {
       )}
 
       {items === null ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        itemsError ? <ErrorState error={itemsError} onRetry={reloadItems} compact /> : <Skeleton lines={3} />
       ) : items.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noItems")}</p>
       ) : (

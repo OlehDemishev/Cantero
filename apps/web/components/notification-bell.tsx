@@ -4,6 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { BellIcon } from "@/components/nav-icons";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type NotificationType =
   | "low_stock"
@@ -47,19 +50,15 @@ const POLL_INTERVAL_MS = 60_000;
 
 export function NotificationBell() {
   const t = useTranslations("notifications");
-  const [data, setData] = useState<NotificationsResponse | null>(null);
+  const { data = null, error, setData, reload } = useApi<NotificationsResponse>("/notifications");
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  function load() {
-    apiFetch<NotificationsResponse>("/notifications").then(setData);
-  }
-
+  // Polled in the background: a failed poll keeps the last answer and just tries again next time.
   useEffect(() => {
-    load();
-    const interval = setInterval(load, POLL_INTERVAL_MS);
+    const interval = setInterval(() => void reload(), POLL_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, []);
+  }, [reload]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -128,7 +127,11 @@ export function NotificationBell() {
             )}
           </div>
           {!data ? (
-            <p className="px-2 py-3 text-sm text-fg-subtle">{t("loading")}</p>
+            error ? (
+              <ErrorState error={error} onRetry={reload} compact className="px-2 py-3" />
+            ) : (
+              <Skeleton className="px-2 py-3" lines={3} />
+            )
           ) : data.notifications.length === 0 ? (
             <p className="px-2 py-3 text-sm text-fg-subtle">{t("empty")}</p>
           ) : (

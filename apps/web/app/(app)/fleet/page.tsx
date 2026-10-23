@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { VEHICLE_TYPES, type VehicleInspectionResult, type VehicleType } from "@cantero/shared";
@@ -8,6 +8,8 @@ import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { formatNumber } from "@/lib/format-currency";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Worker {
   id: string;
@@ -66,7 +68,7 @@ export default function FleetPage() {
   const tc = useTranslations("common");
   const tl = useTranslations("labels");
 
-  const [vehicles, setVehicles] = useState<Vehicle[] | null>(null);
+  const { data: vehicles = null, error: vehiclesError, reload: reloadVehicles } = useApi<Vehicle[]>("/vehicles");
   const { data: workers = [] } = useApi<Worker[]>("/workers");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<VehicleDetail | null>(null);
@@ -83,14 +85,13 @@ export default function FleetPage() {
   const [inspectionForm, setInspectionForm] = useState({ result: "passed" as VehicleInspectionResult, inspectorName: "", notes: "" });
   const [fuelLogs, setFuelLogs] = useState<FuelLog[] | null>(null);
   const [fuelForm, setFuelForm] = useState({ quantity: "", cost: "", odometerMiles: "", idleHours: "" });
-  const [fuelEfficiency, setFuelEfficiency] = useState<FuelEfficiencyRow[] | null>(null);
+  const { data: fuelEfficiency = null, reload: reloadFuelEfficiency } = useApi<FuelEfficiencyRow[]>("/vehicles/fuel-efficiency-report");
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<Vehicle[]>("/vehicles").then(setVehicles);
-    apiFetch<FuelEfficiencyRow[]>("/vehicles/fuel-efficiency-report").then(setFuelEfficiency).catch(notifyApiError);
+    void reloadVehicles();
+    void reloadFuelEfficiency();
   }
-  useEffect(load, []);
 
   async function createVehicle(e: React.FormEvent) {
     e.preventDefault();
@@ -145,7 +146,7 @@ export default function FleetPage() {
       });
       setFuelForm({ quantity: "", cost: "", odometerMiles: "", idleHours: "" });
       apiFetch<FuelLog[]>(`/vehicles/${id}/fuel-logs`).then(setFuelLogs).catch(notifyApiError);
-      apiFetch<FuelEfficiencyRow[]>("/vehicles/fuel-efficiency-report").then(setFuelEfficiency).catch(notifyApiError);
+      void reloadFuelEfficiency();
     } finally {
       setBusy(false);
     }
@@ -274,7 +275,7 @@ export default function FleetPage() {
 
       <div className="mt-6">
         {!vehicles ? (
-          <p className="text-fg-subtle">{tc("loading")}</p>
+          vehiclesError ? <ErrorState error={vehiclesError} onRetry={reloadVehicles} compact /> : <Skeleton lines={4} />
         ) : vehicles.length === 0 ? (
           <p className="text-fg-subtle">{t("noVehicles")}</p>
         ) : (

@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { CANDIDATE_STAGES, type CandidateStage, type JobPostingStatus } from "@cantero/shared";
 import { CloseIcon } from "@/components/nav-icons";
 import { apiFetch } from "@/lib/api-client";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useApi } from "@/lib/use-api";
 
 interface JobPosting {
   id: string;
@@ -48,10 +51,16 @@ export default function RecruitingPage() {
   const t = useTranslations("recruiting");
   const tc = useTranslations("common");
 
-  const [postings, setPostings] = useState<JobPosting[] | null>(null);
+  const { data: postings = null, error: postingsError, reload: reloadPostings } = useApi<JobPosting[]>("/recruiting/job-postings");
   const [postingForm, setPostingForm] = useState({ title: "", trade: "", location: "" });
-  const [selectedPostingId, setSelectedPostingId] = useState<string | null>(null);
-  const [candidates, setCandidates] = useState<Candidate[] | null>(null);
+  const [pickedPostingId, setSelectedPostingId] = useState<string | null>(null);
+  // The first posting is open until another is picked.
+  const selectedPostingId = pickedPostingId ?? postings?.[0]?.id ?? null;
+  const {
+    data: candidates = null,
+    error: candidatesError,
+    reload: reloadCandidates,
+  } = useApi<Candidate[]>(selectedPostingId ? `/recruiting/job-postings/${selectedPostingId}/candidates` : null);
   const [candidateForm, setCandidateForm] = useState({ name: "", email: "", phone: "", source: "" });
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<CandidateDetail | null>(null);
@@ -61,18 +70,12 @@ export default function RecruitingPage() {
   const [showPostingForm, setShowPostingForm] = useState(false);
 
   function loadPostings() {
-    apiFetch<JobPosting[]>("/recruiting/job-postings").then((list) => {
-      setPostings(list);
-      if (!selectedPostingId && list[0]) setSelectedPostingId(list[0].id);
-    });
+    void reloadPostings();
   }
-  useEffect(loadPostings, []);
 
   function loadCandidates() {
-    if (!selectedPostingId) return;
-    apiFetch<Candidate[]>(`/recruiting/job-postings/${selectedPostingId}/candidates`).then(setCandidates);
+    void reloadCandidates();
   }
-  useEffect(loadCandidates, [selectedPostingId]);
 
   async function createPosting(e: React.FormEvent) {
     e.preventDefault();
@@ -198,7 +201,7 @@ export default function RecruitingPage() {
             )}
           </div>
           {!postings ? (
-            <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+            postingsError ? <ErrorState error={postingsError} onRetry={reloadPostings} compact /> : <Skeleton lines={3} />
           ) : (
             <ul className="mb-4 flex flex-col gap-1.5">
               {postings.map((p) => (
@@ -306,7 +309,7 @@ export default function RecruitingPage() {
               </form>
 
               {!candidates ? (
-                <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+                candidatesError ? <ErrorState error={candidatesError} onRetry={reloadCandidates} compact /> : <Skeleton lines={3} />
               ) : candidates.length === 0 ? (
                 <p className="text-sm text-fg-subtle">{t("noCandidates")}</p>
               ) : (

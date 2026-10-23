@@ -8,6 +8,9 @@ import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { formatDate, formatDateWithOptions } from "@/lib/format-date";
 import { resetStateInEffect } from "@/lib/effect-reset";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useApi } from "@/lib/use-api";
 
 type ResourceType = "worker" | "equipment";
 
@@ -96,9 +99,8 @@ function isoDaysFromNow(days: number) {
 export default function ResourcePlanningPage() {
   const t = useTranslations("resourcePlanning");
   const confirm = useConfirm();
-  const tc = useTranslations("common");
 
-  const [calendar, setCalendar] = useState<Calendar | null>(null);
+  const { data: calendar = null, error: calendarError, reload: reloadCalendar } = useApi<Calendar>("/resource-planning/calendar");
   const [projects, setProjects] = useState<Project[]>([]);
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [equipment, setEquipment] = useState<Equipment[]>([]);
@@ -106,21 +108,22 @@ export default function ResourcePlanningPage() {
   const [projectTasks, setProjectTasks] = useState<TaskOption[]>([]);
   const [busy, setBusy] = useState(false);
   const [newAssignmentConflicts, setNewAssignmentConflicts] = useState<CreateConflict[] | null>(null);
-  const [heatmap, setHeatmap] = useState<HeatmapRow[] | null>(null);
   const [heatmapFrom] = useState(isoDaysFromNow(0));
   const [heatmapTo] = useState(isoDaysFromNow(27));
+  const {
+    data: heatmap = null,
+    error: heatmapError,
+    reload: reloadHeatmap,
+  } = useApi<HeatmapRow[]>(`/resource-planning/workload-heatmap?from=${new Date(heatmapFrom).toISOString()}&to=${new Date(heatmapTo).toISOString()}`);
   const [leveledMoves, setLeveledMoves] = useState<{ resourceKey: string; moves: LevelingMove[] } | null>(null);
   const [levelBusy, setLevelBusy] = useState<string | null>(null);
 
   function load() {
-    apiFetch<Calendar>("/resource-planning/calendar").then(setCalendar);
-    apiFetch<HeatmapRow[]>(
-      `/resource-planning/workload-heatmap?from=${new Date(heatmapFrom).toISOString()}&to=${new Date(heatmapTo).toISOString()}`,
-    ).then(setHeatmap);
+    void reloadCalendar();
+    void reloadHeatmap();
   }
 
   useEffect(() => {
-    load();
     apiFetch<Project[]>("/projects").then((list) => {
       setProjects(list);
       setForm((f) => ({ ...f, projectId: f.projectId || (list[0]?.id ?? "") }));
@@ -307,7 +310,7 @@ export default function ResourcePlanningPage() {
       </div>
 
       {!calendar ? (
-        <p className="mt-8 text-fg-subtle">{tc("loading")}</p>
+        calendarError ? <ErrorState error={calendarError} onRetry={reloadCalendar} compact className="mt-8" /> : <Skeleton className="mt-8" lines={3} />
       ) : (
         <>
           {calendar.conflicts.length > 0 && (
@@ -389,7 +392,7 @@ export default function ResourcePlanningPage() {
           <h2 className="mb-3 mt-10 text-sm font-semibold text-fg-muted">{t("workloadHeatmap")}</h2>
           <p className="mb-3 text-xs text-fg-subtle">{t("workloadHeatmapHint")}</p>
           {!heatmap ? (
-            <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+            heatmapError ? <ErrorState error={heatmapError} onRetry={reloadHeatmap} compact /> : <Skeleton lines={3} />
           ) : heatmap.length === 0 ? (
             <p className="text-sm text-fg-subtle">{t("noAssignments")}</p>
           ) : (

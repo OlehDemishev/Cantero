@@ -8,6 +8,8 @@ import { useApi } from "@/lib/use-api";
 import { PhotoAttachments } from "@/components/photo-attachments";
 import { useBulkSelection } from "@/components/bulk-select";
 import { formatDate } from "@/lib/format-date";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Worker {
   id: string;
@@ -58,7 +60,7 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
   const bulk = useBulkSelection();
 
   const [project, setProject] = useState<Project | null>(null);
-  const [claims, setClaims] = useState<WarrantyClaim[] | null>(null);
+  const { data: claims = null, error: claimsError, reload: reloadClaims } = useApi<WarrantyClaim[]>(`/warranty-claims?projectId=${projectId}`);
   const { data: workers = [] } = useApi<Worker[]>("/workers");
   const [warrantyForm, setWarrantyForm] = useState({ handoverDate: "", warrantyMonths: "" });
   const [creating, setCreating] = useState(false);
@@ -69,7 +71,7 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
   const [repairCost, setRepairCost] = useState("");
   const [busy, setBusy] = useState(false);
 
-  function load() {
+  function loadProject() {
     apiFetch<Project>(`/projects/${projectId}`).then((p) => {
       setProject(p);
       setWarrantyForm({
@@ -77,11 +79,16 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
         warrantyMonths: p.warrantyMonths?.toString() ?? "",
       });
     }).catch(notifyApiError);
-    apiFetch<WarrantyClaim[]>(`/warranty-claims?projectId=${projectId}`).then(setClaims);
+  }
+
+  /** After a change: the project's warranty terms and its claims. */
+  function load() {
+    loadProject();
+    void reloadClaims();
   }
 
   useEffect(() => {
-    load();
+    loadProject();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
@@ -282,7 +289,7 @@ export function WarrantyPanel({ projectId }: { projectId: string }) {
       )}
 
       {claims === null ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        claimsError ? <ErrorState error={claimsError} onRetry={reloadClaims} compact /> : <Skeleton lines={3} />
       ) : claims.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noClaims")}</p>
       ) : (

@@ -10,8 +10,10 @@ export interface UseApiOptions {
    * of an error (`stale` is then true). */
   cacheKey?: string;
   /** While a changed path (another filter, a search) loads, keep showing the previous path's data
-   * instead of none — for refining one list, not for switching to another record or project. */
-  keepPrevious?: boolean;
+   * instead of none — for refining one list, not for switching to another record or project. A
+   * string scopes it: the previous data is kept only if it was loaded under the same string (pass
+   * the project id, say, so a filter change keeps the rows but a project change doesn't). */
+  keepPrevious?: boolean | string;
 }
 
 export interface UseApiResult<T> {
@@ -111,9 +113,11 @@ interface State<T> {
   validating: boolean;
   stale: boolean;
   cachedAt: number | null;
+  /** The keepPrevious scope the data was loaded under. */
+  scope: string | null;
 }
 
-const EMPTY: State<never> = { key: null, data: undefined, error: null, validating: false, stale: false, cachedAt: null };
+const EMPTY: State<never> = { key: null, data: undefined, error: null, validating: false, stale: false, cachedAt: null, scope: null };
 
 /**
  * Loads a GET path for a component: `{ data, error, loading, reload, setData }`. Identical GETs from
@@ -125,18 +129,27 @@ const EMPTY: State<never> = { key: null, data: undefined, error: null, validatin
 export function useApi<T>(path: string | null, options: UseApiOptions = {}): UseApiResult<T> {
   const { cacheKey, keepPrevious = false } = options;
   const key = path === null ? null : requestKey(path, cacheKey);
+  const scope = keepPrevious === false ? null : keepPrevious === true ? "" : keepPrevious;
   const [state, setState] = useState<State<T>>(EMPTY);
   /** The key this component is showing right now (as of the last commit) and the reloads it has
    * pending, so answers for a key it has moved on from are dropped and its requests let go. */
-  const current = useRef<{ key: string | null; releases: Set<() => void> }>({ key: null, releases: new Set() });
+  const current = useRef<{ key: string | null; scope: string | null; releases: Set<() => void> }>({ key: null, scope: null, releases: new Set() });
 
   const accept = useCallback((forKey: string, answer: Answer<T>) => {
     if (current.current.key !== forKey) return;
-    setState({ key: forKey, data: answer.data, error: null, validating: false, stale: answer.stale, cachedAt: answer.cachedAt });
+    setState({
+      key: forKey,
+      data: answer.data,
+      error: null,
+      validating: false,
+      stale: answer.stale,
+      cachedAt: answer.cachedAt,
+      scope: current.current.scope,
+    });
   }, []);
 
   useEffect(() => {
-    const mine = { key, releases: new Set<() => void>() };
+    const mine = { key, scope, releases: new Set<() => void>() };
     current.current = mine;
     if (key === null || path === null) return;
     const listener = (answer: Answer<unknown>) => accept(key, answer as Answer<T>);
@@ -155,9 +168,9 @@ export function useApi<T>(path: string | null, options: UseApiOptions = {}): Use
       if (subscribers.size === 0) listeners.delete(key);
       mine.releases.forEach((r) => r());
       mine.releases.clear();
-      if (current.current === mine) current.current = { key: null, releases: new Set() };
+      if (current.current === mine) current.current = { key: null, scope: null, releases: new Set() };
     };
-  }, [key, path, cacheKey, accept]);
+  }, [key, path, cacheKey, scope, accept]);
 
   const reload = useCallback(async () => {
     if (key === null || path === null) return;
@@ -190,7 +203,7 @@ export function useApi<T>(path: string | null, options: UseApiOptions = {}): Use
 
   const own = state.key === key && key !== null;
   return {
-    data: own || (keepPrevious && key !== null) ? state.data : undefined,
+    data: own || (key !== null && scope !== null && state.scope === scope) ? state.data : undefined,
     error: own ? state.error : null,
     loading: key !== null && (!own || (state.data === undefined && state.error === null)),
     validating: own && state.validating,

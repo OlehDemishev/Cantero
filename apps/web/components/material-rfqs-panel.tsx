@@ -6,6 +6,9 @@ import type { MaterialRfqStatus } from "@cantero/shared";
 import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useApi } from "@/lib/use-api";
 
 interface MaterialCatalogItem {
   id: string;
@@ -59,7 +62,7 @@ export function MaterialRfqsPanel() {
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const [rfqs, setRfqs] = useState<RfqSummary[] | null>(null);
+  const { data: rfqs = null, error: rfqsError, reload: reloadRfqs } = useApi<RfqSummary[]>("/materials/rfqs");
   const [detail, setDetail] = useState<Rfq | null>(null);
   const [materials, setMaterials] = useState<MaterialCatalogItem[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -72,7 +75,7 @@ export function MaterialRfqsPanel() {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<RfqSummary[]>("/materials/rfqs").then(setRfqs);
+    void reloadRfqs();
   }
 
   function loadDetail(id: string) {
@@ -91,7 +94,6 @@ export function MaterialRfqsPanel() {
   }
 
   useEffect(() => {
-    load();
     apiFetch<MaterialCatalogItem[]>("/materials/catalog").then((items) => {
       setMaterials(items);
       setLines([{ materialCatalogItemId: items[0]?.id ?? "", quantity: "1" }]);
@@ -247,7 +249,7 @@ export function MaterialRfqsPanel() {
       )}
 
       {rfqs === null ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        rfqsError ? <ErrorState error={rfqsError} onRetry={reloadRfqs} compact /> : <Skeleton lines={3} />
       ) : rfqs.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noRfqs")}</p>
       ) : (

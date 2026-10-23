@@ -8,6 +8,9 @@ import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useApi } from "@/lib/use-api";
 
 interface Subcontractor {
   id: string;
@@ -55,8 +58,16 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
   const currency = me?.company.currency ?? "USD";
   const money = (amount: number | string) => formatCurrency(amount, currency);
 
-  const [backcharges, setBackcharges] = useState<Backcharge[] | null>(null);
-  const [notices, setNotices] = useState<DefaultNotice[] | null>(null);
+  const {
+    data: backcharges = null,
+    error: backchargesError,
+    reload: reloadBackcharges,
+  } = useApi<Backcharge[]>(`/projects/${projectId}/subcontractor-backcharges`);
+  const {
+    data: notices = null,
+    error: noticesError,
+    reload: reloadNotices,
+  } = useApi<DefaultNotice[]>(`/projects/${projectId}/subcontractor-default-notices`);
   const [subcontractors, setSubcontractors] = useState<Subcontractor[]>([]);
   const [warrantyClaims, setWarrantyClaims] = useState<WarrantyClaimOption[]>([]);
   const [creatingBackcharge, setCreatingBackcharge] = useState(false);
@@ -66,12 +77,11 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<Backcharge[]>(`/projects/${projectId}/subcontractor-backcharges`).then(setBackcharges);
-    apiFetch<DefaultNotice[]>(`/projects/${projectId}/subcontractor-default-notices`).then(setNotices);
+    void reloadBackcharges();
+    void reloadNotices();
   }
 
   useEffect(() => {
-    load();
     apiFetch<Subcontractor[]>("/finance/subcontractors").then((list) => {
       setSubcontractors(list);
       if (list[0]) {
@@ -80,7 +90,6 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
       }
     }).catch(notifyApiError);
     apiFetch<WarrantyClaimOption[]>(`/warranty-claims?projectId=${projectId}`).then(setWarrantyClaims).catch(notifyApiError);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
   async function submitBackcharge(e: React.FormEvent) {
@@ -214,7 +223,7 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
       )}
 
       {backcharges === null ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        backchargesError ? <ErrorState error={backchargesError} onRetry={reloadBackcharges} compact /> : <Skeleton lines={3} />
       ) : backcharges.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noBackcharges")}</p>
       ) : (
@@ -312,7 +321,7 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
       )}
 
       {notices === null ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        noticesError ? <ErrorState error={noticesError} onRetry={reloadNotices} compact /> : <Skeleton lines={3} />
       ) : notices.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noDefaultNotices")}</p>
       ) : (

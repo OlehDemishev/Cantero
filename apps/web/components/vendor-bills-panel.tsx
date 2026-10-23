@@ -8,6 +8,9 @@ import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatCurrency } from "@/lib/format-currency";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useApi } from "@/lib/use-api";
 
 interface Supplier {
   id: string;
@@ -92,9 +95,11 @@ export function VendorBillsPanel() {
   const tc = useTranslations("common");
   const { data: me } = useMe();
 
-  const [bills, setBills] = useState<VendorBill[] | null>(null);
-  const [aging, setAging] = useState<ApAgingReport | null>(null);
-  const [disbursementCalendar, setDisbursementCalendar] = useState<DisbursementCalendar | null>(null);
+  const { data: bills = null, error: billsError, reload: reloadBillList } = useApi<VendorBill[]>("/materials/vendor-bills");
+  const { data: aging = null, reload: reloadAging } = useApi<ApAgingReport>("/materials/vendor-bills/aging-report");
+  const { data: disbursementCalendar = null, reload: reloadDisbursementCalendar } = useApi<DisbursementCalendar>(
+    "/materials/vendor-bills/disbursement-calendar",
+  );
   const [scheduleDrafts, setScheduleDrafts] = useState<Record<string, string>>({});
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [orders, setOrders] = useState<PurchaseOrderSummary[]>([]);
@@ -107,13 +112,12 @@ export function VendorBillsPanel() {
   const [billSubmitting, setBillSubmitting] = useState(false);
 
   function loadBills() {
-    apiFetch<VendorBill[]>("/materials/vendor-bills").then(setBills);
-    apiFetch<ApAgingReport>("/materials/vendor-bills/aging-report").then(setAging).catch(notifyApiError);
-    apiFetch<DisbursementCalendar>("/materials/vendor-bills/disbursement-calendar").then(setDisbursementCalendar).catch(notifyApiError);
+    void reloadBillList();
+    void reloadAging();
+    void reloadDisbursementCalendar();
   }
 
   useEffect(() => {
-    loadBills();
     apiFetch<Supplier[]>("/materials/suppliers").then((s) => {
       setSuppliers(s);
       if (s[0]) setBillSupplierId(s[0].id);
@@ -299,7 +303,7 @@ export function VendorBillsPanel() {
 
         <div className="lg:col-span-2">
           {!bills ? (
-            <p className="text-fg-subtle">{tc("loading")}</p>
+            billsError ? <ErrorState error={billsError} onRetry={reloadBillList} compact /> : <Skeleton lines={3} />
           ) : bills.length === 0 ? (
             <p className="text-fg-subtle">{t("noVendorBills")}</p>
           ) : (

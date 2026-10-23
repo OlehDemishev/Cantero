@@ -6,6 +6,8 @@ import type { ApprenticeRatioViolation, CertifiedPayrollLine } from "@cantero/sh
 import { apiFetch, downloadBlob, notifyApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency, formatNumber } from "@/lib/format-currency";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Project {
   isPublicWork: boolean;
@@ -41,6 +43,7 @@ export function CertifiedPayrollPanel({ projectId }: { projectId: string }) {
   const [project, setProject] = useState<Project | null>(null);
   const [publicWorkForm, setPublicWorkForm] = useState({ isPublicWork: false, contractNumber: "" });
   const [reports, setReports] = useState<CertifiedPayrollReport[] | null>(null);
+  const [reportsError, setReportsError] = useState<Error | null>(null);
   const [weekEndingDate, setWeekEndingDate] = useState(todayIso());
   const [preview, setPreview] = useState<PreviewResult | null>(null);
   const [signerName, setSignerName] = useState("");
@@ -56,7 +59,12 @@ export function CertifiedPayrollPanel({ projectId }: { projectId: string }) {
   }
 
   function loadReports() {
-    apiFetch<CertifiedPayrollReport[]>(`/projects/${projectId}/certified-payroll`).then(setReports);
+    apiFetch<CertifiedPayrollReport[]>(`/projects/${projectId}/certified-payroll`)
+      .then((result) => {
+        setReportsError(null);
+        setReports(result);
+      })
+      .catch(setReportsError);
   }
 
   useEffect(loadProject, [projectId]);
@@ -265,7 +273,7 @@ export function CertifiedPayrollPanel({ projectId }: { projectId: string }) {
           )}
 
           {!reports ? (
-            <p className="text-fg-subtle">{tc("loading")}</p>
+            reportsError ? <ErrorState error={reportsError} onRetry={loadReports} compact /> : <Skeleton lines={3} />
           ) : reports.length === 0 ? (
             <p className="text-sm text-fg-subtle">{t("noReports")}</p>
           ) : (

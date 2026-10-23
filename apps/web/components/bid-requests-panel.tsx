@@ -90,6 +90,7 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<BidRequestDetail | null>(null);
   const [leveling, setLeveling] = useState<Leveling | null>(null);
+  const [levelingError, setLevelingError] = useState<Error | null>(null);
   const [showLeveling, setShowLeveling] = useState(false);
   const [criterionForm, setCriterionForm] = useState({ label: "", weight: "5" });
   const [creating, setCreating] = useState(false);
@@ -127,7 +128,12 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
       return;
     }
     setShowLeveling(true);
-    if (!leveling) apiFetch<Leveling>(`/bid-requests/${bidRequestId}/leveling`).then(setLeveling);
+    if (!leveling) loadLeveling(bidRequestId);
+  }
+
+  function loadLeveling(bidRequestId: string) {
+    setLevelingError(null);
+    apiFetch<Leveling>(`/bid-requests/${bidRequestId}/leveling`).then(setLeveling).catch(setLevelingError);
   }
 
   function toggleSub(id: string) {
@@ -539,7 +545,11 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                     {showLeveling && (
                       <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
                         {!leveling ? (
-                          <p className="text-xs text-fg-subtle">{tc("loading")}</p>
+                          levelingError ? (
+                            <ErrorState error={levelingError} onRetry={() => loadLeveling(r.id)} compact />
+                          ) : (
+                            <Skeleton lines={2} />
+                          )
                         ) : leveling.scopeItems.length === 0 ? (
                           <p className="text-xs text-fg-subtle">{t("noLevelingData")}</p>
                         ) : (

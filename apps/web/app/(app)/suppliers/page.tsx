@@ -69,35 +69,38 @@ export default function SuppliersPage() {
   const [scorecards, setScorecards] = useState<Record<string, Scorecard>>({});
   const [syncBusy, setSyncBusy] = useState(false);
   const [syncResult, setSyncResult] = useState<ImportResult | null>(null);
-  const [documents, setDocuments] = useState<SupplierDocument[] | null>(null);
-  const [reviews, setReviews] = useState<SupplierReview[] | null>(null);
+  // The open supplier's documents, reviews and orders.
+  const {
+    data: documents = null,
+    error: documentsError,
+    reload: reloadDocuments,
+  } = useApi<SupplierDocument[]>(expandedId ? `/materials/suppliers/${expandedId}/documents` : null);
+  const { data: reviews = null, reload: reloadReviews } = useApi<SupplierReview[]>(expandedId ? `/materials/suppliers/${expandedId}/reviews` : null);
   const [docForm, setDocForm] = useState({ type: "general_liability_insurance" as SupplierDocumentType, name: "", expiresAt: "" });
   const [reviewForm, setReviewForm] = useState({ rating: "5", wouldReorder: "", comments: "" });
   const [detailBusy, setDetailBusy] = useState(false);
-  const [purchaseOrders, setPurchaseOrders] = useState<SupplierPurchaseOrder[] | null>(null);
+  const {
+    data: purchaseOrders = null,
+    error: purchaseOrdersError,
+    reload: reloadPurchaseOrders,
+  } = useApi<SupplierPurchaseOrder[]>(expandedId ? `/materials/purchase-orders?supplierId=${expandedId}` : null);
 
-  function loadDetail(id: string) {
-    apiFetch<SupplierDocument[]>(`/materials/suppliers/${id}/documents`).then(setDocuments);
-    apiFetch<SupplierReview[]>(`/materials/suppliers/${id}/reviews`).then(setReviews).catch(notifyApiError);
-    apiFetch<SupplierPurchaseOrder[]>(`/materials/purchase-orders?supplierId=${id}`).then(setPurchaseOrders);
+  /** After a change to the open supplier's documents or reviews. */
+  function loadDetail() {
+    void reloadDocuments();
+    void reloadReviews();
+    void reloadPurchaseOrders();
   }
 
   function toggleExpand(id: string) {
     if (expandedId === id) {
       setExpandedId(null);
-      setDocuments(null);
-      setReviews(null);
-      setPurchaseOrders(null);
       return;
     }
     setExpandedId(id);
-    setDocuments(null);
-    setReviews(null);
-    setPurchaseOrders(null);
     if (!scorecards[id]) {
       apiFetch<Scorecard>(`/materials/suppliers/${id}/scorecard`).then((s) => setScorecards((prev) => ({ ...prev, [id]: s }))).catch(notifyApiError);
     }
-    loadDetail(id);
   }
 
   async function addDocument(e: React.FormEvent, supplierId: string) {
@@ -110,7 +113,7 @@ export default function SuppliersPage() {
         body: JSON.stringify({ type: docForm.type, name: docForm.name, expiresAt: new Date(docForm.expiresAt).toISOString() }),
       });
       setDocForm({ type: "general_liability_insurance", name: "", expiresAt: "" });
-      loadDetail(supplierId);
+      loadDetail();
     } finally {
       setDetailBusy(false);
     }
@@ -119,7 +122,7 @@ export default function SuppliersPage() {
   async function removeDocument(supplierId: string, documentId: string) {
     if (!(await confirm({ message: t("confirmDeleteDocument"), tone: "danger", verb: "delete" }))) return;
     await apiFetch(`/materials/suppliers/${supplierId}/documents/${documentId}`, { method: "DELETE" });
-    loadDetail(supplierId);
+    loadDetail();
   }
 
   async function addReview(e: React.FormEvent, supplierId: string) {
@@ -135,7 +138,7 @@ export default function SuppliersPage() {
         }),
       });
       setReviewForm({ rating: "5", wouldReorder: "", comments: "" });
-      loadDetail(supplierId);
+      loadDetail();
       setScorecards((prev) => {
         const next = { ...prev };
         delete next[supplierId];
@@ -311,7 +314,11 @@ export default function SuppliersPage() {
                             </Link>
                           </div>
                           {purchaseOrders === null ? (
-                            <p className="text-xs text-fg-subtle">{tc("loading")}</p>
+                            purchaseOrdersError ? (
+                              <ErrorState error={purchaseOrdersError} onRetry={reloadPurchaseOrders} compact />
+                            ) : (
+                              <Skeleton lines={2} />
+                            )
                           ) : purchaseOrders.length === 0 ? (
                             <p className="text-xs text-fg-subtle">{t("noPurchaseOrdersYet")}</p>
                           ) : (
@@ -333,7 +340,7 @@ export default function SuppliersPage() {
                         <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-3">
                           <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("coiDocuments")}</h3>
                           {documents === null ? (
-                            <p className="text-xs text-fg-subtle">{tc("loading")}</p>
+                            documentsError ? <ErrorState error={documentsError} onRetry={reloadDocuments} compact /> : <Skeleton lines={2} />
                           ) : documents.length === 0 ? (
                             <p className="text-xs text-fg-subtle">{t("noCoiDocuments")}</p>
                           ) : (

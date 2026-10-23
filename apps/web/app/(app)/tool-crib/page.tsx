@@ -8,6 +8,9 @@ import { CalibrationPanel } from "@/components/calibration-panel";
 import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useApi } from "@/lib/use-api";
 
 interface Worker {
   id: string;
@@ -34,7 +37,7 @@ export default function ToolCribPage() {
   const tc = useTranslations("common");
   const { data: me } = useMe();
 
-  const [items, setItems] = useState<ToolCribItem[] | null>(null);
+  const { data: items = null, error: itemsError, reload: reloadItems } = useApi<ToolCribItem[]>("/tool-crib/items");
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ name: "", barcode: "", replacementCost: "", parLevel: "", quantityOnHand: "" });
@@ -46,10 +49,9 @@ export default function ToolCribPage() {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<ToolCribItem[]>("/tool-crib/items").then(setItems);
+    void reloadItems();
   }
   useEffect(() => {
-    load();
     apiFetch<Worker[]>("/workers").then((w) => {
       setWorkers(w);
       if (w[0]) setCheckoutForm((f) => ({ ...f, workerId: w[0].id }));
@@ -180,7 +182,7 @@ export default function ToolCribPage() {
       )}
 
       {!items ? (
-        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
+        itemsError ? <ErrorState error={itemsError} onRetry={reloadItems} compact /> : <Skeleton lines={3} />
       ) : items.length === 0 ? (
         <p className="text-sm text-fg-subtle">{t("noItems")}</p>
       ) : (
