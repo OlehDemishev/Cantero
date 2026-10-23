@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface TaxRate {
   id: string;
@@ -21,17 +24,16 @@ interface TaxJurisdiction {
 
 export function TaxJurisdictionsPanel() {
   const t = useTranslations("tax");
-  const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
-  const [jurisdictions, setJurisdictions] = useState<TaxJurisdiction[] | null>(null);
+  const { data: jurisdictions = null, reload: reloadJurisdictions, error: jurisdictionsError } = useApi<TaxJurisdiction[]>("/tax/jurisdictions");
   const [form, setForm] = useState({ name: "", country: "", region: "" });
   const [rateForms, setRateForms] = useState<Record<string, { ratePercent: string; effectiveFrom: string }>>({});
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<TaxJurisdiction[]>("/tax/jurisdictions").then(setJurisdictions);
+    void reloadJurisdictions();
   }
-  useEffect(load, []);
 
   async function createJurisdiction(e: React.FormEvent) {
     e.preventDefault();
@@ -67,13 +69,13 @@ export function TaxJurisdictionsPanel() {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("jurisdictionsTitle")}</h2>
-      <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">{t("jurisdictionsHint")}</p>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("jurisdictionsTitle")}</h2>
+      <p className="mb-4 text-sm text-fg-subtle">{t("jurisdictionsHint")}</p>
 
       <form onSubmit={createJurisdiction} className="mb-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
         <input
           required
-          placeholder={t("jurisdictionNamePlaceholder")}
+          placeholder={t("jurisdictionNamePlaceholder")} aria-label={t("jurisdictionNamePlaceholder")}
           className="input"
           value={form.name}
           onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -81,13 +83,13 @@ export function TaxJurisdictionsPanel() {
         <input
           required
           maxLength={2}
-          placeholder={t("countryPlaceholder")}
+          placeholder={t("countryPlaceholder")} aria-label={t("countryPlaceholder")}
           className="input w-24"
           value={form.country}
           onChange={(e) => setForm((f) => ({ ...f, country: e.target.value }))}
         />
         <input
-          placeholder={t("regionPlaceholder")}
+          placeholder={t("regionPlaceholder")} aria-label={t("regionPlaceholder")}
           className="input"
           value={form.region}
           onChange={(e) => setForm((f) => ({ ...f, region: e.target.value }))}
@@ -98,9 +100,9 @@ export function TaxJurisdictionsPanel() {
       </form>
 
       {jurisdictions === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        jurisdictionsError ? <ErrorState error={jurisdictionsError} onRetry={reloadJurisdictions} compact /> : <Skeleton lines={3} />
       ) : jurisdictions.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noJurisdictions")}</p>
+        <p className="text-sm text-fg-subtle">{t("noJurisdictions")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {jurisdictions.map((j) => {
@@ -108,10 +110,10 @@ export function TaxJurisdictionsPanel() {
             return (
               <li key={j.id} className="card">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium text-gray-900 dark:text-gray-50">
-                    {j.name} <span className="text-xs text-gray-400 dark:text-gray-500">({j.region ? `${j.region}, ` : ""}{j.country})</span>
+                  <span className="font-medium text-fg">
+                    {j.name} <span className="text-xs text-fg-subtle">({j.region ? `${j.region}, ` : ""}{j.country})</span>
                   </span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">{currentRate ? `${currentRate.ratePercent}%` : t("noRateSet")}</span>
+                  <span className="text-xs text-fg-subtle">{currentRate ? `${currentRate.ratePercent}%` : t("noRateSet")}</span>
                 </div>
                 <div className="mt-2 flex flex-wrap items-end gap-2">
                   <input
@@ -119,12 +121,12 @@ export function TaxJurisdictionsPanel() {
                     step="0.001"
                     min="0"
                     max="100"
-                    placeholder={t("ratePercentPlaceholder")}
+                    placeholder={t("ratePercentPlaceholder")} aria-label={t("ratePercentPlaceholder")}
                     className="input w-28"
                     value={rateForms[j.id]?.ratePercent ?? ""}
                     onChange={(e) => setRateForms((f) => ({ ...f, [j.id]: { ratePercent: e.target.value, effectiveFrom: f[j.id]?.effectiveFrom ?? "" } }))}
                   />
-                  <input
+                  <input aria-label={ta("effectiveFrom")}
                     type="date"
                     className="input w-auto"
                     value={rateForms[j.id]?.effectiveFrom ?? ""}

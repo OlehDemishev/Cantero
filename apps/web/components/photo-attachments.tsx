@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, apiUpload } from "@/lib/api-client";
+import { apiFetch, apiUpload, notifyApiError } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { Dialog } from "@/components/ui/dialog";
 
 type AttachmentParam = "punchListItemId" | "dailyLogId" | "incidentReportId" | "warrantyClaimId" | "deficiencyId" | "rfiId";
 
@@ -13,7 +15,13 @@ interface DocumentSummary {
   category: string;
 }
 
-const MARKUP_COLORS = ["#dc2626", "#f59e0b", "#16a34a", "#2563eb", "#000000"];
+const MARKUP_COLORS = [
+  { value: "#dc2626", name: "red" },
+  { value: "#f59e0b", name: "amber" },
+  { value: "#16a34a", name: "green" },
+  { value: "#2563eb", name: "blue" },
+  { value: "#000000", name: "black" },
+] as const;
 
 /** Reusable photo strip for the field modules — punch list items, daily logs, incidents, warranty
  * claims, QC deficiencies, RFIs — all attach through the same Document model via one of these id params.
@@ -33,7 +41,7 @@ export function PhotoAttachments({
 }) {
   const t = useTranslations("photos");
 
-  const [docs, setDocs] = useState<DocumentSummary[] | null>(null);
+  const { data: docs = null, reload: reloadDocs } = useApi<DocumentSummary[]>(`/documents?${param}=${entityId}`);
   const [previews, setPreviews] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [viewingId, setViewingId] = useState<string | null>(null);
@@ -42,13 +50,8 @@ export function PhotoAttachments({
   const objectUrlsRef = useRef<string[]>([]);
 
   function load() {
-    apiFetch<DocumentSummary[]>(`/documents?${param}=${entityId}`).then(setDocs);
+    void reloadDocs();
   }
-
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entityId]);
 
   useEffect(() => {
     if (!docs) return;
@@ -65,12 +68,11 @@ export function PhotoAttachments({
       const next = Object.fromEntries(pairs);
       setPreviews(next);
       objectUrlsRef.current = Object.values(next);
-    });
+    }).catch(notifyApiError);
     return () => {
       cancelled = true;
       objectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
     };
-     
   }, [docs]);
 
   function triggerUpload(category: "gallery_before" | "gallery_after" | "photo") {
@@ -119,7 +121,7 @@ export function PhotoAttachments({
               // eslint-disable-next-line @next/next/no-img-element
               <img src={previews[d.id]} alt={d.name} className="h-full w-full object-cover" />
             ) : (
-              <span className="flex h-full w-full items-center justify-center text-[10px] text-gray-400 dark:text-gray-500">…</span>
+              <span className="flex h-full w-full items-center justify-center text-2xs text-fg-subtle">…</span>
             )}
           </button>
         ))}
@@ -134,7 +136,7 @@ export function PhotoAttachments({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
-        <span className="text-xs font-medium text-gray-700 dark:text-gray-200">{t("title")}</span>
+        <span className="text-xs font-medium text-fg-muted">{t("title")}</span>
         {beforeAfter ? (
           <>
             <button type="button" onClick={() => triggerUpload("gallery_before")} disabled={busy} className="btn-secondary px-2 py-0.5 text-xs">
@@ -152,20 +154,20 @@ export function PhotoAttachments({
         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
       </div>
       {docs === null ? null : docs.length === 0 ? (
-        <p className="text-xs text-gray-400 dark:text-gray-500">{t("noPhotos")}</p>
+        <p className="text-xs text-fg-subtle">{t("noPhotos")}</p>
       ) : beforeAfter ? (
         <div className="flex flex-wrap gap-4">
           <div className="flex flex-col gap-1.5">
-            <span className="text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{t("before")}</span>
-            {beforeDocs.length === 0 ? <p className="text-xs text-gray-400 dark:text-gray-500">{t("noPhotos")}</p> : renderGrid(beforeDocs)}
+            <span className="text-xs font-medium uppercase tracking-wide text-fg-subtle">{t("before")}</span>
+            {beforeDocs.length === 0 ? <p className="text-xs text-fg-subtle">{t("noPhotos")}</p> : renderGrid(beforeDocs)}
           </div>
           <div className="flex flex-col gap-1.5">
-            <span className="text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{t("after")}</span>
-            {afterDocs.length === 0 ? <p className="text-xs text-gray-400 dark:text-gray-500">{t("noPhotos")}</p> : renderGrid(afterDocs)}
+            <span className="text-xs font-medium uppercase tracking-wide text-fg-subtle">{t("after")}</span>
+            {afterDocs.length === 0 ? <p className="text-xs text-fg-subtle">{t("noPhotos")}</p> : renderGrid(afterDocs)}
           </div>
           {otherDocs.length > 0 && (
             <div className="flex flex-col gap-1.5">
-              <span className="text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{t("title")}</span>
+              <span className="text-xs font-medium uppercase tracking-wide text-fg-subtle">{t("title")}</span>
               {renderGrid(otherDocs)}
             </div>
           )}
@@ -177,6 +179,7 @@ export function PhotoAttachments({
       {viewingDoc && previews[viewingDoc.id] && (
         <PhotoMarkupModal
           imageUrl={previews[viewingDoc.id]}
+          name={viewingDoc.name}
           busy={busy}
           onClose={() => setViewingId(null)}
           onSave={(blob) => saveMarkup(viewingDoc.id, blob)}
@@ -188,21 +191,24 @@ export function PhotoAttachments({
 
 function PhotoMarkupModal({
   imageUrl,
+  name,
   busy,
   onClose,
   onSave,
 }: {
   imageUrl: string;
+  name: string;
   busy: boolean;
   onClose: () => void;
   onSave: (blob: Blob) => void;
 }) {
   const t = useTranslations("photos");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const drawingRef = useRef(false);
-  const [color, setColor] = useState(MARKUP_COLORS[0]);
+  const [color, setColor] = useState<string>(MARKUP_COLORS[0].value);
   const [annotating, setAnnotating] = useState(false);
   const [hasMarks, setHasMarks] = useState(false);
 
@@ -273,11 +279,11 @@ function PhotoMarkupModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
-      <div className="max-h-full max-w-3xl overflow-auto rounded-lg bg-white dark:bg-gray-800 p-3" onClick={(e) => e.stopPropagation()}>
+    <Dialog open onClose={onClose} title={name} hideTitle dismissible={!busy} panelClassName="max-h-full max-w-3xl overflow-auto p-3">
+      <div>
         <div className="relative inline-block">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img ref={imgRef} src={imageUrl} alt="" className="max-h-[70vh] max-w-full" onLoad={setupCanvas} />
+          <img ref={imgRef} src={imageUrl} alt={name} className="max-h-[70vh] max-w-full" onLoad={setupCanvas} />
           <canvas
             ref={canvasRef}
             className={`absolute inset-0 h-full w-full ${annotating ? "cursor-crosshair" : "pointer-events-none"}`}
@@ -290,14 +296,20 @@ function PhotoMarkupModal({
         <div className="mt-3 flex flex-wrap items-center gap-2">
           {annotating ? (
             <>
+              {/* Named and marked when picked (ring + dot), not told apart by colour alone. */}
               {MARKUP_COLORS.map((c) => (
                 <button
-                  key={c}
+                  key={c.value}
                   type="button"
-                  onClick={() => setColor(c)}
-                  className={`h-5 w-5 rounded-full border-2 ${color === c ? "border-gray-900" : "border-transparent"}`}
-                  style={{ backgroundColor: c }}
-                />
+                  onClick={() => setColor(c.value)}
+                  aria-label={ta(`color_${c.name}`)}
+                  aria-pressed={color === c.value}
+                  title={ta(`color_${c.name}`)}
+                  className={`flex h-6 w-6 items-center justify-center rounded-full ring-offset-2 ring-offset-surface ${color === c.value ? "ring-2 ring-fg" : ""}`}
+                  style={{ backgroundColor: c.value }}
+                >
+                  {color === c.value && <span aria-hidden="true" className="h-2 w-2 rounded-full bg-white" />}
+                </button>
               ))}
               <button type="button" onClick={clearMarkup} className="btn-secondary px-2 py-1 text-xs">
                 {t("clearMarkup")}
@@ -324,6 +336,6 @@ function PhotoMarkupModal({
           )}
         </div>
       </div>
-    </div>
+    </Dialog>
   );
 }

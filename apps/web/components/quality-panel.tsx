@@ -1,11 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { DEFICIENCY_SEVERITIES, INSPECTION_ITEM_RESULTS, type DeficiencySeverity, type InspectionItemResult } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { PhotoAttachments } from "@/components/photo-attachments";
 import { formatDate } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface Worker {
   id: string;
@@ -50,33 +55,18 @@ interface HeatmapBucket {
   critical: number;
 }
 
-const STATUS_STYLES: Record<Checklist["status"], string> = {
-  open: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  passed: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
-  failed: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
-};
-const SEVERITY_STYLES: Record<DeficiencySeverity, string> = {
-  minor: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  major: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
-  critical: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
-};
-const DEFICIENCY_STATUS_STYLES: Record<Deficiency["status"], string> = {
-  open: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
-  resolved: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
-  verified: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
-};
-
 const EMPTY_CHECKLIST_FORM = { name: "", trade: "", phase: "", templateId: "", inspectorWorkerId: "", adHocItems: "" };
 
 export function QualityPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("quality");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
-  const [checklists, setChecklists] = useState<Checklist[] | null>(null);
-  const [deficiencies, setDeficiencies] = useState<Deficiency[] | null>(null);
-  const [heatmap, setHeatmap] = useState<HeatmapBucket[] | null>(null);
-  const [templates, setTemplates] = useState<InspectionTemplate[]>([]);
-  const [workers, setWorkers] = useState<Worker[]>([]);
+  const { data: checklists = null, reload: reloadChecklists, error: checklistsError } = useApi<Checklist[]>(`/inspection-checklists?projectId=${projectId}`);
+  const { data: deficiencies = null, reload: reloadDeficiencies, error: deficienciesError } = useApi<Deficiency[]>(`/deficiencies?projectId=${projectId}`);
+  const { data: heatmap = null, reload: reloadHeatmap } = useApi<HeatmapBucket[]>(`/deficiencies/heat-map?projectId=${projectId}`);
+  const { data: templates = [] } = useApi<InspectionTemplate[]>("/inspection-templates");
+  const { data: workers = [] } = useApi<Worker[]>("/workers");
   const [creating, setCreating] = useState(false);
   const [checklistForm, setChecklistForm] = useState(EMPTY_CHECKLIST_FORM);
   const [deficiencyDraft, setDeficiencyDraft] = useState<{ checklistId: string; itemId: string } | null>(null);
@@ -90,17 +80,10 @@ export function QualityPanel({ projectId }: { projectId: string }) {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<Checklist[]>(`/inspection-checklists?projectId=${projectId}`).then(setChecklists);
-    apiFetch<Deficiency[]>(`/deficiencies?projectId=${projectId}`).then(setDeficiencies);
-    apiFetch<HeatmapBucket[]>(`/deficiencies/heat-map?projectId=${projectId}`).then(setHeatmap);
+    void reloadChecklists();
+    void reloadDeficiencies();
+    void reloadHeatmap();
   }
-
-  useEffect(() => {
-    load();
-    apiFetch<InspectionTemplate[]>("/inspection-templates").then(setTemplates);
-    apiFetch<Worker[]>("/workers").then(setWorkers);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
 
   async function createChecklist(e: React.FormEvent) {
     e.preventDefault();
@@ -179,10 +162,10 @@ export function QualityPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("title")}</h2>
 
       <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("inspections")}</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("inspections")}</h3>
         {!creating && (
           <button onClick={() => setCreating(true)} className="btn-secondary px-3 py-1 text-xs">
             {t("newInspection")}
@@ -195,12 +178,12 @@ export function QualityPanel({ projectId }: { projectId: string }) {
           <div className="flex flex-wrap gap-3">
             <input
               required
-              placeholder={tc("name")}
+              placeholder={tc("name")} aria-label={tc("name")}
               className="input"
               value={checklistForm.name}
               onChange={(e) => setChecklistForm((f) => ({ ...f, name: e.target.value }))}
             />
-            <select
+            <select aria-label={ta("template")}
               className="input"
               value={checklistForm.templateId}
               onChange={(e) => setChecklistForm((f) => ({ ...f, templateId: e.target.value }))}
@@ -215,19 +198,19 @@ export function QualityPanel({ projectId }: { projectId: string }) {
             {!checklistForm.templateId && (
               <input
                 required
-                placeholder={t("trade")}
+                placeholder={t("trade")} aria-label={t("trade")}
                 className="input"
                 value={checklistForm.trade}
                 onChange={(e) => setChecklistForm((f) => ({ ...f, trade: e.target.value }))}
               />
             )}
             <input
-              placeholder={t("phase")}
+              placeholder={t("phase")} aria-label={t("phase")}
               className="input"
               value={checklistForm.phase}
               onChange={(e) => setChecklistForm((f) => ({ ...f, phase: e.target.value }))}
             />
-            <select
+            <select aria-label={t("inspector")}
               className="input"
               value={checklistForm.inspectorWorkerId}
               onChange={(e) => setChecklistForm((f) => ({ ...f, inspectorWorkerId: e.target.value }))}
@@ -245,7 +228,7 @@ export function QualityPanel({ projectId }: { projectId: string }) {
               required
               rows={3}
               className="input"
-              placeholder={t("adHocItemsPlaceholder")}
+              placeholder={t("adHocItemsPlaceholder")} aria-label={t("adHocItemsPlaceholder")}
               value={checklistForm.adHocItems}
               onChange={(e) => setChecklistForm((f) => ({ ...f, adHocItems: e.target.value }))}
             />
@@ -262,29 +245,29 @@ export function QualityPanel({ projectId }: { projectId: string }) {
       )}
 
       {checklists === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        checklistsError ? <ErrorState error={checklistsError} onRetry={reloadChecklists} compact /> : <Skeleton lines={3} />
       ) : checklists.length === 0 ? (
-        <p className="mb-6 text-sm text-gray-400 dark:text-gray-500">{t("noInspections")}</p>
+        <p className="mb-6 text-sm text-fg-subtle">{t("noInspections")}</p>
       ) : (
         <ul className="mb-6 flex flex-col gap-3">
           {checklists.map((cl) => (
             <li key={cl.id} className="card">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{cl.name}</span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">
+                <span className="text-sm font-medium text-fg">{cl.name}</span>
+                <span className="text-xs text-fg-subtle">
                   {cl.trade}
                   {cl.phase ? ` · ${cl.phase}` : ""}
                 </span>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[cl.status]}`}>{t(`status_${cl.status}`)}</span>
+                <Badge tone={statusTone(cl.status)}>{t(`status_${cl.status}`)}</Badge>
               </div>
-              {cl.inspector && <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{t("inspectorLabel", { name: cl.inspector.name })}</p>}
+              {cl.inspector && <p className="mt-1 text-xs text-fg-subtle">{t("inspectorLabel", { name: cl.inspector.name })}</p>}
 
               <ul className="mt-2 flex flex-col gap-1.5">
                 {cl.items.map((item) => (
                   <li key={item.id} className="flex flex-wrap items-center gap-2 text-sm">
                     <span className="flex-1">{item.description}</span>
                     {cl.status === "open" ? (
-                      <select
+                      <select aria-label={ta("fieldOf", { field: ta("result"), item: item.description })}
                         className="input w-auto py-0.5 text-xs"
                         value={item.result}
                         onChange={(e) => recordResult(cl.id, item.id, e.target.value as InspectionItemResult)}
@@ -296,10 +279,10 @@ export function QualityPanel({ projectId }: { projectId: string }) {
                         ))}
                       </select>
                     ) : (
-                      <span className="text-xs text-gray-500 dark:text-gray-400">{t(`result_${item.result}`)}</span>
+                      <span className="text-xs text-fg-subtle">{t(`result_${item.result}`)}</span>
                     )}
                     {item.result === "fail" && cl.status === "open" && (
-                      <button onClick={() => startDeficiency(cl.id, item)} className="text-xs text-error-700 dark:text-error-500 hover:underline">
+                      <button onClick={() => startDeficiency(cl.id, item)} className="text-xs text-danger-fg hover:underline">
                         {t("raiseDeficiency")}
                       </button>
                     )}
@@ -309,14 +292,14 @@ export function QualityPanel({ projectId }: { projectId: string }) {
 
               {deficiencyDraft?.checklistId === cl.id && (
                 <div className="mt-2 flex flex-col gap-1.5 border-t border-gray-100 dark:border-gray-700 pt-2">
-                  <textarea
+                  <textarea aria-label={tc("description")}
                     rows={2}
                     className="input text-xs"
                     value={deficiencyForm.description}
                     onChange={(e) => setDeficiencyForm((f) => ({ ...f, description: e.target.value }))}
                   />
                   <div className="flex flex-wrap gap-1.5">
-                    <select
+                    <select aria-label={ta("severity")}
                       className="input w-auto py-0.5 text-xs"
                       value={deficiencyForm.severity}
                       onChange={(e) => setDeficiencyForm((f) => ({ ...f, severity: e.target.value as DeficiencySeverity }))}
@@ -327,7 +310,7 @@ export function QualityPanel({ projectId }: { projectId: string }) {
                         </option>
                       ))}
                     </select>
-                    <select
+                    <select aria-label={t("assignee")}
                       className="input w-auto py-0.5 text-xs"
                       value={deficiencyForm.assigneeWorkerId}
                       onChange={(e) => setDeficiencyForm((f) => ({ ...f, assigneeWorkerId: e.target.value }))}
@@ -339,14 +322,14 @@ export function QualityPanel({ projectId }: { projectId: string }) {
                         </option>
                       ))}
                     </select>
-                    <input
+                    <input aria-label={ta("dueDate")}
                       type="date"
                       className="input w-auto py-0.5 text-xs"
                       value={deficiencyForm.dueDate}
                       onChange={(e) => setDeficiencyForm((f) => ({ ...f, dueDate: e.target.value }))}
                     />
                     <input
-                      placeholder={t("locationPlaceholder")}
+                      placeholder={t("locationPlaceholder")} aria-label={t("locationPlaceholder")}
                       className="input w-auto py-0.5 text-xs"
                       value={deficiencyForm.location}
                       onChange={(e) => setDeficiencyForm((f) => ({ ...f, location: e.target.value }))}
@@ -373,26 +356,26 @@ export function QualityPanel({ projectId }: { projectId: string }) {
 
       {heatmap && heatmap.length > 0 && (
         <div className="mb-6">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("heatmapTitle")}</h3>
-          <div className="card overflow-x-auto">
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("heatmapTitle")}</h3>
+          <div tabIndex={0} className="card overflow-x-auto">
             <table className="w-full min-w-[420px] border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-xs text-gray-500 dark:text-gray-400">
-                  <th className="py-1">{t("location")}</th>
-                  <th className="text-right">{t("severity_minor")}</th>
-                  <th className="text-right">{t("severity_major")}</th>
-                  <th className="text-right">{t("severity_critical")}</th>
-                  <th className="text-right">{t("total")}</th>
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-xs text-fg-subtle">
+                  <th scope="col" className="py-1">{t("location")}</th>
+                  <th scope="col" className="text-right">{t("severity_minor")}</th>
+                  <th scope="col" className="text-right">{t("severity_major")}</th>
+                  <th scope="col" className="text-right">{t("severity_critical")}</th>
+                  <th scope="col" className="text-right">{t("total")}</th>
                 </tr>
               </thead>
               <tbody>
                 {heatmap.map((row) => (
                   <tr key={row.location} className="border-b border-gray-100 dark:border-gray-700">
                     <td className="py-1.5">{row.location}</td>
-                    <td className="text-right tabular-nums text-gray-500 dark:text-gray-400">{row.minor}</td>
-                    <td className="text-right tabular-nums text-warning-700 dark:text-warning-500">{row.major}</td>
-                    <td className="text-right tabular-nums text-error-600">{row.critical}</td>
-                    <td className="text-right font-semibold tabular-nums text-gray-900 dark:text-gray-50">{row.total}</td>
+                    <td className="text-right tabular-nums text-fg-subtle">{row.minor}</td>
+                    <td className="text-right tabular-nums text-warning-fg">{row.major}</td>
+                    <td className="text-right tabular-nums text-danger-fg">{row.critical}</td>
+                    <td className="text-right font-semibold tabular-nums text-fg">{row.total}</td>
                   </tr>
                 ))}
               </tbody>
@@ -401,23 +384,23 @@ export function QualityPanel({ projectId }: { projectId: string }) {
         </div>
       )}
 
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("deficiencies")}</h3>
+      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("deficiencies")}</h3>
       {deficiencies === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        deficienciesError ? <ErrorState error={deficienciesError} onRetry={reloadDeficiencies} compact /> : <Skeleton lines={3} />
       ) : deficiencies.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noDeficiencies")}</p>
+        <p className="text-sm text-fg-subtle">{t("noDeficiencies")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {deficiencies.map((d) => (
             <li key={d.id} className="card">
               <div className="flex items-center gap-2">
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${SEVERITY_STYLES[d.severity]}`}>{t(`severity_${d.severity}`)}</span>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${DEFICIENCY_STATUS_STYLES[d.status]}`}>{t(`deficiencyStatus_${d.status}`)}</span>
-                {d.dueDate && <span className="text-xs text-gray-500 dark:text-gray-400">{formatDate(new Date(d.dueDate))}</span>}
-                {d.location && <span className="text-xs text-gray-500 dark:text-gray-400">{d.location}</span>}
+                <Badge tone={statusTone(d.severity)}>{t(`severity_${d.severity}`)}</Badge>
+                <Badge tone={statusTone(d.status, "deficiency")}>{t(`deficiencyStatus_${d.status}`)}</Badge>
+                {d.dueDate && <span className="text-xs text-fg-subtle">{formatDate(new Date(d.dueDate))}</span>}
+                {d.location && <span className="text-xs text-fg-subtle">{d.location}</span>}
               </div>
-              <p className="mt-1.5 text-sm text-gray-900 dark:text-gray-50">{d.description}</p>
-              {d.assignee && <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{t("assignedTo", { name: d.assignee.name })}</p>}
+              <p className="mt-1.5 text-sm text-fg">{d.description}</p>
+              {d.assignee && <p className="mt-1 text-xs text-fg-subtle">{t("assignedTo", { name: d.assignee.name })}</p>}
               <div className="mt-2">
                 <PhotoAttachments param="deficiencyId" entityId={d.id} />
               </div>
@@ -433,7 +416,7 @@ export function QualityPanel({ projectId }: { projectId: string }) {
                   </button>
                 )}
                 {d.status !== "open" && (
-                  <button onClick={() => transitionDeficiency(d.id, "reopen")} className="text-xs text-gray-400 dark:text-gray-500 hover:text-error-600">
+                  <button onClick={() => transitionDeficiency(d.id, "reopen")} className="text-xs text-fg-subtle hover:text-danger-fg">
                     {t("reopen")}
                   </button>
                 )}

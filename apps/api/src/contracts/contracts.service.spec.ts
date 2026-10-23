@@ -112,19 +112,20 @@ describe("ContractsService", () => {
 
     it("generates a signing token and emails the client when one is on file", async () => {
       prisma.contract.findFirst.mockResolvedValue({ id: "c1", companyId: COMPANY_A, status: "draft", title: "MSA" });
-      prisma.contract.update.mockResolvedValue({
-        id: "c1",
-        clientAccessToken: "tok-abc",
-        client: { email: "client@example.com" },
-      });
+      // The update's result doesn't carry the token (GLOBAL_OMIT), so the link must use the one generated.
+      prisma.contract.update.mockResolvedValue({ id: "c1", client: { email: "client@example.com" } });
       prisma.company.findUniqueOrThrow.mockResolvedValue({ name: "Acme" });
 
-      await service.send(COMPANY_A, ACTOR, "c1");
+      const result = await service.send(COMPANY_A, ACTOR, "c1");
 
       expect(prisma.contract.update).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ status: "sent" }) }),
       );
+      const token = prisma.contract.update.mock.calls[0][0].data.clientAccessToken as string;
+      expect(token).toMatch(/^[0-9a-f]{48}$/);
       expect(mail.send).toHaveBeenCalledWith(expect.objectContaining({ to: "client@example.com" }));
+      expect(mail.send.mock.calls[0][0].text).toContain(`/contract/${token}`);
+      expect(result).not.toHaveProperty("clientAccessToken");
     });
 
     it("skips the email when the contract has no client with an address on file", async () => {
@@ -134,6 +135,22 @@ describe("ContractsService", () => {
       await service.send(COMPANY_A, ACTOR, "c1");
 
       expect(mail.send).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("clientLink()", () => {
+    it("reads only the token, scoped to the company", async () => {
+      prisma.contract.findFirst.mockResolvedValue({ clientAccessToken: "tok-abc" });
+
+      await expect(service.clientLink(COMPANY_A, "c1")).resolves.toEqual({ token: "tok-abc" });
+      expect(prisma.contract.findFirst).toHaveBeenCalledWith({ where: { id: "c1", companyId: COMPANY_A }, select: { clientAccessToken: true } });
+    });
+
+    it("404s for another company's contract and 400s before it was sent", async () => {
+      prisma.contract.findFirst.mockResolvedValueOnce(null).mockResolvedValueOnce({ clientAccessToken: null });
+
+      await expect(service.clientLink(COMPANY_A, "c1")).rejects.toThrow(NotFoundException);
+      await expect(service.clientLink(COMPANY_A, "c1")).rejects.toThrow(BadRequestException);
     });
   });
 

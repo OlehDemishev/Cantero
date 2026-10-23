@@ -1,3 +1,4 @@
+import { randomInt } from "node:crypto";
 import { BadRequestException, Injectable, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { authenticator } from "otplib";
@@ -18,8 +19,9 @@ const BCRYPT_ROUNDS = 10;
 const VERIFY_LIMIT = 8;
 const VERIFY_WINDOW_MS = 15 * 60 * 1000;
 
-function randomBackupCode(): string {
-  return Array.from({ length: 10 }, () => Math.floor(Math.random() * 36).toString(36)).join("").toUpperCase();
+/** Ten base-36 characters from the CSPRNG (~51 bits) — Math.random() is predictable. */
+export function randomBackupCode(): string {
+  return Array.from({ length: 10 }, () => randomInt(36).toString(36)).join("").toUpperCase();
 }
 
 @Injectable()

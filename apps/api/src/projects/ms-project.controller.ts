@@ -30,7 +30,7 @@ export class MsProjectController {
   @Get("company/ms-project/authorize-url")
   authorizeUrl(@CurrentUser() user: AuthUser, @Query() query: AuthorizeMsProjectDto) {
     if (!query.environmentUrl) throw new BadRequestException("environmentUrl is required");
-    return { url: this.service.getAuthorizeUrl(user.companyId, query.environmentUrl) };
+    return { url: this.service.getAuthorizeUrl(user, query.environmentUrl) };
   }
 
   @Requires("settings.integrations")

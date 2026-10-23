@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
+import { formatCurrency } from "@/lib/format-currency";
+import { Alert } from "@/components/ui/alert";
+import { Field } from "@/components/ui/field";
 
 interface Plan {
   id: string;
@@ -22,6 +25,7 @@ interface Member {
 
 export function BillingPlanPanel({ isManager }: { isManager: boolean }) {
   const t = useTranslations("settings");
+  const tl = useTranslations("labels");
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [memberCount, setMemberCount] = useState<number | null>(null);
@@ -33,9 +37,9 @@ export function BillingPlanPanel({ isManager }: { isManager: boolean }) {
     apiFetch<Subscription>("/billing/subscription").then((s) => {
       setSubscription(s);
       setSeatsInput(String(s.seats));
-    });
-    apiFetch<Plan[]>("/billing/plans").then(setPlans);
-    apiFetch<Member[]>("/company/members").then((list) => setMemberCount(list.length));
+    }).catch(notifyApiError);
+    apiFetch<Plan[]>("/billing/plans").then(setPlans).catch(notifyApiError);
+    apiFetch<Member[]>("/company/members").then((list) => setMemberCount(list.length)).catch(notifyApiError);
   }
 
   useEffect(load, []);
@@ -81,8 +85,8 @@ export function BillingPlanPanel({ isManager }: { isManager: boolean }) {
 
   return (
     <section id="billing" className="card">
-      <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("plan")}</h2>
-      {error && <p className="mb-3 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{error}</p>}
+      <h2 className="mb-4 text-sm font-semibold text-fg-muted">{t("plan")}</h2>
+      {error && <Alert tone="danger" className="mb-3">{error}</Alert>}
       <div className="flex flex-col gap-2">
         {plans.map((plan) => {
           const isCurrent = subscription?.plan.code === plan.code;
@@ -95,8 +99,8 @@ export function BillingPlanPanel({ isManager }: { isManager: boolean }) {
                 <div className="text-sm font-medium">
                   {plan.name} {isCurrent && `· ${t("currentPlan")}`}
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
-                  {plan.pricePerSeat} {plan.currency} / seat / mo
+                <div className="text-xs text-fg-subtle">
+                  {tl("perSeatPerMonth", { amount: formatCurrency(plan.pricePerSeat, plan.currency) })}
                 </div>
               </div>
               {isManager && !isCurrent && (
@@ -110,23 +114,22 @@ export function BillingPlanPanel({ isManager }: { isManager: boolean }) {
       </div>
 
       {subscription && memberCount !== null && (
-        <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+        <p className="mt-3 text-xs text-fg-subtle">
           {t("seatsUsed", { used: memberCount, total: subscription.seats })}
         </p>
       )}
 
       {isManager && (
         <form onSubmit={updateSeats} className="mt-4 flex items-end gap-2">
-          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-            {t("seats")}
+          <Field label={t("seats")} size="sm">
             <input
               type="number"
               min="1"
-              className="input mt-1 w-24"
+              className="input w-24"
               value={seatsInput}
               onChange={(e) => setSeatsInput(e.target.value)}
             />
-          </label>
+          </Field>
           <button type="submit" disabled={busy} className="btn-secondary">
             {t("updateSeats")}
           </button>

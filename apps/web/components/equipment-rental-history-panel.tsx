@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
 
 interface Rental {
   id: string;
@@ -20,28 +21,24 @@ interface Rental {
 
 export function EquipmentRentalHistoryPanel({ equipmentId, currency }: { equipmentId: string; currency: string }) {
   const t = useTranslations("equipment");
-  const [rentals, setRentals] = useState<Rental[] | null>(null);
-
-  useEffect(() => {
-    apiFetch<Rental[]>(`/equipment/${equipmentId}/rentals`).then(setRentals);
-  }, [equipmentId]);
+  const { data: rentals = null } = useApi<Rental[]>(`/equipment/${equipmentId}/rentals`);
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("rentalHistory")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("rentalHistoryHint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("rentalHistory")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{t("rentalHistoryHint")}</p>
       {!rentals || rentals.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noRentals")}</p>
+        <p className="text-sm text-fg-subtle">{t("noRentals")}</p>
       ) : (
-        <div className="overflow-x-auto">
+        <div tabIndex={0} className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-              <th className="py-2">{t("renter")}</th>
-              <th>{t("dailyRate")}</th>
-              <th>{t("rentalStart")}</th>
-              <th>{t("rentalReturn")}</th>
-              <th className="text-right">{t("rentalRevenue")}</th>
+            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
+              <th scope="col" className="py-2">{t("renter")}</th>
+              <th scope="col">{t("dailyRate")}</th>
+              <th scope="col">{t("rentalStart")}</th>
+              <th scope="col">{t("rentalReturn")}</th>
+              <th scope="col" className="text-right">{t("rentalRevenue")}</th>
             </tr>
           </thead>
           <tbody>
@@ -50,18 +47,18 @@ export function EquipmentRentalHistoryPanel({ equipmentId, currency }: { equipme
                 <td className="py-2">
                   {r.renterName}
                   {!r.actualReturnDate && (
-                    <span className="ml-1.5 rounded-full bg-brand-50 dark:bg-brand-500/15 px-1.5 py-0.5 text-[10px] font-medium text-brand-700 dark:text-brand-400">
+                    <Badge tone="brand" size="sm" className="ml-1.5">
                       {t("rentalActive")}
-                    </span>
+                    </Badge>
                   )}
                 </td>
                 <td>
-                  {r.dailyRate} {currency}
+                  {formatCurrency(r.dailyRate, currency)}
                 </td>
                 <td>{formatDate(new Date(r.startDate))}</td>
                 <td>{r.actualReturnDate ? formatDate(new Date(r.actualReturnDate)) : t("stillOut")}</td>
                 <td className="text-right font-medium">
-                  {r.revenue} {currency}
+                  {formatCurrency(r.revenue, currency)}
                 </td>
               </tr>
             ))}

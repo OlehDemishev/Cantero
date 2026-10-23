@@ -2,7 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { formatCurrency } from "@/lib/format-currency";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { Field } from "@/components/ui/field";
 
 type ClientStage = "lead" | "contacted" | "qualified" | "won" | "lost";
 interface Worker {
@@ -50,9 +56,10 @@ export function ClientDealPanel({
   const tc = useTranslations("common");
 
   const [client, setClient] = useState<Client | null>(null);
-  const [workers, setWorkers] = useState<Worker[]>([]);
+  const [clientError, setClientError] = useState<Error | null>(null);
+  const { data: workers = [] } = useApi<Worker[]>("/workers");
   const [allClients, setAllClients] = useState<ReferralClient[]>([]);
-  const [campaigns, setCampaigns] = useState<MarketingCampaign[]>([]);
+  const { data: campaigns = [] } = useApi<MarketingCampaign[]>("/marketing/campaigns");
   const [dealForm, setDealForm] = useState({
     estimatedValue: "",
     ownerWorkerId: "",
@@ -67,6 +74,7 @@ export function ClientDealPanel({
 
   function load() {
     apiFetch<Client>(`/clients/${clientId}`).then((c) => {
+      setClientError(null);
       setClient(c);
       setDealForm({
         estimatedValue: c.estimatedValue?.toString() ?? "",
@@ -77,14 +85,12 @@ export function ClientDealPanel({
         source: c.source ?? "",
         campaignId: c.campaignId ?? "",
       });
-    });
+    }).catch(setClientError);
   }
 
   useEffect(() => {
     load();
-    apiFetch<Worker[]>("/workers").then(setWorkers);
-    apiFetch<ReferralClient[]>("/clients").then((cs) => setAllClients(cs.filter((c) => c.id !== clientId)));
-    apiFetch<MarketingCampaign[]>("/marketing/campaigns").then(setCampaigns);
+    apiFetch<ReferralClient[]>("/clients").then((cs) => setAllClients(cs.filter((c) => c.id !== clientId))).catch(notifyApiError);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientId]);
 
@@ -123,21 +129,21 @@ export function ClientDealPanel({
     }
   }
 
-  if (!client) return null;
+  if (!client) return clientError ? <ErrorState error={clientError} onRetry={load} compact /> : <Skeleton lines={3} />;
 
   return (
     <div className="mt-6 card max-w-md">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("estimatedValue")} / {t("owner")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("estimatedValue")} / {t("owner")}</h2>
       <form onSubmit={saveDeal} className="flex flex-col gap-2">
         <input
           type="number"
           min="0"
           className="input"
-          placeholder={t("estimatedValue")}
+          placeholder={t("estimatedValue")} aria-label={t("estimatedValue")}
           value={dealForm.estimatedValue}
           onChange={(e) => setDealForm((f) => ({ ...f, estimatedValue: e.target.value }))}
         />
-        <select
+        <select aria-label={t("owner")}
           className="input"
           value={dealForm.ownerWorkerId}
           onChange={(e) => setDealForm((f) => ({ ...f, ownerWorkerId: e.target.value }))}
@@ -149,40 +155,36 @@ export function ClientDealPanel({
             </option>
           ))}
         </select>
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("probability")}
+        <Field label={t("probability")} size="sm">
           <input
             type="number"
             min="0"
             max="100"
-            className="input mt-1"
+            className="input"
             placeholder={t("probabilityPlaceholder")}
             value={dealForm.probability}
             onChange={(e) => setDealForm((f) => ({ ...f, probability: e.target.value }))}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("expectedCloseDate")}
+        </Field>
+        <Field label={t("expectedCloseDate")} size="sm">
           <input
             type="date"
-            className="input mt-1"
+            className="input"
             value={dealForm.expectedCloseDate}
             onChange={(e) => setDealForm((f) => ({ ...f, expectedCloseDate: e.target.value }))}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("source")}
+        </Field>
+        <Field label={t("source")} size="sm">
           <input
-            className="input mt-1"
+            className="input"
             placeholder={t("sourcePlaceholder")}
             value={dealForm.source}
             onChange={(e) => setDealForm((f) => ({ ...f, source: e.target.value }))}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("campaign")}
+        </Field>
+        <Field label={t("campaign")} size="sm">
           <select
-            className="input mt-1"
+            className="input"
             value={dealForm.campaignId}
             onChange={(e) => setDealForm((f) => ({ ...f, campaignId: e.target.value }))}
           >
@@ -193,11 +195,10 @@ export function ClientDealPanel({
               </option>
             ))}
           </select>
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("referredBy")}
+        </Field>
+        <Field label={t("referredBy")} size="sm">
           <select
-            className="input mt-1"
+            className="input"
             value={dealForm.referredByClientId}
             onChange={(e) => setDealForm((f) => ({ ...f, referredByClientId: e.target.value }))}
           >
@@ -208,17 +209,17 @@ export function ClientDealPanel({
               </option>
             ))}
           </select>
-        </label>
+        </Field>
         <div className="flex items-center gap-2">
           <button type="submit" disabled={busy} className="btn-secondary self-start">
             {tc("save")}
           </button>
-          {dealSaved && <span className="text-xs text-success-700 dark:text-success-500">{tc("saved")}</span>}
+          {dealSaved && <span className="text-xs text-success-fg">{tc("saved")}</span>}
         </div>
       </form>
       {client.referrals.length > 0 && (
         <div className="mt-4 border-t border-gray-100 dark:border-gray-700 pt-3">
-          <h3 className="mb-1 text-xs font-semibold text-gray-500 dark:text-gray-400">{t("referrals")}</h3>
+          <h3 className="mb-1 text-xs font-semibold text-fg-subtle">{t("referrals")}</h3>
           <ul className="flex flex-col gap-1">
             {client.referrals.map((r) => (
               <li key={r.id}>
@@ -232,16 +233,12 @@ export function ClientDealPanel({
       )}
       {client.referralRewardStatus !== "none" && (
         <div className="mt-4 border-t border-gray-100 dark:border-gray-700 pt-3">
-          <h3 className="mb-1 text-xs font-semibold text-gray-500 dark:text-gray-400">{t("referralReward")}</h3>
+          <h3 className="mb-1 text-xs font-semibold text-fg-subtle">{t("referralReward")}</h3>
           <div className="flex items-center justify-between">
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                client.referralRewardStatus === "paid" ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-400"
-              }`}
-            >
+            <Badge tone={client.referralRewardStatus === "paid" ? "success" : "warning"}>
               {t(`referralReward_${client.referralRewardStatus}`)}
-              {client.referralRewardAmount != null && ` · ${client.referralRewardAmount} ${currency}`}
-            </span>
+              {client.referralRewardAmount != null && ` · ${formatCurrency(client.referralRewardAmount, currency)}`}
+            </Badge>
             {isManager && client.referralRewardStatus === "pending" && (
               <button onClick={markReferralRewardPaid} disabled={busy} className="btn-secondary px-2 py-1 text-xs">
                 {t("markRewardPaid")}

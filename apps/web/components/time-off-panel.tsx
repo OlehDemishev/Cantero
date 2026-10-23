@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 import { useCan } from "@/lib/permissions";
 
@@ -26,21 +29,17 @@ interface TimeOffRequest {
 export function TimeOffPanel() {
   const t = useTranslations("timeOff");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const canDecide = useCan()("site.crewTime");
 
-  const [requests, setRequests] = useState<TimeOffRequest[] | null>(null);
-  const [workers, setWorkers] = useState<Worker[]>([]);
+  const { data: requests = null, reload: reloadRequests, error: requestsError } = useApi<TimeOffRequest[]>("/time-off");
+  const { data: workers = [] } = useApi<Worker[]>("/workers");
   const [form, setForm] = useState({ workerId: "", type: "vacation" as TimeOffType, startDate: "", endDate: "", reason: "" });
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<TimeOffRequest[]>("/time-off").then(setRequests);
+    void reloadRequests();
   }
-
-  useEffect(() => {
-    load();
-    apiFetch<Worker[]>("/workers").then(setWorkers);
-  }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -76,12 +75,12 @@ export function TimeOffPanel() {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("title")}</h2>
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="card lg:col-span-1">
-          <h3 className="mb-3 text-xs font-semibold text-gray-500 dark:text-gray-400">{t("newRequest")}</h3>
+          <h3 className="mb-3 text-xs font-semibold text-fg-subtle">{t("newRequest")}</h3>
           <form onSubmit={submit} className="flex flex-col gap-2">
-            <select
+            <select aria-label={ta("worker")}
               required
               className="input"
               value={form.workerId}
@@ -94,7 +93,7 @@ export function TimeOffPanel() {
                 </option>
               ))}
             </select>
-            <select
+            <select aria-label={t("type")}
               className="input"
               value={form.type}
               onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as TimeOffType }))}
@@ -103,14 +102,14 @@ export function TimeOffPanel() {
               <option value="sick">{t("sick")}</option>
               <option value="unpaid">{t("unpaid")}</option>
             </select>
-            <input
+            <input aria-label={ta("startDate")}
               required
               type="date"
               className="input"
               value={form.startDate}
               onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value, endDate: f.endDate && f.endDate < e.target.value ? e.target.value : f.endDate }))}
             />
-            <input
+            <input aria-label={ta("endDate")}
               required
               type="date"
               min={form.startDate || undefined}
@@ -119,7 +118,7 @@ export function TimeOffPanel() {
               onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))}
             />
             <input
-              placeholder={t("reason")}
+              placeholder={t("reason")} aria-label={t("reason")}
               className="input"
               value={form.reason}
               onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))}
@@ -132,19 +131,19 @@ export function TimeOffPanel() {
 
         <div className="lg:col-span-2">
           {!requests ? (
-            <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+            requestsError ? <ErrorState error={requestsError} onRetry={reloadRequests} compact /> : <Skeleton lines={3} />
           ) : requests.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noRequests")}</p>
+            <p className="text-sm text-fg-subtle">{t("noRequests")}</p>
           ) : (
             <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-                  <th className="py-2">{tc("name")}</th>
-                  <th>{t("type")}</th>
-                  <th>{t("dates")}</th>
-                  <th>{tc("status")}</th>
-                  {canDecide && <th></th>}
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
+                  <th scope="col" className="py-2">{tc("name")}</th>
+                  <th scope="col">{t("type")}</th>
+                  <th scope="col">{t("dates")}</th>
+                  <th scope="col">{tc("status")}</th>
+                  {canDecide && <th scope="col"></th>}
                 </tr>
               </thead>
               <tbody>
@@ -159,10 +158,10 @@ export function TimeOffPanel() {
                       <span
                         className={
                           r.status === "approved"
-                            ? "text-xs text-success-700 dark:text-success-500"
+                            ? "text-xs text-success-fg"
                             : r.status === "denied"
-                              ? "text-xs text-error-700 dark:text-error-500"
-                              : "text-xs text-gray-500 dark:text-gray-400"
+                              ? "text-xs text-danger-fg"
+                              : "text-xs text-fg-subtle"
                         }
                       >
                         {t(r.status)}
@@ -172,10 +171,10 @@ export function TimeOffPanel() {
                       <td className="text-right">
                         {r.status === "pending" && (
                           <div className="flex justify-end gap-2 text-xs">
-                            <button onClick={() => decide(r.id, true)} disabled={busy} className="text-success-700 dark:text-success-500 hover:underline">
+                            <button onClick={() => decide(r.id, true)} disabled={busy} className="text-success-fg hover:underline">
                               {t("approve")}
                             </button>
-                            <button onClick={() => decide(r.id, false)} disabled={busy} className="text-error-700 dark:text-error-500 hover:underline">
+                            <button onClick={() => decide(r.id, false)} disabled={busy} className="text-danger-fg hover:underline">
                               {t("deny")}
                             </button>
                           </div>

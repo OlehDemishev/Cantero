@@ -7,6 +7,7 @@ import { fetchCached } from "@/lib/offline-cache";
 import { resetStateInEffect } from "@/lib/effect-reset";
 import { FieldMessage, type FieldMessageType } from "@/components/field-message";
 import { useCrewChoices } from "@/lib/permissions";
+import { Field } from "@/components/ui/field";
 
 interface Worker {
   id: string;
@@ -99,14 +100,13 @@ export function TimeTab({ projectId }: { projectId: string }) {
     }
   }
 
-  if (error) return <p className="text-sm text-gray-400 dark:text-gray-500">{t("offline")}</p>;
-  if (workers === null) return <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>;
-  if (choices.length === 0) return <p className="text-sm text-gray-500 dark:text-gray-400">{t(crew ? "noWorkers" : "noOwnWorker")}</p>;
+  if (error) return <p className="text-sm text-fg-subtle">{t("offline")}</p>;
+  if (workers === null) return <p className="text-sm text-fg-subtle">{tc("loading")}</p>;
+  if (choices.length === 0) return <p className="text-sm text-fg-subtle">{t(crew ? "noWorkers" : "noOwnWorker")}</p>;
 
   return (
     <form onSubmit={submit} className="card flex flex-col gap-3">
-      <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-gray-700 dark:text-gray-200">{tt("worker")}</span>
+      <Field label={tt("worker")}>
         <select className="input" value={form.workerId} disabled={!crew} onChange={(e) => setForm((f) => ({ ...f, workerId: e.target.value }))}>
           {choices.map((w) => (
             <option key={w.id} value={w.id}>
@@ -114,9 +114,8 @@ export function TimeTab({ projectId }: { projectId: string }) {
             </option>
           ))}
         </select>
-      </label>
-      <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-gray-700 dark:text-gray-200">{tt("task")}</span>
+      </Field>
+      <Field label={tt("task")}>
         <select className="input" value={form.taskId} onChange={(e) => setForm((f) => ({ ...f, taskId: e.target.value }))}>
           <option value="">{tt("noneTask")}</option>
           {tasks.map((task) => (
@@ -125,10 +124,9 @@ export function TimeTab({ projectId }: { projectId: string }) {
             </option>
           ))}
         </select>
-      </label>
+      </Field>
       <div className="flex gap-3">
-        <label className="flex flex-1 flex-col gap-1.5 text-sm">
-          <span className="font-medium text-gray-700 dark:text-gray-200">{tt("hours")}</span>
+        <Field label={tt("hours")} className="flex-1">
           <input
             type="number"
             step="0.25"
@@ -138,16 +136,15 @@ export function TimeTab({ projectId }: { projectId: string }) {
             value={form.hours}
             onChange={(e) => setForm((f) => ({ ...f, hours: e.target.value }))}
           />
-        </label>
-        <label className="flex flex-1 flex-col gap-1.5 text-sm">
-          <span className="font-medium text-gray-700 dark:text-gray-200">{tt("date")}</span>
+        </Field>
+        <Field label={tt("date")} className="flex-1">
           <input
             type="date"
             className="input"
             value={form.date}
             onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
           />
-        </label>
+        </Field>
       </div>
       <button type="submit" disabled={busy} className="btn-primary mt-1">
         {t("logTimeButton")}

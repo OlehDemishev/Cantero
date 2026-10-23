@@ -1,0 +1,208 @@
+"use client";
+
+import { useState } from "react";
+import { useTranslations } from "next-intl";
+import type { SubcontractorDiversityCategory } from "@cantero/shared";
+import { SubcontractorListItem } from "@/components/subcontractor-list-item";
+import { apiFetch, downloadBlob, getToken, API_URL, ApiError } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useMe } from "@/lib/use-me";
+import { Badge } from "@/components/ui/badge";
+import { FormError } from "@/components/ui/field";
+import { PageHeader } from "@/components/ui/page-header";
+
+interface Subcontractor {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  specialization: string | null;
+  bio: string | null;
+  publicListed: boolean;
+  licenseNumber: string | null;
+  bondingCapacity: string | null;
+  safetyProgramSummary: string | null;
+  diversityCertifications: SubcontractorDiversityCategory[];
+  diversityCertificationExpiresAt: string | null;
+}
+interface TaxSummaryRow {
+  subcontractorId: string;
+  name: string;
+  legalBusinessName: string | null;
+  taxIdMasked: string | null;
+  mailingAddress: string | null;
+  totalPaid: number;
+  reportable: boolean;
+}
+
+const CURRENT_YEAR = new Date().getFullYear();
+
+export default function SubcontractorsPage() {
+  const t = useTranslations("subcontractorCompliance");
+  const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
+  const { data: me } = useMe();
+  const isUsCompany = me?.company.country === "US";
+
+  const { data: subcontractors = null, reload: reloadSubcontractors, error: subcontractorsError } = useApi<Subcontractor[]>("/finance/subcontractors");
+  const [newForm, setNewForm] = useState({ name: "", email: "", phone: "" });
+  const [busy, setBusy] = useState(false);
+  const [taxSummaryYear, setTaxSummaryYear] = useState(String(CURRENT_YEAR));
+  const {
+    data: taxSummary = null,
+    error: taxSummaryError,
+    reload: reloadTaxSummary,
+  } = useApi<TaxSummaryRow[]>(isUsCompany ? `/finance/subcontractors/tax-summary?year=${taxSummaryYear}` : null);
+  const [datevError, setDatevError] = useState<string | null>(null);
+  const [datevWarningCount, setDatevWarningCount] = useState<number | null>(null);
+
+  async function exportDatevCsv() {
+    setDatevError(null);
+    setDatevWarningCount(null);
+    try {
+      const token = getToken();
+      const res = await fetch(`${API_URL}/finance/subcontractor-costs/export/datev.csv`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new ApiError(res.status, body?.message ?? res.statusText);
+      }
+      const warningsCount = Number(res.headers.get("X-Datev-Warnings-Count") ?? "0");
+      const blob = await res.blob();
+      downloadBlob(blob, "subcontractor-costs-datev.csv");
+      setDatevWarningCount(warningsCount);
+    } catch (err) {
+      setDatevError(err instanceof ApiError ? err.message : tc("error"));
+    }
+  }
+
+  function load() {
+    void reloadSubcontractors();
+  }
+
+  function onChanged() {
+    load();
+    if (isUsCompany) void reloadTaxSummary();
+  }
+
+  async function createSubcontractor(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      await apiFetch("/finance/subcontractors", {
+        method: "POST",
+        body: JSON.stringify({ name: newForm.name, email: newForm.email || undefined, phone: newForm.phone || undefined }),
+      });
+      setNewForm({ name: "", email: "", phone: "" });
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <PageHeader
+        title={t("title")}
+        actions={
+          <button onClick={exportDatevCsv} className="btn-secondary">
+            {t("exportDatev")}
+          </button>
+        }
+      />
+      <p className="mt-1 text-sm text-fg-subtle">{t("complianceSubtitle")}</p>
+      <p className="mt-1 text-xs text-fg-subtle">{t("datevTestImportNotice")}</p>
+      {datevError && <FormError className="mt-1">{datevError}</FormError>}
+      {datevWarningCount !== null && datevWarningCount > 0 && (
+        <p className="mt-1 text-xs text-warning-fg">{t("datevWarningCount", { count: datevWarningCount })}</p>
+      )}
+
+      <div className="mt-6 card max-w-md">
+        <h2 className="mb-4 text-sm font-semibold text-fg-muted">{t("newSubcontractor")}</h2>
+        <form onSubmit={createSubcontractor} className="flex flex-col gap-3">
+          <input required placeholder={tc("name")} aria-label={tc("name")} className="input" value={newForm.name} onChange={(e) => setNewForm((f) => ({ ...f, name: e.target.value }))} />
+          <input type="email" placeholder={tc("email")} aria-label={tc("email")} className="input" value={newForm.email} onChange={(e) => setNewForm((f) => ({ ...f, email: e.target.value }))} />
+          <input placeholder={tc("phone")} aria-label={tc("phone")} className="input" value={newForm.phone} onChange={(e) => setNewForm((f) => ({ ...f, phone: e.target.value }))} />
+          <button type="submit" disabled={busy} className="btn-primary self-start">
+            {tc("create")}
+          </button>
+        </form>
+      </div>
+
+      <div className="mt-8">
+        {!subcontractors ? (
+          subcontractorsError ? <ErrorState error={subcontractorsError} onRetry={reloadSubcontractors} compact /> : <Skeleton lines={3} />
+        ) : subcontractors.length === 0 ? (
+          <p className="text-sm text-fg-subtle">{t("noSubcontractors")}</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {subcontractors.map((s) => (
+              <SubcontractorListItem key={s.id} subcontractor={s} isUsCompany={!!isUsCompany} onChanged={onChanged} />
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {isUsCompany && (
+        <div className="mt-8 card">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-fg-muted">{t("taxSummaryTitle")}</h2>
+            <select aria-label={ta("year")}
+              className="input w-auto"
+              value={taxSummaryYear}
+              onChange={(e) => {
+                setTaxSummaryYear(e.target.value);
+              }}
+            >
+              {[CURRENT_YEAR, CURRENT_YEAR - 1, CURRENT_YEAR - 2].map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </select>
+          </div>
+          <p className="mb-3 text-xs text-fg-subtle">{t("taxSummaryHint")}</p>
+          {taxSummary === null ? (
+            taxSummaryError ? <ErrorState error={taxSummaryError} onRetry={reloadTaxSummary} compact /> : <Skeleton lines={3} />
+          ) : taxSummary.length === 0 ? (
+            <p className="text-sm text-fg-subtle">{t("noTaxSummary")}</p>
+          ) : (
+            <div tabIndex={0} className="overflow-x-auto">
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-gray-100 dark:border-gray-700 text-left text-xs text-fg-subtle">
+                  <th scope="col" className="py-1.5 font-medium">{tc("name")}</th>
+                  <th scope="col" className="font-medium">{t("legalBusinessNamePlaceholder")}</th>
+                  <th scope="col" className="font-medium">{t("taxIdPlaceholder")}</th>
+                  <th scope="col" className="text-right font-medium">{t("totalPaid")}</th>
+                  <th scope="col" className="text-right font-medium">{t("reportable")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {taxSummary.map((row) => (
+                  <tr key={row.subcontractorId} className="border-b border-gray-100 dark:border-gray-700">
+                    <td className="py-1.5">{row.name}</td>
+                    <td className="text-fg-subtle">{row.legalBusinessName ?? "—"}</td>
+                    <td className="text-fg-subtle">{row.taxIdMasked ?? "—"}</td>
+                    <td className="text-right font-medium">{row.totalPaid}</td>
+                    <td className="text-right">
+                      {row.reportable ? (
+                        <Badge tone="warning">{t("reportableYes")}</Badge>
+                      ) : (
+                        <span className="text-xs text-fg-subtle">{t("reportableNo")}</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  );
+}

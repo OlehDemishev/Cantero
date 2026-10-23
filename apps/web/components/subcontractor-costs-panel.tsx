@@ -2,10 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { apiFetch, downloadBlob, notifyApiError } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import type { CostCode } from "@/components/cost-codes-panel";
 import { formatDate } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
 
 const NEW_SUBCONTRACTOR = "__new__";
 
@@ -31,10 +36,11 @@ interface SubcontractorCost {
 export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("subcontractors");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const [costs, setCosts] = useState<SubcontractorCost[] | null>(null);
+  const { data: costs = null, reload: reloadCosts, error: costsError } = useApi<SubcontractorCost[]>(`/finance/subcontractor-costs?projectId=${projectId}`);
   const [subcontractors, setSubcontractors] = useState<Subcontractor[]>([]);
   const [form, setForm] = useState({
     subcontractorId: "",
@@ -46,24 +52,21 @@ export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
   });
   const [busy, setBusy] = useState(false);
   const [finalFlags, setFinalFlags] = useState<Record<string, boolean>>({});
-  const [costCodes, setCostCodes] = useState<CostCode[]>([]);
+  const { data: costCodes = [] } = useApi<CostCode[]>("/cost-codes");
 
   function load() {
-    apiFetch<SubcontractorCost[]>(`/finance/subcontractor-costs?projectId=${projectId}`).then(setCosts);
+    void reloadCosts();
   }
 
   function loadSubcontractors() {
     apiFetch<Subcontractor[]>("/finance/subcontractors").then((list) => {
       setSubcontractors(list);
       if (list[0]) setForm((f) => ({ ...f, subcontractorId: f.subcontractorId || list[0].id }));
-    });
+    }).catch(notifyApiError);
   }
 
   useEffect(() => {
-    load();
     loadSubcontractors();
-    apiFetch<CostCode[]>("/cost-codes").then(setCostCodes);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -117,31 +120,38 @@ export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("title")}</h2>
       {!costs ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        costsError ? <ErrorState error={costsError} onRetry={reloadCosts} compact /> : <Skeleton lines={3} />
       ) : costs.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noCosts")}</p>
+        <p className="text-sm text-fg-subtle">{t("noCosts")}</p>
       ) : (
         <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
+          <thead>
+            <tr className="border-b border-gray-200 text-left text-xs text-fg-subtle dark:border-gray-700">
+              <th scope="col" className="py-1.5 font-medium">{ta("description")}</th>
+              <th scope="col" className="font-medium">{ta("subcontractor")}</th>
+              <th scope="col" className="font-medium">{ta("dueDate")}</th>
+              <th scope="col" className="font-medium">{ta("status")}</th>
+              <th scope="col" className="text-right font-medium">{ta("amount")}</th>
+              <th scope="col" className="text-right font-medium"><span className="sr-only">{ta("actions")}</span></th>
+              <th scope="col" className="text-right font-medium">{ta("lienWaiver")}</th>
+            </tr>
+          </thead>
           <tbody>
             {costs.map((c) => (
               <tr key={c.id} className="border-b border-gray-100 dark:border-gray-700">
                 <td className="py-1.5">{c.description}</td>
-                <td className="text-gray-500 dark:text-gray-400">{c.subcontractor.name}</td>
-                <td className="text-gray-500 dark:text-gray-400">{c.dueDate ? formatDate(new Date(c.dueDate)) : "—"}</td>
+                <td className="text-fg-subtle">{c.subcontractor.name}</td>
+                <td className="text-fg-subtle">{c.dueDate ? formatDate(new Date(c.dueDate)) : "—"}</td>
                 <td>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                      c.paid ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
-                    }`}
-                  >
+                  <Badge tone={c.paid ? "success" : "neutral"}>
                     {c.paid ? t("paid") : t("unpaid")}
-                  </span>
+                  </Badge>
                 </td>
                 <td className="text-right font-medium">
-                  {c.amount} {currency}
+                  {formatCurrency(c.amount, currency)}
                 </td>
                 <td className="text-right">
                   {!c.paid && (
@@ -153,7 +163,7 @@ export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
                 <td className="text-right">
                   {!c.lienWaiver ? (
                     <div className="flex items-center justify-end gap-1.5">
-                      <label className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                      <label className="flex items-center gap-1 text-xs text-fg-subtle">
                         <input
                           type="checkbox"
                           checked={!!finalFlags[c.id]}
@@ -170,9 +180,9 @@ export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
                       {t("downloadWaiver")}
                     </button>
                   ) : (
-                    <span className="rounded-full bg-warning-50 dark:bg-warning-500/15 px-2 py-0.5 text-xs font-medium text-warning-700 dark:text-warning-500">
+                    <Badge tone="warning">
                       {t("waiverAwaitingSignature")}
-                    </span>
+                    </Badge>
                   )}
                 </td>
               </tr>
@@ -183,7 +193,7 @@ export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
       )}
 
       <form onSubmit={handleSubmit} className="mt-4 flex flex-wrap items-end gap-2">
-        <select
+        <select aria-label={ta("subcontractor")}
           className="input w-auto"
           value={form.subcontractorId}
           onChange={(e) => setForm((f) => ({ ...f, subcontractorId: e.target.value }))}
@@ -198,7 +208,7 @@ export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
         {form.subcontractorId === NEW_SUBCONTRACTOR && (
           <input
             required
-            placeholder={tc("name")}
+            placeholder={tc("name")} aria-label={tc("name")}
             className="input w-auto"
             value={form.newSubcontractorName}
             onChange={(e) => setForm((f) => ({ ...f, newSubcontractorName: e.target.value }))}
@@ -206,7 +216,7 @@ export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
         )}
         <input
           required
-          placeholder={t("description")}
+          placeholder={t("description")} aria-label={t("description")}
           className="input w-auto"
           value={form.description}
           onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
@@ -215,19 +225,19 @@ export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
           required
           type="number"
           step="0.01"
-          placeholder={t("amount")}
+          placeholder={t("amount")} aria-label={t("amount")}
           className="input w-24"
           value={form.amount}
           onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
         />
-        <input
+        <input aria-label={ta("dueDate")}
           type="date"
           className="input w-auto"
           value={form.dueDate}
           onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
         />
         {costCodes.length > 0 && (
-          <select
+          <select aria-label={ta("costCode")}
             className="input w-auto"
             value={form.costCodeId}
             onChange={(e) => setForm((f) => ({ ...f, costCodeId: e.target.value }))}

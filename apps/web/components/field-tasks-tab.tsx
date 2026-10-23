@@ -7,6 +7,8 @@ import { fetchCached, updateCache } from "@/lib/offline-cache";
 import { resetStateInEffect } from "@/lib/effect-reset";
 import { CachedNote } from "@/components/field-cached-note";
 import { FieldMessage } from "@/components/field-message";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 type TaskStatus = "planned" | "in_progress" | "done";
 const STATUS_ORDER: TaskStatus[] = ["planned", "in_progress", "done"];
@@ -19,12 +21,7 @@ interface Task {
 
 function StatusBadge({ status }: { status: TaskStatus }) {
   const ts = useTranslations("scheduling");
-  const styles: Record<TaskStatus, string> = {
-    planned: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-    in_progress: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
-    done: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
-  };
-  return <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${styles[status]}`}>{ts(status)}</span>;
+  return <Badge tone={statusTone(status)}>{ts(status)}</Badge>;
 }
 
 export function TasksTab({ projectId }: { projectId: string }) {
@@ -69,9 +66,9 @@ export function TasksTab({ projectId }: { projectId: string }) {
     }
   }
 
-  if (error) return <p className="text-sm text-gray-400 dark:text-gray-500">{t("offline")}</p>;
-  if (!tasks) return <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>;
-  if (tasks.length === 0) return <p className="text-sm text-gray-400 dark:text-gray-500">{t("noTasks")}</p>;
+  if (error) return <p className="text-sm text-fg-subtle">{t("offline")}</p>;
+  if (!tasks) return <p className="text-sm text-fg-subtle">{tc("loading")}</p>;
+  if (tasks.length === 0) return <p className="text-sm text-fg-subtle">{t("noTasks")}</p>;
 
   return (
     <div>
@@ -81,12 +78,12 @@ export function TasksTab({ projectId }: { projectId: string }) {
           <FieldMessage type="error" text={actionError} />
         </div>
       )}
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("tapToAdvance")}</p>
+      <p className="mb-3 text-xs text-fg-subtle">{t("tapToAdvance")}</p>
       <ul className="flex flex-col gap-2">
         {tasks.map((task) => (
           <li key={task.id}>
             <button onClick={() => advance(task)} className="card flex w-full items-center justify-between text-left">
-              <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{task.name}</span>
+              <span className="text-sm font-medium text-fg">{task.name}</span>
               <StatusBadge status={task.status} />
             </button>
           </li>

@@ -14,9 +14,15 @@ export class SupplierPortalService {
   async me(supplier: PortalSupplierContext) {
     const record = await this.prisma.supplier.findUniqueOrThrow({
       where: { id: supplier.supplierId },
-      include: { company: { select: { name: true, currency: true } } },
+      include: { company: { select: { name: true, currency: true, locale: true } } },
     });
-    return { name: record.name, email: record.email, companyName: record.company.name, currency: record.company.currency };
+    return {
+      name: record.name,
+      email: record.email,
+      companyName: record.company.name,
+      currency: record.company.currency,
+      locale: record.company.locale,
+    };
   }
 
   listPurchaseOrders(supplier: PortalSupplierContext) {

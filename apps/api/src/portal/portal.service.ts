@@ -45,7 +45,7 @@ export class PortalService {
   async me(client: PortalClientContext) {
     const record = await this.prisma.client.findUniqueOrThrow({
       where: { id: client.clientId },
-      include: { company: { select: { name: true, currency: true, stripeAccountId: true, stripeChargesEnabled: true } } },
+      include: { company: { select: { name: true, currency: true, locale: true, stripeAccountId: true, stripeChargesEnabled: true } } },
     });
     const onlinePaymentsEnabled = !!record.company.stripeAccountId && record.company.stripeChargesEnabled;
     // A method saved on another Stripe account (the platform's, before Stripe Connect) can't be
@@ -56,6 +56,8 @@ export class PortalService {
       email: record.email,
       companyName: record.company.name,
       currency: record.company.currency,
+      // the portal opens in the language this client gets its documents in
+      locale: record.preferredLocale ?? record.company.locale,
       onlinePaymentsEnabled,
       savedPaymentMethodLabel: usable ? paymentMethodLabel(record.stripePaymentMethodType, record.stripePaymentMethodBrand) : null,
       savedPaymentMethodLast4: usable ? record.stripePaymentMethodLast4 : null,

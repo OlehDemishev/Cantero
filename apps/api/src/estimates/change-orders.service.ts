@@ -48,6 +48,16 @@ export class ChangeOrdersService {
     });
   }
 
+  /** The client's review/sign token, for staff with the manage permission to copy the link the
+   * client got by email. Kept out of every other response (GLOBAL_OMIT): whoever holds it can act
+   * as the client. */
+  async clientLink(companyId: string, estimateId: string, id: string): Promise<{ token: string }> {
+    const changeOrder = await this.prisma.changeOrder.findFirst({ where: { id, estimateId, companyId }, select: { clientAccessToken: true } });
+    if (!changeOrder) throw new NotFoundException("Change order not found");
+    if (!changeOrder.clientAccessToken) throw new BadRequestException("This change order hasn't been sent to the client yet");
+    return { token: changeOrder.clientAccessToken };
+  }
+
   async get(companyId: string, id: string) {
     const changeOrder = await this.prisma.changeOrder.findFirst({
       where: { id, companyId },
@@ -230,11 +240,13 @@ export class ChangeOrdersService {
       include: { project: true },
     });
 
+    const clientAccessToken = randomBytes(24).toString("hex");
     const updated = await this.prisma.$transaction(async (tx) => {
       const updated = await tx.changeOrder.update({
         where: { id: changeOrderId },
+        omit: { clientAccessToken: true },
         data: {
-          clientAccessToken: randomBytes(24).toString("hex"),
+          clientAccessToken,
           sentAt: new Date(),
           clientDecision: "pending",
           decisionAt: null,
@@ -259,7 +271,7 @@ export class ChangeOrdersService {
     if (client?.email) {
       const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
       const webOrigin = this.config.get<string>("WEB_ORIGIN") ?? "http://localhost:3000";
-      const link = `${webOrigin}/change-order/${updated.clientAccessToken}`;
+      const link = `${webOrigin}/change-order/${clientAccessToken}`;
       const email = changeOrderSentEmail(
         client.preferredLocale ?? company.locale,
         company.name,
@@ -279,8 +291,8 @@ export class ChangeOrdersService {
       where: { clientAccessToken: token },
       include: {
         lines: { include: { rateCatalogItem: true }, orderBy: { sortOrder: "asc" } },
-        estimate: { select: { name: true, currency: true } },
-        company: { select: { name: true } },
+        estimate: { select: { name: true, currency: true, project: { select: { client: { select: { preferredLocale: true } } } } } },
+        company: { select: { name: true, locale: true } },
       },
     });
     if (!changeOrder) throw new NotFoundException("Change order not found");
@@ -294,6 +306,7 @@ export class ChangeOrdersService {
       decisionAt: changeOrder.decisionAt,
       clientDecisionNote: changeOrder.clientDecisionNote,
       companyName: changeOrder.company.name,
+      locale: changeOrder.estimate.project?.client?.preferredLocale ?? changeOrder.company.locale,
       currency: changeOrder.estimate.currency,
       estimateName: changeOrder.estimate.name,
       scheduleImpactDays: changeOrder.scheduleImpactDays,
@@ -335,7 +348,7 @@ export class ChangeOrdersService {
     return this.applyDecision(changeOrder, { decision: "rejected", note: input.note }, undefined, actor);
   }
 
-  private async applyDecision(changeOrder: ChangeOrder, input: ClientDecisionInput, signerIp?: string, recordedBy?: AuditActor) {
+  private async applyDecision(changeOrder: Omit<ChangeOrder, "clientAccessToken">, input: ClientDecisionInput, signerIp?: string, recordedBy?: AuditActor) {
     if (changeOrder.clientDecision !== "pending") {
       throw new BadRequestException("This change order has already been decided");
     }

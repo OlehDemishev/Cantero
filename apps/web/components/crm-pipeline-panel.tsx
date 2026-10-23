@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
+import { formatCurrency, formatNumber } from "@/lib/format-currency";
 
 type ClientStage = "lead" | "contacted" | "qualified" | "won" | "lost";
 
@@ -44,36 +46,29 @@ interface LeaderboardRow {
 
 export function CrmPipelinePanel() {
   const t = useTranslations("clients");
-  const tc = useTranslations("common");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const [forecast, setForecast] = useState<Forecast | null>(null);
-  const [funnel, setFunnel] = useState<Funnel | null>(null);
-  const [leaderboard, setLeaderboard] = useState<LeaderboardRow[] | null>(null);
-
-  useEffect(() => {
-    apiFetch<Forecast>("/clients/pipeline-forecast").then(setForecast);
-    apiFetch<Funnel>("/clients/funnel-report").then(setFunnel);
-    apiFetch<LeaderboardRow[]>("/clients/owner-leaderboard").then(setLeaderboard);
-  }, []);
+  const { data: forecast = null, error: forecastError, reload: reloadForecast } = useApi<Forecast>("/clients/pipeline-forecast");
+  const { data: funnel = null, error: funnelError, reload: reloadFunnel } = useApi<Funnel>("/clients/funnel-report");
+  const { data: leaderboard = null, error: leaderboardError, reload: reloadLeaderboard } = useApi<LeaderboardRow[]>("/clients/owner-leaderboard");
 
   return (
     <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-3">
       <div>
-        <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("pipelineForecast")}</h2>
+        <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("pipelineForecast")}</h2>
         {!forecast ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+          forecastError ? <ErrorState error={forecastError} onRetry={reloadForecast} compact /> : <Skeleton lines={3} />
         ) : (
           <>
             <div className="card">
-              <div className="text-xs text-gray-500 dark:text-gray-400">{t("weightedPipelineValue")}</div>
+              <div className="text-xs text-fg-subtle">{t("weightedPipelineValue")}</div>
               <div className="mt-1 text-lg font-semibold">
-                {forecast.totalWeightedValue.toFixed(2)} {currency}
+                {formatCurrency(forecast.totalWeightedValue, currency)}
               </div>
               {forecast.unscheduledWeightedValue > 0 && (
-                <div className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                  {t("unscheduledWeightedValue", { value: forecast.unscheduledWeightedValue.toFixed(2), currency })}
+                <div className="mt-1 text-xs text-fg-subtle">
+                  {t("unscheduledWeightedValue", { value: formatCurrency(forecast.unscheduledWeightedValue, currency) })}
                 </div>
               )}
             </div>
@@ -83,7 +78,7 @@ export function CrmPipelinePanel() {
                   <li key={m.month} className="flex justify-between">
                     <span>{m.month}</span>
                     <span className="font-medium">
-                      {m.weightedValue.toFixed(2)} {currency}
+                      {formatCurrency(m.weightedValue, currency)}
                     </span>
                   </li>
                 ))}
@@ -94,17 +89,17 @@ export function CrmPipelinePanel() {
       </div>
 
       <div>
-        <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("funnelReport")}</h2>
+        <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("funnelReport")}</h2>
         {!funnel ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+          funnelError ? <ErrorState error={funnelError} onRetry={reloadFunnel} compact /> : <Skeleton lines={3} />
         ) : (
           <>
             <div className="card">
-              <div className="text-xs text-gray-500 dark:text-gray-400">{t("winRate")}</div>
+              <div className="text-xs text-fg-subtle">{t("winRate")}</div>
               <div className="mt-1 text-lg font-semibold">
-                {funnel.winRatePercent !== null ? `${funnel.winRatePercent.toFixed(0)}%` : "—"}
+                {funnel.winRatePercent !== null ? `${formatNumber(funnel.winRatePercent, { fractionDigits: 0 })}%` : "—"}
               </div>
-              <div className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+              <div className="mt-1 text-xs text-fg-subtle">
                 {t("winLossCount", { won: funnel.wonCount, lost: funnel.lostCount })}
               </div>
             </div>
@@ -114,7 +109,7 @@ export function CrmPipelinePanel() {
                   <span>{t(f.stage)}</span>
                   <span>
                     {f.everReachedCount}
-                    {f.avgDaysInStage !== null && ` · ${t("avgDays", { days: f.avgDaysInStage.toFixed(1) })}`}
+                    {f.avgDaysInStage !== null && ` · ${t("avgDays", { days: formatNumber(f.avgDaysInStage, { fractionDigits: 1 }) })}`}
                   </span>
                 </li>
               ))}
@@ -124,21 +119,21 @@ export function CrmPipelinePanel() {
       </div>
 
       <div>
-        <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("ownerLeaderboard")}</h2>
+        <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("ownerLeaderboard")}</h2>
         {!leaderboard ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+          leaderboardError ? <ErrorState error={leaderboardError} onRetry={reloadLeaderboard} compact /> : <Skeleton lines={3} />
         ) : leaderboard.length === 0 ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500">{t("ownerLeaderboardEmpty")}</p>
+          <p className="text-sm text-fg-subtle">{t("ownerLeaderboardEmpty")}</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {leaderboard.map((row) => (
               <li key={row.ownerWorkerId} className="card">
                 <div className="text-sm font-medium">{row.ownerName}</div>
-                <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  {t("wonSummary", { count: row.wonCount, value: row.wonValue.toFixed(2), currency })}
+                <div className="mt-1 text-xs text-fg-subtle">
+                  {t("wonSummary", { count: row.wonCount, value: formatCurrency(row.wonValue, currency) })}
                 </div>
-                <div className="text-xs text-gray-400 dark:text-gray-500">
-                  {t("openSummary", { count: row.openCount, value: row.openValue.toFixed(2), currency })}
+                <div className="text-xs text-fg-subtle">
+                  {t("openSummary", { count: row.openCount, value: formatCurrency(row.openValue, currency) })}
                 </div>
               </li>
             ))}

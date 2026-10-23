@@ -24,7 +24,7 @@ const INVITE_LIST_SELECT = { id: true, email: true, role: true, expiresAt: true,
 /** Minimal shape assertSeatAvailable() needs — satisfied by both PrismaService directly (the
  * outer, fast-path check in accept()/completeAcceptAfterTwoFactor()) and a Prisma.TransactionClient
  * (the authoritative recheck inside finalizeAcceptance()'s serializable transaction). */
-interface SeatCountClient {
+export interface SeatCountClient {
   subscription: { findUnique: (args: { where: { companyId: string } }) => Promise<{ seats: number } | null> };
   membership: { count: (args: { where: { companyId: string } }) => Promise<number> };
   invite: {
@@ -58,7 +58,7 @@ export class InvitesService {
 
   async create(companyId: string, input: CreateInviteInput, actorRole?: string) {
     assertMayAppointAdmin(actorRole, input.role === "admin");
-    await this.assertSeatAvailable(this.prisma, companyId);
+    await assertSeatAvailable(this.prisma, companyId);
 
     const existingUser = await this.prisma.user.findUnique({ where: { email: input.email } });
     if (existingUser) {
@@ -127,7 +127,7 @@ export class InvitesService {
    */
   async accept(input: AcceptInviteInput, meta: SessionMeta): Promise<AcceptInviteResult> {
     const invite = await this.getByToken(input.token);
-    await this.assertSeatAvailable(this.prisma, invite.companyId, invite.id);
+    await assertSeatAvailable(this.prisma, invite.companyId, invite.id);
 
     const existingUser = await this.prisma.user.findUnique({ where: { email: invite.email } });
     if (existingUser) {
@@ -176,7 +176,7 @@ export class InvitesService {
     if (!ok) throw new UnauthorizedException("Invalid code");
 
     const invite = await this.getByToken(payload.inviteToken);
-    await this.assertSeatAvailable(this.prisma, invite.companyId, invite.id);
+    await assertSeatAvailable(this.prisma, invite.companyId, invite.id);
     return this.finalizeAcceptance(invite, meta, payload.userId);
   }
 
@@ -196,7 +196,7 @@ export class InvitesService {
     newUser?: { name: string; passwordHash: string },
   ): Promise<{ accessToken: string; companyId: string }> {
     const { user, membership } = await runSerializable(this.prisma, async (tx) => {
-      await this.assertSeatAvailable(tx, invite.companyId, invite.id);
+      await assertSeatAvailable(tx, invite.companyId, invite.id);
 
       const user = userId
         ? await tx.user.findUniqueOrThrow({ where: { id: userId } })
@@ -212,7 +212,7 @@ export class InvitesService {
       return { user, membership };
     });
 
-    const sid = await this.sessions.create(user.id, meta);
+    const sid = await this.sessions.create(user.id, invite.companyId, meta);
     const authUser: AuthUser = {
       userId: user.id,
       companyId: invite.companyId,
@@ -223,32 +223,35 @@ export class InvitesService {
     };
     return { accessToken: this.jwtService.sign(authUser), companyId: invite.companyId };
   }
+}
 
-  /** `excludeInviteId` matters only when accepting: the invite being accepted is itself still an
-   * unaccepted, unexpired row in the pending count at the moment this runs, but accepting it
-   * converts an existing reservation into a membership rather than consuming a new seat — without
-   * excluding it, seats read as one short of what's actually available and the *last* invite in a
-   * fully-reserved company could never be accepted. */
-  private async assertSeatAvailable(client: SeatCountClient, companyId: string, excludeInviteId?: string): Promise<void> {
-    const subscription = await client.subscription.findUnique({ where: { companyId } });
-    const seats = subscription?.seats ?? 1;
+/** Refuses one more person when members plus pending invites already fill the paid seats. Used
+ * by invites and SCIM provisioning alike.
+ *
+ * `excludeInviteId` matters only when accepting: the invite being accepted is itself still an
+ * unaccepted, unexpired row in the pending count at the moment this runs, but accepting it
+ * converts an existing reservation into a membership rather than consuming a new seat — without
+ * excluding it, seats read as one short of what's actually available and the *last* invite in a
+ * fully-reserved company could never be accepted. */
+export async function assertSeatAvailable(client: SeatCountClient, companyId: string, excludeInviteId?: string): Promise<void> {
+  const subscription = await client.subscription.findUnique({ where: { companyId } });
+  const seats = subscription?.seats ?? 1;
 
-    const [memberCount, pendingInviteCount] = await Promise.all([
-      client.membership.count({ where: { companyId } }),
-      client.invite.count({
-        where: {
-          companyId,
-          acceptedAt: null,
-          expiresAt: { gt: new Date() },
-          ...(excludeInviteId ? { id: { not: excludeInviteId } } : {}),
-        },
-      }),
-    ]);
+  const [memberCount, pendingInviteCount] = await Promise.all([
+    client.membership.count({ where: { companyId } }),
+    client.invite.count({
+      where: {
+        companyId,
+        acceptedAt: null,
+        expiresAt: { gt: new Date() },
+        ...(excludeInviteId ? { id: { not: excludeInviteId } } : {}),
+      },
+    }),
+  ]);
 
-    if (memberCount + pendingInviteCount >= seats) {
-      throw new BadRequestException(
-        `Seat limit reached (${seats}) — upgrade seats before inviting another person`,
-      );
-    }
+  if (memberCount + pendingInviteCount >= seats) {
+    throw new BadRequestException(
+      `Seat limit reached (${seats}) — upgrade seats before inviting another person`,
+    );
   }
 }

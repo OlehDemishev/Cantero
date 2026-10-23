@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 interface TurnoverRow {
   materialId: string;
@@ -17,37 +19,32 @@ interface TurnoverRow {
 
 export function WarehouseTurnoverReportPanel() {
   const t = useTranslations("reports");
-  const tc = useTranslations("common");
-  const [turnover, setTurnover] = useState<TurnoverRow[] | null>(null);
-
-  useEffect(() => {
-    apiFetch<TurnoverRow[]>("/reports/warehouse-turnover").then(setTurnover);
-  }, []);
+  const { data: turnover = null, error: turnoverError, reload: reloadTurnover } = useApi<TurnoverRow[]>("/reports/warehouse-turnover");
 
   return (
     <>
-      <h2 className="mb-3 mt-10 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("warehouseTurnover")}</h2>
+      <h2 className="mb-3 mt-10 text-sm font-semibold text-fg-muted">{t("warehouseTurnover")}</h2>
       {!turnover ? (
-        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        turnoverError ? <ErrorState error={turnoverError} onRetry={reloadTurnover} compact /> : <Skeleton lines={3} />
       ) : turnover.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noTurnoverData")}</p>
+        <p className="text-sm text-fg-subtle">{t("noTurnoverData")}</p>
       ) : (
-        <div className="overflow-x-auto">
+        <div tabIndex={0} className="overflow-x-auto">
           <table className="w-full min-w-[640px] border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-                <th className="py-2">{t("material")}</th>
-                <th className="text-right">{t("onHand")}</th>
-                <th className="text-right">{t("consumed")}</th>
-                <th className="text-right">{t("turnoverRatio")}</th>
-                <th></th>
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
+                <th scope="col" className="py-2">{t("material")}</th>
+                <th scope="col" className="text-right">{t("onHand")}</th>
+                <th scope="col" className="text-right">{t("consumed")}</th>
+                <th scope="col" className="text-right">{t("turnoverRatio")}</th>
+                <th scope="col"></th>
               </tr>
             </thead>
             <tbody>
               {turnover.map((row) => (
                 <tr key={row.materialId} className="border-b border-gray-100 dark:border-gray-700">
                   <td className="py-2">
-                    {row.name} <span className="text-gray-400 dark:text-gray-500">({row.code})</span>
+                    {row.name} <span className="text-fg-subtle">({row.code})</span>
                   </td>
                   <td className="text-right">
                     {row.onHand} {row.unit}
@@ -58,9 +55,9 @@ export function WarehouseTurnoverReportPanel() {
                   <td className="text-right">{row.turnoverRatio ?? "—"}</td>
                   <td className="text-right">
                     {row.slowMoving && (
-                      <span className="rounded-full bg-warning-50 dark:bg-warning-500/15 px-2 py-0.5 text-xs font-medium text-warning-700 dark:text-warning-500">
+                      <Badge tone="warning">
                         {t("slowMoving")}
-                      </span>
+                      </Badge>
                     )}
                   </td>
                 </tr>

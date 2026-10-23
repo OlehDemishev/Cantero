@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface EacRow {
   projectId: string;
@@ -22,33 +24,28 @@ interface EacRow {
 
 export function EstimateAtCompletionReportPanel({ currency }: { currency: string }) {
   const t = useTranslations("reports");
-  const tc = useTranslations("common");
-  const [eac, setEac] = useState<EacRow[] | null>(null);
-
-  useEffect(() => {
-    apiFetch<EacRow[]>("/reports/estimate-at-completion").then(setEac);
-  }, []);
+  const { data: eac = null, error: eacError, reload: reloadEac } = useApi<EacRow[]>("/reports/estimate-at-completion");
 
   return (
     <>
-      <h2 className="mb-3 mt-10 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("estimateAtCompletion")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("estimateAtCompletionHint")}</p>
+      <h2 className="mb-3 mt-10 text-sm font-semibold text-fg-muted">{t("estimateAtCompletion")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{t("estimateAtCompletionHint")}</p>
       {!eac ? (
-        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        eacError ? <ErrorState error={eacError} onRetry={reloadEac} compact /> : <Skeleton lines={3} />
       ) : eac.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noProjects")}</p>
+        <p className="text-sm text-fg-subtle">{t("noProjects")}</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[860px] border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-                <th className="py-2">{t("project")}</th>
-                <th className="text-right">{t("percentComplete")}</th>
-                <th className="text-right">{t("costPerformanceIndex")}</th>
-                <th className="text-right">{t("estimateAtCompletionShort")}</th>
-                <th className="text-right">{t("varianceAtCompletion")}</th>
-                <th className="text-right">{t("projectedMargin")}</th>
-                <th className="text-right">{t("marginErosion")}</th>
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
+                <th scope="col" className="py-2">{t("project")}</th>
+                <th scope="col" className="text-right">{t("percentComplete")}</th>
+                <th scope="col" className="text-right">{t("costPerformanceIndex")}</th>
+                <th scope="col" className="text-right">{t("estimateAtCompletionShort")}</th>
+                <th scope="col" className="text-right">{t("varianceAtCompletion")}</th>
+                <th scope="col" className="text-right">{t("projectedMargin")}</th>
+                <th scope="col" className="text-right">{t("marginErosion")}</th>
               </tr>
             </thead>
             <tbody>
@@ -64,15 +61,15 @@ export function EstimateAtCompletionReportPanel({ currency }: { currency: string
                     {row.costPerformanceIndex === null ? "—" : row.costPerformanceIndex}
                   </td>
                   <td className="text-right tabular-nums">
-                    {row.estimateAtCompletion} {currency}
+                    {formatCurrency(row.estimateAtCompletion, currency)}
                   </td>
-                  <td className={`text-right tabular-nums ${row.varianceAtCompletion < 0 ? "text-error-700 dark:text-error-500" : "text-success-700 dark:text-success-500"}`}>
-                    {row.varianceAtCompletion} {currency}
+                  <td className={`text-right tabular-nums ${row.varianceAtCompletion < 0 ? "text-danger-fg" : "text-success-fg"}`}>
+                    {formatCurrency(row.varianceAtCompletion, currency)}
                   </td>
-                  <td className={`text-right tabular-nums ${(row.projectedMarginPercent ?? 0) < 0 ? "text-error-700 dark:text-error-500" : "text-success-700 dark:text-success-500"}`}>
+                  <td className={`text-right tabular-nums ${(row.projectedMarginPercent ?? 0) < 0 ? "text-danger-fg" : "text-success-fg"}`}>
                     {row.projectedMarginPercent === null ? "—" : `${row.projectedMarginPercent}%`}
                   </td>
-                  <td className={`text-right tabular-nums ${(row.marginErosionPercent ?? 0) > 0 ? "text-error-700 dark:text-error-500" : "text-success-700 dark:text-success-500"}`}>
+                  <td className={`text-right tabular-nums ${(row.marginErosionPercent ?? 0) > 0 ? "text-danger-fg" : "text-success-fg"}`}>
                     {row.marginErosionPercent === null ? "—" : `${row.marginErosionPercent}%`}
                   </td>
                 </tr>

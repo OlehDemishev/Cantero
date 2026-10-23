@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const markerIcon = L.icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -30,18 +31,14 @@ const DEFAULT_ZOOM = 4;
 
 export function ProjectMapPanel() {
   const t = useTranslations("portfolio");
-  const [projects, setProjects] = useState<Project[] | null>(null);
+  const { data: projects = null, error: projectsError, reload: reloadProjects } = useApi<Project[]>("/projects");
 
-  useEffect(() => {
-    apiFetch<Project[]>("/projects").then(setProjects);
-  }, []);
-
-  if (!projects) return null;
+  if (!projects) return projectsError ? <ErrorState error={projectsError} onRetry={reloadProjects} compact /> : <Skeleton lines={3} />;
 
   const withCoords = projects.filter((p): p is Project & { geofenceLat: number; geofenceLng: number } => p.geofenceLat !== null && p.geofenceLng !== null);
 
   if (withCoords.length === 0) {
-    return <p className="mt-4 text-sm text-gray-400 dark:text-gray-500">{t("noProjectCoordinates")}</p>;
+    return <p className="mt-4 text-sm text-fg-subtle">{t("noProjectCoordinates")}</p>;
   }
 
   const center: [number, number] = [withCoords[0].geofenceLat, withCoords[0].geofenceLng];
@@ -56,7 +53,7 @@ export function ProjectMapPanel() {
               <a href={`/projects/${p.id}`} className="font-medium text-brand-700 dark:text-brand-400 hover:underline">
                 {p.name}
               </a>
-              {p.address && <div className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{p.address}</div>}
+              {p.address && <div className="mt-0.5 text-xs text-fg-subtle">{p.address}</div>}
             </Popup>
           </Marker>
         ))}

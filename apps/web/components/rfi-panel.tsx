@@ -12,6 +12,12 @@ import { PhotoAttachments } from "@/components/photo-attachments";
 import { useDeepLinkedRow, buildItemDeepLink } from "@/lib/use-deep-linked-row";
 import { CopyLinkButton } from "@/components/ui/copy-link-button";
 import { formatDate } from "@/lib/format-date";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useApi } from "@/lib/use-api";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
+import { Field } from "@/components/ui/field";
 
 interface RfiAnalytics {
   openCount: number;
@@ -43,21 +49,6 @@ interface Rfi {
   escalatedAt: string | null;
 }
 
-const STATUS_STYLES: Record<RfiStatus, string> = {
-  open: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  answered: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
-  closed: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
-};
-const PRIORITY_STYLES: Record<RfiPriority, string> = {
-  low: "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400",
-  medium: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
-  high: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
-};
-const BALL_IN_COURT_STYLES: Record<BallInCourtParty, string> = {
-  internal: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
-  client: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
-  subcontractor: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-};
 const BALL_IN_COURT_PARTIES: BallInCourtParty[] = ["internal", "client", "subcontractor"];
 
 const EMPTY_FORM = {
@@ -74,13 +65,12 @@ export function RfiPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("rfi");
   const tc = useTranslations("common");
   const tb = useTranslations("bulk");
+  const ta = useTranslations("a11y");
   const bulk = useBulkSelection();
 
   const deepLinkedId = useDeepLinkedRow("rfi");
   const rowRefs = useRef<Record<string, HTMLLIElement | null>>({});
 
-  const [items, setItems] = useState<Rfi[] | null>(null);
-  const [analytics, setAnalytics] = useState<RfiAnalytics | null>(null);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [expandedId, setExpandedId] = useState<string | null>(deepLinkedId);
@@ -89,20 +79,24 @@ export function RfiPanel({ projectId }: { projectId: string }) {
   const [myTurnOnly, setMyTurnOnly] = useState(false);
   const [changeOrderIdDrafts, setChangeOrderIdDrafts] = useState<Record<string, string>>({});
 
+  const query = new URLSearchParams({ projectId });
+  if (myTurnOnly) query.set("ballInCourtParty", "internal");
+  const {
+    data: items = null,
+    error: itemsError,
+    reload: reloadItems,
+  } = useApi<Rfi[]>(`/rfis?${query.toString()}`, { keepPrevious: projectId });
+  const { data: analytics = null, reload: reloadAnalytics } = useApi<RfiAnalytics>(`/rfis/analytics?projectId=${projectId}`);
+
   function load() {
-    const query = new URLSearchParams({ projectId });
-    if (myTurnOnly) query.set("ballInCourtParty", "internal");
-    apiFetch<Rfi[]>(`/rfis?${query.toString()}`).then(setItems);
-    apiFetch<RfiAnalytics>(`/rfis/analytics?projectId=${projectId}`).then(setAnalytics);
+    void reloadItems();
+    void reloadAnalytics();
   }
 
   useEffect(() => {
     if (!deepLinkedId || !items) return;
     rowRefs.current[deepLinkedId]?.scrollIntoView({ behavior: "smooth", block: "center" });
-     
   }, [items, deepLinkedId]);
-
-  useEffect(load, [projectId, myTurnOnly]);
 
   async function setBallInCourt(id: string, ballInCourtParty: BallInCourtParty) {
     await apiFetch(`/rfis/${id}/ball-in-court`, { method: "PATCH", body: JSON.stringify({ ballInCourtParty }) });
@@ -185,9 +179,9 @@ export function RfiPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("title")}</h2>
         <div className="flex items-center gap-2">
-          <label className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+          <label className="flex items-center gap-1.5 text-xs text-fg-subtle">
             <input type="checkbox" checked={myTurnOnly} onChange={(e) => setMyTurnOnly(e.target.checked)} />
             {t("myTurnOnly")}
           </label>
@@ -202,17 +196,15 @@ export function RfiPanel({ projectId }: { projectId: string }) {
       {creating && (
         <form onSubmit={submit} className="card mb-4 flex flex-col gap-3">
           <TemplatePicker type="rfi" onSelect={({ subject, body }) => setForm((f) => ({ ...f, subject, question: body }))} />
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("subject")}</span>
+          <Field label={t("subject")}>
             <input
               required
               className="input"
               value={form.subject}
               onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value }))}
             />
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("question")}</span>
+          </Field>
+          <Field label={t("question")}>
             <textarea
               required
               rows={3}
@@ -220,11 +212,10 @@ export function RfiPanel({ projectId }: { projectId: string }) {
               value={form.question}
               onChange={(e) => setForm((f) => ({ ...f, question: e.target.value }))}
             />
-          </label>
+          </Field>
           <SimilarItemsHint type="rfi" projectId={projectId} text={`${form.subject}\n${form.question}`} />
           <div className="flex flex-wrap gap-3">
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("priority")}</span>
+            <Field label={t("priority")}>
               <select
                 className="input"
                 value={form.priority}
@@ -234,18 +225,16 @@ export function RfiPanel({ projectId }: { projectId: string }) {
                 <option value="medium">{t("medium")}</option>
                 <option value="high">{t("high")}</option>
               </select>
-            </label>
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("dueDate")}</span>
+            </Field>
+            <Field label={t("dueDate")}>
               <input
                 type="date"
                 className="input"
                 value={form.dueDate}
                 onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
               />
-            </label>
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("scheduleImpactDays")}</span>
+            </Field>
+            <Field label={t("scheduleImpactDays")}>
               <input
                 type="number"
                 min="0"
@@ -253,10 +242,10 @@ export function RfiPanel({ projectId }: { projectId: string }) {
                 value={form.scheduleImpactDays}
                 onChange={(e) => setForm((f) => ({ ...f, scheduleImpactDays: e.target.value }))}
               />
-            </label>
+            </Field>
           </div>
           <div className="flex items-end gap-3">
-            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+            <label className="flex items-center gap-2 text-sm text-fg-muted">
               <input
                 type="checkbox"
                 checked={form.costImpact}
@@ -265,8 +254,7 @@ export function RfiPanel({ projectId }: { projectId: string }) {
               {t("costImpact")}
             </label>
             {form.costImpact && (
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700 dark:text-gray-200">{t("estimatedCostImpact")}</span>
+              <Field label={t("estimatedCostImpact")}>
                 <input
                   type="number"
                   min="0"
@@ -275,7 +263,7 @@ export function RfiPanel({ projectId }: { projectId: string }) {
                   value={form.estimatedCostImpact}
                   onChange={(e) => setForm((f) => ({ ...f, estimatedCostImpact: e.target.value }))}
                 />
-              </label>
+              </Field>
             )}
           </div>
           <div className="flex gap-2">
@@ -292,36 +280,36 @@ export function RfiPanel({ projectId }: { projectId: string }) {
       {analytics && analytics.openCount + analytics.answeredWithDueDateCount > 0 && (
         <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="card py-2">
-            <div className="text-xs text-gray-500 dark:text-gray-400">{t("analyticsOpenCount")}</div>
-            <div className="text-lg font-semibold text-gray-900 dark:text-gray-50">{analytics.openCount}</div>
+            <div className="text-xs text-fg-subtle">{t("analyticsOpenCount")}</div>
+            <div className="text-lg font-semibold text-fg">{analytics.openCount}</div>
           </div>
           <div className="card py-2">
-            <div className="text-xs text-gray-500 dark:text-gray-400">{t("analyticsAvgDaysToAnswer")}</div>
-            <div className="text-lg font-semibold text-gray-900 dark:text-gray-50">
+            <div className="text-xs text-fg-subtle">{t("analyticsAvgDaysToAnswer")}</div>
+            <div className="text-lg font-semibold text-fg">
               {analytics.averageDaysToAnswer !== null ? t("daysValue", { days: analytics.averageDaysToAnswer }) : "—"}
             </div>
           </div>
           <div className="card py-2">
-            <div className="text-xs text-gray-500 dark:text-gray-400">{t("analyticsOldestOpen")}</div>
-            <div className="text-lg font-semibold text-gray-900 dark:text-gray-50">
+            <div className="text-xs text-fg-subtle">{t("analyticsOldestOpen")}</div>
+            <div className="text-lg font-semibold text-fg">
               {analytics.oldestOpenRfi ? t("daysValue", { days: analytics.oldestOpenRfi.daysOpen }) : "—"}
             </div>
-            {analytics.oldestOpenRfi && <div className="text-xs text-gray-400 dark:text-gray-500">{analytics.oldestOpenRfi.number}</div>}
+            {analytics.oldestOpenRfi && <div className="text-xs text-fg-subtle">{analytics.oldestOpenRfi.number}</div>}
           </div>
           <div className="card py-2">
-            <div className="text-xs text-gray-500 dark:text-gray-400">{t("analyticsSlaCompliance")}</div>
-            <div className="text-lg font-semibold text-gray-900 dark:text-gray-50">
+            <div className="text-xs text-fg-subtle">{t("analyticsSlaCompliance")}</div>
+            <div className="text-lg font-semibold text-fg">
               {analytics.slaCompliancePercent !== null ? `${analytics.slaCompliancePercent}%` : "—"}
             </div>
           </div>
           {analytics.ballInCourtBreakdown.length > 0 && (
             <div className="card col-span-2 py-2 sm:col-span-4">
-              <div className="mb-1 text-xs text-gray-500 dark:text-gray-400">{t("analyticsBallInCourtBreakdown")}</div>
+              <div className="mb-1 text-xs text-fg-subtle">{t("analyticsBallInCourtBreakdown")}</div>
               <div className="flex flex-wrap gap-1.5">
                 {analytics.ballInCourtBreakdown.map((b) => (
-                  <span key={b.party} className={`rounded-full px-2 py-0.5 text-xs font-medium ${BALL_IN_COURT_STYLES[b.party]}`}>
+                  <Badge tone={statusTone(b.party)} key={b.party}>
                     {t(`ballInCourtParty_${b.party}`)}: {b.count}
-                  </span>
+                  </Badge>
                 ))}
               </div>
             </div>
@@ -332,19 +320,19 @@ export function RfiPanel({ projectId }: { projectId: string }) {
       {bulk.result && (
         <div className="mb-3 flex items-center justify-between rounded-md bg-gray-50 dark:bg-gray-700 px-3 py-2 text-xs text-gray-600 dark:text-gray-300">
           <span>{tb("resultSummary", { succeeded: bulk.result.succeeded, failed: bulk.result.failed.length })}</span>
-          <button onClick={bulk.dismissResult} className="text-gray-400 dark:text-gray-500 hover:text-gray-600">
+          <button aria-label={ta("dismiss")} onClick={bulk.dismissResult} className="text-fg-subtle hover:text-fg-muted">
             ×
           </button>
         </div>
       )}
 
       {items === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        itemsError ? <ErrorState error={itemsError} onRetry={reloadItems} compact /> : <Skeleton lines={3} />
       ) : items.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noItems")}</p>
+        <p className="text-sm text-fg-subtle">{t("noItems")}</p>
       ) : (
         <>
-          <div className="mb-2 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+          <div className="mb-2 flex items-center gap-3 text-xs text-fg-subtle">
             <label className="flex items-center gap-1.5">
               <input
                 type="checkbox"
@@ -368,7 +356,7 @@ export function RfiPanel({ projectId }: { projectId: string }) {
             return (
               <li key={item.id} ref={(el) => { rowRefs.current[item.id] = el; }} className={`card ${deepLinkedId === item.id ? "ring-2 ring-brand-300" : ""}`}>
                 <div className="flex w-full items-start gap-3">
-                  <input type="checkbox" className="mt-1" checked={bulk.selected.has(item.id)} onChange={() => bulk.toggle(item.id)} />
+                  <input aria-label={ta("selectItem", { name: item.subject })} type="checkbox" className="mt-1" checked={bulk.selected.has(item.id)} onChange={() => bulk.toggle(item.id)} />
                   <CopyLinkButton url={buildItemDeepLink(projectId, "quality", "rfi", item.id)} />
                   <button
                     onClick={() => {
@@ -379,30 +367,30 @@ export function RfiPanel({ projectId }: { projectId: string }) {
                   >
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono text-gray-400 dark:text-gray-500">{item.number}</span>
-                        <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{item.subject}</span>
+                        <span className="text-xs font-mono text-fg-subtle">{item.number}</span>
+                        <span className="text-sm font-medium text-fg">{item.subject}</span>
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[item.status]}`}>
+                        <Badge tone={statusTone(item.status)}>
                           {t(item.status)}
-                        </span>
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${PRIORITY_STYLES[item.priority]}`}>
+                        </Badge>
+                        <Badge tone={statusTone(item.priority)}>
                           {t(item.priority)}
-                        </span>
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${BALL_IN_COURT_STYLES[item.ballInCourtParty]}`}>
+                        </Badge>
+                        <Badge tone={statusTone(item.ballInCourtParty)}>
                           {t("ballInCourt", { party: t(`ballInCourtParty_${item.ballInCourtParty}`) })}
-                        </span>
+                        </Badge>
                         {item.costImpact && (
-                          <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-error-700 dark:text-error-500">
+                          <Badge tone="danger">
                             {t("costImpact")}
-                          </span>
+                          </Badge>
                         )}
                         {item.escalatedAt && (
-                          <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-error-700 dark:text-error-500">
+                          <Badge tone="danger">
                             {t("escalated")}
-                          </span>
+                          </Badge>
                         )}
-                        {item.dueDate && <span className="text-xs text-gray-500 dark:text-gray-400">{formatDate(new Date(item.dueDate))}</span>}
+                        {item.dueDate && <span className="text-xs text-fg-subtle">{formatDate(new Date(item.dueDate))}</span>}
                       </div>
                     </div>
                   </button>
@@ -411,11 +399,11 @@ export function RfiPanel({ projectId }: { projectId: string }) {
                 {expanded && (
                   <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 dark:border-gray-700 pt-3 text-sm">
                     <p>
-                      <span className="font-medium text-gray-700 dark:text-gray-200">{t("question")}: </span>
+                      <span className="font-medium text-fg-muted">{t("question")}: </span>
                       {item.question}
                     </p>
                     {item.status !== "closed" && (
-                      <label className="flex w-fit items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                      <label className="flex w-fit items-center gap-1.5 text-xs text-fg-subtle">
                         {t("ballInCourtLabel")}
                         <select
                           className="input w-auto py-1 text-xs"
@@ -432,27 +420,27 @@ export function RfiPanel({ projectId }: { projectId: string }) {
                     )}
                     {item.scheduleImpactDays != null && (
                       <p>
-                        <span className="font-medium text-gray-700 dark:text-gray-200">{t("scheduleImpactDays")}: </span>
+                        <span className="font-medium text-fg-muted">{t("scheduleImpactDays")}: </span>
                         {item.scheduleImpactDays}
                       </p>
                     )}
                     {(item.estimatedCostImpact !== null || item.changeOrderId) && (
                       <div className="rounded-md bg-gray-50 dark:bg-gray-700 p-2 text-xs">
                         {item.changeOrderId ? (
-                          <p className="flex items-center justify-between text-success-700 dark:text-success-500">
+                          <p className="flex items-center justify-between text-success-fg">
                             <span>{t("costImpactConfirmed")}</span>
-                            <button onClick={() => unlinkChangeOrder(item.id)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
+                            <button onClick={() => unlinkChangeOrder(item.id)} className="text-fg-subtle hover:text-danger-fg">
                               {t("unlinkChangeOrder")}
                             </button>
                           </p>
                         ) : (
                           <>
                             {item.estimatedCostImpact !== null && (
-                              <p className="text-gray-500 dark:text-gray-400">{t("estimatedCostImpactLabel", { amount: item.estimatedCostImpact })}</p>
+                              <p className="text-fg-subtle">{t("estimatedCostImpactLabel", { amount: item.estimatedCostImpact })}</p>
                             )}
                             <div className="mt-1 flex items-center gap-1.5">
                               <input
-                                placeholder={t("changeOrderIdPlaceholder")}
+                                placeholder={t("changeOrderIdPlaceholder")} aria-label={t("changeOrderIdPlaceholder")}
                                 className="input py-0.5 text-xs"
                                 value={changeOrderIdDrafts[item.id] ?? ""}
                                 onChange={(e) => setChangeOrderIdDrafts((f) => ({ ...f, [item.id]: e.target.value }))}
@@ -471,13 +459,13 @@ export function RfiPanel({ projectId }: { projectId: string }) {
                     )}
                     {item.answer && (
                       <p>
-                        <span className="font-medium text-gray-700 dark:text-gray-200">{t("answer")}: </span>
+                        <span className="font-medium text-fg-muted">{t("answer")}: </span>
                         {item.answer}
-                        {item.answeredByName && <span className="text-xs text-gray-400 dark:text-gray-500"> — {item.answeredByName}</span>}
+                        {item.answeredByName && <span className="text-xs text-fg-subtle"> — {item.answeredByName}</span>}
                       </p>
                     )}
                     {item.status === "closed" && item.closedByName && (
-                      <p className="text-xs text-success-700 dark:text-success-500">{t("closedBy", { name: item.closedByName })}</p>
+                      <p className="text-xs text-success-fg">{t("closedBy", { name: item.closedByName })}</p>
                     )}
 
                     {item.status !== "closed" && (
@@ -485,7 +473,7 @@ export function RfiPanel({ projectId }: { projectId: string }) {
                         <textarea
                           rows={2}
                           className="input"
-                          placeholder={t("answerPlaceholder")}
+                          placeholder={t("answerPlaceholder")} aria-label={t("answerPlaceholder")}
                           value={answerDraft}
                           onChange={(e) => setAnswerDraft(e.target.value)}
                         />

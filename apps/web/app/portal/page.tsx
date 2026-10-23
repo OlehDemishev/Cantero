@@ -3,12 +3,19 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { getPortalToken, portalApiFetch, clearPortalToken } from "@/lib/portal-api-client";
+import { ApiError, notifyApiError } from "@/lib/api-client";
+import { getPortalToken, portalApiFetch, signOutPortal, clearPortalToken } from "@/lib/portal-api-client";
 import { formatDate } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { formatCurrency } from "@/lib/format-currency";
+import { useCompanyLocale } from "@/components/public-locale";
+import { Badge } from "@/components/ui/badge";
+import { Field } from "@/components/ui/field";
 
 interface Me {
   name: string;
   companyName: string;
+  locale: string;
   currency: string;
   onlinePaymentsEnabled: boolean;
   savedPaymentMethodLabel: string | null;
@@ -80,11 +87,13 @@ interface ChangeRequestSummary {
 
 export default function PortalDashboardPage() {
   const t = useTranslations("portal");
+  const confirm = useConfirm();
   const te = useTranslations("estimates");
   const ti = useTranslations("invoices");
   const router = useRouter();
 
   const [me, setMe] = useState<Me | null>(null);
+  useCompanyLocale(me?.locale);
   const [estimates, setEstimates] = useState<EstimateSummary[] | null>(null);
   const [changeOrders, setChangeOrders] = useState<ChangeOrderSummary[] | null>(null);
   const [invoices, setInvoices] = useState<InvoiceSummary[] | null>(null);
@@ -103,7 +112,15 @@ export default function PortalDashboardPage() {
   const [changeRequestMessage, setChangeRequestMessage] = useState<string | null>(null);
 
   function loadMe() {
-    portalApiFetch<Me>("/portal/me").then(setMe);
+    portalApiFetch<Me>("/portal/me")
+      .then(setMe)
+      .catch((err) => {
+        // Signed out on another device, or no longer on file: back to the sign-in page.
+        if (err instanceof ApiError && err.status === 401) {
+          clearPortalToken();
+          router.replace("/portal/login");
+        }
+      });
   }
 
   async function saveCard() {
@@ -117,7 +134,7 @@ export default function PortalDashboardPage() {
   }
 
   async function removeCard() {
-    if (!window.confirm(t("confirmRemovePaymentMethod"))) return;
+    if (!(await confirm({ message: t("confirmRemovePaymentMethod"), tone: "danger", verb: "remove" }))) return;
     setPaymentMethodBusy(true);
     try {
       await portalApiFetch("/portal/payment-method", { method: "DELETE" });
@@ -133,16 +150,16 @@ export default function PortalDashboardPage() {
       const firstUnderWarranty = list.find((p) => p.isUnderWarranty);
       if (firstUnderWarranty) setClaimForm((f) => ({ ...f, projectId: f.projectId || firstUnderWarranty.id }));
       if (list[0]) setChangeRequestForm((f) => ({ ...f, projectId: f.projectId || list[0].id }));
-    });
-    portalApiFetch<WarrantyClaimSummary[]>("/portal/warranty").then(setWarrantyClaims);
+    }).catch(notifyApiError);
+    portalApiFetch<WarrantyClaimSummary[]>("/portal/warranty").then(setWarrantyClaims).catch(notifyApiError);
   }
 
   function loadChangeRequests() {
-    portalApiFetch<ChangeRequestSummary[]>("/portal/change-requests").then(setChangeRequests);
+    portalApiFetch<ChangeRequestSummary[]>("/portal/change-requests").then(setChangeRequests).catch(notifyApiError);
   }
 
   function loadTickets() {
-    portalApiFetch<TicketSummary[]>("/portal/tickets").then(setTickets);
+    portalApiFetch<TicketSummary[]>("/portal/tickets").then(setTickets).catch(notifyApiError);
   }
 
   async function submitChangeRequest(e: React.FormEvent) {
@@ -175,9 +192,9 @@ export default function PortalDashboardPage() {
       return;
     }
     loadMe();
-    portalApiFetch<EstimateSummary[]>("/portal/estimates").then(setEstimates);
-    portalApiFetch<ChangeOrderSummary[]>("/portal/change-orders").then(setChangeOrders);
-    portalApiFetch<InvoiceSummary[]>("/portal/invoices").then(setInvoices);
+    portalApiFetch<EstimateSummary[]>("/portal/estimates").then(setEstimates).catch(notifyApiError);
+    portalApiFetch<ChangeOrderSummary[]>("/portal/change-orders").then(setChangeOrders).catch(notifyApiError);
+    portalApiFetch<InvoiceSummary[]>("/portal/invoices").then(setInvoices).catch(notifyApiError);
     loadWarranty();
     loadTickets();
     loadChangeRequests();
@@ -225,15 +242,15 @@ export default function PortalDashboardPage() {
     }
   }
 
-  function logout() {
-    clearPortalToken();
+  async function logout() {
+    await signOutPortal();
     router.replace("/portal/login");
   }
 
   if (!me) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
-        <p className="text-sm text-gray-500 dark:text-gray-400">{t("loading")}</p>
+        <p className="text-sm text-fg-subtle">{t("loading")}</p>
       </main>
     );
   }
@@ -247,8 +264,8 @@ export default function PortalDashboardPage() {
               C
             </span>
             <div>
-              <p className="text-sm font-semibold text-gray-900 dark:text-gray-50">{me.companyName}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{t("welcome", { name: me.name })}</p>
+              <p className="text-sm font-semibold text-fg">{me.companyName}</p>
+              <p className="text-xs text-fg-subtle">{t("welcome", { name: me.name })}</p>
             </div>
           </div>
           <button onClick={logout} className="btn-secondary px-3 py-1.5 text-xs">
@@ -258,11 +275,11 @@ export default function PortalDashboardPage() {
 
         {projects && projects.length > 0 && (
           <section className="card mb-6">
-            <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("projects")}</h2>
+            <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("projects")}</h2>
             <ul className="flex flex-col gap-2">
               {projects.map((p) => (
                 <li key={p.id} className="flex items-center justify-between">
-                  <span className="text-sm text-gray-800 dark:text-gray-100">{p.name}</span>
+                  <span className="text-sm text-fg">{p.name}</span>
                   <a href={`/portal/projects/${p.id}/messages`} className="text-xs text-brand-700 dark:text-brand-400 hover:underline">
                     {t("messages")}
                   </a>
@@ -274,16 +291,16 @@ export default function PortalDashboardPage() {
 
         {projects && projects.some((p) => p.progress.taskPercent !== null || p.progress.budgetPercent !== null) && (
           <section className="card mb-6">
-            <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("projectProgress")}</h2>
+            <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("projectProgress")}</h2>
             <ul className="flex flex-col gap-4">
               {projects
                 .filter((p) => p.progress.taskPercent !== null || p.progress.budgetPercent !== null)
                 .map((p) => (
                   <li key={p.id}>
-                    <p className="mb-2 text-sm font-medium text-gray-800 dark:text-gray-100">{p.name}</p>
+                    <p className="mb-2 text-sm font-medium text-fg">{p.name}</p>
                     {p.progress.taskPercent !== null && (
                       <div className="mb-2">
-                        <div className="mb-1 flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                        <div className="mb-1 flex justify-between text-xs text-fg-subtle">
                           <span>{t("tasksComplete")}</span>
                           <span>
                             {p.progress.tasksDone}/{p.progress.tasksTotal} · {p.progress.taskPercent}%
@@ -296,7 +313,7 @@ export default function PortalDashboardPage() {
                     )}
                     {p.progress.budgetPercent !== null && (
                       <div>
-                        <div className="mb-1 flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                        <div className="mb-1 flex justify-between text-xs text-fg-subtle">
                           <span>{t("budgetPaid")}</span>
                           <span>{p.progress.budgetPercent}%</span>
                         </div>
@@ -315,9 +332,9 @@ export default function PortalDashboardPage() {
         )}
 
         <section className="card">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("estimates")}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("estimates")}</h2>
           {!estimates || estimates.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noEstimates")}</p>
+            <p className="text-sm text-fg-subtle">{t("noEstimates")}</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {estimates.map((e) => (
@@ -329,23 +346,15 @@ export default function PortalDashboardPage() {
                     <span>
                       {e.name}
                       {e.variantLabel && <span className="ml-2 text-xs text-brand-600">{e.variantLabel}</span>}
-                      <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">{e.project?.name}</span>
+                      <span className="ml-2 text-xs text-fg-subtle">{e.project?.name}</span>
                     </span>
                     <span className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {e.grandTotal} {me.currency}
+                      <span className="text-xs text-fg-subtle">
+                        {formatCurrency(e.grandTotal, me.currency)}
                       </span>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          e.clientDecision === "approved"
-                            ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
-                            : e.clientDecision === "rejected"
-                              ? "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500"
-                              : "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500"
-                        }`}
-                      >
+                      <Badge tone={e.clientDecision === "approved" ? "success" : e.clientDecision === "rejected" ? "danger" : "warning"}>
                         {te(`clientDecision_${e.clientDecision}`)}
-                      </span>
+                      </Badge>
                     </span>
                   </a>
                 </li>
@@ -355,9 +364,9 @@ export default function PortalDashboardPage() {
         </section>
 
         <section className="card mt-6">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("changeOrders")}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("changeOrders")}</h2>
           {!changeOrders || changeOrders.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noChangeOrders")}</p>
+            <p className="text-sm text-fg-subtle">{t("noChangeOrders")}</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {changeOrders.map((co) => (
@@ -368,23 +377,15 @@ export default function PortalDashboardPage() {
                   >
                     <span>
                       CO-{co.number} — {co.title}
-                      <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">{co.estimate.name}</span>
+                      <span className="ml-2 text-xs text-fg-subtle">{co.estimate.name}</span>
                     </span>
                     <span className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {co.grandTotal} {me.currency}
+                      <span className="text-xs text-fg-subtle">
+                        {formatCurrency(co.grandTotal, me.currency)}
                       </span>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          co.clientDecision === "approved"
-                            ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
-                            : co.clientDecision === "rejected"
-                              ? "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500"
-                              : "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500"
-                        }`}
-                      >
+                      <Badge tone={co.clientDecision === "approved" ? "success" : co.clientDecision === "rejected" ? "danger" : "warning"}>
                         {te(`clientDecision_${co.clientDecision}`)}
-                      </span>
+                      </Badge>
                     </span>
                   </a>
                 </li>
@@ -394,9 +395,9 @@ export default function PortalDashboardPage() {
         </section>
 
         <section className="card mt-6">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("invoices")}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("invoices")}</h2>
           {!invoices || invoices.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noInvoices")}</p>
+            <p className="text-sm text-fg-subtle">{t("noInvoices")}</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {invoices.map((inv) => (
@@ -407,19 +408,15 @@ export default function PortalDashboardPage() {
                   >
                     <span>
                       {inv.number}
-                      <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">{inv.project.name}</span>
+                      <span className="ml-2 text-xs text-fg-subtle">{inv.project.name}</span>
                     </span>
                     <span className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {inv.total} {me.currency}
+                      <span className="text-xs text-fg-subtle">
+                        {formatCurrency(inv.total, me.currency)}
                       </span>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          inv.status === "paid" ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-                        }`}
-                      >
+                      <Badge tone={inv.status === "paid" ? "success" : "neutral"}>
                         {ti(inv.status)}
-                      </span>
+                      </Badge>
                     </span>
                   </a>
                 </li>
@@ -430,10 +427,10 @@ export default function PortalDashboardPage() {
 
         {me.onlinePaymentsEnabled && (
           <section className="card mt-6">
-            <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("paymentMethod")}</h2>
+            <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("paymentMethod")}</h2>
             {me.savedPaymentMethodLast4 ? (
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-700 dark:text-gray-200">
+                <span className="text-sm text-fg-muted">
                   {t("cardOnFile", { brand: me.savedPaymentMethodLabel ?? "", last4: me.savedPaymentMethodLast4 })}
                 </span>
                 <button onClick={removeCard} disabled={paymentMethodBusy} className="btn-secondary px-2 py-1 text-xs">
@@ -442,7 +439,7 @@ export default function PortalDashboardPage() {
               </div>
             ) : (
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500 dark:text-gray-400">{t("noPaymentMethodOnFile")}</span>
+                <span className="text-sm text-fg-subtle">{t("noPaymentMethodOnFile")}</span>
                 <button onClick={saveCard} disabled={paymentMethodBusy} className="btn-secondary px-2 py-1 text-xs">
                   {t("savePaymentMethod")}
                 </button>
@@ -452,44 +449,33 @@ export default function PortalDashboardPage() {
         )}
 
         <section className="card mt-6">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("warranty")}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("warranty")}</h2>
           {!warrantyClaims || warrantyClaims.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noWarrantyClaims")}</p>
+            <p className="text-sm text-fg-subtle">{t("noWarrantyClaims")}</p>
           ) : (
             <ul className="mb-4 flex flex-col gap-2">
               {warrantyClaims.map((claim) => (
                 <li key={claim.id} className="flex items-center justify-between rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm">
                   <span>
                     {claim.title}
-                    <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">{claim.project.name}</span>
-                    {claim.location && <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">— {claim.location}</span>}
+                    <span className="ml-2 text-xs text-fg-subtle">{claim.project.name}</span>
+                    {claim.location && <span className="ml-2 text-xs text-fg-subtle">— {claim.location}</span>}
                   </span>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                      claim.status === "resolved"
-                        ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
-                        : claim.status === "denied"
-                          ? "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500"
-                          : claim.status === "in_progress"
-                            ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400"
-                            : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-                    }`}
-                  >
+                  <Badge tone={claim.status === "resolved" ? "success" : claim.status === "denied" ? "danger" : claim.status === "in_progress" ? "brand" : "neutral"}>
                     {t(`claimStatus_${claim.status}`)}
-                  </span>
+                  </Badge>
                 </li>
               ))}
             </ul>
           )}
 
           {!projects || projects.filter((p) => p.isUnderWarranty).length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noProjectsUnderWarranty")}</p>
+            <p className="text-sm text-fg-subtle">{t("noProjectsUnderWarranty")}</p>
           ) : (
             <form onSubmit={submitClaim} className="flex flex-col gap-2">
-              <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-                {t("project")}
+              <Field label={t("project")} size="sm">
                 <select
-                  className="input mt-1"
+                  className="input"
                   value={claimForm.projectId}
                   onChange={(e) => setClaimForm((f) => ({ ...f, projectId: e.target.value }))}
                 >
@@ -501,23 +487,23 @@ export default function PortalDashboardPage() {
                       </option>
                     ))}
                 </select>
-              </label>
+              </Field>
               <input
                 required
-                placeholder={t("claimTitlePlaceholder")}
+                placeholder={t("claimTitlePlaceholder")} aria-label={t("claimTitlePlaceholder")}
                 className="input"
                 value={claimForm.title}
                 onChange={(e) => setClaimForm((f) => ({ ...f, title: e.target.value }))}
               />
               <input
-                placeholder={t("locationPlaceholder")}
+                placeholder={t("locationPlaceholder")} aria-label={t("locationPlaceholder")}
                 className="input"
                 value={claimForm.location}
                 onChange={(e) => setClaimForm((f) => ({ ...f, location: e.target.value }))}
               />
               <textarea
                 rows={2}
-                placeholder={t("descriptionPlaceholder")}
+                placeholder={t("descriptionPlaceholder")} aria-label={t("descriptionPlaceholder")}
                 className="input"
                 value={claimForm.description}
                 onChange={(e) => setClaimForm((f) => ({ ...f, description: e.target.value }))}
@@ -531,9 +517,9 @@ export default function PortalDashboardPage() {
         </section>
 
         <section className="card mt-6">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("changeRequests")}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("changeRequests")}</h2>
           {!changeRequests || changeRequests.length === 0 ? (
-            <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">{t("noChangeRequests")}</p>
+            <p className="mb-4 text-sm text-fg-subtle">{t("noChangeRequests")}</p>
           ) : (
             <ul className="mb-4 flex flex-col gap-2">
               {changeRequests.map((request) => (
@@ -541,24 +527,14 @@ export default function PortalDashboardPage() {
                   <div className="flex items-center justify-between">
                     <span>
                       {request.title}
-                      <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">{request.project.name}</span>
+                      <span className="ml-2 text-xs text-fg-subtle">{request.project.name}</span>
                     </span>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        request.status === "converted"
-                          ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
-                          : request.status === "declined"
-                            ? "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500"
-                            : request.status === "under_review"
-                              ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400"
-                              : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-                      }`}
-                    >
+                    <Badge tone={request.status === "converted" ? "success" : request.status === "declined" ? "danger" : request.status === "under_review" ? "brand" : "neutral"}>
                       {t(`changeRequestStatus_${request.status}`)}
-                    </span>
+                    </Badge>
                   </div>
                   {request.status === "declined" && request.reviewNote && (
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t("declineReason", { note: request.reviewNote })}</p>
+                    <p className="mt-1 text-xs text-fg-subtle">{t("declineReason", { note: request.reviewNote })}</p>
                   )}
                 </li>
               ))}
@@ -566,13 +542,12 @@ export default function PortalDashboardPage() {
           )}
 
           {!projects || projects.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noProjects")}</p>
+            <p className="text-sm text-fg-subtle">{t("noProjects")}</p>
           ) : (
             <form onSubmit={submitChangeRequest} className="flex flex-col gap-2">
-              <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-                {t("project")}
+              <Field label={t("project")} size="sm">
                 <select
-                  className="input mt-1"
+                  className="input"
                   value={changeRequestForm.projectId}
                   onChange={(e) => setChangeRequestForm((f) => ({ ...f, projectId: e.target.value }))}
                 >
@@ -582,10 +557,10 @@ export default function PortalDashboardPage() {
                     </option>
                   ))}
                 </select>
-              </label>
+              </Field>
               <input
                 required
-                placeholder={t("changeRequestTitlePlaceholder")}
+                placeholder={t("changeRequestTitlePlaceholder")} aria-label={t("changeRequestTitlePlaceholder")}
                 className="input"
                 value={changeRequestForm.title}
                 onChange={(e) => setChangeRequestForm((f) => ({ ...f, title: e.target.value }))}
@@ -593,7 +568,7 @@ export default function PortalDashboardPage() {
               <textarea
                 required
                 rows={2}
-                placeholder={t("descriptionPlaceholder")}
+                placeholder={t("descriptionPlaceholder")} aria-label={t("descriptionPlaceholder")}
                 className="input"
                 value={changeRequestForm.description}
                 onChange={(e) => setChangeRequestForm((f) => ({ ...f, description: e.target.value }))}
@@ -607,9 +582,9 @@ export default function PortalDashboardPage() {
         </section>
 
         <section className="card mt-6">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("myTickets")}</h2>
+          <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("myTickets")}</h2>
           {!tickets || tickets.length === 0 ? (
-            <p className="mb-4 text-sm text-gray-400 dark:text-gray-500">{t("noTickets")}</p>
+            <p className="mb-4 text-sm text-fg-subtle">{t("noTickets")}</p>
           ) : (
             <ul className="mb-4 flex flex-col gap-2">
               {tickets.map((ticket) => (
@@ -620,19 +595,11 @@ export default function PortalDashboardPage() {
                   >
                     <span>
                       {ticket.subject}
-                      <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">{formatDate(new Date(ticket.createdAt))}</span>
+                      <span className="ml-2 text-xs text-fg-subtle">{formatDate(new Date(ticket.createdAt))}</span>
                     </span>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        ticket.status === "resolved" || ticket.status === "closed"
-                          ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
-                          : ticket.status === "waiting_on_customer"
-                            ? "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500"
-                            : "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400"
-                      }`}
-                    >
+                    <Badge tone={ticket.status === "resolved" || ticket.status === "closed" ? "success" : ticket.status === "waiting_on_customer" ? "warning" : "brand"}>
                       {t(`ticketStatus_${ticket.status}`)}
-                    </span>
+                    </Badge>
                   </a>
                 </li>
               ))}
@@ -642,7 +609,7 @@ export default function PortalDashboardPage() {
           <form onSubmit={submitTicket} className="flex flex-col gap-2">
             <input
               required
-              placeholder={t("ticketSubjectPlaceholder")}
+              placeholder={t("ticketSubjectPlaceholder")} aria-label={t("ticketSubjectPlaceholder")}
               className="input"
               value={ticketForm.subject}
               onChange={(e) => setTicketForm((f) => ({ ...f, subject: e.target.value }))}
@@ -650,7 +617,7 @@ export default function PortalDashboardPage() {
             <textarea
               required
               rows={2}
-              placeholder={t("ticketContentPlaceholder")}
+              placeholder={t("ticketContentPlaceholder")} aria-label={t("ticketContentPlaceholder")}
               className="input"
               value={ticketForm.content}
               onChange={(e) => setTicketForm((f) => ({ ...f, content: e.target.value }))}

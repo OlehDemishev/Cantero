@@ -2,7 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useApi } from "@/lib/use-api";
+import { Field, FormError } from "@/components/ui/field";
 
 interface MaterialCatalogItem {
   id: string;
@@ -27,9 +32,12 @@ interface DraftComponent {
 
 export function StockKits() {
   const t = useTranslations("stockKits");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
-  const [kits, setKits] = useState<StockKit[] | null>(null);
+  const { data: kits = null, error: kitsError, reload: reloadKits } = useApi<StockKit[]>("/materials/stock-kits");
   const [materials, setMaterials] = useState<MaterialCatalogItem[]>([]);
   const [form, setForm] = useState({ kitMaterialCatalogItemId: "", name: "" });
   const [components, setComponents] = useState<DraftComponent[]>([]);
@@ -37,18 +45,17 @@ export function StockKits() {
   const [error, setError] = useState<string | null>(null);
 
   function load() {
-    apiFetch<StockKit[]>("/materials/stock-kits").then(setKits);
+    void reloadKits();
   }
 
   useEffect(() => {
-    load();
     apiFetch<MaterialCatalogItem[]>("/materials/catalog").then((items) => {
       setMaterials(items);
       if (items[0]) {
         setForm((f) => ({ ...f, kitMaterialCatalogItemId: items[0].id }));
         setComponents([{ materialCatalogItemId: items[0].id, quantityPerKit: "1" }]);
       }
-    });
+    }).catch(notifyApiError);
   }, []);
 
   function addComponent() {
@@ -84,6 +91,7 @@ export function StockKits() {
   }
 
   async function remove(id: string) {
+    if (!(await confirm({ message: td("deleteStockKit"), tone: "danger", verb: "delete" }))) return;
     setBusy(true);
     try {
       await apiFetch(`/materials/stock-kits/${id}`, { method: "DELETE" });
@@ -95,10 +103,9 @@ export function StockKits() {
 
   return (
     <div>
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("newKit")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("newKit")}</h2>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3 max-w-lg">
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("kitItem")}
+        <Field label={t("kitItem")} size="sm">
           <select
             className="input"
             value={form.kitMaterialCatalogItemId}
@@ -110,19 +117,19 @@ export function StockKits() {
               </option>
             ))}
           </select>
-        </label>
+        </Field>
         <input
           required
-          placeholder={tc("name")}
+          placeholder={tc("name")} aria-label={tc("name")}
           className="input"
           value={form.name}
           onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
         />
 
-        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("components")}</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("components")}</p>
         {components.map((c, i) => (
           <div key={i} className="flex items-center gap-2">
-            <select
+            <select aria-label={ta("material")}
               className="input"
               value={c.materialCatalogItemId}
               onChange={(e) =>
@@ -135,7 +142,7 @@ export function StockKits() {
                 </option>
               ))}
             </select>
-            <input
+            <input aria-label={ta("quantity")}
               type="number"
               step="0.000001"
               className="input w-24"
@@ -147,7 +154,7 @@ export function StockKits() {
             <button
               type="button"
               onClick={() => setComponents((cs) => cs.filter((_, idx) => idx !== i))}
-              className="text-xs text-error-700 dark:text-error-500"
+              className="text-xs text-danger-fg"
             >
               {tc("delete")}
             </button>
@@ -160,13 +167,13 @@ export function StockKits() {
           {tc("create")}
         </button>
       </form>
-      {error && <p className="mt-2 text-xs text-error-600">{error}</p>}
+      {error && <FormError className="mt-2">{error}</FormError>}
 
       <div className="mt-8">
         {!kits ? (
-          <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+          kitsError ? <ErrorState error={kitsError} onRetry={reloadKits} compact /> : <Skeleton lines={3} />
         ) : kits.length === 0 ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500">{t("noKits")}</p>
+          <p className="text-sm text-fg-subtle">{t("noKits")}</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {kits.map((k) => (
@@ -174,15 +181,15 @@ export function StockKits() {
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="font-medium">{k.name}</span>
-                    <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
+                    <span className="ml-2 text-xs text-fg-subtle">
                       → {k.kitMaterialCatalogItem.name} ({k.kitMaterialCatalogItem.code})
                     </span>
                   </div>
-                  <button onClick={() => remove(k.id)} disabled={busy} className="text-xs text-error-700 dark:text-error-500 hover:underline">
+                  <button onClick={() => remove(k.id)} disabled={busy} className="text-xs text-danger-fg hover:underline">
                     {tc("delete")}
                   </button>
                 </div>
-                <ul className="mt-2 flex flex-col gap-0.5 text-xs text-gray-500 dark:text-gray-400">
+                <ul className="mt-2 flex flex-col gap-0.5 text-xs text-fg-subtle">
                   {k.components.map((c, i) => (
                     <li key={i}>
                       {c.quantityPerKit} × {c.materialCatalogItem.name}

@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface SavedViewRecord<T> {
   id: string;
@@ -20,16 +22,16 @@ export function SavedViewsBar<T extends object>({
   onApply: (filters: T) => void;
 }) {
   const t = useTranslations("savedViews");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
 
-  const [views, setViews] = useState<SavedViewRecord<T>[] | null>(null);
+  const { data: views = null, reload: reloadViews } = useApi<SavedViewRecord<T>[]>(`/saved-views?viewType=${viewType}`);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<SavedViewRecord<T>[]>(`/saved-views?viewType=${viewType}`).then(setViews);
+    void reloadViews();
   }
-
-  useEffect(load, [viewType]);
 
   async function save() {
     if (!name.trim()) return;
@@ -47,6 +49,7 @@ export function SavedViewsBar<T extends object>({
   }
 
   async function remove(id: string) {
+    if (!(await confirm({ message: td("deleteSavedView"), tone: "danger", verb: "delete" }))) return;
     await apiFetch(`/saved-views/${id}`, { method: "DELETE" });
     load();
   }
@@ -64,7 +67,7 @@ export function SavedViewsBar<T extends object>({
                 type="button"
                 onClick={() => remove(v.id)}
                 aria-label={t("removeView")}
-                className="text-gray-400 dark:text-gray-500 hover:text-error-600"
+                className="text-fg-subtle hover:text-danger-fg"
               >
                 ×
               </button>
@@ -75,7 +78,7 @@ export function SavedViewsBar<T extends object>({
       <div className="flex items-center gap-1.5">
         <input
           className="input w-32 py-1 text-xs"
-          placeholder={t("nameThisView")}
+          placeholder={t("nameThisView")} aria-label={t("nameThisView")}
           value={name}
           onChange={(e) => setName(e.target.value)}
         />

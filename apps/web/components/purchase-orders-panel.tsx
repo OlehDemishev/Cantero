@@ -2,9 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { Field } from "@/components/ui/field";
 
 interface Supplier {
   id: string;
@@ -51,10 +56,12 @@ interface ShipmentLineDraft {
 export function PurchaseOrdersPanel() {
   const t = useTranslations("purchaseOrders");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
 
   const PURCHASE_ORDERS_PAGE_SIZE = 100;
   const [orders, setOrders] = useState<PurchaseOrder[] | null>(null);
+  const [ordersError, setOrdersError] = useState<Error | null>(null);
   const [ordersHasMore, setOrdersHasMore] = useState(false);
   const [ordersLoadMoreBusy, setOrdersLoadMoreBusy] = useState(false);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -72,9 +79,10 @@ export function PurchaseOrdersPanel() {
 
   function load() {
     apiFetch<PurchaseOrder[]>("/materials/purchase-orders").then((page) => {
+      setOrdersError(null);
       setOrders(page);
       setOrdersHasMore(page.length === PURCHASE_ORDERS_PAGE_SIZE);
-    });
+    }).catch(setOrdersError);
   }
 
   async function loadMoreOrders() {
@@ -96,9 +104,9 @@ export function PurchaseOrdersPanel() {
     apiFetch<Supplier[]>("/materials/suppliers").then((s) => {
       setSuppliers(s);
       if (s[0]) setSupplierId(s[0].id);
-    });
-    apiFetch<Warehouse[]>("/materials/warehouses").then(setWarehouses);
-    apiFetch<MaterialCatalogItem[]>("/materials/catalog").then(setMaterials);
+    }).catch(notifyApiError);
+    apiFetch<Warehouse[]>("/materials/warehouses").then(setWarehouses).catch(notifyApiError);
+    apiFetch<MaterialCatalogItem[]>("/materials/catalog").then(setMaterials).catch(notifyApiError);
   }, []);
 
   function addLine() {
@@ -196,11 +204,11 @@ export function PurchaseOrdersPanel() {
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
       <div className="card lg:col-span-1">
-        <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-200">
+        <h2 className="mb-4 text-sm font-semibold text-fg-muted">
           {t("newOrder")}
         </h2>
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-          <select
+          <select aria-label={t("supplier")}
             className="input"
             value={supplierId}
             onChange={(e) => setSupplierId(e.target.value)}
@@ -211,18 +219,17 @@ export function PurchaseOrdersPanel() {
               </option>
             ))}
           </select>
-          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-            {t("expectedDate")}
+          <Field label={t("expectedDate")} size="sm">
             <input
               type="date"
-              className="input mt-1"
+              className="input"
               value={expectedDate}
               onChange={(e) => setExpectedDate(e.target.value)}
             />
-          </label>
+          </Field>
 
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+            <span className="text-xs font-semibold text-fg-subtle">
               {t("material")}
             </span>
             <button
@@ -235,7 +242,7 @@ export function PurchaseOrdersPanel() {
           </div>
           {lines.map((line, i) => (
             <div key={i} className="flex gap-2">
-              <select
+              <select aria-label={t("material")}
                 className="input"
                 value={line.materialCatalogItemId}
                 onChange={(e) =>
@@ -258,7 +265,7 @@ export function PurchaseOrdersPanel() {
                 type="number"
                 step="0.01"
                 min="0.01"
-                placeholder={t("quantity")}
+                placeholder={t("quantity")} aria-label={t("quantity")}
                 className="input w-20"
                 value={line.quantity}
                 onChange={(e) =>
@@ -273,7 +280,7 @@ export function PurchaseOrdersPanel() {
                 type="number"
                 step="0.01"
                 min="0"
-                placeholder={t("unitPrice")}
+                placeholder={t("unitPrice")} aria-label={t("unitPrice")}
                 className="input w-20"
                 value={line.unitPrice}
                 onChange={(e) =>
@@ -299,7 +306,7 @@ export function PurchaseOrdersPanel() {
 
       <div className="lg:col-span-2">
         {!orders ? (
-          <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+          ordersError ? <ErrorState error={ordersError} onRetry={load} compact /> : <Skeleton lines={3} />
         ) : (
           <ul className="flex flex-col gap-2">
             {orders.map((po) => (
@@ -308,30 +315,22 @@ export function PurchaseOrdersPanel() {
                   <div className="flex items-center gap-2 font-medium">
                     {po.supplier.name}
                     {po.autoGenerated && (
-                      <span className="rounded-full bg-warning-50 dark:bg-warning-500/15 px-2 py-0.5 text-xs font-medium text-warning-700 dark:text-warning-500">
+                      <Badge tone="warning">
                         {t("autoGenerated")}
-                      </span>
+                      </Badge>
                     )}
                   </div>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs ${
-                      po.status === "received"
-                        ? "bg-green-100 dark:bg-green-500/15 text-green-800 dark:text-green-400"
-                        : po.status === "partially_received"
-                          ? "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500"
-                          : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-                    }`}
-                  >
+                  <Badge tone={po.status === "received" ? "success" : po.status === "partially_received" ? "warning" : "neutral"}>
                     {t(po.status)}
-                  </span>
+                  </Badge>
                 </div>
-                <ul className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                <ul className="mt-2 text-sm text-fg-subtle">
                   {po.lines.map((l) => (
                     <li key={l.id}>
                       {l.materialCatalogItem.code} × {l.quantity} @{" "}
-                      {l.unitPrice} {me?.company.currency}
+                      {formatCurrency(l.unitPrice, me?.company.currency, { maximumFractionDigits: 4 })}
                       {Number(l.quantityReceived) > 0 && (
-                        <span className="ml-1.5 text-xs text-gray-400 dark:text-gray-500">
+                        <span className="ml-1.5 text-xs text-fg-subtle">
                           (
                           {t("receivedOf", {
                             received: l.quantityReceived,
@@ -344,7 +343,7 @@ export function PurchaseOrdersPanel() {
                   ))}
                 </ul>
                 {po.acknowledgedAt ? (
-                  <p className="mt-2 text-xs text-success-700 dark:text-success-500">
+                  <p className="mt-2 text-xs text-success-fg">
                     {t("acknowledgedBy", {
                       date: formatDate(new Date(po.acknowledgedAt)),
                       eta: po.supplierEta
@@ -352,14 +351,14 @@ export function PurchaseOrdersPanel() {
                         : "—",
                     })}
                     {po.supplierNote && (
-                      <span className="block text-gray-500 dark:text-gray-400">
+                      <span className="block text-fg-subtle">
                         {po.supplierNote}
                       </span>
                     )}
                   </p>
                 ) : (
                   po.status !== "draft" && (
-                    <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
+                    <p className="mt-2 text-xs text-fg-subtle">
                       {t("notAcknowledged")}
                     </p>
                   )
@@ -383,7 +382,7 @@ export function PurchaseOrdersPanel() {
 
                 {receivingOrderId === po.id && (
                   <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 dark:border-gray-700 pt-3">
-                    <select
+                    <select aria-label={ta("warehouse")}
                       className="input"
                       value={shipmentWarehouseId}
                       onChange={(e) => setShipmentWarehouseId(e.target.value)}
@@ -401,14 +400,14 @@ export function PurchaseOrdersPanel() {
                           key={sl.lineId}
                           className="flex flex-wrap items-center gap-2"
                         >
-                          <span className="w-32 truncate text-xs text-gray-500 dark:text-gray-400">
+                          <span className="w-32 truncate text-xs text-fg-subtle">
                             {line.materialCatalogItem.code}
                           </span>
                           <input
                             type="number"
                             step="0.01"
                             min="0"
-                            placeholder={t("quantityReceivedPlaceholder")}
+                            placeholder={t("quantityReceivedPlaceholder")} aria-label={t("quantityReceivedPlaceholder")}
                             className="input w-32"
                             value={sl.quantityReceived}
                             onChange={(e) =>
@@ -425,7 +424,7 @@ export function PurchaseOrdersPanel() {
                             type="number"
                             step="0.01"
                             min="0"
-                            placeholder={t("quantityDamagedPlaceholder")}
+                            placeholder={t("quantityDamagedPlaceholder")} aria-label={t("quantityDamagedPlaceholder")}
                             className="input w-32"
                             value={sl.quantityDamaged}
                             onChange={(e) =>
@@ -438,7 +437,7 @@ export function PurchaseOrdersPanel() {
                               )
                             }
                           />
-                          <select
+                          <select aria-label={ta("shortfall")}
                             className="input"
                             value={sl.shortfallType}
                             onChange={(e) =>

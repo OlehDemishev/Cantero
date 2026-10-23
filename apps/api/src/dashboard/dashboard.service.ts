@@ -1,5 +1,11 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
-import type { CreateDashboardWidgetInput, DashboardWidgetType } from "@cantero/shared";
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import {
+  DASHBOARD_WIDGET_PERMISSIONS,
+  canViewDashboardWidget,
+  type AuthUser,
+  type CreateDashboardWidgetInput,
+  type DashboardWidgetType,
+} from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { PdfService } from "../common/pdf/pdf.service";
 import { ReportsService } from "../reports/reports.service";
@@ -18,8 +24,11 @@ export class DashboardService {
 
   /** Every widget renders from an existing report/insight endpoint — this is the only place
    * that maps a widget's type + config to the right one of those, so adding a widget type never
-   * means writing a new query, just wiring an existing one in here. */
-  private async resolveData(companyId: string, type: DashboardWidgetType, config: Record<string, unknown> | null) {
+   * means writing a new query, just wiring an existing one in here. Callers check the widget's
+   * capability (DASHBOARD_WIDGET_PERMISSIONS) first; the viewer is passed on so project-scoped
+   * reports narrow exactly as their own endpoint does. */
+  private async resolveData(user: AuthUser, type: DashboardWidgetType, config: Record<string, unknown> | null) {
+    const { companyId } = user;
     const cfg = config ?? {};
     switch (type) {
       case "revenue_trend":
@@ -27,11 +36,11 @@ export class DashboardService {
       case "cash_flow_forecast":
         return this.reports.cashFlowForecast(companyId);
       case "project_margins":
-        return this.reports.projectMargins(companyId);
+        return this.reports.projectMargins(companyId, user);
       case "portfolio_summary":
-        return this.reports.portfolio(companyId);
+        return this.reports.portfolio(companyId, user);
       case "invoice_aging":
-        return this.reports.invoiceAging(companyId);
+        return this.reports.invoiceAging(companyId, user);
       case "warehouse_turnover":
         return this.reports.warehouseTurnover(companyId);
       case "labor_cost":
@@ -41,28 +50,49 @@ export class DashboardService {
         });
       case "custom_report":
         if (typeof cfg.customReportId !== "string") return null;
-        return this.customReports.run(companyId, cfg.customReportId);
+        return this.customReports.run(companyId, cfg.customReportId, user);
       case "backlog":
         return this.reports.backlog(companyId);
       case "compliance_calendar":
-        return this.reports.complianceCalendar(companyId, typeof cfg.lookaheadDays === "number" ? cfg.lookaheadDays : undefined);
+        return this.reports.complianceCalendar(
+          companyId,
+          typeof cfg.lookaheadDays === "number" ? cfg.lookaheadDays : undefined,
+          user,
+        );
     }
   }
 
-  async list(companyId: string, userId: string) {
+  /** The member's widgets, each with its data. A widget whose capability the member no longer holds
+   * (role changed, permission revoked) is left out entirely rather than shown empty, and comes back
+   * if the capability is granted again. */
+  async list(user: AuthUser) {
+    const { companyId, userId } = user;
     const widgets = await this.prisma.dashboardWidget.findMany({
       where: { companyId, userId },
       orderBy: { sortOrder: "asc" },
     });
     return Promise.all(
-      widgets.map(async (w) => ({
-        ...w,
-        data: await this.resolveData(companyId, w.type, w.config as Record<string, unknown> | null).catch(() => null),
-      })),
+      widgets
+        .filter((w) => canViewDashboardWidget(w.type, user.permissions))
+        .map(async (w) => ({
+          ...w,
+          data: await this.resolveData(user, w.type, w.config as Record<string, unknown> | null).catch(() => null),
+        })),
     );
   }
 
-  async create(companyId: string, userId: string, input: CreateDashboardWidgetInput) {
+  async create(user: AuthUser, input: CreateDashboardWidgetInput) {
+    const { companyId, userId } = user;
+    if (!canViewDashboardWidget(input.type, user.permissions)) {
+      throw new ForbiddenException(`Requires the "${DASHBOARD_WIDGET_PERMISSIONS[input.type]}" permission`);
+    }
+    if (input.type === "custom_report") {
+      // Same reach as GET /custom-reports/:id/run: any saved report of the member's own company.
+      const reportId = input.config?.customReportId;
+      if (typeof reportId !== "string") throw new BadRequestException("customReportId is required for a custom_report widget");
+      const report = await this.prisma.customReport.findFirst({ where: { id: reportId, companyId }, select: { id: true } });
+      if (!report) throw new NotFoundException("Report not found");
+    }
     const last = await this.prisma.dashboardWidget.findFirst({
       where: { companyId, userId },
       orderBy: { sortOrder: "desc" },
@@ -78,29 +108,32 @@ export class DashboardService {
     });
   }
 
-  async delete(companyId: string, userId: string, id: string) {
+  /** Deleting needs no capability: a member can always clear a widget from their own dashboard. */
+  async delete({ companyId, userId }: AuthUser, id: string) {
     const widget = await this.prisma.dashboardWidget.findFirst({ where: { id, companyId, userId } });
     if (!widget) throw new NotFoundException("Widget not found");
     await this.prisma.dashboardWidget.delete({ where: { id } });
     return { ok: true };
   }
 
-  async reorder(companyId: string, userId: string, orderedIds: string[]) {
+  async reorder(user: AuthUser, orderedIds: string[]) {
+    const { companyId, userId } = user;
     await Promise.all(
       orderedIds.map((id, index) =>
         this.prisma.dashboardWidget.updateMany({ where: { id, companyId, userId }, data: { sortOrder: index } }),
       ),
     );
-    return this.list(companyId, userId);
+    return this.list(user);
   }
 
   /** A tabular KPI summary of the user's current dashboard — reuses PdfService's table-document
    * renderer rather than attempting to rasterize each widget's chart, consistent with the rest
-   * of the app's PDF exports (invoices, estimates, closeout) all being table-shaped. */
-  async exportPdf(companyId: string, userId: string): Promise<Buffer> {
+   * of the app's PDF exports (invoices, estimates, closeout) all being table-shaped. Built from
+   * list(), so it carries only the widgets the member may still see. */
+  async exportPdf(user: AuthUser): Promise<Buffer> {
     const [widgets, company] = await Promise.all([
-      this.list(companyId, userId),
-      this.prisma.company.findUniqueOrThrow({ where: { id: companyId }, select: { name: true } }),
+      this.list(user),
+      this.prisma.company.findUniqueOrThrow({ where: { id: user.companyId }, select: { name: true } }),
     ]);
     const rows = widgets.map((w) => ({
       cells: [this.widgetLabel(w.type), this.summarize(w.type, w.data)],

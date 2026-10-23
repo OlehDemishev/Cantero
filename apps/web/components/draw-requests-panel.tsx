@@ -3,9 +3,13 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { DRAW_REQUEST_STATUSES, type DrawRequestStatus } from "@cantero/shared";
-import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { apiFetch, downloadBlob, notifyApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
+import { Field } from "@/components/ui/field";
 
 interface Invoice {
   id: string;
@@ -23,14 +27,6 @@ interface DrawRequest {
   lenderName: string | null;
   invoice: { id: string; number: string; total: string };
 }
-
-const STATUS_STYLES: Record<DrawRequestStatus, string> = {
-  draft: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  submitted: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
-  under_review: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
-  approved: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
-  funded: "bg-success-600 text-white",
-};
 
 const EMPTY_FORM = { invoiceId: "", periodStart: "", periodEnd: "", lenderName: "", lenderContactEmail: "", notes: "" };
 
@@ -54,8 +50,8 @@ export function DrawRequestsPanel({ projectId }: { projectId: string }) {
       const wrappedInvoiceIds = new Set(list.map((d) => d.invoice.id));
       apiFetch<Invoice[]>("/invoices").then((all) =>
         setEligibleInvoices(all.filter((i) => i.project.id === projectId && i.percentComplete !== null && !wrappedInvoiceIds.has(i.id))),
-      );
-    });
+      ).catch(notifyApiError);
+    }).catch(notifyApiError);
   }
 
   useEffect(load, [projectId]);
@@ -100,19 +96,18 @@ export function DrawRequestsPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-8">
       <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("title")}</h2>
         {!creating && eligibleInvoices.length > 0 && (
           <button onClick={() => setCreating(true)} className="btn-secondary px-3 py-1 text-xs">
             {t("newDraw")}
           </button>
         )}
       </div>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
 
       {creating && (
         <form onSubmit={submitCreate} className="card mb-4 flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("invoice")}</span>
+          <Field label={t("invoice")}>
             <select
               required
               className="input"
@@ -122,14 +117,13 @@ export function DrawRequestsPanel({ projectId }: { projectId: string }) {
               <option value="">—</option>
               {eligibleInvoices.map((inv) => (
                 <option key={inv.id} value={inv.id}>
-                  {inv.number} — {inv.percentComplete}% — {inv.total} {currency}
+                  {inv.number} — {inv.percentComplete}% — {formatCurrency(inv.total, currency)}
                 </option>
               ))}
             </select>
-          </label>
+          </Field>
           <div className="flex flex-wrap gap-3">
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("periodStart")}</span>
+            <Field label={t("periodStart")}>
               <input
                 type="date"
                 required
@@ -137,9 +131,8 @@ export function DrawRequestsPanel({ projectId }: { projectId: string }) {
                 value={form.periodStart}
                 onChange={(e) => setForm((f) => ({ ...f, periodStart: e.target.value }))}
               />
-            </label>
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("periodEnd")}</span>
+            </Field>
+            <Field label={t("periodEnd")}>
               <input
                 type="date"
                 required
@@ -147,34 +140,31 @@ export function DrawRequestsPanel({ projectId }: { projectId: string }) {
                 value={form.periodEnd}
                 onChange={(e) => setForm((f) => ({ ...f, periodEnd: e.target.value }))}
               />
-            </label>
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("lenderName")}</span>
+            </Field>
+            <Field label={t("lenderName")}>
               <input
                 className="input"
                 value={form.lenderName}
                 onChange={(e) => setForm((f) => ({ ...f, lenderName: e.target.value }))}
               />
-            </label>
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("lenderContactEmail")}</span>
+            </Field>
+            <Field label={t("lenderContactEmail")}>
               <input
                 type="email"
                 className="input"
                 value={form.lenderContactEmail}
                 onChange={(e) => setForm((f) => ({ ...f, lenderContactEmail: e.target.value }))}
               />
-            </label>
+            </Field>
           </div>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("notes")}</span>
+          <Field label={t("notes")}>
             <textarea
               rows={2}
               className="input"
               value={form.notes}
               onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
             />
-          </label>
+          </Field>
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className="btn-primary">
               {tc("save")}
@@ -187,28 +177,28 @@ export function DrawRequestsPanel({ projectId }: { projectId: string }) {
       )}
 
       {draws.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noDraws")}</p>
+        <p className="text-sm text-fg-subtle">{t("noDraws")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {draws.map((draw) => (
             <li key={draw.id} className="card">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-gray-800 dark:text-white/90">{t("drawNumber", { number: draw.drawNumber })}</span>
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[draw.status]}`}>
+                  <span className="font-medium text-fg">{t("drawNumber", { number: draw.drawNumber })}</span>
+                  <Badge tone={statusTone(draw.status)}>
                     {t(`status_${draw.status}`)}
-                  </span>
+                  </Badge>
                 </div>
-                <span className="text-sm font-medium tabular-nums text-gray-700 dark:text-gray-200">
-                  {draw.invoice.total} {currency}
+                <span className="text-sm font-medium tabular-nums text-fg-muted">
+                  {formatCurrency(draw.invoice.total, currency)}
                 </span>
               </div>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              <p className="mt-1 text-xs text-fg-subtle">
                 {formatDate(new Date(draw.periodStart))} – {formatDate(new Date(draw.periodEnd))}
                 {draw.lenderName ? ` · ${draw.lenderName}` : ""}
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <select
+                <select aria-label={tc("status")}
                   className="input w-auto py-1 text-xs"
                   value={draw.status}
                   onChange={(e) => changeStatus(draw.id, e.target.value as DrawRequestStatus)}

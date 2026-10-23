@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAssignableRoles } from "@/lib/permissions";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface CustomRole {
   id: string;
@@ -19,20 +22,20 @@ interface Member {
 
 export function TeamMembersPanel({ isManager }: { isManager: boolean }) {
   const t = useTranslations("settings");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
-  const [members, setMembers] = useState<Member[] | null>(null);
-  const [customRoles, setCustomRoles] = useState<CustomRole[]>([]);
+  const ta = useTranslations("a11y");
+  const { data: members = null, reload: reloadMembers, error: membersError } = useApi<Member[]>("/company/members");
+  const { data: customRoles = [], reload: reloadCustomRoles } = useApi<CustomRole[]>("/company/custom-roles");
   const { roles: assignableRoles, mayTouchAdmin } = useAssignableRoles();
   const isAdminLevel = (customRoleId: string | undefined) => !!customRoles.find((cr) => cr.id === customRoleId)?.basePermissions.includes("admin");
   // Owner rows are never editable; admin rows (or an admin-based custom role) only by the owner.
   const editable = (m: Member) => isManager && m.role !== "owner" && (mayTouchAdmin || (m.role !== "admin" && !isAdminLevel(m.customRole?.id)));
 
   function load() {
-    apiFetch<Member[]>("/company/members").then(setMembers);
-    apiFetch<CustomRole[]>("/company/custom-roles").then(setCustomRoles);
+    void reloadMembers();
+    void reloadCustomRoles();
   }
-
-  useEffect(load, []);
 
   async function updateMemberRole(userId: string, role: string) {
     await apiFetch(`/company/members/${userId}`, { method: "PATCH", body: JSON.stringify({ role }) });
@@ -40,7 +43,7 @@ export function TeamMembersPanel({ isManager }: { isManager: boolean }) {
   }
 
   async function removeMember(userId: string) {
-    if (!window.confirm(t("confirmRemoveMember"))) return;
+    if (!(await confirm({ message: t("confirmRemoveMember"), tone: "danger", verb: "remove" }))) return;
     await apiFetch(`/company/members/${userId}`, { method: "DELETE" });
     load();
   }
@@ -55,19 +58,19 @@ export function TeamMembersPanel({ isManager }: { isManager: boolean }) {
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("members")}</h2>
+      <h2 className="mb-4 text-sm font-semibold text-fg-muted">{t("members")}</h2>
       {!members ? (
-        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        membersError ? <ErrorState error={membersError} onRetry={reloadMembers} compact /> : <Skeleton lines={3} />
       ) : (
         <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-              <th className="py-2">{tc("name")}</th>
-              <th>{tc("email")}</th>
-              <th>{t("role")}</th>
-              <th>{t("customRole")}</th>
-              {isManager && <th></th>}
+            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
+              <th scope="col" className="py-2">{tc("name")}</th>
+              <th scope="col">{tc("email")}</th>
+              <th scope="col">{t("role")}</th>
+              <th scope="col">{t("customRole")}</th>
+              {isManager && <th scope="col"></th>}
             </tr>
           </thead>
           <tbody>
@@ -77,7 +80,7 @@ export function TeamMembersPanel({ isManager }: { isManager: boolean }) {
                 <td>{m.user.email}</td>
                 <td>
                   {editable(m) ? (
-                    <select
+                    <select aria-label={ta("fieldOf", { field: t("role"), item: m.user.name })}
                       className="input w-auto"
                       value={m.role}
                       onChange={(e) => updateMemberRole(m.userId, e.target.value)}
@@ -94,7 +97,7 @@ export function TeamMembersPanel({ isManager }: { isManager: boolean }) {
                 </td>
                 <td>
                   {editable(m) ? (
-                    <select
+                    <select aria-label={ta("fieldOf", { field: t("customRole"), item: m.user.name })}
                       className="input w-auto"
                       value={m.customRole?.id ?? ""}
                       onChange={(e) => assignCustomRole(m.userId, e.target.value)}

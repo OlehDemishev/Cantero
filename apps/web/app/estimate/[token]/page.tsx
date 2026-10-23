@@ -2,9 +2,15 @@
 
 import { use, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, ApiError } from "@/lib/api-client";
+import { apiFetch } from "@/lib/api-client";
+import { PublicLinkError } from "@/components/public-link-error";
+import { useCompanyLocale } from "@/components/public-locale";
 import { SignaturePad } from "@/components/signature-pad";
 import { formatDateTime } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
+import { Alert } from "@/components/ui/alert";
+import { Field, FormError } from "@/components/ui/field";
 
 interface PublicLine {
   id: string;
@@ -15,6 +21,8 @@ interface PublicLine {
 }
 type ClientDecision = "pending" | "approved" | "rejected" | "countered";
 interface PublicEstimate {
+  /** The client's or company's language — see useCompanyLocale. */
+  locale: string;
   id: string;
   name: string;
   variantLabel: string | null;
@@ -38,7 +46,8 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
   const tc = useTranslations("common");
 
   const [estimate, setEstimate] = useState<PublicEstimate | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
+  useCompanyLocale(estimate?.locale);
   const [note, setNote] = useState("");
   const [signerName, setSignerName] = useState("");
   const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
@@ -50,7 +59,7 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
   function load() {
     apiFetch<PublicEstimate>(`/public/estimates/${token}`)
       .then(setEstimate)
-      .catch((err) => setError(err instanceof ApiError ? err.message : t("linkNotFound")));
+      .catch(setError);
   }
 
   useEffect(load, [token]);
@@ -93,18 +102,12 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
     }
   }
 
-  if (error) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
-        <p className="text-sm text-gray-500 dark:text-gray-400">{error}</p>
-      </main>
-    );
-  }
+  if (error) return <PublicLinkError error={error} />;
 
   if (!estimate) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
-        <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
       </main>
     );
   }
@@ -116,29 +119,29 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500 text-sm font-semibold text-white">
             C
           </span>
-          <span className="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-50">{estimate.companyName}</span>
+          <span className="text-lg font-semibold tracking-tight text-fg">{estimate.companyName}</span>
         </div>
 
         <div className="card">
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">
+            <h1 className="text-xl font-semibold text-fg">
               {estimate.name}
               {estimate.variantLabel && (
-                <span className="ml-2 rounded-full bg-brand-50 dark:bg-brand-500/15 px-2 py-0.5 text-xs font-medium text-brand-700 dark:text-brand-400 align-middle">
+                <Badge tone="brand" className="ml-2 align-middle">
                   {estimate.variantLabel}
-                </span>
+                </Badge>
               )}
             </h1>
           </div>
-          {estimate.projectName && <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{estimate.projectName}</p>}
+          {estimate.projectName && <p className="mt-1 text-sm text-fg-subtle">{estimate.projectName}</p>}
 
-          <div className="overflow-x-auto">
+          <div tabIndex={0} className="overflow-x-auto">
           <table className="mt-6 w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-                <th className="py-2">{t("rateItem")}</th>
-                <th>{t("quantity")}</th>
-                <th className="text-right">{t("lineTotal")}</th>
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
+                <th scope="col" className="py-2">{t("rateItem")}</th>
+                <th scope="col">{t("quantity")}</th>
+                <th scope="col" className="text-right">{t("lineTotal")}</th>
               </tr>
             </thead>
             <tbody>
@@ -149,7 +152,7 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
                     {l.quantity} {l.unit}
                   </td>
                   <td className="text-right">
-                    {l.lineTotal} {estimate.currency}
+                    {formatCurrency(l.lineTotal, estimate.currency)}
                   </td>
                 </tr>
               ))}
@@ -159,64 +162,59 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
 
           <dl className="mt-4 flex flex-col gap-1.5 text-sm">
             <div className="flex justify-between">
-              <dt className="text-gray-500 dark:text-gray-400">{t("subtotal")}</dt>
+              <dt className="text-fg-subtle">{t("subtotal")}</dt>
               <dd>
-                {estimate.subtotal} {estimate.currency}
+                {formatCurrency(estimate.subtotal, estimate.currency)}
               </dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-gray-500 dark:text-gray-400">{t("markupAmount")}</dt>
+              <dt className="text-fg-subtle">{t("markupAmount")}</dt>
               <dd>
-                {estimate.markupAmount} {estimate.currency}
+                {formatCurrency(estimate.markupAmount, estimate.currency)}
               </dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-gray-500 dark:text-gray-400">{t("taxAmount")}</dt>
+              <dt className="text-fg-subtle">{t("taxAmount")}</dt>
               <dd>
-                {estimate.taxAmount} {estimate.currency}
+                {formatCurrency(estimate.taxAmount, estimate.currency)}
               </dd>
             </div>
             <div className="flex justify-between border-t border-gray-200 dark:border-gray-700 pt-2 font-semibold">
               <dt>{t("grandTotal")}</dt>
               <dd>
-                {estimate.grandTotal} {estimate.currency}
+                {formatCurrency(estimate.grandTotal, estimate.currency)}
               </dd>
             </div>
           </dl>
 
           {estimate.clientDecision === "pending" ? (
             <div className="mt-6 border-t border-gray-100 dark:border-gray-700 pt-4">
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700 dark:text-gray-200">{t("clientNoteOptional")}</span>
+              <Field label={t("clientNoteOptional")}>
                 <textarea
                   rows={2}
                   className="input"
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                 />
-              </label>
+              </Field>
 
-              <div className="mt-4 flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700 dark:text-gray-200">{t("signerNameLabel")}</span>
+              <Field label={t("signerNameLabel")} className="mt-4">
                 <input
                   className="input"
                   placeholder={t("signerNamePlaceholder")}
                   value={signerName}
                   onChange={(e) => setSignerName(e.target.value)}
                 />
-              </div>
+              </Field>
               <div className="mt-3 flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700 dark:text-gray-200">{t("signHere")}</span>
+                <span className="font-medium text-fg-muted">{t("signHere")}</span>
                 <SignaturePad onChange={setSignatureDataUrl} clearLabel={t("clearSignature")} />
               </div>
-              {signatureError && <p className="mt-2 text-xs text-error-600">{signatureError}</p>}
+              {signatureError && <FormError className="mt-2">{signatureError}</FormError>}
 
               {counterMode ? (
                 <div className="mt-3 rounded-lg bg-gray-50 dark:bg-gray-700 p-3">
-                  <label className="flex flex-col gap-1.5 text-sm">
-                    <span className="font-medium text-gray-700 dark:text-gray-200">
-                      {t("counterOfferAmountLabel")} ({estimate.currency})
-                    </span>
+                  <Field label={`${t("counterOfferAmountLabel")} (${estimate.currency})`}>
                     <input
                       type="number"
                       min="0.01"
@@ -225,7 +223,7 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
                       value={counterAmount}
                       onChange={(e) => setCounterAmount(e.target.value)}
                     />
-                  </label>
+                  </Field>
                   <div className="mt-3 flex gap-2">
                     <button onClick={decideCounter} disabled={busy || !counterAmount} className="btn-primary flex-1">
                       {t("sendCounterOffer")}
@@ -252,24 +250,16 @@ export default function PublicEstimatePage({ params }: { params: Promise<{ token
               )}
             </div>
           ) : (
-            <div
-              className={`mt-6 rounded-lg border-t px-4 py-3 text-sm ${
-                estimate.clientDecision === "approved"
-                  ? "border-success-200 bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500"
-                  : estimate.clientDecision === "countered"
-                    ? "border-brand-200 bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400"
-                    : "border-error-200 bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500"
-              }`}
-            >
+            <Alert tone={estimate.clientDecision === "approved" ? "success" : estimate.clientDecision === "countered" ? "brand" : "danger"} className="mt-6" role="status">
               {estimate.clientDecision === "approved"
                 ? t("clientDecisionThanksApproved")
                 : estimate.clientDecision === "countered"
-                  ? t("clientDecisionThanksCountered", { amount: estimate.counterOfferAmount ?? "", currency: estimate.currency })
+                  ? t("clientDecisionThanksCountered", { amount: formatCurrency(estimate.counterOfferAmount, estimate.currency) })
                   : t("clientDecisionThanksRejected")}
               {estimate.decisionAt && (
                 <span className="block text-xs opacity-75">{formatDateTime(new Date(estimate.decisionAt))}</span>
               )}
-            </div>
+            </Alert>
           )}
         </div>
       </div>

@@ -1,11 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { DASHBOARD_WIDGET_TYPES, type DashboardWidgetType } from "@cantero/shared";
+import { visibleDashboardWidgetTypes, type DashboardWidgetType } from "@cantero/shared";
 import { apiFetch, downloadBlob, ApiError } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { formatCurrency } from "@/lib/format-currency";
+import { useReportFieldLabel } from "@/lib/report-field-label";
+import { useCan } from "@/lib/permissions";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { FormError } from "@/components/ui/field";
 
 interface CustomReportOption {
   id: string;
@@ -21,28 +29,37 @@ interface Widget {
 
 export function DashboardWidgetsPanel() {
   const t = useTranslations("dashboard");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const [widgets, setWidgets] = useState<Widget[] | null>(null);
-  const [customReports, setCustomReports] = useState<CustomReportOption[]>([]);
-  const [newType, setNewType] = useState<DashboardWidgetType>("revenue_trend");
+  const can = useCan();
+  const {
+    data: widgets = null,
+    error: widgetsError,
+    setData: setWidgets,
+    reload: reloadWidgets,
+  } = useApi<Widget[]>("/dashboard-widgets");
+  const canCustomReports = can("reports.custom");
+  const { data: customReports = [] } = useApi<CustomReportOption[]>(canCustomReports ? "/custom-reports" : null);
+  // Only the widgets whose report this member may open are offered — the same map the API enforces.
+  const widgetTypes = me ? visibleDashboardWidgetTypes(me.user.permissions) : [];
+  const [pickedType, setNewType] = useState<DashboardWidgetType | null>(null);
+  const newType: DashboardWidgetType | undefined = pickedType && widgetTypes.includes(pickedType) ? pickedType : widgetTypes[0];
   const [newCustomReportId, setNewCustomReportId] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function load() {
-    apiFetch<Widget[]>("/dashboard-widgets").then(setWidgets);
+    void reloadWidgets();
   }
-
-  useEffect(() => {
-    load();
-    apiFetch<CustomReportOption[]>("/custom-reports").then(setCustomReports);
-  }, []);
 
   async function addWidget(e: React.FormEvent) {
     e.preventDefault();
+    if (!newType) return;
     setBusy(true);
     setError(null);
     try {
@@ -62,6 +79,7 @@ export function DashboardWidgetsPanel() {
   }
 
   async function removeWidget(id: string) {
+    if (!(await confirm({ message: td("removeWidget"), tone: "danger", verb: "remove" }))) return;
     setBusy(true);
     setError(null);
     try {
@@ -95,10 +113,13 @@ export function DashboardWidgetsPanel() {
     downloadBlob(blob, "dashboard.pdf");
   }
 
+  // Nothing this member could add and nothing added yet: no panel at all.
+  if (widgetTypes.length === 0 && widgets?.length === 0) return null;
+
   return (
     <div className="mt-10">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("myWidgets")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("myWidgets")}</h2>
         {widgets && widgets.length > 0 && (
           <button onClick={downloadPdf} className="btn-secondary px-3 py-1 text-xs">
             {t("downloadDashboardPdf")}
@@ -106,52 +127,54 @@ export function DashboardWidgetsPanel() {
         )}
       </div>
 
-      <form onSubmit={addWidget} className="mb-4 flex flex-wrap items-end gap-2">
-        <select className="input w-auto" value={newType} onChange={(e) => setNewType(e.target.value as DashboardWidgetType)}>
-          {DASHBOARD_WIDGET_TYPES.map((ty) => (
-            <option key={ty} value={ty}>
-              {t(`widgetType_${ty}`)}
-            </option>
-          ))}
-        </select>
-        {newType === "custom_report" && (
-          <select className="input w-auto" value={newCustomReportId} onChange={(e) => setNewCustomReportId(e.target.value)}>
-            <option value="">{t("selectCustomReport")}</option>
-            {customReports.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name}
+      {widgetTypes.length > 0 && (
+        <form onSubmit={addWidget} className="mb-4 flex flex-wrap items-end gap-2">
+          <select aria-label={ta("widgetType")} className="input w-auto" value={newType} onChange={(e) => setNewType(e.target.value as DashboardWidgetType)}>
+            {widgetTypes.map((ty) => (
+              <option key={ty} value={ty}>
+                {t(`widgetType_${ty}`)}
               </option>
             ))}
           </select>
-        )}
-        <button type="submit" disabled={busy} className="btn-secondary">
-          {t("addWidget")}
-        </button>
-      </form>
-      {error && <p className="mb-3 text-xs text-error-700 dark:text-error-500">{error}</p>}
+          {newType === "custom_report" && (
+            <select aria-label={ta("savedReport")} className="input w-auto" value={newCustomReportId} onChange={(e) => setNewCustomReportId(e.target.value)}>
+              <option value="">{t("selectCustomReport")}</option>
+              {customReports.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
+          )}
+          <button type="submit" disabled={busy} className="btn-secondary">
+            {t("addWidget")}
+          </button>
+        </form>
+      )}
+      {error && <FormError className="mb-3">{error}</FormError>}
 
       {!widgets ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        widgetsError ? <ErrorState error={widgetsError} onRetry={reloadWidgets} compact /> : <Skeleton variant="block" height="h-24" />
       ) : widgets.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noWidgets")}</p>
+        <p className="text-sm text-fg-subtle">{t("noWidgets")}</p>
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {widgets.map((w, i) => (
             <div key={w.id} className="card">
               <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t(`widgetType_${w.type}`)}</span>
+                <span className="text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t(`widgetType_${w.type}`)}</span>
                 <div className="flex items-center gap-1">
-                  <button onClick={() => move(i, -1)} disabled={i === 0} className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-700 disabled:opacity-30">
+                  <button aria-label={ta("moveUp")} onClick={() => move(i, -1)} disabled={i === 0} className="text-xs text-fg-subtle hover:text-fg-muted disabled:opacity-30">
                     ↑
                   </button>
-                  <button
+                  <button aria-label={ta("moveDown")}
                     onClick={() => move(i, 1)}
                     disabled={i === widgets.length - 1}
-                    className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-700 disabled:opacity-30"
+                    className="text-xs text-fg-subtle hover:text-fg-muted disabled:opacity-30"
                   >
                     ↓
                   </button>
-                  <button onClick={() => removeWidget(w.id)} className="ml-1 text-xs text-error-700 dark:text-error-500 hover:underline">
+                  <button onClick={() => removeWidget(w.id)} className="ml-1 text-xs text-danger-fg hover:underline">
                     {tc("delete")}
                   </button>
                 </div>
@@ -177,8 +200,9 @@ function WidgetBody({
   emptyLabel: string;
 }) {
   const t = useTranslations("dashboard");
+  const fieldLabel = useReportFieldLabel();
 
-  if (!data) return <p className="text-sm text-gray-400 dark:text-gray-500">{emptyLabel}</p>;
+  if (!data) return <p className="text-sm text-fg-subtle">{emptyLabel}</p>;
 
   if (type === "revenue_trend" && Array.isArray(data)) {
     const rows = data as { month: string; revenue: number }[];
@@ -188,7 +212,7 @@ function WidgetBody({
         {rows.map((r) => (
           <div key={r.month} className="flex flex-1 flex-col items-center gap-1">
             <div className="w-full rounded-t bg-brand-500" style={{ height: `${Math.max((r.revenue / max) * 70, 2)}px` }} />
-            <div className="text-[9px] text-gray-400 dark:text-gray-500">{r.month.slice(5)}</div>
+            <div className="text-2xs text-fg-subtle">{r.month.slice(5)}</div>
           </div>
         ))}
       </div>
@@ -200,21 +224,21 @@ function WidgetBody({
     return (
       <div className="grid grid-cols-3 gap-2 text-center text-sm">
         <div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">{t("widgetIn")}</div>
-          <div className="font-semibold text-success-700 dark:text-success-500">
-            {d.totals.inflow} {currency}
+          <div className="text-xs text-fg-subtle">{t("widgetIn")}</div>
+          <div className="font-semibold text-success-fg">
+            {formatCurrency(d.totals.inflow, currency)}
           </div>
         </div>
         <div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">{t("widgetOut")}</div>
-          <div className="font-semibold text-error-700 dark:text-error-500">
-            {d.totals.outflow} {currency}
+          <div className="text-xs text-fg-subtle">{t("widgetOut")}</div>
+          <div className="font-semibold text-danger-fg">
+            {formatCurrency(d.totals.outflow, currency)}
           </div>
         </div>
         <div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">{t("widgetNet")}</div>
+          <div className="text-xs text-fg-subtle">{t("widgetNet")}</div>
           <div className="font-semibold">
-            {d.totals.net} {currency}
+            {formatCurrency(d.totals.net, currency)}
           </div>
         </div>
       </div>
@@ -226,15 +250,15 @@ function WidgetBody({
     return (
       <div className="grid grid-cols-3 gap-2 text-center text-sm">
         <div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">{t("widgetProjects")}</div>
+          <div className="text-xs text-fg-subtle">{t("widgetProjects")}</div>
           <div className="font-semibold">{d.summary.projectsTotal}</div>
         </div>
         <div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">{t("widgetAtRisk")}</div>
-          <div className="font-semibold text-error-700 dark:text-error-500">{d.summary.projectsAtRisk}</div>
+          <div className="text-xs text-fg-subtle">{t("widgetAtRisk")}</div>
+          <div className="font-semibold text-danger-fg">{d.summary.projectsAtRisk}</div>
         </div>
         <div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">{t("widgetOpenRfis")}</div>
+          <div className="text-xs text-fg-subtle">{t("widgetOpenRfis")}</div>
           <div className="font-semibold">{d.summary.openRfiTotal}</div>
         </div>
       </div>
@@ -245,11 +269,11 @@ function WidgetBody({
     const d = data as { backlog: number; contractValue: number; billedToDate: number };
     return (
       <div className="text-center">
-        <div className="text-2xl font-semibold text-gray-900 dark:text-gray-50">
-          {d.backlog} {currency}
+        <div className="text-2xl font-semibold text-fg">
+          {formatCurrency(d.backlog, currency)}
         </div>
-        <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("widgetBacklogDetail", { contractValue: d.contractValue, billedToDate: d.billedToDate, currency })}
+        <div className="mt-1 text-xs text-fg-subtle">
+          {t("widgetBacklogDetail", { contractValue: formatCurrency(d.contractValue, currency), billedToDate: formatCurrency(d.billedToDate, currency) })}
         </div>
       </div>
     );
@@ -265,25 +289,25 @@ function WidgetBody({
       <div>
         <div className="mb-3 grid grid-cols-2 gap-2 text-center text-sm">
           <div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">{t("widgetExpired")}</div>
-            <div className={`font-semibold ${d.expiredCount > 0 ? "text-error-700 dark:text-error-500" : "text-gray-900 dark:text-gray-50"}`}>{d.expiredCount}</div>
+            <div className="text-xs text-fg-subtle">{t("widgetExpired")}</div>
+            <div className={`font-semibold ${d.expiredCount > 0 ? "text-danger-fg" : "text-fg"}`}>{d.expiredCount}</div>
           </div>
           <div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">{t("widgetExpiringSoon")}</div>
-            <div className="font-semibold text-warning-700 dark:text-warning-500">{d.expiringCount}</div>
+            <div className="text-xs text-fg-subtle">{t("widgetExpiringSoon")}</div>
+            <div className="font-semibold text-warning-fg">{d.expiringCount}</div>
           </div>
         </div>
         {d.items.length === 0 ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500">{emptyLabel}</p>
+          <p className="text-sm text-fg-subtle">{emptyLabel}</p>
         ) : (
           <ul className="flex flex-col gap-1">
             {d.items.slice(0, 6).map((item, i) => (
               <li key={i} className="flex items-center justify-between text-xs">
-                <span className="truncate text-gray-700 dark:text-gray-200">
+                <span className="truncate text-fg-muted">
                   {item.label}
-                  {item.holderName && <span className="text-gray-400 dark:text-gray-500"> — {item.holderName}</span>}
+                  {item.holderName && <span className="text-fg-subtle"> — {item.holderName}</span>}
                 </span>
-                <span className={item.status === "expired" ? "text-error-700 dark:text-error-500" : "text-gray-500 dark:text-gray-400"}>
+                <span className={item.status === "expired" ? "text-danger-fg" : "text-fg-subtle"}>
                   {formatDate(new Date(item.expiresAt))}
                 </span>
               </li>
@@ -295,16 +319,16 @@ function WidgetBody({
   }
 
   if (type === "custom_report" && typeof data === "object") {
-    const d = data as { columns: { key: string; label: string }[]; rows: Record<string, unknown>[] };
-    if (d.rows.length === 0) return <p className="text-sm text-gray-400 dark:text-gray-500">{emptyLabel}</p>;
+    const d = data as { columns: { key: string; label: string; labelKey?: string }[]; rows: Record<string, unknown>[] };
+    if (d.rows.length === 0) return <p className="text-sm text-fg-subtle">{emptyLabel}</p>;
     return (
-      <div className="overflow-x-auto">
+      <div tabIndex={0} className="overflow-x-auto">
         <table className="w-full border-collapse text-xs">
           <thead>
-            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
               {d.columns.map((c) => (
-                <th key={c.key} className="py-1 pr-2">
-                  {c.label}
+                <th scope="col" key={c.key} className="py-1 pr-2">
+                  {fieldLabel(c)}
                 </th>
               ))}
             </tr>
@@ -328,15 +352,15 @@ function WidgetBody({
   // Generic array-of-objects fallback (project_margins, invoice_aging, warehouse_turnover, labor_cost, etc.)
   const nested = data as { byWorker?: unknown[]; invoices?: unknown[] };
   const rows = Array.isArray(data) ? data : (nested.byWorker ?? nested.invoices ?? []);
-  if (!Array.isArray(rows) || rows.length === 0) return <p className="text-sm text-gray-400 dark:text-gray-500">{emptyLabel}</p>;
+  if (!Array.isArray(rows) || rows.length === 0) return <p className="text-sm text-fg-subtle">{emptyLabel}</p>;
   const columns = Object.keys(rows[0] as Record<string, unknown>).slice(0, 4);
   return (
-    <div className="overflow-x-auto">
+    <div tabIndex={0} className="overflow-x-auto">
       <table className="w-full border-collapse text-xs">
         <thead>
-          <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+          <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
             {columns.map((c) => (
-              <th key={c} className="py-1 pr-2">
+              <th scope="col" key={c} className="py-1 pr-2">
                 {c}
               </th>
             ))}

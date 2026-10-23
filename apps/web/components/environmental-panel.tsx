@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   ENVIRONMENTAL_INCIDENT_SEVERITIES,
@@ -9,7 +9,13 @@ import {
   type EnvironmentalIncidentStatus,
 } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
+import { Field } from "@/components/ui/field";
 
 interface BmpInspection {
   id: string;
@@ -37,19 +43,15 @@ interface EnvironmentalIncident {
   regulatorNotified: boolean;
 }
 
-const SEVERITY_STYLES: Record<EnvironmentalIncidentSeverity, string> = {
-  minor: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  moderate: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
-  major: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
-};
 const OPEN_INCIDENT_STATUSES: EnvironmentalIncidentStatus[] = ["open", "contained"];
 
 export function EnvironmentalPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("environmental");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
-  const [permits, setPermits] = useState<StormwaterPermit[] | null>(null);
-  const [incidents, setIncidents] = useState<EnvironmentalIncident[] | null>(null);
+  const { data: permits = null, reload: reloadPermits, error: permitsError } = useApi<StormwaterPermit[]>(`/projects/${projectId}/stormwater-permits`);
+  const { data: incidents = null, reload: reloadIncidents, error: incidentsError } = useApi<EnvironmentalIncident[]>(`/projects/${projectId}/environmental-incidents`);
   const [addingPermit, setAddingPermit] = useState(false);
   const [permitForm, setPermitForm] = useState({ permitNumber: "", noiFiledAt: "" });
   const [inspectingPermitId, setInspectingPermitId] = useState<string | null>(null);
@@ -59,10 +61,9 @@ export function EnvironmentalPanel({ projectId }: { projectId: string }) {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<StormwaterPermit[]>(`/projects/${projectId}/stormwater-permits`).then(setPermits);
-    apiFetch<EnvironmentalIncident[]>(`/projects/${projectId}/environmental-incidents`).then(setIncidents);
+    void reloadPermits();
+    void reloadIncidents();
   }
-  useEffect(load, [projectId]);
 
   async function createPermit(e: React.FormEvent) {
     e.preventDefault();
@@ -150,27 +151,26 @@ export function EnvironmentalPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("title")}</h2>
         {!addingPermit && (
           <button onClick={() => setAddingPermit(true)} className="btn-secondary px-2.5 py-1 text-xs">
             {t("addPermit")}
           </button>
         )}
       </div>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
 
       {addingPermit && (
         <form onSubmit={createPermit} className="card mb-3 flex flex-wrap items-end gap-2">
           <input
-            placeholder={t("permitNumberPlaceholder")}
+            placeholder={t("permitNumberPlaceholder")} aria-label={t("permitNumberPlaceholder")}
             className="input"
             value={permitForm.permitNumber}
             onChange={(e) => setPermitForm((f) => ({ ...f, permitNumber: e.target.value }))}
           />
-          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-            {t("noiFiledAt")}
+          <Field label={t("noiFiledAt")} size="sm">
             <input type="date" className="input" value={permitForm.noiFiledAt} onChange={(e) => setPermitForm((f) => ({ ...f, noiFiledAt: e.target.value }))} />
-          </label>
+          </Field>
           <button type="submit" disabled={busy} className="btn-primary">
             {tc("save")}
           </button>
@@ -181,27 +181,27 @@ export function EnvironmentalPanel({ projectId }: { projectId: string }) {
       )}
 
       {!permits ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        permitsError ? <ErrorState error={permitsError} onRetry={reloadPermits} compact /> : <Skeleton lines={3} />
       ) : permits.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noPermits")}</p>
+        <p className="text-sm text-fg-subtle">{t("noPermits")}</p>
       ) : (
         <ul className="mb-6 flex flex-col gap-2">
           {permits.map((p) => (
             <li key={p.id} className="card">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{p.permitNumber ?? t("permitNumberPlaceholder")}</span>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${p.active ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"}`}>
+                <span className="text-sm font-medium text-fg">{p.permitNumber ?? t("permitNumberPlaceholder")}</span>
+                <Badge tone={p.active ? "success" : "neutral"}>
                   {p.active ? t("active") : t("inactive")}
-                </span>
+                </Badge>
               </div>
-              {p.noiFiledAt && <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{t("noiFiledAt")}: {formatDate(new Date(p.noiFiledAt))}</p>}
+              {p.noiFiledAt && <p className="mt-1 text-xs text-fg-subtle">{t("noiFiledAt")}: {formatDate(new Date(p.noiFiledAt))}</p>}
 
               {p.inspections.length > 0 && (
                 <ul className="mt-2 flex flex-col gap-1">
                   {p.inspections.map((insp) => (
-                    <li key={insp.id} className="text-xs text-gray-500 dark:text-gray-400">
-                      <span className="text-gray-400 dark:text-gray-500">{formatDate(new Date(insp.inspectedAt))}</span> —{" "}
-                      <span className={insp.result === "deficient" ? "font-medium text-error-700 dark:text-error-500" : ""}>{t(`result_${insp.result}`)}</span>
+                    <li key={insp.id} className="text-xs text-fg-subtle">
+                      <span className="text-fg-subtle">{formatDate(new Date(insp.inspectedAt))}</span> —{" "}
+                      <span className={insp.result === "deficient" ? "font-medium text-danger-fg" : ""}>{t(`result_${insp.result}`)}</span>
                       {insp.inspectorName && ` (${insp.inspectorName})`}
                     </li>
                   ))}
@@ -213,12 +213,12 @@ export function EnvironmentalPanel({ projectId }: { projectId: string }) {
                   {inspectingPermitId === p.id ? (
                     <>
                       <input
-                        placeholder={t("triggerReasonPlaceholder")}
+                        placeholder={t("triggerReasonPlaceholder")} aria-label={t("triggerReasonPlaceholder")}
                         className="input"
                         value={inspectionForm.triggerReason}
                         onChange={(e) => setInspectionForm((f) => ({ ...f, triggerReason: e.target.value }))}
                       />
-                      <select
+                      <select aria-label={ta("result")}
                         className="input"
                         value={inspectionForm.result}
                         onChange={(e) => setInspectionForm((f) => ({ ...f, result: e.target.value as BmpInspectionResult }))}
@@ -227,7 +227,7 @@ export function EnvironmentalPanel({ projectId }: { projectId: string }) {
                         <option value="deficient">{t("result_deficient")}</option>
                       </select>
                       <input
-                        placeholder={t("inspectorNamePlaceholder")}
+                        placeholder={t("inspectorNamePlaceholder")} aria-label={t("inspectorNamePlaceholder")}
                         className="input"
                         value={inspectionForm.inspectorName}
                         onChange={(e) => setInspectionForm((f) => ({ ...f, inspectorName: e.target.value }))}
@@ -244,7 +244,7 @@ export function EnvironmentalPanel({ projectId }: { projectId: string }) {
                       <button onClick={() => setInspectingPermitId(p.id)} className="btn-secondary px-2.5 py-1 text-xs">
                         {t("addInspection")}
                       </button>
-                      <button onClick={() => fileNot(p.id)} disabled={busy} className="text-xs text-gray-500 dark:text-gray-400 hover:underline">
+                      <button onClick={() => fileNot(p.id)} disabled={busy} className="text-xs text-fg-subtle hover:underline">
                         {t("fileNot")}
                       </button>
                     </>
@@ -257,7 +257,7 @@ export function EnvironmentalPanel({ projectId }: { projectId: string }) {
       )}
 
       <div className="mb-1 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("incidentsTitle")}</h3>
+        <h3 className="text-sm font-semibold text-fg-muted">{t("incidentsTitle")}</h3>
         {!addingIncident && (
           <button onClick={() => setAddingIncident(true)} className="btn-secondary px-2.5 py-1 text-xs">
             {t("reportIncident")}
@@ -269,14 +269,14 @@ export function EnvironmentalPanel({ projectId }: { projectId: string }) {
         <form onSubmit={reportIncident} className="card mb-3 flex flex-col gap-2">
           <textarea
             required
-            placeholder={t("descriptionPlaceholder")}
+            placeholder={t("descriptionPlaceholder")} aria-label={t("descriptionPlaceholder")}
             className="input"
             rows={2}
             value={incidentForm.description}
             onChange={(e) => setIncidentForm((f) => ({ ...f, description: e.target.value }))}
           />
           <div className="flex flex-wrap items-center gap-2">
-            <select
+            <select aria-label={ta("severity")}
               className="input"
               value={incidentForm.severity}
               onChange={(e) => setIncidentForm((f) => ({ ...f, severity: e.target.value as EnvironmentalIncidentSeverity }))}
@@ -308,18 +308,18 @@ export function EnvironmentalPanel({ projectId }: { projectId: string }) {
       )}
 
       {!incidents ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        incidentsError ? <ErrorState error={incidentsError} onRetry={reloadIncidents} compact /> : <Skeleton lines={3} />
       ) : incidents.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noIncidents")}</p>
+        <p className="text-sm text-fg-subtle">{t("noIncidents")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {incidents.map((inc) => (
             <li key={inc.id} className="card">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-900 dark:text-gray-50">{inc.description}</span>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${SEVERITY_STYLES[inc.severity]}`}>{t(`severity_${inc.severity}`)}</span>
+                <span className="text-sm text-fg">{inc.description}</span>
+                <Badge tone={statusTone(inc.severity, "environmental")}>{t(`severity_${inc.severity}`)}</Badge>
               </div>
-              <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+              <p className="mt-1 text-xs text-fg-subtle">
                 {formatDate(new Date(inc.occurredAt))} · {t(`status_${inc.status}`)}
                 {inc.regulatorNotified && ` · ${t("regulatorNotifiedLabel")}`}
               </p>

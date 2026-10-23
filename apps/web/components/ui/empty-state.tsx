@@ -15,7 +15,7 @@ interface EmptyStateProps {
 export function EmptyState({ message, cta, icon: Icon, title }: EmptyStateProps) {
   if (!Icon && !title) {
     return (
-      <p className="text-sm text-gray-400 dark:text-gray-500">
+      <p className="text-sm text-fg-subtle">
         {message}
         {cta && "href" in cta && (
           <>
@@ -32,13 +32,13 @@ export function EmptyState({ message, cta, icon: Icon, title }: EmptyStateProps)
   return (
     <div className="flex flex-col items-center gap-3 py-10 text-center">
       {Icon && (
-        <div className="flex size-12 items-center justify-center rounded-full bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500">
+        <div className="flex size-12 items-center justify-center rounded-full bg-gray-100 text-fg-subtle dark:bg-gray-700">
           <Icon className="size-6" />
         </div>
       )}
       <div>
-        {title && <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{title}</p>}
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{message}</p>
+        {title && <p className="text-sm font-semibold text-fg-muted">{title}</p>}
+        <p className="mt-1 text-sm text-fg-subtle">{message}</p>
       </div>
       {cta &&
         ("href" in cta ? (

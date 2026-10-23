@@ -3,23 +3,26 @@ import { Reflector } from "@nestjs/core";
 import { ApiKeyGuard } from "./api-key.guard";
 import { PrismaService } from "../prisma/prisma.service";
 import { hashApiKey } from "../../company/api-keys.service";
+import { ScimController } from "../../scim/scim.controller";
+import { REQUIRE_SCOPE_KEY } from "../decorators/require-scope.decorator";
 
-function makeContext(headers: Record<string, string>) {
-  const request: Record<string, any> = { headers };
+function makeContext(headers: Record<string, string>, ip?: string) {
+  const request: Record<string, any> = { headers, ip };
   return {
     switchToHttp: () => ({ getRequest: () => request }),
     getHandler: () => ({}),
+    getClass: () => ({}),
   } as any;
 }
 
 describe("ApiKeyGuard", () => {
   let guard: ApiKeyGuard;
   let prisma: { apiKey: { findFirst: jest.Mock; update: jest.Mock } };
-  let reflector: { get: jest.Mock };
+  let reflector: { getAllAndOverride: jest.Mock };
 
   beforeEach(() => {
     prisma = { apiKey: { findFirst: jest.fn(), update: jest.fn().mockResolvedValue({}) } };
-    reflector = { get: jest.fn() };
+    reflector = { getAllAndOverride: jest.fn() };
     guard = new ApiKeyGuard(prisma as unknown as PrismaService, reflector as unknown as Reflector);
   });
 
@@ -31,6 +34,38 @@ describe("ApiKeyGuard", () => {
     prisma.apiKey.findFirst.mockResolvedValue(null);
 
     await expect(guard.canActivate(makeContext({ "x-api-key": "cnt_bad" }))).rejects.toThrow(UnauthorizedException);
+  });
+
+  describe("company IP allowlist", () => {
+    const keyFor = (ipAllowlist: string[]) => ({ id: "k-1", companyId: "company-a", scopes: [], expiresAt: null, company: { ipAllowlist } });
+
+    it("rejects a valid key used from an IP outside the company's allowlist", async () => {
+      prisma.apiKey.findFirst.mockResolvedValue(keyFor(["203.0.113.0/24"]));
+
+      await expect(guard.canActivate(makeContext({ "x-api-key": "cnt_ok" }, "198.51.100.7"))).rejects.toThrow(ForbiddenException);
+      expect(prisma.apiKey.update).not.toHaveBeenCalled();
+    });
+
+    it("accepts a key used from an allowed IP, IPv4-mapped or not", async () => {
+      prisma.apiKey.findFirst.mockResolvedValue(keyFor(["203.0.113.0/24"]));
+
+      await expect(guard.canActivate(makeContext({ "x-api-key": "cnt_ok" }, "::ffff:203.0.113.9"))).resolves.toBe(true);
+      await expect(guard.canActivate(makeContext({ "x-api-key": "cnt_ok" }, "203.0.113.10"))).resolves.toBe(true);
+    });
+
+    it("accepts any IP when the company has no allowlist", async () => {
+      prisma.apiKey.findFirst.mockResolvedValue(keyFor([]));
+
+      await expect(guard.canActivate(makeContext({ "x-api-key": "cnt_ok" }, "198.51.100.7"))).resolves.toBe(true);
+    });
+
+    it("loads the allowlist with the key, in the same query", async () => {
+      prisma.apiKey.findFirst.mockResolvedValue(keyFor([]));
+
+      await guard.canActivate(makeContext({ "x-api-key": "cnt_ok" }));
+
+      expect(prisma.apiKey.findFirst).toHaveBeenCalledWith(expect.objectContaining({ include: { company: { select: { ipAllowlist: true } } } }));
+    });
   });
 
   it("rejects a key past its expiresAt", async () => {
@@ -46,7 +81,7 @@ describe("ApiKeyGuard", () => {
 
   it("allows an unrestricted key (empty scopes) through any @RequireScope route", async () => {
     prisma.apiKey.findFirst.mockResolvedValue({ id: "k-1", companyId: "company-a", scopes: [], expiresAt: null });
-    reflector.get.mockReturnValue("projects");
+    reflector.getAllAndOverride.mockReturnValue("projects");
 
     const context = makeContext({ "x-api-key": "cnt_ok" });
     await expect(guard.canActivate(context)).resolves.toBe(true);
@@ -55,16 +90,41 @@ describe("ApiKeyGuard", () => {
 
   it("allows a scoped key through a route it's scoped for", async () => {
     prisma.apiKey.findFirst.mockResolvedValue({ id: "k-1", companyId: "company-a", scopes: ["projects", "clients"], expiresAt: null });
-    reflector.get.mockReturnValue("projects");
+    reflector.getAllAndOverride.mockReturnValue("projects");
 
     await expect(guard.canActivate(makeContext({ "x-api-key": "cnt_ok" }))).resolves.toBe(true);
   });
 
   it("rejects a scoped key on a route outside its scopes", async () => {
     prisma.apiKey.findFirst.mockResolvedValue({ id: "k-1", companyId: "company-a", scopes: ["projects"], expiresAt: null });
-    reflector.get.mockReturnValue("budget");
+    reflector.getAllAndOverride.mockReturnValue("budget");
 
     await expect(guard.canActivate(makeContext({ "x-api-key": "cnt_ok" }))).rejects.toThrow(ForbiddenException);
+  });
+
+  it("refuses an unrestricted key (empty scopes) on SCIM — that scope must be granted explicitly", async () => {
+    prisma.apiKey.findFirst.mockResolvedValue({ id: "k-1", companyId: "company-a", scopes: [], expiresAt: null });
+    reflector.getAllAndOverride.mockReturnValue("scim");
+
+    await expect(guard.canActivate(makeContext({ "x-api-key": "cnt_ok" }))).rejects.toThrow(ForbiddenException);
+  });
+
+  it("allows a key scoped for SCIM onto SCIM, and keeps it off the read datasets", async () => {
+    prisma.apiKey.findFirst.mockResolvedValue({ id: "k-1", companyId: "company-a", scopes: ["scim"], expiresAt: null });
+    reflector.getAllAndOverride.mockReturnValueOnce("scim").mockReturnValueOnce("projects");
+
+    await expect(guard.canActivate(makeContext({ "x-api-key": "cnt_ok" }))).resolves.toBe(true);
+    await expect(guard.canActivate(makeContext({ "x-api-key": "cnt_ok" }))).rejects.toThrow(ForbiddenException);
+  });
+
+  it("reads the scope from the controller too, and the SCIM controller requires \"scim\"", async () => {
+    const real = new Reflector();
+    expect(Reflect.getMetadata(REQUIRE_SCOPE_KEY, ScimController)).toBe("scim");
+    const scimGuard = new ApiKeyGuard(prisma as unknown as PrismaService, real);
+    prisma.apiKey.findFirst.mockResolvedValue({ id: "k-1", companyId: "company-a", scopes: [], expiresAt: null });
+    const context = { ...makeContext({ "x-api-key": "cnt_ok" }), getHandler: () => ScimController.prototype.create, getClass: () => ScimController };
+
+    await expect(scimGuard.canActivate(context)).rejects.toThrow(ForbiddenException);
   });
 
   it("looks the key up by its SHA-256 hash, never the raw value", async () => {
@@ -74,6 +134,7 @@ describe("ApiKeyGuard", () => {
 
     expect(prisma.apiKey.findFirst).toHaveBeenCalledWith({
       where: { keyHash: hashApiKey("cnt_raw_key"), revokedAt: null },
+      include: { company: { select: { ipAllowlist: true } } },
     });
   });
 });

@@ -22,6 +22,15 @@ export interface TriageItem {
  * it's already been escalated); this just turns it into one sortable number instead of leaving
  * everyone to eyeball a flat list.
  */
+/** One reason a project lost health points. `key` + `params` are what the web translates
+ * (messages: projectHealth.factor_<key>); `label` is the English text, kept for API clients. */
+export interface HealthFactor {
+  key: "over_budget" | "near_budget" | "open_rfis" | "open_punch_items";
+  params: Record<string, number>;
+  label: string;
+  penalty: number;
+}
+
 @Injectable()
 export class InsightsService {
   constructor(
@@ -100,19 +109,31 @@ export class InsightsService {
     ]);
 
     let score = 100;
-    const factors: { label: string; penalty: number }[] = [];
+    const factors: HealthFactor[] = [];
 
     if (budget.grandTotalBudget > 0) {
       const ratio = (budget.materialsCostActual + budget.laborCostActual + budget.subcontractorCostActual) / budget.grandTotalBudget;
       if (ratio >= 1) {
-        factors.push({ label: "Over budget", penalty: 40 });
+        factors.push({ key: "over_budget", params: {}, label: "Over budget", penalty: 40 });
       } else if (ratio >= 0.9) {
-        factors.push({ label: "Near budget limit", penalty: 20 });
+        factors.push({ key: "near_budget", params: {}, label: "Near budget limit", penalty: 20 });
       }
     }
-    if (openRfiCount > 0) factors.push({ label: `${openRfiCount} open RFI${openRfiCount > 1 ? "s" : ""}`, penalty: Math.min(openRfiCount * 5, 20) });
+    if (openRfiCount > 0) {
+      factors.push({
+        key: "open_rfis",
+        params: { count: openRfiCount },
+        label: `${openRfiCount} open RFI${openRfiCount > 1 ? "s" : ""}`,
+        penalty: Math.min(openRfiCount * 5, 20),
+      });
+    }
     if (openPunchCount > 0) {
-      factors.push({ label: `${openPunchCount} open punch item${openPunchCount > 1 ? "s" : ""}`, penalty: Math.min(openPunchCount * 3, 20) });
+      factors.push({
+        key: "open_punch_items",
+        params: { count: openPunchCount },
+        label: `${openPunchCount} open punch item${openPunchCount > 1 ? "s" : ""}`,
+        penalty: Math.min(openPunchCount * 3, 20),
+      });
     }
 
     score -= factors.reduce((sum, f) => sum + f.penalty, 0);

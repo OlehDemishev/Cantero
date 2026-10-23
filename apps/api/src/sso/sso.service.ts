@@ -1,22 +1,37 @@
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
+import { promises as dns } from "node:dns";
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcryptjs";
 import { SAML } from "@node-saml/node-saml";
-import type { AuthUser, UpdateSsoConfigInput } from "@cantero/shared";
+import { ssoNonceSchema, type AuthUser, type UpdateSsoConfigInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { SessionsService, type SessionMeta } from "../common/sessions/sessions.service";
 
-interface SsoConfig {
-  ssoDomain: string | null;
-  ssoEntryPoint: string | null;
-  ssoIssuer: string | null;
-  ssoCert: string | null;
-}
+/** The TXT record a company publishes to prove it controls its SSO domain. */
+export const SSO_VERIFICATION_RECORD_PREFIX = "_cantero-sso";
+export const SSO_VERIFICATION_VALUE_PREFIX = "cantero-sso-verification=";
+
+const SSO_CONFIG_SELECT = {
+  ssoDomain: true,
+  ssoEntryPoint: true,
+  ssoIssuer: true,
+  ssoCert: true,
+  ssoDomainVerificationToken: true,
+  ssoDomainVerifiedAt: true,
+  ssoVerifiedDomain: true,
+} as const;
+
+const DOMAIN_TAKEN = "This domain is already verified for SSO by another company";
 
 const ASSERTION_FALLBACK_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+/** How long the browser has to trade the code from /sso/callback for a token — it does so at once. */
+const LOGIN_CODE_TTL_MS = 60 * 1000;
+const INVALID_CODE = "This sign-in has expired or was already used — start the sign-in again";
+
+const sha256 = (raw: string) => createHash("sha256").update(raw).digest("hex");
 
 @Injectable()
 export class SsoService {
@@ -28,33 +43,113 @@ export class SsoService {
     private readonly sessions: SessionsService,
   ) {}
 
+  /** The company's SSO settings plus the domain's verification state: `verificationRecord` is the
+   * TXT record to publish while the domain is unverified (null once verified or with no domain). */
   async getConfig(companyId: string) {
-    return this.prisma.company.findUniqueOrThrow({
-      where: { id: companyId },
-      select: { ssoDomain: true, ssoEntryPoint: true, ssoIssuer: true, ssoCert: true },
-    });
+    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId }, select: SSO_CONFIG_SELECT });
+    const domainVerified = company.ssoDomain !== null && company.ssoVerifiedDomain === company.ssoDomain;
+    return {
+      ssoDomain: company.ssoDomain,
+      ssoEntryPoint: company.ssoEntryPoint,
+      ssoIssuer: company.ssoIssuer,
+      ssoCert: company.ssoCert,
+      ssoDomainVerified: domainVerified,
+      ssoDomainVerifiedAt: domainVerified ? company.ssoDomainVerifiedAt : null,
+      verificationRecord:
+        company.ssoDomain && !domainVerified && company.ssoDomainVerificationToken
+          ? {
+              type: "TXT" as const,
+              name: `${SSO_VERIFICATION_RECORD_PREFIX}.${company.ssoDomain}`,
+              value: `${SSO_VERIFICATION_VALUE_PREFIX}${company.ssoDomainVerificationToken}`,
+            }
+          : null,
+    };
   }
 
+  /** Saves the IdP settings. A new domain (or one without a token yet) gets a fresh verification
+   * token and starts unverified: until verifyDomain() sees the TXT record, logins for it aren't
+   * routed here and nobody is provisioned. A domain another company has verified can't be claimed. */
   async updateConfig(companyId: string, actor: AuditActor, input: UpdateSsoConfigInput) {
+    const domain = input.domain.toLowerCase();
+    const takenBy = await this.prisma.company.findFirst({
+      where: { ssoVerifiedDomain: domain, id: { not: companyId } },
+      select: { id: true },
+    });
+    if (takenBy) throw new BadRequestException(DOMAIN_TAKEN);
+
+    const current = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId }, select: SSO_CONFIG_SELECT });
+    const domainChanged = current.ssoDomain !== domain;
     try {
       await this.prisma.company.update({
         where: { id: companyId },
-        data: { ssoDomain: input.domain.toLowerCase(), ssoEntryPoint: input.entryPoint, ssoIssuer: input.issuer, ssoCert: input.cert },
+        data: {
+          ssoDomain: domain,
+          ssoEntryPoint: input.entryPoint,
+          ssoIssuer: input.issuer,
+          ssoCert: input.cert,
+          ...(domainChanged ? { ssoVerifiedDomain: null, ssoDomainVerifiedAt: null } : {}),
+          ...(domainChanged || !current.ssoDomainVerificationToken
+            ? { ssoDomainVerificationToken: randomBytes(24).toString("base64url") }
+            : {}),
+        },
       });
     } catch (err) {
-      if ((err as { code?: string }).code === "P2002") {
-        throw new BadRequestException("This domain is already configured for SSO on another company");
-      }
+      if ((err as { code?: string }).code === "P2002") throw new BadRequestException(DOMAIN_TAKEN);
       throw err;
     }
-    this.audit.record(companyId, actor, "sso.configured", "Company", companyId, `Configured SSO for domain ${input.domain}`);
+    this.audit.record(companyId, actor, "sso.configured", "Company", companyId, `Configured SSO for domain ${domain}`);
     return this.getConfig(companyId);
+  }
+
+  /** Live DNS check for the TXT record getConfig() shows. A lookup failure (no record yet,
+   * NXDOMAIN, timeout) just reports not-verified, as for the custom portal domain. */
+  async verifyDomain(companyId: string, actor: AuditActor) {
+    const company = await this.prisma.company.findUniqueOrThrow({ where: { id: companyId }, select: SSO_CONFIG_SELECT });
+    if (!company.ssoDomain || !company.ssoDomainVerificationToken) {
+      throw new BadRequestException("Save an SSO domain before verifying it");
+    }
+    if (company.ssoVerifiedDomain === company.ssoDomain) return { verified: true, ...(await this.getConfig(companyId)) };
+
+    const expected = `${SSO_VERIFICATION_VALUE_PREFIX}${company.ssoDomainVerificationToken}`;
+    let found = false;
+    try {
+      const records = await dns.resolveTxt(`${SSO_VERIFICATION_RECORD_PREFIX}.${company.ssoDomain}`);
+      found = records.some((chunks) => chunks.join("").trim() === expected);
+    } catch {
+      found = false;
+    }
+    if (!found) return { verified: false, ...(await this.getConfig(companyId)) };
+
+    const takenBy = await this.prisma.company.findFirst({
+      where: { ssoVerifiedDomain: company.ssoDomain, id: { not: companyId } },
+      select: { id: true },
+    });
+    if (takenBy) throw new BadRequestException(DOMAIN_TAKEN);
+    try {
+      await this.prisma.company.update({
+        where: { id: companyId },
+        data: { ssoVerifiedDomain: company.ssoDomain, ssoDomainVerifiedAt: new Date() },
+      });
+    } catch (err) {
+      if ((err as { code?: string }).code === "P2002") throw new BadRequestException(DOMAIN_TAKEN);
+      throw err;
+    }
+    this.audit.record(companyId, actor, "sso.domain_verified", "Company", companyId, `Verified SSO domain ${company.ssoDomain}`);
+    return { verified: true, ...(await this.getConfig(companyId)) };
   }
 
   async disable(companyId: string, actor: AuditActor) {
     await this.prisma.company.update({
       where: { id: companyId },
-      data: { ssoDomain: null, ssoEntryPoint: null, ssoIssuer: null, ssoCert: null },
+      data: {
+        ssoDomain: null,
+        ssoEntryPoint: null,
+        ssoIssuer: null,
+        ssoCert: null,
+        ssoDomainVerificationToken: null,
+        ssoDomainVerifiedAt: null,
+        ssoVerifiedDomain: null,
+      },
     });
     this.audit.record(companyId, actor, "sso.disabled", "Company", companyId, "Disabled SSO");
     return this.getConfig(companyId);
@@ -66,13 +161,13 @@ export class SsoService {
     return saml.generateServiceProviderMetadata(null, null);
   }
 
-  /** Resolves the login email's domain to a company with SSO configured, and returns the IdP redirect URL. Never confirms/denies whether an email itself is registered — only whether its domain has SSO. */
-  async startLogin(email: string): Promise<{ redirectUrl: string }> {
+  /** Resolves the login email's domain to a company with SSO configured and its domain verified, and returns the IdP redirect URL. Never confirms/denies whether an email itself is registered — only whether its domain has SSO. */
+  async startLogin(email: string, nonce: string): Promise<{ redirectUrl: string }> {
     const domain = email.split("@")[1]?.toLowerCase();
     if (!domain) throw new BadRequestException("Invalid email");
 
     const company = await this.prisma.company.findFirst({
-      where: { ssoDomain: domain, ssoEntryPoint: { not: null }, ssoIssuer: { not: null }, ssoCert: { not: null } },
+      where: { ssoVerifiedDomain: domain, ssoEntryPoint: { not: null }, ssoIssuer: { not: null }, ssoCert: { not: null } },
     });
     if (!company) throw new NotFoundException("SSO isn't configured for this email's domain");
 
@@ -81,15 +176,27 @@ export class SsoService {
       ssoIssuer: company.ssoIssuer!,
       ssoCert: company.ssoCert!,
     });
-    const redirectUrl = await saml.getAuthorizeUrlAsync("", undefined, {});
+    // The nonce rides through the IdP as RelayState and comes back with the assertion (see handleAcs).
+    const redirectUrl = await saml.getAuthorizeUrlAsync(nonce, undefined, {});
     return { redirectUrl };
   }
 
-  /** Validates the IdP's SAML response, just-in-time provisions the user (as "worker") on first sign-in, and returns our own access token. */
-  async handleAcs(companyId: string, samlResponse: string, meta: SessionMeta): Promise<{ accessToken: string }> {
+  /** Validates the IdP's SAML response, just-in-time provisions the user (as "worker") on first
+   * sign-in, and returns a one-time code for the browser to exchange (exchangeCode) — never the
+   * access token itself, which would otherwise sit in the callback URL, the browser history and
+   * anything that logs URLs. `relayState` is the nonce the login page started with; an assertion
+   * arriving without one (IdP-initiated, or POSTed by another site) can't be tied to a browser, so
+   * it's refused. */
+  async handleAcs(companyId: string, samlResponse: string, relayState: string | undefined): Promise<{ code: string }> {
+    const nonce = ssoNonceSchema.safeParse(relayState);
+    if (!nonce.success) throw new BadRequestException("Start the sign-in from the Cantero login page");
     const company = await this.prisma.company.findUnique({ where: { id: companyId } });
     if (!company?.ssoEntryPoint || !company.ssoIssuer || !company.ssoCert) {
       throw new NotFoundException("SSO isn't configured for this company");
+    }
+    // An unverified domain claim activates nothing: no sign-in and no provisioning through it.
+    if (!company.ssoVerifiedDomain || company.ssoVerifiedDomain !== company.ssoDomain) {
+      throw new NotFoundException("SSO isn't active for this company until its domain is verified");
     }
 
     const saml = this.buildSaml(company.id, {
@@ -100,14 +207,14 @@ export class SsoService {
     const { profile } = await saml.validatePostResponseAsync({ SAMLResponse: samlResponse });
     const email = (profile?.email ?? profile?.mail ?? profile?.nameID ?? "").toString().toLowerCase();
     if (!email.includes("@")) throw new BadRequestException("The IdP didn't provide a usable email address");
-    if (email.split("@")[1] !== company.ssoDomain) {
+    if (email.split("@")[1] !== company.ssoVerifiedDomain) {
       throw new BadRequestException("The signed-in email doesn't match this company's SSO domain");
     }
     await this.consumeAssertion(companyId, profile);
 
     let user = await this.prisma.user.findUnique({
       where: { email },
-      include: { memberships: { where: { companyId }, include: { customRole: true } } },
+      include: { memberships: { where: { companyId } } },
     });
     if (user && user.memberships.length === 0) {
       throw new BadRequestException("This email belongs to an account in a different company — contact your administrator");
@@ -124,24 +231,54 @@ export class SsoService {
           name: (profile?.["displayName"] as string | undefined) ?? email,
           memberships: { create: { companyId, role: "worker" } },
         },
-        include: { memberships: { where: { companyId }, include: { customRole: true } } },
+        include: { memberships: { where: { companyId } } },
       });
       user = created;
       this.audit.record(companyId, { name: "SSO" }, "sso.user_provisioned", "User", created.id, `Provisioned ${email} via SSO`);
     }
 
-    const membership = user.memberships[0];
-    const sid = await this.sessions.create(user.id, meta);
+    const code = randomBytes(32).toString("base64url");
+    await this.prisma.ssoLoginCode.deleteMany({ where: { expiresAt: { lt: new Date() } } });
+    await this.prisma.ssoLoginCode.create({
+      data: {
+        codeHash: sha256(code),
+        nonceHash: sha256(nonce.data),
+        userId: user.id,
+        companyId,
+        expiresAt: new Date(Date.now() + LOGIN_CODE_TTL_MS),
+      },
+    });
+    return { code };
+  }
+
+  /** Trades a code from handleAcs for an access token. The code is deleted on the first attempt,
+   * right or wrong, so it can't be tried twice; the nonce must be the one this browser tab kept
+   * in sessionStorage when it started the sign-in. */
+  async exchangeCode(code: string, nonce: string, meta: SessionMeta): Promise<{ accessToken: string }> {
+    const record = await this.prisma.ssoLoginCode.findUnique({ where: { codeHash: sha256(code) } });
+    if (!record) throw new BadRequestException(INVALID_CODE);
+    const { count } = await this.prisma.ssoLoginCode.deleteMany({ where: { id: record.id } });
+    if (count !== 1 || record.expiresAt < new Date()) throw new BadRequestException(INVALID_CODE);
+    if (!timingSafeEqual(Buffer.from(sha256(nonce)), Buffer.from(record.nonceHash))) {
+      throw new BadRequestException("This sign-in was started in another browser window — start the sign-in again");
+    }
+
+    const membership = await this.prisma.membership.findUnique({
+      where: { userId_companyId: { userId: record.userId, companyId: record.companyId } },
+      include: { customRole: true, user: { select: { email: true, name: true } } },
+    });
+    if (!membership) throw new BadRequestException(INVALID_CODE);
+
+    const sid = await this.sessions.create(record.userId, record.companyId, meta);
     const accessToken = this.jwt.sign({
-      userId: user.id,
-      companyId,
-      email: user.email,
-      name: user.name,
+      userId: record.userId,
+      companyId: record.companyId,
+      email: membership.user.email,
+      name: membership.user.name,
       role: membership.role,
       additionalRoles: membership.customRole?.basePermissions,
       sid,
     } satisfies AuthUser);
-
     return { accessToken };
   }
 

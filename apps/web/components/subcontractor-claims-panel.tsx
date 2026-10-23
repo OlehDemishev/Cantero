@@ -3,10 +3,17 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { SubcontractorBackchargeStatus, SubcontractorDefaultNoticeStatus } from "@cantero/shared";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatDate } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useApi } from "@/lib/use-api";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
+import { Field } from "@/components/ui/field";
 
 interface Subcontractor {
   id: string;
@@ -35,26 +42,24 @@ interface DefaultNotice {
   subcontractor: Subcontractor;
 }
 
-const BACKCHARGE_STATUS_STYLES: Record<SubcontractorBackchargeStatus, string> = {
-  pending: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  deducted: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
-  waived: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
-};
-const NOTICE_STATUS_STYLES: Record<SubcontractorDefaultNoticeStatus, string> = {
-  issued: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
-  cured: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
-  terminated: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-};
-
 export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("subcontractorClaims");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "USD";
-  const money = (amount: number | string) => formatCurrency(amount, currency, me?.company.locale);
+  const money = (amount: number | string) => formatCurrency(amount, currency);
 
-  const [backcharges, setBackcharges] = useState<Backcharge[] | null>(null);
-  const [notices, setNotices] = useState<DefaultNotice[] | null>(null);
+  const {
+    data: backcharges = null,
+    error: backchargesError,
+    reload: reloadBackcharges,
+  } = useApi<Backcharge[]>(`/projects/${projectId}/subcontractor-backcharges`);
+  const {
+    data: notices = null,
+    error: noticesError,
+    reload: reloadNotices,
+  } = useApi<DefaultNotice[]>(`/projects/${projectId}/subcontractor-default-notices`);
   const [subcontractors, setSubcontractors] = useState<Subcontractor[]>([]);
   const [warrantyClaims, setWarrantyClaims] = useState<WarrantyClaimOption[]>([]);
   const [creatingBackcharge, setCreatingBackcharge] = useState(false);
@@ -64,21 +69,19 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<Backcharge[]>(`/projects/${projectId}/subcontractor-backcharges`).then(setBackcharges);
-    apiFetch<DefaultNotice[]>(`/projects/${projectId}/subcontractor-default-notices`).then(setNotices);
+    void reloadBackcharges();
+    void reloadNotices();
   }
 
   useEffect(() => {
-    load();
     apiFetch<Subcontractor[]>("/finance/subcontractors").then((list) => {
       setSubcontractors(list);
       if (list[0]) {
         setBackchargeForm((f) => ({ ...f, subcontractorId: f.subcontractorId || list[0].id }));
         setNoticeForm((f) => ({ ...f, subcontractorId: f.subcontractorId || list[0].id }));
       }
-    });
-    apiFetch<WarrantyClaimOption[]>(`/warranty-claims?projectId=${projectId}`).then(setWarrantyClaims);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }).catch(notifyApiError);
+    apiFetch<WarrantyClaimOption[]>(`/warranty-claims?projectId=${projectId}`).then(setWarrantyClaims).catch(notifyApiError);
   }, [projectId]);
 
   async function submitBackcharge(e: React.FormEvent) {
@@ -129,7 +132,7 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
   }
 
   async function resolveNotice(id: string, action: "cure" | "terminate") {
-    if (action === "terminate" && !window.confirm(t("confirmTerminate"))) return;
+    if (action === "terminate" && !(await confirm({ message: t("confirmTerminate"), tone: "danger", verb: "terminate" }))) return;
     await apiFetch(`/subcontractor-default-notices/${id}/${action}`, { method: "POST" });
     load();
   }
@@ -137,7 +140,7 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("backchargesTitle")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("backchargesTitle")}</h2>
         {!creatingBackcharge && (
           <button onClick={() => setCreatingBackcharge(true)} className="btn-secondary px-3 py-1 text-xs">
             {t("newBackcharge")}
@@ -147,8 +150,7 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
 
       {creatingBackcharge && (
         <form onSubmit={submitBackcharge} className="card mb-4 flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("subcontractor")}</span>
+          <Field label={t("subcontractor")}>
             <select
               className="input"
               value={backchargeForm.subcontractorId}
@@ -160,9 +162,8 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
                 </option>
               ))}
             </select>
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("description")}</span>
+          </Field>
+          <Field label={t("description")}>
             <textarea
               required
               rows={2}
@@ -170,9 +171,8 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
               value={backchargeForm.description}
               onChange={(e) => setBackchargeForm((f) => ({ ...f, description: e.target.value }))}
             />
-          </label>
-          <label className="flex w-40 flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("amount")}</span>
+          </Field>
+          <Field label={t("amount")} className="w-40">
             <input
               required
               type="number"
@@ -182,10 +182,9 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
               value={backchargeForm.amount}
               onChange={(e) => setBackchargeForm((f) => ({ ...f, amount: e.target.value }))}
             />
-          </label>
+          </Field>
           {warrantyClaims.length > 0 && (
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("linkedWarrantyClaim")}</span>
+            <Field label={t("linkedWarrantyClaim")}>
               <select
                 className="input"
                 value={backchargeForm.warrantyClaimId}
@@ -198,7 +197,7 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
                   </option>
                 ))}
               </select>
-            </label>
+            </Field>
           )}
           <div className="flex gap-2">
             <button type="submit" disabled={busy || !subcontractors.length} className="btn-primary">
@@ -212,9 +211,9 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
       )}
 
       {backcharges === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        backchargesError ? <ErrorState error={backchargesError} onRetry={reloadBackcharges} compact /> : <Skeleton lines={3} />
       ) : backcharges.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noBackcharges")}</p>
+        <p className="text-sm text-fg-subtle">{t("noBackcharges")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {backcharges.map((b) => (
@@ -222,16 +221,16 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{b.subcontractor.name}</span>
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${BACKCHARGE_STATUS_STYLES[b.status]}`}>
+                    <span className="text-sm font-medium text-fg">{b.subcontractor.name}</span>
+                    <Badge tone={statusTone(b.status)}>
                       {t(b.status)}
-                    </span>
+                    </Badge>
                   </div>
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{b.description}</p>
-                  {b.warrantyClaim && <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{t("recoveryFor", { title: b.warrantyClaim.title })}</p>}
+                  <p className="mt-1 text-xs text-fg-subtle">{b.description}</p>
+                  {b.warrantyClaim && <p className="mt-1 text-xs text-fg-subtle">{t("recoveryFor", { title: b.warrantyClaim.title })}</p>}
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-2">
-                  <span className="text-sm font-semibold tabular-nums text-gray-900 dark:text-gray-50">{money(b.amount)}</span>
+                  <span className="text-sm font-semibold tabular-nums text-fg">{money(b.amount)}</span>
                   {b.status === "pending" && (
                     <div className="flex gap-1.5">
                       <button onClick={() => resolveBackcharge(b.id, "deduct")} className="btn-secondary px-2.5 py-1 text-xs">
@@ -250,7 +249,7 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
       )}
 
       <div className="mb-3 mt-8 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("defaultNoticesTitle")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("defaultNoticesTitle")}</h2>
         {!creatingNotice && (
           <button onClick={() => setCreatingNotice(true)} className="btn-secondary px-3 py-1 text-xs">
             {t("newDefaultNotice")}
@@ -260,8 +259,7 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
 
       {creatingNotice && (
         <form onSubmit={submitNotice} className="card mb-4 flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("subcontractor")}</span>
+          <Field label={t("subcontractor")}>
             <select
               className="input"
               value={noticeForm.subcontractorId}
@@ -273,13 +271,11 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
                 </option>
               ))}
             </select>
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("noticeTitleField")}</span>
+          </Field>
+          <Field label={t("noticeTitleField")}>
             <input required className="input" value={noticeForm.title} onChange={(e) => setNoticeForm((f) => ({ ...f, title: e.target.value }))} />
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("description")}</span>
+          </Field>
+          <Field label={t("description")}>
             <textarea
               required
               rows={3}
@@ -287,9 +283,8 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
               value={noticeForm.description}
               onChange={(e) => setNoticeForm((f) => ({ ...f, description: e.target.value }))}
             />
-          </label>
-          <label className="flex w-40 flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("curePeriodDays")}</span>
+          </Field>
+          <Field label={t("curePeriodDays")} className="w-40">
             <input
               type="number"
               min="1"
@@ -297,7 +292,7 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
               value={noticeForm.curePeriodDays}
               onChange={(e) => setNoticeForm((f) => ({ ...f, curePeriodDays: e.target.value }))}
             />
-          </label>
+          </Field>
           <div className="flex gap-2">
             <button type="submit" disabled={busy || !subcontractors.length} className="btn-primary">
               {tc("save")}
@@ -310,9 +305,9 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
       )}
 
       {notices === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        noticesError ? <ErrorState error={noticesError} onRetry={reloadNotices} compact /> : <Skeleton lines={3} />
       ) : notices.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noDefaultNotices")}</p>
+        <p className="text-sm text-fg-subtle">{t("noDefaultNotices")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {notices.map((n) => (
@@ -320,13 +315,13 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{n.title}</span>
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${NOTICE_STATUS_STYLES[n.status]}`}>{t(n.status)}</span>
+                    <span className="text-sm font-medium text-fg">{n.title}</span>
+                    <Badge tone={statusTone(n.status)}>{t(n.status)}</Badge>
                   </div>
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{n.subcontractor.name}</p>
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{n.description}</p>
+                  <p className="mt-1 text-xs text-fg-subtle">{n.subcontractor.name}</p>
+                  <p className="mt-1 text-xs text-fg-subtle">{n.description}</p>
                   {n.cureDeadline && (
-                    <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">{t("cureDeadline", { date: formatDate(new Date(n.cureDeadline)) })}</p>
+                    <p className="mt-1.5 text-xs text-fg-subtle">{t("cureDeadline", { date: formatDate(new Date(n.cureDeadline)) })}</p>
                   )}
                 </div>
                 {n.status === "issued" && (

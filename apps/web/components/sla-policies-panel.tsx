@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { TICKET_PRIORITIES, type TicketPriority } from "@cantero/shared";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
+import { Field } from "@/components/ui/field";
 
 interface SlaPolicy {
   id: string;
@@ -40,7 +41,7 @@ export function SlaPoliciesPanel() {
           ]),
         ) as Record<TicketPriority, { responseMinutes: string; resolutionMinutes: string }>,
       );
-    });
+    }).catch(notifyApiError);
   }
   useEffect(load, []);
 
@@ -61,15 +62,14 @@ export function SlaPoliciesPanel() {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("slaPoliciesTitle")}</h2>
-      <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">{t("slaPoliciesHint")}</p>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("slaPoliciesTitle")}</h2>
+      <p className="mb-4 text-sm text-fg-subtle">{t("slaPoliciesHint")}</p>
 
       <div className="flex flex-col gap-2 max-w-lg">
         {TICKET_PRIORITIES.map((priority) => (
           <div key={priority} className="card flex flex-wrap items-end gap-2">
-            <span className="w-20 text-sm font-medium text-gray-700 dark:text-gray-200">{t(`priority_${priority}`)}</span>
-            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-              {t("responseMinutes")}
+            <span className="w-20 text-sm font-medium text-fg-muted">{t(`priority_${priority}`)}</span>
+            <Field label={t("responseMinutes")} size="sm">
               <input
                 type="number"
                 min="1"
@@ -77,9 +77,8 @@ export function SlaPoliciesPanel() {
                 value={forms[priority]?.responseMinutes ?? ""}
                 onChange={(e) => setForms((f) => ({ ...f, [priority]: { ...f[priority], responseMinutes: e.target.value } }))}
               />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-              {t("resolutionMinutes")}
+            </Field>
+            <Field label={t("resolutionMinutes")} size="sm">
               <input
                 type="number"
                 min="1"
@@ -87,7 +86,7 @@ export function SlaPoliciesPanel() {
                 value={forms[priority]?.resolutionMinutes ?? ""}
                 onChange={(e) => setForms((f) => ({ ...f, [priority]: { ...f[priority], resolutionMinutes: e.target.value } }))}
               />
-            </label>
+            </Field>
             <button onClick={() => save(priority)} disabled={busy} className="btn-secondary px-3 py-1.5 text-xs">
               {tc("save")}
             </button>

@@ -37,7 +37,7 @@ export class AccountingSyncController {
   @Requires("finance.manage")
   @Get("company/accounting/authorize-url")
   authorizeUrl(@CurrentUser() user: AuthUser, @Query("provider") provider: string) {
-    return { url: this.service.getAuthorizeUrl(user.companyId, assertProvider(provider)) };
+    return { url: this.service.getAuthorizeUrl(user, assertProvider(provider)) };
   }
 
   @Requires("finance.manage")

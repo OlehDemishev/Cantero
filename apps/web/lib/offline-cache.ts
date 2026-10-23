@@ -20,11 +20,16 @@ export async function updateCache<T>(key: string, data: T): Promise<void> {
 
 /**
  * Fetches fresh data and caches it for offline viewing; if the request fails because the
- * device is offline, falls back to the last cached value (if any) instead of throwing.
+ * device is offline, falls back to the last cached value (if any) instead of throwing. An aborted
+ * request (`init.signal`) rejects with the AbortError as usual — it is not mistaken for "offline".
  */
-export async function fetchCached<T>(key: string, path: string): Promise<{ data: T; cachedAt: number | null; stale: boolean }> {
+export async function fetchCached<T>(
+  key: string,
+  path: string,
+  init: { signal?: AbortSignal } = {},
+): Promise<{ data: T; cachedAt: number | null; stale: boolean }> {
   try {
-    const data = await apiFetch<T>(path);
+    const data = await apiFetch<T>(path, init);
     updateCache(key, data).catch(() => {});
     return { data, cachedAt: Date.now(), stale: false };
   } catch (err) {

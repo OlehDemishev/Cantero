@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { useCan } from "@/lib/permissions";
+import { PanelErrorState } from "@/components/ui/error-state";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
 
 interface Depreciation {
   monthsElapsed: number;
@@ -29,52 +32,51 @@ export function FixedAssetRegisterPanel() {
   const t = useTranslations("fixedAssetRegister");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
-  const [entries, setEntries] = useState<RegisterEntry[] | null>(null);
+  const canSee = useCan()("equipment.costs");
+  const { data: entries = null, error, reload } = useApi<RegisterEntry[]>(canSee ? "/equipment/fixed-asset-register" : null);
 
-  useEffect(() => {
-    apiFetch<RegisterEntry[]>("/equipment/fixed-asset-register").then(setEntries);
-  }, []);
-
+  if (!canSee) return null;
+  if (error && !entries) return <PanelErrorState title={t("title")} error={error} onRetry={reload} />;
   if (!entries || entries.length === 0) return null;
 
   return (
     <div className="mt-10">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("description")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{t("description")}</p>
       <div className="card overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-              <th className="py-1.5">{t("asset")}</th>
-              <th>{t("purchaseCost")}</th>
-              <th>{t("accumulatedDepreciation")}</th>
-              <th>{t("bookValue")}</th>
-              <th>{t("status")}</th>
+            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
+              <th scope="col" className="py-1.5">{t("asset")}</th>
+              <th scope="col">{t("purchaseCost")}</th>
+              <th scope="col">{t("accumulatedDepreciation")}</th>
+              <th scope="col">{t("bookValue")}</th>
+              <th scope="col">{t("status")}</th>
             </tr>
           </thead>
           <tbody>
             {entries.map((e) => (
               <tr key={e.id} className="border-b border-gray-100 dark:border-gray-700">
                 <td className="py-1.5">
-                  <a href={`/equipment/${e.id}`} className="font-medium text-gray-900 dark:text-gray-50 hover:underline">
+                  <a href={`/equipment/${e.id}`} className="font-medium text-fg hover:underline">
                     {e.name}
                   </a>
-                  <span className="ml-1 text-xs text-gray-400 dark:text-gray-500">{e.category}</span>
+                  <span className="ml-1 text-xs text-fg-subtle">{e.category}</span>
                 </td>
                 <td>
-                  {e.purchaseCost} {currency}
+                  {formatCurrency(e.purchaseCost, currency)}
                 </td>
-                <td>{e.depreciation ? `${e.depreciation.accumulatedDepreciation} ${currency}` : "—"}</td>
-                <td className="font-medium">{e.depreciation ? `${e.depreciation.bookValue} ${currency}` : "—"}</td>
+                <td>{e.depreciation ? `${formatCurrency(e.depreciation.accumulatedDepreciation, currency)}` : "—"}</td>
+                <td className="font-medium">{e.depreciation ? `${formatCurrency(e.depreciation.bookValue, currency)}` : "—"}</td>
                 <td>
                   {e.disposal ? (
-                    <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-error-700 dark:text-error-500">
+                    <Badge tone="danger">
                       {t("disposed", { date: formatDate(new Date(e.disposal.disposedAt)) })}
-                    </span>
+                    </Badge>
                   ) : e.depreciation ? (
-                    <span className="rounded-full bg-success-50 dark:bg-success-500/15 px-2 py-0.5 text-xs font-medium text-success-700 dark:text-success-500">{t("tracked")}</span>
+                    <Badge tone="success">{t("tracked")}</Badge>
                   ) : (
-                    <span className="text-xs text-gray-400 dark:text-gray-500">{t("noSchedule")}</span>
+                    <span className="text-xs text-fg-subtle">{t("noSchedule")}</span>
                   )}
                 </td>
               </tr>

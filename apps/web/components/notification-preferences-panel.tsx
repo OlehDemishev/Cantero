@@ -7,6 +7,7 @@ import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { isPushSupported, getExistingSubscription, enablePush, disablePush } from "@/lib/push";
 import { resetStateInEffect } from "@/lib/effect-reset";
+import { Alert } from "@/components/ui/alert";
 
 /** Three small, independent account-notification cards (push, email digest, muted types) — kept
  * in one file since they share the "account" tab and the same `me` data, not because they're one
@@ -14,7 +15,7 @@ import { resetStateInEffect } from "@/lib/effect-reset";
 export function NotificationPreferencesPanel() {
   const t = useTranslations("settings");
   const tc = useTranslations("common");
-  const { data: me } = useMe();
+  const { data: me, reload: reloadMe } = useMe();
 
   const [pushStatus, setPushStatus] = useState<"checking" | "unsupported" | "enabled" | "disabled">(() =>
     isPushSupported() ? "checking" : "unsupported",
@@ -70,6 +71,7 @@ export function NotificationPreferencesPanel() {
         body: JSON.stringify({ emailDigestFrequency: next }),
       });
       setDigestSaved(true);
+      reloadMe();
       setTimeout(() => setDigestSaved(false), 2000);
     } finally {
       setDigestBusy(false);
@@ -87,6 +89,7 @@ export function NotificationPreferencesPanel() {
         body: JSON.stringify({ mutedNotificationTypes: next }),
       });
       setMutedTypesSaved(true);
+      reloadMe();
       setTimeout(() => setMutedTypesSaved(false), 2000);
     } finally {
       setMutedTypesBusy(false);
@@ -97,9 +100,9 @@ export function NotificationPreferencesPanel() {
     <>
       {pushStatus !== "unsupported" && (
         <section className="card mt-6">
-          <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("pushNotifications")}</h2>
-          <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("pushNotificationsHint")}</p>
-          {pushError && <p className="mb-3 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{pushError}</p>}
+          <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("pushNotifications")}</h2>
+          <p className="mb-4 text-xs text-fg-subtle">{t("pushNotificationsHint")}</p>
+          {pushError && <Alert tone="danger" className="mb-3">{pushError}</Alert>}
           <div className="flex items-center gap-3">
             <button
               onClick={togglePush}
@@ -112,16 +115,16 @@ export function NotificationPreferencesPanel() {
                   ? t("disablePush")
                   : t("enablePush")}
             </button>
-            {pushStatus === "enabled" && <span className="text-sm text-green-700">{t("pushEnabled")}</span>}
+            {pushStatus === "enabled" && <span className="text-sm text-success-fg">{t("pushEnabled")}</span>}
           </div>
         </section>
       )}
 
       <section className="card mt-6">
-        <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("emailDigest")}</h2>
-        <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("emailDigestHint")}</p>
+        <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("emailDigest")}</h2>
+        <p className="mb-4 text-xs text-fg-subtle">{t("emailDigestHint")}</p>
         <div className="flex items-center gap-3">
-          <select
+          <select aria-label={t("emailDigest")}
             className="input w-auto"
             value={digestFrequency}
             disabled={digestBusy}
@@ -131,16 +134,16 @@ export function NotificationPreferencesPanel() {
             <option value="daily">{t("digestDaily")}</option>
             <option value="weekly">{t("digestWeekly")}</option>
           </select>
-          {digestSaved && <span className="text-sm text-green-700">{tc("saved")}</span>}
+          {digestSaved && <span className="text-sm text-success-fg">{tc("saved")}</span>}
         </div>
       </section>
 
       <section className="card mt-6">
-        <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("mutedNotificationTypes")}</h2>
-        <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("mutedNotificationTypesHint")}</p>
+        <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("mutedNotificationTypes")}</h2>
+        <p className="mb-4 text-xs text-fg-subtle">{t("mutedNotificationTypesHint")}</p>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {NOTIFICATION_TYPES.map((type) => (
-            <label key={type} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+            <label key={type} className="flex items-center gap-2 text-sm text-fg-muted">
               <input
                 type="checkbox"
                 checked={!mutedTypes.includes(type)}
@@ -151,7 +154,7 @@ export function NotificationPreferencesPanel() {
             </label>
           ))}
         </div>
-        {mutedTypesSaved && <span className="mt-2 inline-block text-sm text-green-700">{tc("saved")}</span>}
+        {mutedTypesSaved && <span className="mt-2 inline-block text-sm text-success-fg">{tc("saved")}</span>}
       </section>
     </>
   );

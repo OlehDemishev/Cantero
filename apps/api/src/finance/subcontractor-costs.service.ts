@@ -13,6 +13,10 @@ const LIEN_WAIVER_TYPE_LABELS: Record<string, string> = {
   unconditional_final: "Unconditional waiver on final payment",
 };
 
+/** What a cost carries of its subcontractor: the UI shows the name; the tax ID, bank and DATEV
+ * fields stay with the subcontractor's own (permission-checked) record. */
+const SUBCONTRACTOR_SUMMARY = { select: { id: true, name: true } } as const;
+
 @Injectable()
 export class SubcontractorCostsService {
   constructor(
@@ -25,7 +29,7 @@ export class SubcontractorCostsService {
   list(companyId: string, projectId?: string, subcontractorId?: string) {
     return this.prisma.subcontractorCost.findMany({
       where: { companyId, ...(projectId ? { projectId } : {}), ...(subcontractorId ? { subcontractorId } : {}) },
-      include: { subcontractor: true, lienWaiver: true, project: { select: { id: true, name: true } } },
+      include: { subcontractor: SUBCONTRACTOR_SUMMARY, lienWaiver: true, project: { select: { id: true, name: true } } },
       orderBy: { incurredDate: "desc" },
     });
   }
@@ -53,7 +57,7 @@ export class SubcontractorCostsService {
         dueDate: input.dueDate ? new Date(input.dueDate) : undefined,
         costCodeId: input.costCodeId,
       },
-      include: { subcontractor: true },
+      include: { subcontractor: SUBCONTRACTOR_SUMMARY },
     });
   }
 
@@ -72,7 +76,7 @@ export class SubcontractorCostsService {
     const updated = await this.prisma.subcontractorCost.update({
       where: { id },
       data: { paid: true },
-      include: { subcontractor: true },
+      include: { subcontractor: SUBCONTRACTOR_SUMMARY },
     });
 
     await this.prisma.subcontractorPayment.create({
@@ -96,7 +100,7 @@ export class SubcontractorCostsService {
   async requestLienWaiver(companyId: string, actor: AuditActor, costId: string, input: RequestLienWaiverInput) {
     const cost = await this.prisma.subcontractorCost.findFirst({
       where: { id: costId, companyId },
-      include: { subcontractor: true },
+      include: { subcontractor: SUBCONTRACTOR_SUMMARY },
     });
     if (!cost) throw new NotFoundException("Subcontractor cost not found");
 
@@ -133,7 +137,7 @@ export class SubcontractorCostsService {
   async getLienWaiverPdf(companyId: string, costId: string): Promise<Buffer> {
     const waiver = await this.prisma.lienWaiver.findFirst({
       where: { companyId, subcontractorCostId: costId },
-      include: { subcontractor: true, project: true },
+      include: { subcontractor: SUBCONTRACTOR_SUMMARY, project: true },
     });
     if (!waiver) throw new NotFoundException("No lien waiver on file for this cost");
 
@@ -185,7 +189,7 @@ export class SubcontractorCostsService {
         companyId,
         ...(from || to ? { incurredDate: { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } } : {}),
       },
-      include: { subcontractor: true },
+      include: { subcontractor: { select: { id: true, name: true, datevKreditorNumber: true } } },
       orderBy: { incurredDate: "asc" },
     });
 

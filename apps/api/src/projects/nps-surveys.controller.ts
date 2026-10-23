@@ -23,6 +23,12 @@ export class NpsSurveysController {
   }
 
   @Public()
+  @Get("nps-surveys/:token")
+  getByToken(@Param("token") token: string) {
+    return this.service.getByToken(token);
+  }
+
+  @Public()
   @Post("nps-surveys/:token")
   submit(@Param("token") token: string, @Body(new ZodValidationPipe(submitNpsSurveySchema)) body: SubmitNpsSurveyInput) {
     return this.service.submit(token, body);

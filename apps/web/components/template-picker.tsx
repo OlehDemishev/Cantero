@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { ChecklistTemplateType } from "@cantero/shared";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 
 interface Template {
   id: string;
@@ -34,16 +33,13 @@ export function TemplatePicker({
   onSelect: (selection: TemplateSelection) => void;
 }) {
   const t = useTranslations("checklistTemplates");
-  const [templates, setTemplates] = useState<Template[]>([]);
-
-  useEffect(() => {
-    apiFetch<Template[]>(`/checklist-templates?type=${type}`).then(setTemplates);
-  }, [type]);
+  const ta = useTranslations("a11y");
+  const { data: templates = [] } = useApi<Template[]>(`/checklist-templates?type=${type}`);
 
   if (templates.length === 0) return null;
 
   return (
-    <select
+    <select aria-label={ta("template")}
       className="input"
       value=""
       onChange={(e) => {

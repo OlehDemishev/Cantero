@@ -1,9 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDateTime } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface Session {
   id: string;
@@ -15,17 +19,17 @@ interface Session {
 
 export function SessionsPanel() {
   const t = useTranslations("sessions");
-  const tc = useTranslations("common");
-  const [sessions, setSessions] = useState<Session[] | null>(null);
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
+  const { data: sessions = null, reload: reloadSessions, error: sessionsError } = useApi<Session[]>("/auth/sessions");
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<Session[]>("/auth/sessions").then(setSessions);
+    void reloadSessions();
   }
 
-  useEffect(load, []);
-
   async function revoke(id: string) {
+    if (!(await confirm({ message: td("revokeSession"), tone: "danger", verb: "revoke" }))) return;
     setBusy(true);
     try {
       await apiFetch(`/auth/sessions/${id}`, { method: "DELETE" });
@@ -37,24 +41,24 @@ export function SessionsPanel() {
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-4 text-xs text-fg-subtle">{t("hint")}</p>
 
       {!sessions ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        sessionsError ? <ErrorState error={sessionsError} onRetry={reloadSessions} compact /> : <Skeleton lines={3} />
       ) : sessions.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noSessions")}</p>
+        <p className="text-sm text-fg-subtle">{t("noSessions")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {sessions.map((s) => (
             <li key={s.id} className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-2 text-sm">
               <div>
-                <div className="text-gray-700 dark:text-gray-200">{s.userAgent ?? t("unknownDevice")}</div>
-                <div className="text-xs text-gray-400 dark:text-gray-500">
+                <div className="text-fg-muted">{s.userAgent ?? t("unknownDevice")}</div>
+                <div className="text-xs text-fg-subtle">
                   {s.ipAddress ?? "—"} · {t("lastSeen", { date: formatDateTime(new Date(s.lastSeenAt)) })}
                 </div>
               </div>
-              <button onClick={() => revoke(s.id)} disabled={busy} className="text-xs text-error-700 dark:text-error-500 hover:underline">
+              <button onClick={() => revoke(s.id)} disabled={busy} className="text-xs text-danger-fg hover:underline">
                 {t("revoke")}
               </button>
             </li>

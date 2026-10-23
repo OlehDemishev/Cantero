@@ -2,6 +2,7 @@ import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from "@
 import { Reflector } from "@nestjs/core";
 import type { MembershipRole } from "@prisma/client";
 import type { AuthUser } from "@cantero/shared";
+import { IS_PUBLIC_KEY } from "../decorators/public.decorator";
 import { OPEN_TO_ALL_ROLES_KEY, ROLES_KEY } from "../decorators/roles.decorator";
 import { REQUIRES_KEY, permissionFor, type Requirement } from "../decorators/permissions.decorator";
 
@@ -10,6 +11,10 @@ export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
+    // A public handler (token links, webhooks, API-key routes) has no user to check: its controller's
+    // @Requires/@Roles cover the staff routes beside it, not this one.
+    if (this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [context.getHandler(), context.getClass()])) return true;
+
     // A handler marked open lifts its controller's restriction; see OpenToAllRoles.
     if (this.reflector.get<string | undefined>(OPEN_TO_ALL_ROLES_KEY, context.getHandler())) return true;
 

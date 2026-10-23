@@ -1,9 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface Certification {
   id: string;
@@ -13,16 +17,15 @@ interface Certification {
 
 export function WorkerCertificationsPanel({ workerId }: { workerId: string }) {
   const t = useTranslations("team");
-  const tc = useTranslations("common");
-  const [certifications, setCertifications] = useState<Certification[] | null>(null);
+  const ta = useTranslations("a11y");
+  const confirm = useConfirm();
+  const { data: certifications = null, reload: reloadCertifications, error: certificationsError } = useApi<Certification[]>(`/workers/${workerId}/certifications`);
   const [certForm, setCertForm] = useState({ name: "", expiresAt: "" });
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<Certification[]>(`/workers/${workerId}/certifications`).then(setCertifications);
+    void reloadCertifications();
   }
-
-  useEffect(load, [workerId]);
 
   async function addCertification(e: React.FormEvent) {
     e.preventDefault();
@@ -41,18 +44,18 @@ export function WorkerCertificationsPanel({ workerId }: { workerId: string }) {
   }
 
   async function removeCertification(certificationId: string) {
-    if (!window.confirm(t("confirmDeleteCertification"))) return;
+    if (!(await confirm({ message: t("confirmDeleteCertification"), tone: "danger", verb: "delete" }))) return;
     await apiFetch(`/workers/${workerId}/certifications/${certificationId}`, { method: "DELETE" });
     load();
   }
 
   return (
     <>
-      <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("certifications")}</h2>
+      <h2 className="mb-3 mt-8 text-sm font-semibold text-fg-muted">{t("certifications")}</h2>
       {certifications === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        certificationsError ? <ErrorState error={certificationsError} onRetry={reloadCertifications} compact /> : <Skeleton lines={3} />
       ) : certifications.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noCertifications")}</p>
+        <p className="text-sm text-fg-subtle">{t("noCertifications")}</p>
       ) : (
         <ul className="flex flex-col gap-1.5">
           {certifications.map((cert) => {
@@ -62,11 +65,11 @@ export function WorkerCertificationsPanel({ workerId }: { workerId: string }) {
                 <span>
                   {cert.name}
                   {" — "}
-                  <span className={expired ? "text-error-700 dark:text-error-500" : "text-gray-500 dark:text-gray-400"}>
+                  <span className={expired ? "text-danger-fg" : "text-fg-subtle"}>
                     {formatDate(new Date(cert.expiresAt))}
                   </span>
                 </span>
-                <button onClick={() => removeCertification(cert.id)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
+                <button aria-label={ta("removeItem", { name: cert.name })} onClick={() => removeCertification(cert.id)} className="text-fg-subtle hover:text-danger-fg">
                   ×
                 </button>
               </li>
@@ -77,12 +80,12 @@ export function WorkerCertificationsPanel({ workerId }: { workerId: string }) {
       <form onSubmit={addCertification} className="mt-3 flex flex-col gap-2">
         <input
           required
-          placeholder={t("certificationNamePlaceholder")}
+          placeholder={t("certificationNamePlaceholder")} aria-label={t("certificationNamePlaceholder")}
           className="input"
           value={certForm.name}
           onChange={(e) => setCertForm((f) => ({ ...f, name: e.target.value }))}
         />
-        <input
+        <input aria-label={ta("expiryDate")}
           required
           type="date"
           className="input"

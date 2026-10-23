@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, ApiError } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { FormError } from "@/components/ui/field";
 
 interface Broadcast {
   id: string;
@@ -14,16 +16,15 @@ interface Broadcast {
 
 export function CrewSmsBroadcastPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("crewSmsBroadcast");
+  const ta = useTranslations("a11y");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [log, setLog] = useState<Broadcast[] | null>(null);
+  const { data: log = null, reload: reloadLog } = useApi<Broadcast[]>(`/crew-sms-broadcasts?projectId=${projectId}`);
 
   function load() {
-    apiFetch<Broadcast[]>(`/crew-sms-broadcasts?projectId=${projectId}`).then(setLog);
+    void reloadLog();
   }
-
-  useEffect(load, [projectId]);
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
@@ -43,10 +44,10 @@ export function CrewSmsBroadcastPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-8">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("title")}</h2>
       <div className="card">
         <form onSubmit={handleSend} className="flex flex-col gap-2">
-          <textarea
+          <textarea aria-label={ta("message")}
             className="input h-20"
             placeholder={t("placeholder")}
             value={message}
@@ -54,20 +55,20 @@ export function CrewSmsBroadcastPanel({ projectId }: { projectId: string }) {
             onChange={(e) => setMessage(e.target.value)}
           />
           <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-400 dark:text-gray-500">{message.length}/480</span>
+            <span className="text-xs text-fg-subtle">{message.length}/480</span>
             <button type="submit" disabled={busy || !message.trim()} className="btn-primary px-3 py-1.5 text-xs">
               {busy ? t("sending") : t("send")}
             </button>
           </div>
         </form>
-        {error && <p className="mt-2 text-xs text-error-700 dark:text-error-500">{error}</p>}
+        {error && <FormError className="mt-2">{error}</FormError>}
 
         {log && log.length > 0 && (
           <ul className="mt-4 flex flex-col gap-2 border-t border-gray-100 dark:border-gray-700 pt-3">
             {log.map((b) => (
-              <li key={b.id} className="text-xs text-gray-500 dark:text-gray-400">
-                <span className="text-gray-700 dark:text-gray-200">{b.message}</span>
-                <span className="ml-1 text-gray-400 dark:text-gray-500">
+              <li key={b.id} className="text-xs text-fg-subtle">
+                <span className="text-fg-muted">{b.message}</span>
+                <span className="ml-1 text-fg-subtle">
                   — {t("recipientCount", { count: b.recipientCount })}, {b.sentByName}
                 </span>
               </li>

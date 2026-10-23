@@ -1,7 +1,8 @@
 import { JwtService } from "@nestjs/jwt";
 import { BadRequestException, NotFoundException } from "@nestjs/common";
-import { MsProjectService } from "./ms-project.service";
+import { normalizeDynamicsEnvironmentUrl, MsProjectService } from "./ms-project.service";
 import { encrypted } from "../common/crypto/testing";
+import { signState } from "../common/oauth/oauth";
 
 function jsonResponse(body: unknown, ok = true, status = ok ? 200 : 400) {
   return { ok, status, json: async () => body } as unknown as Response;
@@ -49,11 +50,11 @@ describe("MsProjectService", () => {
   describe("getAuthorizeUrl", () => {
     it("throws when MS_PROJECT_CLIENT_ID isn't configured", () => {
       config.get.mockImplementation(() => undefined);
-      expect(() => service.getAuthorizeUrl("company-a", ENV_URL)).toThrow(BadRequestException);
+      expect(() => service.getAuthorizeUrl({ companyId: "company-a", userId: "user-a" }, ENV_URL)).toThrow(BadRequestException);
     });
 
     it("builds an authorize URL scoped to the given environment, carrying a signed state", () => {
-      const url = service.getAuthorizeUrl("company-a", ENV_URL);
+      const url = service.getAuthorizeUrl({ companyId: "company-a", userId: "user-a" }, ENV_URL);
       const parsed = new URL(url);
 
       expect(parsed.origin + parsed.pathname).toBe("https://login.microsoftonline.com/common/oauth2/v2.0/authorize");
@@ -62,13 +63,60 @@ describe("MsProjectService", () => {
       expect(parsed.searchParams.get("redirect_uri")).toBe("http://localhost:4000/api/auth/ms-project/callback");
 
       const decoded = jwt.verify(parsed.searchParams.get("state")!) as { companyId: string; environmentUrl: string };
-      expect(decoded).toEqual({ companyId: "company-a", environmentUrl: ENV_URL, iat: expect.any(Number), exp: expect.any(Number) });
+      expect(decoded).toEqual({ kind: "oauth_state", provider: "ms_project", companyId: "company-a", userId: "user-a", environmentUrl: ENV_URL, iat: expect.any(Number), exp: expect.any(Number) });
     });
 
     it("strips a trailing slash from the environment URL before encoding it", () => {
-      const url = service.getAuthorizeUrl("company-a", `${ENV_URL}/`);
+      const url = service.getAuthorizeUrl({ companyId: "company-a", userId: "user-a" }, `${ENV_URL}/`);
       const decoded = jwt.verify(new URL(url).searchParams.get("state")!) as { environmentUrl: string };
       expect(decoded.environmentUrl).toBe(ENV_URL);
+    });
+  });
+
+  describe("environment URL validation", () => {
+    it.each([
+      ["https://org12345.crm4.dynamics.com", "https://org12345.crm4.dynamics.com"],
+      ["https://contoso.crm.dynamics.com/", "https://contoso.crm.dynamics.com"],
+      ["https://contoso.api.crm11.dynamics.com", "https://contoso.api.crm11.dynamics.com"],
+      ["  HTTPS://Contoso.CRM.dynamics.com  ", "https://contoso.crm.dynamics.com"],
+    ])("accepts the Dataverse URL %j", (raw, expected) => {
+      expect(normalizeDynamicsEnvironmentUrl(raw)).toBe(expected);
+    });
+
+    it.each([
+      "http://contoso.crm.dynamics.com",
+      "https://attacker.example",
+      "https://contoso.crm.dynamics.com.attacker.example",
+      "https://attacker.example/contoso.crm.dynamics.com",
+      "https://contoso.crm.dynamics.com:8443",
+      "https://user:pass@contoso.crm.dynamics.com",
+      "https://contoso.crm.dynamics.com/api",
+      "https://contoso.crm.dynamics.com?x=1",
+      "https://dynamics.com",
+      "https://169.254.169.254",
+      "not a url",
+    ])("refuses %j", (raw) => {
+      expect(normalizeDynamicsEnvironmentUrl(raw)).toBeNull();
+    });
+
+    it("won't build an authorize URL for a non-Dataverse host", () => {
+      expect(() => service.getAuthorizeUrl({ companyId: "company-a", userId: "user-a" }, "https://attacker.example")).toThrow(BadRequestException);
+    });
+
+    it("never sends the bearer token to a stored URL that isn't Dataverse", async () => {
+      prisma.msProjectConnection.findUnique.mockResolvedValue({
+        id: "conn-1",
+        companyId: "company-a",
+        accessToken: "at",
+        refreshToken: "rt",
+        tokenExpiresAt: new Date(Date.now() + 3600_000),
+        environmentUrl: "https://attacker.example",
+      });
+      prisma.project.findFirst.mockResolvedValue({ id: "project-1", name: "Sample Reno", msProjectExternalId: null });
+      prisma.task.findMany.mockResolvedValue([{ id: "t-1", name: "Demo", startDate: new Date(), dueDate: new Date(), msProjectExternalId: null }]);
+
+      await expect(service.syncProject("company-a", "project-1")).rejects.toThrow("isn't a Dataverse URL");
+      expect(fetchMock).not.toHaveBeenCalled();
     });
   });
 
@@ -78,7 +126,7 @@ describe("MsProjectService", () => {
     });
 
     it("exchanges the code and stores the connection with the environmentUrl from the state", async () => {
-      const state = jwt.sign({ companyId: "company-a", environmentUrl: ENV_URL });
+      const state = signState(jwt, "ms_project", { companyId: "company-a", userId: "user-a" }, { environmentUrl: ENV_URL });
       fetchMock.mockResolvedValueOnce(jsonResponse({ access_token: "at", refresh_token: "rt", expires_in: 3600 }));
 
       const result = await service.handleCallback("auth-code", state);
@@ -93,7 +141,7 @@ describe("MsProjectService", () => {
     });
 
     it("throws when Microsoft rejects the authorization code", async () => {
-      const state = jwt.sign({ companyId: "company-a", environmentUrl: ENV_URL });
+      const state = signState(jwt, "ms_project", { companyId: "company-a", userId: "user-a" }, { environmentUrl: ENV_URL });
       fetchMock.mockResolvedValueOnce(jsonResponse({}, false, 400));
 
       await expect(service.handleCallback("bad-code", state)).rejects.toThrow(BadRequestException);

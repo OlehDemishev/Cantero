@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface Company {
   deletionRequestedAt: string | null;
@@ -12,17 +14,16 @@ interface Company {
 /** Exporting the data needs settings.export; asking to delete the company stays with owner and admin. */
 export function DataPrivacyPanel({ canExport, canDelete }: { canExport: boolean; canDelete: boolean }) {
   const t = useTranslations("dataPrivacy");
+  const confirm = useConfirm();
 
-  const [company, setCompany] = useState<Company | null>(null);
+  const { data: company = null, reload: reloadCompany } = useApi<Company>("/company");
   const [exporting, setExporting] = useState(false);
   const [exportingOperational, setExportingOperational] = useState(false);
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<Company>("/company").then(setCompany);
+    void reloadCompany();
   }
-
-  useEffect(load, []);
 
   async function exportData() {
     setExporting(true);
@@ -45,7 +46,7 @@ export function DataPrivacyPanel({ canExport, canDelete }: { canExport: boolean;
   }
 
   async function requestDeletion() {
-    if (!window.confirm(t("confirmRequest"))) return;
+    if (!(await confirm({ message: t("confirmRequest"), tone: "danger", verb: "request" }))) return;
     setBusy(true);
     try {
       await apiFetch("/company/deletion-request", { method: "POST" });
@@ -69,14 +70,14 @@ export function DataPrivacyPanel({ canExport, canDelete }: { canExport: boolean;
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-4 text-xs text-fg-subtle">{t("hint")}</p>
 
       <div className="flex flex-col gap-4">
         {canExport && (
         <>
         <div>
-          <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("exportTitle")}</h3>
+          <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("exportTitle")}</h3>
           <p className="mb-2 text-sm text-gray-600 dark:text-gray-300">{t("exportHint")}</p>
           <button onClick={exportData} disabled={exporting} className="btn-secondary px-3 py-1 text-xs">
             {exporting ? t("exporting") : t("exportButton")}
@@ -84,7 +85,7 @@ export function DataPrivacyPanel({ canExport, canDelete }: { canExport: boolean;
         </div>
 
         <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
-          <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("operationalExportTitle")}</h3>
+          <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("operationalExportTitle")}</h3>
           <p className="mb-2 text-sm text-gray-600 dark:text-gray-300">{t("operationalExportHint")}</p>
           <button onClick={exportOperationalData} disabled={exportingOperational} className="btn-secondary px-3 py-1 text-xs">
             {exportingOperational ? t("exporting") : t("operationalExportButton")}
@@ -95,10 +96,10 @@ export function DataPrivacyPanel({ canExport, canDelete }: { canExport: boolean;
 
         {canDelete && (
         <div className={canExport ? "border-t border-gray-100 dark:border-gray-700 pt-4" : ""}>
-          <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("deletionTitle")}</h3>
+          <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("deletionTitle")}</h3>
           {company.deletionRequestedAt ? (
               <>
-                <p className="mb-2 text-sm text-error-700 dark:text-error-500">
+                <p className="mb-2 text-sm text-danger-fg">
                   {t("deletionPending", { date: formatDate(new Date(company.deletionRequestedAt)) })}
                 </p>
                 <button onClick={cancelRequest} disabled={busy} className="btn-secondary px-3 py-1 text-xs">
@@ -108,7 +109,7 @@ export function DataPrivacyPanel({ canExport, canDelete }: { canExport: boolean;
             ) : (
               <>
                 <p className="mb-2 text-sm text-gray-600 dark:text-gray-300">{t("deletionHint")}</p>
-                <button onClick={requestDeletion} disabled={busy} className="btn-secondary px-3 py-1 text-xs text-error-600">
+                <button onClick={requestDeletion} disabled={busy} className="btn-secondary px-3 py-1 text-xs text-danger-fg">
                   {t("requestDeletion")}
                 </button>
               </>

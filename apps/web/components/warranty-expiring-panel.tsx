@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { useCan } from "@/lib/permissions";
+import { PanelErrorState } from "@/components/ui/error-state";
 import { formatDate } from "@/lib/format-date";
 
 interface ExpiringRegistration {
@@ -15,33 +16,32 @@ interface ExpiringRegistration {
 
 export function WarrantyExpiringPanel() {
   const t = useTranslations("warrantyRegistry");
-  const [items, setItems] = useState<ExpiringRegistration[] | null>(null);
+  const canSee = useCan()("site.manage");
+  const { data: items = null, error, reload } = useApi<ExpiringRegistration[]>(canSee ? "/warranty-registrations/expiring?days=90" : null);
 
-  useEffect(() => {
-    apiFetch<ExpiringRegistration[]>("/warranty-registrations/expiring?days=90").then(setItems);
-  }, []);
-
+  if (!canSee) return null;
+  if (error && !items) return <PanelErrorState title={t("expiringTitle")} error={error} onRetry={reload} />;
   if (!items || items.length === 0) return null;
 
   return (
     <div className="mt-10">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("expiringTitle")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("expiringHint")}</p>
-      <div className="card overflow-x-auto">
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("expiringTitle")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{t("expiringHint")}</p>
+      <div tabIndex={0} className="card overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-              <th className="py-1.5">{t("scope")}</th>
-              <th>{t("project")}</th>
-              <th className="text-right">{t("expiresOn2")}</th>
+            <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
+              <th scope="col" className="py-1.5">{t("scope")}</th>
+              <th scope="col">{t("project")}</th>
+              <th scope="col" className="text-right">{t("expiresOn2")}</th>
             </tr>
           </thead>
           <tbody>
             {items.map((r) => (
               <tr key={r.id} className="border-b border-gray-100 dark:border-gray-700">
-                <td className="py-1.5 font-medium text-gray-900 dark:text-gray-50">
+                <td className="py-1.5 font-medium text-fg">
                   {r.scope}
-                  {r.manufacturer && <span className="ml-1.5 text-xs text-gray-400 dark:text-gray-500">({r.manufacturer})</span>}
+                  {r.manufacturer && <span className="ml-1.5 text-xs text-fg-subtle">({r.manufacturer})</span>}
                 </td>
                 <td>{r.project.name}</td>
                 <td className="text-right">{formatDate(new Date(r.expirationDate))}</td>

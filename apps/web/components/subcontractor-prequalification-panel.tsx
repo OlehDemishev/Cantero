@@ -1,10 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import type { PrequalificationStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 interface Prequalification {
   id: string;
@@ -20,17 +25,13 @@ interface Prequalification {
   createdAt: string;
 }
 
-const STATUS_STYLES: Record<PrequalificationStatus, string> = {
-  pending: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
-  approved: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
-  rejected: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
-};
 
 export function SubcontractorPrequalificationPanel({ subcontractorId }: { subcontractorId: string }) {
   const t = useTranslations("subcontractorPrequalification");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
-  const [cycles, setCycles] = useState<Prequalification[] | null>(null);
+  const { data: cycles = null, reload: reloadCycles, error: cyclesError } = useApi<Prequalification[]>(`/subcontractors/${subcontractorId}/prequalifications`);
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ licenseNumber: "", bondingCapacity: "", yearsInBusiness: "", safetyEmrRating: "", referencesNotes: "" });
   const [decidingId, setDecidingId] = useState<string | null>(null);
@@ -38,9 +39,8 @@ export function SubcontractorPrequalificationPanel({ subcontractorId }: { subcon
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<Prequalification[]>(`/subcontractors/${subcontractorId}/prequalifications`).then(setCycles);
+    void reloadCycles();
   }
-  useEffect(load, [subcontractorId]);
 
   async function create(e: React.FormEvent) {
     e.preventDefault();
@@ -88,20 +88,20 @@ export function SubcontractorPrequalificationPanel({ subcontractorId }: { subcon
   return (
     <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
       <div className="mb-1.5 flex items-center justify-between">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("title")}</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("title")}</h3>
         {!adding && (
           <button onClick={() => setAdding(true)} className="btn-secondary px-2 py-0.5 text-xs">
             {t("startCycle")}
           </button>
         )}
       </div>
-      <p className="mb-2 text-xs text-gray-400 dark:text-gray-500">{t("hint")}</p>
+      <p className="mb-2 text-xs text-fg-subtle">{t("hint")}</p>
 
       {adding && (
         <form onSubmit={create} className="mb-3 flex flex-col gap-2 rounded-md border border-gray-200 dark:border-gray-700 p-2">
           <div className="flex flex-wrap gap-2">
             <input
-              placeholder={t("licenseNumberPlaceholder")}
+              placeholder={t("licenseNumberPlaceholder")} aria-label={t("licenseNumberPlaceholder")}
               className="input"
               value={form.licenseNumber}
               onChange={(e) => setForm((f) => ({ ...f, licenseNumber: e.target.value }))}
@@ -109,14 +109,14 @@ export function SubcontractorPrequalificationPanel({ subcontractorId }: { subcon
             <input
               type="number"
               step="0.01"
-              placeholder={t("bondingCapacityPlaceholder")}
+              placeholder={t("bondingCapacityPlaceholder")} aria-label={t("bondingCapacityPlaceholder")}
               className="input w-36"
               value={form.bondingCapacity}
               onChange={(e) => setForm((f) => ({ ...f, bondingCapacity: e.target.value }))}
             />
             <input
               type="number"
-              placeholder={t("yearsInBusinessPlaceholder")}
+              placeholder={t("yearsInBusinessPlaceholder")} aria-label={t("yearsInBusinessPlaceholder")}
               className="input w-28"
               value={form.yearsInBusiness}
               onChange={(e) => setForm((f) => ({ ...f, yearsInBusiness: e.target.value }))}
@@ -124,7 +124,7 @@ export function SubcontractorPrequalificationPanel({ subcontractorId }: { subcon
             <input
               type="number"
               step="0.01"
-              placeholder={t("safetyEmrPlaceholder")}
+              placeholder={t("safetyEmrPlaceholder")} aria-label={t("safetyEmrPlaceholder")}
               className="input w-28"
               value={form.safetyEmrRating}
               onChange={(e) => setForm((f) => ({ ...f, safetyEmrRating: e.target.value }))}
@@ -132,7 +132,7 @@ export function SubcontractorPrequalificationPanel({ subcontractorId }: { subcon
           </div>
           <textarea
             rows={2}
-            placeholder={t("referencesNotesPlaceholder")}
+            placeholder={t("referencesNotesPlaceholder")} aria-label={t("referencesNotesPlaceholder")}
             className="input"
             value={form.referencesNotes}
             onChange={(e) => setForm((f) => ({ ...f, referencesNotes: e.target.value }))}
@@ -149,9 +149,9 @@ export function SubcontractorPrequalificationPanel({ subcontractorId }: { subcon
       )}
 
       {!cycles ? (
-        <p className="text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        cyclesError ? <ErrorState error={cyclesError} onRetry={reloadCycles} compact /> : <Skeleton lines={3} />
       ) : cycles.length === 0 ? (
-        <p className="text-xs text-gray-400 dark:text-gray-500">{t("noCycles")}</p>
+        <p className="text-xs text-fg-subtle">{t("noCycles")}</p>
       ) : (
         <ul className="flex flex-col gap-1.5">
           {cycles.map((c) => (
@@ -162,10 +162,10 @@ export function SubcontractorPrequalificationPanel({ subcontractorId }: { subcon
                   {c.yearsInBusiness !== null && ` · ${t("yearsInBusinessAbbr", { years: c.yearsInBusiness })}`}
                   {c.score !== null && ` · ${t("scoreAbbr", { score: c.score })}`}
                 </span>
-                <span className={`rounded-full px-2 py-0.5 font-medium ${STATUS_STYLES[c.status]}`}>{t(`status_${c.status}`)}</span>
+                <Badge tone={statusTone(c.status)}>{t(`status_${c.status}`)}</Badge>
               </div>
               {c.status === "approved" && c.expiresAt && (
-                <p className="mt-0.5 text-gray-400 dark:text-gray-500">
+                <p className="mt-0.5 text-fg-subtle">
                   {t("expiresOn", { date: formatDate(new Date(c.expiresAt)) })}
                 </p>
               )}
@@ -176,18 +176,18 @@ export function SubcontractorPrequalificationPanel({ subcontractorId }: { subcon
                       type="number"
                       min="0"
                       max="100"
-                      placeholder={t("scorePlaceholder")}
+                      placeholder={t("scorePlaceholder")} aria-label={t("scorePlaceholder")}
                       className="input w-20 py-0.5 text-xs"
                       value={decideForm.score}
                       onChange={(e) => setDecideForm((f) => ({ ...f, score: e.target.value }))}
                     />
                     <input
-                      placeholder={t("reviewedByPlaceholder")}
+                      placeholder={t("reviewedByPlaceholder")} aria-label={t("reviewedByPlaceholder")}
                       className="input w-32 py-0.5 text-xs"
                       value={decideForm.reviewedByName}
                       onChange={(e) => setDecideForm((f) => ({ ...f, reviewedByName: e.target.value }))}
                     />
-                    <input
+                    <input aria-label={ta("expiryDate")}
                       type="date"
                       className="input py-0.5 text-xs"
                       value={decideForm.expiresAt}
@@ -196,7 +196,7 @@ export function SubcontractorPrequalificationPanel({ subcontractorId }: { subcon
                     <button onClick={() => decide(c.id, "approved")} disabled={busy} className="btn-primary px-2 py-0.5 text-xs">
                       {t("approve")}
                     </button>
-                    <button onClick={() => decide(c.id, "rejected")} disabled={busy} className="text-error-700 dark:text-error-500 hover:underline">
+                    <button onClick={() => decide(c.id, "rejected")} disabled={busy} className="text-danger-fg hover:underline">
                       {t("reject")}
                     </button>
                   </div>

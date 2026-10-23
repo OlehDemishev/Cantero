@@ -4,7 +4,7 @@ import { JwtService } from "@nestjs/jwt";
 import type { AccountingConnection, AccountingProvider as AccountingProviderEnum } from "@prisma/client";
 import type { AccountingProviderType } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
-import { apiOrigin, exchangeCode, refreshIfExpiring, requestToken, signState, tokenExpiry, verifyState, type TokenEndpoint } from "../common/oauth/oauth";
+import { apiOrigin, exchangeCode, refreshIfExpiring, requestToken, signState, tokenExpiry, verifyState, type OAuthStateClaims, type TokenEndpoint } from "../common/oauth/oauth";
 import { encryptSecret, withDecryptedTokens, withEncryptedTokens } from "../common/crypto/secret-box";
 
 const FETCH_TIMEOUT_MS = 10_000;
@@ -138,7 +138,7 @@ export class AccountingSyncService {
     return { ok: true };
   }
 
-  getAuthorizeUrl(companyId: string, provider: AccountingProviderType): string {
+  getAuthorizeUrl(user: OAuthStateClaims, provider: AccountingProviderType): string {
     if (provider === "lexoffice") {
       throw new BadRequestException("lexoffice connects with a Public API Key, not OAuth — use the lexoffice connect form instead");
     }
@@ -150,7 +150,7 @@ export class AccountingSyncService {
       );
     }
 
-    const state = signState(this.jwt, { companyId, provider });
+    const state = signState(this.jwt, provider, user);
     const redirectUri = this.callbackUrl(provider);
     const params = new URLSearchParams({
       client_id: clientId,
@@ -177,8 +177,8 @@ export class AccountingSyncService {
     // OAuthProviderType below.
     if (provider === "lexoffice") throw new BadRequestException("lexoffice doesn't use this callback");
 
-    const decoded = verifyState<{ companyId: string; provider: AccountingProviderType }>(this.jwt, state);
-    if (decoded.provider !== provider) throw new BadRequestException("Provider mismatch");
+    // The state names the provider it was signed for, so a Xero state can't complete a QuickBooks callback.
+    const decoded = verifyState(this.jwt, state, provider);
 
     const tokens = await exchangeCode(this.tokenEndpoint(provider), { code, redirect_uri: this.callbackUrl(provider) });
     const externalAccountId = provider === "quickbooks" ? realmId : await this.fetchXeroTenantId(tokens.access_token);

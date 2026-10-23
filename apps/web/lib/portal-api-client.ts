@@ -1,4 +1,4 @@
-import { ApiError } from "./api-client";
+import { readApiError, sendApiRequest } from "./api-client";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
 const PORTAL_TOKEN_KEY = "cantero_portal_token";
@@ -16,6 +16,25 @@ export function clearPortalToken(): void {
   localStorage.removeItem(PORTAL_TOKEN_KEY);
 }
 
+/** The portal's "Sign out": retires this client's portal tokens on the server (every device — the
+ * portal has no per-device sessions), then forgets this one. Best effort: offline or an
+ * unreachable API still signs this browser out. */
+export async function signOutPortal(): Promise<void> {
+  const token = getPortalToken();
+  if (token) {
+    try {
+      await fetch(`${API_URL}/portal/auth/logout`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(3000),
+      });
+    } catch {
+      // offline or timed out
+    }
+  }
+  clearPortalToken();
+}
+
 /** Same shape as apiFetch — kept separate so a client-portal session never shares a token slot with an internal user session. */
 export async function portalApiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getPortalToken();
@@ -25,18 +44,9 @@ export async function portalApiFetch<T>(path: string, options: RequestInit = {})
   };
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(`${API_URL}${path}`, { ...options, headers });
+  const res = await sendApiRequest(`${API_URL}${path}`, { ...options, headers });
 
-  if (!res.ok) {
-    let message = res.statusText;
-    try {
-      const body = await res.json();
-      message = Array.isArray(body?.message) ? body.message.join(", ") : (body?.message ?? message);
-    } catch {
-      // response wasn't JSON; keep statusText
-    }
-    throw new ApiError(res.status, message);
-  }
+  if (!res.ok) throw await readApiError(res);
 
   if (res.status === 204) return undefined as T;
 

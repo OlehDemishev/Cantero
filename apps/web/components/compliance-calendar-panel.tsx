@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 type ComplianceItemType = "subcontractor_document" | "supplier_document" | "worker_certification" | "permit" | "company_document";
 type ComplianceStatus = "expired" | "expiring";
@@ -22,22 +25,16 @@ interface ComplianceCalendar {
 
 export function ComplianceCalendarPanel() {
   const t = useTranslations("complianceCalendar");
-  const [data, setData] = useState<ComplianceCalendar | null>(null);
   const [lookaheadDays, setLookaheadDays] = useState(90);
+  const { data = null, error: dataError, reload: reloadData } = useApi<ComplianceCalendar>(`/reports/compliance-calendar?lookaheadDays=${lookaheadDays}`);
 
-  function load() {
-    apiFetch<ComplianceCalendar>(`/reports/compliance-calendar?lookaheadDays=${lookaheadDays}`).then(setData);
-  }
-
-  useEffect(load, [lookaheadDays]);
-
-  if (data === null) return null;
+  if (data === null) return dataError ? <ErrorState error={dataError} onRetry={reloadData} compact /> : <Skeleton lines={3} />;
 
   return (
     <div className="mt-10">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-        <label className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+        <h2 className="text-sm font-semibold text-fg-muted">{t("title")}</h2>
+        <label className="flex items-center gap-1.5 text-xs text-fg-subtle">
           {t("lookahead")}
           <select className="input w-auto py-1 text-xs" value={lookaheadDays} onChange={(e) => setLookaheadDays(Number(e.target.value))}>
             <option value={30}>{t("days", { n: 30 })}</option>
@@ -51,47 +48,43 @@ export function ComplianceCalendarPanel() {
         {(data.expiredCount > 0 || data.expiringCount > 0) && (
           <div className="mb-3 flex flex-wrap gap-2 text-xs">
             {data.expiredCount > 0 && (
-              <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2.5 py-1 font-medium text-error-700 dark:text-error-500">
+              <Badge tone="danger">
                 {t("expiredCount", { count: data.expiredCount })}
-              </span>
+              </Badge>
             )}
             {data.expiringCount > 0 && (
-              <span className="rounded-full bg-warning-50 dark:bg-warning-500/15 px-2.5 py-1 font-medium text-warning-700 dark:text-warning-500">
+              <Badge tone="warning">
                 {t("expiringCount", { count: data.expiringCount })}
-              </span>
+              </Badge>
             )}
           </div>
         )}
 
         {data.items.length === 0 ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500">{t("empty")}</p>
+          <p className="text-sm text-fg-subtle">{t("empty")}</p>
         ) : (
-          <div className="overflow-x-auto">
+          <div tabIndex={0} className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-                <th className="py-1.5">{t("item")}</th>
-                <th>{t("type")}</th>
-                <th>{t("holder")}</th>
-                <th>{t("expiresAt")}</th>
-                <th>{t("status")}</th>
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
+                <th scope="col" className="py-1.5">{t("item")}</th>
+                <th scope="col">{t("type")}</th>
+                <th scope="col">{t("holder")}</th>
+                <th scope="col">{t("expiresAt")}</th>
+                <th scope="col">{t("status")}</th>
               </tr>
             </thead>
             <tbody>
               {data.items.map((item, i) => (
                 <tr key={i} className="border-b border-gray-100 dark:border-gray-700">
                   <td className="py-1.5">{item.label}</td>
-                  <td className="text-xs text-gray-500 dark:text-gray-400">{t(`type_${item.type}`)}</td>
-                  <td className="text-xs text-gray-500 dark:text-gray-400">{item.holderName ?? "—"}</td>
-                  <td className="text-xs text-gray-500 dark:text-gray-400">{formatDate(new Date(item.expiresAt))}</td>
+                  <td className="text-xs text-fg-subtle">{t(`type_${item.type}`)}</td>
+                  <td className="text-xs text-fg-subtle">{item.holderName ?? "—"}</td>
+                  <td className="text-xs text-fg-subtle">{formatDate(new Date(item.expiresAt))}</td>
                   <td>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        item.status === "expired" ? "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500" : "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500"
-                      }`}
-                    >
+                    <Badge tone={item.status === "expired" ? "danger" : "warning"}>
                       {t(item.status)}
-                    </span>
+                    </Badge>
                   </td>
                 </tr>
               ))}

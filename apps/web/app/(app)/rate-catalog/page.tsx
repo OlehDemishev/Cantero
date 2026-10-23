@@ -1,0 +1,558 @@
+"use client";
+
+import { Fragment, useState } from "react";
+import { useTranslations } from "next-intl";
+import { CsvImportButton } from "@/components/csv-import-button";
+import { AssembliesPanel } from "@/components/assemblies-panel";
+import { EstimateAccuracyPanel } from "@/components/estimate-accuracy-panel";
+import { MaterialPricesPanel } from "@/components/material-prices-panel";
+import { EmptyState } from "@/components/ui/empty-state";
+import { CloseIcon, RateCatalogIcon } from "@/components/nav-icons";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { formatDate, formatDateTime } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
+import { Alert } from "@/components/ui/alert";
+import { PageHeader } from "@/components/ui/page-header";
+import { Field } from "@/components/ui/field";
+
+interface MaterialCatalogItem {
+  id: string;
+  code: string;
+  name: string;
+  unit: string;
+  defaultUnitPrice: string;
+}
+interface RateCatalogItem {
+  id: string;
+  code: string;
+  name: string;
+  unit: string;
+  laborHoursPerUnit: string;
+  catalogId: string | null;
+  formula: string | null;
+  formulaParams: string[];
+  materials: { materialCatalogItem: MaterialCatalogItem; quantityPerUnit: string; wasteFactorPercent: string }[];
+}
+interface Catalog {
+  id: string;
+  name: string;
+}
+interface Revision {
+  id: string;
+  code: string;
+  name: string;
+  unit: string;
+  laborHoursPerUnit: string;
+  changedByName: string;
+  createdAt: string;
+}
+interface PendingChange {
+  id: string;
+  laborHoursPerUnit: string | null;
+  name: string | null;
+  unit: string | null;
+  proposedByName: string;
+  proposedAt: string;
+  rateCatalogItem: { id: string; code: string; name: string; laborHoursPerUnit: string };
+}
+
+interface MaterialLine {
+  materialCatalogItemId: string;
+  quantityPerUnit: string;
+  wasteFactorPercent: string;
+}
+
+const EMPTY_FORM = { code: "", name: "", unit: "", laborHoursPerUnit: "0.5", catalogId: "", formula: "", formulaParams: "" };
+
+export default function RateCatalogPage() {
+  const t = useTranslations("rateCatalog");
+  const tc = useTranslations("common");
+  const ti = useTranslations("import");
+  const ta = useTranslations("a11y");
+
+  const { data: items = null, reload: reloadItems } = useApi<RateCatalogItem[]>("/estimates/rate-catalog");
+  const { data: materials = [], reload: reloadMaterials } = useApi<MaterialCatalogItem[]>("/materials/catalog");
+  const { data: catalogs = [], reload: reloadCatalogs } = useApi<Catalog[]>("/catalogs");
+  const [activeCatalogId, setActiveCatalogId] = useState<string>("all");
+  const [newCatalogName, setNewCatalogName] = useState("");
+  const [catalogBusy, setCatalogBusy] = useState(false);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [lines, setLines] = useState<MaterialLine[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState(EMPTY_FORM);
+  const [historyForId, setHistoryForId] = useState<string | null>(null);
+  const [history, setHistory] = useState<Revision[] | null>(null);
+  const { data: pendingChanges = [], reload: reloadPendingChanges } = useApi<PendingChange[]>("/estimates/rate-catalog/pending-changes");
+  const [pendingNotice, setPendingNotice] = useState<string | null>(null);
+
+  function load() {
+    void reloadItems();
+    void reloadPendingChanges();
+  }
+
+  function loadMaterials() {
+    void reloadMaterials();
+  }
+
+  function loadCatalogs() {
+    void reloadCatalogs();
+  }
+
+  function addLine() {
+    if (materials.length === 0) return;
+    setLines((l) => [...l, { materialCatalogItemId: materials[0].id, quantityPerUnit: "1", wasteFactorPercent: "0" }]);
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await apiFetch("/estimates/rate-catalog", {
+        method: "POST",
+        body: JSON.stringify({
+          code: form.code,
+          name: form.name,
+          unit: form.unit,
+          laborHoursPerUnit: Number(form.laborHoursPerUnit),
+          catalogId: form.catalogId || undefined,
+          formula: form.formula || undefined,
+          formulaParams: form.formula
+            ? form.formulaParams.split(",").map((p) => p.trim()).filter(Boolean)
+            : [],
+          materials: lines.map((l) => ({
+            materialCatalogItemId: l.materialCatalogItemId,
+            quantityPerUnit: Number(l.quantityPerUnit),
+            wasteFactorPercent: Number(l.wasteFactorPercent),
+          })),
+        }),
+      });
+      setForm(EMPTY_FORM);
+      setLines([]);
+      setShowCreateForm(false);
+      load();
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function createCatalog(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newCatalogName.trim() || catalogBusy) return;
+    setCatalogBusy(true);
+    try {
+      await apiFetch("/catalogs", { method: "POST", body: JSON.stringify({ name: newCatalogName.trim() }) });
+      setNewCatalogName("");
+      loadCatalogs();
+    } finally {
+      setCatalogBusy(false);
+    }
+  }
+
+  function startEdit(item: RateCatalogItem) {
+    setEditingId(item.id);
+    setEditForm({
+      code: item.code,
+      name: item.name,
+      unit: item.unit,
+      laborHoursPerUnit: item.laborHoursPerUnit,
+      catalogId: item.catalogId ?? "",
+      formula: item.formula ?? "",
+      formulaParams: item.formulaParams.join(", "),
+    });
+    setHistoryForId(null);
+  }
+
+  async function saveEdit(id: string) {
+    const result = await apiFetch<{ pendingApproval: boolean }>(`/estimates/rate-catalog/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        name: editForm.name,
+        unit: editForm.unit,
+        laborHoursPerUnit: Number(editForm.laborHoursPerUnit),
+        catalogId: editForm.catalogId || null,
+        formula: editForm.formula || null,
+        formulaParams: editForm.formula
+          ? editForm.formulaParams.split(",").map((p) => p.trim()).filter(Boolean)
+          : [],
+      }),
+    });
+    setPendingNotice(result.pendingApproval ? t("changeHeldForApproval") : null);
+    setEditingId(null);
+    load();
+  }
+
+  async function approvePendingChange(id: string) {
+    await apiFetch(`/estimates/rate-catalog/pending-changes/${id}/approve`, { method: "POST", body: JSON.stringify({}) });
+    load();
+  }
+
+  async function rejectPendingChange(id: string) {
+    await apiFetch(`/estimates/rate-catalog/pending-changes/${id}/reject`, { method: "POST", body: JSON.stringify({}) });
+    load();
+  }
+
+  function toggleHistory(id: string) {
+    if (historyForId === id) {
+      setHistoryForId(null);
+      setHistory(null);
+      return;
+    }
+    setHistoryForId(id);
+    setHistory(null);
+    apiFetch<Revision[]>(`/estimates/rate-catalog/${id}/history`).then(setHistory).catch(notifyApiError);
+  }
+
+  const catalogNameById = Object.fromEntries(catalogs.map((c) => [c.id, c.name]));
+  const visibleItems = items?.filter((item) => {
+    if (activeCatalogId === "all") return true;
+    if (activeCatalogId === "uncategorized") return !item.catalogId;
+    return item.catalogId === activeCatalogId;
+  });
+
+  return (
+    <>
+      <PageHeader
+        title={t("title")}
+        actions={
+          <>
+            <CsvImportButton endpoint="/materials/catalog/import" label={ti("importMaterials")} onDone={loadMaterials} />
+            <CsvImportButton endpoint="/estimates/rate-catalog/import" label={ti("importRateItems")} onDone={load} />
+            {!showCreateForm && (
+              <button type="button" onClick={() => setShowCreateForm(true)} className="btn-primary">
+                {tc("create")}
+              </button>
+            )}
+          </>
+        }
+      />
+
+      {pendingNotice && (
+        <Alert
+          tone="warning"
+          size="sm"
+          className="mt-3"
+          action={
+            <button onClick={() => setPendingNotice(null)} className="hover:underline">
+              {tc("close")}
+            </button>
+          }
+        >
+          {pendingNotice}
+        </Alert>
+      )}
+
+      {pendingChanges.length > 0 && (
+        <div className="card mt-4">
+          <h2 className="mb-2 text-sm font-semibold text-fg-muted">{t("pendingChanges")}</h2>
+          <p className="mb-3 text-xs text-fg-subtle">{t("pendingChangesHint")}</p>
+          <ul className="flex flex-col gap-2">
+            {pendingChanges.map((pc) => (
+              <li key={pc.id} className="flex items-center justify-between rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm">
+                <div>
+                  <span className="font-medium text-fg">
+                    {pc.rateCatalogItem.code} — {pc.name ?? pc.rateCatalogItem.name}
+                  </span>
+                  {pc.laborHoursPerUnit !== null && (
+                    <span className="ml-2 text-xs text-fg-subtle">
+                      {t("laborHoursChange", { from: pc.rateCatalogItem.laborHoursPerUnit, to: pc.laborHoursPerUnit })}
+                    </span>
+                  )}
+                  <p className="text-xs text-fg-subtle">{t("proposedBy", { name: pc.proposedByName, date: formatDate(new Date(pc.proposedAt)) })}</p>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => approvePendingChange(pc.id)} className="btn-primary px-2.5 py-1 text-xs">
+                    {t("approveChange")}
+                  </button>
+                  <button onClick={() => rejectPendingChange(pc.id)} className="btn-secondary px-2.5 py-1 text-xs">
+                    {t("rejectChange")}
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <button
+          onClick={() => setActiveCatalogId("all")}
+          className={`rounded-full px-3 py-1 text-xs font-medium ${activeCatalogId === "all" ? "bg-brand-500 text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"}`}
+        >
+          {t("allCatalogs")}
+        </button>
+        <button
+          onClick={() => setActiveCatalogId("uncategorized")}
+          className={`rounded-full px-3 py-1 text-xs font-medium ${activeCatalogId === "uncategorized" ? "bg-brand-500 text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"}`}
+        >
+          {t("uncategorized")}
+        </button>
+        {catalogs.map((c) => (
+          <button
+            key={c.id}
+            onClick={() => setActiveCatalogId(c.id)}
+            className={`rounded-full px-3 py-1 text-xs font-medium ${activeCatalogId === c.id ? "bg-brand-500 text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"}`}
+          >
+            {c.name}
+          </button>
+        ))}
+        <form onSubmit={createCatalog} className="flex items-center gap-1">
+          <input
+            placeholder={t("newCatalogName")} aria-label={t("newCatalogName")}
+            className="input w-40 py-1 text-xs"
+            value={newCatalogName}
+            onChange={(e) => setNewCatalogName(e.target.value)}
+          />
+          <button aria-label={tc("add")} type="submit" disabled={catalogBusy} className="btn-secondary px-2 py-1 text-xs">
+            +
+          </button>
+        </form>
+      </div>
+
+      {showCreateForm && (
+        <div className="mt-6 card max-w-md">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-fg-muted">{tc("create")}</h2>
+            <button
+              type="button"
+              onClick={() => setShowCreateForm(false)}
+              aria-label={tc("cancel")}
+              className="text-fg-subtle hover:text-gray-600 dark:hover:text-gray-300"
+            >
+              <CloseIcon className="size-4" />
+            </button>
+          </div>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+            <input
+              required
+              autoFocus
+              placeholder={t("code")} aria-label={t("code")}
+              className="input"
+              value={form.code}
+              onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
+            />
+            <input
+              required
+              placeholder={tc("name")} aria-label={tc("name")}
+              className="input"
+              value={form.name}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+            />
+            <input
+              required
+              placeholder={t("unit")} aria-label={t("unit")}
+              className="input"
+              value={form.unit}
+              onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}
+            />
+            <Field label={t("laborHours")} size="sm">
+              <input
+                required
+                type="number"
+                step="0.01"
+                className="input"
+                value={form.laborHoursPerUnit}
+                onChange={(e) => setForm((f) => ({ ...f, laborHoursPerUnit: e.target.value }))}
+              />
+            </Field>
+            <Field label={t("catalog")} size="sm">
+              <select
+                className="input"
+                value={form.catalogId}
+                onChange={(e) => setForm((f) => ({ ...f, catalogId: e.target.value }))}
+              >
+                <option value="">{t("uncategorized")}</option>
+                {catalogs.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <Field label={t("formula")} size="sm">
+              <input
+                placeholder={t("formulaPlaceholder")}
+                className="input"
+                value={form.formula}
+                onChange={(e) => setForm((f) => ({ ...f, formula: e.target.value }))}
+              />
+            </Field>
+            {form.formula && (
+              <Field label={t("formulaParams")} size="sm">
+                <input
+                  placeholder={t("formulaParamsPlaceholder")}
+                  className="input"
+                  value={form.formulaParams}
+                  onChange={(e) => setForm((f) => ({ ...f, formulaParams: e.target.value }))}
+                />
+              </Field>
+            )}
+
+            <div className="mt-2 flex items-center justify-between">
+              <span className="text-xs font-semibold text-fg-subtle">{t("materials")}</span>
+              <button aria-label={tc("add")} type="button" onClick={addLine} className="btn-secondary px-2 py-1 text-xs">
+                +
+              </button>
+            </div>
+            {lines.map((line, i) => (
+              <div key={i} className="flex gap-2">
+                <select aria-label={ta("material")}
+                  className="input"
+                  value={line.materialCatalogItemId}
+                  onChange={(e) =>
+                    setLines((ls) => ls.map((l, j) => (j === i ? { ...l, materialCatalogItemId: e.target.value } : l)))
+                  }
+                >
+                  {materials.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.code}
+                    </option>
+                  ))}
+                </select>
+                <input aria-label={ta("quantity")}
+                  type="number"
+                  step="0.001"
+                  className="input w-24"
+                  value={line.quantityPerUnit}
+                  onChange={(e) =>
+                    setLines((ls) => ls.map((l, j) => (j === i ? { ...l, quantityPerUnit: e.target.value } : l)))
+                  }
+                />
+              </div>
+            ))}
+
+            <button type="submit" disabled={submitting} className="btn-primary mt-2">
+              {tc("create")}
+            </button>
+          </form>
+        </div>
+      )}
+
+      <div className="mt-6">
+        {!visibleItems ? (
+          <p className="text-fg-subtle">{tc("loading")}</p>
+        ) : visibleItems.length === 0 ? (
+          <div className="card">
+            <EmptyState
+              icon={RateCatalogIcon}
+              title={t("emptyTitle")}
+              message={t("empty")}
+              cta={{ label: tc("create"), onClick: () => setShowCreateForm(true) }}
+            />
+          </div>
+        ) : (
+            <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
+                  <th scope="col" className="py-2">{t("code")}</th>
+                  <th scope="col">{tc("name")}</th>
+                  <th scope="col">{t("unit")}</th>
+                  <th scope="col">{t("laborHours")}</th>
+                  <th scope="col">{t("catalog")}</th>
+                  <th scope="col">{t("materials")}</th>
+                  <th scope="col"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {visibleItems.map((item) =>
+                  editingId === item.id ? (
+                    <tr key={item.id} className="border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
+                      <td className="py-2 font-mono text-xs">{item.code}</td>
+                      <td>
+                        <input aria-label={tc("name")} className="input py-1 text-xs" value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} />
+                      </td>
+                      <td>
+                        <input aria-label={t("unit")} className="input w-16 py-1 text-xs" value={editForm.unit} onChange={(e) => setEditForm((f) => ({ ...f, unit: e.target.value }))} />
+                      </td>
+                      <td>
+                        <input aria-label={ta("laborHours")}
+                          type="number"
+                          step="0.01"
+                          className="input w-20 py-1 text-xs"
+                          value={editForm.laborHoursPerUnit}
+                          onChange={(e) => setEditForm((f) => ({ ...f, laborHoursPerUnit: e.target.value }))}
+                        />
+                      </td>
+                      <td>
+                        <select aria-label={t("catalog")}
+                          className="input py-1 text-xs"
+                          value={editForm.catalogId}
+                          onChange={(e) => setEditForm((f) => ({ ...f, catalogId: e.target.value }))}
+                        >
+                          <option value="">{t("uncategorized")}</option>
+                          {catalogs.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.name}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td colSpan={2} className="flex flex-wrap items-center gap-1 py-2">
+                        <button onClick={() => saveEdit(item.id)} className="btn-primary px-2 py-1 text-xs">
+                          {tc("save")}
+                        </button>
+                        <button onClick={() => setEditingId(null)} className="btn-secondary px-2 py-1 text-xs">
+                          {tc("cancel")}
+                        </button>
+                      </td>
+                    </tr>
+                  ) : (
+                    <Fragment key={item.id}>
+                      <tr className="border-b border-gray-100 dark:border-gray-700">
+                        <td className="py-2 font-mono text-xs">{item.code}</td>
+                        <td>
+                          {item.name}
+                          {item.formula && <Badge tone="brand" size="sm" className="ml-1">ƒ</Badge>}
+                        </td>
+                        <td>{item.unit}</td>
+                        <td>{item.laborHoursPerUnit}</td>
+                        <td className="text-xs text-fg-subtle">{item.catalogId ? catalogNameById[item.catalogId] : t("uncategorized")}</td>
+                        <td className="text-xs text-fg-subtle">{item.materials.map((m) => m.materialCatalogItem.code).join(", ")}</td>
+                        <td className="whitespace-nowrap text-right">
+                          <button onClick={() => startEdit(item)} className="text-xs text-brand-700 dark:text-brand-400 hover:underline">
+                            {tc("edit")}
+                          </button>{" "}
+                          <button onClick={() => toggleHistory(item.id)} className="text-xs text-brand-700 dark:text-brand-400 hover:underline">
+                            {t("history")}
+                          </button>
+                        </td>
+                      </tr>
+                      {historyForId === item.id && (
+                        <tr className="border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
+                          <td colSpan={7} className="py-2">
+                            {!history ? (
+                              <span className="text-xs text-fg-subtle">{tc("loading")}</span>
+                            ) : history.length === 0 ? (
+                              <span className="text-xs text-fg-subtle">{t("noHistory")}</span>
+                            ) : (
+                              <ul className="flex flex-col gap-1">
+                                {history.map((rev) => (
+                                  <li key={rev.id} className="text-xs text-fg-subtle">
+                                    {formatDateTime(new Date(rev.createdAt))} — {rev.name} ({rev.laborHoursPerUnit} {t("laborHours").toLowerCase()}) —{" "}
+                                    {rev.changedByName}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  ),
+                )}
+              </tbody>
+            </table>
+            </div>
+          )}
+      </div>
+
+      <MaterialPricesPanel />
+      <AssembliesPanel />
+      <EstimateAccuracyPanel />
+    </>
+  );
+}

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { FormError } from "@/components/ui/field";
 
 interface SyncSummary {
   synced: number;
@@ -40,18 +41,18 @@ export function AutodeskSyncPanel({ projectId, initialAutodeskProjectId }: { pro
 
   return (
     <section className="card">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
-      {error && <p className="mb-2 text-xs text-error-600">{error}</p>}
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
+      {error && <FormError className="mb-2">{error}</FormError>}
       {result && (
         <p className="mb-2 text-xs text-gray-600 dark:text-gray-300">
           {t("syncResult", { synced: result.synced, failed: result.failed })}
-          {result.errors.length > 0 && <span className="mt-1 block text-error-600">{result.errors.slice(0, 3).join("; ")}</span>}
+          {result.errors.length > 0 && <span className="mt-1 block text-danger-fg">{result.errors.slice(0, 3).join("; ")}</span>}
         </p>
       )}
       <div className="flex flex-wrap items-end gap-2">
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-gray-700 dark:text-gray-200">{t("accProjectIdLabel")}</span>
+          <span className="font-medium text-fg-muted">{t("accProjectIdLabel")}</span>
           <input
             className="input"
             placeholder={t("accProjectIdPlaceholder")}

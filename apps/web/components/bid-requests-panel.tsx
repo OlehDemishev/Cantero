@@ -1,9 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, apiUpload, downloadBlob, ApiError } from "@/lib/api-client";
+import { apiFetch, apiUpload, downloadBlob, ApiError, notifyApiError } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
+import { Field, FormError } from "@/components/ui/field";
 
 interface Subcontractor {
   id: string;
@@ -66,23 +74,21 @@ interface Leveling {
   scopeItems: LevelingScopeRow[];
 }
 
-const STATUS_STYLES: Record<BidRequestStatus, string> = {
-  open: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
-  awarded: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
-  cancelled: "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400",
-};
-
 export function BidRequestsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("bidding");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const [requests, setRequests] = useState<BidRequest[] | null>(null);
-  const [subcontractors, setSubcontractors] = useState<Subcontractor[]>([]);
+  const { data: requests = null, reload: reloadRequests, error: requestsError } = useApi<BidRequest[]>(`/bid-requests?projectId=${projectId}`);
+  const { data: subcontractors = [] } = useApi<Subcontractor[]>("/finance/subcontractors");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<BidRequestDetail | null>(null);
   const [leveling, setLeveling] = useState<Leveling | null>(null);
+  const [levelingError, setLevelingError] = useState<Error | null>(null);
   const [showLeveling, setShowLeveling] = useState(false);
   const [criterionForm, setCriterionForm] = useState({ label: "", weight: "5" });
   const [creating, setCreating] = useState(false);
@@ -93,11 +99,11 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
   const [gaebError, setGaebError] = useState<string | null>(null);
 
   function load() {
-    apiFetch<BidRequest[]>(`/bid-requests?projectId=${projectId}`).then(setRequests);
+    void reloadRequests();
   }
 
   function loadDetail(id: string) {
-    apiFetch<BidRequestDetail>(`/bid-requests/${id}`).then(setDetail);
+    apiFetch<BidRequestDetail>(`/bid-requests/${id}`).then(setDetail).catch(notifyApiError);
   }
 
   function toggleExpand(id: string) {
@@ -120,14 +126,13 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
       return;
     }
     setShowLeveling(true);
-    if (!leveling) apiFetch<Leveling>(`/bid-requests/${bidRequestId}/leveling`).then(setLeveling);
+    if (!leveling) loadLeveling(bidRequestId);
   }
 
-  useEffect(() => {
-    load();
-    apiFetch<Subcontractor[]>("/finance/subcontractors").then(setSubcontractors);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
+  function loadLeveling(bidRequestId: string) {
+    setLevelingError(null);
+    apiFetch<Leveling>(`/bid-requests/${bidRequestId}/leveling`).then(setLeveling).catch(setLevelingError);
+  }
 
   function toggleSub(id: string) {
     setForm((f) => {
@@ -221,7 +226,7 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
   }
 
   async function cancel(bidRequestId: string) {
-    if (!window.confirm(t("confirmCancel"))) return;
+    if (!(await confirm({ message: t("confirmCancel"), tone: "danger", verb: "cancelItem", cancelLabel: td("keep") }))) return;
     setBusy(true);
     try {
       await apiFetch(`/bid-requests/${bidRequestId}/cancel`, { method: "POST" });
@@ -249,6 +254,7 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
   }
 
   async function removeCriterion(bidRequestId: string, criterionId: string) {
+    if (!(await confirm({ message: td("removeCriterion"), tone: "danger", verb: "remove" }))) return;
     setBusy(true);
     try {
       await apiFetch(`/bid-requests/${bidRequestId}/criteria/${criterionId}`, { method: "DELETE" });
@@ -269,7 +275,7 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("title")}</h2>
         {!creating && (
           <button onClick={() => setCreating(true)} className="btn-secondary px-3 py-1 text-xs">
             {t("newBidRequest")}
@@ -279,21 +285,19 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
 
       {creating && (
         <form onSubmit={submit} className="card mb-4 flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("scopeTitle")}</span>
+          <Field label={t("scopeTitle")}>
             <input required className="input" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{tc("description")}</span>
+          </Field>
+          <Field label={tc("description")}>
             <textarea
               rows={2}
               className="input"
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
             />
-          </label>
+          </Field>
           <label className="flex w-auto flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("dueDate")}</span>
+            <span className="font-medium text-fg-muted">{t("dueDate")}</span>
             <input
               type="date"
               className="input"
@@ -302,9 +306,9 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
             />
           </label>
           <div className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("inviteSubcontractors")}</span>
+            <span className="font-medium text-fg-muted">{t("inviteSubcontractors")}</span>
             {subcontractors.length === 0 ? (
-              <p className="text-xs text-gray-400 dark:text-gray-500">{t("noSubcontractors")}</p>
+              <p className="text-xs text-fg-subtle">{t("noSubcontractors")}</p>
             ) : (
               <div className="flex flex-wrap gap-2">
                 {subcontractors.map((s) => (
@@ -317,18 +321,18 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
             )}
           </div>
           <div className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("scopeLines")}</span>
-            <p className="text-xs text-gray-400 dark:text-gray-500">{t("scopeLinesHint")}</p>
+            <span className="font-medium text-fg-muted">{t("scopeLines")}</span>
+            <p className="text-xs text-fg-subtle">{t("scopeLinesHint")}</p>
             {lineForm.map((row, i) => (
               <div key={i} className="flex items-center gap-1.5">
                 <input
-                  placeholder={t("positionNo")}
+                  placeholder={t("positionNo")} aria-label={t("positionNo")}
                   className="input w-20 py-1 text-xs"
                   value={row.positionNo}
                   onChange={(e) => updateLineRow(i, "positionNo", e.target.value)}
                 />
                 <input
-                  placeholder={t("lineDescription")}
+                  placeholder={t("lineDescription")} aria-label={t("lineDescription")}
                   className="input flex-1 py-1 text-xs"
                   value={row.description}
                   onChange={(e) => updateLineRow(i, "description", e.target.value)}
@@ -336,18 +340,18 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                 <input
                   type="number"
                   step="any"
-                  placeholder={t("quantity")}
+                  placeholder={t("quantity")} aria-label={t("quantity")}
                   className="input w-20 py-1 text-xs"
                   value={row.quantity}
                   onChange={(e) => updateLineRow(i, "quantity", e.target.value)}
                 />
                 <input
-                  placeholder={t("unit")}
+                  placeholder={t("unit")} aria-label={t("unit")}
                   className="input w-16 py-1 text-xs"
                   value={row.unit}
                   onChange={(e) => updateLineRow(i, "unit", e.target.value)}
                 />
-                <button type="button" onClick={() => removeLineRow(i)} className="text-gray-400 dark:text-gray-500 hover:text-error-700">
+                <button aria-label={ta("remove")} type="button" onClick={() => removeLineRow(i)} className="text-fg-subtle hover:text-danger-fg">
                   ×
                 </button>
               </div>
@@ -356,7 +360,7 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
               {t("addLine")}
             </button>
           </div>
-          {error && <p className="text-xs text-error-600">{error}</p>}
+          {error && <FormError>{error}</FormError>}
           <div className="flex gap-2">
             <button type="submit" disabled={busy || form.subcontractorIds.size === 0} className="btn-primary">
               {t("sendBidRequest")}
@@ -369,9 +373,9 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
       )}
 
       {requests === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        requestsError ? <ErrorState error={requestsError} onRetry={reloadRequests} compact /> : <Skeleton lines={3} />
       ) : requests.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noBidRequests")}</p>
+        <p className="text-sm text-fg-subtle">{t("noBidRequests")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {requests.map((r) => {
@@ -382,39 +386,39 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
               <li key={r.id} className="card">
                 <button onClick={() => toggleExpand(r.id)} className="flex w-full items-center justify-between text-left">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{r.title}</span>
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[r.status]}`}>{t(r.status)}</span>
+                    <span className="text-sm font-medium text-fg">{r.title}</span>
+                    <Badge tone={statusTone(r.status)}>{t(r.status)}</Badge>
                   </div>
-                  <span className="text-xs text-gray-400 dark:text-gray-500">{t("bidCount", { count: r.bids.length, total: r.invites.length })}</span>
+                  <span className="text-xs text-fg-subtle">{t("bidCount", { count: r.bids.length, total: r.invites.length })}</span>
                 </button>
 
-                {expanded && !d && <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>}
+                {expanded && !d && <p className="mt-3 text-xs text-fg-subtle">{tc("loading")}</p>}
 
                 {d && (
                   <div className="mt-3 flex flex-col gap-3 border-t border-gray-100 dark:border-gray-700 pt-3 text-sm">
                     {d.description && <p className="text-gray-600 dark:text-gray-300">{d.description}</p>}
-                    {error && <p className="text-xs text-error-600">{error}</p>}
+                    {error && <FormError>{error}</FormError>}
 
                     <div>
-                      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("scoringCriteria")}</p>
+                      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("scoringCriteria")}</p>
                       <div className="flex flex-wrap gap-1.5">
                         {d.criteria.map((c) => (
-                          <span key={c.id} className="flex items-center gap-1 rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs text-gray-700 dark:text-gray-200">
+                          <Badge tone="neutral" className="flex" key={c.id}>
                             {c.label} ({c.weight})
-                            <button onClick={() => removeCriterion(r.id, c.id)} className="text-gray-400 dark:text-gray-500 hover:text-error-700">
+                            <button aria-label={ta("removeItem", { name: c.label })} onClick={() => removeCriterion(r.id, c.id)} className="text-fg-subtle hover:text-danger-fg">
                               ×
                             </button>
-                          </span>
+                          </Badge>
                         ))}
                       </div>
                       <form onSubmit={(e) => addCriterion(r.id, e)} className="mt-1.5 flex items-center gap-1.5">
-                        <input
+                        <input aria-label={ta("criterion")}
                           placeholder={t("criterionLabelPlaceholder")}
                           className="input py-1 text-xs"
                           value={criterionForm.label}
                           onChange={(e) => setCriterionForm((f) => ({ ...f, label: e.target.value }))}
                         />
-                        <input
+                        <input aria-label={ta("weight")}
                           type="number"
                           min="1"
                           max="10"
@@ -431,16 +435,16 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                     <div className="overflow-x-auto">
                     <table className="w-full border-collapse text-sm">
                       <thead>
-                        <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-xs text-gray-500 dark:text-gray-400">
-                          <th className="py-1">{t("subcontractor")}</th>
-                          <th className="text-right">{t("amount")}</th>
+                        <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-xs text-fg-subtle">
+                          <th scope="col" className="py-1">{t("subcontractor")}</th>
+                          <th scope="col" className="text-right">{t("amount")}</th>
                           {d.criteria.map((c) => (
-                            <th key={c.id} className="px-1 text-center">
+                            <th scope="col" key={c.id} className="px-1 text-center">
                               {c.label}
                             </th>
                           ))}
-                          <th className="text-right">{t("weightedScore")}</th>
-                          <th></th>
+                          <th scope="col" className="text-right">{t("weightedScore")}</th>
+                          <th scope="col"></th>
                         </tr>
                       </thead>
                       <tbody>
@@ -452,12 +456,12 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                             <tr key={inv.subcontractor.id} className="border-b border-gray-100 dark:border-gray-700">
                               <td className="py-1">{inv.subcontractor.name}</td>
                               <td className="text-right font-medium tabular-nums">
-                                {bid ? `${bid.amount} ${currency}` : <span className="text-gray-400 dark:text-gray-500">{t("noBidYet")}</span>}
+                                {bid ? `${formatCurrency(bid.amount, currency)}` : <span className="text-fg-subtle">{t("noBidYet")}</span>}
                               </td>
                               {d.criteria.map((c) => (
                                 <td key={c.id} className="px-1 text-center">
                                   {dBid ? (
-                                    <select
+                                    <select aria-label={ta("fieldOf", { field: ta("score"), item: `${inv.subcontractor.name}, ${c.label}` })}
                                       className="input w-14 py-0.5 text-center text-xs"
                                       value={scoresByCriterion[c.id] ?? ""}
                                       onChange={(e) => scoreBid(r.id, dBid.id, c.id, Number(e.target.value))}
@@ -472,19 +476,19 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                                       ))}
                                     </select>
                                   ) : (
-                                    <span className="text-gray-300">—</span>
+                                    <span className="text-fg-subtle">—</span>
                                   )}
                                 </td>
                               ))}
-                              <td className="text-right text-xs font-medium text-gray-700 dark:text-gray-200">
+                              <td className="text-right text-xs font-medium text-fg-muted">
                                 {dBid?.weightedScore ?? "—"}
                               </td>
                               <td className="pl-2 text-right">
                                 <div className="flex items-center justify-end gap-1.5">
                                   {bid?.isAwarded && (
-                                    <span className="rounded-full bg-success-50 dark:bg-success-500/15 px-2 py-0.5 text-xs font-medium text-success-700 dark:text-success-500">
+                                    <Badge tone="success">
                                       {t("awarded")}
-                                    </span>
+                                    </Badge>
                                   )}
                                   {bid && !bid.isAwarded && r.status === "open" && (
                                     <button onClick={() => award(r.id, bid.id)} disabled={busy} className="btn-secondary px-2 py-1 text-xs">
@@ -515,7 +519,7 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                       </tbody>
                     </table>
                     </div>
-                    {gaebError && <p className="text-xs text-error-600">{gaebError}</p>}
+                    {gaebError && <FormError>{gaebError}</FormError>}
                     <div className="flex items-center gap-2">
                       {r.bids.length > 1 && (
                         <button onClick={() => toggleLeveling(r.id)} className="btn-secondary w-fit px-3 py-1 text-xs">
@@ -537,17 +541,21 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                     {showLeveling && (
                       <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
                         {!leveling ? (
-                          <p className="text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+                          levelingError ? (
+                            <ErrorState error={levelingError} onRetry={() => loadLeveling(r.id)} compact />
+                          ) : (
+                            <Skeleton lines={2} />
+                          )
                         ) : leveling.scopeItems.length === 0 ? (
-                          <p className="text-xs text-gray-400 dark:text-gray-500">{t("noLevelingData")}</p>
+                          <p className="text-xs text-fg-subtle">{t("noLevelingData")}</p>
                         ) : (
-                          <div className="overflow-x-auto">
+                          <div tabIndex={0} className="overflow-x-auto">
                             <table className="w-full min-w-[480px] border-collapse text-xs">
                               <thead>
-                                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-                                  <th className="py-1">{t("scopeItem")}</th>
+                                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
+                                  <th scope="col" className="py-1">{t("scopeItem")}</th>
                                   {leveling.bids.map((b) => (
-                                    <th key={b.id} className="px-1 text-right">
+                                    <th scope="col" key={b.id} className="px-1 text-right">
                                       {b.subcontractorName}
                                     </th>
                                   ))}
@@ -562,10 +570,10 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                                       return (
                                         <td key={b.id} className="px-1 text-right">
                                           {!cell ? (
-                                            <span className="text-gray-300">{t("notMentioned")}</span>
+                                            <span className="text-fg-subtle">{t("notMentioned")}</span>
                                           ) : (
-                                            <span className={cell.included ? "text-gray-900 dark:text-gray-50" : "text-error-600 line-through"}>
-                                              {cell.amount} {currency}
+                                            <span className={cell.included ? "text-fg" : "text-danger-fg line-through"}>
+                                              {formatCurrency(cell.amount, currency)}
                                             </span>
                                           )}
                                         </td>
@@ -579,7 +587,7 @@ export function BidRequestsPanel({ projectId }: { projectId: string }) {
                                   <td className="pt-1">{t("totalBid")}</td>
                                   {leveling.bids.map((b) => (
                                     <td key={b.id} className="pt-1 text-right">
-                                      {b.amount} {currency}
+                                      {formatCurrency(b.amount, currency)}
                                     </td>
                                   ))}
                                 </tr>

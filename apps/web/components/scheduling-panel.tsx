@@ -1,12 +1,19 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { DndContext, KeyboardSensor, PointerSensor, useDraggable, useDroppable, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
-import { TASK_DEPENDENCY_TYPES, type TaskDependencyType } from "@cantero/shared";
+import { TASK_DEPENDENCY_TYPES, createTaskSchema, type TaskDependencyType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { CommentsThread } from "@/components/comments-thread";
 import { formatDate, formatDateWithOptions } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Badge } from "@/components/ui/badge";
+import { statusTone, TONE_FILL_CLASSES } from "@/lib/status-tone";
+import { Field, FormError } from "@/components/ui/field";
+import { Button } from "@/components/ui/button";
+import { useFormValidation } from "@/lib/form-validation";
 
 type TaskStatus = "planned" | "in_progress" | "done";
 const STATUSES: TaskStatus[] = ["planned", "in_progress", "done"];
@@ -39,45 +46,50 @@ interface CpmResult {
 
 export function SchedulingPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("scheduling");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
-  const [tasks, setTasks] = useState<Task[] | null>(null);
-  const [milestones, setMilestones] = useState<Milestone[] | null>(null);
-  const [criticalPath, setCriticalPath] = useState<CpmResult[]>([]);
+  const { data: tasks = null, reload: reloadTasks } = useApi<Task[]>(`/tasks?projectId=${projectId}`);
+  const { data: milestones = null, reload: reloadMilestones } = useApi<Milestone[]>(`/milestones?projectId=${projectId}`);
+  const { data: criticalPath = [], reload: reloadCriticalPath } = useApi<CpmResult[]>(`/tasks/critical-path?projectId=${projectId}`);
   const [taskForm, setTaskForm] = useState({ name: "", startDate: "", dueDate: "", isOutdoorWork: false });
   const [milestoneForm, setMilestoneForm] = useState({ name: "", dueDate: "" });
   const [busy, setBusy] = useState(false);
+  const [taskError, setTaskError] = useState<string | null>(null);
+  const { errors: taskErrors, validate: validateTask, clearError: clearTaskError, formRef: taskFormRef } = useFormValidation(createTaskSchema);
   const [depEditorTaskId, setDepEditorTaskId] = useState<string | null>(null);
   const [depForm, setDepForm] = useState({ predecessorId: "", type: "finish_to_start" as TaskDependencyType, lagDays: "0" });
   const [depError, setDepError] = useState<string | null>(null);
   const [commentsTaskId, setCommentsTaskId] = useState<string | null>(null);
 
   function load() {
-    apiFetch<Task[]>(`/tasks?projectId=${projectId}`).then(setTasks);
-    apiFetch<Milestone[]>(`/milestones?projectId=${projectId}`).then(setMilestones);
-    apiFetch<CpmResult[]>(`/tasks/critical-path?projectId=${projectId}`).then(setCriticalPath);
+    void reloadTasks();
+    void reloadMilestones();
+    void reloadCriticalPath();
   }
-
-  useEffect(load, [projectId]);
 
   const criticalTaskIds = new Set(criticalPath.filter((r) => r.critical).map((r) => r.id));
 
   async function createTask(e: React.FormEvent) {
     e.preventDefault();
+    const body = validateTask({
+      projectId,
+      name: taskForm.name.trim(),
+      startDate: taskForm.startDate ? new Date(taskForm.startDate).toISOString() : undefined,
+      dueDate: taskForm.dueDate ? new Date(taskForm.dueDate).toISOString() : undefined,
+      isOutdoorWork: taskForm.isOutdoorWork,
+    });
+    if (!body) return;
     setBusy(true);
+    setTaskError(null);
     try {
-      await apiFetch("/tasks", {
-        method: "POST",
-        body: JSON.stringify({
-          projectId,
-          name: taskForm.name,
-          startDate: taskForm.startDate ? new Date(taskForm.startDate).toISOString() : undefined,
-          dueDate: taskForm.dueDate ? new Date(taskForm.dueDate).toISOString() : undefined,
-          isOutdoorWork: taskForm.isOutdoorWork,
-        }),
-      });
+      await apiFetch("/tasks", { method: "POST", body: JSON.stringify(body) });
       setTaskForm({ name: "", startDate: "", dueDate: "", isOutdoorWork: false });
       load();
+    } catch (err) {
+      setTaskError(err instanceof Error ? err.message : tc("error"));
     } finally {
       setBusy(false);
     }
@@ -147,36 +159,37 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
   }
 
   async function removeDependency(dependencyId: string) {
+    if (!(await confirm({ message: td("removeDependency"), tone: "danger", verb: "remove" }))) return;
     await apiFetch(`/tasks/dependencies/${dependencyId}`, { method: "DELETE" });
     load();
   }
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("board")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("board")}</h2>
       <DndContext sensors={dndSensors} onDragEnd={handleDragEnd}>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {STATUSES.map((status) => (
           <DroppableColumn key={status} id={status}>
-            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t(status)}</div>
+            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t(status)}</div>
             <div className="flex flex-col gap-2">
               {(tasks ?? []).filter((task) => task.status === status).map((task) => (
                 <DraggableTaskCard key={task.id} id={task.id}>
                   <div className="flex items-center gap-1.5">
                     <span className="text-sm font-medium">{task.name}</span>
                     {criticalTaskIds.has(task.id) && (
-                      <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-error-700 dark:text-error-500">
+                      <Badge tone="danger" size="sm" className="uppercase tracking-wide">
                         {t("critical")}
-                      </span>
+                      </Badge>
                     )}
                     {task.isOutdoorWork && (
-                      <span className="rounded-full bg-brand-50 dark:bg-brand-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-700 dark:text-brand-400">
+                      <Badge tone="brand" size="sm" className="uppercase tracking-wide">
                         {t("outdoorWork")}
-                      </span>
+                      </Badge>
                     )}
                   </div>
                   {(task.startDate || task.dueDate) && (
-                    <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    <div className="mt-1 text-xs text-fg-subtle">
                       {task.startDate ? formatDate(new Date(task.startDate)) : "…"}
                       {" → "}
                       {task.dueDate ? formatDate(new Date(task.dueDate)) : "…"}
@@ -185,10 +198,10 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
                   {task.predecessorLinks.length > 0 && (
                     <ul className="mt-1.5 flex flex-col gap-0.5">
                       {task.predecessorLinks.map((link) => (
-                        <li key={link.id} className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                        <li key={link.id} className="flex items-center gap-1 text-xs text-fg-subtle">
                           {t("dependsOn")}: {link.predecessor.name} ({t(`depType_${link.type}`)}
                           {link.lagDays !== 0 ? `${link.lagDays > 0 ? "+" : ""}${link.lagDays}d` : ""})
-                          <button onClick={() => removeDependency(link.id)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
+                          <button aria-label={ta("removeItem", { name: link.predecessor.name })} onClick={() => removeDependency(link.id)} className="text-fg-subtle hover:text-danger-fg">
                             ×
                           </button>
                         </li>
@@ -214,7 +227,7 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
 
                   {depEditorTaskId === task.id && (
                     <div className="mt-2 flex flex-col gap-1.5 border-t border-gray-100 dark:border-gray-700 pt-2">
-                      <select
+                      <select aria-label={ta("predecessor")}
                         className="input py-1 text-xs"
                         value={depForm.predecessorId}
                         onChange={(e) => setDepForm((f) => ({ ...f, predecessorId: e.target.value }))}
@@ -229,7 +242,7 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
                           ))}
                       </select>
                       <div className="flex gap-1.5">
-                        <select
+                        <select aria-label={ta("dependencyType")}
                           className="input py-1 text-xs"
                           value={depForm.type}
                           onChange={(e) => setDepForm((f) => ({ ...f, type: e.target.value as TaskDependencyType }))}
@@ -240,14 +253,14 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
                             </option>
                           ))}
                         </select>
-                        <input
+                        <input aria-label={ta("lagDays")}
                           type="number"
                           className="input w-16 py-1 text-xs"
                           value={depForm.lagDays}
                           onChange={(e) => setDepForm((f) => ({ ...f, lagDays: e.target.value }))}
                         />
                       </div>
-                      {depError && <p className="text-xs text-error-600">{depError}</p>}
+                      {depError && <FormError>{depError}</FormError>}
                       <button onClick={() => addDependency(task.id)} className="btn-primary px-2 py-1 text-xs">
                         {tc("save")}
                       </button>
@@ -267,33 +280,25 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
       </div>
       </DndContext>
 
-      <form onSubmit={createTask} className="mt-4 flex flex-wrap items-end gap-2">
-        <input
-          required
-          placeholder={t("taskName")}
-          className="input w-auto"
-          value={taskForm.name}
-          onChange={(e) => setTaskForm((f) => ({ ...f, name: e.target.value }))}
-        />
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("startDate")}
+      <form ref={taskFormRef} onSubmit={createTask} noValidate className="mt-4 flex flex-wrap items-start gap-2">
+        <Field label={t("taskName")} size="sm" error={taskErrors.name}>
           <input
-            type="date"
-            className="input mt-1"
-            value={taskForm.startDate}
-            onChange={(e) => setTaskForm((f) => ({ ...f, startDate: e.target.value }))}
+            required
+            className="input w-auto"
+            value={taskForm.name}
+            onChange={(e) => {
+              setTaskForm((f) => ({ ...f, name: e.target.value }));
+              clearTaskError("name");
+            }}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("dueDate")}
-          <input
-            type="date"
-            className="input mt-1"
-            value={taskForm.dueDate}
-            onChange={(e) => setTaskForm((f) => ({ ...f, dueDate: e.target.value }))}
-          />
-        </label>
-        <label className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+        </Field>
+        <Field label={t("startDate")} size="sm" error={taskErrors.startDate}>
+          <input type="date" className="input" value={taskForm.startDate} onChange={(e) => setTaskForm((f) => ({ ...f, startDate: e.target.value }))} />
+        </Field>
+        <Field label={t("dueDate")} size="sm" error={taskErrors.dueDate}>
+          <input type="date" className="input" value={taskForm.dueDate} onChange={(e) => setTaskForm((f) => ({ ...f, dueDate: e.target.value }))} />
+        </Field>
+        <label className="flex items-center gap-1.5 self-end pb-3 text-xs text-fg-subtle">
           <input
             type="checkbox"
             checked={taskForm.isOutdoorWork}
@@ -301,13 +306,14 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
           />
           {t("outdoorWork")}
         </label>
-        <button type="submit" disabled={busy} className="btn-primary">
+        <Button type="submit" loading={busy} className="self-end">
           {t("newTask")}
-        </button>
+        </Button>
+        <FormError className="basis-full">{taskError}</FormError>
       </form>
 
-      <h2 className="mb-3 mt-10 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("gantt")}</h2>
-      <p className="mb-2 text-xs text-gray-400 dark:text-gray-500">{t("ganttDragHint")}</p>
+      <h2 className="mb-3 mt-10 text-sm font-semibold text-fg-muted">{t("gantt")}</h2>
+      <p className="mb-2 text-xs text-fg-subtle">{t("ganttDragHint")}</p>
       <GanttChart
         tasks={tasks ?? []}
         milestones={milestones ?? []}
@@ -316,24 +322,24 @@ export function SchedulingPanel({ projectId }: { projectId: string }) {
         onTaskDatesChange={changeTaskDates}
       />
 
-      <h2 className="mb-3 mt-10 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("milestones")}</h2>
+      <h2 className="mb-3 mt-10 text-sm font-semibold text-fg-muted">{t("milestones")}</h2>
       <ul className="flex flex-col gap-2">
         {(milestones ?? []).map((m) => (
           <li key={m.id} className="card flex items-center justify-between">
             <span className="text-sm font-medium">{m.name}</span>
-            <span className="text-xs text-gray-500 dark:text-gray-400">{m.dueDate ? formatDate(new Date(m.dueDate)) : "—"}</span>
+            <span className="text-xs text-fg-subtle">{m.dueDate ? formatDate(new Date(m.dueDate)) : "—"}</span>
           </li>
         ))}
       </ul>
       <form onSubmit={createMilestone} className="mt-3 flex flex-wrap items-end gap-2">
         <input
           required
-          placeholder={tc("name")}
+          placeholder={tc("name")} aria-label={tc("name")}
           className="input w-auto"
           value={milestoneForm.name}
           onChange={(e) => setMilestoneForm((f) => ({ ...f, name: e.target.value }))}
         />
-        <input
+        <input aria-label={t("dueDate")}
           type="date"
           className="input w-auto"
           value={milestoneForm.dueDate}
@@ -381,7 +387,7 @@ function GanttChart({
   const datedMilestones = milestones.filter((m) => m.dueDate);
 
   if (datedTasks.length === 0 && datedMilestones.length === 0) {
-    return <p className="text-sm text-gray-400 dark:text-gray-500">{emptyLabel}</p>;
+    return <p className="text-sm text-fg-subtle">{emptyLabel}</p>;
   }
 
   const now = new Date();
@@ -464,13 +470,13 @@ function GanttChart({
   return (
     <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
       {criticalTaskIds.size > 0 && (
-        <div className="mb-3 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+        <div className="mb-3 flex items-center gap-1.5 text-xs text-fg-subtle">
           <span className="inline-block h-2.5 w-2.5 rounded-sm bg-error-500" /> {t("criticalPathLegend")}
         </div>
       )}
       <div className="flex items-center gap-3">
         <div className="w-32 flex-none" />
-        <div className="relative h-5 flex-1 text-[10px] text-gray-400 dark:text-gray-500">
+        <div className="relative h-5 flex-1 text-2xs text-fg-subtle">
           {weekTicks.map((tick) => (
             <div key={tick} className="absolute -translate-x-1/2 border-l border-gray-100 dark:border-gray-700 pl-1" style={{ left: `${pct(tick)}%`, height: "100%" }}>
               {formatDateWithOptions(tick, { month: "short", day: "numeric" })}
@@ -502,7 +508,7 @@ function GanttChart({
                   onMouseDown={(e) => handleMoveStart(e, task)}
                   className={`group absolute h-5 cursor-grab select-none rounded active:cursor-grabbing ${
                     critical ? "ring-2 ring-error-500" : ""
-                  } ${task.status === "done" ? "bg-green-500" : task.status === "in_progress" ? "bg-amber-500" : "bg-gray-400"} ${
+                  } ${TONE_FILL_CLASSES[statusTone(task.status)]} ${
                     isDragging ? "opacity-80" : ""
                   }`}
                   style={{ left: `${left}%`, width: `${Math.max(right - left, 1.5)}%` }}

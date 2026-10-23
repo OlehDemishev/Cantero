@@ -3,14 +3,23 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { chartColors, chartAxisProps, chartGridProps, chartTooltipProps } from "@/components/charts/chart-theme";
 import { AGGREGATE_REPORT_DATASETS, REPORT_DATASETS, type ReportDataset } from "@cantero/shared";
-import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { apiFetch, downloadBlob, notifyApiError } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { useCan } from "@/lib/permissions";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 import { resetStateInEffect } from "@/lib/effect-reset";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { useReportFieldLabel } from "@/lib/report-field-label";
+import { Field } from "@/components/ui/field";
 
 interface ReportField {
   key: string;
   label: string;
+  labelKey?: string;
 }
 
 const NO_STATUS_DATASETS = new Set<ReportDataset>(["projects", "time_entries"]);
@@ -45,9 +54,13 @@ function formatCell(value: unknown): string {
 
 export function CustomReportsPanel() {
   const t = useTranslations("customReports");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
+  const fieldLabel = useReportFieldLabel();
 
-  const [saved, setSaved] = useState<SavedReport[] | null>(null);
+  // The report builder is its own permission (reports.custom); without it the panel isn't shown.
+  const canSee = useCan()("reports.custom");
+  const { data: saved = null, error: savedError, reload: reloadSaved } = useApi<SavedReport[]>(canSee ? "/custom-reports" : null);
   const [dataset, setDataset] = useState<ReportDataset>("projects");
   const [fields, setFields] = useState<ReportField[]>([]);
   const [columns, setColumns] = useState<string[]>([]);
@@ -60,21 +73,27 @@ export function CustomReportsPanel() {
   const [savedResult, setSavedResult] = useState<{ id: string; result: RunResult } | null>(null);
 
   function load() {
-    apiFetch<SavedReport[]>("/custom-reports").then(setSaved);
+    void reloadSaved();
   }
 
-  useEffect(load, []);
-
   useEffect(() => {
-    apiFetch<ReportField[]>(`/custom-reports/fields?dataset=${dataset}`).then((f) => {
-      setFields(f);
-      setColumns(f.map((field) => field.key));
-    });
+    if (!canSee) return;
+    let current = true;
+    apiFetch<ReportField[]>(`/custom-reports/fields?dataset=${dataset}`)
+      .then((f) => {
+        if (!current) return;
+        setFields(f);
+        setColumns(f.map((field) => field.key));
+      })
+      .catch(notifyApiError);
     resetStateInEffect(() => {
       setStatusEquals("");
       setResult(null);
     });
-  }, [dataset]);
+    return () => {
+      current = false;
+    };
+  }, [dataset, canSee]);
 
   function toggleColumn(key: string) {
     setColumns((cols) => (cols.includes(key) ? cols.filter((c) => c !== key) : [...cols, key]));
@@ -134,7 +153,7 @@ export function CustomReportsPanel() {
   }
 
   async function deleteSaved(id: string) {
-    if (!window.confirm(t("confirmDeleteSavedReport"))) return;
+    if (!(await confirm({ message: t("confirmDeleteSavedReport"), tone: "danger", verb: "delete" }))) return;
     await apiFetch(`/custom-reports/${id}`, { method: "DELETE" });
     if (savedResult?.id === id) setSavedResult(null);
     load();
@@ -142,15 +161,16 @@ export function CustomReportsPanel() {
 
   const isAggregate = AGGREGATE_DATASETS.has(dataset);
 
+  if (!canSee) return null;
+
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-4 text-xs text-fg-subtle">{t("hint")}</p>
 
       <div className="card flex flex-col gap-4">
         <div className="flex flex-wrap gap-3">
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("dataset")}</span>
+          <Field label={t("dataset")}>
             <select className="input" value={dataset} onChange={(e) => setDataset(e.target.value as ReportDataset)}>
               {REPORT_DATASETS.map((d) => (
                 <option key={d} value={d}>
@@ -158,39 +178,36 @@ export function CustomReportsPanel() {
                 </option>
               ))}
             </select>
-          </label>
+          </Field>
           {!isAggregate && (
             <>
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700 dark:text-gray-200">{t("dateFrom")}</span>
+              <Field label={t("dateFrom")}>
                 <input type="date" className="input" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
-              </label>
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700 dark:text-gray-200">{t("dateTo")}</span>
+              </Field>
+              <Field label={t("dateTo")}>
                 <input type="date" className="input" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
-              </label>
+              </Field>
               {!NO_STATUS_DATASETS.has(dataset) && (
-                <label className="flex flex-col gap-1.5 text-sm">
-                  <span className="font-medium text-gray-700 dark:text-gray-200">{t("statusEquals")}</span>
+                <Field label={t("statusEquals")}>
                   <input
                     className="input"
                     placeholder={t("statusPlaceholder")}
                     value={statusEquals}
                     onChange={(e) => setStatusEquals(e.target.value)}
                   />
-                </label>
+                </Field>
               )}
             </>
           )}
         </div>
 
         <div>
-          <span className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200">{t("columns")}</span>
+          <span className="mb-1.5 block text-sm font-medium text-fg-muted">{t("columns")}</span>
           <div className="flex flex-wrap gap-3">
             {fields.map((f) => (
               <label key={f.key} className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300">
                 <input type="checkbox" checked={columns.includes(f.key)} onChange={() => toggleColumn(f.key)} />
-                {f.label}
+                {fieldLabel(f)}
               </label>
             ))}
           </div>
@@ -202,7 +219,7 @@ export function CustomReportsPanel() {
           </button>
           <input
             className="input w-auto"
-            placeholder={t("reportNamePlaceholder")}
+            placeholder={t("reportNamePlaceholder")} aria-label={t("reportNamePlaceholder")}
             value={reportName}
             onChange={(e) => setReportName(e.target.value)}
           />
@@ -219,19 +236,19 @@ export function CustomReportsPanel() {
         )}
       </div>
 
-      <h3 className="mb-2 mt-6 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("savedReports")}</h3>
+      <h3 className="mb-2 mt-6 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("savedReports")}</h3>
       {saved === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        savedError ? <ErrorState error={savedError} onRetry={reloadSaved} compact /> : <Skeleton lines={2} />
       ) : saved.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noSavedReports")}</p>
+        <p className="text-sm text-fg-subtle">{t("noSavedReports")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {saved.map((r) => (
             <li key={r.id} className="card">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <div className="text-sm font-medium text-gray-900 dark:text-gray-50">{r.name}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                  <div className="text-sm font-medium text-fg">{r.name}</div>
+                  <div className="text-xs text-fg-subtle">
                     {t(`dataset_${r.dataset}`)} · {t("createdBy", { name: r.user.name })}
                   </div>
                 </div>
@@ -242,7 +259,7 @@ export function CustomReportsPanel() {
                   <button onClick={() => exportSavedCsv(r)} className="btn-secondary px-2.5 py-1 text-xs">
                     {t("exportCsv")}
                   </button>
-                  <button onClick={() => deleteSaved(r.id)} className="text-xs text-gray-400 dark:text-gray-500 hover:text-error-600">
+                  <button onClick={() => deleteSaved(r.id)} className="text-xs text-fg-subtle hover:text-danger-fg">
                     {tc("delete")}
                   </button>
                 </div>
@@ -274,19 +291,19 @@ function ReportChart({ dataset, rows }: { dataset: ReportDataset; rows: Record<s
       <ResponsiveContainer width="100%" height="100%">
         {config.type === "line" ? (
           <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-gray-200, #e5e7eb)" />
-            <XAxis dataKey={config.category} tick={{ fontSize: 11 }} />
-            <YAxis tick={{ fontSize: 11 }} />
-            <Tooltip />
-            <Line type="monotone" dataKey={config.value} stroke="#465fff" strokeWidth={2} dot={false} />
+            <CartesianGrid {...chartGridProps} />
+            <XAxis dataKey={config.category} {...chartAxisProps} />
+            <YAxis {...chartAxisProps} />
+            <Tooltip {...chartTooltipProps} />
+            <Line type="monotone" dataKey={config.value} stroke={chartColors.primary} strokeWidth={2} dot={false} />
           </LineChart>
         ) : (
           <BarChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-gray-200, #e5e7eb)" />
-            <XAxis dataKey={config.category} tick={{ fontSize: 11 }} />
-            <YAxis tick={{ fontSize: 11 }} />
-            <Tooltip />
-            <Bar dataKey={config.value} fill="#465fff" radius={[4, 4, 0, 0]} />
+            <CartesianGrid {...chartGridProps} />
+            <XAxis dataKey={config.category} {...chartAxisProps} />
+            <YAxis {...chartAxisProps} />
+            <Tooltip {...chartTooltipProps} />
+            <Bar dataKey={config.value} fill={chartColors.primary} radius={[4, 4, 0, 0]} />
           </BarChart>
         )}
       </ResponsiveContainer>
@@ -295,15 +312,16 @@ function ReportChart({ dataset, rows }: { dataset: ReportDataset; rows: Record<s
 }
 
 function ReportTable({ result, emptyLabel }: { result: RunResult; emptyLabel: string }) {
-  if (result.rows.length === 0) return <p className="text-sm text-gray-400 dark:text-gray-500">{emptyLabel}</p>;
+  const fieldLabel = useReportFieldLabel();
+  if (result.rows.length === 0) return <p className="text-sm text-fg-subtle">{emptyLabel}</p>;
   return (
-    <div className="overflow-x-auto">
+    <div tabIndex={0} className="overflow-x-auto">
       <table className="w-full border-collapse text-sm">
         <thead>
-          <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
+          <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
             {result.columns.map((c) => (
-              <th key={c.key} className="py-2 pr-4">
-                {c.label}
+              <th scope="col" key={c.key} className="py-2 pr-4">
+                {fieldLabel(c)}
               </th>
             ))}
           </tr>

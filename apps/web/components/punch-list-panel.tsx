@@ -5,6 +5,9 @@ import { useTranslations } from "next-intl";
 import type { BulkActionResult, PunchListItemStatus } from "@cantero/shared";
 import { SimilarItemsHint } from "@/components/similar-items-hint";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { PhotoAttachments } from "@/components/photo-attachments";
 import { CommentsThread } from "@/components/comments-thread";
 import { useBulkSelection } from "@/components/bulk-select";
@@ -12,6 +15,9 @@ import { useDeepLinkedRow, buildItemDeepLink } from "@/lib/use-deep-linked-row";
 import { CopyLinkButton } from "@/components/ui/copy-link-button";
 import { PrintButton } from "@/components/ui/print-button";
 import { formatDate } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
+import { Field } from "@/components/ui/field";
 
 interface Worker {
   id: string;
@@ -42,21 +48,16 @@ interface PunchListItem {
   changeOrderId: string | null;
 }
 
-const STATUS_STYLES: Record<PunchListItemStatus, string> = {
-  open: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  resolved: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
-  verified: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
-};
-
 export function PunchListPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("punchList");
   const tc = useTranslations("common");
   const tb = useTranslations("bulk");
+  const ta = useTranslations("a11y");
 
-  const [items, setItems] = useState<PunchListItem[] | null>(null);
-  const [workers, setWorkers] = useState<Worker[]>([]);
-  const [subcontractors, setSubcontractors] = useState<Subcontractor[]>([]);
-  const [templates, setTemplates] = useState<Template[]>([]);
+  const { data: items = null, reload: reloadItems, error: itemsError } = useApi<PunchListItem[]>(`/punch-list?projectId=${projectId}`);
+  const { data: workers = [] } = useApi<Worker[]>("/workers");
+  const { data: subcontractors = [] } = useApi<Subcontractor[]>("/finance/subcontractors");
+  const { data: templates = [] } = useApi<Template[]>("/checklist-templates?type=punch_list");
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", location: "", assignee: "", dueDate: "", estimatedCostImpact: "" });
@@ -67,22 +68,13 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
   const rowRefs = useRef<Record<string, HTMLLIElement | null>>({});
 
   function load() {
-    apiFetch<PunchListItem[]>(`/punch-list?projectId=${projectId}`).then(setItems);
+    void reloadItems();
   }
 
   useEffect(() => {
     if (!deepLinkedId || !items) return;
     rowRefs.current[deepLinkedId]?.scrollIntoView({ behavior: "smooth", block: "center" });
-     
   }, [items, deepLinkedId]);
-
-  useEffect(() => {
-    load();
-    apiFetch<Worker[]>("/workers").then(setWorkers);
-    apiFetch<Subcontractor[]>("/finance/subcontractors").then(setSubcontractors);
-    apiFetch<Template[]>("/checklist-templates?type=punch_list").then(setTemplates);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
 
   async function applyTemplate() {
     if (!selectedTemplateId) return;
@@ -165,11 +157,11 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("title")}</h2>
         <div className="flex items-center gap-1.5">
           {templates.length > 0 && (
             <>
-              <select
+              <select aria-label={ta("template")}
                 className="input w-auto py-1 text-xs"
                 value={selectedTemplateId}
                 onChange={(e) => setSelectedTemplateId(e.target.value)}
@@ -199,27 +191,24 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
 
       {creating && (
         <form onSubmit={submit} className="card mb-4 flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("itemTitle")}</span>
+          <Field label={t("itemTitle")}>
             <input
               required
               className="input"
               value={form.title}
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
             />
-          </label>
+          </Field>
           <div className="flex gap-3">
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("location")}</span>
+            <Field label={t("location")} className="flex-1">
               <input
                 className="input"
                 placeholder={t("locationPlaceholder")}
                 value={form.location}
                 onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
               />
-            </label>
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("assignee")}</span>
+            </Field>
+            <Field label={t("assignee")} className="flex-1">
               <select className="input" value={form.assignee} onChange={(e) => setForm((f) => ({ ...f, assignee: e.target.value }))}>
                 <option value="">{tc("none")}</option>
                 <optgroup label={t("assigneeWorkers")}>
@@ -237,20 +226,18 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
                   ))}
                 </optgroup>
               </select>
-            </label>
+            </Field>
           </div>
           <SimilarItemsHint type="punch_list_item" projectId={projectId} text={[form.title, form.location, form.description].filter((v) => v.trim()).join("\n")} />
-          <label className="flex w-40 flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("dueDate")}</span>
+          <Field label={t("dueDate")} className="w-40">
             <input
               type="date"
               className="input"
               value={form.dueDate}
               onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
             />
-          </label>
-          <label className="flex w-40 flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("estimatedCostImpact")}</span>
+          </Field>
+          <Field label={t("estimatedCostImpact")} className="w-40">
             <input
               type="number"
               min="0"
@@ -259,16 +246,15 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
               value={form.estimatedCostImpact}
               onChange={(e) => setForm((f) => ({ ...f, estimatedCostImpact: e.target.value }))}
             />
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("description")}</span>
+          </Field>
+          <Field label={t("description")}>
             <textarea
               rows={2}
               className="input"
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
             />
-          </label>
+          </Field>
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className="btn-primary">
               {tc("save")}
@@ -283,19 +269,19 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
       {bulk.result && (
         <div className="mb-3 flex items-center justify-between rounded-md bg-gray-50 dark:bg-gray-700 px-3 py-2 text-xs text-gray-600 dark:text-gray-300">
           <span>{tb("resultSummary", { succeeded: bulk.result.succeeded, failed: bulk.result.failed.length })}</span>
-          <button onClick={bulk.dismissResult} className="text-gray-400 dark:text-gray-500 hover:text-gray-600">
+          <button aria-label={ta("dismiss")} onClick={bulk.dismissResult} className="text-fg-subtle hover:text-fg-muted">
             ×
           </button>
         </div>
       )}
 
       {items === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        itemsError ? <ErrorState error={itemsError} onRetry={reloadItems} compact /> : <Skeleton lines={3} />
       ) : items.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noItems")}</p>
+        <p className="text-sm text-fg-subtle">{t("noItems")}</p>
       ) : (
         <>
-          <div className="mb-2 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+          <div className="mb-2 flex items-center gap-3 text-xs text-fg-subtle">
             <label className="flex items-center gap-1.5">
               <input
                 type="checkbox"
@@ -321,44 +307,44 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
             <li key={item.id} ref={(el) => { rowRefs.current[item.id] = el; }} className={`card ${deepLinkedId === item.id ? "ring-2 ring-brand-300" : ""}`}>
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-2">
-                  <input type="checkbox" className="no-print mt-1" checked={bulk.selected.has(item.id)} onChange={() => bulk.toggle(item.id)} />
+                  <input aria-label={ta("selectItem", { name: item.title })} type="checkbox" className="no-print mt-1" checked={bulk.selected.has(item.id)} onChange={() => bulk.toggle(item.id)} />
                   <span className="no-print"><CopyLinkButton url={buildItemDeepLink(projectId, "quality", "punch_list", item.id)} /></span>
                   <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{item.title}</span>
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[item.status]}`}>
+                    <span className="text-sm font-medium text-fg">{item.title}</span>
+                    <Badge tone={statusTone(item.status, "punchList")}>
                       {t(item.status)}
-                    </span>
+                    </Badge>
                     {item.escalatedAt && (
-                      <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-error-700 dark:text-error-500">
+                      <Badge tone="danger">
                         {t("escalated")}
-                      </span>
+                      </Badge>
                     )}
                   </div>
-                  <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-gray-500 dark:text-gray-400">
+                  <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-fg-subtle">
                     {item.location && <span>{item.location}</span>}
                     {item.assignee && <span>{t("assignedTo", { name: item.assignee.name })}</span>}
                     {item.assigneeSubcontractor && <span>{t("assignedTo", { name: item.assigneeSubcontractor.name })}</span>}
                     {item.dueDate && <span>{formatDate(new Date(item.dueDate))}</span>}
                   </div>
-                  {item.description && <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">{item.description}</p>}
+                  {item.description && <p className="mt-1.5 text-xs text-fg-subtle">{item.description}</p>}
                   {(item.estimatedCostImpact !== null || item.changeOrderId) && (
                     <div className="mt-1.5 rounded-md bg-gray-50 dark:bg-gray-700 p-2 text-xs">
                       {item.changeOrderId ? (
-                        <p className="flex items-center justify-between text-success-700 dark:text-success-500">
+                        <p className="flex items-center justify-between text-success-fg">
                           <span>{t("costImpactConfirmed")}</span>
-                          <button onClick={() => unlinkChangeOrder(item.id)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
+                          <button onClick={() => unlinkChangeOrder(item.id)} className="text-fg-subtle hover:text-danger-fg">
                             {t("unlinkChangeOrder")}
                           </button>
                         </p>
                       ) : (
                         <>
                           {item.estimatedCostImpact !== null && (
-                            <p className="text-gray-500 dark:text-gray-400">{t("estimatedCostImpactLabel", { amount: item.estimatedCostImpact })}</p>
+                            <p className="text-fg-subtle">{t("estimatedCostImpactLabel", { amount: item.estimatedCostImpact })}</p>
                           )}
                           <div className="mt-1 flex items-center gap-1.5">
                             <input
-                              placeholder={t("changeOrderIdPlaceholder")}
+                              placeholder={t("changeOrderIdPlaceholder")} aria-label={t("changeOrderIdPlaceholder")}
                               className="input py-0.5 text-xs"
                               value={changeOrderIdDrafts[item.id] ?? ""}
                               onChange={(e) => setChangeOrderIdDrafts((f) => ({ ...f, [item.id]: e.target.value }))}
@@ -376,10 +362,10 @@ export function PunchListPanel({ projectId }: { projectId: string }) {
                     </div>
                   )}
                   {item.status === "verified" && item.verifiedByName && (
-                    <p className="mt-1.5 text-xs text-success-700 dark:text-success-500">{t("verifiedBy", { name: item.verifiedByName })}</p>
+                    <p className="mt-1.5 text-xs text-success-fg">{t("verifiedBy", { name: item.verifiedByName })}</p>
                   )}
                   {item.status === "resolved" && item.resolvedByName && (
-                    <p className="mt-1.5 text-xs text-warning-700 dark:text-warning-500">{t("resolvedBy", { name: item.resolvedByName })}</p>
+                    <p className="mt-1.5 text-xs text-warning-fg">{t("resolvedBy", { name: item.resolvedByName })}</p>
                   )}
                   <div className="mt-2">
                     <PhotoAttachments param="punchListItemId" entityId={item.id} beforeAfter />

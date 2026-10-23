@@ -3,10 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useDeepLinkedRow, buildItemDeepLink } from "@/lib/use-deep-linked-row";
 import { CopyLinkButton } from "@/components/ui/copy-link-button";
 import { PrintButton } from "@/components/ui/print-button";
 import { formatDate } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
+import { Field } from "@/components/ui/field";
 
 interface MeetingActionItem {
   id: string;
@@ -45,8 +50,8 @@ export function MeetingsPanel({ projectId }: { projectId: string }) {
   const deepLinkedId = useDeepLinkedRow("meeting");
   const rowRefs = useRef<Record<string, HTMLLIElement | null>>({});
 
-  const [items, setItems] = useState<Meeting[] | null>(null);
-  const [openItems, setOpenItems] = useState<OpenActionItem[]>([]);
+  const { data: items = null, reload: reloadItems, error: itemsError } = useApi<Meeting[]>(`/meetings?projectId=${projectId}`);
+  const { data: openItems = [], reload: reloadOpenItems } = useApi<OpenActionItem[]>(`/meetings/open-action-items?projectId=${projectId}`);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [expandedId, setExpandedId] = useState<string | null>(deepLinkedId);
@@ -54,16 +59,13 @@ export function MeetingsPanel({ projectId }: { projectId: string }) {
   const [actionItemDrafts, setActionItemDrafts] = useState<Record<string, { description: string; ownerName: string }>>({});
 
   function load() {
-    apiFetch<Meeting[]>(`/meetings?projectId=${projectId}`).then(setItems);
-    apiFetch<OpenActionItem[]>(`/meetings/open-action-items?projectId=${projectId}`).then(setOpenItems);
+    void reloadItems();
+    void reloadOpenItems();
   }
-
-  useEffect(load, [projectId]);
 
   useEffect(() => {
     if (!deepLinkedId || !items) return;
     rowRefs.current[deepLinkedId]?.scrollIntoView({ behavior: "smooth", block: "center" });
-     
   }, [items, deepLinkedId]);
 
   async function submit(e: React.FormEvent) {
@@ -119,7 +121,7 @@ export function MeetingsPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("title")}</h2>
         <div className="flex items-center gap-1.5">
           {!creating && (
             <button onClick={() => setCreating(true)} className="btn-secondary px-3 py-1 text-xs">
@@ -132,13 +134,11 @@ export function MeetingsPanel({ projectId }: { projectId: string }) {
 
       {creating && (
         <form onSubmit={submit} className="card mb-4 flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("meetingTitle")}</span>
+          <Field label={t("meetingTitle")}>
             <input required className="input" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
-          </label>
+          </Field>
           <div className="flex flex-wrap gap-3">
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("meetingDate")}</span>
+            <Field label={t("meetingDate")}>
               <input
                 required
                 type="date"
@@ -146,25 +146,22 @@ export function MeetingsPanel({ projectId }: { projectId: string }) {
                 value={form.meetingDate}
                 onChange={(e) => setForm((f) => ({ ...f, meetingDate: e.target.value }))}
               />
-            </label>
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("location")}</span>
+            </Field>
+            <Field label={t("location")}>
               <input className="input" value={form.location} onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))} />
-            </label>
+            </Field>
           </div>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("attendees")}</span>
+          <Field label={t("attendees")}>
             <input
               placeholder={t("attendeesPlaceholder")}
               className="input"
               value={form.attendeesText}
               onChange={(e) => setForm((f) => ({ ...f, attendeesText: e.target.value }))}
             />
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("notes")}</span>
+          </Field>
+          <Field label={t("notes")}>
             <textarea rows={3} className="input" value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
-          </label>
+          </Field>
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className="btn-primary">
               {tc("save")}
@@ -178,7 +175,7 @@ export function MeetingsPanel({ projectId }: { projectId: string }) {
 
       {openItems.length > 0 && (
         <div className="card mb-4">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("openActionItems")}</h3>
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("openActionItems")}</h3>
           <ul className="flex flex-col gap-1.5">
             {openItems.map((item) => (
               <OpenActionItemRow key={item.id} item={item} onResolve={resolveActionItem} t={t} />
@@ -188,9 +185,9 @@ export function MeetingsPanel({ projectId }: { projectId: string }) {
       )}
 
       {items === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        itemsError ? <ErrorState error={itemsError} onRetry={reloadItems} compact /> : <Skeleton lines={3} />
       ) : items.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noItems")}</p>
+        <p className="text-sm text-fg-subtle">{t("noItems")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {items.map((meeting) => {
@@ -207,15 +204,15 @@ export function MeetingsPanel({ projectId }: { projectId: string }) {
                   <button onClick={() => setExpandedId(expanded ? null : meeting.id)} className="flex w-full items-start justify-between gap-3 text-left">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono text-gray-400 dark:text-gray-500">#{meeting.number}</span>
-                        <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{meeting.title}</span>
+                        <span className="text-xs font-mono text-fg-subtle">#{meeting.number}</span>
+                        <span className="text-sm font-medium text-fg">{meeting.title}</span>
                       </div>
-                      <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">{formatDate(new Date(meeting.meetingDate))}</div>
+                      <div className="mt-1 text-xs text-fg-subtle">{formatDate(new Date(meeting.meetingDate))}</div>
                     </div>
                   {meeting.actionItems.filter((a) => a.status === "open").length > 0 && (
-                    <span className="rounded-full bg-warning-50 dark:bg-warning-500/15 px-2 py-0.5 text-xs font-medium text-warning-700 dark:text-warning-500">
+                    <Badge tone="warning">
                       {t("openCount", { count: meeting.actionItems.filter((a) => a.status === "open").length })}
-                    </span>
+                    </Badge>
                   )}
                   </button>
                 </div>
@@ -224,39 +221,39 @@ export function MeetingsPanel({ projectId }: { projectId: string }) {
                   <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 dark:border-gray-700 pt-3 text-sm">
                     {meeting.location && (
                       <p>
-                        <span className="font-medium text-gray-700 dark:text-gray-200">{t("location")}: </span>
+                        <span className="font-medium text-fg-muted">{t("location")}: </span>
                         {meeting.location}
                       </p>
                     )}
                     {meeting.attendees.length > 0 && (
                       <p>
-                        <span className="font-medium text-gray-700 dark:text-gray-200">{t("attendees")}: </span>
+                        <span className="font-medium text-fg-muted">{t("attendees")}: </span>
                         {meeting.attendees.join(", ")}
                       </p>
                     )}
                     {meeting.notes && (
                       <p>
-                        <span className="font-medium text-gray-700 dark:text-gray-200">{t("notes")}: </span>
+                        <span className="font-medium text-fg-muted">{t("notes")}: </span>
                         {meeting.notes}
                       </p>
                     )}
 
                     <div className="mt-1">
-                      <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("actionItems")}</h4>
+                      <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("actionItems")}</h4>
                       {meeting.actionItems.length === 0 ? (
-                        <p className="text-xs text-gray-400 dark:text-gray-500">{t("noActionItems")}</p>
+                        <p className="text-xs text-fg-subtle">{t("noActionItems")}</p>
                       ) : (
                         <ul className="flex flex-col gap-1.5">
                           {meeting.actionItems.map((item) => (
                             <li key={item.id} className="flex items-center justify-between gap-2 rounded-md border border-gray-200 dark:border-gray-700 px-2.5 py-1.5 text-xs">
                               <div>
-                                <span className={item.status === "done" ? "text-gray-400 dark:text-gray-500 line-through" : "text-gray-700 dark:text-gray-200"}>{item.description}</span>
-                                <span className="ml-1.5 text-gray-400 dark:text-gray-500">— {item.ownerName}</span>
+                                <span className={item.status === "done" ? "text-fg-subtle line-through" : "text-fg-muted"}>{item.description}</span>
+                                <span className="ml-1.5 text-fg-subtle">— {item.ownerName}</span>
                               </div>
                               {item.status === "open" ? (
                                 <ResolveButton itemId={item.id} onResolve={resolveActionItem} t={t} />
                               ) : (
-                                <span className="text-success-700 dark:text-success-500">{t("resolvedBy", { name: item.resolvedByName ?? "" })}</span>
+                                <span className="text-success-fg">{t("resolvedBy", { name: item.resolvedByName ?? "" })}</span>
                               )}
                             </li>
                           ))}
@@ -265,13 +262,13 @@ export function MeetingsPanel({ projectId }: { projectId: string }) {
 
                       <div className="mt-2 flex flex-wrap items-center gap-1.5">
                         <input
-                          placeholder={t("actionItemDescriptionPlaceholder")}
+                          placeholder={t("actionItemDescriptionPlaceholder")} aria-label={t("actionItemDescriptionPlaceholder")}
                           className="input flex-1 py-1 text-xs"
                           value={draft.description}
                           onChange={(e) => setActionItemDrafts((f) => ({ ...f, [meeting.id]: { ...draft, description: e.target.value } }))}
                         />
                         <input
-                          placeholder={t("actionItemOwnerPlaceholder")}
+                          placeholder={t("actionItemOwnerPlaceholder")} aria-label={t("actionItemOwnerPlaceholder")}
                           className="input w-40 py-1 text-xs"
                           value={draft.ownerName}
                           onChange={(e) => setActionItemDrafts((f) => ({ ...f, [meeting.id]: { ...draft, ownerName: e.target.value } }))}
@@ -311,7 +308,7 @@ function ResolveButton({ itemId, onResolve, t }: { itemId: string; onResolve: (i
     <div className="flex items-center gap-1">
       <input
         autoFocus
-        placeholder={t("resolvedByPlaceholder")}
+        placeholder={t("resolvedByPlaceholder")} aria-label={t("resolvedByPlaceholder")}
         className="input w-28 py-0.5 text-xs"
         value={name}
         onChange={(e) => setName(e.target.value)}
@@ -342,8 +339,8 @@ function OpenActionItemRow({
   return (
     <li className="flex items-center justify-between gap-2 rounded-md border border-gray-200 dark:border-gray-700 px-2.5 py-1.5 text-xs">
       <div>
-        <span className="text-gray-700 dark:text-gray-200">{item.description}</span>
-        <span className="ml-1.5 text-gray-400 dark:text-gray-500">
+        <span className="text-fg-muted">{item.description}</span>
+        <span className="ml-1.5 text-fg-subtle">
           — {item.ownerName} · {t("fromMeeting", { number: item.meeting.number, title: item.meeting.title })}
         </span>
       </div>

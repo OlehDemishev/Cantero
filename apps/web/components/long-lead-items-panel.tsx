@@ -1,9 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import type { LongLeadItemStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { useCan } from "@/lib/permissions";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
+import { Field } from "@/components/ui/field";
 
 interface Supplier {
   id: string;
@@ -25,35 +32,24 @@ interface LongLeadItem extends LongLeadRisk {
 }
 
 const STATUSES: LongLeadItemStatus[] = ["tracking", "ordered", "in_fabrication", "shipped", "delivered"];
-const RISK_STYLES: Record<LongLeadRisk["risk"], string> = {
-  delivered_on_time: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
-  delivered_late: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
-  on_track: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
-  at_risk: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
-  critical: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
-  unscheduled: "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400",
-};
 
 const EMPTY_FORM = { description: "", supplierId: "", requiredOnSiteDate: "", expectedDeliveryDate: "" };
 
 export function LongLeadItemsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("longLeadItems");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
-  const [items, setItems] = useState<LongLeadItem[] | null>(null);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const { data: items = null, reload: reloadItems, error: itemsError } = useApi<LongLeadItem[]>(`/long-lead-items?projectId=${projectId}`);
+  const canSeeSuppliers = useCan()("purchasing.view");
+  const { data: suppliers = [] } = useApi<Supplier[]>(canSeeSuppliers ? "/materials/suppliers" : null);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<LongLeadItem[]>(`/long-lead-items?projectId=${projectId}`).then(setItems);
+    void reloadItems();
   }
-
-  useEffect(load, [projectId]);
-  useEffect(() => {
-    apiFetch<Supplier[]>("/materials/suppliers").then(setSuppliers);
-  }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -87,29 +83,27 @@ export function LongLeadItemsPanel({ projectId }: { projectId: string }) {
     load();
   }
 
-  if (items === null) return null;
+  if (items === null) return itemsError ? <ErrorState error={itemsError} onRetry={reloadItems} compact /> : <Skeleton lines={3} />;
 
   return (
     <div className="mt-10">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("title")}</h2>
         {!creating && (
           <button onClick={() => setCreating(true)} className="btn-secondary px-3 py-1 text-xs">
             {t("newItem")}
           </button>
         )}
       </div>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
 
       {creating && (
         <form onSubmit={submit} className="card mb-4 flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("description")}</span>
+          <Field label={t("description")}>
             <input required className="input" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
-          </label>
+          </Field>
           <div className="flex flex-wrap gap-3">
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("supplier")}</span>
+            <Field label={t("supplier")}>
               <select className="input" value={form.supplierId} onChange={(e) => setForm((f) => ({ ...f, supplierId: e.target.value }))}>
                 <option value="">—</option>
                 {suppliers.map((s) => (
@@ -118,25 +112,23 @@ export function LongLeadItemsPanel({ projectId }: { projectId: string }) {
                   </option>
                 ))}
               </select>
-            </label>
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("requiredOnSiteDate")}</span>
+            </Field>
+            <Field label={t("requiredOnSiteDate")}>
               <input
                 type="date"
                 className="input"
                 value={form.requiredOnSiteDate}
                 onChange={(e) => setForm((f) => ({ ...f, requiredOnSiteDate: e.target.value }))}
               />
-            </label>
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("expectedDeliveryDate")}</span>
+            </Field>
+            <Field label={t("expectedDeliveryDate")}>
               <input
                 type="date"
                 className="input"
                 value={form.expectedDeliveryDate}
                 onChange={(e) => setForm((f) => ({ ...f, expectedDeliveryDate: e.target.value }))}
               />
-            </label>
+            </Field>
           </div>
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className="btn-primary">
@@ -150,19 +142,19 @@ export function LongLeadItemsPanel({ projectId }: { projectId: string }) {
       )}
 
       {items.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noItems")}</p>
+        <p className="text-sm text-fg-subtle">{t("noItems")}</p>
       ) : (
         <div className="card overflow-x-auto">
           <table className="w-full min-w-[820px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-left text-gray-500 dark:border-gray-800">
-                <th className="py-2">{t("description")}</th>
-                <th>{t("supplier")}</th>
-                <th>{t("status")}</th>
-                <th>{t("requiredOnSiteDate")}</th>
-                <th>{t("expectedDeliveryDate")}</th>
-                <th>{t("actualDeliveryDate")}</th>
-                <th>{t("risk")}</th>
+                <th scope="col" className="py-2">{t("description")}</th>
+                <th scope="col">{t("supplier")}</th>
+                <th scope="col">{t("status")}</th>
+                <th scope="col">{t("requiredOnSiteDate")}</th>
+                <th scope="col">{t("expectedDeliveryDate")}</th>
+                <th scope="col">{t("actualDeliveryDate")}</th>
+                <th scope="col">{t("risk")}</th>
               </tr>
             </thead>
             <tbody>
@@ -171,7 +163,7 @@ export function LongLeadItemsPanel({ projectId }: { projectId: string }) {
                   <td className="py-1.5">{item.description}</td>
                   <td>{item.supplier?.name ?? "—"}</td>
                   <td>
-                    <select
+                    <select aria-label={ta("fieldOf", { field: t("status"), item: item.description })}
                       className="input py-0.5 text-xs"
                       value={item.status}
                       onChange={(e) => updateStatus(item.id, e.target.value as LongLeadItemStatus)}
@@ -184,7 +176,7 @@ export function LongLeadItemsPanel({ projectId }: { projectId: string }) {
                     </select>
                   </td>
                   <td>
-                    <input
+                    <input aria-label={ta("fieldOf", { field: t("requiredOnSiteDate"), item: item.description })}
                       type="date"
                       className="input py-0.5 text-xs"
                       value={item.requiredOnSiteDate?.slice(0, 10) ?? ""}
@@ -192,7 +184,7 @@ export function LongLeadItemsPanel({ projectId }: { projectId: string }) {
                     />
                   </td>
                   <td>
-                    <input
+                    <input aria-label={ta("fieldOf", { field: t("expectedDeliveryDate"), item: item.description })}
                       type="date"
                       className="input py-0.5 text-xs"
                       value={item.expectedDeliveryDate?.slice(0, 10) ?? ""}
@@ -200,7 +192,7 @@ export function LongLeadItemsPanel({ projectId }: { projectId: string }) {
                     />
                   </td>
                   <td>
-                    <input
+                    <input aria-label={ta("fieldOf", { field: t("actualDeliveryDate"), item: item.description })}
                       type="date"
                       className="input py-0.5 text-xs"
                       value={item.actualDeliveryDate?.slice(0, 10) ?? ""}
@@ -208,10 +200,10 @@ export function LongLeadItemsPanel({ projectId }: { projectId: string }) {
                     />
                   </td>
                   <td>
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${RISK_STYLES[item.risk]}`}>
+                    <Badge tone={statusTone(item.risk, "longLead")}>
                       {t(`risk_${item.risk}`)}
                       {item.slackDays !== null && ` (${item.slackDays >= 0 ? "+" : ""}${item.slackDays}d)`}
-                    </span>
+                    </Badge>
                   </td>
                 </tr>
               ))}

@@ -90,6 +90,16 @@ describe("CalendarFeedService", () => {
       expect(prisma.milestone.findMany.mock.calls[0][0].where.project.companyId).toBe("company-1");
       expect(prisma.serviceVisit.findMany.mock.calls[0][0].where.companyId).toBe("company-1");
     });
+
+    it("leaves restricted (members-only) projects out of the anonymous feed", async () => {
+      prisma.company.findUnique.mockResolvedValue({ id: "company-1", name: "Acme Co" });
+
+      await service.buildFeed("good-token");
+
+      expect(prisma.task.findMany.mock.calls[0][0].where.project.restrictedToMembers).toBe(false);
+      expect(prisma.milestone.findMany.mock.calls[0][0].where.project.restrictedToMembers).toBe(false);
+      expect(prisma.serviceVisit.findMany.mock.calls[0][0].where.serviceContract.project.restrictedToMembers).toBe(false);
+    });
   });
 
   describe("listEvents()", () => {

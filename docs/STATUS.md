@@ -36,3 +36,63 @@ Verified: up (~14 s warm), second up (no duplicates), down (no leftover processe
 up again (no pending migrations, data kept), down. Docker-unavailable path exits 1 with a message.
 
 Left: merge the PR (the user merges it).
+
+## 2026-10-23 — UI, design code and security audit (branch claude/kind-allen-sjrtoq)
+
+Report: `docs/audit/2026-10-23-ui-audit.md` (Russian). Static review of apps/web (design system, a11y,
+i18n, frontend security) and apps/api security, plus a live Playwright walk of all 82 routes as owner,
+worker, logged out and portal users (en/de/pl, desktop and 390 px). No code changed.
+
+Most urgent: `RolesGuard` ignores `@Public()`, so NPS/eNPS/service-feedback submissions always 403 (L1);
+the API crashes on boot with the placeholder VAPID keys from `.env.example` (L2). Security highs: OAuth
+`state` accepts any access JWT (S1), client signing tokens returned to staff (S2), any API key has SCIM
+write (S3), project guard checks only the first projectId (S4).
+
+Left: everything in the report. Section 8 lists the order, one session per item, starting with L1+L2.
+## 2026-10-23 — dashboard widget permissions; optional numeric query params
+
+Dashboard widgets now ask for the same capability as the endpoint they mirror:
+`DASHBOARD_WIDGET_PERMISSIONS` + `canViewDashboardWidget` / `visibleDashboardWidgetTypes` in
+`packages/shared/src/dashboard.ts` (a spec checks each entry against the endpoint's @Requires).
+`DashboardService` takes the AuthUser: create is a 403 for a type the member lacks (custom_report
+also needs a report of the member's company, 400/404 otherwise); list/reorder/exportPdf leave out
+widgets the member can no longer see; project-scoped reports get the viewer like their endpoints.
+`AppValidationPipe` (main.ts) keeps an absent numeric query param undefined — Nest 10 turned it
+into NaN, so every optional `OptionalIntPipe` param (e.g. `GET /job-costing/history` without
+`months`, default 12) answered 400.
+
+The web's add-widget menu now uses `visibleDashboardWidgetTypes` (merge commit 41fed3f).
+
+## 2026-10-23 — audit fixes, all 12 plan items (branch claude/kind-allen-sjrtoq, not merged)
+
+Every item of section 8 in `docs/audit/2026-10-23-ui-audit.md` is done; section 9 there maps
+findings to commits. Security S1–S11 + low items, L1/L2, logout/SSO code exchange, kiosk token,
+report/company scoping, SSO domain DNS proof, SSRF; web: (app) route-group layout + MeProvider,
+semantic tokens + system theme, Dialog/useConfirm, useApi + ErrorState/Skeleton, Badge/Alert/
+Field/PageHeader + Zod on 6 forms, a11y (axe 0 serious/critical on 324 views, scanner 0
+unlabeled), i18n (Accept-Language, company locale on public pages, formatCurrency everywhere),
+lazy project/settings tabs, split oversized components. Migrations (hand-written, never run
+against a real DB except the local one): session companyId, SSO login codes + portal token
+version, scheduled report creator, SSO domain verification.
+
+Not run: the e2e suite (CI runs only on PRs to main / pushes to main — open a PR to get it).
+Behaviour changes to know: IdP-initiated SSO refused; scheduled reports without a recorded author
+skip restricted projects until re-saved; stored-file URLs download instead of opening inline;
+SSO domains need a TXT record (existing ones grandfathered); portal sign-out signs the holder out
+on every device; portal tokens last 7 days.
+
+Left (not in the plan): magic-byte checks on uploads; a device account for the kiosk; per-user
+calendar feeds; portal magic-link verify fires twice in dev StrictMode (L5); focusable scroll
+areas have no own name; canvas/Gantt dragging is mouse-only; existing buttons still use .btn-*
+classes rather than <Button>; ~25 label patterns not moved to Field; "pcs" unit in starter data.
+Local-only: apps/api/.env has EXPO_ACCESS_TOKEN="" which fails one push.service spec locally.
+
+## 2026-10-23 — E2E fixes for PR #4 (drawing-set upload hang, SSO one-time-code test)
+
+`TimeTrackingPanel` defaulted the not-yet-loaded workers to a new `[]` each render, so the effect
+keeping the worker pick re-ran and re-set the form forever until /workers answered; a file chosen
+in that window (Documents tab) made the loop synchronous and froze the page. Now a stable
+`NO_WORKERS` plus a guard against re-setting the same pick. The sso-saml "one-time code" test now
+reads the code from the ACS redirect (`route.fetch({ maxRedirects: 0 })`): Playwright never routes
+redirect hops, so its route on /sso/callback never matched. Local e2e: both specs pass; full suite
+29 passed, 1 skipped (gobd-anchor), semantic-search fails only locally (model download blocked).

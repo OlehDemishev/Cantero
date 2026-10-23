@@ -1,8 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, ApiError } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { FormError } from "@/components/ui/field";
 
 interface OffboardingTemplateItem {
   id: string;
@@ -12,18 +17,18 @@ interface OffboardingTemplateItem {
 
 export function OffboardingTemplatePanel() {
   const t = useTranslations("team");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
 
-  const [items, setItems] = useState<OffboardingTemplateItem[] | null>(null);
+  const { data: items = null, reload: reloadItems, error: itemsError } = useApi<OffboardingTemplateItem[]>("/company/offboarding-template");
   const [title, setTitle] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function load() {
-    apiFetch<OffboardingTemplateItem[]>("/company/offboarding-template").then(setItems);
+    void reloadItems();
   }
-
-  useEffect(load, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -42,6 +47,7 @@ export function OffboardingTemplatePanel() {
   }
 
   async function remove(id: string) {
+    if (!(await confirm({ message: td("removeTemplateItem"), tone: "danger", verb: "remove" }))) return;
     setBusy(true);
     setError(null);
     try {
@@ -56,13 +62,13 @@ export function OffboardingTemplatePanel() {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("offboardingTemplate")}</h2>
-      <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">{t("offboardingTemplateHint")}</p>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("offboardingTemplate")}</h2>
+      <p className="mb-4 text-sm text-fg-subtle">{t("offboardingTemplateHint")}</p>
 
       <form onSubmit={handleSubmit} className="flex max-w-md gap-2">
         <input
           required
-          placeholder={t("offboardingTaskTitlePlaceholder")}
+          placeholder={t("offboardingTaskTitlePlaceholder")} aria-label={t("offboardingTaskTitlePlaceholder")}
           className="input flex-1"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -71,24 +77,24 @@ export function OffboardingTemplatePanel() {
           {t("addOffboardingTask")}
         </button>
       </form>
-      {error && <p className="mt-1.5 text-xs text-error-700 dark:text-error-500">{error}</p>}
+      {error && <FormError className="mt-1.5">{error}</FormError>}
 
-      <ul className="mt-4 flex max-w-md flex-col gap-1.5">
-        {items === null ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
-        ) : items.length === 0 ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500">{t("noOffboardingTasks")}</p>
-        ) : (
-          items.map((item) => (
+      {items === null ? (
+        <div className="mt-4 max-w-md">{itemsError ? <ErrorState error={itemsError} onRetry={reloadItems} compact /> : <Skeleton lines={3} />}</div>
+      ) : items.length === 0 ? (
+        <p className="mt-4 text-sm text-fg-subtle">{t("noOffboardingTasks")}</p>
+      ) : (
+        <ul className="mt-4 flex max-w-md flex-col gap-1.5">
+          {items.map((item) => (
             <li key={item.id} className="card flex items-center justify-between text-sm">
               <span>{item.title}</span>
-              <button onClick={() => remove(item.id)} disabled={busy} className="text-xs text-error-700 dark:text-error-500 hover:underline">
+              <button onClick={() => remove(item.id)} disabled={busy} className="text-xs text-danger-fg hover:underline">
                 {tc("delete")}
               </button>
             </li>
-          ))
-        )}
-      </ul>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

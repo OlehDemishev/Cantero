@@ -3,9 +3,14 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
 import { useCrewChoices } from "@/lib/permissions";
 import { resetStateInEffect } from "@/lib/effect-reset";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 interface Worker {
   id: string;
@@ -25,14 +30,21 @@ interface TimeEntry {
   withinGeofence: boolean | null;
 }
 
+/** Stands in for the workers list until it loads — one array, not a new `[]` each render, so the
+ * crew choices derived from it (and the effect that keeps the pick on one of them) stay put. */
+const NO_WORKERS: Worker[] = [];
+
 export function TimeTrackingPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("team");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
   const TIME_ENTRIES_PAGE_SIZE = 100;
   const [entries, setEntries] = useState<TimeEntry[] | null>(null);
-  const [workers, setWorkers] = useState<Worker[]>([]);
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [entriesError, setEntriesError] = useState<Error | null>(null);
+  const { data: workers = NO_WORKERS } = useApi<Worker[]>("/workers");
+  const { data: tasks = [] } = useApi<Task[]>(`/tasks?projectId=${projectId}`);
   const [form, setForm] = useState({
     workerId: "",
     taskId: "",
@@ -46,12 +58,13 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
   const [loadMoreBusy, setLoadMoreBusy] = useState(false);
 
   function load() {
-    apiFetch<TimeEntry[]>(`/time-entries?projectId=${projectId}`).then(
-      (page) => {
+    apiFetch<TimeEntry[]>(`/time-entries?projectId=${projectId}`)
+      .then((page) => {
+        setEntriesError(null);
         setEntries(page);
         setHasMore(page.length === TIME_ENTRIES_PAGE_SIZE);
-      },
-    );
+      })
+      .catch(setEntriesError);
   }
 
   async function loadMore() {
@@ -70,15 +83,15 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
 
   useEffect(() => {
     load();
-    apiFetch<Worker[]>("/workers").then(setWorkers);
-    apiFetch<Task[]>(`/tasks?projectId=${projectId}`).then(setTasks);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
   const { crew, choices, initialId } = useCrewChoices(workers, "time");
   // Keep the pick on a worker this member may record for (their own record unless they run the crew).
   useEffect(() => {
-    if (choices.some((w) => w.id === form.workerId)) return;
+    // Already on the pick (or on "" while there is nothing to pick): setting it again would only
+    // re-render, and with a fresh `choices` re-run this effect — a loop that never yields.
+    if (form.workerId === initialId || choices.some((w) => w.id === form.workerId)) return;
     resetStateInEffect(() => setForm((f) => ({ ...f, workerId: initialId })));
   }, [choices, initialId, form.workerId]);
 
@@ -102,7 +115,7 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
   }
 
   async function deleteEntry(id: string) {
-    if (!window.confirm(t("confirmDeleteEntry"))) return;
+    if (!(await confirm({ message: t("confirmDeleteEntry"), tone: "danger", verb: "delete" }))) return;
     setBusy(true);
     try {
       await apiFetch(`/time-entries/${id}`, { method: "DELETE" });
@@ -135,20 +148,28 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">
         {t("timeEntries")}
       </h2>
       {!entries ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">
-          {tc("loading")}
-        </p>
+        entriesError ? <ErrorState error={entriesError} onRetry={load} compact /> : <Skeleton lines={3} />
       ) : entries.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">
+        <p className="text-sm text-fg-subtle">
           {t("noTimeEntries")}
         </p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-gray-200 text-left text-xs text-fg-subtle dark:border-gray-700">
+                <th scope="col" className="py-1.5 font-medium">{ta("date")}</th>
+                <th scope="col" className="font-medium">{ta("worker")}</th>
+                <th scope="col" className="font-medium">{ta("task")}</th>
+                <th scope="col" className="font-medium"><span className="sr-only">{ta("location")}</span></th>
+                <th scope="col" className="text-right font-medium">{ta("hours")}</th>
+                <th scope="col" className="text-right font-medium"><span className="sr-only">{ta("actions")}</span></th>
+              </tr>
+            </thead>
             <tbody>
               {entries.map((entry) => (
                 <tr
@@ -160,14 +181,14 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
                   <td>{entry.task?.name ?? "—"}</td>
                   <td>
                     {entry.withinGeofence === false && (
-                      <span className="rounded-full bg-warning-50 dark:bg-warning-500/15 px-2 py-0.5 text-xs font-medium text-warning-700 dark:text-warning-500">
+                      <Badge tone="warning">
                         {t("outsideGeofence")}
-                      </span>
+                      </Badge>
                     )}
                   </td>
                   <td className="text-right">
                     {editingId === entry.id ? (
-                      <input
+                      <input aria-label={t("hours")}
                         type="number"
                         step="0.25"
                         min="0.25"
@@ -201,7 +222,7 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
                     <button
                       onClick={() => deleteEntry(entry.id)}
                       disabled={busy}
-                      className="ml-2 text-error-700 dark:text-error-500 hover:underline"
+                      className="ml-2 text-danger-fg hover:underline"
                     >
                       {tc("delete")}
                     </button>
@@ -227,7 +248,7 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
           onSubmit={logTime}
           className="mt-4 flex flex-wrap items-end gap-2"
         >
-          <select
+          <select aria-label={t("worker")}
             className="input w-auto"
             value={form.workerId}
             disabled={!crew}
@@ -241,7 +262,7 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
               </option>
             ))}
           </select>
-          <select
+          <select aria-label={t("task")}
             className="input w-auto"
             value={form.taskId}
             onChange={(e) => setForm((f) => ({ ...f, taskId: e.target.value }))}
@@ -253,7 +274,7 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
               </option>
             ))}
           </select>
-          <input
+          <input aria-label={t("hours")}
             type="number"
             step="0.25"
             min="0.25"
@@ -262,7 +283,7 @@ export function TimeTrackingPanel({ projectId }: { projectId: string }) {
             value={form.hours}
             onChange={(e) => setForm((f) => ({ ...f, hours: e.target.value }))}
           />
-          <input
+          <input aria-label={t("date")}
             type="date"
             className="input w-auto"
             value={form.date}

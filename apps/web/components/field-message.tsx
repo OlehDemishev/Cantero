@@ -3,9 +3,9 @@
 export type FieldMessageType = "success" | "warning" | "error";
 
 const STYLES: Record<FieldMessageType, string> = {
-  success: "text-success-700 dark:text-success-500",
-  warning: "text-warning-700 dark:text-warning-500",
-  error: "text-error-700 dark:text-error-500",
+  success: "text-success-fg",
+  warning: "text-warning-fg",
+  error: "text-danger-fg",
 };
 
 /** Shared success/warning/error line for the field-app submit forms — used so a failed submit

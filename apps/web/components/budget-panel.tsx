@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatDate } from "@/lib/format-date";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface BudgetRevision {
   id: string;
@@ -50,7 +53,7 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("budget");
   const tc = useTranslations("common");
   const { data: me } = useMe();
-  const [budget, setBudget] = useState<BudgetVsActual | null>(null);
+  const { data: budget = null, reload: reloadBudget, error: budgetError } = useApi<BudgetVsActual>(`/finance/budget-vs-actual?projectId=${projectId}`);
   const [addingRevision, setAddingRevision] = useState(false);
   const [revisionForm, setRevisionForm] = useState({ amount: "", reason: "" });
   const [addingDraw, setAddingDraw] = useState(false);
@@ -58,10 +61,8 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<BudgetVsActual>(`/finance/budget-vs-actual?projectId=${projectId}`).then(setBudget);
+    void reloadBudget();
   }
-
-  useEffect(load, [projectId]);
 
   async function submitRevision(e: React.FormEvent) {
     e.preventDefault();
@@ -97,22 +98,22 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
     }
   }
 
-  if (!budget) return null;
+  if (!budget) return budgetError ? <ErrorState error={budgetError} onRetry={reloadBudget} compact /> : <Skeleton lines={3} />;
   const currency = me?.company.currency ?? "";
-  const money = (amount: number | string | null | undefined) => formatCurrency(amount, currency, me?.company.locale);
+  const money = (amount: number | string | null | undefined) => formatCurrency(amount, currency);
 
   if (budget.estimatesCount === 0) {
     return (
       <div className="mt-10">
-        <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noApprovedEstimates")}</p>
+        <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+        <p className="text-sm text-fg-subtle">{t("noApprovedEstimates")}</p>
       </div>
     );
   }
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("title")}</h2>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <BudgetCard
           title={t("materialsCost")}
@@ -122,7 +123,7 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
             [
               t("variance"),
               `${budget.materialsCostVariance >= 0 ? "+" : ""}${money(budget.materialsCostVariance)}`,
-              budget.materialsCostVariance < 0 ? "text-red-600" : "text-green-700",
+              budget.materialsCostVariance < 0 ? "text-danger-fg" : "text-success-fg",
             ],
           ]}
         />
@@ -134,7 +135,7 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
             [
               t("variance"),
               `${budget.laborCostVariance >= 0 ? "+" : ""}${money(budget.laborCostVariance)}`,
-              budget.laborCostVariance < 0 ? "text-red-600" : "text-green-700",
+              budget.laborCostVariance < 0 ? "text-danger-fg" : "text-success-fg",
             ],
             [t("hoursLogged"), `${budget.laborHoursLogged}h`],
             ...(budget.laborHoursUncosted > 0
@@ -148,7 +149,7 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
             rows={[
               [t("actual"), money(budget.subcontractorCostActual)],
               ...(budget.subcontractorCostUnpaid > 0
-                ? ([[t("unpaid"), money(budget.subcontractorCostUnpaid), "text-warning-700 dark:text-warning-500"]] as [
+                ? ([[t("unpaid"), money(budget.subcontractorCostUnpaid), "text-warning-fg"]] as [
                     string,
                     string,
                     string,
@@ -164,7 +165,7 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
             ...(budget.budgetRevisionsTotal !== 0
               ? ([
                   [t("budgetRevisionsTotal"), `${budget.budgetRevisionsTotal >= 0 ? "+" : ""}${money(budget.budgetRevisionsTotal)}`],
-                  [t("revisedBudgetTotal"), money(budget.revisedBudgetTotal), "font-medium text-gray-900 dark:text-gray-50"],
+                  [t("revisedBudgetTotal"), money(budget.revisedBudgetTotal), "font-medium text-fg"],
                 ] as [string, string, string?][])
               : []),
             [t("invoicedTotal"), money(budget.invoicedTotal)],
@@ -181,7 +182,7 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
               [
                 t("contingencyRemaining"),
                 money(budget.contingencyRemaining),
-                (budget.contingencyRemaining ?? 0) < 0 ? "text-red-600 font-medium" : "font-medium text-gray-900 dark:text-gray-50",
+                (budget.contingencyRemaining ?? 0) < 0 ? "text-danger-fg font-medium" : "font-medium text-fg",
               ],
             ]}
           />
@@ -190,7 +191,7 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
 
       <div className="mt-4">
         <div className="mb-2 flex items-center justify-between">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("revisionLog")}</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("revisionLog")}</h3>
           {!addingRevision && (
             <button onClick={() => setAddingRevision(true)} className="btn-secondary px-2.5 py-1 text-xs">
               {t("addRevision")}
@@ -205,14 +206,14 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
                 required
                 type="number"
                 step="0.01"
-                placeholder={t("revisionAmountPlaceholder")}
+                placeholder={t("revisionAmountPlaceholder")} aria-label={t("revisionAmountPlaceholder")}
                 className="input w-40"
                 value={revisionForm.amount}
                 onChange={(e) => setRevisionForm((f) => ({ ...f, amount: e.target.value }))}
               />
               <input
                 required
-                placeholder={t("revisionReasonPlaceholder")}
+                placeholder={t("revisionReasonPlaceholder")} aria-label={t("revisionReasonPlaceholder")}
                 className="input flex-1"
                 value={revisionForm.reason}
                 onChange={(e) => setRevisionForm((f) => ({ ...f, reason: e.target.value }))}
@@ -230,20 +231,20 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
         )}
 
         {budget.revisions.length === 0 ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500">{t("noRevisions")}</p>
+          <p className="text-sm text-fg-subtle">{t("noRevisions")}</p>
         ) : (
           <ul className="flex flex-col gap-1.5">
             {budget.revisions.map((r) => (
               <li key={r.id} className="rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className={`font-medium ${Number(r.amount) >= 0 ? "text-success-700 dark:text-success-500" : "text-error-700 dark:text-error-500"}`}>
+                  <span className={`font-medium ${Number(r.amount) >= 0 ? "text-success-fg" : "text-danger-fg"}`}>
                     {Number(r.amount) >= 0 ? "+" : ""}
                     {money(r.amount)}
                   </span>
-                  <span className="text-xs text-gray-400 dark:text-gray-500">{formatDate(new Date(r.createdAt))}</span>
+                  <span className="text-xs text-fg-subtle">{formatDate(new Date(r.createdAt))}</span>
                 </div>
-                <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{r.reason}</p>
-                <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{r.createdByName}</p>
+                <p className="mt-0.5 text-xs text-fg-subtle">{r.reason}</p>
+                <p className="mt-0.5 text-xs text-fg-subtle">{r.createdByName}</p>
               </li>
             ))}
           </ul>
@@ -253,7 +254,7 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
       {budget.contingencyAmount !== null && (
         <div className="mt-4">
           <div className="mb-2 flex items-center justify-between">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("contingencyDrawLog")}</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-fg-subtle">{t("contingencyDrawLog")}</h3>
             {!addingDraw && (
               <button onClick={() => setAddingDraw(true)} className="btn-secondary px-2.5 py-1 text-xs">
                 {t("addDraw")}
@@ -269,14 +270,14 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
                   type="number"
                   step="0.01"
                   min="0.01"
-                  placeholder={t("drawAmountPlaceholder")}
+                  placeholder={t("drawAmountPlaceholder")} aria-label={t("drawAmountPlaceholder")}
                   className="input w-40"
                   value={drawForm.amount}
                   onChange={(e) => setDrawForm((f) => ({ ...f, amount: e.target.value }))}
                 />
                 <input
                   required
-                  placeholder={t("drawReasonPlaceholder")}
+                  placeholder={t("drawReasonPlaceholder")} aria-label={t("drawReasonPlaceholder")}
                   className="input flex-1"
                   value={drawForm.reason}
                   onChange={(e) => setDrawForm((f) => ({ ...f, reason: e.target.value }))}
@@ -294,17 +295,17 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
           )}
 
           {budget.contingencyDraws.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noDraws")}</p>
+            <p className="text-sm text-fg-subtle">{t("noDraws")}</p>
           ) : (
             <ul className="flex flex-col gap-1.5">
               {budget.contingencyDraws.map((d) => (
                 <li key={d.id} className="rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm">
                   <div className="flex items-center justify-between">
-                    <span className="font-medium text-error-700 dark:text-error-500">-{money(d.amount)}</span>
-                    <span className="text-xs text-gray-400 dark:text-gray-500">{formatDate(new Date(d.createdAt))}</span>
+                    <span className="font-medium text-danger-fg">-{money(d.amount)}</span>
+                    <span className="text-xs text-fg-subtle">{formatDate(new Date(d.createdAt))}</span>
                   </div>
-                  <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{d.reason}</p>
-                  <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{d.createdByName}</p>
+                  <p className="mt-0.5 text-xs text-fg-subtle">{d.reason}</p>
+                  <p className="mt-0.5 text-xs text-fg-subtle">{d.createdByName}</p>
                 </li>
               ))}
             </ul>
@@ -318,11 +319,11 @@ export function BudgetPanel({ projectId }: { projectId: string }) {
 function BudgetCard({ title, rows }: { title: string; rows: [string, string, string?][] }) {
   return (
     <div className="card">
-      <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{title}</div>
+      <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-fg-subtle">{title}</div>
       <dl className="flex flex-col gap-1 text-sm">
         {rows.map(([label, value, colorClass]) => (
           <div key={label} className="flex justify-between">
-            <dt className="text-gray-500 dark:text-gray-400">{label}</dt>
+            <dt className="text-fg-subtle">{label}</dt>
             <dd className={colorClass}>{value}</dd>
           </div>
         ))}

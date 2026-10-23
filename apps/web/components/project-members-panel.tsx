@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { HelpTooltip } from "@/components/help-tooltip";
 import { useCan } from "@/lib/permissions";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface ProjectMember {
   id: string;
@@ -21,23 +23,24 @@ interface Project {
 
 export function ProjectMembersPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("projectMembers");
+  const confirm = useConfirm();
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const canManage = useCan()("projects.manage");
 
-  const [project, setProject] = useState<Project | null>(null);
-  const [members, setMembers] = useState<ProjectMember[] | null>(null);
+  const { data: project = null, reload: reloadProject } = useApi<Project>(`/projects/${projectId}`);
+  const { data: members = null, reload: reloadMembers } = useApi<ProjectMember[]>(`/projects/${projectId}/members`);
   const [companyMembers, setCompanyMembers] = useState<CompanyMember[]>([]);
   const [selectedUserId, setSelectedUserId] = useState("");
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<Project>(`/projects/${projectId}`).then(setProject);
-    apiFetch<ProjectMember[]>(`/projects/${projectId}/members`).then(setMembers);
+    void reloadProject();
+    void reloadMembers();
   }
 
-  useEffect(load, [projectId]);
   useEffect(() => {
-    if (canManage) apiFetch<CompanyMember[]>("/company/members").then(setCompanyMembers);
+    if (canManage) apiFetch<CompanyMember[]>("/company/members").then(setCompanyMembers).catch(notifyApiError);
   }, [canManage]);
 
   async function toggleRestricted() {
@@ -68,7 +71,7 @@ export function ProjectMembersPanel({ projectId }: { projectId: string }) {
   }
 
   async function removeMember(userId: string) {
-    if (!window.confirm(t("confirmRemove"))) return;
+    if (!(await confirm({ message: t("confirmRemove"), tone: "danger", verb: "remove" }))) return;
     setBusy(true);
     try {
       await apiFetch(`/projects/${projectId}/members/${userId}`, { method: "DELETE" });
@@ -84,31 +87,31 @@ export function ProjectMembersPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="mt-8">
-      <h2 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-gray-700 dark:text-gray-200">
+      <h2 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-fg-muted">
         {t("title")}
         <HelpTooltip text={t("tooltip")} />
       </h2>
       <div className="card">
-        <label className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-200">
+        <label className="flex items-start gap-2 text-sm text-fg-muted">
           <input type="checkbox" className="mt-0.5" checked={project?.restrictedToMembers ?? false} onChange={toggleRestricted} disabled={busy} />
           <span>
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("restrictToggle")}</span>
-            <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">{t("restrictToggleHint")}</span>
+            <span className="font-medium text-fg-muted">{t("restrictToggle")}</span>
+            <span className="mt-0.5 block text-xs text-fg-subtle">{t("restrictToggleHint")}</span>
           </span>
         </label>
 
         {project?.restrictedToMembers && (
           <div className="mt-4 border-t border-gray-100 dark:border-gray-700 pt-4">
             {!members || members.length === 0 ? (
-              <p className="text-sm text-gray-400 dark:text-gray-500">{t("noMembers")}</p>
+              <p className="text-sm text-fg-subtle">{t("noMembers")}</p>
             ) : (
               <ul className="flex flex-col gap-1.5">
                 {members.map((m) => (
                   <li key={m.id} className="flex items-center justify-between text-sm">
-                    <span className="text-gray-700 dark:text-gray-200">
-                      {m.user.name} <span className="text-gray-400 dark:text-gray-500">({m.user.email})</span>
+                    <span className="text-fg-muted">
+                      {m.user.name} <span className="text-fg-subtle">({m.user.email})</span>
                     </span>
-                    <button onClick={() => removeMember(m.userId)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
+                    <button aria-label={ta("removeItem", { name: m.user.name })} onClick={() => removeMember(m.userId)} className="text-fg-subtle hover:text-danger-fg">
                       ×
                     </button>
                   </li>
@@ -118,7 +121,7 @@ export function ProjectMembersPanel({ projectId }: { projectId: string }) {
 
             {availableMembers.length > 0 && (
               <form onSubmit={addMember} className="mt-3 flex items-center gap-2">
-                <select className="input" value={selectedUserId} onChange={(e) => setSelectedUserId(e.target.value)}>
+                <select aria-label={ta("member")} className="input" value={selectedUserId} onChange={(e) => setSelectedUserId(e.target.value)}>
                   <option value="">{t("selectMember")}</option>
                   {availableMembers.map((cm) => (
                     <option key={cm.userId} value={cm.userId}>

@@ -4,10 +4,17 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { fetchClientLink } from "@/lib/client-link";
+import { useCan } from "@/lib/permissions";
 import { goBack } from "@/lib/back-navigation";
 import { formatDateTime } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
+import { FormError } from "@/components/ui/field";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface Contract {
   id: string;
@@ -16,7 +23,6 @@ interface Contract {
   status: "draft" | "sent" | "signed" | "void";
   signerName: string | null;
   signedAt: string | null;
-  clientAccessToken: string | null;
   client: { id: string; name: string } | null;
   subcontractor: { id: string; name: string } | null;
   docusignEnvelopeId: string | null;
@@ -24,35 +30,35 @@ interface Contract {
   docusignSignedPdfKey: string | null;
 }
 
-const STATUS_STYLES: Record<Contract["status"], string> = {
-  draft: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  sent: "bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-400",
-  signed: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
-  void: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
-};
 
 export function ContractDetail({ contractId }: { contractId: string }) {
   const t = useTranslations("contracts");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const router = useRouter();
 
   const [contract, setContract] = useState<Contract | null>(null);
+  const [loadError, setLoadError] = useState<Error | null>(null);
   const [bodyDraft, setBodyDraft] = useState("");
   const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const can = useCan();
   const [docusignError, setDocusignError] = useState<string | null>(null);
 
   function load() {
-    apiFetch<Contract>(`/contracts/${contractId}`).then((c) => {
-      setContract(c);
-      setBodyDraft(c.body);
-      if (c.status === "signed") {
-        apiFetch<Blob>(`/contracts/${contractId}/signature`)
-          .then((blob) => setSignatureUrl(URL.createObjectURL(blob)))
-          .catch(() => setSignatureUrl(null));
-      }
-    });
+    apiFetch<Contract>(`/contracts/${contractId}`)
+      .then((c) => {
+        setLoadError(null);
+        setContract(c);
+        setBodyDraft(c.body);
+        if (c.status === "signed") {
+          apiFetch<Blob>(`/contracts/${contractId}/signature`)
+            .then((blob) => setSignatureUrl(URL.createObjectURL(blob)))
+            .catch(() => setSignatureUrl(null));
+        }
+      })
+      .catch(setLoadError);
   }
 
   useEffect(load, [contractId]);
@@ -111,30 +117,23 @@ export function ContractDetail({ contractId }: { contractId: string }) {
   }
 
   async function copyLink() {
-    if (!contract?.clientAccessToken) return;
-    await navigator.clipboard.writeText(`${window.location.origin}/contract/${contract.clientAccessToken}`);
+    await navigator.clipboard.writeText(await fetchClientLink(`/contracts/${contractId}/client-link`, "contract"));
     setLinkCopied(true);
   }
 
   if (!contract) {
-    return (
-      <AuthenticatedShell>
-        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
-      </AuthenticatedShell>
-    );
+    return loadError ? <ErrorState error={loadError} onRetry={load} backHref="/contracts" /> : <Skeleton variant="block" height="h-64" />;
   }
 
   return (
-    <AuthenticatedShell>
-      <button onClick={() => goBack(router, "/contracts")} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">
-        ← {tc("back")}
-      </button>
-      <div className="mt-2 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{contract.title}</h1>
-        <span className={`rounded-full px-3 py-1 text-xs font-medium ${STATUS_STYLES[contract.status]}`}>{t(contract.status)}</span>
-      </div>
+    <>
+      <PageHeader
+        back={{ onClick: () => goBack(router, "/contracts"), label: tc("back") }}
+        title={contract.title}
+        actions={<Badge tone={statusTone(contract.status)}>{t(contract.status)}</Badge>}
+      />
       {(contract.client || contract.subcontractor) && (
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <p className="text-sm text-fg-subtle">
           {contract.client ? (
             <Link href={`/clients/${contract.client.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
               {contract.client.name}
@@ -149,7 +148,7 @@ export function ContractDetail({ contractId }: { contractId: string }) {
         <div className="lg:col-span-2">
           {contract.status === "draft" ? (
             <>
-              <textarea
+              <textarea aria-label={ta("contractText")}
                 rows={16}
                 className="input w-full font-mono text-xs"
                 value={bodyDraft}
@@ -160,13 +159,13 @@ export function ContractDetail({ contractId }: { contractId: string }) {
               </button>
             </>
           ) : (
-            <div className="card whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300">{contract.body}</div>
+            <div className="card whitespace-pre-wrap text-sm text-fg-muted">{contract.body}</div>
           )}
 
           {contract.status === "signed" && contract.signerName && (
             <div className="card mt-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{t("signedBy")}</p>
-              <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">
+              <p className="text-xs font-medium uppercase tracking-wide text-fg-subtle">{t("signedBy")}</p>
+              <p className="mt-1 text-sm text-fg-muted">
                 {contract.signerName} · {contract.signedAt && formatDateTime(new Date(contract.signedAt))}
               </p>
               {signatureUrl && (
@@ -189,12 +188,12 @@ export function ContractDetail({ contractId }: { contractId: string }) {
               </button>
             )}
             {contract.docusignStatus && (
-              <p className="text-xs text-gray-500 dark:text-gray-400">{t("docusignStatusLabel", { status: contract.docusignStatus })}</p>
+              <p className="text-xs text-fg-subtle">{t("docusignStatusLabel", { status: contract.docusignStatus })}</p>
             )}
             {contract.docusignEnvelopeId && contract.status === "sent" && (
-              <p className="text-xs text-gray-400 dark:text-gray-500">{t("docusignAutoPollHint")}</p>
+              <p className="text-xs text-fg-subtle">{t("docusignAutoPollHint")}</p>
             )}
-            {docusignError && <p className="text-xs text-error-600">{docusignError}</p>}
+            {docusignError && <FormError>{docusignError}</FormError>}
             {contract.status !== "void" && (
               <button onClick={voidContract} disabled={busy} className="btn-secondary">
                 {t("voidContract")}
@@ -208,7 +207,8 @@ export function ContractDetail({ contractId }: { contractId: string }) {
                 {t("downloadDocusignSignedPdf")}
               </button>
             )}
-            {contract.clientAccessToken && (
+            {/* Only a contract sent by the app's own link has one — DocuSign envelopes don't. */}
+            {contract.status !== "draft" && !contract.docusignEnvelopeId && can("contracts.manage") && (
               <button onClick={copyLink} className="btn-secondary">
                 {linkCopied ? tc("linkCopied") : tc("copyLink")}
               </button>
@@ -216,6 +216,6 @@ export function ContractDetail({ contractId }: { contractId: string }) {
           </div>
         </div>
       </div>
-    </AuthenticatedShell>
+    </>
   );
 }

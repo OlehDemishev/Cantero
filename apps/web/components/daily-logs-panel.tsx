@@ -1,12 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { WEATHER_CONDITIONS, type WeatherCondition } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { PhotoAttachments } from "@/components/photo-attachments";
 import { VoiceInputButton } from "@/components/voice-input-button";
 import { formatDate } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
+import { Field, FormError } from "@/components/ui/field";
 
 interface DailyLog {
   id: string;
@@ -38,7 +43,7 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("dailyLogs");
   const tc = useTranslations("common");
 
-  const [logs, setLogs] = useState<DailyLog[] | null>(null);
+  const { data: logs = null, reload: reloadLogs, error: logsError } = useApi<DailyLog[]>(`/daily-logs?projectId=${projectId}`);
   const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -47,10 +52,8 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
   const [error, setError] = useState<string | null>(null);
 
   function load() {
-    apiFetch<DailyLog[]>(`/daily-logs?projectId=${projectId}`).then(setLogs);
+    void reloadLogs();
   }
-
-  useEffect(load, [projectId]);
 
   function startEdit(log: DailyLog) {
     setEditingId(log.id);
@@ -120,7 +123,7 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("title")}</h2>
         {!showForm && (
           <button onClick={startCreate} className="btn-secondary px-3 py-1 text-xs">
             {t("newLog")}
@@ -131,8 +134,7 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
       {showForm && (
         <form onSubmit={submit} className="card mb-4 flex flex-col gap-3">
           {!editingId && (
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("date")}</span>
+            <Field label={t("date")}>
               <input
                 type="date"
                 required
@@ -140,11 +142,10 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
                 value={form.date}
                 onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
               />
-            </label>
+            </Field>
           )}
           <div className="flex gap-3">
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("weather")}</span>
+            <Field label={t("weather")} className="flex-1">
               <select
                 className="input"
                 value={form.weatherCondition}
@@ -157,18 +158,16 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
                   </option>
                 ))}
               </select>
-            </label>
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("weatherNotes")}</span>
+            </Field>
+            <Field label={t("weatherNotes")} className="flex-1">
               <input
                 className="input"
                 placeholder={t("weatherNotesPlaceholder")}
                 value={form.weatherNotes}
                 onChange={(e) => setForm((f) => ({ ...f, weatherNotes: e.target.value }))}
               />
-            </label>
-            <label className="flex w-40 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("weatherDelayHours")}</span>
+            </Field>
+            <Field label={t("weatherDelayHours")} className="w-40">
               <input
                 type="number"
                 min="0"
@@ -178,11 +177,10 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
                 value={form.weatherDelayHours}
                 onChange={(e) => setForm((f) => ({ ...f, weatherDelayHours: e.target.value }))}
               />
-            </label>
+            </Field>
           </div>
           <div className="flex gap-3">
-            <label className="flex w-32 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("crewCount")}</span>
+            <Field label={t("crewCount")} className="w-32">
               <input
                 type="number"
                 min="0"
@@ -190,19 +188,18 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
                 value={form.crewCount}
                 onChange={(e) => setForm((f) => ({ ...f, crewCount: e.target.value }))}
               />
-            </label>
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("crewNotes")}</span>
+            </Field>
+            <Field label={t("crewNotes")} className="flex-1">
               <input
                 className="input"
                 placeholder={t("crewNotesPlaceholder")}
                 value={form.crewNotes}
                 onChange={(e) => setForm((f) => ({ ...f, crewNotes: e.target.value }))}
               />
-            </label>
+            </Field>
           </div>
           <label className="flex flex-col gap-1.5 text-sm">
-            <span className="flex items-center gap-2 font-medium text-gray-700 dark:text-gray-200">
+            <span className="flex items-center gap-2 font-medium text-fg-muted">
               {t("workPerformed")}
               <VoiceInputButton
                 onTranscript={(text) => setForm((f) => ({ ...f, workPerformed: f.workPerformed ? `${f.workPerformed} ${text}` : text }))}
@@ -216,8 +213,7 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
               onChange={(e) => setForm((f) => ({ ...f, workPerformed: e.target.value }))}
             />
           </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("delays")}</span>
+          <Field label={t("delays")}>
             <textarea
               rows={2}
               className="input"
@@ -225,17 +221,16 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
               value={form.delays}
               onChange={(e) => setForm((f) => ({ ...f, delays: e.target.value }))}
             />
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("notes")}</span>
+          </Field>
+          <Field label={t("notes")}>
             <textarea
               rows={2}
               className="input"
               value={form.notes}
               onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
             />
-          </label>
-          {error && <p className="text-xs text-error-600">{error}</p>}
+          </Field>
+          {error && <FormError>{error}</FormError>}
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className="btn-primary">
               {tc("save")}
@@ -248,9 +243,9 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
       )}
 
       {logs === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        logsError ? <ErrorState error={logsError} onRetry={reloadLogs} compact /> : <Skeleton lines={3} />
       ) : logs.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noLogs")}</p>
+        <p className="text-sm text-fg-subtle">{t("noLogs")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {logs.map((log) => {
@@ -262,56 +257,56 @@ export function DailyLogsPanel({ projectId }: { projectId: string }) {
                   className="flex w-full items-center justify-between text-left"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-gray-900 dark:text-gray-50">
+                    <span className="text-sm font-medium text-fg">
                       {formatDate(new Date(log.date))}
                     </span>
                     {log.weatherCondition && (
-                      <span className="rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs text-gray-600 dark:text-gray-300">
+                      <Badge tone="neutral">
                         {t(`weather_${log.weatherCondition}`)}
-                      </span>
+                      </Badge>
                     )}
                     {log.delays && (
-                      <span className="rounded-full bg-warning-50 dark:bg-warning-500/15 px-2 py-0.5 text-xs font-medium text-warning-700 dark:text-warning-500">
+                      <Badge tone="warning">
                         {t("hasDelays")}
-                      </span>
+                      </Badge>
                     )}
                     {!!log.weatherDelayHours && (
-                      <span className="rounded-full bg-warning-50 dark:bg-warning-500/15 px-2 py-0.5 text-xs font-medium text-warning-700 dark:text-warning-500">
+                      <Badge tone="warning">
                         {t("weatherDelayBadge", { hours: log.weatherDelayHours })}
-                      </span>
+                      </Badge>
                     )}
                   </div>
-                  <span className="text-xs text-gray-400 dark:text-gray-500">{log.authorName}</span>
+                  <span className="text-xs text-fg-subtle">{log.authorName}</span>
                 </button>
-                <p className="mt-1.5 truncate text-xs text-gray-500 dark:text-gray-400">{log.workPerformed}</p>
+                <p className="mt-1.5 truncate text-xs text-fg-subtle">{log.workPerformed}</p>
                 {expanded && (
                   <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 dark:border-gray-700 pt-3 text-sm">
                     {log.crewCount !== null && (
                       <p>
-                        <span className="font-medium text-gray-700 dark:text-gray-200">{t("crewCount")}: </span>
+                        <span className="font-medium text-fg-muted">{t("crewCount")}: </span>
                         {log.crewCount}
                         {log.crewNotes ? ` — ${log.crewNotes}` : ""}
                       </p>
                     )}
                     {log.weatherNotes && (
                       <p>
-                        <span className="font-medium text-gray-700 dark:text-gray-200">{t("weatherNotes")}: </span>
+                        <span className="font-medium text-fg-muted">{t("weatherNotes")}: </span>
                         {log.weatherNotes}
                       </p>
                     )}
                     <p>
-                      <span className="font-medium text-gray-700 dark:text-gray-200">{t("workPerformed")}: </span>
+                      <span className="font-medium text-fg-muted">{t("workPerformed")}: </span>
                       {log.workPerformed}
                     </p>
                     {log.delays && (
                       <p>
-                        <span className="font-medium text-gray-700 dark:text-gray-200">{t("delays")}: </span>
+                        <span className="font-medium text-fg-muted">{t("delays")}: </span>
                         {log.delays}
                       </p>
                     )}
                     {log.notes && (
                       <p>
-                        <span className="font-medium text-gray-700 dark:text-gray-200">{t("notes")}: </span>
+                        <span className="font-medium text-fg-muted">{t("notes")}: </span>
                         {log.notes}
                       </p>
                     )}

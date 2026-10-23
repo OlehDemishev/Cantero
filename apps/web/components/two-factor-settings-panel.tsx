@@ -5,10 +5,12 @@ import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { resetStateInEffect } from "@/lib/effect-reset";
+import { Alert } from "@/components/ui/alert";
+import { Field, FormError } from "@/components/ui/field";
 
 export function TwoFactorSettingsPanel() {
   const t = useTranslations("twoFactor");
-  const { data: me } = useMe();
+  const { data: me, reload: reloadMe } = useMe();
 
   const [setupData, setSetupData] = useState<{ secret: string; otpauthUrl: string } | null>(null);
   const [enableCode, setEnableCode] = useState("");
@@ -48,6 +50,7 @@ export function TwoFactorSettingsPanel() {
       setSetupData(null);
       setEnableCode("");
       setEnabled(true);
+      reloadMe();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("invalidCode"));
     } finally {
@@ -64,6 +67,7 @@ export function TwoFactorSettingsPanel() {
       setDisablePassword("");
       setEnabled(false);
       setBackupCodes(null);
+      reloadMe();
     } catch (err) {
       setError(err instanceof Error ? err.message : "");
     } finally {
@@ -75,21 +79,21 @@ export function TwoFactorSettingsPanel() {
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-4 text-xs text-fg-subtle">{t("hint")}</p>
 
-      {error && <p className="mb-3 text-xs text-error-700 dark:text-error-500">{error}</p>}
+      {error && <FormError className="mb-3">{error}</FormError>}
 
       {backupCodes && (
-        <div className="mb-4 rounded border border-amber-200 bg-amber-50 p-3">
-          <p className="mb-2 text-xs font-semibold text-amber-800 dark:text-amber-400">{t("backupCodesTitle")}</p>
-          <p className="mb-2 text-xs text-amber-700">{t("backupCodesHint")}</p>
-          <div className="grid grid-cols-2 gap-1 font-mono text-xs text-amber-900">
+        <Alert tone="warning" className="mb-4">
+          <p className="mb-2 text-xs font-semibold">{t("backupCodesTitle")}</p>
+          <p className="mb-2 text-xs">{t("backupCodesHint")}</p>
+          <div className="grid grid-cols-2 gap-1 font-mono text-xs text-fg">
             {backupCodes.map((c) => (
               <span key={c}>{c}</span>
             ))}
           </div>
-        </div>
+        </Alert>
       )}
 
       {!isEnabled && !setupData && (
@@ -102,16 +106,15 @@ export function TwoFactorSettingsPanel() {
         <form onSubmit={confirmEnable} className="flex flex-col gap-2">
           <p className="text-xs text-gray-600 dark:text-gray-300">{t("scanHint")}</p>
           <p className="break-all rounded bg-gray-50 dark:bg-gray-700 p-2 font-mono text-xs">{setupData.secret}</p>
-          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-            {t("codeLabel")}
+          <Field label={t("codeLabel")} size="sm">
             <input
               required
-              className="input mt-1"
+              className="input"
               value={enableCode}
               onChange={(e) => setEnableCode(e.target.value)}
               maxLength={6}
             />
-          </label>
+          </Field>
           <button type="submit" disabled={busy} className="btn-primary self-start">
             {t("confirm")}
           </button>
@@ -120,17 +123,16 @@ export function TwoFactorSettingsPanel() {
 
       {isEnabled && (
         <form onSubmit={disable} className="flex items-end gap-2">
-          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-            {t("passwordToDisable")}
+          <Field label={t("passwordToDisable")} size="sm">
             <input
               required
               type="password"
-              className="input mt-1"
+              className="input"
               value={disablePassword}
               onChange={(e) => setDisablePassword(e.target.value)}
             />
-          </label>
-          <button type="submit" disabled={busy} className="btn-secondary px-3 py-1 text-xs text-error-600">
+          </Field>
+          <button type="submit" disabled={busy} className="btn-secondary px-3 py-1 text-xs text-danger-fg">
             {t("disable")}
           </button>
         </form>

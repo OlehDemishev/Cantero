@@ -5,8 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { AnnotationType } from "@cantero/shared";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, notifyApiError } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { resetStateInEffect } from "@/lib/effect-reset";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface Point {
   x: number;
@@ -121,16 +125,19 @@ function drawAnnotation(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement
 
 export function DrawingSheetViewer({ sheetId }: { sheetId: string }) {
   const t = useTranslations("drawings");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
-  const [sheet, setSheet] = useState<DrawingSheet | null>(null);
-  const [annotations, setAnnotations] = useState<Annotation[] | null>(null);
+  const { data: sheet = null, error: sheetError, reload: reloadSheet } = useApi<DrawingSheet>(`/drawing-sheets/${sheetId}`);
+  const { data: annotations = null, reload: reloadAnnotations } = useApi<Annotation[]>(`/drawing-sheets/${sheetId}/annotations`);
   const [tool, setTool] = useState<AnnotationType | null>(null);
   const [draftPoints, setDraftPoints] = useState<Point[]>([]);
   const [busy, setBusy] = useState(false);
 
-  const [allRfis, setAllRfis] = useState<RfiRow[]>([]);
-  const [allPunchItems, setAllPunchItems] = useState<PunchRow[]>([]);
+  const { data: allRfis = [], reload: reloadRfis } = useApi<RfiRow[]>(sheet ? `/rfis?projectId=${sheet.projectId}` : null);
+  const { data: allPunchItems = [], reload: reloadPunchItems } = useApi<PunchRow[]>(sheet ? `/punch-list?projectId=${sheet.projectId}` : null);
   const [pinTool, setPinTool] = useState(false);
   const [pinDraft, setPinDraft] = useState<{ point: Point; kind: "rfi" | "punch"; targetId: string } | null>(null);
 
@@ -142,21 +149,15 @@ export function DrawingSheetViewer({ sheetId }: { sheetId: string }) {
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
   const drawingRef = useRef(false);
 
-  function loadMeta() {
-    apiFetch<DrawingSheet>(`/drawing-sheets/${sheetId}`).then(setSheet);
-  }
   function loadAnnotations() {
-    apiFetch<Annotation[]>(`/drawing-sheets/${sheetId}/annotations`).then(setAnnotations);
+    void reloadAnnotations();
   }
 
   useEffect(() => {
-    loadMeta();
-    loadAnnotations();
     resetStateInEffect(() => setLinks(null));
     apiFetch<SheetLinks>(`/drawing-sheets/${sheetId}/links`)
       .then(setLinks)
       .catch(() => setLinks({ outgoing: [], referencedBy: [] }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sheetId]);
 
   /** Opens the Digital takeoff on this sheet, in the project's Documents tab. */
@@ -172,12 +173,9 @@ export function DrawingSheetViewer({ sheetId }: { sheetId: string }) {
   }
 
   function loadPins() {
-    if (!sheet) return;
-    apiFetch<RfiRow[]>(`/rfis?projectId=${sheet.projectId}`).then(setAllRfis);
-    apiFetch<PunchRow[]>(`/punch-list?projectId=${sheet.projectId}`).then(setAllPunchItems);
+    void reloadRfis();
+    void reloadPunchItems();
   }
-
-  useEffect(loadPins, [sheet, sheetId]);
 
   const rfis = allRfis.filter((r) => r.drawingSheetId === sheetId);
   const punchItems = allPunchItems.filter((p) => p.drawingSheetId === sheetId);
@@ -221,7 +219,7 @@ export function DrawingSheetViewer({ sheetId }: { sheetId: string }) {
         base.getContext("2d")!.drawImage(img, 0, 0);
       }
       redrawOverlay();
-    });
+    }).catch(notifyApiError);
 
     return () => {
       cancelled = true;
@@ -264,7 +262,7 @@ export function DrawingSheetViewer({ sheetId }: { sheetId: string }) {
     if (!tool) return;
     let text: string | undefined;
     if (tool === "text") {
-      text = window.prompt(t("enterCalloutText")) ?? undefined;
+      text = (await confirm({ title: td("addCallout"), verb: "add", reason: { label: t("enterCalloutText"), required: true } })) ?? undefined;
       if (!text) {
         setDraftPoints([]);
         return;
@@ -327,6 +325,7 @@ export function DrawingSheetViewer({ sheetId }: { sheetId: string }) {
   }
 
   async function deleteAnnotation(id: string) {
+    if (!(await confirm({ message: td("deleteAnnotation"), tone: "danger", verb: "delete" }))) return;
     await apiFetch(`/drawing-sheets/${sheetId}/annotations/${id}`, { method: "DELETE" });
     loadAnnotations();
   }
@@ -342,16 +341,16 @@ export function DrawingSheetViewer({ sheetId }: { sheetId: string }) {
     loadPins();
   }
 
-  if (!sheet) return <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>;
+  if (!sheet) return sheetError ? <ErrorState error={sheetError} onRetry={reloadSheet} compact /> : <Skeleton variant="block" height="h-96" />;
 
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+          <h2 className="text-sm font-semibold text-fg-muted">
             {sheet.sheetNumber} {sheet.title && `— ${sheet.title}`}
           </h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
+          <p className="text-xs text-fg-subtle">
             {sheet.discipline ?? t("noDiscipline")} {sheet.revision && `· ${t("revision")} ${sheet.revision}`}
           </p>
         </div>
@@ -416,7 +415,7 @@ export function DrawingSheetViewer({ sheetId }: { sheetId: string }) {
       </div>
 
       {links && (links.outgoing.length > 0 || links.referencedBy.length > 0) && (
-        <div className="mt-3 flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+        <div className="mt-3 flex flex-col gap-1 text-xs text-fg-subtle">
           {links.outgoing.length > 0 && <p>{t("linksHint", { n: links.outgoing.length })}</p>}
           {links.referencedBy.length > 0 && (
             <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -433,7 +432,7 @@ export function DrawingSheetViewer({ sheetId }: { sheetId: string }) {
         </div>
       )}
 
-      {busy && <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>}
+      {busy && <p className="mt-1 text-xs text-fg-subtle">{tc("loading")}</p>}
 
       {pinDraft && (
         <div className="mt-3 flex flex-wrap items-end gap-2 rounded-md border border-gray-200 p-2 text-xs dark:border-gray-800">
@@ -473,14 +472,14 @@ export function DrawingSheetViewer({ sheetId }: { sheetId: string }) {
       )}
 
       {annotations && annotations.length > 0 && (
-        <ul className="mt-3 flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+        <ul className="mt-3 flex flex-col gap-1 text-xs text-fg-subtle">
           {annotations.map((a) => (
             <li key={a.id} className="flex items-center justify-between">
               <span>
                 {t(`tool_${a.type}`)} — {a.authorName}
                 {a.text && `: "${a.text}"`}
               </span>
-              <button onClick={() => deleteAnnotation(a.id)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
+              <button aria-label={ta("remove")} onClick={() => deleteAnnotation(a.id)} className="text-fg-subtle hover:text-danger-fg">
                 ×
               </button>
             </li>
@@ -489,7 +488,7 @@ export function DrawingSheetViewer({ sheetId }: { sheetId: string }) {
       )}
 
       {pins.length > 0 && (
-        <ul className="mt-3 flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+        <ul className="mt-3 flex flex-col gap-1 text-xs text-fg-subtle">
           {pins.map((p) => (
             <li key={p.id}>📍 {p.label}</li>
           ))}

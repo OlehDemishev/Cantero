@@ -18,7 +18,24 @@ const SSO_DOMAIN = "e2e-sso.test";
 let idp: TestIdp;
 let ownerToken: string;
 let companyId: string;
-let previousSso: { ssoDomain: string | null; ssoEntryPoint: string | null; ssoIssuer: string | null; ssoCert: string | null };
+let previousSso: {
+  ssoDomain: string | null;
+  ssoEntryPoint: string | null;
+  ssoIssuer: string | null;
+  ssoCert: string | null;
+  ssoDomainVerified?: boolean;
+};
+
+/** A test domain has no DNS to put the verification TXT record in, so mark it verified directly. */
+async function markDomainVerified(domain: string) {
+  const db = new Client({ connectionString: databaseUrl() });
+  await db.connect();
+  try {
+    await db.query(`UPDATE companies SET "ssoVerifiedDomain" = $1, "ssoDomainVerifiedAt" = now() WHERE id = $2`, [domain, companyId]);
+  } finally {
+    await db.end();
+  }
+}
 
 test.beforeAll(async () => {
   idp = createTestIdp();
@@ -26,6 +43,7 @@ test.beforeAll(async () => {
   companyId = (await api<{ company: { id: string } }>("GET", "/me", ownerToken)).company.id;
   previousSso = await api("GET", "/company/sso", ownerToken);
   await api("PATCH", "/company/sso", ownerToken, { domain: SSO_DOMAIN, entryPoint: idp.entryPoint, issuer: idp.issuer, cert: idp.certPem });
+  await markDomainVerified(SSO_DOMAIN);
 });
 
 test.afterAll(async () => {
@@ -36,6 +54,7 @@ test.afterAll(async () => {
       issuer: previousSso.ssoIssuer,
       cert: previousSso.ssoCert,
     });
+    if (previousSso.ssoDomainVerified) await markDomainVerified(previousSso.ssoDomain);
   } else {
     await api("DELETE", "/company/sso", ownerToken);
   }
@@ -57,17 +76,18 @@ function spIssuer() {
 }
 
 /** Starts SSO from the real login page and answers the IdP redirect with `respond`'s SAMLResponse. */
-async function signInViaIdp(page: Page, email: string, respond: (email: string) => string) {
+async function signInViaIdp(page: Page, email: string, respond: (email: string) => string, until: RegExp = /\/sso\/callback|\/dashboard/) {
   let samlRequestSeen = false;
   await page.route(`${idp.entryPoint}**`, async (route) => {
-    samlRequestSeen = new URL(route.request().url()).searchParams.has("SAMLRequest");
-    await route.fulfill({ contentType: "text/html", body: autoPostPage(acsUrl(), respond(email)) });
+    const params = new URL(route.request().url()).searchParams;
+    samlRequestSeen = params.has("SAMLRequest");
+    await route.fulfill({ contentType: "text/html", body: autoPostPage(acsUrl(), respond(email), params.get("RelayState")) });
   });
   await page.goto("/login");
   await page.getByRole("button", { name: "Sign in with company SSO instead" }).click();
   await page.locator('input[type="email"]').fill(email);
   await page.getByRole("button", { name: "Continue", exact: true }).click();
-  await page.waitForURL(/\/sso\/callback|\/dashboard/);
+  await page.waitForURL(until);
   expect(samlRequestSeen).toBe(true);
 }
 
@@ -82,6 +102,37 @@ test("a new employee signs in through the company IdP and is provisioned as a wo
   expect(me.user.name).toBe("New Hire");
   expect(me.user.role).toBe("worker");
   expect(me.company.id).toBe(companyId);
+});
+
+test("the one-time code from the callback is useless outside the tab that started the sign-in", async ({ page, browser }) => {
+  const email = `link.${Date.now()}@${SSO_DOMAIN}`;
+  // Stop before the browser follows the ACS redirect to the callback, so the page never redeems the
+  // code — as if the URL had been copied out. Held at the ACS answer itself: Playwright doesn't
+  // route the hops of a redirect, so a route on /sso/callback would never see this navigation.
+  let code: string | null = null;
+  await page.route(acsUrl(), async (route) => {
+    const res = await route.fetch({ maxRedirects: 0 });
+    code = new URL(res.headers()["location"] ?? "", "http://x").searchParams.get("code");
+    await route.fulfill({ contentType: "text/html", body: "<!doctype html><title>held</title>" });
+  });
+  await signInViaIdp(
+    page,
+    email,
+    (e) => signedSamlResponse(idp, { email: e, displayName: "Link", spIssuer: spIssuer(), acsUrl: acsUrl() }),
+    /\/auth\/sso\/acs\//,
+  );
+  expect(code).toBeTruthy();
+
+  // The same callback link opened in another browser (another person's, say) has no nonce to match.
+  const other = await browser.newPage();
+  await other.goto(`/sso/callback?code=${encodeURIComponent(code!)}`);
+  await expect(other.getByText(/started in another browser/)).toBeVisible();
+  expect(new URL(other.url()).search).toBe("");
+  expect(await other.evaluate(() => localStorage.getItem("cantero_token"))).toBeNull();
+  await other.close();
+
+  // Nor can it be redeemed directly with a guessed nonce.
+  await expect(api("POST", "/auth/sso/exchange", null, { code, nonce: "x".repeat(43) })).rejects.toThrow();
 });
 
 test("an assertion altered after signing is rejected", async ({ page }) => {

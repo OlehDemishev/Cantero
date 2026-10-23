@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
 
 interface Baseline {
@@ -34,7 +37,7 @@ export function ScheduleBaselinePanel({ projectId }: { projectId: string }) {
   const t = useTranslations("scheduleBaseline");
   const tc = useTranslations("common");
 
-  const [baselines, setBaselines] = useState<Baseline[] | null>(null);
+  const { data: baselines = null, reload: reloadBaselines, error: baselinesError } = useApi<Baseline[]>(`/schedule-baselines?projectId=${projectId}`);
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -42,12 +45,8 @@ export function ScheduleBaselinePanel({ projectId }: { projectId: string }) {
   const [compareResults, setCompareResults] = useState<Record<string, CompareResult>>({});
 
   function load() {
-    apiFetch<Baseline[]>(`/schedule-baselines?projectId=${projectId}`).then(setBaselines);
+    void reloadBaselines();
   }
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
 
   async function create(e: React.FormEvent) {
     e.preventDefault();
@@ -76,18 +75,18 @@ export function ScheduleBaselinePanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("title")}</h2>
         {!adding && (
           <button onClick={() => setAdding(true)} className="btn-secondary px-2.5 py-1 text-xs">
             {t("newBaseline")}
           </button>
         )}
       </div>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
 
       {adding && (
         <form onSubmit={create} className="card mb-3 flex flex-wrap items-end gap-2">
-          <input required placeholder={t("namePlaceholder")} className="input flex-1" value={name} onChange={(e) => setName(e.target.value)} />
+          <input required placeholder={t("namePlaceholder")} aria-label={t("namePlaceholder")} className="input flex-1" value={name} onChange={(e) => setName(e.target.value)} />
           <button type="submit" disabled={busy} className="btn-primary">
             {tc("save")}
           </button>
@@ -98,9 +97,9 @@ export function ScheduleBaselinePanel({ projectId }: { projectId: string }) {
       )}
 
       {!baselines ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        baselinesError ? <ErrorState error={baselinesError} onRetry={reloadBaselines} compact /> : <Skeleton lines={3} />
       ) : baselines.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noBaselines")}</p>
+        <p className="text-sm text-fg-subtle">{t("noBaselines")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {baselines.map((b) => {
@@ -109,21 +108,21 @@ export function ScheduleBaselinePanel({ projectId }: { projectId: string }) {
             return (
               <li key={b.id} className="card">
                 <button onClick={() => toggleExpand(b.id)} className="flex w-full items-center justify-between text-left">
-                  <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{b.name}</span>
-                  <span className="text-xs text-gray-400 dark:text-gray-500">{t("createdBy", { name: b.createdByName, date: fmt(b.createdAt) })}</span>
+                  <span className="text-sm font-medium text-fg">{b.name}</span>
+                  <span className="text-xs text-fg-subtle">{t("createdBy", { name: b.createdByName, date: fmt(b.createdAt) })}</span>
                 </button>
 
-                {expanded && !result && <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>}
+                {expanded && !result && <p className="mt-3 text-xs text-fg-subtle">{tc("loading")}</p>}
 
                 {expanded && result && (
-                  <div className="mt-3 overflow-x-auto border-t border-gray-100 dark:border-gray-700 pt-3">
+                  <div tabIndex={0} className="mt-3 overflow-x-auto border-t border-gray-100 dark:border-gray-700 pt-3">
                     <table className="w-full min-w-[560px] border-collapse text-sm">
                       <thead>
-                        <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-xs text-gray-500 dark:text-gray-400">
-                          <th className="py-1">{tc("name")}</th>
-                          <th>{t("baselineDates")}</th>
-                          <th>{t("currentDates")}</th>
-                          <th className="text-right">{t("slippage")}</th>
+                        <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-xs text-fg-subtle">
+                          <th scope="col" className="py-1">{tc("name")}</th>
+                          <th scope="col">{t("baselineDates")}</th>
+                          <th scope="col">{t("currentDates")}</th>
+                          <th scope="col" className="text-right">{t("slippage")}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -131,23 +130,23 @@ export function ScheduleBaselinePanel({ projectId }: { projectId: string }) {
                           <tr key={task.taskId} className="border-b border-gray-100 dark:border-gray-700">
                             <td className="py-1.5">
                               {task.name}
-                              {task.status === "removed" && <span className="ml-1.5 text-xs text-gray-400 dark:text-gray-500">({t("taskRemoved")})</span>}
+                              {task.status === "removed" && <span className="ml-1.5 text-xs text-fg-subtle">({t("taskRemoved")})</span>}
                             </td>
-                            <td className="text-xs text-gray-500 dark:text-gray-400">
+                            <td className="text-xs text-fg-subtle">
                               {fmt(task.baselineStartDate)} – {fmt(task.baselineDueDate)}
                             </td>
-                            <td className="text-xs text-gray-500 dark:text-gray-400">
+                            <td className="text-xs text-fg-subtle">
                               {fmt(task.currentStartDate)} – {fmt(task.currentDueDate)}
                             </td>
                             <td
                               className={`text-right text-xs font-medium tabular-nums ${
                                 task.slippageDays === null
-                                  ? "text-gray-400 dark:text-gray-500"
+                                  ? "text-fg-subtle"
                                   : task.slippageDays > 0
-                                    ? "text-error-600"
+                                    ? "text-danger-fg"
                                     : task.slippageDays < 0
-                                      ? "text-success-700 dark:text-success-500"
-                                      : "text-gray-500 dark:text-gray-400"
+                                      ? "text-success-fg"
+                                      : "text-fg-subtle"
                               }`}
                             >
                               {task.slippageDays === null

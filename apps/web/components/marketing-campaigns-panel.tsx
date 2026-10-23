@@ -1,9 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
+import { formatCurrency } from "@/lib/format-currency";
+import { Field } from "@/components/ui/field";
 
 interface Campaign {
   id: string;
@@ -17,18 +22,16 @@ interface Campaign {
 
 export function MarketingCampaignsPanel() {
   const t = useTranslations("marketing");
-  const tc = useTranslations("common");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const [campaigns, setCampaigns] = useState<Campaign[] | null>(null);
+  const { data: campaigns = null, reload: reloadCampaigns, error: campaignsError } = useApi<Campaign[]>("/marketing/campaigns");
   const [form, setForm] = useState({ name: "", channel: "", spend: "", startDate: "", endDate: "" });
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<Campaign[]>("/marketing/campaigns").then(setCampaigns);
+    void reloadCampaigns();
   }
-  useEffect(load, []);
 
   async function createCampaign(e: React.FormEvent) {
     e.preventDefault();
@@ -54,26 +57,25 @@ export function MarketingCampaignsPanel() {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("campaignsTitle")}</h2>
-      <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">{t("campaignsHint")}</p>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("campaignsTitle")}</h2>
+      <p className="mb-4 text-sm text-fg-subtle">{t("campaignsHint")}</p>
 
       <form onSubmit={createCampaign} className="mb-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
         <input
           required
-          placeholder={t("campaignNamePlaceholder")}
+          placeholder={t("campaignNamePlaceholder")} aria-label={t("campaignNamePlaceholder")}
           className="input"
           value={form.name}
           onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
         />
         <input
           required
-          placeholder={t("channelPlaceholder")}
+          placeholder={t("channelPlaceholder")} aria-label={t("channelPlaceholder")}
           className="input"
           value={form.channel}
           onChange={(e) => setForm((f) => ({ ...f, channel: e.target.value }))}
         />
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("spend")}
+        <Field label={t("spend")} size="sm">
           <input
             type="number"
             step="0.01"
@@ -82,25 +84,25 @@ export function MarketingCampaignsPanel() {
             value={form.spend}
             onChange={(e) => setForm((f) => ({ ...f, spend: e.target.value }))}
           />
-        </label>
+        </Field>
         <button type="submit" disabled={busy} className="btn-primary shrink-0">
           {t("addCampaign")}
         </button>
       </form>
 
       {campaigns === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        campaignsError ? <ErrorState error={campaignsError} onRetry={reloadCampaigns} compact /> : <Skeleton lines={3} />
       ) : campaigns.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noCampaigns")}</p>
+        <p className="text-sm text-fg-subtle">{t("noCampaigns")}</p>
       ) : (
         <ul className="flex flex-col gap-1.5">
           {campaigns.map((c) => (
             <li key={c.id} className="card flex items-center justify-between text-sm">
               <span>
-                {c.name} <span className="text-xs text-gray-400 dark:text-gray-500">({c.channel})</span>
+                {c.name} <span className="text-xs text-fg-subtle">({c.channel})</span>
               </span>
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                {c.spend && `${c.spend} ${currency} · `}
+              <span className="text-xs text-fg-subtle">
+                {c.spend && `${formatCurrency(c.spend, currency)} · `}
                 {t("leadsCount", { count: c._count.clients })}
               </span>
             </li>

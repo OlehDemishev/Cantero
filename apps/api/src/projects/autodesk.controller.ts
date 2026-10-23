@@ -43,7 +43,7 @@ export class AutodeskController {
   @Requires("settings.integrations")
   @Get("company/autodesk/authorize-url")
   authorizeUrl(@CurrentUser() user: AuthUser) {
-    return { url: this.service.getAuthorizeUrl(user.companyId) };
+    return { url: this.service.getAuthorizeUrl(user) };
   }
 
   @Requires("settings.integrations")

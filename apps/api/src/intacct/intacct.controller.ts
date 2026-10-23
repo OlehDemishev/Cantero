@@ -30,7 +30,7 @@ export class IntacctController {
   @Requires("finance.manage")
   @Get("company/intacct/authorize-url")
   authorizeUrl(@CurrentUser() user: AuthUser) {
-    return { url: this.service.getAuthorizeUrl(user.companyId) };
+    return { url: this.service.getAuthorizeUrl(user) };
   }
 
   @Requires("finance.manage")

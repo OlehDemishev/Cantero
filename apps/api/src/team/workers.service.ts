@@ -1,10 +1,12 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcryptjs";
 import type { AddWorkerCertificationInput, AdjustPtoBalanceInput, CreateWorkerInput, UpdateWorkerInput } from "@cantero/shared";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AuditService, type AuditActor } from "../common/audit/audit.service";
 import { RateLimiterService } from "../common/rate-limiter/rate-limiter.service";
 import { calculateLoadedLaborRate } from "./labor-burden";
+import { signKioskToken } from "./kiosk-token";
 
 const PIN_BCRYPT_ROUNDS = 10;
 const PIN_VERIFY_LIMIT = 10;
@@ -16,6 +18,7 @@ export class WorkersService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly rateLimiter: RateLimiterService,
+    private readonly jwt: JwtService,
   ) {}
 
   async list(companyId: string) {
@@ -71,6 +74,7 @@ export class WorkersService {
   /** Clones the company's onboarding template into fresh tasks for this worker — a snapshot at
    * creation time, so editing the template later never rewrites tasks already assigned. */
   async create(companyId: string, input: CreateWorkerInput) {
+    await this.assertWageClassificationInCompany(companyId, input.wageClassificationId);
     const worker = await this.prisma.worker.create({ omit: { clockInPinHash: false }, data: { ...input, companyId } });
 
     const templateItems = await this.prisma.onboardingTemplateItem.findMany({
@@ -92,6 +96,7 @@ export class WorkersService {
 
   async update(companyId: string, actor: AuditActor, id: string, input: UpdateWorkerInput) {
     const before = await this.get(companyId, id);
+    await this.assertWageClassificationInCompany(companyId, input.wageClassificationId);
     const worker = await this.prisma.worker.update({ omit: { clockInPinHash: false }, where: { id }, data: input });
 
     if (input.hourlyCost !== undefined && Number(before.hourlyCost) !== Number(input.hourlyCost)) {
@@ -117,6 +122,14 @@ export class WorkersService {
       if (!input.active) await this.cloneOffboardingTemplate(companyId, id);
     }
     return this.redactPin(worker);
+  }
+
+  /** A wage classification is another company's pay data; a worker may only point at its own
+   * company's. Null/undefined (clearing it, or leaving it alone) needs no check. */
+  private async assertWageClassificationInCompany(companyId: string, wageClassificationId: string | null | undefined) {
+    if (!wageClassificationId) return;
+    const found = await this.prisma.wageClassification.findFirst({ where: { id: wageClassificationId, companyId }, select: { id: true } });
+    if (!found) throw new BadRequestException("Unknown wage classification");
   }
 
   /** Same clone-the-template-into-fresh-tasks pattern as create()'s onboarding clone, triggered
@@ -307,14 +320,25 @@ export class WorkersService {
   /** Company-scoped, not a general-purpose auth check — the kiosk device is already inside an
    * authenticated session (someone logged in), so a false PIN here just means "try again", not
    * "attacker detected". Still rate-limited per worker: a typical PIN is only 4-6 digits, cheap
-   * to brute-force by a coworker at the same kiosk without some limit. */
-  async verifyClockInPin(companyId: string, workerId: string, pin: string): Promise<{ valid: boolean }> {
+   * to brute-force by a coworker at the same kiosk without some limit.
+   *
+   * A correct PIN returns a short-lived kiosk token naming this worker, the company and the
+   * kiosk session (`sessionUserId`); POST /time-entries/kiosk requires it, so the PIN check is
+   * enforced by the API rather than only by the kiosk page. */
+  async verifyClockInPin(
+    companyId: string,
+    sessionUserId: string,
+    workerId: string,
+    pin: string,
+  ): Promise<{ valid: false } | { valid: true; kioskToken: string }> {
     this.rateLimiter.consume(`clock-in-pin:${companyId}:${workerId}`, PIN_VERIFY_LIMIT, PIN_VERIFY_WINDOW_MS);
     const worker = await this.getRaw(companyId, workerId);
-    if (!worker.clockInPinHash) return { valid: false };
+    // Kiosk clock-in is only for active workers — same set listKioskWorkers() offers.
+    if (!worker.clockInPinHash || !worker.active) return { valid: false };
     const valid = await bcrypt.compare(pin, worker.clockInPinHash);
-    if (valid) this.rateLimiter.reset(`clock-in-pin:${companyId}:${workerId}`);
-    return { valid };
+    if (!valid) return { valid: false };
+    this.rateLimiter.reset(`clock-in-pin:${companyId}:${workerId}`);
+    return { valid: true, kioskToken: signKioskToken(this.jwt, { companyId, workerId, userId: sessionUserId }) };
   }
 
   /** Every active worker with a kiosk PIN set — the roster a kiosk device shows to pick from,

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { useCan } from "@/lib/permissions";
+import { PanelErrorState } from "@/components/ui/error-state";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 
@@ -21,49 +22,48 @@ export function DiversitySpendPanel() {
   const t = useTranslations("diversitySpend");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "USD";
-  const money = (amount: number) => formatCurrency(amount, currency, me?.company.locale);
+  const money = (amount: number) => formatCurrency(amount, currency);
 
-  const [report, setReport] = useState<DiversitySpendReport | null>(null);
+  const canSee = useCan()("finance.view");
+  const { data: report = null, error, reload } = useApi<DiversitySpendReport>(canSee ? "/finance/subcontractors/diversity-spend-report" : null);
 
-  useEffect(() => {
-    apiFetch<DiversitySpendReport>("/finance/subcontractors/diversity-spend-report").then(setReport);
-  }, []);
-
+  if (!canSee) return null;
+  if (error && !report) return <PanelErrorState title={t("title")} error={error} onRetry={reload} />;
   if (!report || report.totalSpend === 0) return null;
 
   return (
     <div className="mt-10">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <div className="card">
-          <div className="text-xs text-gray-500 dark:text-gray-400">{t("totalSpend")}</div>
-          <div className="mt-1 text-lg font-semibold tabular-nums text-gray-900 dark:text-gray-50">{money(report.totalSpend)}</div>
+          <div className="text-xs text-fg-subtle">{t("totalSpend")}</div>
+          <div className="mt-1 text-lg font-semibold tabular-nums text-fg">{money(report.totalSpend)}</div>
         </div>
         <div className="card">
-          <div className="text-xs text-gray-500 dark:text-gray-400">{t("certifiedSpend")}</div>
-          <div className="mt-1 text-lg font-semibold tabular-nums text-gray-900 dark:text-gray-50">{money(report.certifiedSpend)}</div>
+          <div className="text-xs text-fg-subtle">{t("certifiedSpend")}</div>
+          <div className="mt-1 text-lg font-semibold tabular-nums text-fg">{money(report.certifiedSpend)}</div>
         </div>
         <div className="card">
-          <div className="text-xs text-gray-500 dark:text-gray-400">{t("certifiedShare")}</div>
-          <div className="mt-1 text-lg font-semibold tabular-nums text-gray-900 dark:text-gray-50">{report.certifiedSharePercent}%</div>
+          <div className="text-xs text-fg-subtle">{t("certifiedShare")}</div>
+          <div className="mt-1 text-lg font-semibold tabular-nums text-fg">{report.certifiedSharePercent}%</div>
         </div>
       </div>
 
       {report.byCategory.length > 0 && (
-        <div className="card mt-3 overflow-x-auto">
+        <div tabIndex={0} className="card mt-3 overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-                <th className="py-1.5">{t("category")}</th>
-                <th className="text-right">{t("spend")}</th>
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
+                <th scope="col" className="py-1.5">{t("category")}</th>
+                <th scope="col" className="text-right">{t("spend")}</th>
               </tr>
             </thead>
             <tbody>
               {report.byCategory.map((row) => (
                 <tr key={row.category} className="border-b border-gray-100 dark:border-gray-700">
-                  <td className="py-1.5 font-medium text-gray-900 dark:text-gray-50">{t(`category_${row.category}`)}</td>
+                  <td className="py-1.5 font-medium text-fg">{t(`category_${row.category}`)}</td>
                   <td className="text-right tabular-nums">{money(row.spend)}</td>
                 </tr>
               ))}

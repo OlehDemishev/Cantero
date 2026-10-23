@@ -17,7 +17,7 @@ export function HelpTooltip({ text }: { text: string }) {
         onMouseLeave={() => setOpen(false)}
         onFocus={() => setOpen(true)}
         onBlur={() => setOpen(false)}
-        className="flex h-4 w-4 items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+        className="flex h-4 w-4 items-center justify-center text-fg-subtle hover:text-gray-600 dark:hover:text-gray-300"
         aria-label={text}
       >
         <HelpCircleIcon width={14} height={14} />

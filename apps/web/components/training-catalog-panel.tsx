@@ -1,9 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Field } from "@/components/ui/field";
 
 interface TrainingCourse {
   id: string;
@@ -32,11 +38,14 @@ interface ComplianceGap {
 
 export function TrainingCatalogPanel() {
   const t = useTranslations("training");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
 
-  const [courses, setCourses] = useState<TrainingCourse[] | null>(null);
-  const [workers, setWorkers] = useState<Worker[]>([]);
-  const [gaps, setGaps] = useState<ComplianceGap[] | null>(null);
+  const { data: courses = null, reload: reloadCourses, error: coursesError } = useApi<TrainingCourse[]>("/training/courses");
+  const { data: workers = [] } = useApi<Worker[]>("/workers");
+  const { data: gaps = null, reload: reloadGaps } = useApi<ComplianceGap[]>("/training/compliance-gaps");
   const [form, setForm] = useState({ title: "", category: "", validityMonths: "" });
   const [busy, setBusy] = useState(false);
   const [expandedCourseId, setExpandedCourseId] = useState<string | null>(null);
@@ -44,14 +53,9 @@ export function TrainingCatalogPanel() {
   const [enrollWorkerId, setEnrollWorkerId] = useState("");
 
   function load() {
-    apiFetch<TrainingCourse[]>("/training/courses").then(setCourses);
-    apiFetch<ComplianceGap[]>("/training/compliance-gaps").then(setGaps);
+    void reloadCourses();
+    void reloadGaps();
   }
-
-  useEffect(() => {
-    load();
-    apiFetch<Worker[]>("/workers").then(setWorkers);
-  }, []);
 
   async function createCourse(e: React.FormEvent) {
     e.preventDefault();
@@ -74,6 +78,7 @@ export function TrainingCatalogPanel() {
   }
 
   async function deleteCourse(id: string) {
+    if (!(await confirm({ message: td("deleteCourse"), tone: "danger", verb: "delete" }))) return;
     setBusy(true);
     try {
       await apiFetch(`/training/courses/${id}`, { method: "DELETE" });
@@ -123,25 +128,24 @@ export function TrainingCatalogPanel() {
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("catalogTitle")}</h2>
-      <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">{t("catalogHint")}</p>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("catalogTitle")}</h2>
+      <p className="mb-4 text-sm text-fg-subtle">{t("catalogHint")}</p>
 
       <form onSubmit={createCourse} className="mb-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
         <input
           required
-          placeholder={t("courseTitlePlaceholder")}
+          placeholder={t("courseTitlePlaceholder")} aria-label={t("courseTitlePlaceholder")}
           className="input"
           value={form.title}
           onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
         />
         <input
-          placeholder={t("categoryPlaceholder")}
+          placeholder={t("categoryPlaceholder")} aria-label={t("categoryPlaceholder")}
           className="input"
           value={form.category}
           onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
         />
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("validityMonths")}
+        <Field label={t("validityMonths")} size="sm">
           <input
             type="number"
             min="1"
@@ -150,16 +154,16 @@ export function TrainingCatalogPanel() {
             value={form.validityMonths}
             onChange={(e) => setForm((f) => ({ ...f, validityMonths: e.target.value }))}
           />
-        </label>
+        </Field>
         <button type="submit" disabled={busy} className="btn-primary shrink-0">
           {t("addCourse")}
         </button>
       </form>
 
       {courses === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        coursesError ? <ErrorState error={coursesError} onRetry={reloadCourses} compact /> : <Skeleton lines={3} />
       ) : courses.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noCourses")}</p>
+        <p className="text-sm text-fg-subtle">{t("noCourses")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {courses.map((course) => {
@@ -167,21 +171,21 @@ export function TrainingCatalogPanel() {
             return (
               <li key={course.id} className="card">
                 <div className="flex items-center justify-between">
-                  <button onClick={() => toggleExpand(course.id)} className="text-left text-sm font-medium text-gray-900 dark:text-gray-50 hover:underline">
+                  <button onClick={() => toggleExpand(course.id)} className="text-left text-sm font-medium text-fg hover:underline">
                     {course.title}
                   </button>
                   <div className="flex items-center gap-2">
                     {course.validityMonths && (
-                      <span className="text-xs text-gray-400 dark:text-gray-500">{t("validForMonths", { months: course.validityMonths })}</span>
+                      <span className="text-xs text-fg-subtle">{t("validForMonths", { months: course.validityMonths })}</span>
                     )}
-                    <button onClick={() => deleteCourse(course.id)} disabled={busy} className="text-xs text-error-700 dark:text-error-500 hover:underline">
+                    <button onClick={() => deleteCourse(course.id)} disabled={busy} className="text-xs text-danger-fg hover:underline">
                       {tc("delete")}
                     </button>
                   </div>
                 </div>
-                {course.category && <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{course.category}</p>}
+                {course.category && <p className="mt-0.5 text-xs text-fg-subtle">{course.category}</p>}
                 {gap && gap.missingWorkers.length > 0 && (
-                  <p className="mt-1 text-xs text-warning-700 dark:text-warning-500">
+                  <p className="mt-1 text-xs text-warning-fg">
                     {t("missingCount", { count: gap.missingWorkers.length, total: gap.totalActiveWorkers })}
                   </p>
                 )}
@@ -189,7 +193,7 @@ export function TrainingCatalogPanel() {
                 {expandedCourseId === course.id && (
                   <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-3">
                     <div className="mb-2 flex gap-2">
-                      <select className="input" value={enrollWorkerId} onChange={(e) => setEnrollWorkerId(e.target.value)}>
+                      <select aria-label={ta("worker")} className="input" value={enrollWorkerId} onChange={(e) => setEnrollWorkerId(e.target.value)}>
                         {workers.map((w) => (
                           <option key={w.id} value={w.id}>
                             {w.name}
@@ -201,18 +205,18 @@ export function TrainingCatalogPanel() {
                       </button>
                     </div>
                     {!enrollments ? (
-                      <p className="text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+                      <p className="text-xs text-fg-subtle">{tc("loading")}</p>
                     ) : enrollments.length === 0 ? (
-                      <p className="text-xs text-gray-400 dark:text-gray-500">{t("noEnrollments")}</p>
+                      <p className="text-xs text-fg-subtle">{t("noEnrollments")}</p>
                     ) : (
                       <ul className="flex flex-col gap-1">
                         {enrollments.map((en) => (
                           <li key={en.id} className="flex items-center justify-between text-xs">
                             <span>{en.worker.name}</span>
                             {en.status === "completed" ? (
-                              <span className="rounded-full bg-success-50 dark:bg-success-500/15 px-2 py-0.5 font-medium text-success-700 dark:text-success-500">
+                              <Badge tone="success">
                                 {t("completedOn", { date: en.completedAt ? formatDate(new Date(en.completedAt)) : "" })}
-                              </span>
+                              </Badge>
                             ) : (
                               <button onClick={() => complete(en.id, course.id)} disabled={busy} className="text-brand-600 hover:underline">
                                 {t("markComplete")}

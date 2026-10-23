@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
 
 type TaskStatus = "planned" | "in_progress" | "done";
 type CommitmentStatus = "committed" | "completed" | "missed";
@@ -50,23 +52,18 @@ function mondayOf(dateStr: string): string {
 export function LookAheadPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("scheduling");
   const tc = useTranslations("common");
-  const [tasks, setTasks] = useState<LookAheadTask[] | null>(null);
-  const [commitments, setCommitments] = useState<Commitment[]>([]);
-  const [ppc, setPpc] = useState<PpcReport | null>(null);
+  const { data: tasks = null, reload: reloadTasks } = useApi<LookAheadTask[]>(`/tasks/look-ahead?projectId=${projectId}`);
+  const { data: commitments = [], reload: reloadCommitments } = useApi<Commitment[]>(`/tasks/commitments?projectId=${projectId}`);
+  const { data: ppc = null, reload: reloadPpc } = useApi<PpcReport>(`/tasks/ppc-report?projectId=${projectId}`);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
   const [varianceReason, setVarianceReason] = useState("");
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<LookAheadTask[]>(`/tasks/look-ahead?projectId=${projectId}`).then(setTasks);
-    apiFetch<Commitment[]>(`/tasks/commitments?projectId=${projectId}`).then(setCommitments);
-    apiFetch<PpcReport>(`/tasks/ppc-report?projectId=${projectId}`).then(setPpc);
+    void reloadTasks();
+    void reloadCommitments();
+    void reloadPpc();
   }
-
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
 
   if (tasks && tasks.length === 0) return null;
 
@@ -106,26 +103,26 @@ export function LookAheadPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-8">
       <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("lookAhead")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("lookAhead")}</h2>
         {ppc && ppc.ppcPercent !== null && (
-          <span className="rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-300">{t("ppc", { percent: ppc.ppcPercent })}</span>
+          <Badge tone="neutral">{t("ppc", { percent: ppc.ppcPercent })}</Badge>
         )}
       </div>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("lookAheadHint")}</p>
+      <p className="mb-3 text-xs text-fg-subtle">{t("lookAheadHint")}</p>
 
       {!tasks ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">…</p>
+        <p className="text-sm text-fg-subtle">…</p>
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {Array.from({ length: WEEK_COUNT }, (_, weekIndex) => {
             const weekTasks = tasks.filter((task) => task.weekIndex === weekIndex);
             return (
               <div key={weekIndex} className="card">
-                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-fg-subtle">
                   {t("lookAheadWeek", { week: weekIndex + 1 })}
                 </h3>
                 {weekTasks.length === 0 ? (
-                  <p className="text-xs text-gray-400 dark:text-gray-500">{t("lookAheadNoTasks")}</p>
+                  <p className="text-xs text-fg-subtle">{t("lookAheadNoTasks")}</p>
                 ) : (
                   <ul className="flex flex-col gap-2">
                     {weekTasks.map((task) => {
@@ -133,23 +130,19 @@ export function LookAheadPanel({ projectId }: { projectId: string }) {
                       return (
                         <li key={task.id} className="rounded-lg border border-gray-100 dark:border-gray-700 px-2.5 py-2 text-sm">
                           <div className="flex items-center justify-between gap-2">
-                            <span className="font-medium text-gray-800 dark:text-white/90">{task.name}</span>
-                            <span
-                              className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
-                                task.ready ? "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500" : "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500"
-                              }`}
-                            >
+                            <span className="font-medium text-fg">{task.name}</span>
+                            <Badge tone={task.ready ? "success" : "warning"} className="shrink-0">
                               {task.ready ? t("lookAheadReady") : t("lookAheadBlocked")}
-                            </span>
+                            </Badge>
                           </div>
                           {task.startDate && (
-                            <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+                            <p className="mt-0.5 text-xs text-fg-subtle">
                               {formatDate(new Date(task.startDate))}
                               {task.dueDate && ` – ${formatDate(new Date(task.dueDate))}`}
                             </p>
                           )}
                           {!task.ready && task.blockedByTaskNames.length > 0 && (
-                            <p className="mt-1 text-xs text-warning-700 dark:text-warning-500">
+                            <p className="mt-1 text-xs text-warning-fg">
                               {t("lookAheadBlockedBy", { names: task.blockedByTaskNames.join(", ") })}
                             </p>
                           )}
@@ -161,7 +154,7 @@ export function LookAheadPanel({ projectId }: { projectId: string }) {
                           )}
                           {commitment && commitment.status === "committed" && resolvingId !== commitment.id && (
                             <div className="mt-2 flex items-center gap-1.5">
-                              <span className="rounded-full bg-brand-50 dark:bg-brand-500/15 px-2 py-0.5 text-xs font-medium text-brand-700 dark:text-brand-400">{t("committed")}</span>
+                              <Badge tone="brand">{t("committed")}</Badge>
                               <button onClick={() => resolve(commitment.id, "completed")} disabled={busy} className="btn-secondary px-2 py-0.5 text-xs">
                                 {t("markCompleted")}
                               </button>
@@ -174,7 +167,7 @@ export function LookAheadPanel({ projectId }: { projectId: string }) {
                             <div className="mt-2 flex items-end gap-1.5">
                               <input
                                 required
-                                placeholder={t("varianceReasonPlaceholder")}
+                                placeholder={t("varianceReasonPlaceholder")} aria-label={t("varianceReasonPlaceholder")}
                                 className="input py-1 text-xs"
                                 value={varianceReason}
                                 onChange={(e) => setVarianceReason(e.target.value)}
@@ -188,12 +181,12 @@ export function LookAheadPanel({ projectId }: { projectId: string }) {
                             </div>
                           )}
                           {commitment && commitment.status === "completed" && (
-                            <span className="mt-2 inline-block rounded-full bg-success-50 dark:bg-success-500/15 px-2 py-0.5 text-xs font-medium text-success-700 dark:text-success-500">
+                            <Badge tone="success" className="mt-2">
                               {t("completed")}
-                            </span>
+                            </Badge>
                           )}
                           {commitment && commitment.status === "missed" && (
-                            <p className="mt-2 text-xs text-error-700 dark:text-error-500">{t("missedWithReason", { reason: commitment.varianceReason ?? "" })}</p>
+                            <p className="mt-2 text-xs text-danger-fg">{t("missedWithReason", { reason: commitment.varianceReason ?? "" })}</p>
                           )}
                         </li>
                       );

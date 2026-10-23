@@ -2,6 +2,7 @@ import { JwtService } from "@nestjs/jwt";
 import { BadGatewayException, BadRequestException, NotFoundException } from "@nestjs/common";
 import { AutodeskService, versionUrn } from "./autodesk.service";
 import { encrypted } from "../common/crypto/testing";
+import { signState } from "../common/oauth/oauth";
 
 function jsonResponse(body: unknown, ok = true, status = ok ? 200 : 400) {
   return { ok, status, json: async () => body } as unknown as Response;
@@ -47,11 +48,11 @@ describe("AutodeskService", () => {
   describe("getAuthorizeUrl", () => {
     it("throws when AUTODESK_CLIENT_ID isn't configured", () => {
       config.get.mockImplementation(() => undefined);
-      expect(() => service.getAuthorizeUrl("company-a")).toThrow(BadRequestException);
+      expect(() => service.getAuthorizeUrl({ companyId: "company-a", userId: "user-a" })).toThrow(BadRequestException);
     });
 
     it("builds an authorize URL carrying a signed state", () => {
-      const url = service.getAuthorizeUrl("company-a");
+      const url = service.getAuthorizeUrl({ companyId: "company-a", userId: "user-a" });
       const parsed = new URL(url);
 
       expect(parsed.origin + parsed.pathname).toBe("https://developer.api.autodesk.com/authentication/v2/authorize");
@@ -68,8 +69,15 @@ describe("AutodeskService", () => {
       await expect(service.handleCallback("code", "not-a-real-token")).rejects.toThrow(BadRequestException);
     });
 
+    it("refuses an access token (or another provider's state) passed off as state", async () => {
+      const accessToken = jwt.sign({ userId: "user-a", companyId: "company-a", email: "x@y.z", role: "owner", sid: "s1" });
+      await expect(service.handleCallback("code", accessToken)).rejects.toThrow(BadRequestException);
+      await expect(service.handleCallback("code", signState(jwt, "docusign", { companyId: "company-a", userId: "user-a" }))).rejects.toThrow(BadRequestException);
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
     it("exchanges the code, fetches hubs, mints a viewer token, and stores the first hub's id and region", async () => {
-      const state = jwt.sign({ companyId: "company-a" });
+      const state = signState(jwt, "autodesk", { companyId: "company-a", userId: "user-a" });
       fetchMock
         .mockResolvedValueOnce(jsonResponse({ access_token: "at", refresh_token: "rt", expires_in: 3600 }))
         .mockResolvedValueOnce(jsonResponse({ data: [{ id: "b.hub-1", attributes: { region: "EMEA" } }, { id: "b.hub-2" }] }))
@@ -90,7 +98,7 @@ describe("AutodeskService", () => {
     });
 
     it("throws when the account has no accessible hub", async () => {
-      const state = jwt.sign({ companyId: "company-a" });
+      const state = signState(jwt, "autodesk", { companyId: "company-a", userId: "user-a" });
       fetchMock
         .mockResolvedValueOnce(jsonResponse({ access_token: "at", refresh_token: "rt", expires_in: 3600 }))
         .mockResolvedValueOnce(jsonResponse({ data: [] }));
@@ -99,7 +107,7 @@ describe("AutodeskService", () => {
     });
 
     it("throws when Autodesk rejects the authorization code", async () => {
-      const state = jwt.sign({ companyId: "company-a" });
+      const state = signState(jwt, "autodesk", { companyId: "company-a", userId: "user-a" });
       fetchMock.mockResolvedValueOnce(jsonResponse({}, false, 400));
 
       await expect(service.handleCallback("bad-code", state)).rejects.toThrow(BadRequestException);

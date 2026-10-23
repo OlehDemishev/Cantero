@@ -179,3 +179,51 @@ describe("SubcontractorCostsService.exportDatevPurchasesCsv", () => {
     expect(dataRow.split(";")[7]).toBe("3300"); // Gegenkonto — subcontractor expense account
   });
 });
+
+describe("SubcontractorCostsService — subcontractor fields in staff responses", () => {
+  const SUMMARY = { select: { id: true, name: true } };
+  let service: SubcontractorCostsService;
+  let prisma: {
+    subcontractorCost: { findMany: jest.Mock; findFirst: jest.Mock; create: jest.Mock; update: jest.Mock };
+    subcontractor: { findFirst: jest.Mock };
+    project: { findFirst: jest.Mock };
+    lienWaiver: { findUnique: jest.Mock };
+    subcontractorPayment: { create: jest.Mock };
+  };
+
+  beforeEach(async () => {
+    prisma = {
+      subcontractorCost: { findMany: jest.fn().mockResolvedValue([]), findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
+      subcontractor: { findFirst: jest.fn().mockResolvedValue({ id: "sub-1" }) },
+      project: { findFirst: jest.fn().mockResolvedValue({ id: "project-1" }) },
+      lienWaiver: { findUnique: jest.fn().mockResolvedValue({ id: "waiver-1" }) },
+      subcontractorPayment: { create: jest.fn() },
+    };
+    const module = await Test.createTestingModule({
+      providers: [
+        SubcontractorCostsService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: PdfService, useValue: {} },
+        { provide: StorageService, useValue: {} },
+        { provide: AuditService, useValue: { record: jest.fn() } },
+      ],
+    }).compile();
+    service = module.get(SubcontractorCostsService);
+  });
+
+  it("lists costs with only the subcontractor's id and name, never its tax ID", async () => {
+    await service.list(COMPANY_A, "project-1");
+    expect(prisma.subcontractorCost.findMany).toHaveBeenCalledWith(expect.objectContaining({ include: expect.objectContaining({ subcontractor: SUMMARY }) }));
+  });
+
+  it("returns a created cost the same way", async () => {
+    await service.create(COMPANY_A, { subcontractorId: "sub-1", projectId: "project-1", description: "Rough-in", amount: 100 } as never);
+    expect(prisma.subcontractorCost.create).toHaveBeenCalledWith(expect.objectContaining({ include: { subcontractor: SUMMARY } }));
+  });
+
+  it("returns a cost marked paid the same way", async () => {
+    prisma.subcontractorCost.findFirst.mockResolvedValue({ id: "cost-1", subcontractorId: "sub-1", amount: 100 });
+    await service.markPaid(COMPANY_A, ACTOR, "cost-1");
+    expect(prisma.subcontractorCost.update).toHaveBeenCalledWith(expect.objectContaining({ include: { subcontractor: SUMMARY } }));
+  });
+});

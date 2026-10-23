@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { resetStateInEffect } from "@/lib/effect-reset";
+import { Alert } from "@/components/ui/alert";
 
 interface SimilarItem {
   id: string;
@@ -46,7 +47,7 @@ export function SimilarItemsHint({ type, projectId, text }: { type: "rfi" | "pun
 
   if (items.length === 0) return null;
   return (
-    <div role="status" className="rounded-lg border border-warning-200 bg-warning-50 px-3 py-2 text-xs text-warning-700 dark:border-warning-500/30 dark:bg-warning-500/15 dark:text-warning-500">
+    <Alert tone="warning" size="sm" role="status">
       <p className="font-medium">{t(type === "rfi" ? "titleRfi" : "titlePunch")}</p>
       <ul className="mt-1 flex flex-col gap-0.5">
         {items.map((item) => (
@@ -54,10 +55,10 @@ export function SimilarItemsHint({ type, projectId, text }: { type: "rfi" | "pun
             <Link href={item.link} className="underline underline-offset-2 hover:no-underline" target="_blank">
               {item.title}
             </Link>
-            {item.subtitle && <span className="text-warning-600 dark:text-warning-500/80"> · {item.subtitle}</span>}
+            {item.subtitle && <span className="text-warning-fg"> · {item.subtitle}</span>}
           </li>
         ))}
       </ul>
-    </div>
+    </Alert>
   );
 }

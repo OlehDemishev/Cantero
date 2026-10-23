@@ -1,0 +1,170 @@
+"use client";
+
+import { useState } from "react";
+import { useTranslations } from "next-intl";
+import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Field, FormError } from "@/components/ui/field";
+import { PageHeader } from "@/components/ui/page-header";
+
+interface UnitOfMeasure {
+  id: string;
+  code: string;
+  name: string;
+  baseUnitId: string | null;
+  factorToBase: string | null;
+}
+
+const EMPTY_FORM = { code: "", name: "", baseUnitId: "", factorToBase: "" };
+
+export default function UnitsOfMeasurePage() {
+  const t = useTranslations("unitsOfMeasure");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
+  const tc = useTranslations("common");
+  const tl = useTranslations("labels");
+
+  const { data: units = null, reload: reloadUnits, error: unitsError } = useApi<UnitOfMeasure[]>("/materials/units-of-measure");
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function load() {
+    void reloadUnits();
+  }
+
+  const baseUnits = (units ?? []).filter((u) => u.baseUnitId === null);
+  const unitById = new Map((units ?? []).map((u) => [u.id, u]));
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    try {
+      await apiFetch("/materials/units-of-measure", {
+        method: "POST",
+        body: JSON.stringify({
+          code: form.code,
+          name: form.name,
+          baseUnitId: form.baseUnitId || undefined,
+          factorToBase: form.baseUnitId && form.factorToBase ? Number(form.factorToBase) : undefined,
+        }),
+      });
+      setForm(EMPTY_FORM);
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : tc("error"));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!(await confirm({ message: td("deleteUnit"), tone: "danger", verb: "delete" }))) return;
+    setError(null);
+    try {
+      await apiFetch(`/materials/units-of-measure/${id}`, { method: "DELETE" });
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : tc("error"));
+    }
+  }
+
+  return (
+    <>
+      <PageHeader title={t("title")} description={t("hint")} />
+
+      <form onSubmit={handleSubmit} className="mt-6 flex flex-wrap items-end gap-2">
+        <Field label={t("code")} size="sm">
+          <input
+            required
+            className="input w-28"
+            placeholder="kg"
+            value={form.code}
+            onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
+          />
+        </Field>
+        <Field label={t("name")} size="sm">
+          <input
+            required
+            className="input w-48"
+            placeholder={tl("unitNamePlaceholder")}
+            value={form.name}
+            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+          />
+        </Field>
+        <Field label={t("baseUnit")} size="sm">
+          <select
+            className="input w-auto"
+            value={form.baseUnitId}
+            onChange={(e) => setForm((f) => ({ ...f, baseUnitId: e.target.value }))}
+          >
+            <option value="">{t("baseUnitNone")}</option>
+            {baseUnits.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.code} — {u.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+        {form.baseUnitId && (
+          <Field label={t("factor")} size="sm">
+            <input
+              type="number"
+              step="0.000001"
+              min="0"
+              className="input w-24"
+              value={form.factorToBase}
+              onChange={(e) => setForm((f) => ({ ...f, factorToBase: e.target.value }))}
+            />
+          </Field>
+        )}
+        <button type="submit" disabled={submitting} className="btn-primary">
+          {t("newUnit")}
+        </button>
+      </form>
+      {error && <FormError className="mt-2">{error}</FormError>}
+
+      <div className="mt-6 overflow-x-auto">
+        {!units ? (
+          unitsError ? <ErrorState error={unitsError} onRetry={reloadUnits} compact /> : <Skeleton lines={3} />
+        ) : (
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
+                <th scope="col" className="py-2">{t("code")}</th>
+                <th scope="col">{t("name")}</th>
+                <th scope="col">{t("baseUnit")}</th>
+                <th scope="col">{t("factor")}</th>
+                <th scope="col"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {units.map((u) => (
+                <tr key={u.id} className="border-b border-gray-100 dark:border-gray-700">
+                  <td className="py-2 font-medium">{u.code}</td>
+                  <td>{u.name}</td>
+                  <td className="text-fg-subtle">
+                    {u.baseUnitId ? unitById.get(u.baseUnitId)?.code ?? "—" : t("baseUnitNone")}
+                  </td>
+                  <td className="text-fg-subtle">{u.factorToBase ?? "—"}</td>
+                  <td className="text-right">
+                    <button
+                      onClick={() => handleDelete(u.id)}
+                      className="text-xs text-fg-subtle hover:text-danger-fg"
+                    >
+                      {tc("delete")}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </>
+  );
+}

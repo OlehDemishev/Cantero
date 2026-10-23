@@ -1,6 +1,7 @@
 import { fetchDatasetRows, fieldsFor, type DatasetDeps } from "./report-datasets";
 
 const COMPANY_A = "company-a";
+const VIEWER = { userId: "user-1", role: "accountant" };
 
 function makeDeps(overrides: Partial<DatasetDeps> = {}): DatasetDeps {
   return {
@@ -16,6 +17,9 @@ function makeDeps(overrides: Partial<DatasetDeps> = {}): DatasetDeps {
     laborCost: {
       report: jest.fn(),
     } as never,
+    projectAccess: {
+      visibleWhere: jest.fn().mockResolvedValue({}),
+    } as never,
     ...overrides,
   };
 }
@@ -25,7 +29,7 @@ describe("fetchDatasetRows — aggregate datasets", () => {
     const deps = makeDeps();
     (deps.reports.revenueTrend as jest.Mock).mockResolvedValue([{ month: "2026-01", revenue: 1000 }]);
 
-    const rows = await fetchDatasetRows(deps, COMPANY_A, "revenue_by_month", {});
+    const rows = await fetchDatasetRows(deps, COMPANY_A, "revenue_by_month", {}, VIEWER);
 
     expect(rows).toEqual([{ month: "2026-01", revenue: 1000 }]);
     expect(deps.reports.revenueTrend).toHaveBeenCalledWith(COMPANY_A);
@@ -35,9 +39,10 @@ describe("fetchDatasetRows — aggregate datasets", () => {
     const deps = makeDeps();
     (deps.reports.projectMargins as jest.Mock).mockResolvedValue([{ projectName: "Riverside", margin: 500 }]);
 
-    const rows = await fetchDatasetRows(deps, COMPANY_A, "project_margins", {});
+    const rows = await fetchDatasetRows(deps, COMPANY_A, "project_margins", {}, VIEWER);
 
     expect(rows).toEqual([{ projectName: "Riverside", margin: 500 }]);
+    expect(deps.reports.projectMargins).toHaveBeenCalledWith(COMPANY_A, VIEWER);
   });
 
   it("delegates labor_utilization to LaborCostService.report's byWorker breakdown", async () => {
@@ -50,7 +55,7 @@ describe("fetchDatasetRows — aggregate datasets", () => {
       totalUncostedHours: 0,
     });
 
-    const rows = await fetchDatasetRows(deps, COMPANY_A, "labor_utilization", {});
+    const rows = await fetchDatasetRows(deps, COMPANY_A, "labor_utilization", {}, VIEWER);
 
     expect(rows).toEqual([{ workerName: "Jordan Smith", hours: 40, cost: 1200 }]);
   });
@@ -65,9 +70,21 @@ describe("fetchDatasetRows — projects with custom fields", () => {
     (deps.prisma.customFieldDefinition.findMany as jest.Mock).mockResolvedValue([{ id: "field-1", name: "Permit #" }]);
     (deps.prisma.customFieldValue.findMany as jest.Mock).mockResolvedValue([{ fieldId: "field-1", entityId: "proj-1", value: "PMT-42" }]);
 
-    const rows = await fetchDatasetRows(deps, COMPANY_A, "projects", {});
+    const rows = await fetchDatasetRows(deps, COMPANY_A, "projects", {}, VIEWER);
 
     expect(rows[0]["custom_field-1"]).toBe("PMT-42");
+  });
+});
+
+describe("fetchDatasetRows — restricted projects", () => {
+  it("drops projects the viewer can't see from the projects dataset", async () => {
+    const deps = makeDeps();
+    (deps.projectAccess.visibleWhere as jest.Mock).mockResolvedValue({ id: { notIn: ["restricted-1"] } });
+
+    await fetchDatasetRows(deps, COMPANY_A, "projects", {}, VIEWER);
+
+    expect(deps.projectAccess.visibleWhere).toHaveBeenCalledWith(COMPANY_A, "Project", "user-1", "accountant");
+    expect((deps.prisma.project.findMany as jest.Mock).mock.calls[0][0].where.AND).toContainEqual({ id: { notIn: ["restricted-1"] } });
   });
 });
 
@@ -86,5 +103,7 @@ describe("fieldsFor", () => {
     const fields = await fieldsFor(deps.prisma as never, COMPANY_A, "projects");
 
     expect(fields.find((f) => f.key === "custom_field-1")).toEqual({ key: "custom_field-1", label: "Permit #" });
+    // built-in columns carry a translation key; a custom field's own name is never translated
+    expect(fields.find((f) => f.key === "name")).toEqual({ key: "name", label: "Name", labelKey: "name" });
   });
 });

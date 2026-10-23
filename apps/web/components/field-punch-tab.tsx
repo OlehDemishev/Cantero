@@ -6,6 +6,8 @@ import { submitOrQueue } from "@/lib/offline-queue";
 import { fetchCached, updateCache } from "@/lib/offline-cache";
 import { CachedNote } from "@/components/field-cached-note";
 import { FieldMessage, type FieldMessageType } from "@/components/field-message";
+import { Badge } from "@/components/ui/badge";
+import { Field } from "@/components/ui/field";
 
 interface PunchListItem {
   id: string;
@@ -85,24 +87,22 @@ export function PunchTab({ projectId }: { projectId: string }) {
     <div className="flex flex-col gap-4">
       <CachedNote cachedAt={cachedAt} />
       <form onSubmit={submit} className="card flex flex-col gap-3">
-        <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium text-gray-700 dark:text-gray-200">{tp("itemTitle")}</span>
+        <Field label={tp("itemTitle")}>
           <input
             required
             className="input"
             value={form.title}
             onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
           />
-        </label>
-        <label className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium text-gray-700 dark:text-gray-200">{tp("location")}</span>
+        </Field>
+        <Field label={tp("location")}>
           <input
             className="input"
             placeholder={tp("locationPlaceholder")}
             value={form.location}
             onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
           />
-        </label>
+        </Field>
         <button type="submit" disabled={busy} className="btn-primary">
           {tp("newItem")}
         </button>
@@ -110,25 +110,25 @@ export function PunchTab({ projectId }: { projectId: string }) {
       </form>
 
       {items === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
       ) : openAndResolved.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tp("noItems")}</p>
+        <p className="text-sm text-fg-subtle">{tp("noItems")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {openAndResolved.map((item) => (
             <li key={item.id} className="card flex items-center justify-between">
               <div>
-                <div className="text-sm font-medium text-gray-900 dark:text-gray-50">{item.title}</div>
-                {item.location && <div className="text-xs text-gray-500 dark:text-gray-400">{item.location}</div>}
+                <div className="text-sm font-medium text-fg">{item.title}</div>
+                {item.location && <div className="text-xs text-fg-subtle">{item.location}</div>}
               </div>
               {item.status === "open" ? (
                 <button onClick={() => resolve(item.id)} className="btn-secondary px-2.5 py-1 text-xs">
                   {tp("markResolved")}
                 </button>
               ) : (
-                <span className="rounded-full bg-warning-50 dark:bg-warning-500/15 px-2.5 py-1 text-xs font-medium text-warning-700 dark:text-warning-500">
+                <Badge tone="warning">
                   {tp("resolved")}
-                </span>
+                </Badge>
               )}
             </li>
           ))}

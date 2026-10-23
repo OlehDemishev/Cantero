@@ -15,7 +15,7 @@ export class SignatureRequestsController {
 
   @Get()
   list(@CurrentUser() user: AuthUser) {
-    return this.service.list(user.companyId);
+    return this.service.list(user.companyId, user);
   }
 
   @Get(":id")

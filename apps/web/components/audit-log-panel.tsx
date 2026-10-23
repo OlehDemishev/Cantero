@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { formatDateTime } from "@/lib/format-date";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Field } from "@/components/ui/field";
 
 interface AuditLogEntry {
   id: string;
@@ -14,9 +17,9 @@ interface AuditLogEntry {
 
 export function AuditLogPanel() {
   const t = useTranslations("settings");
-  const tc = useTranslations("common");
   const AUDIT_PAGE_SIZE = 50;
   const [auditLog, setAuditLog] = useState<AuditLogEntry[] | null>(null);
+  const [auditLogError, setAuditLogError] = useState<Error | null>(null);
   const [auditFilter, setAuditFilter] = useState({ dateFrom: "", dateTo: "", entityType: "", action: "" });
   const [auditExportBusy, setAuditExportBusy] = useState(false);
   const [auditHasMore, setAuditHasMore] = useState(false);
@@ -35,9 +38,10 @@ export function AuditLogPanel() {
 
   function loadAuditLog(filter: typeof auditFilter = auditFilter) {
     apiFetch<AuditLogEntry[]>(`/company/audit-log${auditQueryString(filter)}`).then((page) => {
+      setAuditLogError(null);
       setAuditLog(page);
       setAuditHasMore(page.length === AUDIT_PAGE_SIZE);
-    });
+    }).catch(setAuditLogError);
   }
 
   async function loadMoreAuditLog() {
@@ -69,69 +73,65 @@ export function AuditLogPanel() {
   return (
     <section className="card lg:col-span-2">
       <div className="mb-1 flex items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("auditLog")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("auditLog")}</h2>
         <button onClick={exportAuditLog} disabled={auditExportBusy} className="btn-secondary px-2.5 py-1 text-xs">
           {t("exportCsv")}
         </button>
       </div>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("auditLogHint")}</p>
+      <p className="mb-4 text-xs text-fg-subtle">{t("auditLogHint")}</p>
 
       <div className="mb-4 flex flex-wrap items-end gap-2">
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("auditFilterDateFrom")}
+        <Field label={t("auditFilterDateFrom")} size="sm">
           <input
             type="date"
             className="input"
             value={auditFilter.dateFrom}
             onChange={(e) => setAuditFilter((f) => ({ ...f, dateFrom: e.target.value }))}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("auditFilterDateTo")}
+        </Field>
+        <Field label={t("auditFilterDateTo")} size="sm">
           <input
             type="date"
             className="input"
             value={auditFilter.dateTo}
             onChange={(e) => setAuditFilter((f) => ({ ...f, dateTo: e.target.value }))}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("auditFilterEntityType")}
+        </Field>
+        <Field label={t("auditFilterEntityType")} size="sm">
           <input
             className="input"
             placeholder="Project"
             value={auditFilter.entityType}
             onChange={(e) => setAuditFilter((f) => ({ ...f, entityType: e.target.value }))}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("auditFilterAction")}
+        </Field>
+        <Field label={t("auditFilterAction")} size="sm">
           <input
             className="input"
             placeholder="project.created"
             value={auditFilter.action}
             onChange={(e) => setAuditFilter((f) => ({ ...f, action: e.target.value }))}
           />
-        </label>
+        </Field>
         <button onClick={() => loadAuditLog()} className="btn-secondary px-2.5 py-1.5 text-xs">
           {t("auditFilterApply")}
         </button>
       </div>
 
       {!auditLog ? (
-        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        auditLogError ? <ErrorState error={auditLogError} onRetry={() => loadAuditLog()} compact /> : <Skeleton lines={3} />
       ) : auditLog.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noAuditLog")}</p>
+        <p className="text-sm text-fg-subtle">{t("noAuditLog")}</p>
       ) : (
         <>
           <ul className="flex max-h-96 flex-col gap-2 overflow-y-auto">
             {auditLog.map((entry) => (
               <li key={entry.id} className="flex items-start justify-between border-b border-gray-100 dark:border-gray-700 pb-2 text-sm">
                 <div>
-                  <span className="font-medium text-gray-800 dark:text-gray-100">{entry.actorName}</span>{" "}
+                  <span className="font-medium text-fg">{entry.actorName}</span>{" "}
                   <span className="text-gray-600 dark:text-gray-300">{entry.summary}</span>
                 </div>
-                <span className="shrink-0 pl-3 text-xs text-gray-400 dark:text-gray-500">
+                <span className="shrink-0 pl-3 text-xs text-fg-subtle">
                   {formatDateTime(new Date(entry.createdAt))}
                 </span>
               </li>

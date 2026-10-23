@@ -1,8 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
 
 type ChangeRequestStatus = "submitted" | "under_review" | "converted" | "declined";
 interface ChangeRequest {
@@ -15,18 +20,11 @@ interface ChangeRequest {
   convertedChangeOrder: { id: string; number: number } | null;
 }
 
-const STATUS_STYLES: Record<ChangeRequestStatus, string> = {
-  submitted: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  under_review: "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400",
-  converted: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
-  declined: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
-};
-
 export function ClientChangeRequestsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("clientChangeRequests");
   const tc = useTranslations("common");
 
-  const [requests, setRequests] = useState<ChangeRequest[] | null>(null);
+  const { data: requests = null, reload: reloadRequests, error: requestsError } = useApi<ChangeRequest[]>(`/client-change-requests?projectId=${projectId}`);
   const [convertingId, setConvertingId] = useState<string | null>(null);
   const [changeOrderId, setChangeOrderId] = useState("");
   const [decliningId, setDecliningId] = useState<string | null>(null);
@@ -34,13 +32,8 @@ export function ClientChangeRequestsPanel({ projectId }: { projectId: string }) 
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<ChangeRequest[]>(`/client-change-requests?projectId=${projectId}`).then(setRequests);
+    void reloadRequests();
   }
-
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
 
   if (requests !== null && requests.length === 0) return null;
 
@@ -77,10 +70,10 @@ export function ClientChangeRequestsPanel({ projectId }: { projectId: string }) 
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("title")}</h2>
 
       {requests === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        requestsError ? <ErrorState error={requestsError} onRetry={reloadRequests} compact /> : <Skeleton lines={3} />
       ) : (
         <ul className="flex flex-col gap-2">
           {requests.map((r) => (
@@ -88,13 +81,13 @@ export function ClientChangeRequestsPanel({ projectId }: { projectId: string }) 
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{r.title}</span>
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[r.status]}`}>{t(r.status)}</span>
+                    <span className="text-sm font-medium text-fg">{r.title}</span>
+                    <Badge tone={statusTone(r.status)}>{t(r.status)}</Badge>
                   </div>
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t("submittedBy", { name: r.submittedByClient.name })}</p>
-                  <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">{r.description}</p>
-                  {r.convertedChangeOrder && <p className="mt-1.5 text-xs text-success-700 dark:text-success-500">{t("linkedTo", { number: r.convertedChangeOrder.number })}</p>}
-                  {r.status === "declined" && r.reviewNote && <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">{t("declineReason", { note: r.reviewNote })}</p>}
+                  <p className="mt-1 text-xs text-fg-subtle">{t("submittedBy", { name: r.submittedByClient.name })}</p>
+                  <p className="mt-1.5 text-xs text-fg-subtle">{r.description}</p>
+                  {r.convertedChangeOrder && <p className="mt-1.5 text-xs text-success-fg">{t("linkedTo", { number: r.convertedChangeOrder.number })}</p>}
+                  {r.status === "declined" && r.reviewNote && <p className="mt-1.5 text-xs text-fg-subtle">{t("declineReason", { note: r.reviewNote })}</p>}
                 </div>
               </div>
 
@@ -111,7 +104,7 @@ export function ClientChangeRequestsPanel({ projectId }: { projectId: string }) 
                   {convertingId === r.id ? (
                     <div className="flex items-end gap-2">
                       <label className="flex flex-1 flex-col gap-1 text-xs">
-                        <span className="font-medium text-gray-700 dark:text-gray-200">{t("changeOrderId")}</span>
+                        <span className="font-medium text-fg-muted">{t("changeOrderId")}</span>
                         <input required className="input py-1 text-xs" value={changeOrderId} onChange={(e) => setChangeOrderId(e.target.value)} />
                       </label>
                       <button onClick={() => convert(r.id)} disabled={busy || !changeOrderId} className="btn-primary px-2.5 py-1 text-xs">
@@ -124,7 +117,7 @@ export function ClientChangeRequestsPanel({ projectId }: { projectId: string }) 
                   ) : decliningId === r.id ? (
                     <div className="flex items-end gap-2">
                       <label className="flex flex-1 flex-col gap-1 text-xs">
-                        <span className="font-medium text-gray-700 dark:text-gray-200">{t("declineNoteLabel")}</span>
+                        <span className="font-medium text-fg-muted">{t("declineNoteLabel")}</span>
                         <input required className="input py-1 text-xs" value={declineNote} onChange={(e) => setDeclineNote(e.target.value)} />
                       </label>
                       <button onClick={() => decline(r.id)} disabled={busy || !declineNote} className="btn-primary px-2.5 py-1 text-xs">

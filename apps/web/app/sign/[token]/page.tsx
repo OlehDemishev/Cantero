@@ -2,12 +2,18 @@
 
 import { use, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, ApiError } from "@/lib/api-client";
+import { apiFetch } from "@/lib/api-client";
+import { PublicLinkError } from "@/components/public-link-error";
+import { useCompanyLocale } from "@/components/public-locale";
 import { SignaturePad } from "@/components/signature-pad";
 import { formatDate } from "@/lib/format-date";
+import { Alert } from "@/components/ui/alert";
+import { FormError } from "@/components/ui/field";
 
 type SignatureRequestStatus = "draft" | "sent" | "completed" | "voided";
 interface PublicSignatureRequest {
+  /** The client's or company's language — see useCompanyLocale. */
+  locale: string;
   title: string;
   documentName: string;
   companyName: string;
@@ -24,7 +30,8 @@ export default function PublicSignPage({ params }: { params: Promise<{ token: st
   const tc = useTranslations("common");
 
   const [request, setRequest] = useState<PublicSignatureRequest | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
+  useCompanyLocale(request?.locale);
   const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
   const [signatureError, setSignatureError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -32,7 +39,7 @@ export default function PublicSignPage({ params }: { params: Promise<{ token: st
   function load() {
     apiFetch<PublicSignatureRequest>(`/public/signature-requests/${token}`)
       .then(setRequest)
-      .catch((err) => setError(err instanceof ApiError ? err.message : t("linkNotFound")));
+      .catch(setError);
   }
 
   useEffect(load, [token]);
@@ -60,18 +67,12 @@ export default function PublicSignPage({ params }: { params: Promise<{ token: st
     }
   }
 
-  if (error) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
-        <p className="text-sm text-gray-500 dark:text-gray-400">{error}</p>
-      </main>
-    );
-  }
+  if (error) return <PublicLinkError error={error} />;
 
   if (!request) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
-        <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        <p className="text-sm text-fg-subtle">{tc("loading")}</p>
       </main>
     );
   }
@@ -81,16 +82,16 @@ export default function PublicSignPage({ params }: { params: Promise<{ token: st
       <div className="w-full max-w-2xl">
         <div className="mb-6 flex items-center gap-2">
           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500 text-sm font-semibold text-white">C</span>
-          <span className="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-50">{request.companyName}</span>
+          <span className="text-lg font-semibold tracking-tight text-fg">{request.companyName}</span>
         </div>
 
         <div className="card">
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">{request.title}</h1>
+          <h1 className="text-xl font-semibold text-fg">{request.title}</h1>
           <button onClick={viewDocument} className="btn-secondary mt-3 px-3 py-1 text-xs">
             {t("viewDocument", { name: request.documentName })}
           </button>
 
-          <ul className="mt-4 flex flex-col gap-1 border-t border-gray-100 dark:border-gray-700 pt-3 text-xs text-gray-500 dark:text-gray-400">
+          <ul className="mt-4 flex flex-col gap-1 border-t border-gray-100 dark:border-gray-700 pt-3 text-xs text-fg-subtle">
             {request.signers
               .slice()
               .sort((a, b) => a.order - b.order)
@@ -99,18 +100,18 @@ export default function PublicSignPage({ params }: { params: Promise<{ token: st
                   <span>{s.order}.</span>
                   <span>{s.name}</span>
                   {s.signedAt ? (
-                    <span className="text-success-700 dark:text-success-500">{t("signedOn", { date: formatDate(new Date(s.signedAt)) })}</span>
+                    <span className="text-success-fg">{t("signedOn", { date: formatDate(new Date(s.signedAt)) })}</span>
                   ) : (
-                    <span className="text-gray-400 dark:text-gray-500">{t("notSigned")}</span>
+                    <span className="text-fg-subtle">{t("notSigned")}</span>
                   )}
                 </li>
               ))}
           </ul>
 
           {request.signedAt ? (
-            <div className="mt-6 rounded-lg border-t border-success-200 bg-success-50 dark:bg-success-500/15 px-4 py-3 text-sm text-success-700 dark:text-success-500">
+            <Alert tone="success" className="mt-6">
               {t("signedThanks")}
-            </div>
+            </Alert>
           ) : request.status !== "sent" ? (
             <div className="mt-6 rounded-lg border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{t("notAwaitingSignature")}</div>
           ) : !request.isYourTurn ? (
@@ -118,10 +119,10 @@ export default function PublicSignPage({ params }: { params: Promise<{ token: st
           ) : (
             <div className="mt-6 border-t border-gray-100 dark:border-gray-700 pt-4">
               <div className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700 dark:text-gray-200">{t("signHere")}</span>
+                <span className="font-medium text-fg-muted">{t("signHere")}</span>
                 <SignaturePad onChange={setSignatureDataUrl} clearLabel={t("clearSignature")} />
               </div>
-              {signatureError && <p className="mt-2 text-xs text-error-600">{signatureError}</p>}
+              {signatureError && <FormError className="mt-2">{signatureError}</FormError>}
               <button onClick={sign} disabled={busy} className="btn-primary mt-3 w-full">
                 {t("submitSignature")}
               </button>

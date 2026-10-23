@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { formatCurrency } from "@/lib/format-currency";
+import { Field } from "@/components/ui/field";
 
 interface RevisionSummary {
   id: string;
@@ -50,28 +52,26 @@ export function RevisionDiffPanel({ estimateId, revisions, currency }: { estimat
 
   return (
     <div className="mt-6 border-t border-gray-100 dark:border-gray-700 pt-4">
-      <h3 className="mb-2 text-xs font-semibold text-gray-500 dark:text-gray-400">{t("compareRevisions")}</h3>
+      <h3 className="mb-2 text-xs font-semibold text-fg-subtle">{t("compareRevisions")}</h3>
       <div className="flex flex-wrap items-end gap-2">
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("from")}
-          <select className="input mt-1" value={fromId} onChange={(e) => setFromId(e.target.value)}>
+        <Field label={t("from")} size="sm">
+          <select className="input" value={fromId} onChange={(e) => setFromId(e.target.value)}>
             {revisions.map((r) => (
               <option key={r.id} value={r.id}>
                 {t("version")} {r.versionNumber}
               </option>
             ))}
           </select>
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("to")}
-          <select className="input mt-1" value={toId} onChange={(e) => setToId(e.target.value)}>
+        </Field>
+        <Field label={t("to")} size="sm">
+          <select className="input" value={toId} onChange={(e) => setToId(e.target.value)}>
             {revisions.map((r) => (
               <option key={r.id} value={r.id}>
                 {t("version")} {r.versionNumber}
               </option>
             ))}
           </select>
-        </label>
+        </Field>
         <button onClick={compare} disabled={busy || fromId === toId} className="btn-secondary px-3 py-1 text-xs">
           {t("compare")}
         </button>
@@ -79,26 +79,26 @@ export function RevisionDiffPanel({ estimateId, revisions, currency }: { estimat
 
       {diff && (
         <div className="mt-3">
-          <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
+          <p className="mb-2 text-xs text-fg-subtle">
             {t("grandTotalDelta")}: {diff.grandTotalDelta >= 0 ? "+" : ""}
-            {diff.grandTotalDelta.toFixed(2)} {currency}
+            {formatCurrency(diff.grandTotalDelta, currency)}
           </p>
           {diff.added.length === 0 && diff.removed.length === 0 && diff.changed.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500">{t("noDifferences")}</p>
+            <p className="text-sm text-fg-subtle">{t("noDifferences")}</p>
           ) : (
             <ul className="flex flex-col gap-1 text-sm">
               {diff.added.map((l) => (
-                <li key={`add-${l.rateCatalogItemCode}`} className="text-success-700 dark:text-success-500">
+                <li key={`add-${l.rateCatalogItemCode}`} className="text-success-fg">
                   + {l.rateCatalogItemName} ({l.quantity} {l.unit})
                 </li>
               ))}
               {diff.removed.map((l) => (
-                <li key={`rem-${l.rateCatalogItemCode}`} className="text-error-700 dark:text-error-500">
+                <li key={`rem-${l.rateCatalogItemCode}`} className="text-danger-fg">
                   − {l.rateCatalogItemName} ({l.quantity} {l.unit})
                 </li>
               ))}
               {diff.changed.map((l) => (
-                <li key={`chg-${l.rateCatalogItemCode}`} className="text-amber-700">
+                <li key={`chg-${l.rateCatalogItemCode}`} className="text-warning-fg">
                   {l.rateCatalogItemName}: {l.previousQuantity} → {l.quantity} {l.unit}
                 </li>
               ))}

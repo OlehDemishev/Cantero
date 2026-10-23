@@ -1,4 +1,4 @@
-import { LOCALE_TAGS } from "./locale-tags";
+import { resolveLocaleTag } from "./locale-tags";
 
 /**
  * Locale-aware date formatting via Intl.DateTimeFormat — the date equivalent of formatCurrency,
@@ -11,10 +11,7 @@ import { LOCALE_TAGS } from "./locale-tags";
  * (see i18n/request.ts) when no explicit locale is passed — every locale switch in this app does
  * a full page reload, so this is always in sync and works from any component, hook, or plain
  * helper function without threading a locale prop everywhere. */
-function resolveTag(locale?: string): string {
-  const code = locale || (typeof document !== "undefined" ? document.documentElement.lang : "") || "en";
-  return LOCALE_TAGS[code] || "en-US";
-}
+const resolveTag = resolveLocaleTag;
 
 export function formatDate(value: string | Date | null | undefined, locale?: string): string {
   if (!value) return "—";

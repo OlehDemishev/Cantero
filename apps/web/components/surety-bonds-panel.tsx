@@ -1,11 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { SURETY_BOND_TYPES, type SuretyBondStatus, type SuretyBondType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
+import { Field } from "@/components/ui/field";
 
 interface SuretyBond {
   id: string;
@@ -18,27 +25,21 @@ interface SuretyBond {
   status: SuretyBondStatus;
 }
 
-const STATUS_STYLES: Record<SuretyBondStatus, string> = {
-  active: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
-  released: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  expired: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
-};
-
 export function SuretyBondsPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("suretyBonds");
   const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
-  const [bonds, setBonds] = useState<SuretyBond[] | null>(null);
+  const { data: bonds = null, reload: reloadBonds, error: bondsError } = useApi<SuretyBond[]>(`/surety-bonds?projectId=${projectId}`);
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ type: "performance" as SuretyBondType, suretyName: "", bondNumber: "", penalSum: "", issueDate: "", expiryDate: "" });
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<SuretyBond[]>(`/surety-bonds?projectId=${projectId}`).then(setBonds);
+    void reloadBonds();
   }
-  useEffect(load, [projectId]);
 
   async function createBond(e: React.FormEvent) {
     e.preventDefault();
@@ -78,18 +79,18 @@ export function SuretyBondsPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("title")}</h2>
         {!adding && (
           <button onClick={() => setAdding(true)} className="btn-secondary px-2.5 py-1 text-xs">
             {t("addBond")}
           </button>
         )}
       </div>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
 
       {adding && (
         <form onSubmit={createBond} className="card mb-3 flex flex-wrap items-end gap-2">
-          <select className="input" value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as SuretyBondType }))}>
+          <select aria-label={ta("type")} className="input" value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as SuretyBondType }))}>
             {SURETY_BOND_TYPES.map((type) => (
               <option key={type} value={type}>
                 {t(`type_${type}`)}
@@ -98,13 +99,13 @@ export function SuretyBondsPanel({ projectId }: { projectId: string }) {
           </select>
           <input
             required
-            placeholder={t("suretyNamePlaceholder")}
+            placeholder={t("suretyNamePlaceholder")} aria-label={t("suretyNamePlaceholder")}
             className="input"
             value={form.suretyName}
             onChange={(e) => setForm((f) => ({ ...f, suretyName: e.target.value }))}
           />
           <input
-            placeholder={t("bondNumberPlaceholder")}
+            placeholder={t("bondNumberPlaceholder")} aria-label={t("bondNumberPlaceholder")}
             className="input"
             value={form.bondNumber}
             onChange={(e) => setForm((f) => ({ ...f, bondNumber: e.target.value }))}
@@ -114,13 +115,12 @@ export function SuretyBondsPanel({ projectId }: { projectId: string }) {
             type="number"
             step="0.01"
             min="0"
-            placeholder={t("penalSumPlaceholder", { currency })}
+            placeholder={t("penalSumPlaceholder", { currency })} aria-label={t("penalSumPlaceholder", { currency })}
             className="input w-40"
             value={form.penalSum}
             onChange={(e) => setForm((f) => ({ ...f, penalSum: e.target.value }))}
           />
-          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-            {t("issueDate")}
+          <Field label={t("issueDate")} size="sm">
             <input
               required
               type="date"
@@ -128,16 +128,15 @@ export function SuretyBondsPanel({ projectId }: { projectId: string }) {
               value={form.issueDate}
               onChange={(e) => setForm((f) => ({ ...f, issueDate: e.target.value }))}
             />
-          </label>
-          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-            {t("expiryDate")}
+          </Field>
+          <Field label={t("expiryDate")} size="sm">
             <input
               type="date"
               className="input"
               value={form.expiryDate}
               onChange={(e) => setForm((f) => ({ ...f, expiryDate: e.target.value }))}
             />
-          </label>
+          </Field>
           <button type="submit" disabled={busy} className="btn-primary">
             {tc("save")}
           </button>
@@ -148,9 +147,9 @@ export function SuretyBondsPanel({ projectId }: { projectId: string }) {
       )}
 
       {!bonds ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        bondsError ? <ErrorState error={bondsError} onRetry={reloadBonds} compact /> : <Skeleton lines={3} />
       ) : bonds.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noBonds")}</p>
+        <p className="text-sm text-fg-subtle">{t("noBonds")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {bonds.map((bond) => (
@@ -158,12 +157,12 @@ export function SuretyBondsPanel({ projectId }: { projectId: string }) {
               <div className="flex items-center justify-between">
                 <div className="font-medium">
                   {t(`type_${bond.type}`)} · {bond.suretyName}
-                  {bond.bondNumber && <span className="ml-1 text-xs text-gray-400 dark:text-gray-500">({bond.bondNumber})</span>}
+                  {bond.bondNumber && <span className="ml-1 text-xs text-fg-subtle">({bond.bondNumber})</span>}
                 </div>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[bond.status]}`}>{t(`status_${bond.status}`)}</span>
+                <Badge tone={statusTone(bond.status, "suretyBond")}>{t(`status_${bond.status}`)}</Badge>
               </div>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                {t("penalSum")}: {bond.penalSum} {currency} · {t("issueDate")}: {formatDate(new Date(bond.issueDate))}
+              <p className="mt-1 text-xs text-fg-subtle">
+                {t("penalSum")}: {formatCurrency(bond.penalSum, currency)} · {t("issueDate")}: {formatDate(new Date(bond.issueDate))}
                 {bond.expiryDate && ` · ${t("expiryDate")}: ${formatDate(new Date(bond.expiryDate))}`}
               </p>
               {bond.status === "active" && (

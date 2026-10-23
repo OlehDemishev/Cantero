@@ -3,6 +3,7 @@ import type { CreateCustomReportInput, ReportDataset, ReportDefinitionInput } fr
 import { PrismaService } from "../common/prisma/prisma.service";
 import { toCsv } from "../common/csv";
 import { LaborCostService } from "../team/labor-cost.service";
+import { ProjectAccessService, type ProjectViewer } from "../common/project-access/project-access.service";
 import { fetchDatasetRows, fieldsFor, type ReportField } from "./report-datasets";
 import { ReportsService } from "./reports.service";
 
@@ -17,6 +18,7 @@ export class CustomReportsService {
     private readonly prisma: PrismaService,
     private readonly reports: ReportsService,
     private readonly laborCost: LaborCostService,
+    private readonly projectAccess: ProjectAccessService,
   ) {}
 
   fieldsFor(companyId: string, dataset: ReportDataset) {
@@ -54,11 +56,13 @@ export class CustomReportsService {
   }
 
   /** Ad-hoc preview: runs a definition without persisting it, for the builder UI's live results. */
-  async preview(companyId: string, definition: ReportDefinitionInput): Promise<ReportRunResult> {
-    return this.execute(companyId, definition);
+  async preview(companyId: string, definition: ReportDefinitionInput, viewer: ProjectViewer): Promise<ReportRunResult> {
+    return this.execute(companyId, definition, viewer);
   }
 
-  async run(companyId: string, id: string): Promise<ReportRunResult> {
+  /** Runs a saved report for whoever is looking at it: `viewer` (not the report's author) decides
+   * which restricted projects' rows are in it, so sharing a report never shares access. */
+  async run(companyId: string, id: string, viewer: ProjectViewer): Promise<ReportRunResult> {
     const report = await this.prisma.customReport.findFirst({ where: { id, companyId } });
     if (!report) throw new NotFoundException("Report not found");
     return this.execute(companyId, {
@@ -67,23 +71,23 @@ export class CustomReportsService {
       dateFrom: report.dateFrom?.toISOString(),
       dateTo: report.dateTo?.toISOString(),
       statusEquals: report.statusEquals ?? undefined,
-    });
+    }, viewer);
   }
 
-  async exportCsv(companyId: string, id: string): Promise<string> {
-    const { columns, rows } = await this.run(companyId, id);
+  async exportCsv(companyId: string, id: string, viewer: ProjectViewer): Promise<string> {
+    const { columns, rows } = await this.run(companyId, id, viewer);
     return toCsv(
       columns.map((c) => c.label),
       rows.map((row) => columns.map((c) => formatCell(row[c.key]))),
     );
   }
 
-  private async execute(companyId: string, definition: ReportDefinitionInput): Promise<ReportRunResult> {
+  private async execute(companyId: string, definition: ReportDefinitionInput, viewer: ProjectViewer): Promise<ReportRunResult> {
     const allFields = await fieldsFor(this.prisma, companyId, definition.dataset);
     const columns = allFields.filter((f) => definition.columns.includes(f.key));
 
     const allRows = await fetchDatasetRows(
-      { prisma: this.prisma, reports: this.reports, laborCost: this.laborCost },
+      { prisma: this.prisma, reports: this.reports, laborCost: this.laborCost, projectAccess: this.projectAccess },
       companyId,
       definition.dataset,
       {
@@ -91,6 +95,7 @@ export class CustomReportsService {
         dateTo: definition.dateTo ? new Date(definition.dateTo) : undefined,
         statusEquals: definition.statusEquals,
       },
+      viewer,
     );
 
     const rows = allRows.map((row) => {

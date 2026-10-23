@@ -1,0 +1,197 @@
+"use client";
+
+import { useState } from "react";
+import { useTranslations } from "next-intl";
+import Link from "next/link";
+import { EmptyState } from "@/components/ui/empty-state";
+import { CloseIcon, ServiceContractsIcon } from "@/components/nav-icons";
+import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { formatDate } from "@/lib/format-date";
+import { PageHeader } from "@/components/ui/page-header";
+import { Field } from "@/components/ui/field";
+
+interface Project {
+  id: string;
+  name: string;
+}
+interface Client {
+  id: string;
+  name: string;
+}
+interface ServiceContract {
+  id: string;
+  title: string;
+  frequencyMonths: number;
+  nextVisitDate: string;
+  active: boolean;
+  project: Project;
+  client: Client;
+}
+
+export default function ServiceContractsPage() {
+  const t = useTranslations("serviceContracts");
+  const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
+
+  const { data: contracts = null, reload: reloadContracts, error: contractsError } = useApi<ServiceContract[]>("/service-contracts");
+  const { data: projects = [] } = useApi<Project[]>("/projects");
+  const { data: clients = [] } = useApi<Client[]>("/clients");
+  const [form, setForm] = useState({ projectId: "", clientId: "", title: "", frequencyMonths: "3", startDate: "" });
+  const [submitting, setSubmitting] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+
+  function load() {
+    void reloadContracts();
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await apiFetch("/service-contracts", {
+        method: "POST",
+        body: JSON.stringify({
+          projectId: form.projectId,
+          clientId: form.clientId,
+          title: form.title,
+          frequencyMonths: Number(form.frequencyMonths),
+          startDate: new Date(form.startDate).toISOString(),
+        }),
+      });
+      setForm({ projectId: "", clientId: "", title: "", frequencyMonths: "3", startDate: "" });
+      setShowCreateForm(false);
+      load();
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <>
+      <PageHeader
+        title={t("title")}
+        actions={!showCreateForm && (
+          <button type="button" onClick={() => setShowCreateForm(true)} className="btn-primary">
+            {t("newContract")}
+          </button>
+        )}
+      />
+
+      {showCreateForm && (
+        <div className="mt-6 card max-w-md">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-fg-muted">{t("newContract")}</h2>
+            <button
+              type="button"
+              onClick={() => setShowCreateForm(false)}
+              aria-label={tc("cancel")}
+              className="text-fg-subtle hover:text-gray-600 dark:hover:text-gray-300"
+            >
+              <CloseIcon className="size-4" />
+            </button>
+          </div>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+            <input
+              required
+              autoFocus
+              placeholder={tc("name")} aria-label={tc("name")}
+              className="input"
+              value={form.title}
+              onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+            />
+            <select aria-label={ta("project")}
+              required
+              className="input"
+              value={form.projectId}
+              onChange={(e) => setForm((f) => ({ ...f, projectId: e.target.value }))}
+            >
+              <option value="">{t("selectProject")}</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+            <select aria-label={ta("client")}
+              required
+              className="input"
+              value={form.clientId}
+              onChange={(e) => setForm((f) => ({ ...f, clientId: e.target.value }))}
+            >
+              <option value="">{t("selectClient")}</option>
+              {clients.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <Field label={t("frequencyMonths")} size="sm">
+              <input
+                required
+                type="number"
+                min="1"
+                className="input"
+                value={form.frequencyMonths}
+                onChange={(e) => setForm((f) => ({ ...f, frequencyMonths: e.target.value }))}
+              />
+            </Field>
+            <Field label={t("startDate")} size="sm">
+              <input
+                required
+                type="date"
+                className="input"
+                value={form.startDate}
+                onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))}
+              />
+            </Field>
+            <button type="submit" disabled={submitting} className="btn-primary">
+              {tc("create")}
+            </button>
+          </form>
+        </div>
+      )}
+
+      <div className="mt-6">
+        {!contracts ? (
+          contractsError ? <ErrorState error={contractsError} onRetry={reloadContracts} compact /> : <Skeleton lines={3} />
+        ) : contracts.length === 0 ? (
+          <div className="card">
+            <EmptyState
+              icon={ServiceContractsIcon}
+              title={t("emptyTitle")}
+              message={t("empty")}
+              cta={{ label: t("newContract"), onClick: () => setShowCreateForm(true) }}
+            />
+          </div>
+        ) : (
+          <ul className="flex flex-col gap-2">
+              {contracts.map((c) => (
+                <li key={c.id} className="card flex items-center justify-between hover:border-gray-400">
+                  <div>
+                    <a href={`/service-contracts/${c.id}`} className="font-medium hover:underline">
+                      {c.title}
+                    </a>
+                    <span className="ml-2 text-sm text-fg-subtle">
+                      <Link href={`/projects/${c.project.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
+                        {c.project.name}
+                      </Link>{" "}
+                      ·{" "}
+                      <Link href={`/clients/${c.client.id}`} className="text-brand-700 dark:text-brand-400 hover:underline">
+                        {c.client.name}
+                      </Link>
+                    </span>
+                  </div>
+                  <a href={`/service-contracts/${c.id}`} className="text-sm text-fg-subtle hover:underline">
+                    {t("nextVisit")}: {formatDate(new Date(c.nextVisitDate))}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+      </div>
+    </>
+  );
+}

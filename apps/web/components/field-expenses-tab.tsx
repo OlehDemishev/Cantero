@@ -9,6 +9,7 @@ import { fetchCached } from "@/lib/offline-cache";
 import { FieldMessage, type FieldMessageType } from "@/components/field-message";
 import { useCrewChoices } from "@/lib/permissions";
 import { resetStateInEffect } from "@/lib/effect-reset";
+import { Field } from "@/components/ui/field";
 
 interface Worker {
   id: string;
@@ -126,14 +127,13 @@ export function ExpensesTab({ projectId }: { projectId: string }) {
     }
   }
 
-  if (error) return <p className="text-sm text-gray-400 dark:text-gray-500">{t("offline")}</p>;
-  if (workers === null) return <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>;
-  if (choices.length === 0) return <p className="text-sm text-gray-500 dark:text-gray-400">{t(crew ? "noWorkers" : "noOwnWorker")}</p>;
+  if (error) return <p className="text-sm text-fg-subtle">{t("offline")}</p>;
+  if (workers === null) return <p className="text-sm text-fg-subtle">{tc("loading")}</p>;
+  if (choices.length === 0) return <p className="text-sm text-fg-subtle">{t(crew ? "noWorkers" : "noOwnWorker")}</p>;
 
   return (
     <form onSubmit={submit} className="card flex flex-col gap-3">
-      <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-gray-700 dark:text-gray-200">{tt("worker")}</span>
+      <Field label={tt("worker")}>
         <select className="input" value={form.workerId} disabled={!crew} onChange={(e) => setForm((f) => ({ ...f, workerId: e.target.value }))}>
           {choices.map((w) => (
             <option key={w.id} value={w.id}>
@@ -141,9 +141,8 @@ export function ExpensesTab({ projectId }: { projectId: string }) {
             </option>
           ))}
         </select>
-      </label>
-      <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-gray-700 dark:text-gray-200">{te("category")}</span>
+      </Field>
+      <Field label={te("category")}>
         <select
           className="input"
           value={form.category}
@@ -155,10 +154,9 @@ export function ExpensesTab({ projectId }: { projectId: string }) {
             </option>
           ))}
         </select>
-      </label>
+      </Field>
       <div className="flex gap-3">
-        <label className="flex flex-1 flex-col gap-1.5 text-sm">
-          <span className="font-medium text-gray-700 dark:text-gray-200">{te("amount")}</span>
+        <Field label={te("amount")} className="flex-1">
           <input
             required
             type="number"
@@ -168,27 +166,25 @@ export function ExpensesTab({ projectId }: { projectId: string }) {
             value={form.amount}
             onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
           />
-        </label>
-        <label className="flex flex-1 flex-col gap-1.5 text-sm">
-          <span className="font-medium text-gray-700 dark:text-gray-200">{te("date")}</span>
+        </Field>
+        <Field label={te("date")} className="flex-1">
           <input
             type="date"
             className="input"
             value={form.incurredAt}
             onChange={(e) => setForm((f) => ({ ...f, incurredAt: e.target.value }))}
           />
-        </label>
+        </Field>
       </div>
-      <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-gray-700 dark:text-gray-200">{te("description")}</span>
+      <Field label={te("description")}>
         <input
           className="input"
           value={form.description}
           onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
         />
-      </label>
+      </Field>
       <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-gray-700 dark:text-gray-200">{te("receipt")}</span>
+        <span className="font-medium text-fg-muted">{te("receipt")}</span>
         <input
           ref={receiptInputRef}
           type="file"
@@ -207,7 +203,7 @@ export function ExpensesTab({ projectId }: { projectId: string }) {
           >
             {tc("chooseFile")}
           </button>
-          {receipt && <span className="text-xs text-gray-500 dark:text-gray-400">{receipt.name}</span>}
+          {receipt && <span className="text-xs text-fg-subtle">{receipt.name}</span>}
         </div>
       </label>
       {receipt && (
@@ -215,7 +211,7 @@ export function ExpensesTab({ projectId }: { projectId: string }) {
           <button type="button" onClick={scanReceipt} disabled={scanning} className="btn-secondary px-3 py-1 text-xs">
             {scanning ? t("scanReceiptScanning") : t("scanReceiptButton")}
           </button>
-          {scanMessage && <span className="text-xs text-gray-500 dark:text-gray-400">{scanMessage}</span>}
+          {scanMessage && <span className="text-xs text-fg-subtle">{scanMessage}</span>}
         </div>
       )}
       <button type="submit" disabled={busy} className="btn-primary mt-1">

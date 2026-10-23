@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, ApiError } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { formatDate } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Field, FormError } from "@/components/ui/field";
 
 interface CompanyHoliday {
   id: string;
@@ -13,17 +16,17 @@ interface CompanyHoliday {
 
 export function CompanyHolidaysPanel({ canManage }: { canManage: boolean }) {
   const t = useTranslations("settings");
+  const confirm = useConfirm();
+  const td = useTranslations("dialog");
   const tc = useTranslations("common");
-  const [holidays, setHolidays] = useState<CompanyHoliday[] | null>(null);
+  const { data: holidays = null, reload: reloadHolidays } = useApi<CompanyHoliday[]>("/company/holidays");
   const [form, setForm] = useState({ date: "", label: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function load() {
-    apiFetch<CompanyHoliday[]>("/company/holidays").then(setHolidays);
+    void reloadHolidays();
   }
-
-  useEffect(load, []);
 
   async function submit() {
     if (!form.date || !form.label.trim()) return;
@@ -44,6 +47,7 @@ export function CompanyHolidaysPanel({ canManage }: { canManage: boolean }) {
   }
 
   async function remove(id: string) {
+    if (!(await confirm({ message: td("deleteHoliday"), tone: "danger", verb: "delete" }))) return;
     setBusy(true);
     try {
       await apiFetch(`/company/holidays/${id}`, { method: "DELETE" });
@@ -55,23 +59,23 @@ export function CompanyHolidaysPanel({ canManage }: { canManage: boolean }) {
 
   return (
     <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
-      <p className="mb-1 text-xs font-medium text-gray-700 dark:text-gray-200">{t("holidays")}</p>
-      <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">{t("holidaysHint")}</p>
+      <p className="mb-1 text-xs font-medium text-fg-muted">{t("holidays")}</p>
+      <p className="mb-2 text-xs text-fg-subtle">{t("holidaysHint")}</p>
 
       {holidays === null ? (
-        <p className="text-xs text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        <p className="text-xs text-fg-subtle">{tc("loading")}</p>
       ) : holidays.length === 0 ? (
-        <p className="text-xs text-gray-400 dark:text-gray-500">{t("noHolidays")}</p>
+        <p className="text-xs text-fg-subtle">{t("noHolidays")}</p>
       ) : (
         <ul className="mb-3 flex flex-col gap-1.5">
           {holidays.map((h) => (
             <li key={h.id} className="flex items-center justify-between rounded-md border border-gray-200 dark:border-gray-700 px-2.5 py-1.5 text-xs">
               <span>
-                <span className="font-medium text-gray-800 dark:text-gray-100">{formatDate(new Date(h.date))}</span>
-                <span className="ml-2 text-gray-500 dark:text-gray-400">{h.label}</span>
+                <span className="font-medium text-fg">{formatDate(new Date(h.date))}</span>
+                <span className="ml-2 text-fg-subtle">{h.label}</span>
               </span>
               {canManage && (
-                <button onClick={() => remove(h.id)} disabled={busy} className="text-gray-400 dark:text-gray-500 hover:text-error-700">
+                <button onClick={() => remove(h.id)} disabled={busy} className="text-fg-subtle hover:text-danger-fg">
                   {tc("delete")}
                 </button>
               )}
@@ -82,30 +86,28 @@ export function CompanyHolidaysPanel({ canManage }: { canManage: boolean }) {
 
       {canManage && (
         <div className="flex items-end gap-2">
-          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-            {t("holidayDate")}
+          <Field label={t("holidayDate")} size="sm">
             <input
               type="date"
               className="input"
               value={form.date}
               onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
             />
-          </label>
-          <label className="flex flex-1 flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-            {t("holidayLabel")}
+          </Field>
+          <Field label={t("holidayLabel")} size="sm" className="flex-1">
             <input
               className="input"
               placeholder={t("holidayLabelPlaceholder")}
               value={form.label}
               onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
             />
-          </label>
+          </Field>
           <button type="button" onClick={submit} disabled={busy} className="btn-secondary px-3 py-1.5 text-xs">
             {t("addHoliday")}
           </button>
         </div>
       )}
-      {error && <p className="mt-1 text-xs text-error-700 dark:text-error-500">{error}</p>}
+      {error && <FormError className="mt-1">{error}</FormError>}
     </div>
   );
 }

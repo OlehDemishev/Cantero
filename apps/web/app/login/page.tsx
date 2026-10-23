@@ -3,12 +3,17 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, ApiError, setToken } from "@/lib/api-client";
+import { beginSsoNonce } from "@/lib/sso-nonce";
+import { useRedirectIfSignedIn } from "@/lib/use-redirect-if-signed-in";
+import { Alert } from "@/components/ui/alert";
+import { Field } from "@/components/ui/field";
 
 type LoginResult = { accessToken: string; companyId: string } | { requires2fa: true; challengeToken: string };
 
 export default function LoginPage() {
   const t = useTranslations("auth");
   const tc = useTranslations("common");
+  useRedirectIfSignedIn();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -54,7 +59,7 @@ export default function LoginPage() {
     try {
       const res = await apiFetch<{ redirectUrl: string }>("/auth/sso/start", {
         method: "POST",
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, nonce: beginSsoNonce() }),
       });
       window.location.href = res.redirectUrl;
     } catch (err) {
@@ -92,18 +97,17 @@ export default function LoginPage() {
           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500 text-sm font-semibold text-white">
             C
           </span>
-          <span className="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-50">Cantero</span>
+          <span className="text-lg font-semibold tracking-tight text-fg">Cantero</span>
         </div>
 
         <div className="card">
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">{t("loginTitle")}</h1>
+          <h1 className="text-xl font-semibold text-fg">{t("loginTitle")}</h1>
 
-          {error && <p className="mt-4 rounded-lg bg-error-50 dark:bg-error-500/15 px-3 py-2 text-sm text-error-700 dark:text-error-500">{error}</p>}
+          {error && <Alert tone="danger" className="mt-4">{error}</Alert>}
 
           {challengeToken ? (
             <form onSubmit={handleVerify2fa} className="mt-6 flex flex-col gap-4">
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700 dark:text-gray-200">{t("twoFactorCode")}</span>
+              <Field label={t("twoFactorCode")}>
                 <input
                   required
                   autoFocus
@@ -112,15 +116,14 @@ export default function LoginPage() {
                   value={twoFactorCode}
                   onChange={(e) => setTwoFactorCode(e.target.value)}
                 />
-              </label>
+              </Field>
               <button type="submit" disabled={submitting} className="btn-primary mt-2">
                 {submitting ? tc("loading") : t("verify")}
               </button>
             </form>
           ) : ssoMode ? (
             <form onSubmit={handleSsoStart} className="mt-6 flex flex-col gap-4">
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700 dark:text-gray-200">{tc("email")}</span>
+              <Field label={tc("email")}>
                 <input
                   required
                   type="email"
@@ -128,15 +131,14 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
-              </label>
+              </Field>
               <button type="submit" disabled={submitting} className="btn-primary mt-2">
                 {submitting ? tc("loading") : t("continueWithSso")}
               </button>
             </form>
           ) : (
             <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700 dark:text-gray-200">{tc("email")}</span>
+              <Field label={tc("email")}>
                 <input
                   required
                   type="email"
@@ -144,9 +146,8 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
-              </label>
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span className="font-medium text-gray-700 dark:text-gray-200">{t("password")}</span>
+              </Field>
+              <Field label={t("password")}>
                 <input
                   required
                   type="password"
@@ -154,8 +155,8 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
-              </label>
-              <a href="/forgot-password" className="self-end text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700">
+              </Field>
+              <a href="/forgot-password" className="self-end text-xs text-fg-subtle hover:text-fg-muted">
                 {t("forgotPassword")}
               </a>
               <button type="submit" disabled={submitting} className="btn-primary mt-2">
@@ -171,7 +172,7 @@ export default function LoginPage() {
                 setSsoMode((v) => !v);
                 setError(null);
               }}
-              className="mt-4 w-full text-center text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700"
+              className="mt-4 w-full text-center text-xs text-fg-subtle hover:text-fg-muted"
             >
               {ssoMode ? t("useSsoPasswordInstead") : t("useSsoInstead")}
             </button>

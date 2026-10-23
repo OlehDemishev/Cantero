@@ -1,9 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format-date";
+import { Field } from "@/components/ui/field";
 
 interface CalibrationRecord {
   id: string;
@@ -17,19 +21,16 @@ type Props = { toolCribItemId: string; equipmentId?: undefined } | { equipmentId
 
 export function CalibrationPanel(props: Props) {
   const t = useTranslations("calibration");
-  const tc = useTranslations("common");
 
-  const [records, setRecords] = useState<CalibrationRecord[] | null>(null);
   const [form, setForm] = useState({ calibratedAt: "", nextDueAt: "", certificateNumber: "", performedBy: "" });
   const [busy, setBusy] = useState(false);
 
   const query = props.toolCribItemId ? `toolCribItemId=${props.toolCribItemId}` : `equipmentId=${props.equipmentId}`;
+  const { data: records = null, reload: reloadRecords, error: recordsError } = useApi<CalibrationRecord[]>(`/calibration-records?${query}`);
 
   function load() {
-    apiFetch<CalibrationRecord[]>(`/calibration-records?${query}`).then(setRecords);
+    void reloadRecords();
   }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(load, [props.toolCribItemId, props.equipmentId]);
 
   async function log(e: React.FormEvent) {
     e.preventDefault();
@@ -59,20 +60,20 @@ export function CalibrationPanel(props: Props) {
 
   return (
     <section className="card">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-3 text-xs text-fg-subtle">{t("hint")}</p>
 
       {!records ? (
-        <p className="mb-3 text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        recordsError ? <ErrorState error={recordsError} onRetry={reloadRecords} compact className="mb-3" /> : <Skeleton className="mb-3" lines={3} />
       ) : records.length === 0 ? (
-        <p className="mb-3 text-sm text-gray-400 dark:text-gray-500">{t("noRecords")}</p>
+        <p className="mb-3 text-sm text-fg-subtle">{t("noRecords")}</p>
       ) : (
         <>
-          <p className={`mb-2 text-xs font-medium ${overdue ? "text-error-700 dark:text-error-500" : "text-success-700 dark:text-success-500"}`}>
+          <p className={`mb-2 text-xs font-medium ${overdue ? "text-danger-fg" : "text-success-fg"}`}>
             {t("nextDue")}: {formatDate(new Date(latest!.nextDueAt))}
             {overdue && ` — ${t("overdue")}`}
           </p>
-          <ul className="mb-3 flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+          <ul className="mb-3 flex flex-col gap-1 text-xs text-fg-subtle">
             {records.map((r) => (
               <li key={r.id}>
                 {formatDate(new Date(r.calibratedAt))} → {t("dueOn")} {formatDate(new Date(r.nextDueAt))}
@@ -85,22 +86,20 @@ export function CalibrationPanel(props: Props) {
       )}
 
       <form onSubmit={log} className="flex flex-wrap items-end gap-2">
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("calibratedAt")}
+        <Field label={t("calibratedAt")} size="sm">
           <input required type="date" className="input" value={form.calibratedAt} onChange={(e) => setForm((f) => ({ ...f, calibratedAt: e.target.value }))} />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("nextDueAt")}
+        </Field>
+        <Field label={t("nextDueAt")} size="sm">
           <input required type="date" className="input" value={form.nextDueAt} onChange={(e) => setForm((f) => ({ ...f, nextDueAt: e.target.value }))} />
-        </label>
+        </Field>
         <input
-          placeholder={t("certificateNumberPlaceholder")}
+          placeholder={t("certificateNumberPlaceholder")} aria-label={t("certificateNumberPlaceholder")}
           className="input w-32"
           value={form.certificateNumber}
           onChange={(e) => setForm((f) => ({ ...f, certificateNumber: e.target.value }))}
         />
         <input
-          placeholder={t("performedByPlaceholder")}
+          placeholder={t("performedByPlaceholder")} aria-label={t("performedByPlaceholder")}
           className="input w-32"
           value={form.performedBy}
           onChange={(e) => setForm((f) => ({ ...f, performedBy: e.target.value }))}

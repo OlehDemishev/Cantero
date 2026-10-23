@@ -1,12 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import type { TMTicketStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/use-me";
 import { formatCurrency } from "@/lib/format-currency";
 import { formatDate } from "@/lib/format-date";
+import { Badge } from "@/components/ui/badge";
+import { statusTone } from "@/lib/status-tone";
+import { Field } from "@/components/ui/field";
 
 interface UnitPriceMeasurement {
   id: string;
@@ -38,23 +44,15 @@ interface TMTicket {
   revisionCount: number;
 }
 
-const TICKET_STATUS_STYLES: Record<TMTicketStatus, string> = {
-  draft: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  submitted: "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300",
-  approved: "bg-success-50 dark:bg-success-500/15 text-success-700 dark:text-success-500",
-  rejected: "bg-error-50 dark:bg-error-500/15 text-error-700 dark:text-error-500",
-  disputed: "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500",
-};
-
 export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
   const t = useTranslations("unitPriceTm");
   const tc = useTranslations("common");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "USD";
-  const money = (amount: number | string) => formatCurrency(amount, currency, me?.company.locale);
+  const money = (amount: number | string) => formatCurrency(amount, currency);
 
-  const [items, setItems] = useState<UnitPriceItem[] | null>(null);
-  const [tickets, setTickets] = useState<TMTicket[] | null>(null);
+  const { data: items = null, reload: reloadItems, error: itemsError } = useApi<UnitPriceItem[]>(`/projects/${projectId}/unit-price-items`);
+  const { data: tickets = null, reload: reloadTickets, error: ticketsError } = useApi<TMTicket[]>(`/projects/${projectId}/tm-tickets`);
   const [creatingItem, setCreatingItem] = useState(false);
   const [itemForm, setItemForm] = useState({ description: "", unit: "", contractUnitPrice: "", estimatedQuantity: "" });
   const [measureForms, setMeasureForms] = useState<Record<string, { measuredQuantity: string; measuredByName: string }>>({});
@@ -70,14 +68,9 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
   const [busy, setBusy] = useState(false);
 
   function load() {
-    apiFetch<UnitPriceItem[]>(`/projects/${projectId}/unit-price-items`).then(setItems);
-    apiFetch<TMTicket[]>(`/projects/${projectId}/tm-tickets`).then(setTickets);
+    void reloadItems();
+    void reloadTickets();
   }
-
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
 
   async function submitItem(e: React.FormEvent) {
     e.preventDefault();
@@ -181,7 +174,7 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
   return (
     <div className="mt-10">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("unitPriceTitle")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("unitPriceTitle")}</h2>
         {!creatingItem && (
           <button onClick={() => setCreatingItem(true)} className="btn-secondary px-3 py-1 text-xs">
             {t("newUnitPriceItem")}
@@ -191,22 +184,19 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
 
       {creatingItem && (
         <form onSubmit={submitItem} className="card mb-4 flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("description")}</span>
+          <Field label={t("description")}>
             <input
               required
               className="input"
               value={itemForm.description}
               onChange={(e) => setItemForm((f) => ({ ...f, description: e.target.value }))}
             />
-          </label>
+          </Field>
           <div className="flex gap-3">
-            <label className="flex w-28 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("unit")}</span>
+            <Field label={t("unit")} className="w-28">
               <input required className="input" value={itemForm.unit} onChange={(e) => setItemForm((f) => ({ ...f, unit: e.target.value }))} />
-            </label>
-            <label className="flex w-40 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("contractUnitPrice")}</span>
+            </Field>
+            <Field label={t("contractUnitPrice")} className="w-40">
               <input
                 required
                 type="number"
@@ -216,9 +206,8 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
                 value={itemForm.contractUnitPrice}
                 onChange={(e) => setItemForm((f) => ({ ...f, contractUnitPrice: e.target.value }))}
               />
-            </label>
-            <label className="flex w-40 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("estimatedQuantity")}</span>
+            </Field>
+            <Field label={t("estimatedQuantity")} className="w-40">
               <input
                 type="number"
                 min="0"
@@ -227,7 +216,7 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
                 value={itemForm.estimatedQuantity}
                 onChange={(e) => setItemForm((f) => ({ ...f, estimatedQuantity: e.target.value }))}
               />
-            </label>
+            </Field>
           </div>
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className="btn-primary">
@@ -241,9 +230,9 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
       )}
 
       {items === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        itemsError ? <ErrorState error={itemsError} onRetry={reloadItems} compact /> : <Skeleton lines={3} />
       ) : items.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noUnitPriceItems")}</p>
+        <p className="text-sm text-fg-subtle">{t("noUnitPriceItems")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {items.map((item) => {
@@ -255,15 +244,15 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
               <li key={item.id} className="card">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{item.description}</span>
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    <span className="text-sm font-medium text-fg">{item.description}</span>
+                    <p className="mt-1 text-xs text-fg-subtle">
                       {t("installedAtPrice", { installed, unit: item.unit, price: money(item.contractUnitPrice) })}
                     </p>
                     {variance !== null && (
-                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t("varianceFromEstimate", { variance, unit: item.unit })}</p>
+                      <p className="mt-1 text-xs text-fg-subtle">{t("varianceFromEstimate", { variance, unit: item.unit })}</p>
                     )}
                   </div>
-                  <span className="shrink-0 text-sm font-semibold tabular-nums text-gray-900 dark:text-gray-50">{money(billed)}</span>
+                  <span className="shrink-0 text-sm font-semibold tabular-nums text-fg">{money(billed)}</span>
                 </div>
 
                 {item.measurements.length > 0 && (
@@ -282,7 +271,7 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
                 {measuringId === item.id ? (
                   <form onSubmit={(e) => submitMeasurement(e, item.id)} className="mt-3 flex items-end gap-2 border-t border-gray-100 dark:border-gray-700 pt-3">
                     <label className="flex w-32 flex-col gap-1 text-xs">
-                      <span className="font-medium text-gray-700 dark:text-gray-200">{t("measuredQuantity")}</span>
+                      <span className="font-medium text-fg-muted">{t("measuredQuantity")}</span>
                       <input
                         required
                         type="number"
@@ -294,7 +283,7 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
                       />
                     </label>
                     <label className="flex flex-1 flex-col gap-1 text-xs">
-                      <span className="font-medium text-gray-700 dark:text-gray-200">{t("measuredByName")}</span>
+                      <span className="font-medium text-fg-muted">{t("measuredByName")}</span>
                       <input
                         required
                         className="input py-1 text-xs"
@@ -323,7 +312,7 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
       )}
 
       <div className="mb-3 mt-8 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("tmTicketsTitle")}</h2>
+        <h2 className="text-sm font-semibold text-fg-muted">{t("tmTicketsTitle")}</h2>
         {!creatingTicket && (
           <button onClick={() => setCreatingTicket(true)} className="btn-secondary px-3 py-1 text-xs">
             {t("newTMTicket")}
@@ -333,8 +322,7 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
 
       {creatingTicket && (
         <form onSubmit={submitTicket} className="card mb-4 flex flex-col gap-3">
-          <label className="flex w-40 flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("workDate")}</span>
+          <Field label={t("workDate")} className="w-40">
             <input
               required
               type="date"
@@ -342,9 +330,8 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
               value={ticketForm.workDate}
               onChange={(e) => setTicketForm((f) => ({ ...f, workDate: e.target.value }))}
             />
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("description")}</span>
+          </Field>
+          <Field label={t("description")}>
             <textarea
               required
               rows={2}
@@ -352,10 +339,9 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
               value={ticketForm.description}
               onChange={(e) => setTicketForm((f) => ({ ...f, description: e.target.value }))}
             />
-          </label>
+          </Field>
           <div className="flex gap-3">
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("laborCost")}</span>
+            <Field label={t("laborCost")} className="flex-1">
               <input
                 type="number"
                 min="0"
@@ -364,9 +350,8 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
                 value={ticketForm.laborCost}
                 onChange={(e) => setTicketForm((f) => ({ ...f, laborCost: e.target.value }))}
               />
-            </label>
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("equipmentCost")}</span>
+            </Field>
+            <Field label={t("equipmentCost")} className="flex-1">
               <input
                 type="number"
                 min="0"
@@ -375,9 +360,8 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
                 value={ticketForm.equipmentCost}
                 onChange={(e) => setTicketForm((f) => ({ ...f, equipmentCost: e.target.value }))}
               />
-            </label>
-            <label className="flex flex-1 flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700 dark:text-gray-200">{t("materialCost")}</span>
+            </Field>
+            <Field label={t("materialCost")} className="flex-1">
               <input
                 type="number"
                 min="0"
@@ -386,7 +370,7 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
                 value={ticketForm.materialCost}
                 onChange={(e) => setTicketForm((f) => ({ ...f, materialCost: e.target.value }))}
               />
-            </label>
+            </Field>
           </div>
           <div className="flex gap-2">
             <button type="submit" disabled={busy} className="btn-primary">
@@ -400,9 +384,9 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
       )}
 
       {tickets === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        ticketsError ? <ErrorState error={ticketsError} onRetry={reloadTickets} compact /> : <Skeleton lines={3} />
       ) : tickets.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noTMTickets")}</p>
+        <p className="text-sm text-fg-subtle">{t("noTMTickets")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {tickets.map((ticket) => {
@@ -412,24 +396,24 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-900 dark:text-gray-50">{t("ticketNumber", { number: ticket.ticketNumber })}</span>
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${TICKET_STATUS_STYLES[ticket.status]}`}>
+                      <span className="text-sm font-medium text-fg">{t("ticketNumber", { number: ticket.ticketNumber })}</span>
+                      <Badge tone={statusTone(ticket.status)}>
                         {t(ticket.status)}
-                      </span>
+                      </Badge>
                     </div>
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{formatDate(new Date(ticket.workDate))}</p>
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{ticket.description}</p>
+                    <p className="mt-1 text-xs text-fg-subtle">{formatDate(new Date(ticket.workDate))}</p>
+                    <p className="mt-1 text-xs text-fg-subtle">{ticket.description}</p>
                     {ticket.ownerSignerName && ticket.signedAt && (
-                      <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                      <p className="mt-1.5 text-xs text-fg-subtle">
                         {t("signedBy", { name: ticket.ownerSignerName, date: formatDate(new Date(ticket.signedAt)) })}
                       </p>
                     )}
                     {ticket.status === "disputed" && ticket.disputeReason && (
-                      <p className="mt-1.5 text-xs text-warning-700 dark:text-warning-500">{t("disputeReasonLabel", { reason: ticket.disputeReason })}</p>
+                      <p className="mt-1.5 text-xs text-warning-fg">{t("disputeReasonLabel", { reason: ticket.disputeReason })}</p>
                     )}
-                    {ticket.revisionCount > 0 && <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{t("revisionCount", { count: ticket.revisionCount })}</p>}
+                    {ticket.revisionCount > 0 && <p className="mt-1 text-xs text-fg-subtle">{t("revisionCount", { count: ticket.revisionCount })}</p>}
                   </div>
-                  <span className="shrink-0 text-sm font-semibold tabular-nums text-gray-900 dark:text-gray-50">{money(total)}</span>
+                  <span className="shrink-0 text-sm font-semibold tabular-nums text-fg">{money(total)}</span>
                 </div>
 
                 {ticket.status === "draft" &&
@@ -437,7 +421,7 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
                     <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 dark:border-gray-700 pt-3">
                       <div className="flex items-end gap-2">
                         <label className="flex flex-1 flex-col gap-1 text-xs">
-                          <span className="font-medium text-gray-700 dark:text-gray-200">{t("ownerSignerName")}</span>
+                          <span className="font-medium text-fg-muted">{t("ownerSignerName")}</span>
                           <input
                             required
                             className="input py-1 text-xs"
@@ -479,7 +463,7 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
                       {disputingId === ticket.id && (
                         <div className="flex items-end gap-2">
                           <label className="flex flex-1 flex-col gap-1 text-xs">
-                            <span className="font-medium text-gray-700 dark:text-gray-200">{t("disputeReasonPlaceholder")}</span>
+                            <span className="font-medium text-fg-muted">{t("disputeReasonPlaceholder")}</span>
                             <input
                               required
                               className="input py-1 text-xs"
@@ -510,7 +494,7 @@ export function UnitPriceTmPanel({ projectId }: { projectId: string }) {
                     <div className="mt-3 flex items-end gap-2 border-t border-gray-100 dark:border-gray-700 pt-3">
                       {(["laborCost", "equipmentCost", "materialCost"] as const).map((field) => (
                         <label key={field} className="flex flex-1 flex-col gap-1 text-xs">
-                          <span className="font-medium text-gray-700 dark:text-gray-200">{t(field)}</span>
+                          <span className="font-medium text-fg-muted">{t(field)}</span>
                           <input
                             type="number"
                             min="0"

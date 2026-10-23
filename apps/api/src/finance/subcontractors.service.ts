@@ -19,9 +19,10 @@ import { SubcontractorPrequalificationService } from "../subcontractor-prequalif
 /// on a job site — assign() blocks on these, complianceStatus() reports on them individually.
 const REQUIRED_DOCUMENT_TYPES: SubcontractorDocumentType[] = ["general_liability_insurance", "workers_comp_insurance"];
 
-/// Every Subcontractor column except taxId — list()/the general reads never return the raw TIN;
-/// only getTaxProfile() (a dedicated, deliberately separate call) does. Kept as an explicit list
-/// rather than Prisma's `omit` so a future field addition doesn't silently leak by default.
+/// Every Subcontractor column except taxId and publicToken — list()/the general reads never return
+/// the raw TIN; only getTaxProfile() (a dedicated, deliberately separate call) does. The public
+/// profile link comes only from publicLink() (manage only; see GLOBAL_OMIT). Kept as an explicit
+/// list rather than Prisma's `omit` so a future field addition doesn't silently leak by default.
 const SUBCONTRACTOR_SELECT_WITHOUT_TAX_ID = {
   id: true,
   companyId: true,
@@ -30,7 +31,6 @@ const SUBCONTRACTOR_SELECT_WITHOUT_TAX_ID = {
   phone: true,
   specialization: true,
   bio: true,
-  publicToken: true,
   publicListed: true,
   licenseNumber: true,
   bondingCapacity: true,
@@ -241,21 +241,37 @@ export class SubcontractorsService {
 
   async updateProfile(companyId: string, id: string, input: UpdateSubcontractorProfileInput) {
     await this.assertOwned(companyId, id);
-    return this.prisma.subcontractor.update({ where: { id }, data: input });
+    return this.prisma.subcontractor.update({ where: { id }, data: input, select: SUBCONTRACTOR_SELECT_WITHOUT_TAX_ID });
   }
 
   /** A shareable reference/portfolio page a GC can hand to a trusted sub to help them win work
    * elsewhere — not a cross-company search directory (a Subcontractor row is still owned by one
    * company), just a public link showing what this company can vouch for. */
   async setPublicListed(companyId: string, id: string, publicListed: boolean) {
-    const subcontractor = await this.assertOwned(companyId, id);
+    const subcontractor = await this.prisma.subcontractor.findFirst({ where: { id, companyId }, select: { publicToken: true } });
+    if (!subcontractor) throw new NotFoundException("Subcontractor not found");
     return this.prisma.subcontractor.update({
       where: { id },
       data: {
         publicListed,
         publicToken: publicListed ? (subcontractor.publicToken ?? randomBytes(16).toString("hex")) : subcontractor.publicToken,
       },
+      select: SUBCONTRACTOR_SELECT_WITHOUT_TAX_ID,
     });
+  }
+
+  /** The public reference page's token, for staff who can publish the page to copy its link —
+   * kept out of every other response (GLOBAL_OMIT). Only while the page is published. */
+  async publicLink(companyId: string, id: string): Promise<{ token: string }> {
+    const subcontractor = await this.prisma.subcontractor.findFirst({
+      where: { id, companyId },
+      select: { publicListed: true, publicToken: true },
+    });
+    if (!subcontractor) throw new NotFoundException("Subcontractor not found");
+    if (!subcontractor.publicListed || !subcontractor.publicToken) {
+      throw new BadRequestException("This subcontractor's public profile isn't published");
+    }
+    return { token: subcontractor.publicToken };
   }
 
   /** Self-reported MBE/WBE/DBE/etc. certifications — see the schema doc comment on
@@ -302,7 +318,7 @@ export class SubcontractorsService {
   async getPublicProfile(token: string) {
     const subcontractor = await this.prisma.subcontractor.findFirst({
       where: { publicToken: token, publicListed: true },
-      include: { company: { select: { name: true } } },
+      include: { company: { select: { name: true, locale: true, currency: true } } },
     });
     if (!subcontractor) throw new NotFoundException("Profile not found");
 
@@ -316,6 +332,8 @@ export class SubcontractorsService {
       specialization: subcontractor.specialization,
       bio: subcontractor.bio,
       referencedBy: subcontractor.company.name,
+      locale: subcontractor.company.locale,
+      currency: subcontractor.company.currency,
       projectsWorked,
       totalPaidOut: Number(paidTotal._sum.amount ?? 0),
     };

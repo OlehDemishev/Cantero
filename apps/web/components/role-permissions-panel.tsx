@@ -4,6 +4,8 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useCan } from "@/lib/permissions";
+import { useMe } from "@/lib/use-me";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface Matrix {
   permissions: { key: string; section: string; sensitive: boolean }[];
@@ -21,8 +23,10 @@ const cellKey = (role: string, permission: string) => `${role}:${permission}`;
  */
 export function RolePermissionsPanel() {
   const t = useTranslations("permissions");
+  const confirm = useConfirm();
   const ts = useTranslations("settings");
   const can = useCan();
+  const { reload: reloadMe } = useMe();
   const allowed = can("settings.roles");
   const [matrix, setMatrix] = useState<Matrix | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
@@ -44,7 +48,7 @@ export function RolePermissionsPanel() {
   if (!allowed || !matrix) return null;
 
   async function toggle(role: string, permission: { key: string; sensitive: boolean }, granted: boolean) {
-    if (granted && permission.sensitive && role === "worker" && !window.confirm(t("confirmSensitive", { role: ts(role) }))) return;
+    if (granted && permission.sensitive && role === "worker" && !(await confirm({ message: t("confirmSensitive", { role: ts(role) }), verb: "continue" }))) return;
     const key = cellKey(role, permission.key);
     const previous = matrix;
     // Flip it at once; the server's answer then settles whether it's still the default.
@@ -53,6 +57,8 @@ export function RolePermissionsPanel() {
     try {
       await apiFetch("/company/permissions", { method: "PATCH", body: JSON.stringify({ role, permission: permission.key, granted }) });
       load();
+      // The change may be to the viewer's own role: refresh what the menu and pages allow them.
+      reloadMe();
     } catch {
       setMatrix(previous);
     } finally {
@@ -61,7 +67,7 @@ export function RolePermissionsPanel() {
   }
 
   async function reset(role?: string) {
-    if (!role && !window.confirm(t("confirmResetAll"))) return;
+    if (!role && !(await confirm({ message: t("confirmResetAll"), tone: "danger", verb: "reset" }))) return;
     await apiFetch("/company/permissions/reset", { method: "POST", body: JSON.stringify(role ? { role } : {}) });
     load();
   }
@@ -71,27 +77,27 @@ export function RolePermissionsPanel() {
   return (
     <section className="card lg:col-span-2" aria-labelledby="role-permissions-title">
       <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="role-permissions-title" className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+        <h2 id="role-permissions-title" className="text-sm font-semibold text-fg-muted">
           {t("title")}
         </h2>
         {changedRoles.size > 0 && (
-          <button onClick={() => reset()} className="text-xs text-gray-500 underline-offset-2 hover:underline dark:text-gray-400">
+          <button onClick={() => reset()} className="text-xs text-fg-subtle underline-offset-2 hover:underline">
             {t("resetAll")}
           </button>
         )}
       </div>
-      <p className="mb-4 max-w-prose text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <p className="mb-4 max-w-prose text-xs text-fg-subtle">{t("hint")}</p>
 
       <div className="overflow-x-auto">
         <table className="w-full min-w-[720px] border-collapse text-sm">
           <thead>
-            <tr className="border-b border-gray-200 text-left text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
-              <th className="py-2 pr-3 font-medium">{t("permission")}</th>
+            <tr className="border-b border-gray-200 text-left text-xs text-fg-subtle dark:border-gray-700">
+              <th scope="col" className="py-2 pr-3 font-medium">{t("permission")}</th>
               {matrix.roles.map(({ role, editable }) => (
-                <th key={role} className="px-2 py-2 text-center font-medium" title={!editable ? (role === "owner" ? t("ownerLocked") : t("adminOwnerOnly")) : undefined}>
+                <th scope="col" key={role} className="px-2 py-2 text-center font-medium" title={!editable ? (role === "owner" ? t("ownerLocked") : t("adminOwnerOnly")) : undefined}>
                   <span className="block">{ts(role)}</span>
                   {editable && changedRoles.has(role) && (
-                    <button onClick={() => reset(role)} className="mt-0.5 text-[11px] font-normal text-brand-600 hover:underline dark:text-brand-400">
+                    <button onClick={() => reset(role)} className="mt-0.5 text-xs font-normal text-brand-600 hover:underline dark:text-brand-400">
                       {t("resetRole", { role: ts(role) })}
                     </button>
                   )}
@@ -103,7 +109,7 @@ export function RolePermissionsPanel() {
             {sections.map(([section, permissions]) => (
               <Fragment key={section}>
                 <tr>
-                  <th colSpan={matrix.roles.length + 1} className="pb-1 pt-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                  <th scope="row" colSpan={matrix.roles.length + 1} className="pb-1 pt-4 text-left text-xs font-semibold uppercase tracking-wide text-fg-subtle">
                     {t(`section_${section}`)}
                   </th>
                 </tr>
@@ -112,8 +118,8 @@ export function RolePermissionsPanel() {
                   return (
                     <tr key={permission.key} className="border-b border-gray-100 dark:border-gray-800">
                       <td className="py-2 pr-3 align-top">
-                        <span className="block font-medium text-gray-800 dark:text-gray-100">{t(`p_${slug}`)}</span>
-                        <span className="block text-xs text-gray-500 dark:text-gray-400">{t(`p_${slug}_hint`)}</span>
+                        <span className="block font-medium text-fg">{t(`p_${slug}`)}</span>
+                        <span className="block text-xs text-fg-subtle">{t(`p_${slug}_hint`)}</span>
                       </td>
                       {matrix.roles.map(({ role, editable }) => {
                         const cell = cells.get(cellKey(role, permission.key));

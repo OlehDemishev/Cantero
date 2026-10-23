@@ -18,11 +18,23 @@ export interface SessionMeta {
 export class SessionsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(userId: string, meta: SessionMeta): Promise<string> {
+  /** `companyId` is the company the access token carrying this session is issued for. */
+  async create(userId: string, companyId: string, meta: SessionMeta): Promise<string> {
     const session = await this.prisma.userSession.create({
-      data: { userId, userAgent: meta.userAgent, ipAddress: meta.ipAddress },
+      data: { userId, companyId, userAgent: meta.userAgent, ipAddress: meta.ipAddress },
     });
     return session.id;
+  }
+
+  /** Signs a person out of one company only — their sessions in other companies stay. Sessions
+   * from before sessions recorded their company can't be told apart, so they go too (they run out
+   * with their token within days anyway). */
+  async revokeAllInCompany(userId: string, companyId: string): Promise<number> {
+    const { count } = await this.prisma.userSession.updateMany({
+      where: { userId, revokedAt: null, OR: [{ companyId }, { companyId: null }] },
+      data: { revokedAt: new Date() },
+    });
+    return count;
   }
 
   async isRevoked(sessionId: string): Promise<boolean> {
@@ -62,6 +74,16 @@ export class SessionsService {
       where: { userId, revokedAt: null },
       orderBy: { lastSeenAt: "desc" },
     });
+  }
+
+  /** "Sign out": ends the session the caller's own token carries, so that token stops working
+   * everywhere it may have been copied to rather than only being forgotten by this browser. Scoped
+   * to the caller, and a no-op for an already revoked session. */
+  async revokeCurrent(userId: string, sessionId: string | undefined): Promise<{ ok: true }> {
+    if (sessionId) {
+      await this.prisma.userSession.updateMany({ where: { id: sessionId, userId, revokedAt: null }, data: { revokedAt: new Date() } });
+    }
+    return { ok: true };
   }
 
   async revoke(userId: string, sessionId: string): Promise<{ ok: true }> {

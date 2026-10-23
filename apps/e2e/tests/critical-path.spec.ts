@@ -26,8 +26,8 @@ test("login → project → estimate → invoice → payment", async ({ page }) 
   await test.step("create a project", async () => {
     await page.goto("/projects");
     await page.getByRole("button", { name: "New project" }).click();
-    const createForm = page.locator("form").filter({ has: page.getByPlaceholder("Name", { exact: true }) });
-    await createForm.getByPlaceholder("Name", { exact: true }).fill(projectName);
+    const createForm = page.locator("form").filter({ has: page.getByLabel("Name", { exact: true }) });
+    await createForm.getByLabel("Name", { exact: true }).fill(projectName);
     // Invoicing requires a client on the project — the seed data's own client covers that.
     await createForm.getByRole("combobox").selectOption({ label: "Nordwind Bau AG" });
     await clickAndWait(page, "POST", "/projects", () => createForm.getByRole("button", { name: "Create", exact: true }).click());
@@ -40,8 +40,9 @@ test("login → project → estimate → invoice → payment", async ({ page }) 
 
   await test.step("create an estimate with one priced line", async () => {
     // Labor rate / markup / tax fields already carry sane defaults — only the name is required.
-    await page.getByPlaceholder("Name", { exact: true }).fill(`${projectName} estimate`);
-    await clickAndWait(page, "POST", "/estimates", () => page.getByRole("button", { name: "Create", exact: true }).click());
+    const estimateForm = page.locator("form").filter({ has: page.getByRole("button", { name: "Create", exact: true }) });
+    await estimateForm.getByLabel("Name", { exact: true }).fill(`${projectName} estimate`);
+    await clickAndWait(page, "POST", "/estimates", () => estimateForm.getByRole("button", { name: "Create", exact: true }).click());
     await page.waitForURL("**/estimates/*");
 
     // The rate-catalog item and quantity both default to a valid selection — just submit.
@@ -68,7 +69,7 @@ test("login → project → estimate → invoice → payment", async ({ page }) 
     // Scoped to this form specifically — the invoice detail page also has an "Add installment"
     // form with its own "Amount" field.
     const paymentForm = page.locator("form").filter({ has: page.getByRole("button", { name: "Record payment" }) });
-    await paymentForm.getByPlaceholder("Amount", { exact: true }).fill(String(total));
+    await paymentForm.getByLabel("Amount", { exact: true }).fill(String(total));
     await clickAndWait(page, "POST", "/payments", () => paymentForm.getByRole("button", { name: "Record payment" }).click());
     await expect(page.locator("span", { hasText: /^Paid$/ })).toBeVisible();
   });

@@ -2,6 +2,7 @@ import { JwtService } from "@nestjs/jwt";
 import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { DocusignService } from "./docusign.service";
 import { encrypted } from "../common/crypto/testing";
+import { signState } from "../common/oauth/oauth";
 
 function jsonResponse(body: unknown, ok = true, status = ok ? 200 : 400) {
   return { ok, status, json: async () => body, arrayBuffer: async () => Buffer.from("pdf-bytes") } as unknown as Response;
@@ -43,11 +44,11 @@ describe("DocusignService", () => {
   describe("getAuthorizeUrl", () => {
     it("throws when DOCUSIGN_CLIENT_ID isn't configured", () => {
       config.get.mockImplementation(() => undefined);
-      expect(() => service.getAuthorizeUrl("company-a")).toThrow(BadRequestException);
+      expect(() => service.getAuthorizeUrl({ companyId: "company-a", userId: "user-a" })).toThrow(BadRequestException);
     });
 
     it("builds an authorize URL on the demo host by default, carrying a signed state", () => {
-      const url = service.getAuthorizeUrl("company-a");
+      const url = service.getAuthorizeUrl({ companyId: "company-a", userId: "user-a" });
       const parsed = new URL(url);
 
       expect(parsed.origin + parsed.pathname).toBe("https://account-d.docusign.com/oauth/auth");
@@ -61,7 +62,7 @@ describe("DocusignService", () => {
 
     it("uses DOCUSIGN_OAUTH_BASE_URL when set, so a real deployment can point at production", () => {
       config.get.mockImplementation((key: string) => (key === "DOCUSIGN_OAUTH_BASE_URL" ? "https://account.docusign.com" : CONFIG_VALUES[key]));
-      const url = service.getAuthorizeUrl("company-a");
+      const url = service.getAuthorizeUrl({ companyId: "company-a", userId: "user-a" });
       expect(new URL(url).origin).toBe("https://account.docusign.com");
     });
   });
@@ -71,8 +72,15 @@ describe("DocusignService", () => {
       await expect(service.handleCallback("code", "not-a-real-token")).rejects.toThrow(BadRequestException);
     });
 
+    it("refuses an access token (or another provider's state) passed off as state", async () => {
+      const accessToken = jwt.sign({ userId: "user-a", companyId: "company-a", email: "x@y.z", role: "owner", sid: "s1" });
+      await expect(service.handleCallback("code", accessToken)).rejects.toThrow(BadRequestException);
+      await expect(service.handleCallback("code", signState(jwt, "autodesk", { companyId: "company-a", userId: "user-a" }))).rejects.toThrow(BadRequestException);
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
     it("exchanges the code, fetches userinfo, and stores the default account's id and API base URL", async () => {
-      const state = jwt.sign({ companyId: "company-a" });
+      const state = signState(jwt, "docusign", { companyId: "company-a", userId: "user-a" });
       fetchMock
         .mockResolvedValueOnce(jsonResponse({ access_token: "at", refresh_token: "rt", expires_in: 3600 }))
         .mockResolvedValueOnce(
@@ -96,7 +104,7 @@ describe("DocusignService", () => {
     });
 
     it("throws when DocuSign rejects the authorization code", async () => {
-      const state = jwt.sign({ companyId: "company-a" });
+      const state = signState(jwt, "docusign", { companyId: "company-a", userId: "user-a" });
       fetchMock.mockResolvedValueOnce(jsonResponse({}, false, 400));
 
       await expect(service.handleCallback("bad-code", state)).rejects.toThrow(BadRequestException);

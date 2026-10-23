@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { portalApiFetch } from "@/lib/portal-api-client";
+import { Alert } from "@/components/ui/alert";
 
 type PortalBrandingResponse = { found: true; name: string; brandColor: string | null; hasLogo: boolean } | { found: false };
 
@@ -10,6 +11,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
 
 export default function PortalLoginPage() {
   const t = useTranslations("portal");
+  const ta = useTranslations("a11y");
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
@@ -52,22 +54,22 @@ export default function PortalLoginPage() {
               >
                 {(branding.found ? branding.name : "Cantero").slice(0, 1).toUpperCase()}
               </span>
-              <span className="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-50">{branding.found ? branding.name : "Cantero"}</span>
+              <span className="text-lg font-semibold tracking-tight text-fg">{branding.found ? branding.name : "Cantero"}</span>
             </>
           )}
         </div>
 
         <div className="card">
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">{t("signInTitle")}</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("signInHint")}</p>
+          <h1 className="text-xl font-semibold text-fg">{t("signInTitle")}</h1>
+          <p className="mt-1 text-sm text-fg-subtle">{t("signInHint")}</p>
 
           {sent ? (
-            <p className="mt-4 rounded-lg border border-success-200 bg-success-50 dark:bg-success-500/15 px-4 py-3 text-sm text-success-700 dark:text-success-500">
+            <Alert tone="success" className="mt-4">
               {t("linkSentHint")}
-            </p>
+            </Alert>
           ) : (
             <form onSubmit={requestLink} className="mt-4 flex flex-col gap-3">
-              <input
+              <input aria-label={ta("email")}
                 required
                 type="email"
                 placeholder={t("emailPlaceholder")}

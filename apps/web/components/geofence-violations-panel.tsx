@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Field } from "@/components/ui/field";
 
 interface Violation {
   id: string;
@@ -16,6 +19,7 @@ interface Violation {
 export function GeofenceViolationsPanel() {
   const t = useTranslations("geofenceViolations");
   const [violations, setViolations] = useState<Violation[] | null>(null);
+  const [violationsError, setViolationsError] = useState<Error | null>(null);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [busy, setBusy] = useState(false);
@@ -24,7 +28,10 @@ export function GeofenceViolationsPanel() {
     const query = new URLSearchParams();
     if (from) query.set("from", new Date(from).toISOString());
     if (to) query.set("to", new Date(to).toISOString());
-    apiFetch<Violation[]>(`/reports/geofence-violations?${query.toString()}`).then(setViolations);
+    apiFetch<Violation[]>(`/reports/geofence-violations?${query.toString()}`).then((result) => {
+      setViolationsError(null);
+      setViolations(result);
+    }).catch(setViolationsError);
   }
 
   useEffect(load, []);
@@ -42,21 +49,19 @@ export function GeofenceViolationsPanel() {
     }
   }
 
-  if (violations === null) return null;
+  if (violations === null) return violationsError ? <ErrorState error={violationsError} onRetry={load} compact /> : <Skeleton lines={3} />;
 
   return (
     <div className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
+      <h2 className="mb-3 text-sm font-semibold text-fg-muted">{t("title")}</h2>
       <div className="card">
         <div className="mb-3 flex flex-wrap items-end gap-2">
-          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-            {t("from")}
+          <Field label={t("from")} size="sm">
             <input type="date" className="input py-1 text-xs" value={from} onChange={(e) => setFrom(e.target.value)} />
-          </label>
-          <label className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
-            {t("to")}
+          </Field>
+          <Field label={t("to")} size="sm">
             <input type="date" className="input py-1 text-xs" value={to} onChange={(e) => setTo(e.target.value)} />
-          </label>
+          </Field>
           <button onClick={load} className="btn-secondary px-2 py-1 text-xs">
             {t("filter")}
           </button>
@@ -66,27 +71,27 @@ export function GeofenceViolationsPanel() {
         </div>
 
         {violations.length === 0 ? (
-          <p className="text-sm text-gray-400 dark:text-gray-500">{t("empty")}</p>
+          <p className="text-sm text-fg-subtle">{t("empty")}</p>
         ) : (
-          <div className="overflow-x-auto">
+          <div tabIndex={0} className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-                <th className="py-1.5">{t("date")}</th>
-                <th>{t("worker")}</th>
-                <th>{t("project")}</th>
-                <th>{t("hours")}</th>
-                <th>{t("distance")}</th>
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
+                <th scope="col" className="py-1.5">{t("date")}</th>
+                <th scope="col">{t("worker")}</th>
+                <th scope="col">{t("project")}</th>
+                <th scope="col">{t("hours")}</th>
+                <th scope="col">{t("distance")}</th>
               </tr>
             </thead>
             <tbody>
               {violations.map((v) => (
                 <tr key={v.id} className="border-b border-gray-100 dark:border-gray-700">
-                  <td className="py-1.5 text-xs text-gray-500 dark:text-gray-400">{v.date.slice(0, 10)}</td>
+                  <td className="py-1.5 text-xs text-fg-subtle">{v.date.slice(0, 10)}</td>
                   <td>{v.workerName}</td>
-                  <td className="text-xs text-gray-500 dark:text-gray-400">{v.projectName}</td>
+                  <td className="text-xs text-fg-subtle">{v.projectName}</td>
                   <td>{v.hours}</td>
-                  <td className="text-xs text-gray-500 dark:text-gray-400">{v.distanceFromSiteMeters !== null ? `${v.distanceFromSiteMeters} m` : "—"}</td>
+                  <td className="text-xs text-fg-subtle">{v.distanceFromSiteMeters !== null ? `${v.distanceFromSiteMeters} m` : "—"}</td>
                 </tr>
               ))}
             </tbody>

@@ -1,8 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { formatCurrency } from "@/lib/format-currency";
+import { Badge } from "@/components/ui/badge";
 
 interface WipRow {
   projectId: string;
@@ -30,12 +35,8 @@ interface WipReport {
 export function WipReportPanel({ currency }: { currency: string }) {
   const t = useTranslations("reports");
   const tc = useTranslations("common");
-  const [wip, setWip] = useState<WipReport | null>(null);
+  const { data: wip = null, error: wipError, reload: reloadWip } = useApi<WipReport>("/reports/wip-report");
   const [wipExporting, setWipExporting] = useState(false);
-
-  useEffect(() => {
-    apiFetch<WipReport>("/reports/wip-report").then(setWip);
-  }, []);
 
   async function downloadWipPdf() {
     setWipExporting(true);
@@ -51,29 +52,29 @@ export function WipReportPanel({ currency }: { currency: string }) {
     <>
       <div className="mb-3 mt-10 flex items-center justify-between">
         <div>
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t("wipReport")}</h2>
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t("wipReportHint")}</p>
+          <h2 className="text-sm font-semibold text-fg-muted">{t("wipReport")}</h2>
+          <p className="mt-1 text-xs text-fg-subtle">{t("wipReportHint")}</p>
         </div>
         <button onClick={downloadWipPdf} disabled={wipExporting} className="btn-secondary shrink-0 px-3 py-1.5 text-xs">
           {wipExporting ? tc("loading") : t("downloadWipPdf")}
         </button>
       </div>
       {!wip ? (
-        <p className="text-gray-500 dark:text-gray-400">{tc("loading")}</p>
+        wipError ? <ErrorState error={wipError} onRetry={reloadWip} compact /> : <Skeleton lines={3} />
       ) : wip.rows.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noProjects")}</p>
+        <p className="text-sm text-fg-subtle">{t("noProjects")}</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[860px] border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-gray-500 dark:text-gray-400">
-                <th className="py-2">{t("project")}</th>
-                <th className="text-right">{t("contractValue")}</th>
-                <th className="text-right">{t("costsIncurredToDate")}</th>
-                <th className="text-right">{t("percentComplete")}</th>
-                <th className="text-right">{t("earnedRevenue")}</th>
-                <th className="text-right">{t("billedToDate")}</th>
-                <th className="text-right">{t("overUnderBilling")}</th>
+              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
+                <th scope="col" className="py-2">{t("project")}</th>
+                <th scope="col" className="text-right">{t("contractValue")}</th>
+                <th scope="col" className="text-right">{t("costsIncurredToDate")}</th>
+                <th scope="col" className="text-right">{t("percentComplete")}</th>
+                <th scope="col" className="text-right">{t("earnedRevenue")}</th>
+                <th scope="col" className="text-right">{t("billedToDate")}</th>
+                <th scope="col" className="text-right">{t("overUnderBilling")}</th>
               </tr>
             </thead>
             <tbody>
@@ -85,30 +86,22 @@ export function WipReportPanel({ currency }: { currency: string }) {
                     </a>
                   </td>
                   <td className="text-right tabular-nums">
-                    {row.contractValue} {currency}
+                    {formatCurrency(row.contractValue, currency)}
                   </td>
                   <td className="text-right tabular-nums">
-                    {row.costsIncurredToDate} {currency}
+                    {formatCurrency(row.costsIncurredToDate, currency)}
                   </td>
                   <td className="text-right tabular-nums">{row.percentComplete}%</td>
                   <td className="text-right tabular-nums">
-                    {row.earnedRevenue} {currency}
+                    {formatCurrency(row.earnedRevenue, currency)}
                   </td>
                   <td className="text-right tabular-nums">
-                    {row.billedToDate} {currency}
+                    {formatCurrency(row.billedToDate, currency)}
                   </td>
                   <td className="text-right tabular-nums">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        row.status === "overbilled"
-                          ? "bg-warning-50 dark:bg-warning-500/15 text-warning-700 dark:text-warning-500"
-                          : row.status === "underbilled"
-                            ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-400"
-                            : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
-                      }`}
-                    >
-                      {row.overUnderBilling} {currency}
-                    </span>
+                    <Badge tone={row.status === "overbilled" ? "warning" : row.status === "underbilled" ? "brand" : "neutral"}>
+                      {formatCurrency(row.overUnderBilling, currency)}
+                    </Badge>
                   </td>
                 </tr>
               ))}
@@ -117,20 +110,20 @@ export function WipReportPanel({ currency }: { currency: string }) {
               <tr className="font-semibold">
                 <td className="pt-2">{t("total")}</td>
                 <td className="pt-2 text-right tabular-nums">
-                  {wip.totals.contractValue} {currency}
+                  {formatCurrency(wip.totals.contractValue, currency)}
                 </td>
                 <td className="pt-2 text-right tabular-nums">
-                  {wip.totals.costsIncurredToDate} {currency}
+                  {formatCurrency(wip.totals.costsIncurredToDate, currency)}
                 </td>
                 <td className="pt-2 text-right"></td>
                 <td className="pt-2 text-right tabular-nums">
-                  {wip.totals.earnedRevenue} {currency}
+                  {formatCurrency(wip.totals.earnedRevenue, currency)}
                 </td>
                 <td className="pt-2 text-right tabular-nums">
-                  {wip.totals.billedToDate} {currency}
+                  {formatCurrency(wip.totals.billedToDate, currency)}
                 </td>
                 <td className="pt-2 text-right tabular-nums">
-                  {wip.totals.overUnderBilling} {currency}
+                  {formatCurrency(wip.totals.overUnderBilling, currency)}
                 </td>
               </tr>
             </tfoot>

@@ -1,11 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { COMPANY_DOCUMENT_TYPES, type CompanyDocumentType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
+import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { CertificateAttachment } from "@/components/certificate-attachment";
 import { formatDate } from "@/lib/format-date";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 interface CompanyDocument {
   id: string;
@@ -20,20 +24,19 @@ interface Company {
 
 export function CompanyCoiPanel({ canManage }: { canManage: boolean }) {
   const t = useTranslations("companyCoi");
-  const tc = useTranslations("common");
+  const ta = useTranslations("a11y");
+  const confirm = useConfirm();
 
-  const [company, setCompany] = useState<Company | null>(null);
-  const [documents, setDocuments] = useState<CompanyDocument[] | null>(null);
+  const { data: company = null, reload: reloadCompany } = useApi<Company>("/company");
+  const { data: documents = null, reload: reloadDocuments, error: documentsError } = useApi<CompanyDocument[]>("/company/coi-documents");
   const [docForm, setDocForm] = useState({ type: "general_liability_insurance" as CompanyDocumentType, name: "", expiresAt: "" });
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
 
   function load() {
-    apiFetch<Company>("/company").then(setCompany);
-    apiFetch<CompanyDocument[]>("/company/coi-documents").then(setDocuments);
+    void reloadCompany();
+    void reloadDocuments();
   }
-
-  useEffect(load, []);
 
   async function addDocument(e: React.FormEvent) {
     e.preventDefault();
@@ -52,7 +55,7 @@ export function CompanyCoiPanel({ canManage }: { canManage: boolean }) {
   }
 
   async function removeDocument(id: string) {
-    if (!window.confirm(t("confirmDeleteDocument"))) return;
+    if (!(await confirm({ message: t("confirmDeleteDocument"), tone: "danger", verb: "delete" }))) return;
     await apiFetch(`/company/coi-documents/${id}`, { method: "DELETE" });
     load();
   }
@@ -80,13 +83,13 @@ export function CompanyCoiPanel({ canManage }: { canManage: boolean }) {
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("title")}</h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("hint")}</p>
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("title")}</h2>
+      <p className="mb-4 text-xs text-fg-subtle">{t("hint")}</p>
 
       {documents === null ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{tc("loading")}</p>
+        documentsError ? <ErrorState error={documentsError} onRetry={reloadDocuments} compact /> : <Skeleton lines={3} />
       ) : documents.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noDocuments")}</p>
+        <p className="text-sm text-fg-subtle">{t("noDocuments")}</p>
       ) : (
         <ul className="mb-4 flex flex-col gap-1.5">
           {documents.map((doc) => {
@@ -94,14 +97,14 @@ export function CompanyCoiPanel({ canManage }: { canManage: boolean }) {
             return (
               <li key={doc.id} className="flex items-center justify-between text-sm">
                 <span>
-                  <span className="text-gray-500 dark:text-gray-400">{t(doc.type)}</span> — {doc.name}
+                  <span className="text-fg-subtle">{t(doc.type)}</span> — {doc.name}
                   {" · "}
-                  <span className={expired ? "text-error-700 dark:text-error-500" : "text-gray-500 dark:text-gray-400"}>{formatDate(new Date(doc.expiresAt))}</span>
+                  <span className={expired ? "text-danger-fg" : "text-fg-subtle"}>{formatDate(new Date(doc.expiresAt))}</span>
                 </span>
                 {canManage && (
                   <span className="flex items-center gap-2">
                     <CertificateAttachment param="companyDocumentId" entityId={doc.id} />
-                    <button onClick={() => removeDocument(doc.id)} className="text-gray-400 dark:text-gray-500 hover:text-error-600">
+                    <button aria-label={ta("removeItem", { name: doc.name })} onClick={() => removeDocument(doc.id)} className="text-fg-subtle hover:text-danger-fg">
                       ×
                     </button>
                   </span>
@@ -115,7 +118,7 @@ export function CompanyCoiPanel({ canManage }: { canManage: boolean }) {
       {canManage && (
         <>
           <form onSubmit={addDocument} className="flex flex-wrap items-end gap-2">
-            <select
+            <select aria-label={ta("documentType")}
               className="input w-auto"
               value={docForm.type}
               onChange={(e) => setDocForm((f) => ({ ...f, type: e.target.value as CompanyDocumentType }))}
@@ -128,12 +131,12 @@ export function CompanyCoiPanel({ canManage }: { canManage: boolean }) {
             </select>
             <input
               required
-              placeholder={t("documentNamePlaceholder")}
+              placeholder={t("documentNamePlaceholder")} aria-label={t("documentNamePlaceholder")}
               className="input w-auto"
               value={docForm.name}
               onChange={(e) => setDocForm((f) => ({ ...f, name: e.target.value }))}
             />
-            <input
+            <input aria-label={ta("expiryDate")}
               required
               type="date"
               className="input w-auto"
@@ -146,7 +149,7 @@ export function CompanyCoiPanel({ canManage }: { canManage: boolean }) {
           </form>
 
           <div className="mt-4 border-t border-gray-100 dark:border-gray-700 pt-4">
-            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+            <label className="flex items-center gap-2 text-sm text-fg-muted">
               <input
                 type="checkbox"
                 checked={company?.coiPubliclyShared ?? false}
@@ -157,7 +160,7 @@ export function CompanyCoiPanel({ canManage }: { canManage: boolean }) {
             </label>
             {company?.coiPubliclyShared && company.coiPublicToken && (
               <div className="mt-2 flex items-center gap-2">
-                <input readOnly className="input flex-1 text-xs" value={`${window.location.origin}/company-coi/${company.coiPublicToken}`} />
+                <input aria-label={ta("shareLink")} readOnly className="input flex-1 text-xs" value={`${window.location.origin}/company-coi/${company.coiPublicToken}`} />
                 <button onClick={copyLink} className="btn-secondary shrink-0 px-3 py-1.5 text-xs">
                   {copied ? t("copied") : t("copyLink")}
                 </button>

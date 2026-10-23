@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { useApi } from "@/lib/use-api";
 import { useAssignableRoles } from "@/lib/permissions";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Alert } from "@/components/ui/alert";
 
 interface Invite {
   id: string;
@@ -14,17 +17,16 @@ interface Invite {
 
 export function TeamInvitesPanel() {
   const t = useTranslations("settings");
-  const [invites, setInvites] = useState<Invite[] | null>(null);
+  const confirm = useConfirm();
+  const { data: invites = null, reload: reloadInvites } = useApi<Invite[]>("/company/invites");
   const { roles: assignableRoles } = useAssignableRoles();
   const [inviteForm, setInviteForm] = useState({ email: "", role: "worker" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function load() {
-    apiFetch<Invite[]>("/company/invites").then(setInvites);
+    void reloadInvites();
   }
-
-  useEffect(load, []);
 
   async function sendInvite(e: React.FormEvent) {
     e.preventDefault();
@@ -42,18 +44,18 @@ export function TeamInvitesPanel() {
   }
 
   async function revokeInvite(id: string) {
-    if (!window.confirm(t("confirmRevokeInvite"))) return;
+    if (!(await confirm({ message: t("confirmRevokeInvite"), tone: "danger", verb: "revoke" }))) return;
     await apiFetch(`/company/invites/${id}`, { method: "DELETE" });
     load();
   }
 
   return (
     <section className="card lg:col-span-2">
-      <h2 className="mb-1 text-sm font-semibold text-gray-700 dark:text-gray-200">{t("invites")}</h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t("inviteEmailHint")}</p>
-      {error && <p className="mb-3 rounded-md bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-400">{error}</p>}
+      <h2 className="mb-1 text-sm font-semibold text-fg-muted">{t("invites")}</h2>
+      <p className="mb-4 text-xs text-fg-subtle">{t("inviteEmailHint")}</p>
+      {error && <Alert tone="danger" className="mb-3">{error}</Alert>}
       {!invites || invites.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t("noInvites")}</p>
+        <p className="text-sm text-fg-subtle">{t("noInvites")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {invites.map((inv) => (
@@ -73,12 +75,12 @@ export function TeamInvitesPanel() {
         <input
           required
           type="email"
-          placeholder={t("inviteEmail")}
+          placeholder={t("inviteEmail")} aria-label={t("inviteEmail")}
           className="input w-auto"
           value={inviteForm.email}
           onChange={(e) => setInviteForm((f) => ({ ...f, email: e.target.value }))}
         />
-        <select
+        <select aria-label={t("role")}
           className="input w-auto"
           value={inviteForm.role}
           onChange={(e) => setInviteForm((f) => ({ ...f, role: e.target.value }))}
