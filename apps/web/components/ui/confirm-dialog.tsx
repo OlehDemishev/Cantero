@@ -48,9 +48,6 @@ export interface ConfirmDialogProps {
   onCancel: () => void;
 }
 
-const BUTTON_FOCUS = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
-const DANGER_BUTTON = `inline-flex items-center justify-center gap-2 rounded-lg bg-error-600 px-4 py-2.5 text-sm font-medium text-white shadow-theme-xs transition hover:bg-error-700 disabled:cursor-not-allowed disabled:opacity-60 ${BUTTON_FOCUS}`;
-
 export function ConfirmDialog({
   open,
   title,
@@ -124,14 +121,14 @@ export function ConfirmDialog({
           </p>
         )}
         <div className="mt-5 flex flex-wrap justify-end gap-2">
-          <button ref={cancelRef} type="button" onClick={onCancel} disabled={busy} className={`btn-secondary ${BUTTON_FOCUS}`}>
+          <button ref={cancelRef} type="button" onClick={onCancel} disabled={busy} className="btn-secondary">
             {cancelLabel ?? t("cancel")}
           </button>
           <button
             ref={confirmRef}
             type="submit"
             disabled={busy || missingReason}
-            className={danger ? DANGER_BUTTON : `btn-primary ${BUTTON_FOCUS}`}
+            className={danger ? "btn-danger" : "btn-primary"}
           >
             {busy ? t("working") : (confirmLabel ?? (verb ? t(`verbs.${verb}`) : t("confirm")))}
           </button>

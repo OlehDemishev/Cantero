@@ -4809,5 +4809,18 @@
     "offlineBody": "Być może jesteś offline. Sprawdź połączenie i spróbuj ponownie.",
     "errorTitle": "Nie udało się wczytać",
     "retry": "Spróbuj ponownie"
+  },
+  "validation": {
+    "required": "To pole jest wymagane",
+    "invalid": "Wprowadź poprawną wartość",
+    "number": "Wprowadź liczbę",
+    "wholeNumber": "Wprowadź liczbę całkowitą",
+    "min": "Musi wynosić co najmniej {min}",
+    "greaterThan": "Musi być większe niż {min}",
+    "max": "Może wynosić co najwyżej {max}",
+    "tooShort": "Musi mieć co najmniej {min} znaków",
+    "tooLong": "Może mieć co najwyżej {max} znaków",
+    "email": "Wprowadź poprawny adres e-mail",
+    "date": "Wprowadź poprawną datę"
   }
 }

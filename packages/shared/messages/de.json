@@ -4809,5 +4809,18 @@
     "offlineBody": "Möglicherweise sind Sie offline. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
     "errorTitle": "Konnte nicht geladen werden",
     "retry": "Erneut versuchen"
+  },
+  "validation": {
+    "required": "Dieses Feld ist erforderlich",
+    "invalid": "Bitte einen gültigen Wert eingeben",
+    "number": "Bitte eine Zahl eingeben",
+    "wholeNumber": "Bitte eine ganze Zahl eingeben",
+    "min": "Muss mindestens {min} sein",
+    "greaterThan": "Muss größer als {min} sein",
+    "max": "Darf höchstens {max} sein",
+    "tooShort": "Mindestens {min} Zeichen",
+    "tooLong": "Höchstens {max} Zeichen",
+    "email": "Bitte eine gültige E-Mail-Adresse eingeben",
+    "date": "Bitte ein gültiges Datum eingeben"
   }
 }

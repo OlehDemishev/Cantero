@@ -19,6 +19,10 @@
   --text-theme-sm--line-height: 20px;
   --text-theme-xs: 12px;
   --text-theme-xs--line-height: 18px;
+  /* One step below text-xs, for dense chart labels, calendar cells and tiny badges — instead of
+     ad-hoc text-[9px]/[10px]/[11px]. */
+  --text-2xs: 0.625rem;
+  --text-2xs--line-height: 0.875rem;
 
   --color-brand-25: #f2f7ff;
   --color-brand-50: #ecf3ff;
@@ -82,6 +86,13 @@
   --color-warning-800: #93370d;
   --color-warning-900: #7a2e0e;
 
+  /* Informational (neutral-blue) tone for badges and notices: Badge/Alert tone="info". */
+  --color-info-50: #f0f9ff;
+  --color-info-100: #e0f2fe;
+  --color-info-200: #b9e6fe;
+  --color-info-500: #0ba5ec;
+  --color-info-700: #026aa2;
+
   /*
     Semantic tokens. These are the light-theme values; `.dark` (below) swaps them, so one class
     such as `text-fg` or `bg-surface` is right in both themes — no `dark:` twin to forget.
@@ -106,6 +117,7 @@
   --color-danger-fg: #b42318;
   --color-success-fg: #027a48;
   --color-warning-fg: #b54708;
+  --color-info-fg: #026aa2;
 
   /* Chart series and chrome (components/charts/chart-theme.ts). Series 2-4 double as the
      warning/danger/success colors; each dark value is lifted to stay visible on gray-800. */
@@ -165,6 +177,7 @@
     --color-danger-fg: #f97066;
     --color-success-fg: #32d583;
     --color-warning-fg: #fdb022;
+    --color-info-fg: #36bffa;
 
     --color-chart-1: #7592ff;
     --color-chart-2: #fdb022;
@@ -277,6 +290,25 @@ html:lang(uk) body {
   }
   .btn-secondary {
     @apply inline-flex items-center justify-center gap-2 rounded-lg border border-border-strong bg-surface px-4 py-2.5 text-sm font-medium text-fg-muted shadow-theme-xs transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-error-600 px-4 py-2.5 text-sm font-medium text-white shadow-theme-xs transition hover:bg-error-700 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-fg-muted transition hover:bg-surface-hover hover:text-fg disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger,
+  .btn-ghost {
+    @apply focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus;
+  }
+  /* Sizes — after the variants so they win over the variants' default padding and text size. */
+  .btn-sm {
+    @apply px-3 py-1.5 text-sm;
+  }
+  .btn-xs {
+    @apply px-2.5 py-1 text-xs;
   }
 }
 
