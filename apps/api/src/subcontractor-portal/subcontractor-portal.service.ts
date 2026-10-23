@@ -15,9 +15,15 @@ export class SubcontractorPortalService {
   async me(subcontractor: PortalSubcontractorContext) {
     const record = await this.prisma.subcontractor.findUniqueOrThrow({
       where: { id: subcontractor.subcontractorId },
-      include: { company: { select: { name: true, currency: true } } },
+      include: { company: { select: { name: true, currency: true, locale: true } } },
     });
-    return { name: record.name, email: record.email, companyName: record.company.name, currency: record.company.currency };
+    return {
+      name: record.name,
+      email: record.email,
+      companyName: record.company.name,
+      currency: record.company.currency,
+      locale: record.company.locale,
+    };
   }
 
   listProjects(subcontractor: PortalSubcontractorContext) {

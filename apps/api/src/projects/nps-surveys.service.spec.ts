@@ -82,6 +82,27 @@ describe("NpsSurveysService", () => {
     });
   });
 
+  describe("getByToken()", () => {
+    it("404s on an unknown token", async () => {
+      prisma.npsSurvey.findUnique.mockResolvedValue(null);
+      await expect(service.getByToken("bad-token")).rejects.toThrow(NotFoundException);
+    });
+
+    it("uses the client's document language before the company's", async () => {
+      prisma.npsSurvey.findUnique.mockResolvedValue({
+        respondedAt: new Date(),
+        company: { name: "Acme", locale: "en" },
+        project: { name: "Site A", client: { preferredLocale: "es" } },
+      });
+      await expect(service.getByToken("t")).resolves.toEqual({
+        companyName: "Acme",
+        projectName: "Site A",
+        locale: "es",
+        submitted: true,
+      });
+    });
+  });
+
   describe("submit()", () => {
     it("404s on an unknown token", async () => {
       prisma.npsSurvey.findUnique.mockResolvedValue(null);

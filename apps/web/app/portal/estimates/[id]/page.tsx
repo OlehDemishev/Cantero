@@ -4,9 +4,11 @@ import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { getPortalToken, portalApiFetch } from "@/lib/portal-api-client";
-import { ApiError, downloadBlob } from "@/lib/api-client";
+import { downloadBlob } from "@/lib/api-client";
 import { SignaturePad } from "@/components/signature-pad";
 import { formatDateTime } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
+import { PublicLinkError } from "@/components/public-link-error";
 
 interface PortalLine {
   id: string;
@@ -38,11 +40,12 @@ interface PortalEstimate {
 export default function PortalEstimatePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const t = useTranslations("portal");
+  const tp = useTranslations("publicLink");
   const te = useTranslations("estimates");
   const router = useRouter();
 
   const [estimate, setEstimate] = useState<PortalEstimate | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [note, setNote] = useState("");
   const [signerName, setSignerName] = useState("");
   const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
@@ -58,7 +61,7 @@ export default function PortalEstimatePage({ params }: { params: Promise<{ id: s
           portalApiFetch<Blob>(`/portal/estimates/${id}/signature`).then((blob) => setSignatureUrl(URL.createObjectURL(blob)));
         }
       })
-      .catch((err) => setError(err instanceof ApiError ? err.message : te("linkNotFound")));
+      .catch(setLoadError);
   }
 
   useEffect(() => {
@@ -98,11 +101,16 @@ export default function PortalEstimatePage({ params }: { params: Promise<{ id: s
     downloadBlob(blob, `${estimate?.name ?? "estimate"}.pdf`);
   }
 
-  if (error) {
+  if (loadError) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
-        <p className="text-sm text-fg-subtle">{error}</p>
-      </main>
+      <PublicLinkError
+        error={loadError}
+        action={
+          <a href="/portal" className="btn-primary inline-block">
+            {tp("backToPortal")}
+          </a>
+        }
+      />
     );
   }
   if (!estimate) {
@@ -147,7 +155,7 @@ export default function PortalEstimatePage({ params }: { params: Promise<{ id: s
                       {l.quantity} {l.unit}
                     </td>
                     <td className="text-right">
-                      {l.lineTotal} {estimate.currency}
+                      {formatCurrency(l.lineTotal, estimate.currency)}
                     </td>
                   </tr>
                 ))}
@@ -159,25 +167,25 @@ export default function PortalEstimatePage({ params }: { params: Promise<{ id: s
             <div className="flex justify-between">
               <dt className="text-fg-subtle">{te("subtotal")}</dt>
               <dd>
-                {estimate.subtotal} {estimate.currency}
+                {formatCurrency(estimate.subtotal, estimate.currency)}
               </dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-fg-subtle">{te("markupAmount")}</dt>
               <dd>
-                {estimate.markupAmount} {estimate.currency}
+                {formatCurrency(estimate.markupAmount, estimate.currency)}
               </dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-fg-subtle">{te("taxAmount")}</dt>
               <dd>
-                {estimate.taxAmount} {estimate.currency}
+                {formatCurrency(estimate.taxAmount, estimate.currency)}
               </dd>
             </div>
             <div className="flex justify-between border-t border-gray-200 dark:border-gray-700 pt-2 font-semibold">
               <dt>{te("grandTotal")}</dt>
               <dd>
-                {estimate.grandTotal} {estimate.currency}
+                {formatCurrency(estimate.grandTotal, estimate.currency)}
               </dd>
             </div>
           </dl>

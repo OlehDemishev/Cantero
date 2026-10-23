@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { EstimateAlternateStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface Alternate {
   id: string;
@@ -117,7 +118,7 @@ export function EstimateAlternatesPanel({ estimateId, currency }: { estimateId: 
       ) : (
         <>
           {data.acceptedCount > 0 && (
-            <p className="mb-2 text-xs text-fg-subtle">{t("acceptedTotal", { amount: data.acceptedTotal, currency })}</p>
+            <p className="mb-2 text-xs text-fg-subtle">{t("acceptedTotal", { amount: formatCurrency(data.acceptedTotal, currency) })}</p>
           )}
           <ul className="flex flex-col gap-2">
             {data.alternates.map((a) => (
@@ -132,7 +133,7 @@ export function EstimateAlternatesPanel({ estimateId, currency }: { estimateId: 
                   </div>
                   <span className={`shrink-0 text-sm font-semibold tabular-nums ${Number(a.amount) < 0 ? "text-success-fg" : "text-fg"}`}>
                     {Number(a.amount) > 0 ? "+" : ""}
-                    {a.amount} {currency}
+                    {formatCurrency(a.amount, currency)}
                   </span>
                 </div>
                 {a.status === "pending" && (

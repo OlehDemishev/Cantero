@@ -74,6 +74,7 @@ import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { useCan } from "@/lib/permissions";
 import type { Permission } from "@cantero/shared";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface Project {
   id: string;
@@ -408,7 +409,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
                       <a href={`/estimates/${e.id}`} className="card flex items-center justify-between hover:border-gray-400">
                         <span className="font-medium">{e.name}</span>
                         <span className="text-sm text-fg-subtle">
-                          {e.status === "approved" ? t("approved") : t("draft")} · {e.grandTotal} {me?.company.currency}
+                          {e.status === "approved" ? t("approved") : t("draft")} · {formatCurrency(e.grandTotal, me?.company.currency)}
                         </span>
                       </a>
                     </li>

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface ProgressDraw {
   id: string;
@@ -95,14 +96,14 @@ export function ProgressBillingPanel({ estimateId, currency }: { estimateId: str
           <div className="flex justify-between text-xs text-fg-subtle">
             <span>{t("percentBilled", { percent: summary.percentBilled })}</span>
             <span>
-              {t("billedOfContract", { billed: summary.totalBilledGross.toFixed(2), total: summary.contractTotal.toFixed(2), currency })}
+              {t("billedOfContract", { billed: formatCurrency(summary.totalBilledGross, currency), total: formatCurrency(summary.contractTotal, currency) })}
             </span>
           </div>
           {summary.totalRetainageHeld > 0 && (
             <div className="flex justify-between text-xs text-fg-subtle">
               <span>{t("retainageHeld")}</span>
               <span className="font-medium text-fg-muted">
-                {summary.totalRetainageHeld.toFixed(2)} {currency}
+                {formatCurrency(summary.totalRetainageHeld, currency)}
               </span>
             </div>
           )}
@@ -118,7 +119,7 @@ export function ProgressBillingPanel({ estimateId, currency }: { estimateId: str
                     : t("drawLabel", { percent: draw.percentComplete ?? 0 })}
                 </span>
                 <span className="tabular-nums text-fg-muted">
-                  {draw.total.toFixed(2)} {currency}
+                  {formatCurrency(draw.total, currency)}
                 </span>
               </li>
             ))}
@@ -163,14 +164,14 @@ export function ProgressBillingPanel({ estimateId, currency }: { estimateId: str
 
       {summary.retainageReleasedTotal > 0 && (
         <p className="mt-2 text-xs text-success-fg">
-          {t("retainageReleasedSoFar", { amount: summary.retainageReleasedTotal.toFixed(2), currency })}
+          {t("retainageReleasedSoFar", { amount: formatCurrency(summary.retainageReleasedTotal, currency) })}
         </p>
       )}
 
       {summary.retainageRemaining > 0 && (
         <div className="mt-2 flex flex-col gap-2">
           <button onClick={() => releaseRetainage()} disabled={busy} className="btn-secondary self-start">
-            {t("releaseRetainage", { amount: summary.retainageRemaining.toFixed(2), currency })}
+            {t("releaseRetainage", { amount: formatCurrency(summary.retainageRemaining, currency) })}
           </button>
           {!releasingPartial ? (
             <button onClick={() => setReleasingPartial(true)} className="self-start text-xs text-brand-700 dark:text-brand-400 hover:underline">

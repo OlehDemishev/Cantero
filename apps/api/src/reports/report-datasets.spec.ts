@@ -103,5 +103,7 @@ describe("fieldsFor", () => {
     const fields = await fieldsFor(deps.prisma as never, COMPANY_A, "projects");
 
     expect(fields.find((f) => f.key === "custom_field-1")).toEqual({ key: "custom_field-1", label: "Permit #" });
+    // built-in columns carry a translation key; a custom field's own name is never translated
+    expect(fields.find((f) => f.key === "name")).toEqual({ key: "name", label: "Name", labelKey: "name" });
   });
 });

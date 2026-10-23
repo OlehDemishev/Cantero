@@ -12,6 +12,8 @@ import { InvoicesIcon } from "@/components/nav-icons";
 import { apiFetch, downloadBlob, getToken, API_URL, ApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { formatCurrency } from "@/lib/format-currency";
+import { formatDate } from "@/lib/format-date";
 
 interface Invoice {
   id: string;
@@ -66,7 +68,6 @@ export default function InvoicesPage() {
   const [invoicesHasMore, setInvoicesHasMore] = useState(false);
   const [invoicesLoadMoreBusy, setInvoicesLoadMoreBusy] = useState(false);
   const currency = me?.company.currency ?? "";
-  const locale = me?.company.locale ?? "en";
 
   const [recurring, setRecurring] = useState<RecurringInvoice[] | null>(null);
   const [recurringHasMore, setRecurringHasMore] = useState(false);
@@ -355,7 +356,7 @@ export default function InvoicesPage() {
                     </td>
                     <td>{t(inv.status)}</td>
                     <td>
-                      {inv.total} {currency}
+                      {formatCurrency(inv.total, currency)}
                     </td>
                   </tr>
                 ))}
@@ -428,11 +429,11 @@ export default function InvoicesPage() {
                 </div>
                 <p className="mt-1 text-xs text-fg-subtle">
                   {t("nextRun")}:{" "}
-                  {new Date(r.nextRunDate).toLocaleDateString(locale)}
+                  {formatDate(r.nextRunDate)}
                   {r.lastGeneratedAt &&
-                    ` · ${t("lastGenerated")}: ${new Date(r.lastGeneratedAt).toLocaleDateString(locale)}`}
+                    ` · ${t("lastGenerated")}: ${formatDate(r.lastGeneratedAt)}`}
                   {r.endDate &&
-                    ` · ${t("endDate")}: ${new Date(r.endDate).toLocaleDateString(locale)}`}
+                    ` · ${t("endDate")}: ${formatDate(r.endDate)}`}
                 </p>
                 <div className="mt-2 flex gap-2">
                   <button

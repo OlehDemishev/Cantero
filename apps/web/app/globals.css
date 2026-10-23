@@ -204,6 +204,11 @@ body {
   font-family: var(--font-outfit), Outfit, sans-serif;
 }
 
+/* Outfit has no Cyrillic glyphs; Ukrainian uses Onest throughout so a page doesn't mix two faces. */
+html:lang(uk) body {
+  font-family: var(--font-onest), Onest, sans-serif;
+}
+
 @utility menu-item {
   @apply relative flex w-full items-center gap-3 rounded-lg px-3 py-2 text-theme-sm font-medium;
 }

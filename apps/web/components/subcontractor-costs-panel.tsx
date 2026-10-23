@@ -6,6 +6,7 @@ import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import type { CostCode } from "@/components/cost-codes-panel";
 import { formatDate } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
 
 const NEW_SUBCONTRACTOR = "__new__";
 
@@ -141,7 +142,7 @@ export function SubcontractorCostsPanel({ projectId }: { projectId: string }) {
                   </span>
                 </td>
                 <td className="text-right font-medium">
-                  {c.amount} {currency}
+                  {formatCurrency(c.amount, currency)}
                 </td>
                 <td className="text-right">
                   {!c.paid && (

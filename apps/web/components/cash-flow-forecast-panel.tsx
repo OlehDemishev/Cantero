@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface CashFlowWeek {
   weekStart: string;
@@ -41,26 +42,26 @@ export function CashFlowForecastPanel({ currency }: { currency: string }) {
             <div className="card">
               <div className="text-xs text-fg-subtle">{t("projectedInflow")}</div>
               <div className="mt-1 text-lg font-semibold text-success-fg">
-                {cashFlow.totals.inflow} {currency}
+                {formatCurrency(cashFlow.totals.inflow, currency)}
               </div>
             </div>
             <div className="card">
               <div className="text-xs text-fg-subtle">{t("projectedOutflow")}</div>
               <div className="mt-1 text-lg font-semibold text-danger-fg">
-                {cashFlow.totals.outflow} {currency}
+                {formatCurrency(cashFlow.totals.outflow, currency)}
               </div>
             </div>
             <div className="card">
               <div className="text-xs text-fg-subtle">{t("projectedNet")}</div>
               <div className={`mt-1 text-lg font-semibold ${cashFlow.totals.net < 0 ? "text-danger-fg" : "text-success-fg"}`}>
-                {cashFlow.totals.net} {currency}
+                {formatCurrency(cashFlow.totals.net, currency)}
               </div>
             </div>
           </div>
 
           {(cashFlow.unscheduledInflow > 0 || cashFlow.unscheduledOutflow > 0) && (
             <p className="mt-2 text-xs text-fg-subtle">
-              {t("unscheduledNote", { inflow: cashFlow.unscheduledInflow, outflow: cashFlow.unscheduledOutflow, currency })}
+              {t("unscheduledNote", { inflow: formatCurrency(cashFlow.unscheduledInflow, currency), outflow: formatCurrency(cashFlow.unscheduledOutflow, currency) })}
             </p>
           )}
 
@@ -83,12 +84,12 @@ export function CashFlowForecastPanel({ currency }: { currency: string }) {
                         <div
                           className="w-3 rounded-t bg-success-500"
                           style={{ height: `${(w.inflow / maxVal) * 100}%` }}
-                          title={`${t("inflow")}: ${w.inflow} ${currency}`}
+                          title={`${t("inflow")}: ${formatCurrency(w.inflow, currency)}`}
                         />
                         <div
                           className="w-3 rounded-t bg-error-500"
                           style={{ height: `${(w.outflow / maxVal) * 100}%` }}
-                          title={`${t("outflow")}: ${w.outflow} ${currency}`}
+                          title={`${t("outflow")}: ${formatCurrency(w.outflow, currency)}`}
                         />
                       </div>
                       <span className="text-[10px] text-fg-subtle">{t("weekLabel", { n: i + 1 })}</span>
@@ -115,16 +116,16 @@ export function CashFlowForecastPanel({ currency }: { currency: string }) {
                   <tr key={w.weekStart} className="border-b border-gray-100 dark:border-gray-700">
                     <td className="py-2">{formatDate(new Date(w.weekStart))}</td>
                     <td className="text-right text-success-fg">
-                      {w.inflow} {currency}
+                      {formatCurrency(w.inflow, currency)}
                     </td>
                     <td className="text-right text-danger-fg">
-                      {w.outflow} {currency}
+                      {formatCurrency(w.outflow, currency)}
                     </td>
                     <td className={`text-right ${w.net < 0 ? "text-danger-fg" : "text-fg-muted"}`}>
-                      {w.net} {currency}
+                      {formatCurrency(w.net, currency)}
                     </td>
                     <td className={`text-right font-medium ${w.cumulativeNet < 0 ? "text-danger-fg" : "text-fg"}`}>
-                      {w.cumulativeNet} {currency}
+                      {formatCurrency(w.cumulativeNet, currency)}
                     </td>
                   </tr>
                 ))}

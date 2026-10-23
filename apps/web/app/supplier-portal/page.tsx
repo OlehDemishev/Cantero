@@ -6,10 +6,13 @@ import { useTranslations } from "next-intl";
 import { ApiError } from "@/lib/api-client";
 import { getSupplierPortalToken, supplierPortalApiFetch, signOutSupplierPortal, clearSupplierPortalToken } from "@/lib/supplier-portal-api-client";
 import { formatDate } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
+import { useCompanyLocale } from "@/components/public-locale";
 
 interface Me {
   name: string;
   companyName: string;
+  locale: string;
   currency: string;
 }
 type PurchaseOrderStatus = "draft" | "ordered" | "received";
@@ -40,6 +43,7 @@ export default function SupplierPortalDashboardPage() {
   const router = useRouter();
 
   const [me, setMe] = useState<Me | null>(null);
+  useCompanyLocale(me?.locale);
   const [orders, setOrders] = useState<PurchaseOrder[] | null>(null);
   const [ackForms, setAckForms] = useState<Record<string, { eta: string; note: string }>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -140,7 +144,7 @@ export default function SupplierPortalDashboardPage() {
                     <ul className="mt-1.5 flex flex-col gap-0.5 text-xs text-fg-subtle">
                       {po.lines.map((l) => (
                         <li key={l.id}>
-                          {l.materialCatalogItem.name} × {l.quantity} {l.materialCatalogItem.unit} @ {l.unitPrice} {me.currency}
+                          {l.materialCatalogItem.name} × {l.quantity} {l.materialCatalogItem.unit} @ {formatCurrency(l.unitPrice, me.currency, { maximumFractionDigits: 4 })}
                         </li>
                       ))}
                     </ul>

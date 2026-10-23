@@ -13,6 +13,7 @@ import { EquipmentAssignmentHistoryPanel } from "@/components/equipment-assignme
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
 
 function getCurrentPositionSafe(): Promise<{ lat: number; lng: number } | null> {
   return new Promise((resolve) => {
@@ -566,7 +567,7 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
               {t("disposedOn", { date: formatDate(new Date(equipment.disposal.disposedAt)) })}
               {equipment.disposal.saleAmount !== null && (
                 <span className="block text-xs text-fg-subtle">
-                  {t("saleAmount")}: {equipment.disposal.saleAmount} {currency}
+                  {t("saleAmount")}: {formatCurrency(equipment.disposal.saleAmount, currency)}
                 </span>
               )}
             </p>
@@ -574,9 +575,9 @@ export default function EquipmentDetailPage({ params }: { params: Promise<{ id: 
             <>
               {equipment.depreciation && (
                 <p className="mb-3 text-sm text-fg-muted">
-                  {t("bookValue")}: <span className="font-medium">{equipment.depreciation.bookValue} {currency}</span>
+                  {t("bookValue")}: <span className="font-medium">{formatCurrency(equipment.depreciation.bookValue, currency)}</span>
                   <span className="ml-2 text-xs text-fg-subtle">
-                    ({t("accumulatedDepreciation")}: {equipment.depreciation.accumulatedDepreciation} {currency})
+                    ({t("accumulatedDepreciation")}: {formatCurrency(equipment.depreciation.accumulatedDepreciation, currency)})
                   </span>
                 </p>
               )}

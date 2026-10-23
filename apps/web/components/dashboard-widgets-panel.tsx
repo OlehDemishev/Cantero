@@ -7,6 +7,8 @@ import { apiFetch, downloadBlob, ApiError } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { formatCurrency } from "@/lib/format-currency";
+import { useReportFieldLabel } from "@/lib/report-field-label";
 
 interface CustomReportOption {
   id: string;
@@ -181,6 +183,7 @@ function WidgetBody({
   emptyLabel: string;
 }) {
   const t = useTranslations("dashboard");
+  const fieldLabel = useReportFieldLabel();
 
   if (!data) return <p className="text-sm text-fg-subtle">{emptyLabel}</p>;
 
@@ -206,19 +209,19 @@ function WidgetBody({
         <div>
           <div className="text-xs text-fg-subtle">{t("widgetIn")}</div>
           <div className="font-semibold text-success-fg">
-            {d.totals.inflow} {currency}
+            {formatCurrency(d.totals.inflow, currency)}
           </div>
         </div>
         <div>
           <div className="text-xs text-fg-subtle">{t("widgetOut")}</div>
           <div className="font-semibold text-danger-fg">
-            {d.totals.outflow} {currency}
+            {formatCurrency(d.totals.outflow, currency)}
           </div>
         </div>
         <div>
           <div className="text-xs text-fg-subtle">{t("widgetNet")}</div>
           <div className="font-semibold">
-            {d.totals.net} {currency}
+            {formatCurrency(d.totals.net, currency)}
           </div>
         </div>
       </div>
@@ -250,10 +253,10 @@ function WidgetBody({
     return (
       <div className="text-center">
         <div className="text-2xl font-semibold text-fg">
-          {d.backlog} {currency}
+          {formatCurrency(d.backlog, currency)}
         </div>
         <div className="mt-1 text-xs text-fg-subtle">
-          {t("widgetBacklogDetail", { contractValue: d.contractValue, billedToDate: d.billedToDate, currency })}
+          {t("widgetBacklogDetail", { contractValue: formatCurrency(d.contractValue, currency), billedToDate: formatCurrency(d.billedToDate, currency) })}
         </div>
       </div>
     );
@@ -299,7 +302,7 @@ function WidgetBody({
   }
 
   if (type === "custom_report" && typeof data === "object") {
-    const d = data as { columns: { key: string; label: string }[]; rows: Record<string, unknown>[] };
+    const d = data as { columns: { key: string; label: string; labelKey?: string }[]; rows: Record<string, unknown>[] };
     if (d.rows.length === 0) return <p className="text-sm text-fg-subtle">{emptyLabel}</p>;
     return (
       <div className="overflow-x-auto">
@@ -308,7 +311,7 @@ function WidgetBody({
             <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-fg-subtle">
               {d.columns.map((c) => (
                 <th key={c.key} className="py-1 pr-2">
-                  {c.label}
+                  {fieldLabel(c)}
                 </th>
               ))}
             </tr>

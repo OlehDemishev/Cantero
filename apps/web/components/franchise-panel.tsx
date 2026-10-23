@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface FranchiseBranch {
   companyId: string;
@@ -94,18 +95,18 @@ export function FranchisePanel() {
                 <tr key={b.companyId} className="border-b border-gray-100 dark:border-gray-700">
                   <td className="py-2">{b.name}</td>
                   <td className="py-2">
-                    {b.revenueConverted.toFixed(2)} {franchiseOverview.reportingCurrency}
+                    {formatCurrency(b.revenueConverted, franchiseOverview.reportingCurrency)}
                     {b.currency !== franchiseOverview.reportingCurrency && (
                       <span className="ml-1 text-xs text-fg-subtle">
-                        ({b.revenue.toFixed(2)} {b.currency})
+                        ({formatCurrency(b.revenue, b.currency)})
                       </span>
                     )}
                   </td>
                   <td className="py-2">
-                    {b.costConverted.toFixed(2)} {franchiseOverview.reportingCurrency}
+                    {formatCurrency(b.costConverted, franchiseOverview.reportingCurrency)}
                   </td>
                   <td className={`py-2 font-medium ${b.marginConverted >= 0 ? "text-success-fg" : "text-danger-fg"}`}>
-                    {b.marginConverted.toFixed(2)} {franchiseOverview.reportingCurrency}
+                    {formatCurrency(b.marginConverted, franchiseOverview.reportingCurrency)}
                   </td>
                   <td className="py-2">{b.projectCount}</td>
                   <td className="py-2">{b.memberCount}</td>
@@ -115,13 +116,13 @@ export function FranchisePanel() {
                 <tr className="font-medium text-fg-muted">
                   <td className="py-2">{t("total")}</td>
                   <td className="py-2">
-                    {franchiseOverview.totals.revenue.toFixed(2)} {franchiseOverview.reportingCurrency}
+                    {formatCurrency(franchiseOverview.totals.revenue, franchiseOverview.reportingCurrency)}
                   </td>
                   <td className="py-2">
-                    {franchiseOverview.totals.cost.toFixed(2)} {franchiseOverview.reportingCurrency}
+                    {formatCurrency(franchiseOverview.totals.cost, franchiseOverview.reportingCurrency)}
                   </td>
                   <td className={franchiseOverview.totals.margin >= 0 ? "py-2 text-success-fg" : "py-2 text-danger-fg"}>
-                    {franchiseOverview.totals.margin.toFixed(2)} {franchiseOverview.reportingCurrency}
+                    {formatCurrency(franchiseOverview.totals.margin, franchiseOverview.reportingCurrency)}
                   </td>
                   <td className="py-2">{franchiseOverview.totals.projectCount}</td>
                   <td className="py-2">{franchiseOverview.totals.memberCount}</td>

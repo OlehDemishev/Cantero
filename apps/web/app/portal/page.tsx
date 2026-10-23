@@ -7,10 +7,13 @@ import { ApiError } from "@/lib/api-client";
 import { getPortalToken, portalApiFetch, signOutPortal, clearPortalToken } from "@/lib/portal-api-client";
 import { formatDate } from "@/lib/format-date";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { formatCurrency } from "@/lib/format-currency";
+import { useCompanyLocale } from "@/components/public-locale";
 
 interface Me {
   name: string;
   companyName: string;
+  locale: string;
   currency: string;
   onlinePaymentsEnabled: boolean;
   savedPaymentMethodLabel: string | null;
@@ -88,6 +91,7 @@ export default function PortalDashboardPage() {
   const router = useRouter();
 
   const [me, setMe] = useState<Me | null>(null);
+  useCompanyLocale(me?.locale);
   const [estimates, setEstimates] = useState<EstimateSummary[] | null>(null);
   const [changeOrders, setChangeOrders] = useState<ChangeOrderSummary[] | null>(null);
   const [invoices, setInvoices] = useState<InvoiceSummary[] | null>(null);
@@ -344,7 +348,7 @@ export default function PortalDashboardPage() {
                     </span>
                     <span className="flex items-center gap-2">
                       <span className="text-xs text-fg-subtle">
-                        {e.grandTotal} {me.currency}
+                        {formatCurrency(e.grandTotal, me.currency)}
                       </span>
                       <span
                         className={`rounded-full px-2 py-0.5 text-xs font-medium ${
@@ -383,7 +387,7 @@ export default function PortalDashboardPage() {
                     </span>
                     <span className="flex items-center gap-2">
                       <span className="text-xs text-fg-subtle">
-                        {co.grandTotal} {me.currency}
+                        {formatCurrency(co.grandTotal, me.currency)}
                       </span>
                       <span
                         className={`rounded-full px-2 py-0.5 text-xs font-medium ${
@@ -422,7 +426,7 @@ export default function PortalDashboardPage() {
                     </span>
                     <span className="flex items-center gap-2">
                       <span className="text-xs text-fg-subtle">
-                        {inv.total} {me.currency}
+                        {formatCurrency(inv.total, me.currency)}
                       </span>
                       <span
                         className={`rounded-full px-2 py-0.5 text-xs font-medium ${

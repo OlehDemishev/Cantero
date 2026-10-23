@@ -20,6 +20,7 @@ export default function UnitsOfMeasurePage() {
   const confirm = useConfirm();
   const td = useTranslations("dialog");
   const tc = useTranslations("common");
+  const tl = useTranslations("labels");
 
   const [units, setUnits] = useState<UnitOfMeasure[] | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -90,7 +91,7 @@ export default function UnitsOfMeasurePage() {
           <input
             required
             className="input w-48"
-            placeholder="Kilogram"
+            placeholder={tl("unitNamePlaceholder")}
             value={form.name}
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
           />

@@ -6,6 +6,7 @@ import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useCan } from "@/lib/permissions";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface TaxJurisdiction {
   id: string;
@@ -84,13 +85,13 @@ export function TaxLiabilityPanel() {
               <div>
                 <div className="text-xs text-fg-subtle">{t("totalTaxableSales")}</div>
                 <div className="mt-1 text-lg font-semibold text-fg">
-                  {report.totalTaxableSales} {currency}
+                  {formatCurrency(report.totalTaxableSales, currency)}
                 </div>
               </div>
               <div>
                 <div className="text-xs text-fg-subtle">{t("totalTaxCollected")}</div>
                 <div className="mt-1 text-lg font-semibold text-fg">
-                  {report.totalTaxCollected} {currency}
+                  {formatCurrency(report.totalTaxCollected, currency)}
                 </div>
               </div>
             </div>

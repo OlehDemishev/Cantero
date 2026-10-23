@@ -2,12 +2,16 @@
 
 import { use, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, ApiError } from "@/lib/api-client";
+import { apiFetch } from "@/lib/api-client";
+import { PublicLinkError } from "@/components/public-link-error";
+import { useCompanyLocale } from "@/components/public-locale";
 import { SignaturePad } from "@/components/signature-pad";
 import { formatDateTime } from "@/lib/format-date";
 
 type ContractStatus = "draft" | "sent" | "signed" | "void";
 interface PublicContract {
+  /** The client's or company's language — see useCompanyLocale. */
+  locale: string;
   id: string;
   title: string;
   body: string;
@@ -24,7 +28,8 @@ export default function PublicContractPage({ params }: { params: Promise<{ token
   const tc = useTranslations("common");
 
   const [contract, setContract] = useState<PublicContract | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
+  useCompanyLocale(contract?.locale);
   const [signerName, setSignerName] = useState("");
   const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
   const [signatureError, setSignatureError] = useState<string | null>(null);
@@ -33,7 +38,7 @@ export default function PublicContractPage({ params }: { params: Promise<{ token
   function load() {
     apiFetch<PublicContract>(`/public/contracts/${token}`)
       .then(setContract)
-      .catch((err) => setError(err instanceof ApiError ? err.message : t("linkNotFound")));
+      .catch(setError);
   }
 
   useEffect(load, [token]);
@@ -56,13 +61,7 @@ export default function PublicContractPage({ params }: { params: Promise<{ token
     }
   }
 
-  if (error) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
-        <p className="text-sm text-fg-subtle">{error}</p>
-      </main>
-    );
-  }
+  if (error) return <PublicLinkError error={error} />;
 
   if (!contract) {
     return (

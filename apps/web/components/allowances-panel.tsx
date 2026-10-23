@@ -34,7 +34,7 @@ export function AllowancesPanel({ projectId }: { projectId: string }) {
   const tc = useTranslations("common");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "USD";
-  const money = (amount: number | string) => formatCurrency(amount, currency, me?.company.locale);
+  const money = (amount: number | string) => formatCurrency(amount, currency);
 
   const [allowances, setAllowances] = useState<Allowance[] | null>(null);
   const [creating, setCreating] = useState(false);

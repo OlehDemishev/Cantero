@@ -2,12 +2,16 @@
 
 import { use, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, ApiError } from "@/lib/api-client";
+import { apiFetch } from "@/lib/api-client";
+import { PublicLinkError } from "@/components/public-link-error";
+import { useCompanyLocale } from "@/components/public-locale";
 import { SignaturePad } from "@/components/signature-pad";
 import { formatDate } from "@/lib/format-date";
 
 type SignatureRequestStatus = "draft" | "sent" | "completed" | "voided";
 interface PublicSignatureRequest {
+  /** The client's or company's language — see useCompanyLocale. */
+  locale: string;
   title: string;
   documentName: string;
   companyName: string;
@@ -24,7 +28,8 @@ export default function PublicSignPage({ params }: { params: Promise<{ token: st
   const tc = useTranslations("common");
 
   const [request, setRequest] = useState<PublicSignatureRequest | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
+  useCompanyLocale(request?.locale);
   const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
   const [signatureError, setSignatureError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -32,7 +37,7 @@ export default function PublicSignPage({ params }: { params: Promise<{ token: st
   function load() {
     apiFetch<PublicSignatureRequest>(`/public/signature-requests/${token}`)
       .then(setRequest)
-      .catch((err) => setError(err instanceof ApiError ? err.message : t("linkNotFound")));
+      .catch(setError);
   }
 
   useEffect(load, [token]);
@@ -60,13 +65,7 @@ export default function PublicSignPage({ params }: { params: Promise<{ token: st
     }
   }
 
-  if (error) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
-        <p className="text-sm text-fg-subtle">{error}</p>
-      </main>
-    );
-  }
+  if (error) return <PublicLinkError error={error} />;
 
   if (!request) {
     return (

@@ -73,7 +73,7 @@ export default function PortfolioPage() {
   const tc = useTranslations("common");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
-  const money = (amount: number | string | null | undefined) => formatCurrency(amount, currency, me?.company.locale);
+  const money = (amount: number | string | null | undefined) => formatCurrency(amount, currency);
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabFromParam = searchParams.get("tab");

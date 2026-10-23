@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { formatNumber } from "@/lib/format-currency";
 
 interface Project {
   geofenceLat: number | null;
@@ -88,7 +89,7 @@ export function GeofencePanel({ projectId }: { projectId: string }) {
 
       {isSet && (
         <p className="mb-2 text-xs text-success-fg">
-          {t("activeSummary", { lat: project.geofenceLat!.toFixed(5), lng: project.geofenceLng!.toFixed(5), radius: project.geofenceRadiusMeters! })}
+          {t("activeSummary", { lat: formatNumber(project.geofenceLat, { fractionDigits: 5 }), lng: formatNumber(project.geofenceLng, { fractionDigits: 5 }), radius: project.geofenceRadiusMeters! })}
         </p>
       )}
 

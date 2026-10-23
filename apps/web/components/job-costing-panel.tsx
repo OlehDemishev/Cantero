@@ -8,6 +8,7 @@ import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import type { CostCode } from "@/components/cost-codes-panel";
 import { formatDate } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface CostHistoryMonth {
   month: string;
@@ -129,22 +130,22 @@ export function JobCostingPanel({ projectId }: { projectId: string }) {
                   <span className="font-mono text-xs text-fg-subtle">{row.code}</span> {row.name}
                 </td>
                 <td className="text-right">
-                  {row.estimated.toFixed(2)} {currency}
+                  {formatCurrency(row.estimated, currency)}
                 </td>
                 <td className="text-right">
-                  {row.committed.toFixed(2)} {currency}
+                  {formatCurrency(row.committed, currency)}
                 </td>
                 <td className="text-right">
-                  {row.actual.toFixed(2)} {currency}
+                  {formatCurrency(row.actual, currency)}
                 </td>
                 <td className={`text-right font-medium ${row.variance < 0 ? "text-danger-fg" : "text-success-fg"}`}>
-                  {row.variance.toFixed(2)} {currency}
+                  {formatCurrency(row.variance, currency)}
                 </td>
                 <td className="text-right">
-                  {row.estimateAtCompletion.toFixed(2)} {currency}
+                  {formatCurrency(row.estimateAtCompletion, currency)}
                 </td>
                 <td className={`text-right font-medium ${row.varianceAtCompletion < 0 ? "text-danger-fg" : "text-success-fg"}`}>
-                  {row.varianceAtCompletion.toFixed(2)} {currency}
+                  {formatCurrency(row.varianceAtCompletion, currency)}
                 </td>
               </tr>
             ))}
@@ -153,22 +154,22 @@ export function JobCostingPanel({ projectId }: { projectId: string }) {
             <tr className="font-semibold">
               <td className="pt-2">{t("total")}</td>
               <td className="pt-2 text-right">
-                {report.totals.estimated.toFixed(2)} {currency}
+                {formatCurrency(report.totals.estimated, currency)}
               </td>
               <td className="pt-2 text-right">
-                {report.totals.committed.toFixed(2)} {currency}
+                {formatCurrency(report.totals.committed, currency)}
               </td>
               <td className="pt-2 text-right">
-                {report.totals.actual.toFixed(2)} {currency}
+                {formatCurrency(report.totals.actual, currency)}
               </td>
               <td className={`pt-2 text-right ${report.totals.variance < 0 ? "text-danger-fg" : "text-success-fg"}`}>
-                {report.totals.variance.toFixed(2)} {currency}
+                {formatCurrency(report.totals.variance, currency)}
               </td>
               <td className="pt-2 text-right">
-                {report.totals.estimateAtCompletion.toFixed(2)} {currency}
+                {formatCurrency(report.totals.estimateAtCompletion, currency)}
               </td>
               <td className={`pt-2 text-right ${report.totals.varianceAtCompletion < 0 ? "text-danger-fg" : "text-success-fg"}`}>
-                {report.totals.varianceAtCompletion.toFixed(2)} {currency}
+                {formatCurrency(report.totals.varianceAtCompletion, currency)}
               </td>
             </tr>
           </tfoot>
@@ -184,7 +185,7 @@ export function JobCostingPanel({ projectId }: { projectId: string }) {
                 <CartesianGrid {...chartGridProps} />
                 <XAxis dataKey="month" {...chartAxisProps} />
                 <YAxis {...chartAxisProps} />
-                <Tooltip {...chartTooltipProps} formatter={(value) => `${Number(value).toFixed(2)} ${currency}`} />
+                <Tooltip {...chartTooltipProps} formatter={(value) => `${formatCurrency(Number(value), currency)}`} />
                 <Line type="monotone" dataKey="cumulativeActual" name={t("actual")} stroke={chartColors.primary} strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
@@ -279,7 +280,7 @@ export function JobCostingPanel({ projectId }: { projectId: string }) {
                 <li key={tr.id} className="rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm">
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-fg">
-                      {t("transferLogEntry", { amount: `${tr.amount.toFixed(2)} ${currency}`, from: tr.fromCode, to: tr.toCode })}
+                      {t("transferLogEntry", { amount: `${formatCurrency(tr.amount, currency)}`, from: tr.fromCode, to: tr.toCode })}
                     </span>
                     <span className="text-xs text-fg-subtle">{formatDate(new Date(tr.createdAt))}</span>
                   </div>

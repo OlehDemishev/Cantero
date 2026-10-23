@@ -12,6 +12,7 @@ import {
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface LienNotice {
   id: string;
@@ -265,7 +266,7 @@ export function LienCompliancePanel({ projectId }: { projectId: string }) {
             <li key={f.id} className="card">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-fg">
-                  {f.filedByName} · {f.amount} {currency}
+                  {f.filedByName} · {formatCurrency(f.amount, currency)}
                 </span>
                 <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${FILING_STATUS_STYLES[f.status]}`}>{t(`status_${f.status}`)}</span>
               </div>

@@ -37,6 +37,8 @@ type TabKey = (typeof TAB_KEYS)[number];
 export default function OpenItemsPage() {
   const t = useTranslations("openItems");
   const tc = useTranslations("common");
+  const tRfi = useTranslations("rfi");
+  const tPunch = useTranslations("punchList");
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeTab = ((): TabKey => {
@@ -127,8 +129,8 @@ export default function OpenItemsPage() {
                     </td>
                     <td className="font-mono text-xs text-fg-subtle">{r.number}</td>
                     <td>{r.subject}</td>
-                    <td>{r.status}</td>
-                    <td>{r.priority}</td>
+                    <td>{tRfi.has(r.status) ? tRfi(r.status) : r.status}</td>
+                    <td>{tRfi.has(r.priority) ? tRfi(r.priority) : r.priority}</td>
                     <td>{r.dueDate ? formatDate(new Date(r.dueDate)) : "—"}</td>
                   </tr>
                 ))}
@@ -165,7 +167,7 @@ export default function OpenItemsPage() {
                       </a>
                     </td>
                     <td>{p.title}</td>
-                    <td>{p.status}</td>
+                    <td>{tPunch.has(p.status) ? tPunch(p.status) : p.status}</td>
                     <td>{p.dueDate ? formatDate(new Date(p.dueDate)) : "—"}</td>
                   </tr>
                 ))}

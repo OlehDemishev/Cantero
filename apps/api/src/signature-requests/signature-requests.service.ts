@@ -99,6 +99,7 @@ export class SignatureRequestsService {
       title: signer.signatureRequest.title,
       documentName: signer.signatureRequest.document.name,
       companyName: signer.signatureRequest.company.name,
+      locale: signer.signatureRequest.company.locale,
       status: signer.signatureRequest.status,
       signerName: signer.name,
       signedAt: signer.signedAt,
@@ -186,7 +187,7 @@ export class SignatureRequestsService {
         signatureRequest: {
           include: {
             document: { select: { name: true, mimeType: true, storageKey: true } },
-            company: { select: { name: true } },
+            company: { select: { name: true, locale: true } },
             signers: { orderBy: { order: "asc" } },
           },
         },

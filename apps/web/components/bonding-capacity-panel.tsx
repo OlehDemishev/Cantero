@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface CapacityUtilization {
   limit: number | null;
@@ -56,12 +57,12 @@ export function BondingCapacityPanel() {
           <div>
             <div className="text-xs text-fg-subtle">{t("used")}</div>
             <div className="mt-1 font-semibold text-fg">
-              {capacity.used} {currency}
+              {formatCurrency(capacity.used, currency)}
             </div>
           </div>
           <div>
             <div className="text-xs text-fg-subtle">{t("available")}</div>
-            <div className="mt-1 font-semibold text-fg">{capacity.available !== null ? `${capacity.available} ${currency}` : "—"}</div>
+            <div className="mt-1 font-semibold text-fg">{capacity.available !== null ? `${formatCurrency(capacity.available, currency)}` : "—"}</div>
           </div>
         </div>
         {capacity.utilizationPercent !== null && (

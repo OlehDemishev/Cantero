@@ -6,6 +6,7 @@ import { DRAW_REQUEST_STATUSES, type DrawRequestStatus } from "@cantero/shared";
 import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface Invoice {
   id: string;
@@ -122,7 +123,7 @@ export function DrawRequestsPanel({ projectId }: { projectId: string }) {
               <option value="">—</option>
               {eligibleInvoices.map((inv) => (
                 <option key={inv.id} value={inv.id}>
-                  {inv.number} — {inv.percentComplete}% — {inv.total} {currency}
+                  {inv.number} — {inv.percentComplete}% — {formatCurrency(inv.total, currency)}
                 </option>
               ))}
             </select>
@@ -200,7 +201,7 @@ export function DrawRequestsPanel({ projectId }: { projectId: string }) {
                   </span>
                 </div>
                 <span className="text-sm font-medium tabular-nums text-fg-muted">
-                  {draw.invoice.total} {currency}
+                  {formatCurrency(draw.invoice.total, currency)}
                 </span>
               </div>
               <p className="mt-1 text-xs text-fg-subtle">

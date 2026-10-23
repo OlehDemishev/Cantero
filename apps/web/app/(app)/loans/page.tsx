@@ -7,6 +7,7 @@ import type { LoanStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
+import { formatCurrency, formatNumber } from "@/lib/format-currency";
 
 interface Equipment {
   id: string;
@@ -49,6 +50,7 @@ const STATUS_STYLES: Record<LoanStatus, string> = {
 export default function LoansPage() {
   const t = useTranslations("loans");
   const tc = useTranslations("common");
+  const tl = useTranslations("labels");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "";
 
@@ -140,13 +142,13 @@ export default function LoansPage() {
           <div>
             <div className="text-xs text-fg-subtle">{t("outstandingPrincipal")}</div>
             <div className="mt-1 text-lg font-semibold text-fg">
-              {summary.outstandingPrincipal} {currency}
+              {formatCurrency(summary.outstandingPrincipal, currency)}
             </div>
           </div>
           <div>
             <div className="text-xs text-fg-subtle">{t("upcomingDebtService", { months: summary.monthsAhead })}</div>
             <div className="mt-1 text-lg font-semibold text-fg">
-              {summary.upcomingDebtService} {currency}
+              {formatCurrency(summary.upcomingDebtService, currency)}
             </div>
           </div>
         </div>
@@ -247,7 +249,7 @@ export default function LoansPage() {
                     </span>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-fg-subtle">
-                        {loan.principal} {currency} · {loan.interestRatePercent}% · {loan.termMonths}mo
+                        {formatCurrency(loan.principal, currency)} · {formatNumber(loan.interestRatePercent)}% · {tl("termMonths", { count: loan.termMonths })}
                       </span>
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[loan.status]}`}>{t(`status_${loan.status}`)}</span>
                     </div>
@@ -269,10 +271,10 @@ export default function LoansPage() {
                             <tr key={p.id} className="border-b border-gray-100 dark:border-gray-700">
                               <td className="py-1.5">{formatDate(new Date(p.dueDate))}</td>
                               <td>
-                                {p.principalPortion} {currency}
+                                {formatCurrency(p.principalPortion, currency)}
                               </td>
                               <td>
-                                {p.interestPortion} {currency}
+                                {formatCurrency(p.interestPortion, currency)}
                               </td>
                               <td>
                                 {p.paidAt ? (

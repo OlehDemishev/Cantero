@@ -6,6 +6,7 @@ import { SURETY_BOND_TYPES, type SuretyBondStatus, type SuretyBondType } from "@
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface SuretyBond {
   id: string;
@@ -163,7 +164,7 @@ export function SuretyBondsPanel({ projectId }: { projectId: string }) {
                 <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[bond.status]}`}>{t(`status_${bond.status}`)}</span>
               </div>
               <p className="mt-1 text-xs text-fg-subtle">
-                {t("penalSum")}: {bond.penalSum} {currency} · {t("issueDate")}: {formatDate(new Date(bond.issueDate))}
+                {t("penalSum")}: {formatCurrency(bond.penalSum, currency)} · {t("issueDate")}: {formatDate(new Date(bond.issueDate))}
                 {bond.expiryDate && ` · ${t("expiryDate")}: ${formatDate(new Date(bond.expiryDate))}`}
               </p>
               {bond.status === "active" && (

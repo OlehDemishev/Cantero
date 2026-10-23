@@ -260,8 +260,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
   }
 
   const currency = invoice.currency ?? me?.company.currency ?? "";
-  const locale = me?.company.locale;
-  const money = (amount: number | string | null | undefined) => formatCurrency(amount, currency, locale);
+  const money = (amount: number | string | null | undefined) => formatCurrency(amount, currency);
   const paidTotal = invoice.payments.reduce((sum, p) => sum + Number(p.amount), 0);
   const balanceDue = Number(invoice.total) - paidTotal;
 
@@ -405,7 +404,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
                       {money(p.amount)}
                       {p.currency && (
                         <span className="ml-1.5 text-xs text-fg-subtle">
-                          ({p.foreignAmount} {p.currency} @ {p.exchangeRate})
+                          ({formatCurrency(p.foreignAmount, p.currency)} @ {p.exchangeRate})
                         </span>
                       )}
                     </td>
@@ -509,7 +508,7 @@ export function InvoiceDetail({ invoiceId }: { invoiceId: string }) {
           {invoice.lateFeeAccrued > 0 && (
             <div className="mt-3 flex items-center justify-between rounded-lg border border-warning-200 bg-warning-50 dark:bg-warning-500/15 px-3 py-2">
               <span className="text-xs text-warning-fg">
-                {t("lateFeeAccrued", { amount: invoice.lateFeeAccrued, currency })}
+                {t("lateFeeAccrued", { amount: money(invoice.lateFeeAccrued) })}
               </span>
               <button onClick={chargeLateFee} disabled={busy} className="btn-secondary px-2 py-1 text-xs">
                 {t("chargeLateFee")}

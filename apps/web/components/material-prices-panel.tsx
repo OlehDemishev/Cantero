@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface MaterialCatalogItem {
   id: string;
@@ -119,7 +120,7 @@ export function MaterialPricesPanel() {
                     <span className="text-fg">{c.materialCatalogItem.name}</span>
                     <span className={`text-xs font-medium ${pct > 0 ? "text-danger-fg" : "text-success-fg"}`}>
                       {pct > 0 ? "+" : ""}
-                      {pct}% ({c.oldPrice} → {c.newPrice} {currency})
+                      {pct}% ({formatCurrency(c.oldPrice, currency)} → {formatCurrency(c.newPrice, currency)})
                     </span>
                   </div>
                   <button onClick={() => toggleAffected(c.materialCatalogItem.id)} className="text-xs text-brand-700 dark:text-brand-400 hover:underline">
@@ -193,7 +194,7 @@ export function MaterialPricesPanel() {
                     </form>
                   ) : (
                     <span>
-                      {m.defaultUnitPrice} {currency}
+                      {formatCurrency(m.defaultUnitPrice, currency)}
                     </span>
                   )}
                 </td>
@@ -226,7 +227,7 @@ export function MaterialPricesPanel() {
                     </form>
                   ) : (
                     <span className="text-xs text-fg-subtle">
-                      {m.standardCost != null ? `${m.standardCost} ${currency}` : t("noStandardCostSet")}
+                      {m.standardCost != null ? `${formatCurrency(m.standardCost, currency)}` : t("noStandardCostSet")}
                     </span>
                   )}
                 </td>

@@ -35,7 +35,7 @@ export class LeadsService {
   async getFormInfo(token: string) {
     const company = await this.prisma.company.findUnique({
       where: { publicLeadFormToken: token },
-      select: { id: true, name: true, brandColor: true, logoStorageKey: true },
+      select: { id: true, name: true, locale: true, brandColor: true, logoStorageKey: true },
     });
     if (!company) throw new NotFoundException("This form link is no longer active");
 
@@ -48,6 +48,7 @@ export class LeadsService {
 
     return {
       companyName: company.name,
+      locale: company.locale,
       brandColor: company.brandColor,
       hasLogo: !!company.logoStorageKey,
       photos: photos.map((p) => ({ id: p.id, projectName: p.project?.name ?? null })),

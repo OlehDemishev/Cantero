@@ -230,7 +230,10 @@ export class ContractsService {
   async getByToken(token: string) {
     const contract = await this.prisma.contract.findFirst({
       where: { clientAccessToken: token },
-      include: { company: { select: { name: true } }, project: { select: { name: true } } },
+      include: {
+        company: { select: { name: true, locale: true } },
+        project: { select: { name: true, client: { select: { preferredLocale: true } } } },
+      },
     });
     if (!contract) throw new NotFoundException("Contract not found");
     return {
@@ -239,6 +242,7 @@ export class ContractsService {
       body: contract.body,
       status: contract.status,
       companyName: contract.company.name,
+      locale: contract.project.client?.preferredLocale ?? contract.company.locale,
       projectName: contract.project.name,
       signerName: contract.signerName,
       signedAt: contract.signedAt,

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface ProfitabilityRow {
   cost: number;
@@ -61,13 +62,13 @@ export function ChangeOrderProfitabilityPanel({ estimateId, currency }: { estima
             <tr className="border-b border-gray-100 dark:border-gray-700 font-medium">
               <td className="py-1">{t("baseContract")}</td>
               <td className="text-right">
-                {report.baseContract.cost} {currency}
+                {formatCurrency(report.baseContract.cost, currency)}
               </td>
               <td className="text-right">
-                {report.baseContract.revenue} {currency}
+                {formatCurrency(report.baseContract.revenue, currency)}
               </td>
               <td className="text-right">
-                {report.baseContract.margin} {currency}
+                {formatCurrency(report.baseContract.margin, currency)}
               </td>
               <td className="text-right">{pct(report.baseContract.marginPercent)}</td>
             </tr>
@@ -77,13 +78,13 @@ export function ChangeOrderProfitabilityPanel({ estimateId, currency }: { estima
                   CO-{co.number} — {co.title}
                 </td>
                 <td className="text-right">
-                  {co.cost} {currency}
+                  {formatCurrency(co.cost, currency)}
                 </td>
                 <td className="text-right">
-                  {co.revenue} {currency}
+                  {formatCurrency(co.revenue, currency)}
                 </td>
                 <td className="text-right">
-                  {co.margin} {currency}
+                  {formatCurrency(co.margin, currency)}
                 </td>
                 <td className={`text-right font-medium ${marginClass(co.marginPercent, report.baseContract.marginPercent)}`}>
                   {pct(co.marginPercent)}
@@ -95,13 +96,13 @@ export function ChangeOrderProfitabilityPanel({ estimateId, currency }: { estima
             <tr className="font-semibold">
               <td className="pt-1.5">{t("changeOrdersTotal")}</td>
               <td className="pt-1.5 text-right">
-                {report.changeOrdersTotal.cost} {currency}
+                {formatCurrency(report.changeOrdersTotal.cost, currency)}
               </td>
               <td className="pt-1.5 text-right">
-                {report.changeOrdersTotal.revenue} {currency}
+                {formatCurrency(report.changeOrdersTotal.revenue, currency)}
               </td>
               <td className="pt-1.5 text-right">
-                {report.changeOrdersTotal.margin} {currency}
+                {formatCurrency(report.changeOrdersTotal.margin, currency)}
               </td>
               <td className={`pt-1.5 text-right ${marginClass(report.changeOrdersTotal.marginPercent, report.baseContract.marginPercent)}`}>
                 {pct(report.changeOrdersTotal.marginPercent)}

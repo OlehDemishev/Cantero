@@ -6,6 +6,7 @@ import Link from "next/link";
 import type { EquipmentStatus } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface AssignmentSummary {
   project: { id: string; name: string } | null;
@@ -114,7 +115,7 @@ export default function EquipmentPage() {
                       <p className="text-xs text-fg-subtle">
                         {eq.category}
                         {eq.serialNumber && ` · ${eq.serialNumber}`}
-                        {eq.purchaseCost && ` · ${eq.purchaseCost} ${currency}`}
+                        {eq.purchaseCost && ` · ${formatCurrency(eq.purchaseCost, currency)}`}
                       </p>
                       {assignment && (assignment.worker || assignment.project) && (
                         <p className="mt-1 text-xs text-brand-600">

@@ -139,5 +139,25 @@ describe("InsightsService", () => {
       expect(result.band).toBe("at_risk");
       expect(result.factors.length).toBeGreaterThan(0);
     });
+
+    it("returns each factor as a translation key with its params", async () => {
+      prisma.project.findFirst.mockResolvedValue({ id: "p1" });
+      budget.getForProject.mockResolvedValue({
+        grandTotalBudget: 1000,
+        materialsCostActual: 950,
+        laborCostActual: 0,
+        subcontractorCostActual: 0,
+      });
+      prisma.rfi.count.mockResolvedValue(2);
+      prisma.punchListItem.count.mockResolvedValue(1);
+
+      const result = await service.projectHealth(COMPANY_A, "p1");
+
+      expect(result.factors.map((f) => [f.key, f.params])).toEqual([
+        ["near_budget", {}],
+        ["open_rfis", { count: 2 }],
+        ["open_punch_items", { count: 1 }],
+      ]);
+    });
   });
 });

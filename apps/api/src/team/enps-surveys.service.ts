@@ -95,6 +95,20 @@ export class EnpsSurveysService implements OnModuleInit {
     return workers.length;
   }
 
+  /** Lets the public eNPS page check its link and pick the worker's language before showing the form. */
+  async getByToken(token: string) {
+    const survey = await this.prisma.enpsSurvey.findUnique({
+      where: { token },
+      include: { company: { select: { name: true, locale: true } }, worker: { select: { preferredLocale: true } } },
+    });
+    if (!survey) throw new NotFoundException("Survey link not found");
+    return {
+      companyName: survey.company.name,
+      locale: survey.worker.preferredLocale ?? survey.company.locale,
+      submitted: survey.respondedAt !== null,
+    };
+  }
+
   async submit(token: string, input: SubmitEnpsSurveyInput) {
     const survey = await this.prisma.enpsSurvey.findUnique({ where: { token } });
     if (!survey) throw new NotFoundException("Survey link not found");

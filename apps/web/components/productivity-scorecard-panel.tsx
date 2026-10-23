@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { formatNumber } from "@/lib/format-currency";
 
 interface UnitRate {
   unit: string;
@@ -50,7 +51,7 @@ export function ProductivityScorecardPanel() {
                 {row.byUnit.map((u) => (
                   <span key={u.unit} className="text-xs text-gray-600 dark:text-gray-300">
                     <span className="font-medium text-fg">{u.unit}</span>:{" "}
-                    {u.hoursPerUnit !== null ? t("hoursPerUnit", { rate: u.hoursPerUnit.toFixed(3), unit: u.unit }) : "—"}
+                    {u.hoursPerUnit !== null ? t("hoursPerUnit", { rate: formatNumber(u.hoursPerUnit, { fractionDigits: 3 }), unit: u.unit }) : "—"}
                   </span>
                 ))}
               </div>

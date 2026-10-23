@@ -53,7 +53,7 @@ export function SubcontractorClaimsPanel({ projectId }: { projectId: string }) {
   const tc = useTranslations("common");
   const { data: me } = useMe();
   const currency = me?.company.currency ?? "USD";
-  const money = (amount: number | string) => formatCurrency(amount, currency, me?.company.locale);
+  const money = (amount: number | string) => formatCurrency(amount, currency);
 
   const [backcharges, setBackcharges] = useState<Backcharge[] | null>(null);
   const [notices, setNotices] = useState<DefaultNotice[] | null>(null);

@@ -8,7 +8,8 @@ type Band = "good" | "watch" | "at_risk";
 interface Health {
   score: number;
   band: Band;
-  factors: { label: string; penalty: number }[];
+  /** `key` + `params` are translated (messages: projectHealth.factor_<key>); `label` is the API's English. */
+  factors: { key?: string; params?: Record<string, number>; label: string; penalty: number }[];
 }
 
 const bandClass: Record<Band, string> = {
@@ -19,6 +20,7 @@ const bandClass: Record<Band, string> = {
 
 export function ProjectHealthBadge({ projectId }: { projectId: string }) {
   const t = useTranslations("projects");
+  const th = useTranslations("projectHealth");
   const [health, setHealth] = useState<Health | null>(null);
 
   useEffect(() => {
@@ -35,7 +37,7 @@ export function ProjectHealthBadge({ projectId }: { projectId: string }) {
       {health.factors.length > 0 && (
         <span className="pointer-events-none absolute left-0 top-full z-10 mt-1 hidden w-56 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-2 text-xs text-gray-600 dark:text-gray-300 shadow-lg group-hover:block">
           {health.factors.map((f) => (
-            <div key={f.label}>{f.label}</div>
+            <div key={f.label}>{f.key && th.has(`factor_${f.key}`) ? th(`factor_${f.key}`, f.params ?? {}) : f.label}</div>
           ))}
         </span>
       )}

@@ -20,6 +20,7 @@ import {
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { useReportAccess } from "@/lib/report-access";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface Overview {
   projectsTotal: number;
@@ -78,8 +79,8 @@ export default function DashboardPage() {
           />
           <StatCard
             label={t("invoicedTotal")}
-            value={`${overview.invoices.totalValue} ${currency}`}
-            sub={`${overview.invoices.outstandingValue} ${currency} ${t("outstandingTotal")}`}
+            value={`${formatCurrency(overview.invoices.totalValue, currency)}`}
+            sub={`${formatCurrency(overview.invoices.outstandingValue, currency)} ${t("outstandingTotal")}`}
             trend={revenueTrend}
           />
           <StatCard
@@ -87,7 +88,7 @@ export default function DashboardPage() {
             value={overview.clients.total}
             sub={`${overview.clients.won} ${t("clientsWon")}`}
           />
-          <StatCard label={t("stockValue")} value={`${overview.materials.stockValue} ${currency}`} />
+          <StatCard label={t("stockValue")} value={`${formatCurrency(overview.materials.stockValue, currency)}`} />
           {overview.materials.lowStockCount > 0 && (
             <StatCard label={t("lowStockCount")} value={overview.materials.lowStockCount} warn />
           )}

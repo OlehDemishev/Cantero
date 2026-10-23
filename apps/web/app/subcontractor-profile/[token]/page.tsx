@@ -2,9 +2,15 @@
 
 import { use, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiFetch, ApiError } from "@/lib/api-client";
+import { apiFetch } from "@/lib/api-client";
+import { PublicLinkError } from "@/components/public-link-error";
+import { useCompanyLocale } from "@/components/public-locale";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface PublicProfile {
+  /** The client's or company's language — see useCompanyLocale. */
+  locale: string;
+  currency: string;
   name: string;
   specialization: string | null;
   bio: string | null;
@@ -19,21 +25,16 @@ export default function SubcontractorPublicProfilePage({ params }: { params: Pro
   const tc = useTranslations("common");
 
   const [profile, setProfile] = useState<PublicProfile | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
+  useCompanyLocale(profile?.locale);
 
   useEffect(() => {
     apiFetch<PublicProfile>(`/public/subcontractor-profiles/${token}`)
       .then(setProfile)
-      .catch((err) => setError(err instanceof ApiError ? err.message : t("profileNotFound")));
+      .catch(setError);
   }, [token, t]);
 
-  if (error) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
-        <p className="text-sm text-fg-subtle">{error}</p>
-      </main>
-    );
-  }
+  if (error) return <PublicLinkError error={error} />;
 
   if (!profile) {
     return (
@@ -58,7 +59,7 @@ export default function SubcontractorPublicProfilePage({ params }: { params: Pro
             </div>
             <div>
               <p className="text-xs text-fg-subtle">{t("totalPaidOut")}</p>
-              <p className="text-lg font-semibold text-fg">{profile.totalPaidOut.toLocaleString()}</p>
+              <p className="text-lg font-semibold text-fg">{formatCurrency(profile.totalPaidOut, profile.currency)}</p>
             </div>
           </div>
 

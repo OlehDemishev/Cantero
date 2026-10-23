@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface EacRow {
   projectId: string;
@@ -64,10 +65,10 @@ export function EstimateAtCompletionReportPanel({ currency }: { currency: string
                     {row.costPerformanceIndex === null ? "—" : row.costPerformanceIndex}
                   </td>
                   <td className="text-right tabular-nums">
-                    {row.estimateAtCompletion} {currency}
+                    {formatCurrency(row.estimateAtCompletion, currency)}
                   </td>
                   <td className={`text-right tabular-nums ${row.varianceAtCompletion < 0 ? "text-danger-fg" : "text-success-fg"}`}>
-                    {row.varianceAtCompletion} {currency}
+                    {formatCurrency(row.varianceAtCompletion, currency)}
                   </td>
                   <td className={`text-right tabular-nums ${(row.projectedMarginPercent ?? 0) < 0 ? "text-danger-fg" : "text-success-fg"}`}>
                     {row.projectedMarginPercent === null ? "—" : `${row.projectedMarginPercent}%`}

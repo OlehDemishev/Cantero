@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatCurrency, formatNumber } from "@/lib/format-currency";
 
 type ClientStage = "lead" | "contacted" | "qualified" | "won" | "lost";
 
@@ -69,11 +70,11 @@ export function CrmPipelinePanel() {
             <div className="card">
               <div className="text-xs text-fg-subtle">{t("weightedPipelineValue")}</div>
               <div className="mt-1 text-lg font-semibold">
-                {forecast.totalWeightedValue.toFixed(2)} {currency}
+                {formatCurrency(forecast.totalWeightedValue, currency)}
               </div>
               {forecast.unscheduledWeightedValue > 0 && (
                 <div className="mt-1 text-xs text-fg-subtle">
-                  {t("unscheduledWeightedValue", { value: forecast.unscheduledWeightedValue.toFixed(2), currency })}
+                  {t("unscheduledWeightedValue", { value: formatCurrency(forecast.unscheduledWeightedValue, currency) })}
                 </div>
               )}
             </div>
@@ -83,7 +84,7 @@ export function CrmPipelinePanel() {
                   <li key={m.month} className="flex justify-between">
                     <span>{m.month}</span>
                     <span className="font-medium">
-                      {m.weightedValue.toFixed(2)} {currency}
+                      {formatCurrency(m.weightedValue, currency)}
                     </span>
                   </li>
                 ))}
@@ -102,7 +103,7 @@ export function CrmPipelinePanel() {
             <div className="card">
               <div className="text-xs text-fg-subtle">{t("winRate")}</div>
               <div className="mt-1 text-lg font-semibold">
-                {funnel.winRatePercent !== null ? `${funnel.winRatePercent.toFixed(0)}%` : "—"}
+                {funnel.winRatePercent !== null ? `${formatNumber(funnel.winRatePercent, { fractionDigits: 0 })}%` : "—"}
               </div>
               <div className="mt-1 text-xs text-fg-subtle">
                 {t("winLossCount", { won: funnel.wonCount, lost: funnel.lostCount })}
@@ -114,7 +115,7 @@ export function CrmPipelinePanel() {
                   <span>{t(f.stage)}</span>
                   <span>
                     {f.everReachedCount}
-                    {f.avgDaysInStage !== null && ` · ${t("avgDays", { days: f.avgDaysInStage.toFixed(1) })}`}
+                    {f.avgDaysInStage !== null && ` · ${t("avgDays", { days: formatNumber(f.avgDaysInStage, { fractionDigits: 1 }) })}`}
                   </span>
                 </li>
               ))}
@@ -135,10 +136,10 @@ export function CrmPipelinePanel() {
               <li key={row.ownerWorkerId} className="card">
                 <div className="text-sm font-medium">{row.ownerName}</div>
                 <div className="mt-1 text-xs text-fg-subtle">
-                  {t("wonSummary", { count: row.wonCount, value: row.wonValue.toFixed(2), currency })}
+                  {t("wonSummary", { count: row.wonCount, value: formatCurrency(row.wonValue, currency) })}
                 </div>
                 <div className="text-xs text-fg-subtle">
-                  {t("openSummary", { count: row.openCount, value: row.openValue.toFixed(2), currency })}
+                  {t("openSummary", { count: row.openCount, value: formatCurrency(row.openValue, currency) })}
                 </div>
               </li>
             ))}

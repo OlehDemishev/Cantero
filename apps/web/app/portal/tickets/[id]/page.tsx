@@ -4,8 +4,8 @@ import { use, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { getPortalToken, portalApiFetch } from "@/lib/portal-api-client";
-import { ApiError } from "@/lib/api-client";
 import { formatDateTime } from "@/lib/format-date";
+import { PublicLinkError } from "@/components/public-link-error";
 
 type TicketStatus = "open" | "in_progress" | "waiting_on_customer" | "resolved" | "closed";
 interface TicketMessage {
@@ -26,12 +26,13 @@ interface TicketDetail {
 export default function PortalTicketDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const t = useTranslations("portal");
+  const tp = useTranslations("publicLink");
   const router = useRouter();
 
   const [ticket, setTicket] = useState<TicketDetail | null>(null);
   const [content, setContent] = useState("");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<unknown>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   function load() {
@@ -40,7 +41,7 @@ export default function PortalTicketDetailPage({ params }: { params: Promise<{ i
         setTicket(t);
         setTimeout(() => bottomRef.current?.scrollIntoView({ block: "end" }), 0);
       })
-      .catch((err) => setError(err instanceof ApiError ? err.message : t.toString()));
+      .catch(setLoadError);
   }
 
   useEffect(() => {
@@ -65,11 +66,16 @@ export default function PortalTicketDetailPage({ params }: { params: Promise<{ i
     }
   }
 
-  if (error) {
+  if (loadError) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
-        <p className="text-sm text-fg-subtle">{error}</p>
-      </main>
+      <PublicLinkError
+        error={loadError}
+        action={
+          <a href="/portal" className="btn-primary inline-block">
+            {tp("backToPortal")}
+          </a>
+        }
+      />
     );
   }
 

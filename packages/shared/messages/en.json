@@ -35,7 +35,10 @@
     "close": "Close",
     "add": "Add",
     "send": "Send",
-    "all": "All"
+    "all": "All",
+    "confirmDelete": "Delete this item?",
+    "description": "Description",
+    "notes": "Notes"
   },
   "nav": {
     "menu": "Menu",
@@ -174,7 +177,7 @@
     "widgetOpenRfis": "Open RFIs",
     "widgetExpired": "Expired",
     "widgetExpiringSoon": "Expiring soon",
-    "widgetBacklogDetail": "{contractValue} {currency} contracted, {billedToDate} {currency} billed"
+    "widgetBacklogDetail": "{contractValue} contracted, {billedToDate} billed"
   },
   "settings": {
     "onlinePayments": "Online payments from clients",
@@ -472,11 +475,12 @@
     "rateCatalogApprovalThresholdPercentHint": "A labor-hours edit changing a rate item by more than this percentage is held for approval instead of applying immediately. Leave blank to apply every edit at once.",
     "noThresholdPlaceholder": "No threshold",
     "npsDetractorFollowUpEnabled": "NPS detractor follow-up",
-    "npsDetractorFollowUpEnabledHint": "A client response at or below 6/10 adds a follow-up task to the project and emails the company owner(s).",
+    "npsDetractorFollowUpEnabledHint": "A client response at or below 6/10 adds a follow-up task to the project and emails the company's owners.",
     "confirmDeleteCustomRole": "Delete this custom role? Anyone still assigned to it will lose those permissions.",
     "confirmDeleteWebhook": "Delete this webhook? It will stop receiving events immediately.",
     "auditLoadMore": "Load more",
-    "companySettingsManagerOnlyHint": "Only owners and admins can edit company settings."
+    "companySettingsManagerOnlyHint": "Only owners and admins can edit company settings.",
+    "error": "Something went wrong"
   },
   "projects": {
     "title": "Projects",
@@ -551,15 +555,15 @@
     "expectedCloseDate": "Expected close date",
     "pipelineForecast": "Pipeline forecast",
     "weightedPipelineValue": "Weighted pipeline value",
-    "unscheduledWeightedValue": "{value} {currency} with no expected close date",
+    "unscheduledWeightedValue": "{value} with no expected close date",
     "funnelReport": "Funnel report",
     "winRate": "Win rate",
     "winLossCount": "{won} won · {lost} lost",
     "avgDays": "avg {days}d",
     "ownerLeaderboard": "Owner leaderboard",
     "ownerLeaderboardEmpty": "No won deals yet — this fills in once owners start closing clients.",
-    "wonSummary": "Won: {count} · {value} {currency}",
-    "openSummary": "Open: {count} · {value} {currency}",
+    "wonSummary": "Won: {count} · {value}",
+    "openSummary": "Open: {count} · {value}",
     "referralReward": "Referral reward",
     "referralReward_pending": "Reward owed",
     "referralReward_paid": "Reward paid",
@@ -670,7 +674,9 @@
     "cdlExpiry": "CDL expiry",
     "isApprentice": "Apprentice (not a journeyman)",
     "loadedRate": "Loaded rate",
-    "confirmDeleteCertification": "Delete this certification record?"
+    "confirmDeleteCertification": "Delete this certification record?",
+    "markComplete": "Mark complete",
+    "trainingCompleted": "Completed"
   },
   "documents": {
     "title": "Documents",
@@ -826,15 +832,15 @@
     "grandTotalDelta": "Grand total change",
     "noDifferences": "No differences between these revisions",
     "costCodeUnassigned": "Unassigned cost code",
-    "benchmarkHint": "Typical price for this cost code across {count} past estimate(s): {median} {currency}/unit",
+    "benchmarkHint": "Typical price for this cost code across {count, plural, one {# past estimate} other {# past estimates}}: {median}/unit",
     "computeFormula": "Calculate",
     "computedQuantity": "= {value} {unit}",
     "clientDecision_countered": "Client proposed a different price",
-    "clientDecisionThanksCountered": "Thank you — we've sent your proposed price of {amount} {currency} to the team.",
+    "clientDecisionThanksCountered": "Thank you — we've sent your proposed price of {amount} to the team.",
     "counterOfferAmountLabel": "Your proposed price",
     "proposeDifferentPrice": "Propose a different price instead",
     "sendCounterOffer": "Send proposal",
-    "counterOfferReceived": "Client proposed {amount} {currency} instead.",
+    "counterOfferReceived": "Client proposed {amount} instead.",
     "createRevisedVariant": "Create a revised version",
     "revisedVariantLabel": "Revised",
     "scheduleImpact": "Schedule impact",
@@ -927,7 +933,7 @@
     "sendPeppolNetwork": "Send via Peppol network",
     "peppolSent": "Sent via the Peppol network.",
     "autopay": "Autopay",
-    "lateFeeAccrued": "Late fee accrued: {amount} {currency}",
+    "lateFeeAccrued": "Late fee accrued: {amount}",
     "chargeLateFee": "Charge late fee",
     "taxAmount": "Tax",
     "recalculateTax": "Recalculate tax",
@@ -1150,7 +1156,7 @@
     "notes": "Notes",
     "submitBid": "Submit bid",
     "updateBid": "Update bid",
-    "yourBidWas": "Your bid: {amount} {currency}",
+    "yourBidWas": "Your bid: {amount}",
     "punchListItems": "Your punch list items",
     "noPunchListItems": "No punch list items assigned to you yet.",
     "punchListStatus_open": "Open",
@@ -1335,7 +1341,7 @@
     "catalogSync": "Catalog price sync",
     "catalogSyncHint": "Upload this supplier's price list (CSV: code, unitPrice) to bulk-update prices for materials where this supplier is preferred.",
     "uploadCatalogCsv": "Upload CSV",
-    "catalogSyncResult": "{updated} price(s) updated, {skipped} skipped",
+    "catalogSyncResult": "{updated, plural, one {# price updated} other {# prices updated}}, {skipped} skipped",
     "averageRating": "Avg. rating",
     "wouldReorderPercent": "Would reorder",
     "purchaseOrders": "Purchase orders",
@@ -1472,7 +1478,7 @@
     "disbursementCalendarHint": "Approved, unpaid bills grouped by the week they're expected to be paid.",
     "weekOf": "Week of",
     "totalDue": "Total due",
-    "unscheduledTotal": "{amount} {currency} in approved bills has no due date or scheduled payment date."
+    "unscheduledTotal": "{amount} in approved bills has no due date or scheduled payment date."
   },
   "incomingEInvoices": {
     "title": "Incoming e-invoices",
@@ -1559,7 +1565,7 @@
     "queuedOfflineNoReceipt": "Saved offline — the receipt photo will need to be added once you're back online",
     "receiptQueuedOffline": "Saved — receipt photo will upload once you're back online",
     "receiptUploadFailed": "Expense saved, but the receipt photo failed to upload. Try attaching it again later.",
-    "syncConflicts": "{count} item(s) couldn't sync — something changed elsewhere",
+    "syncConflicts": "{count, plural, one {# item couldn't sync} other {# items couldn't sync}} — something changed elsewhere",
     "retrySync": "Retry",
     "discardSync": "Discard",
     "voiceInputStart": "Start voice input",
@@ -1694,7 +1700,7 @@
     "projectedInflow": "Projected inflow",
     "projectedOutflow": "Projected outflow",
     "projectedNet": "Projected net",
-    "unscheduledNote": "Plus {inflow} {currency} inflow and {outflow} {currency} outflow with no due date, not shown in the weeks below.",
+    "unscheduledNote": "Plus {inflow} inflow and {outflow} outflow with no due date, not shown in the weeks below.",
     "inflow": "Inflow",
     "outflow": "Outflow",
     "net": "Net",
@@ -1806,10 +1812,22 @@
     "profileTitle": "What kind of work do you do?",
     "profileHint": "We'll set up your menu to match — you can always show or hide sections later in Settings.",
     "profile": {
-      "generalContractor": { "label": "General contractor", "hint": "Full project and subcontractor management, all sections shown." },
-      "specialtyTrade": { "label": "Specialty trade", "hint": "A focused menu for trade work — skips fleet, HR, and service contracts." },
-      "remodeling": { "label": "Remodeling & renovation", "hint": "A leaner menu for residential remodeling work." },
-      "everything": { "label": "Show me everything", "hint": "All sections visible — decide later what to hide." }
+      "generalContractor": {
+        "label": "General contractor",
+        "hint": "Full project and subcontractor management, all sections shown."
+      },
+      "specialtyTrade": {
+        "label": "Specialty trade",
+        "hint": "A focused menu for trade work — skips fleet, HR, and service contracts."
+      },
+      "remodeling": {
+        "label": "Remodeling & renovation",
+        "hint": "A leaner menu for residential remodeling work."
+      },
+      "everything": {
+        "label": "Show me everything",
+        "hint": "All sections visible — decide later what to hide."
+      }
     },
     "profileAdjustableHint": "You can change this anytime from Settings → Company.",
     "catalogTitle": "Load your price catalog",
@@ -1877,11 +1895,11 @@
     "weatherDelayHours": "Weather delay (hours)",
     "weatherDelayBadge": "{hours}h weather delay",
     "weatherDelayReport": "Weather delay report",
-    "weatherDelayTotal": "{hours} hours lost to weather — suggests shifting the schedule by {days} day(s).",
+    "weatherDelayTotal": "{hours} hours lost to weather — suggests shifting the schedule by {days, plural, one {# day} other {# days}}.",
     "exportWeatherDelayReport": "Export CSV",
     "shiftScheduleDays": "Shift by (days)",
     "shiftSchedule": "Shift schedule",
-    "shiftScheduleResult": "Shifted {tasks} task(s) and {milestones} milestone(s).",
+    "shiftScheduleResult": "Shifted {tasks, plural, one {# task} other {# tasks}} and {milestones, plural, one {# milestone} other {# milestones}}.",
     "shiftScheduleHint": "Pushes every not-yet-done task and milestone due date forward by this many days — undo manually if you shift by mistake."
   },
   "punchList": {
@@ -2149,8 +2167,8 @@
     "endDate": "End date",
     "note": "Note",
     "assign": "Assign",
-    "newAssignmentConflict": "Overlaps {count} other assignment(s) for the same resource:",
-    "conflictsDetected": "{count} scheduling conflict(s) detected",
+    "newAssignmentConflict": "Overlaps {count, plural, one {# other assignment} other {# other assignments}} for the same resource:",
+    "conflictsDetected": "{count, plural, one {# scheduling conflict detected} other {# scheduling conflicts detected}}",
     "calendar": "Calendar",
     "noAssignments": "No assignments yet.",
     "allAssignments": "All assignments",
@@ -2166,7 +2184,7 @@
     "assignCrew": "Assign crew",
     "levelSchedule": "Level schedule",
     "levelNoChanges": "Already level — nothing to shift.",
-    "leveledMoves": "Shifted {count} assignment(s) to resolve the overlap.",
+    "leveledMoves": "Shifted {count, plural, one {# assignment} other {# assignments}} to resolve the overlap.",
     "confirmDeleteCrew": "Delete this crew? Assignments already made won't be affected.",
     "confirmRemoveAssignment": "Remove this assignment?"
   },
@@ -2185,7 +2203,7 @@
     "topic": "Topic",
     "notes": "Notes",
     "noTemplates": "No templates yet.",
-    "itemCount": "{count} item(s)",
+    "itemCount": "{count, plural, one {# item} other {# items}}",
     "useTemplate": "Use template…",
     "punch_list": "Punch list",
     "rfi": "RFI",
@@ -2295,15 +2313,15 @@
     "title": "Progress billing",
     "hint": "Bill the client in draws as work progresses, withholding a retainage percentage until completion.",
     "percentBilled": "{percent}% billed",
-    "billedOfContract": "{billed} of {total} {currency} contract",
+    "billedOfContract": "{billed} of {total} contract",
     "retainageHeld": "Retainage held",
     "drawLabel": "Draw to {percent}%",
     "retainageReleaseLabel": "Retainage release",
     "percentComplete": "% complete",
     "retainagePercent": "Retainage %",
     "generateDraw": "Generate draw invoice",
-    "releaseRetainage": "Release retainage ({amount} {currency})",
-    "retainageReleasedSoFar": "Released so far: {amount} {currency}",
+    "releaseRetainage": "Release retainage ({amount})",
+    "retainageReleasedSoFar": "Released so far: {amount}",
     "releasePartialInstead": "Release a partial amount instead",
     "partialAmount": "Amount",
     "releasePartial": "Release",
@@ -2330,7 +2348,7 @@
     "noSubcontractors": "Add a subcontractor first to invite them to bid.",
     "sendBidRequest": "Send bid request",
     "noBidRequests": "No bid requests yet.",
-    "bidCount": "{count} of {total} bid(s) in",
+    "bidCount": "{count} of {total, plural, one {# bid} other {# bids}} in",
     "noBidYet": "No bid yet",
     "award": "Award",
     "awarded": "Awarded",
@@ -2437,7 +2455,7 @@
     "readinessTitle": "Handoff readiness",
     "readinessReady": "Ready for handoff",
     "readinessNotReady": "Not ready yet",
-    "readinessCounts": "{asBuilt} as-built document(s), {omManual} O&M manual(s) on file",
+    "readinessCounts": "{asBuilt, plural, one {# as-built document} other {# as-built documents}}, {omManual, plural, one {# O&M manual} other {# O&M manuals}} on file",
     "missing_as_built": "As-built drawings missing",
     "missing_om_manual": "O&M manual missing",
     "missing_punch_list": "Open punch list items",
@@ -2621,7 +2639,7 @@
   "expenses": {
     "title": "Expenses",
     "subtitle": "Field-submitted out-of-pocket expenses awaiting approval and reimbursement.",
-    "pendingTotal": "{amount} {currency} pending approval",
+    "pendingTotal": "{amount} pending approval",
     "allProjects": "All projects",
     "allStatuses": "All statuses",
     "empty": "No expenses submitted yet.",
@@ -2648,7 +2666,7 @@
     "confirmReject": "Confirm rejection",
     "rejectedReasonLabel": "Rejected",
     "anomaly": "+{percent}% vs. usual",
-    "anomalyHint": "Unusually high for this category — company average is {average} {currency}."
+    "anomalyHint": "Unusually high for this category — company average is {average}."
   },
   "materialRfqs": {
     "title": "Material RFQs",
@@ -2806,7 +2824,7 @@
     "categorizationRules": "Categorization rules",
     "categorizationRulesHint": "A transaction whose description contains this text gets auto-tagged with the category — applied automatically after every CSV import, and on demand below.",
     "applyRulesNow": "Apply rules now",
-    "applyRulesResult": "{count} transaction(s) categorized.",
+    "applyRulesResult": "{count, plural, one {# transaction categorized.} other {# transactions categorized.}}",
     "rulePatternPlaceholder": "e.g. Home Depot",
     "addRule": "Add rule",
     "category": "Category",
@@ -2926,7 +2944,7 @@
     "codePlaceholder": "Code, e.g. 03 00 00",
     "namePlaceholder": "Name, e.g. Concrete",
     "importStandardLibrary": "Import CSI MasterFormat",
-    "importResult": "Imported {created} division(s), {skipped} already present."
+    "importResult": "Imported {created, plural, one {# division} other {# divisions}}, {skipped} already present."
   },
   "wageClassifications": {
     "title": "Wage classifications",
@@ -2975,7 +2993,7 @@
     "downloadPdf": "Download PDF",
     "fringe": "Fringe",
     "apprentice": "Apprentice",
-    "apprenticeRatioViolation": "{trade}: {apprenticeCount} apprentice(s) exceeds the {maxAllowed} allowed under the {ratio} ratio"
+    "apprenticeRatioViolation": "{trade}: {apprenticeCount, plural, one {# apprentice exceeds} other {# apprentices exceed}} the {maxAllowed} allowed under the {ratio} ratio"
   },
   "jobCosting": {
     "title": "Job costing",
@@ -3383,7 +3401,7 @@
     "subtitle": "Claims filed with your insurer, from first report through settlement.",
     "newClaim": "File claim",
     "exportCsv": "Export CSV",
-    "openTotal": "{amount} {currency} in open claims",
+    "openTotal": "{amount} in open claims",
     "noProject": "No project",
     "allProjects": "All projects",
     "allStatuses": "All statuses",
@@ -4035,9 +4053,9 @@
     "condition_damaged": "Damaged",
     "condition_lost": "Lost",
     "checkedOutTools": "Checked-out tools",
-    "totalCharged": "{amount} {currency} charged",
+    "totalCharged": "{amount} charged",
     "stillOut": "Still out",
-    "chargeAmountLabel": "Charged {amount} {currency}",
+    "chargeAmountLabel": "Charged {amount}",
     "calibration": "Calibration"
   },
   "lienCompliance": {
@@ -4104,7 +4122,7 @@
     "newScenario": "New scenario",
     "namePlaceholder": "Scenario name",
     "noScenarios": "No scenarios yet.",
-    "overridesCount": "{count} task override(s)",
+    "overridesCount": "{count, plural, one {# task override} other {# task overrides}}",
     "selectTask": "Select task",
     "startDate": "Start date",
     "dueDate": "Due date",
@@ -4112,7 +4130,7 @@
     "compare": "Compare to baseline",
     "noComparableTasks": "No tasks with dates to compare yet.",
     "noFinishChange": "No change to the project finish date.",
-    "finishDelta": "Project finish would move {days} day(s) {direction}.",
+    "finishDelta": "Project finish would move {days, plural, one {# day} other {# days}} {direction}.",
     "later": "later",
     "earlier": "earlier",
     "confirmDeleteScenario": "Delete this schedule scenario?"
@@ -4151,7 +4169,7 @@
     "noEstimates": "No estimates yet — upload project photos with phase tags, then recompute.",
     "billedPercent": "billed at {percent}%",
     "varianceFlag": "This estimate differs from the last billed percentage by more than the usual threshold — worth a second look before the next draw.",
-    "basedOnPhotos": "Based on {count} photo(s)",
+    "basedOnPhotos": "Based on {count, plural, one {# photo} other {# photos}}",
     "history": "History"
   },
   "markupRules": {
@@ -4302,7 +4320,7 @@
     "disputeReasonPlaceholder": "Reason for dispute",
     "submitDispute": "Submit dispute",
     "disputeReasonLabel": "Dispute reason: {reason}",
-    "revisionCount": "Revised {count} time(s)",
+    "revisionCount": "{count, plural, one {Revised once} other {Revised # times}}",
     "reviseAndResubmit": "Revise & resubmit",
     "resubmit": "Resubmit"
   },
@@ -4401,13 +4419,13 @@
     "rejected": "Rejected",
     "accept": "Accept",
     "reject": "Reject",
-    "acceptedTotal": "Net accepted: {amount} {currency}"
+    "acceptedTotal": "Net accepted: {amount}"
   },
   "productivityScorecard": {
     "title": "Crew productivity scorecard",
     "hint": "Company-wide, across every project — grouped by unit within each crew, since hours/unit only benchmarks meaningfully when the units match.",
     "unassignedCrew": "Unassigned",
-    "projectCount": "{count} project(s)",
+    "projectCount": "{count, plural, one {# project} other {# projects}}",
     "totalHours": "{hours}h total",
     "hoursPerUnit": "{rate} h/{unit}"
   },
@@ -4438,7 +4456,7 @@
     "slippage": "Slippage",
     "taskRemoved": "removed",
     "onSchedule": "On schedule",
-    "slippageDays": "{days} day(s) {direction}",
+    "slippageDays": "{days, plural, one {# day} other {# days}} {direction}",
     "late": "late",
     "early": "early"
   },
@@ -4697,5 +4715,87 @@
       "request": "Request",
       "cancelItem": "Yes, cancel it"
     }
+  },
+  "apiErrors": {
+    "network": "Can't reach the server. Check your connection and try again.",
+    "server": "Something went wrong on our side. Please try again in a moment.",
+    "forbidden": "You don't have access to this.",
+    "unauthorized": "Your session has expired. Please sign in again.",
+    "tooManyRequests": "Too many attempts. Please wait a moment and try again.",
+    "notFound": "This item doesn't exist or is no longer available.",
+    "badRequest": "This request couldn't be processed."
+  },
+  "publicLink": {
+    "invalidTitle": "This link is invalid or has expired",
+    "invalidBody": "It may have been mistyped, already used or withdrawn. Ask whoever sent it to you for a new link.",
+    "loadFailedTitle": "This page couldn't be loaded",
+    "loadFailedBody": "Check your connection and try again.",
+    "retry": "Try again",
+    "loading": "Loading…",
+    "alreadySubmittedTitle": "Already submitted",
+    "alreadySubmittedBody": "We've already received your answer for this link. Thank you!",
+    "visitNotCompletedBody": "This visit hasn't been completed yet. You can leave your feedback once it's done.",
+    "backToPortal": "Back to the portal"
+  },
+  "appErrors": {
+    "title": "Something went wrong",
+    "pageBody": "The page hit an unexpected error. It's been reported — try again, or reload the page if it keeps happening.",
+    "retry": "Try again",
+    "notFoundTitle": "Page not found",
+    "notFoundBody": "This address doesn't lead anywhere. The page may have moved, or the link may be mistyped.",
+    "notFoundHome": "Go to the start page"
+  },
+  "labels": {
+    "toggleSidebar": "Toggle sidebar",
+    "toggleTheme": "Toggle light and dark theme",
+    "dismissNotification": "Dismiss notification",
+    "perMonth": "{amount}/mo",
+    "perSeatPerMonth": "{amount} / seat / month",
+    "miles": "{value} mi",
+    "termMonths": "{count, plural, one {# month} other {# months}}",
+    "unitNamePlaceholder": "Kilogram",
+    "metaDescription": "Estimate → materials → invoice, in one place.",
+    "plan_starter": "Starter",
+    "plan_growth": "Growth",
+    "plan_pro": "Pro",
+    "channelUnattributed": "No source"
+  },
+  "projectHealth": {
+    "factor_over_budget": "Over budget",
+    "factor_near_budget": "Near the budget limit",
+    "factor_open_rfis": "{count, plural, one {# open RFI} other {# open RFIs}}",
+    "factor_open_punch_items": "{count, plural, one {# open punch item} other {# open punch items}}"
+  },
+  "reportFields": {
+    "actualCost": "Actual cost",
+    "address": "Address",
+    "client": "Client",
+    "cost": "Cost",
+    "createdAt": "Created",
+    "date": "Date",
+    "dueDate": "Due date",
+    "grandTotal": "Grand total",
+    "handoverDate": "Handover date",
+    "hours": "Hours",
+    "invoicedTotal": "Invoiced",
+    "margin": "Margin",
+    "marginPercent": "Margin %",
+    "month": "Month",
+    "name": "Name",
+    "number": "Number",
+    "project": "Project",
+    "projectName": "Project",
+    "revenue": "Revenue",
+    "role": "Role",
+    "status": "Status",
+    "subject": "Subject",
+    "subtotal": "Subtotal",
+    "task": "Task",
+    "taxAmount": "Tax",
+    "title": "Title",
+    "total": "Total",
+    "warrantyMonths": "Warranty (months)",
+    "worker": "Worker",
+    "workerName": "Worker"
   }
 }

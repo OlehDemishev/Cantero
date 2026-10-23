@@ -10,6 +10,7 @@ import { apiFetch, downloadBlob } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
 import { resetStateInEffect } from "@/lib/effect-reset";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface Claim {
   id: string;
@@ -189,7 +190,7 @@ export default function InsuranceClaimsPage() {
       </div>
 
       {claims && claims.length > 0 && (
-        <p className="mt-2 text-sm font-medium text-fg-muted">{t("openTotal", { amount: openTotal.toFixed(2), currency })}</p>
+        <p className="mt-2 text-sm font-medium text-fg-muted">{t("openTotal", { amount: formatCurrency(openTotal, currency) })}</p>
       )}
 
       {creating && (
@@ -340,7 +341,7 @@ export default function InsuranceClaimsPage() {
                   t("noProject")
                 )}{" "}
                 · {formatDate(new Date(claim.dateFiled))}
-                {claim.claimAmount && ` · ${claim.claimAmount} ${currency}`}
+                {claim.claimAmount && ` · ${formatCurrency(claim.claimAmount, currency)}`}
               </p>
               <p className="mt-1 text-sm text-fg-muted">{claim.description}</p>
 
@@ -351,7 +352,7 @@ export default function InsuranceClaimsPage() {
                     {claim.policyNumber && <Row label={t("policyNumber")} value={claim.policyNumber} />}
                     {claim.adjusterName && <Row label={t("adjusterName")} value={claim.adjusterName} />}
                     {claim.adjusterContact && <Row label={t("adjusterContact")} value={claim.adjusterContact} />}
-                    {claim.settledAmount && <Row label={t("settledAmount")} value={`${claim.settledAmount} ${currency}`} />}
+                    {claim.settledAmount && <Row label={t("settledAmount")} value={`${formatCurrency(claim.settledAmount, currency)}`} />}
                     {claim.settledAt && <Row label={t("settledAt")} value={formatDate(new Date(claim.settledAt))} />}
                   </dl>
 

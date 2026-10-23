@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
 import { formatDate } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface Depreciation {
   monthsElapsed: number;
@@ -62,10 +63,10 @@ export function FixedAssetRegisterPanel() {
                   <span className="ml-1 text-xs text-fg-subtle">{e.category}</span>
                 </td>
                 <td>
-                  {e.purchaseCost} {currency}
+                  {formatCurrency(e.purchaseCost, currency)}
                 </td>
-                <td>{e.depreciation ? `${e.depreciation.accumulatedDepreciation} ${currency}` : "—"}</td>
-                <td className="font-medium">{e.depreciation ? `${e.depreciation.bookValue} ${currency}` : "—"}</td>
+                <td>{e.depreciation ? `${formatCurrency(e.depreciation.accumulatedDepreciation, currency)}` : "—"}</td>
+                <td className="font-medium">{e.depreciation ? `${formatCurrency(e.depreciation.bookValue, currency)}` : "—"}</td>
                 <td>
                   {e.disposal ? (
                     <span className="rounded-full bg-error-50 dark:bg-error-500/15 px-2 py-0.5 text-xs font-medium text-danger-fg">

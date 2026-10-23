@@ -370,6 +370,7 @@ function SidebarBackdrop() {
 function AppHeader({ me }: { me: MeResponse | null }) {
   const { theme, toggleTheme } = useTheme();
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
+  const tl = useTranslations("labels");
 
   function handleToggle() {
     if (window.innerWidth >= 1024) toggleSidebar();
@@ -381,7 +382,7 @@ function AppHeader({ me }: { me: MeResponse | null }) {
       <div className="flex items-center gap-3">
         <button
           onClick={handleToggle}
-          aria-label="Toggle sidebar"
+          aria-label={tl("toggleSidebar")}
           className="flex h-10 w-10 items-center justify-center rounded-lg text-fg-subtle hover:bg-gray-100 dark:hover:bg-white/5"
         >
           {isMobileOpen ? <CloseIcon /> : <MenuIcon />}
@@ -400,7 +401,7 @@ function AppHeader({ me }: { me: MeResponse | null }) {
 
         <button
           onClick={toggleTheme}
-          aria-label="Toggle theme"
+          aria-label={tl("toggleTheme")}
           className="flex h-10 w-10 items-center justify-center rounded-lg text-fg-subtle hover:bg-gray-100 dark:hover:bg-white/5"
         >
           {theme === "dark" ? <SunIcon /> : <MoonIcon />}

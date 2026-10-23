@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface AgingInvoice {
   invoiceId: string;
@@ -43,7 +44,7 @@ export function InvoiceAgingReportPanel({ currency }: { currency: string }) {
             <div className="card">
               <div className="text-xs text-fg-subtle">{t("totalOutstanding")}</div>
               <div className="mt-1 text-lg font-semibold">
-                {aging.totalOutstanding} {currency}
+                {formatCurrency(aging.totalOutstanding, currency)}
               </div>
             </div>
             <div className="card">
@@ -53,25 +54,25 @@ export function InvoiceAgingReportPanel({ currency }: { currency: string }) {
             <div className="card">
               <div className="text-xs text-fg-subtle">{t("bucketCurrent")}</div>
               <div className="mt-1 text-sm font-semibold">
-                {aging.buckets.current} {currency}
+                {formatCurrency(aging.buckets.current, currency)}
               </div>
             </div>
             <div className="card">
               <div className="text-xs text-fg-subtle">{t("bucket1to30")}</div>
               <div className="mt-1 text-sm font-semibold">
-                {aging.buckets.days1to30} {currency}
+                {formatCurrency(aging.buckets.days1to30, currency)}
               </div>
             </div>
             <div className="card">
               <div className="text-xs text-fg-subtle">{t("bucket31to90")}</div>
               <div className="mt-1 text-sm font-semibold">
-                {round2(aging.buckets.days31to60 + aging.buckets.days61to90)} {currency}
+                {formatCurrency(round2(aging.buckets.days31to60 + aging.buckets.days61to90), currency)}
               </div>
             </div>
             <div className="card">
               <div className="text-xs text-fg-subtle">{t("bucket90plus")}</div>
               <div className="mt-1 text-sm font-semibold text-danger-fg">
-                {aging.buckets.days90plus} {currency}
+                {formatCurrency(aging.buckets.days90plus, currency)}
               </div>
             </div>
           </div>
@@ -99,7 +100,7 @@ export function InvoiceAgingReportPanel({ currency }: { currency: string }) {
                       </td>
                       <td>{inv.clientName}</td>
                       <td className="text-right">
-                        {inv.outstanding} {currency}
+                        {formatCurrency(inv.outstanding, currency)}
                       </td>
                       <td className={`text-right ${inv.daysOverdue !== null && inv.daysOverdue > 0 ? "text-danger-fg" : ""}`}>
                         {inv.daysOverdue !== null && inv.daysOverdue > 0 ? inv.daysOverdue : "—"}

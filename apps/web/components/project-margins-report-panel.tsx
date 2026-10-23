@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface ProjectMargin {
   projectId: string;
@@ -53,16 +54,16 @@ export function ProjectMarginsReportPanel({ currency }: { currency: string }) {
                     </a>
                   </td>
                   <td className="text-right">
-                    {m.budgetTotal} {currency}
+                    {formatCurrency(m.budgetTotal, currency)}
                   </td>
                   <td className="text-right">
-                    {m.invoicedTotal} {currency}
+                    {formatCurrency(m.invoicedTotal, currency)}
                   </td>
                   <td className="text-right">
-                    {m.actualCost} {currency}
+                    {formatCurrency(m.actualCost, currency)}
                   </td>
                   <td className={`text-right ${m.margin < 0 ? "text-danger-fg" : "text-success-fg"}`}>
-                    {m.margin} {currency}
+                    {formatCurrency(m.margin, currency)}
                   </td>
                   <td className={`text-right ${m.margin < 0 ? "text-danger-fg" : "text-success-fg"}`}>
                     {m.marginPercent === null ? "—" : `${m.marginPercent}%`}

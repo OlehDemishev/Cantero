@@ -500,8 +500,8 @@ export class EstimatesService {
       where: { clientAccessToken: token },
       include: {
         lines: { orderBy: { sortOrder: "asc" }, include: { rateCatalogItem: true } },
-        project: true,
-        company: { select: { name: true } },
+        project: { include: { client: { select: { preferredLocale: true } } } },
+        company: { select: { name: true, locale: true } },
       },
     });
     if (!estimate) throw new NotFoundException("Estimate not found");
@@ -515,6 +515,8 @@ export class EstimatesService {
       clientDecisionNote: estimate.clientDecisionNote,
       counterOfferAmount: estimate.counterOfferAmount,
       companyName: estimate.company.name,
+      // the page opens in the language the estimate's PDF and email went out in
+      locale: estimate.project?.client?.preferredLocale ?? estimate.company.locale,
       currency: estimate.currency,
       projectName: estimate.project?.name ?? null,
       lines: estimate.lines.map((l) => ({

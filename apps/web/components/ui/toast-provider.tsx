@@ -1,7 +1,9 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { setApiErrorListener } from "@/lib/api-client";
+import { ApiErrorMessages } from "@/components/api-error-messages";
 
 type ToastType = "error" | "success";
 interface Toast {
@@ -22,6 +24,7 @@ const ToastContext = createContext<{ showToast: (type: ToastType, message: strin
  * useToast().showToast() directly too (e.g. for a success confirmation).
  */
 export function ToastProvider({ children }: { children: React.ReactNode }) {
+  const tl = useTranslations("labels");
   const [toasts, setToasts] = useState<Toast[]>([]);
   const nextId = useRef(0);
 
@@ -40,6 +43,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <ToastContext.Provider value={{ showToast }}>
+      <ApiErrorMessages />
       {children}
       <div className="pointer-events-none fixed bottom-4 right-4 z-99999 flex w-full max-w-sm flex-col gap-2 sm:bottom-6 sm:right-6">
         {toasts.map((toast) => (
@@ -51,7 +55,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             }`}
           >
             <span className="flex-1">{toast.message}</span>
-            <button onClick={() => dismiss(toast.id)} className="shrink-0 text-white/70 hover:text-white" aria-label="Dismiss">
+            <button onClick={() => dismiss(toast.id)} className="shrink-0 text-white/70 hover:text-white" aria-label={tl("dismissNotification")}>
               ×
             </button>
           </div>

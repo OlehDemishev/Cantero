@@ -3,7 +3,9 @@
 import { use, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { CompanyDocumentType } from "@cantero/shared";
-import { apiFetch, ApiError, downloadBlob } from "@/lib/api-client";
+import { apiFetch, downloadBlob } from "@/lib/api-client";
+import { PublicLinkError } from "@/components/public-link-error";
+import { useCompanyLocale } from "@/components/public-locale";
 import { formatDate } from "@/lib/format-date";
 
 interface PublicCoiDocument {
@@ -15,6 +17,8 @@ interface PublicCoiDocument {
   fileName: string | null;
 }
 interface PublicCoi {
+  /** The client's or company's language — see useCompanyLocale. */
+  locale: string;
   companyName: string;
   documents: PublicCoiDocument[];
 }
@@ -25,12 +29,13 @@ export default function CompanyCoiPublicPage({ params }: { params: Promise<{ tok
   const tc = useTranslations("common");
 
   const [coi, setCoi] = useState<PublicCoi | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
+  useCompanyLocale(coi?.locale);
 
   useEffect(() => {
     apiFetch<PublicCoi>(`/public/company-coi/${token}`)
       .then(setCoi)
-      .catch((err) => setError(err instanceof ApiError ? err.message : t("notFound")));
+      .catch(setError);
   }, [token, t]);
 
   async function download(doc: PublicCoiDocument) {
@@ -39,13 +44,7 @@ export default function CompanyCoiPublicPage({ params }: { params: Promise<{ tok
     downloadBlob(blob, doc.fileName ?? doc.name);
   }
 
-  if (error) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
-        <p className="text-sm text-fg-subtle">{error}</p>
-      </main>
-    );
-  }
+  if (error) return <PublicLinkError error={error} />;
 
   if (!coi) {
     return (

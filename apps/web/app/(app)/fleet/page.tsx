@@ -6,6 +6,7 @@ import Link from "next/link";
 import { VEHICLE_TYPES, type VehicleInspectionResult, type VehicleType } from "@cantero/shared";
 import { apiFetch } from "@/lib/api-client";
 import { formatDate } from "@/lib/format-date";
+import { formatNumber } from "@/lib/format-currency";
 
 interface Worker {
   id: string;
@@ -62,6 +63,7 @@ function isExpiringSoon(dateStr: string | null): "expired" | "soon" | null {
 export default function FleetPage() {
   const t = useTranslations("fleet");
   const tc = useTranslations("common");
+  const tl = useTranslations("labels");
 
   const [vehicles, setVehicles] = useState<Vehicle[] | null>(null);
   const [workers, setWorkers] = useState<Worker[]>([]);
@@ -368,7 +370,7 @@ export default function FleetPage() {
                             {fuelLogs.map((f) => (
                               <li key={f.id} className="text-xs text-gray-600 dark:text-gray-300">
                                 {f.quantity} · {formatDate(new Date(f.filledAt))}
-                                {f.odometerMiles && <span className="text-fg-subtle"> · {f.odometerMiles} mi</span>}
+                                {f.odometerMiles && <span className="text-fg-subtle"> · {tl("miles", { value: formatNumber(f.odometerMiles) })}</span>}
                                 {f.idleHours && <span className="text-fg-subtle"> · {t("idleHoursShort", { hours: f.idleHours })}</span>}
                               </li>
                             ))}

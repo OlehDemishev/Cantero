@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api-client";
 import { useMe } from "@/lib/use-me";
+import { formatCurrency } from "@/lib/format-currency";
 
 interface Campaign {
   id: string;
@@ -100,7 +101,7 @@ export function MarketingCampaignsPanel() {
                 {c.name} <span className="text-xs text-fg-subtle">({c.channel})</span>
               </span>
               <span className="text-xs text-fg-subtle">
-                {c.spend && `${c.spend} ${currency} · `}
+                {c.spend && `${formatCurrency(c.spend, currency)} · `}
                 {t("leadsCount", { count: c._count.clients })}
               </span>
             </li>

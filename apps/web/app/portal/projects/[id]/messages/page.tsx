@@ -4,8 +4,8 @@ import { use, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { getPortalToken, portalApiFetch } from "@/lib/portal-api-client";
-import { ApiError } from "@/lib/api-client";
 import { formatDateTime } from "@/lib/format-date";
+import { PublicLinkError } from "@/components/public-link-error";
 
 interface PortalMessage {
   id: string;
@@ -19,12 +19,13 @@ interface PortalMessage {
 export default function PortalProjectMessagesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const t = useTranslations("portal");
+  const tp = useTranslations("publicLink");
   const router = useRouter();
 
   const [messages, setMessages] = useState<PortalMessage[] | null>(null);
   const [content, setContent] = useState("");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<unknown>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   function load() {
@@ -33,7 +34,7 @@ export default function PortalProjectMessagesPage({ params }: { params: Promise<
         setMessages(list);
         setTimeout(() => bottomRef.current?.scrollIntoView({ block: "end" }), 0);
       })
-      .catch((err) => setError(err instanceof ApiError ? err.message : t("verifyError")));
+      .catch(setLoadError);
   }
 
   useEffect(() => {
@@ -61,11 +62,16 @@ export default function PortalProjectMessagesPage({ params }: { params: Promise<
     }
   }
 
-  if (error) {
+  if (loadError) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
-        <p className="text-sm text-fg-subtle">{error}</p>
-      </main>
+      <PublicLinkError
+        error={loadError}
+        action={
+          <a href="/portal" className="btn-primary inline-block">
+            {tp("backToPortal")}
+          </a>
+        }
+      />
     );
   }
 

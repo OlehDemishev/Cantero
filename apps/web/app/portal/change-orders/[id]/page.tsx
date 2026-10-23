@@ -4,9 +4,11 @@ import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { getPortalToken, portalApiFetch } from "@/lib/portal-api-client";
-import { ApiError, downloadBlob } from "@/lib/api-client";
+import { downloadBlob } from "@/lib/api-client";
 import { SignaturePad } from "@/components/signature-pad";
 import { formatDateTime } from "@/lib/format-date";
+import { formatCurrency } from "@/lib/format-currency";
+import { PublicLinkError } from "@/components/public-link-error";
 
 interface PortalLine {
   id: string;
@@ -39,11 +41,12 @@ interface PortalChangeOrder {
 export default function PortalChangeOrderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const t = useTranslations("portal");
+  const tp = useTranslations("publicLink");
   const te = useTranslations("estimates");
   const router = useRouter();
 
   const [co, setCo] = useState<PortalChangeOrder | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [note, setNote] = useState("");
   const [signerName, setSignerName] = useState("");
   const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
@@ -59,7 +62,7 @@ export default function PortalChangeOrderPage({ params }: { params: Promise<{ id
           portalApiFetch<Blob>(`/portal/change-orders/${id}/signature`).then((blob) => setSignatureUrl(URL.createObjectURL(blob)));
         }
       })
-      .catch((err) => setError(err instanceof ApiError ? err.message : te("linkNotFound")));
+      .catch(setLoadError);
   }
 
   useEffect(() => {
@@ -99,11 +102,16 @@ export default function PortalChangeOrderPage({ params }: { params: Promise<{ id
     downloadBlob(blob, `CO-${co?.number ?? ""}.pdf`);
   }
 
-  if (error) {
+  if (loadError) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-700 px-6 py-12">
-        <p className="text-sm text-fg-subtle">{error}</p>
-      </main>
+      <PublicLinkError
+        error={loadError}
+        action={
+          <a href="/portal" className="btn-primary inline-block">
+            {tp("backToPortal")}
+          </a>
+        }
+      />
     );
   }
   if (!co) {
@@ -146,7 +154,7 @@ export default function PortalChangeOrderPage({ params }: { params: Promise<{ id
                       {l.quantity} {l.unit}
                     </td>
                     <td className="text-right">
-                      {l.lineTotal} {co.currency}
+                      {formatCurrency(l.lineTotal, co.currency)}
                     </td>
                   </tr>
                 ))}
@@ -158,25 +166,25 @@ export default function PortalChangeOrderPage({ params }: { params: Promise<{ id
             <div className="flex justify-between">
               <dt className="text-fg-subtle">{te("subtotal")}</dt>
               <dd>
-                {co.subtotal} {co.currency}
+                {formatCurrency(co.subtotal, co.currency)}
               </dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-fg-subtle">{te("markupAmount")}</dt>
               <dd>
-                {co.markupAmount} {co.currency}
+                {formatCurrency(co.markupAmount, co.currency)}
               </dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-fg-subtle">{te("taxAmount")}</dt>
               <dd>
-                {co.taxAmount} {co.currency}
+                {formatCurrency(co.taxAmount, co.currency)}
               </dd>
             </div>
             <div className="flex justify-between border-t border-gray-200 dark:border-gray-700 pt-2 font-semibold">
               <dt>{te("grandTotal")}</dt>
               <dd>
-                {co.grandTotal} {co.currency}
+                {formatCurrency(co.grandTotal, co.currency)}
               </dd>
             </div>
           </dl>
